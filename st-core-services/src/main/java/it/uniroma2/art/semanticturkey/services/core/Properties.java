@@ -48,7 +48,6 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
-import it.uniroma2.art.semanticturkey.customform.SpecialValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
@@ -56,6 +55,7 @@ import it.uniroma2.art.semanticturkey.datarange.DataRangeDataOneOf;
 import it.uniroma2.art.semanticturkey.datarange.ParseDataRange;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
+import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -73,6 +73,10 @@ import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.InverseObjectProperty;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ObjectProperty;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ObjectPropertyExpression;
 import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
@@ -758,17 +762,23 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
 	public void addEquivalentProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
-			@LocallyDefined IRI equivalentProperty, @Optional(defaultValue = "false") boolean inverse,
-			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#equivalentProperty") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#equivalentProperty>") IRI linkingPredicate) {
-		addPropertyAxiomHelper(property, equivalentProperty, inverse, linkingPredicate);
+			String equivalentProperty,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#equivalentProperty") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#equivalentProperty>") IRI linkingPredicate)
+			throws RepositoryException, MalformedQueryException, UpdateExecutionException,
+			ManchesterParserException {
+		addPropertyAxiomHelper(property, equivalentProperty, linkingPredicate);
 	}
 
-	protected void addPropertyAxiomHelper(IRI property, IRI linkedProperty, boolean inverse,
-			IRI linkingPredicate)
-			throws RepositoryException, MalformedQueryException, UpdateExecutionException {
+	protected void addPropertyAxiomHelper(IRI property, String linkedProperty, IRI linkingPredicate)
+			throws RepositoryException, MalformedQueryException, UpdateExecutionException,
+			ManchesterParserException {
 		RepositoryConnection repoConnection = getManagedConnection();
 
-		if (inverse) {
+		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+				.getNSPrefixMappings(false);
+		ObjectPropertyExpression ope = ManchesterSyntaxUtils.parseObjectPropertyExpression(linkedProperty,
+				repoConnection.getValueFactory(), prefixToNamespacesMap);
+		if (ope instanceof InverseObjectProperty) {
 			Update update = repoConnection.prepareUpdate(
 			// @formatter:off
 				"PREFIX owl: <http://www.w3.org/2002/07/owl#>                                            \n" +
@@ -782,10 +792,10 @@ public class Properties extends STServiceAdapter {
 				);
 			update.setBinding("property", property);
 			update.setBinding("linkingPredicate", linkingPredicate);
-			update.setBinding("linkedProperty", linkedProperty);
+			update.setBinding("linkedProperty", ((InverseObjectProperty) ope).getProperty());
 			update.execute();
 		} else {
-			repoConnection.add(property, linkingPredicate, linkedProperty, getWorkingGraph());
+			repoConnection.add(property, linkingPredicate, ((ObjectProperty)ope).getProperty(), getWorkingGraph());
 		}
 	}
 	
@@ -830,9 +840,9 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
 	public void addPropertyDisjointWith(
 			@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
-			@LocallyDefined IRI disjointProperty, @Optional(defaultValue="false") boolean inverse,
-			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#propertyDisjointWith") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyDisjointWith>") IRI linkingPredicate) {
-		addPropertyAxiomHelper(property, disjointProperty, inverse, linkingPredicate);
+			String disjointProperty,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2002/07/owl#propertyDisjointWith") @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyDisjointWith>") IRI linkingPredicate) throws RepositoryException, MalformedQueryException, UpdateExecutionException, ManchesterParserException {
+		addPropertyAxiomHelper(property, disjointProperty, linkingPredicate);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -847,8 +857,8 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#property)+ ', values)','C')")
-	public void addInverseProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, IRI inverseProperty, @Optional(defaultValue="false") boolean inverse,  @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#inverseOf>") IRI linkingPredicate) {
-		addPropertyAxiomHelper(property, inverseProperty, inverse, linkingPredicate);
+	public void addInverseProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, String inverseProperty,  @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#inverseOf>") IRI linkingPredicate) throws RepositoryException, MalformedQueryException, UpdateExecutionException, ManchesterParserException {
+		addPropertyAxiomHelper(property, inverseProperty, linkingPredicate);
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
@@ -862,8 +872,8 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
 	public void addSuperProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
-			@LocallyDefined IRI superProperty, @Optional(defaultValue="false") boolean inverse) {
-		addPropertyAxiomHelper(property, superProperty, inverse, RDFS.SUBPROPERTYOF);
+			String superProperty, @Optional(defaultValue = "<http://www.w3.org/2000/01/rdf-schema#subPropertyOf>") IRI linkingPredicate) throws RepositoryException, MalformedQueryException, UpdateExecutionException, ManchesterParserException {
+		addPropertyAxiomHelper(property, superProperty, linkingPredicate);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
