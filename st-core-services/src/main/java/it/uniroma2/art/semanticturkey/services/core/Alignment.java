@@ -106,7 +106,7 @@ public class Alignment extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	Collection<AnnotatedValue<Resource>> searchResources(String searchTerm, IRI datasetIRI, 
+	public Collection<AnnotatedValue<Resource>> searchResources(String searchTerm, IRI datasetIRI, 
 			String[] rolesArray, List<SearchMode> searchModeList, SearchScope searchScope, List<String> langs) {
 		
 		//get the datasetMetadata associated to the desired dataset
