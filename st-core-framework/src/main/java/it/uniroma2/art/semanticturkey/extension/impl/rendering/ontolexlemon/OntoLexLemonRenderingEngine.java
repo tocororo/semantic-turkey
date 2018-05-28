@@ -15,11 +15,11 @@ public class OntoLexLemonRenderingEngine extends BaseRenderingEngine implements 
 	@Override
 	protected void getGraphPatternInternal(StringBuilder gp) {
 		gp.append(
-			//@formatter:off
+		//@formatter:off
 			"\n{"+
-			"\n{?resource <"+ONTOLEX.IS_DENOTED_BY.stringValue()+">|^<"+ONTOLEX.DENOTES.stringValue()+"> ?entry.} "+
+			"\n{?resource <"+ONTOLEX.IS_DENOTED_BY.stringValue()+">|^<"+ONTOLEX.DENOTES.stringValue()+">|<" + ONTOLEX.IS_EVOKED_BY + ">|^<" + ONTOLEX.EVOKES + "> ?entry.} "+
 			"\nUNION " +
-			"\n{?sense <"+ONTOLEX.REFERENCE.stringValue()+">|<"+ONTOLEX.IS_REFERENCE_OF.stringValue()+"> ?resource ." +
+			"\n{?sense <"+ONTOLEX.REFERENCE.stringValue()+">|<"+ONTOLEX.IS_REFERENCE_OF.stringValue()+">|<" + ONTOLEX.IS_LEXICALIZED_SENSE_OF + ">|^<" + ONTOLEX.LEXICALIZED_SENSE +"> ?resource ." +
 			"\n?sense <"+ONTOLEX.IS_SENSE_OF.stringValue()+">|^<"+ONTOLEX.SENSE.stringValue()+"> ?entry . } " +
 			"\n?entry <"+ONTOLEX.CANONICAL_FORM.stringValue()+"> [ <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?labelInternal ] .\n" +
 			"\n}" +
