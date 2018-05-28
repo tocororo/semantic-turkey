@@ -845,7 +845,7 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#property)+ ', values)','D')")
 	public void removeInverseProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, Resource inverseProperty, @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#inverseOf>") IRI linkingPredicate) {
-		removePropertyAxiomHelper(property, inverseProperty, linkingPredicate);
+		removePropertyAxiomHelper(property, linkingPredicate, inverseProperty);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
