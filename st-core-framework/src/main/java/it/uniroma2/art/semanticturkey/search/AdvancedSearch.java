@@ -18,15 +18,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
-import it.uniroma2.art.semanticturkey.extension.impl.search.graphdb.GraphDBSearchStrategy;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 
 public class AdvancedSearch {
 	
 	protected static Logger logger = LoggerFactory.getLogger(AdvancedSearch.class);
 
+	//@formatter:off
 	public Collection<AnnotatedValue<Resource>> searchResources(String inputText, String[] rolesArray, List<SearchMode> searchModeList,
-			SearchScope searchScope, List<String> langs, RepositoryConnection conn, boolean useIndexes, 
+			SearchScope searchScope, List<String> langs, RepositoryConnection conn, 
 			InWhatToSearch inWhatToSearch, WhatToShow whatToShow) throws IllegalStateException{
 		List<AnnotatedValue<Resource>> annotateResList = new ArrayList<>();
 		
@@ -49,7 +49,7 @@ public class AdvancedSearch {
 				"\nWHERE{";
 		
 		//get the type 
-		query+="\nOPTIONAL{"+varResource+ " a "+varType+" . }";
+		//query+="\nOPTIONAL{"+varResource+ " a "+varType+" . }"; // maybe it should be removed, not useful
 		
 		boolean first = true;
 		for(SearchMode searchMode : searchModeList) {
@@ -60,7 +60,7 @@ public class AdvancedSearch {
 				first = false;
 			}
 			query += searchWithOrWithoutIndexes(varResource, varLabel, inputText, searchMode, null, langs, 
-					inWhatToSearch, useIndexes);
+					inWhatToSearch);
 		}
 		
 		//filter the resource according to its type
@@ -74,7 +74,6 @@ public class AdvancedSearch {
 		
 		
 		logger.debug("query = " + query);
-		//System.out.println("query = " + query); // da cancellare
 		
 		//TODO for the moment, create a tuple query, but it should be better to use the QueryBuilder
 		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
@@ -105,12 +104,14 @@ public class AdvancedSearch {
 		
 		return annotateResList;
 	}
+	//@formatter:on
 	
 	
 
 	private String searchWithOrWithoutIndexes(String varResource, String varLabel, String inputText,
-			SearchMode searchMode, Object object, List<String> langs, InWhatToSearch inWhatToSearch, boolean useIndexes) {
+			SearchMode searchMode, Object object, List<String> langs, InWhatToSearch inWhatToSearch) {
 		
+		//@formatter:of
 		String query="";
 		
 		//prepare an inner query, which seems to be working faster (since it executed by GraphDB before the
@@ -121,16 +122,11 @@ public class AdvancedSearch {
 		if(inWhatToSearch.isSearchInLocalName()){
 			//the part related to the localName (with the indexes)
 			query+="\n{";
-			if(useIndexes) {
-				query += searchUsingIndexes(varResource, inputText, searchMode, 
-						GraphDBSearchStrategy.LUCENEINDEXLOCALNAME, langs, inWhatToSearch.isSearchIncludingLocales(),
-						true);
-			} else {
-				String varLocalName = "?localName";
-				query += "\n"+varResource+" a ?type . " + // otherwise the localName is not computed
-						"\nBIND(REPLACE(str("+varResource+"), '^.*(#|/)', \"\") AS "+varLocalName+")"+
-				searchUsingNoIndexes(varLocalName, inputText, searchMode, langs, inWhatToSearch.isSearchIncludingLocales());
-			}
+			
+			String varLocalName = "?localName";
+			query += "\n"+varResource+" a ?type . " + // otherwise the localName is not computed
+					"\nBIND(REPLACE(str("+varResource+"), '^.*(#|/)', \"\") AS "+varLocalName+")"+
+			searchUsingNoIndexes(varLocalName, inputText, searchMode, langs, inWhatToSearch.isSearchIncludingLocales());
 			query+="\n}"+
 					"\nUNION";
 		}
@@ -149,16 +145,6 @@ public class AdvancedSearch {
 		// is inside { and } and linked to the previous part with an UNION
 		if(inWhatToSearch.isSearchInLocalName() || inWhatToSearch.isSearchInURI()){
 			query+="\n{";
-		}
-		
-		//use the indexes to search in the literals, and then get the associated resource
-		if(useIndexes) {
-			query += searchUsingIndexes(varLabel, inputText, searchMode, 
-					GraphDBSearchStrategy.LUCENEINDEXLITERAL, langs, inWhatToSearch.isSearchIncludingLocales(),
-					true);
-		} else {
-			query += searchUsingNoIndexes(varLabel, inputText, searchMode, langs, 
-					inWhatToSearch.isSearchIncludingLocales());
 		}
 		
 		
@@ -199,9 +185,9 @@ public class AdvancedSearch {
 			}
 			//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
 			query+="\n{" +
-				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
-				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-				"\n}";
+					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
+					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+					"\n}";
 			first = false;
 		}
 		if(inWhatToSearch.isSearchInDCTitle()) {
@@ -220,11 +206,15 @@ public class AdvancedSearch {
 			}
 			//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
 			query+="\n{" +
-				"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
-				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
-				"\n}";
+					"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
+					"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+					"\n}";
 			first = false;
 		}
+		
+		
+		query += searchUsingNoIndexes(varLabel, inputText, searchMode, langs, 
+					inWhatToSearch.isSearchIncludingLocales());
 		
 		if(inWhatToSearch.isSearchInLocalName() || inWhatToSearch.isSearchInURI()){
 			query+="\n}";
@@ -233,79 +223,11 @@ public class AdvancedSearch {
 		//close the nested query and the outer query
 		query+="\n}"+
 			 "\n}";
+		//@formatter:on
 		
 		return query;
 	}
 
-
-
-
-	private String searchUsingIndexes(String varToUse, String searchTerm, SearchMode searchMode, 
-			String indexToUse, List<String> langs, boolean includeLocales, boolean forLocalName){
-		String query ="";
-		
-		if(indexToUse==null || indexToUse.length()==0) {
-			//if no lucene index is specified, then assume it is the Index_Literal
-			indexToUse = GraphDBSearchStrategy.LUCENEINDEXLITERAL;
-		}
-		
-		if(searchMode == SearchMode.startsWith){
-			query="\n"+varToUse+" <"+indexToUse+"> '"+searchTerm+"*' .";
-				// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the 
-				//single word, so filter them afterward
-				if(forLocalName) {
-					query+= "\nBIND(REPLACE(str("+varToUse+"), '^.*(#|/)', \"\") AS "+varToUse+"_locName )"+
-							"\nFILTER regex(str("+varToUse+"_locName), '^"+searchTerm+"', 'i')";
-				} else {
-					query+="\nFILTER regex(str("+varToUse+"), '^"+searchTerm+"', 'i')";
-				}
-		} else if(searchMode == SearchMode.endsWith){
-			query="\n"+varToUse+" <"+indexToUse+"> '*"+searchTerm+"' .";
-			// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the 
-			//single word, so filter them afterward
-			if(forLocalName) {
-				query+= "\nBIND(REPLACE(str("+varToUse+"), '^.*(#|/)', \"\") AS "+varToUse+"_locName )"+
-						"\nFILTER regex(str("+varToUse+"_locName), '"+searchTerm+"$', 'i')";
-			} else {
-				query+="\nFILTER regex(str("+varToUse+"), '"+searchTerm+"$', 'i')";
-			}
-		} else if(searchMode == SearchMode.contains){
-			query="\n"+varToUse+" <"+indexToUse+"> '*"+searchTerm+"*' .";
-		} else if(searchMode == searchMode.fuzzy){
-			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements 
-			//having just letter different form the input one
-			List<String> wordForIndex = ServiceForSearches.wordsForFuzzySearch(searchTerm, "*");
-			String wordForIndexAsString = ServiceForSearches.listToStringForQuery(wordForIndex, "", "");
-			query+="\n"+varToUse+" <"+indexToUse+"> \""+wordForIndexAsString+"\" .";
-			
-			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(searchTerm, ".");
-			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
-			query += "\nFILTER regex(str("+varToUse+"), \""+wordForNoIndexAsString+"\", 'i')";
-			
-		}else { // searchMode.equals(exact)
-			query="\n"+varToUse+" <"+indexToUse+"> '"+searchTerm+"' .";
-		}
-		
-		//if at least one language is specified, then filter the results of the label having such language
-		if(langs!=null && langs.size()>0) {
-			boolean first=true;
-			query+="\nFILTER(";
-			for(String lang : langs) {
-				if(!first) {
-					query+=" || ";
-				}
-				first=false;
-				if(includeLocales) {
-					query+="regex(lang("+varToUse+"), '^"+lang+"')";
-				} else {
-					query+="lang("+varToUse+")="+"'"+lang+"'";
-				}
-			}
-			query+=")";
-		}
-		
-		return query;
-	}
 	
 	private String searchUsingNoIndexes(String varToUse, String searchTerm, SearchMode searchMode, List<String> langs, 
 			boolean includeLocales){

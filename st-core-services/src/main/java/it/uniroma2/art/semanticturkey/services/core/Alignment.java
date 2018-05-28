@@ -26,6 +26,7 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,13 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
+import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.search.AdvancedSearch;
+import it.uniroma2.art.semanticturkey.search.AdvancedSearch.InWhatToSearch;
+import it.uniroma2.art.semanticturkey.search.AdvancedSearch.WhatToShow;
+import it.uniroma2.art.semanticturkey.search.SearchMode;
+import it.uniroma2.art.semanticturkey.search.SearchScope;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -59,6 +67,9 @@ import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 @STService
 public class Alignment extends STServiceAdapter {
+	
+	@Autowired
+	private MetadataRegistryBackend metadataRegistryBackend;
 	
 	@Autowired
 	private STServiceContext stServiceContext;
@@ -78,6 +89,60 @@ public class Alignment extends STServiceAdapter {
 	
 	//map that contain <id, context> pairs to handle multiple sessions
 	private Map<String, AlignmentModel> modelsMap = new HashMap<>();
+	
+	
+	//SERVICES FOR ALIGMENT FOR THE SEARCH
+	/**
+	 * Perform a search (a SPARQL query) on another resourse identifies by an IRI 
+	 * @param searchTerm
+	 * @param datasetIRI
+	 * @param rolesArray
+	 * @param searchModeList
+	 * @param searchScope
+	 * @param langs
+	 * @param useIndexes
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
+	Collection<AnnotatedValue<Resource>> searchResources(String searchTerm, IRI datasetIRI, 
+			String[] rolesArray, List<SearchMode> searchModeList, SearchScope searchScope, List<String> langs) {
+		
+		//get the datasetMetadata associated to the desired dataset
+		DatasetMetadata datasetMetadata = metadataRegistryBackend.getDatasetMetadata(datasetIRI);
+		if(datasetMetadata==null) {
+			throw new IllegalArgumentException("dataset "+datasetIRI.stringValue()+" has no datasetMetadata "
+					+ "associated");
+		}
+		
+		//consult metadataRegistryBackend to get the LexicalModel to see in what to search (to set inWhatToSearch)
+		AdvancedSearch advancedSearch = new AdvancedSearch();
+		InWhatToSearch inWhatToSearch = advancedSearch.new InWhatToSearch();
+		//TODO
+		
+		//get the connection from metadataRegistryBackend
+		java.util.Optional<IRI> sparqlEndPoint = datasetMetadata.getSparqlEndpoint();
+		if(!sparqlEndPoint.isPresent()) {
+			throw new IllegalArgumentException("dataset "+datasetIRI.stringValue()+" has no SPARQL endpoint "
+					+ "associated");
+		}
+		
+		SPARQLRepository sparqlRepository = new SPARQLRepository(sparqlEndPoint.get().stringValue());
+		sparqlRepository.initialize();
+		
+		RepositoryConnection conn = sparqlRepository.getConnection();
+		
+		//what to show is dependend on the Lexicalization Model
+		WhatToShow whatToShow = advancedSearch.new WhatToShow();
+		//TODO
+		
+		
+		return advancedSearch.searchResources(searchTerm, rolesArray, searchModeList, searchScope, langs, conn, 
+				inWhatToSearch, whatToShow);
+	}
+	
+	
 	
 	// SERVICES FOR ALIGNMENT IN RESOURCE VIEW
 	

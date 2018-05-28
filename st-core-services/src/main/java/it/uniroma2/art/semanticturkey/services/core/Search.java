@@ -99,13 +99,15 @@ public class Search extends STServiceAdapter {
 	// private static String CONCEPT_ROLE = "concept";
 	// private static String INSTANCE_ROLE = "instance";
 
-	/*
-	 * protected SearchStrategy instantiateSearchStrategy() { SearchStrategies searchStrategy =
-	 * STRepositoryInfoUtils .getSearchStrategy(getProject().getRepositoryManager()
-	 * .getSTRepositoryInfo(STServiceContextUtils.getRepostoryId(stServiceContext)));
-	 * 
-	 * return SearchStrategyUtils.instantiateSearchStrategy(searchStrategy); }
-	 */
+	//@formatter:off
+	/*protected SearchStrategy instantiateSearchStrategy() {
+		SearchStrategies searchStrategy = STRepositoryInfoUtils
+				.getSearchStrategy(getProject().getRepositoryManager()
+						.getSTRepositoryInfo(STServiceContextUtils.getRepostoryId(stServiceContext)));
+
+		return SearchStrategyUtils.instantiateSearchStrategy(searchStrategy);
+	}*/
+	//@formatter:on
 
 	@STServiceOperation
 	@Write
@@ -295,25 +297,28 @@ public class Search extends STServiceAdapter {
 	public enum StatusFilter {
 		NOT_DEPRECATED, ONLY_DEPRECATED, UNDER_VALIDATION, UNDER_VALIDATION_FOR_DEPRECATION, ANYTHING
 	}
-
+	
+	//@formatter:off
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> advancedSearch(@Optional String searchString,
-			@Optional(defaultValue = "false") boolean useLocalName,
-			@Optional(defaultValue = "false") boolean useURI, @Optional SearchMode searchMode,
-			@Optional(defaultValue = "false") boolean useNotes, @Optional List<String> langs,
-			@Optional(defaultValue = "false") boolean includeLocales, StatusFilter statusFilter,
+			@Optional(defaultValue="false") boolean useLocalName, 
+			@Optional(defaultValue="false") boolean useURI, 
+			@Optional SearchMode searchMode, 
+			@Optional(defaultValue="false") boolean useNotes,
+			@Optional List<String> langs, @Optional(defaultValue="false") boolean includeLocales,
+			StatusFilter statusFilter,
 			@Optional @JsonSerialized List<List<IRI>> types,
 			@Optional @JsonSerialized List<List<IRI>> schemes,
 			@Optional @JsonSerialized List<Pair<IRI, List<Value>>> outgoingLinks,
 			@Optional @JsonSerialized List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
 			@Optional @JsonSerialized List<Pair<IRI, List<Value>>> ingoingLinks,
-			@Optional(defaultValue = "false") boolean searchInRDFSLabel,
-			@Optional(defaultValue = "false") boolean searchInSKOSLabel,
-			@Optional(defaultValue = "false") boolean searchInSKOSXLLabel,
-			@Optional(defaultValue = "false") boolean searchInOntolex)
-			throws IllegalStateException, STPropertyAccessException {
+			@Optional(defaultValue="false") boolean searchInRDFSLabel,
+			@Optional(defaultValue="false") boolean searchInSKOSLabel,
+			@Optional(defaultValue="false") boolean searchInSKOSXLLabel,
+			@Optional(defaultValue="false") boolean searchInOntolex) 
+					throws IllegalStateException, STPropertyAccessException {
 		IRI lexModel = getProject().getLexicalizationModel();
 		if (!ValidationUtilities.isValidationEnabled(stServiceContext)) {
 			if (statusFilter == StatusFilter.UNDER_VALIDATION
@@ -323,89 +328,97 @@ public class Search extends STServiceAdapter {
 			}
 		}
 
-		String query = ServiceForSearches.getPrefixes()
-				+ "\nSELECT DISTINCT ?resource ?attr_nature ?attr_scheme" + "\nWHERE{" + "\n{";
-
-		// use the searchInstancesOfClasse to construct the first part of the query (the subquery)
+		String query= ServiceForSearches.getPrefixes() +
+				"\nSELECT DISTINCT ?resource ?attr_nature ?attr_scheme" +
+				"\nWHERE{" +
+				"\n{";
+		
+		//use the searchInstancesOfClasse to construct the first part of the query (the subquery)
 		query += instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, types, searchString,
 				useLocalName, useURI, useNotes, searchMode, langs, includeLocales, true, true, lexModel,
 				searchInRDFSLabel, searchInSKOSLabel, searchInSKOSXLLabel, searchInOntolex);
-		// use the other parameters to filter the results
-		query += "\n}";
+		//use the other parameters to filter the results
+		query+="\n}";
 		// the statusFilter
-		if (statusFilter.equals(StatusFilter.ANYTHING)) {
-			// do nothing in this case
-		} else if (statusFilter.equals(StatusFilter.NOT_DEPRECATED)) {
-			// check that the resource is not marked as deprecated
-			query += "\nFILTER NOT EXISTS{" + "\n{?resource "
-					+ NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED) + " true }" + "\nUNION"
-					+ "\n{?resource a " + NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS) + " }"
-					+ "\nUNION" + "\n{?resource a " + NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)
-					+ " }" + "\n}";
-
-		} else if (statusFilter.equals(StatusFilter.ONLY_DEPRECATED)) {
-			// check that the resource is marked as deprecated
-			query += "\n{?resource " + NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED) + " true }"
-					+ "\nUNION" + "\n{?resource a " + NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)
-					+ " }" + "\nUNION" + "\n{?resource a "
-					+ NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY) + " }";
-		} else if (statusFilter.equals(StatusFilter.UNDER_VALIDATION)) {
-			// check that in the validation graph there is the triple
+		if(statusFilter.equals(StatusFilter.ANYTHING)) {
+			//do nothing in this case
+		} else if(statusFilter.equals(StatusFilter.NOT_DEPRECATED)) {
+			//check that the resource is not marked as deprecated
+			query += "\nFILTER NOT EXISTS{" +
+					"\n{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }" +
+					"\nUNION"+
+					"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }" +
+					"\nUNION"+
+					"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)+" }" +
+					"\n}";
+					
+		} else if(statusFilter.equals(StatusFilter.ONLY_DEPRECATED)) {
+			//check that the resource is marked as deprecated
+			query += 
+				"\n{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }" +
+				"\nUNION"+
+				"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }" +
+				"\nUNION"+
+				"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)+" }";
+		} else if(statusFilter.equals(StatusFilter.UNDER_VALIDATION)) {
+			//check that in the validation graph there is the triple 
 			// ?resource a ?type
-			IRI validationGraph = (IRI) VALIDATION
-					.stagingAddGraph(SimpleValueFactory.getInstance().createIRI(getProject().getBaseURI()));
-			query += "\nGRAPH " + NTriplesUtil.toNTriplesString(validationGraph) + " { "
-					+ "?resource a ?type_for_validation ." + "}";
-		} else if (statusFilter.equals(StatusFilter.UNDER_VALIDATION_FOR_DEPRECATION)) {
-			// check that in the validation graph the resource is marked as deprecated
-			IRI validationGraph = (IRI) VALIDATION
-					.stagingAddGraph(SimpleValueFactory.getInstance().createIRI(getProject().getBaseURI()));
+			IRI validationGraph = (IRI) VALIDATION.stagingAddGraph(SimpleValueFactory.getInstance()
+					.createIRI(getProject().getBaseURI()));
+			query+="\nGRAPH "+NTriplesUtil.toNTriplesString(validationGraph)+" { "+
+					"?resource a ?type_for_validation ." +
+					"}";
+		} else if(statusFilter.equals(StatusFilter.UNDER_VALIDATION_FOR_DEPRECATION)) {
+			//check that in the validation graph the resource is marked as deprecated
+			IRI validationGraph = (IRI) VALIDATION.stagingAddGraph(SimpleValueFactory.getInstance()
+					.createIRI(getProject().getBaseURI()));
 			String valGraph = NTriplesUtil.toNTriplesString(validationGraph);
-			query += "\n{GRAPH " + valGraph + "{?resource "
-					+ NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED) + " true }}" + "\nUNION"
-					+ "\n{GRAPH " + valGraph + "{?resource a "
-					+ NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS) + " }}" + "\nUNION" + "\n{GRAPH "
-					+ valGraph + "{?resource a " + NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)
-					+ " }}";
+			query +="\n{GRAPH "+valGraph+"{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }}" +
+					"\nUNION"+
+					"\n{GRAPH "+valGraph+"{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }}" +
+					"\nUNION"+
+					"\n{GRAPH "+valGraph+"{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)+" }}";
 		}
-
-		// the schemes part
-		String schemeOrTopConcept = "(<" + SKOS.IN_SCHEME.stringValue() + ">|<" + SKOS.TOP_CONCEPT_OF + ">|"
-				+ "^<" + SKOS.HAS_TOP_CONCEPT + ">)";
+		
+		//the schemes part
+		String schemeOrTopConcept="(<"+SKOS.IN_SCHEME.stringValue()+">|<"+SKOS.TOP_CONCEPT_OF+">|"
+				+ "^<"+SKOS.HAS_TOP_CONCEPT+">)";
 		query += ServiceForSearches.filterWithOrOfAndValues("?resource", schemeOrTopConcept, schemes);
-
-		// the outgoingLinks part
-		if (outgoingLinks != null && outgoingLinks.size() > 0) {
+		
+		
+		//the outgoingLinks part
+		if(outgoingLinks!=null && outgoingLinks.size()>0) {
 			query += ServiceForSearches.filterWithOrOfAndPairValues(outgoingLinks, "?resource", "out", false);
 		}
-		// the outgoingSearch part
-		int cont = 1;
-		if (outgoingSearch != null && outgoingSearch.size() > 0) {
-			String valueOfProp = "?valueOfProp_" + cont;
-			for (TripleForSearch<IRI, String, SearchMode> tripleForSearch : outgoingSearch) {
-				query += "\n?resource " + NTriplesUtil.toNTriplesString(tripleForSearch.getPredicate()) + " "
-						+ valueOfProp + " ."
-						+ instantiateSearchStrategy().searchSpecificModePrepareQuery(valueOfProp,
-								tripleForSearch.getSearchString(), tripleForSearch.getMode(), null, null,
+		//the outgoingSearch part
+		int cont=1;
+		if(outgoingSearch!=null && outgoingSearch.size()>0) {
+			String valueOfProp = "?valueOfProp_"+cont;
+			for(TripleForSearch<IRI, String, SearchMode> tripleForSearch : outgoingSearch) {
+				query += "\n?resource "+NTriplesUtil.toNTriplesString(tripleForSearch.getPredicate())+" "+valueOfProp+" ." +
+						instantiateSearchStrategy().searchSpecificModePrepareQuery(valueOfProp, 
+								tripleForSearch.getSearchString(), tripleForSearch.getMode(), null, null, 
 								includeLocales, false);
 			}
 		}
-
-		// the ingoingLinks part
-		if (ingoingLinks != null && ingoingLinks.size() > 0) {
+		
+		//the ingoingLinks part	
+		if(ingoingLinks!=null && ingoingLinks.size()>0) {
 			query += ServiceForSearches.filterWithOrOfAndPairValues(ingoingLinks, "?resource", "in", true);
 		}
-		query += "\nFILTER(BOUND(?resource))" + // used only to not have problem with the OPTIONAL in
-												// qb.processRendering();
-				"\n}" + "\nGROUP BY ?resource ?attr_nature ?attr_scheme";
+		query+= "\nFILTER(BOUND(?resource))" + //used only to not have problem with the OPTIONAL in qb.processRendering(); 
+				"\n}" +
+			"\nGROUP BY ?resource ?attr_nature ?attr_scheme";
 		logger.debug("query = " + query);
 
+		
 		QueryBuilder qb;
 		qb = new QueryBuilder(stServiceContext, query);
 		qb.processRendering();
 		qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
 		return qb.runQuery();
 	}
+	//@formatter:on
 
 	@STServiceOperation
 	@Read
@@ -758,8 +771,7 @@ public class Search extends STServiceAdapter {
 		while (tupleQueryResult.hasNext()) {
 			BindingSet bindingSet = tupleQueryResult.next();
 			// get the value of the superResource (broader for concepts, superClass for classes, etc). This is
-			// not
-			// just the direct super type, but it uses the transitive closure in SPARQL
+			// not just the direct super type, but it uses the transitive closure in SPARQL
 			if (bindingSet.hasBinding(superResourceVar)) {
 				Value superNode = bindingSet.getBinding(superResourceVar).getValue();
 				boolean isResNotURI = false;
@@ -866,13 +878,16 @@ public class Search extends STServiceAdapter {
 
 		// if it is explicitly a topResource or if no path is returned while there was at least one
 		// result from the SPARQL query (this mean that all the paths contained at least one non-URI resource)
-		/*
-		 * if (isTopResource || (pathList.isEmpty() && !resourceToResourceForHierarchyMap.isEmpty())) { // the
-		 * input resource is a top resource for its role (concept, class or property) pathFound = true;
-		 * AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI) resourceURI);
-		 * annotatedValue.setAttribute("explicit", true); annotatedValue.setAttribute("show",
-		 * resourceURI.getLocalName()); results.add(annotatedValue); }
-		 */
+		//@formatter:off
+		/*if (isTopResource || (pathList.isEmpty() && !resourceToResourceForHierarchyMap.isEmpty())) {
+			// the input resource is a top resource for its role (concept, class or property)
+			pathFound = true;
+			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI) resourceURI);
+			annotatedValue.setAttribute("explicit", true);
+			annotatedValue.setAttribute("show", resourceURI.getLocalName());
+			results.add(annotatedValue);
+		}*/
+		//@formatter:on
 
 		// iterate over all possible found path
 		for (int currentLength = 1; currentLength <= maxLength && !pathFound; ++currentLength) {
