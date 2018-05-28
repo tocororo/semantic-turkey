@@ -120,6 +120,7 @@ public class Properties extends STServiceAdapter {
 				"	UNION																	\n" +
 				" 	{ ?resource 	rdf:type owl:OntologyProperty .}						\n" +
 				"	FILTER (NOT EXISTS{ ?resource rdfs:subPropertyOf ?superProp})			\n" +
+				"	FILTER(isIRI(?resource))												\n" +
 				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
 				" GROUP BY ?resource														\n"
@@ -176,6 +177,7 @@ public class Properties extends STServiceAdapter {
                 "																			\n" +
 				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
 				"     ?resource 	rdf:type	rdf:Property	.							\n" +
+				"	  FILTER(isIRI(?resource))												\n" +
 				"     FILTER (NOT EXISTS{ ?resource rdfs:subPropertyOf ?superProp})			\n" +
 				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
@@ -210,6 +212,7 @@ public class Properties extends STServiceAdapter {
                 "																			\n" +
 				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
 				"     ?resource 	rdf:type	owl:ObjectProperty	.						\n" +
+				"     FILTER(isIRI(?resource))												\n" +
 				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 		\n" +
 				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
@@ -244,6 +247,7 @@ public class Properties extends STServiceAdapter {
                 "																			\n" +
 				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
 				"     ?resource 	rdf:type	owl:DatatypeProperty .						\n" +
+				"     FILTER(isIRI(?resource)) 												\n" +
 				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 		\n" +
 				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
@@ -278,6 +282,7 @@ public class Properties extends STServiceAdapter {
                 "																			\n" +
 				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
 				"     ?resource 	rdf:type	owl:AnnotationProperty  .					\n" +
+				"     FILTER(isIRI(?resource)) 												\n" +
 				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 		\n" +
 				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
@@ -312,6 +317,7 @@ public class Properties extends STServiceAdapter {
                 "																			\n" +
 				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
 				"     ?resource 	rdf:type	owl:OntologyProperty .						\n" +
+				"     FILTER(isIRI(?resource)) 												\n" +
 				"     FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp}) 		\n" +
 				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
@@ -379,12 +385,13 @@ public class Properties extends STServiceAdapter {
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +                                      
 				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
-                "																						\n" +
-				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {						\n" +
-				"     ?resource 	rdfs:subPropertyOf	?superProperty .								\n" +
+                "																			\n" +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
+				"     ?resource 	rdfs:subPropertyOf	?superProperty .					\n" +
+				"     FILTER(isIRI(?resource)) 												\n" +
 				generateNatureSPARQLWherePart("?resource") +
-				" }																						\n" +
-				" GROUP BY ?resource															\n"
+				" }																			\n" +
+				" GROUP BY ?resource														\n"
 				// @formatter:on
 		);
 		qb.process(PropertiesMoreProcessor.INSTANCE, "resource", "attr_more");
@@ -409,6 +416,7 @@ public class Properties extends STServiceAdapter {
                 "																		\n" +
 				" SELECT ?resource WHERE {												\n" +
 				"     ?subProperty 	rdfs:subPropertyOf	?resource		 .				\n" +
+				"     FILTER(isIRI(?resource)) 											\n" +
 				" }																		\n" +
 				" GROUP BY ?resource													\n"
 				// @formatter:on
@@ -445,6 +453,7 @@ public class Properties extends STServiceAdapter {
 				" SELECT ?resource WHERE {												\n" +
 				"     ?res 	rdf:type	?type		 .									\n" +
 				"     ?resource 	rdfs:domain	?type		 .							\n" +
+				"     FILTER(isIRI(?resource)) 											\n" +
 				"     {?resource 	rdf:type	?typeOfProp  .							\n" + 
 				"		FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp})}	\n" + 
 				"		UNION															\n" + 
@@ -484,6 +493,7 @@ public class Properties extends STServiceAdapter {
                 "																		\n" +
 				" SELECT ?resource WHERE {												\n" +
 				"     ?resource 	rdf:domain	?classUri		 .						\n" +
+				"     FILTER(isIRI(?resource)) 											\n" +
 				"     {?resource 	rdf:type	?typeOfProp  .							\n" + 
 				"		FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp})}	\n" + 
 				"		UNION															\n" + 
