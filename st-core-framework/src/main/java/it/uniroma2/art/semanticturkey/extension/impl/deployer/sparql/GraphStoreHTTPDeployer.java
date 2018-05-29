@@ -1,11 +1,20 @@
 package it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.AbstractHttpEntity;
+import org.apache.http.message.BasicHeader;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.Deployer;
@@ -18,7 +27,8 @@ import it.uniroma2.art.semanticturkey.extension.impl.deployer.http.AbstractHTTPD
  * 
  * <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class GraphStoreHTTPDeployer extends AbstractHTTPDeployer implements RepositorySourcedDeployer {
+public class GraphStoreHTTPDeployer extends AbstractHTTPDeployer<RepositorySource>
+		implements RepositorySourcedDeployer {
 
 	private GraphStoreHTTPDeployerConfiguration conf;
 
@@ -67,6 +77,42 @@ public class GraphStoreHTTPDeployer extends AbstractHTTPDeployer implements Repo
 		} else {
 			return HttpVerbs.POST;
 		}
+	}
+
+	protected HttpEntity createHttpEntity(RepositorySource source) {
+		return new AbstractHttpEntity() {
+
+			@Override
+			public void writeTo(OutputStream arg0) throws IOException {
+				RepositoryConnection sourceConn = source.getSourceRepositoryConnection();
+				sourceConn.export(Rio.createWriter(RDFFormat.NTRIPLES, arg0), source.getGraphs());
+			}
+
+			@Override
+			public boolean isStreaming() {
+				return false;
+			}
+
+			@Override
+			public boolean isRepeatable() {
+				return true;
+			}
+
+			@Override
+			public long getContentLength() {
+				return -1;
+			}
+
+			@Override
+			public InputStream getContent() throws IOException, UnsupportedOperationException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Header getContentType() {
+				return new BasicHeader("Content-Type", RDFFormat.NTRIPLES.getDefaultMIMEType());
+			}
+		};
 	}
 
 }

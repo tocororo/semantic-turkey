@@ -1,18 +1,23 @@
 package it.uniroma2.art.semanticturkey.extension.impl.deployer.http;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.AbstractHttpEntity;
+import org.apache.http.message.BasicHeader;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.Deployer;
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.FormattedResourceSource;
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RepositorySource;
-import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RepositorySourcedDeployer;
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.StreamSourcedDeployer;
 
 /**
@@ -21,8 +26,8 @@ import it.uniroma2.art.semanticturkey.extension.extpts.deployer.StreamSourcedDep
  * 
  * <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class HTTPDeployer extends AbstractHTTPDeployer
-		implements RepositorySourcedDeployer, StreamSourcedDeployer {
+public class HTTPDeployer extends AbstractHTTPDeployer<FormattedResourceSource>
+		implements StreamSourcedDeployer {
 
 	private HTTPDeployerConfiguration conf;
 
@@ -71,9 +76,39 @@ public class HTTPDeployer extends AbstractHTTPDeployer
 		deployInternal(source);
 	}
 
-	@Override
-	public void deploy(RepositorySource source) throws IOException {
-		deployInternal(source);
+	protected HttpEntity createHttpEntity(FormattedResourceSource source) {
+		return new AbstractHttpEntity() {
+
+			@Override
+			public void writeTo(OutputStream arg0) throws IOException {
+				source.getSourceFormattedResource().writeTo(arg0);
+			}
+
+			@Override
+			public boolean isStreaming() {
+				return false;
+			}
+
+			@Override
+			public boolean isRepeatable() {
+				return true;
+			}
+
+			@Override
+			public long getContentLength() {
+				return -1;
+			}
+
+			@Override
+			public InputStream getContent() throws IOException, UnsupportedOperationException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Header getContentType() {
+				return new BasicHeader("Content-Type", source.getSourceFormattedResource().getMIMEType());
+			}
+		};
 	}
 
 }
