@@ -26,6 +26,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.Lexic
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LexicalizationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.OntologyImportsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.OtherPropertiesStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyChainStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyFacetsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.RangesStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.FormRepresentationsStatementConsumer;
@@ -58,7 +59,9 @@ public class StatementConsumerProvider {
 				customFormManager);
 		SubPropertyOfStatementConsumer subPropertyOfStatementConsumer = new SubPropertyOfStatementConsumer(
 				customFormManager);
-		PropertyFacetsStatementConsumer propertyFactesStatementConsumer = new PropertyFacetsStatementConsumer(
+		PropertyChainStatementConsumer propertyChainStatementConsumer = new PropertyChainStatementConsumer(
+				customFormManager);
+		PropertyFacetsStatementConsumer propertyFacetsStatementConsumer = new PropertyFacetsStatementConsumer(
 				customFormManager);
 		DomainsStatementConsumer domainsStatementConsumer = new DomainsStatementConsumer(customFormManager);
 		RangesStatementConsumer rangesStatementConsumer = new RangesStatementConsumer(customFormManager);
@@ -103,9 +106,9 @@ public class StatementConsumerProvider {
 						skosNotesStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.property,
 				Arrays.asList(typesStatementConsumer, formBasedPreview, equivalentPropertyStatementConsumer,
-						subPropertyOfStatementConsumer, propertyFactesStatementConsumer,
-						propertyDisjointWithStatementConsumer, domainsStatementConsumer,
-						rangesStatementConsumer, lexicalizationsStatementConsumer,
+						subPropertyOfStatementConsumer, propertyChainStatementConsumer,
+						propertyFacetsStatementConsumer, propertyDisjointWithStatementConsumer,
+						domainsStatementConsumer, rangesStatementConsumer, lexicalizationsStatementConsumer,
 						otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.conceptScheme,
 				Arrays.asList(typesStatementConsumer, formBasedPreview, lexicalizationsStatementConsumer,

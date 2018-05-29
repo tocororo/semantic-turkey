@@ -27,6 +27,7 @@ public abstract class OWL2Fragment {
 	public static final IRI DEPRECATED;
 	public static final IRI PROPERTY_DISJOINT_WITH;
 	public static final IRI DATARANGE;
+	public static final IRI PROPERTY_CHAIN_AXIOM;
 
 	static {
 		ValueFactory vf = SimpleValueFactory.getInstance();
@@ -37,5 +38,7 @@ public abstract class OWL2Fragment {
 		DEPRECATED = vf.createIRI(NAMESPACE, "deprecated");
 		PROPERTY_DISJOINT_WITH = vf.createIRI(NAMESPACE, "propertyDisjointWith");
 		DATARANGE = vf.createIRI(NAMESPACE, "DataRange");
+		PROPERTY_CHAIN_AXIOM = vf.createIRI(NAMESPACE, "propertyChainAxiom");
+
 	}
 }

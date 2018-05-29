@@ -99,7 +99,9 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 					expr = UNKNOWN_OWL_AXIOM;
 				}
 				return expr;
-			} else if (statements.contains(resource, RDF.TYPE, RDF.LIST)) {
+			} else if (statements.contains(resource, RDF.TYPE, RDF.LIST)
+					|| statements.contains(resource, RDF.FIRST, null)
+					|| statements.contains(resource, RDF.REST, null)) {
 				ArrayList<Value> values = RDFCollections.asValues(statements, resource, new ArrayList<>());
 
 				return values.stream().map(v -> {
