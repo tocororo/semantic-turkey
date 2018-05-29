@@ -687,7 +687,8 @@ public class Search extends STServiceAdapter {
 			query = "SELECT DISTINCT ?superClass ?superSuperClass ?isTop" + 
 					"\nWHERE{" + 
 					"\n{" + 
-					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBCLASSOF.stringValue() + ">* ?superClass ."; 
+					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBCLASSOF.stringValue() + ">* ?superClass ." +
+					"\nFILTER(isIRI(?superClass))"; 
 			
 			//if the input root is different from owl:Thing e rdfs:Resource the ?superClass should be 
 			// rdfs:subClass of such root
@@ -700,7 +701,8 @@ public class Search extends STServiceAdapter {
 					"\n?superClass a ?metaClass1 ."+
 					
 					"\nOPTIONAL{" +
-					"\n?superClass <" + RDFS.SUBCLASSOF.stringValue() + "> ?superSuperClass .";
+					"\n?superClass <" + RDFS.SUBCLASSOF.stringValue() + "> ?superSuperClass ." +
+					"\nFILTER(isIRI(?superSuperClass))";
 			//if the input root is different from owl:Thing e rdfs:Resource the ?superClass, in this OPTIONAL,
 			// should be different from the input root
 			if(!root.equals(OWL.THING) && !root.equals(RDFS.RESOURCE)) {
