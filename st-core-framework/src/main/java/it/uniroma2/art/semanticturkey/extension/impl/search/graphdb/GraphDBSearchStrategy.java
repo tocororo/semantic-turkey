@@ -586,7 +586,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\nFILTER regex(str("+varToUse+"), \""+wordForNoIndexAsString+"\", 'i')";
 			
 		} else { // searchMode.equals(exact)
-			query="\n"+variable+" <"+indexToUse+"> '"+value+"' .";
+			query="\n"+variable+" <"+indexToUse+"> '"+value+"' ." +
+					"\nFILTER regex(str("+varToUse+"), '^"+value+"$', 'i')";
 		}
 		
 		//if at least one language is specified, then filter the results of the label having such language
