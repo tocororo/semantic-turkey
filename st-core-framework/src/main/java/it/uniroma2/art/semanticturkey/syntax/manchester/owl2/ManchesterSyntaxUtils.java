@@ -34,6 +34,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserRuntimeExceptio
 import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface.PossType;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ObjectPropertyExpressionContext;
 
 public class ManchesterSyntaxUtils {
 
@@ -55,6 +56,35 @@ public class ManchesterSyntaxUtils {
 		} else {
 			return prefix + ":" + res.getLocalName();
 		}
+	}
+
+	public static ObjectPropertyExpression parseObjectPropertyExpression(String objectPropertyExpression,
+			ValueFactory valueFactory, Map<String, String> prefixToNamespacesMap)
+			throws ManchesterParserException {
+		// Get our lexer
+		// ManchesterOWL2SyntaxParserLexer lexer = new
+		// ManchesterOWL2SyntaxParserLexer(CharStreams.fromString(mancExp));
+		BailSimpleLexer lexer = new BailSimpleLexer(CharStreams.fromString(objectPropertyExpression));
+		// Get a list of matched tokens
+		CommonTokenStream tokens = new CommonTokenStream(lexer);
+		// Pass the tokens to the parser
+		ManchesterOWL2SyntaxParserParser parser = new ManchesterOWL2SyntaxParserParser(tokens);
+		// set the error handler that does not try to recover from error, it just throw exception
+		parser.setErrorHandler(new BailErrorStrategy());
+		try {
+			ObjectPropertyExpressionContext objectPropertyExpressionContext = parser
+					.objectPropertyExpression();
+
+			// Walk it and attach our listener
+			ParseTreeWalker walker = new ParseTreeWalker();
+			ParserObjectPropertyExpression parserOpe = new ParserObjectPropertyExpression(valueFactory,
+					prefixToNamespacesMap);
+			walker.walk(parserOpe, objectPropertyExpressionContext);
+			return parserOpe.getObjectPropertyExpression();
+		} catch (ManchesterParserRuntimeException e) {
+			throw new ManchesterParserException(e);
+		}
+
 	}
 
 	public static ManchesterClassInterface parseCompleteExpression(String mancExp, ValueFactory valueFactory,
@@ -298,6 +328,22 @@ public class ManchesterSyntaxUtils {
 			// this should never happen
 			// TODO decide what to do in this case
 			return null;
+		}
+	}
+
+	public static Resource parseObjectPropertyExpression(ObjectPropertyExpression ope,
+			List<Statement> statList, ValueFactory valueFactory) {
+		if (ope instanceof ObjectProperty) {
+			return ((ObjectProperty) ope).getProperty();
+		} else if (ope instanceof InverseObjectProperty) {
+			BNode invProp = valueFactory.createBNode();
+			statList.add(valueFactory.createStatement(invProp, RDF.TYPE, OWL.OBJECTPROPERTY));
+			statList.add(valueFactory.createStatement(invProp, OWL.INVERSEOF,
+					((InverseObjectProperty) ope).getProperty()));
+			return invProp;
+		} else {
+			throw new IllegalArgumentException(
+					"Unsupported object property expression type: " + ope.getClass().getName());
 		}
 	}
 

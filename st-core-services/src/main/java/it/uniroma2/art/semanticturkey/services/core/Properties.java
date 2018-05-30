@@ -7,13 +7,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.validation.constraints.Size;
+
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.util.RDFCollections;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -28,7 +33,9 @@ import org.eclipse.rdf4j.query.UpdateExecutionException;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.util.Connections;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.hibernate.validator.constraints.Length;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,6 +80,9 @@ import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ObjectProperty;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ObjectPropertyExpression;
 import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
@@ -866,6 +876,33 @@ public class Properties extends STServiceAdapter {
 	public void addSuperProperty(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property,
 			IRI superProperty,@Optional(defaultValue = "false") boolean inverse, @Optional(defaultValue = "<http://www.w3.org/2000/01/rdf-schema#subPropertyOf>") IRI linkingPredicate) throws RepositoryException, MalformedQueryException, UpdateExecutionException, ManchesterParserException {
 		addPropertyAxiomHelper(property, superProperty, inverse, linkingPredicate);
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
+	public void addPropertyChainAxiom(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, @Size(min=2) List<String> chainedProperties, @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyChainAxiom>") IRI linkingPredicate) throws ManchesterParserException {
+		
+		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+
+		RepositoryConnection conn = getManagedConnection();
+		ValueFactory vf = conn.getValueFactory();
+
+
+		List<Resource> chainedPropRoots = new ArrayList<>(chainedProperties.size());
+		List<Statement> statList = new ArrayList<>(chainedProperties.size());
+		for (String ope : chainedProperties) {
+			ObjectPropertyExpression objProp = ManchesterSyntaxUtils.parseObjectPropertyExpression(ope, vf, prefixToNamespacesMap);
+			chainedPropRoots.add(ManchesterSyntaxUtils.parseObjectPropertyExpression(objProp, statList, vf));
+		}
+		
+		BNode listRoot = vf.createBNode();
+		
+		RDFCollections.asRDF(chainedPropRoots, listRoot, statList);
+		
+		statList.add(vf.createStatement(property, linkingPredicate, listRoot));
+		
+		conn.add(statList, getWorkingGraph());
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
