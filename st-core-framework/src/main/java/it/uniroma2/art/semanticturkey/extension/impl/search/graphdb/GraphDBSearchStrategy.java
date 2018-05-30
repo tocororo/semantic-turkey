@@ -447,7 +447,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\nUNION" +
 					"\n{" +
 					"\n{SELECT ?propNote {?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
-					"\n?resource ?propNote ?refNobel ." +
+					"\n?resource ?propNote ?refNote ." +
 					"\n?refNote <"+RDF.VALUE+"> ?label ." +
 					"\n}" +
 					"\nUNION";
