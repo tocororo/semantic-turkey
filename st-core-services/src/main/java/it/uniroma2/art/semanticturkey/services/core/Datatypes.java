@@ -1,5 +1,8 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import static java.util.stream.Collectors.toSet;
+
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -100,22 +103,44 @@ public class Datatypes extends STServiceAdapter {
 
 		return annotatedValue;
 	}
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(datatype)', 'D')")
-	public void deleteDatatype(
-			@LocallyDefined @Created(role = RDFResourceRole.dataRange) IRI datatype) {
+	public void deleteDatatype(@LocallyDefined @Created(role = RDFResourceRole.dataRange) IRI datatype) {
 
 		RepositoryConnection conn = getManagedConnection();
 		conn.remove(datatype, null, null, getWorkingGraph());
-		conn.remove((Resource)null, null, datatype, getWorkingGraph());
+		conn.remove((Resource) null, null, datatype, getWorkingGraph());
 	}
 
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(datatype)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getDatatypes() {
+		Collection<AnnotatedValue<Resource>> declaredDatatypes = getDeclaredDatatypes();
+		Collection<AnnotatedValue<Resource>> owl2DatatypeMap = getOWL2DatatypeMap();
+
+		Set<Resource> declaredDatatypeSet = declaredDatatypes.stream().map(AnnotatedValue::getValue)
+				.collect(toSet());
+
+		ArrayList<AnnotatedValue<Resource>> datatypes = new ArrayList<>(
+				declaredDatatypes.size() + owl2DatatypeMap.size());
+		datatypes.addAll(declaredDatatypes);
+
+		for (AnnotatedValue<Resource> adt : owl2DatatypeMap) {
+			if (!declaredDatatypeSet.contains(adt.getValue())) {
+				datatypes.add(adt);
+			}
+		}
+
+		return datatypes;
+	}
+
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(datatype)', 'R')")
+	public Collection<AnnotatedValue<Resource>> getDeclaredDatatypes() {
 		QueryBuilder qb = createQueryBuilder(
 		// @formatter:off
 			" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                   \n" +                                      
