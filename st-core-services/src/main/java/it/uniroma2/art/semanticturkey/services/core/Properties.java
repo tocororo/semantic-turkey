@@ -25,7 +25,9 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.MalformedQueryException;
+import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
@@ -904,6 +906,28 @@ public class Properties extends STServiceAdapter {
 		
 		conn.add(statList, getWorkingGraph());
 	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'D')")
+	public void removePropertyChainAxiom(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, Resource chain, @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyChainAxiom>") IRI linkingPredicate) throws ManchesterParserException {
+		RepositoryConnection conn = getManagedConnection();
+		conn.remove(property, linkingPredicate, chain, getWorkingGraph());
+		
+		if (chain instanceof BNode) {
+			GraphQuery descQuery = conn.prepareGraphQuery(
+				"DESCRIBE ?y FROM " + RenderUtils.toSPARQL(getWorkingGraph()) + " WHERE { BIND(?x as ?y) }"	
+				);
+			descQuery.setBinding("x", chain);
+			descQuery.setIncludeInferred(false);
+			Model stats = QueryResults.asModel(descQuery.evaluate());
+			
+			if (stats.filter(null, null, chain).size() <= 1) {
+				conn.remove(stats, getWorkingGraph());
+			}
+		}
+	}
+	
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
