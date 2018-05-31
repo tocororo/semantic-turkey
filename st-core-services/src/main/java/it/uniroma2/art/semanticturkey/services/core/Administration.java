@@ -109,14 +109,14 @@ public class Administration extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void updateEmailConfig(String mailSmtpHost, String mailSmtpPort, String mailSmtpAuth,
-			String mailFromAddress, String mailFromPassword, String mailFromAlias) throws STPropertyUpdateException {
+	public void updateEmailConfig(String mailSmtpHost, String mailSmtpPort, String mailSmtpAuth, String mailFromAddress,
+			String mailFromAlias, @Optional String mailFromPassword) throws STPropertyUpdateException {
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_HOST, mailSmtpHost);
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_PORT, mailSmtpPort);
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_AUTH, mailSmtpAuth);
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ADDRESS, mailFromAddress);
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_PASSWORD, mailFromPassword);
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ALIAS, mailFromAlias);
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_PASSWORD, mailFromPassword);
 	}
 	
 	
