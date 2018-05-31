@@ -928,6 +928,13 @@ public class Properties extends STServiceAdapter {
 		}
 	}
 	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'U')")
+	public void updatePropertyChainAxiom(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, Resource replacedChain, @Size(min=2) List<String> chainedProperties, @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyChainAxiom>") IRI linkingPredicate) throws ManchesterParserException {
+		removePropertyChainAxiom(property, replacedChain, linkingPredicate);
+		addPropertyChainAxiom(property, chainedProperties, linkingPredicate);
+	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
