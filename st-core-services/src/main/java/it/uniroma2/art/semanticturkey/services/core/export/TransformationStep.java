@@ -22,16 +22,16 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 
 /**
- * A filtering step consists of a {@link PluginSpecification} and a collection of graphs it applies to.
+ * A transformation step consists of a {@link PluginSpecification} and a collection of graphs it applies to.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class FilteringStep {
+public class TransformationStep {
 	private it.uniroma2.art.semanticturkey.plugin.PluginSpecification filter;
 	private IRI[] graphs;
 
-	public FilteringStep(@JsonProperty("filter") PluginSpecification filter,
-			@JsonProperty("graphs") @JsonDeserialize(using = FilteringStep.GraphsDeserializer.class) IRI[] graphs) {
+	public TransformationStep(@JsonProperty("filter") PluginSpecification filter,
+			@JsonProperty("graphs") @JsonDeserialize(using = TransformationStep.GraphsDeserializer.class) IRI[] graphs) {
 		this.filter = filter;
 		this.graphs = graphs;
 	}

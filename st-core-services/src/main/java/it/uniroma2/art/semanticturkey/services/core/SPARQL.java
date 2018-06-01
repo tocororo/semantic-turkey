@@ -78,7 +78,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.services.core.export.FilteringPipeline;
+import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipeline;
 import it.uniroma2.art.semanticturkey.services.core.sparql.Graph2TupleQueryResultAdapter;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 
@@ -344,7 +344,7 @@ public class SPARQL extends STServiceAdapter {
 	 * mechanism (see {@link Export}).
 	 * 
 	 * See {@link #evaluateQuery(String, QueryLanguage, boolean, Map, int, IRI[], IRI[])} and
-	 * {@link Export#export(HttpServletResponse, IRI[], FilteringPipeline, boolean, RDFFormat, boolean)} for
+	 * {@link Export#export(HttpServletResponse, IRI[], TransformationPipeline, boolean, RDFFormat, boolean)} for
 	 * the meaning of the parameters.
 	 * 
 	 * The results of the query are stored in a randomly named graph, which would appear in the output if the
@@ -384,7 +384,7 @@ public class SPARQL extends STServiceAdapter {
 			@Optional(defaultValue = "{}") Map<String, Value> bindings,
 			@Optional(defaultValue = "0") int maxExecTime, @Optional(defaultValue = "") IRI[] defaultGraphs,
 			@Optional(defaultValue = "") IRI[] namedGraphs,
-			@Optional(defaultValue = "[]") FilteringPipeline filteringPipeline, @Optional String outputFormat,
+			@Optional(defaultValue = "[]") TransformationPipeline filteringPipeline, @Optional String outputFormat,
 			@Optional PluginSpecification deployerSpec,
 			@Optional PluginSpecification reformattingExporterSpec)
 			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,

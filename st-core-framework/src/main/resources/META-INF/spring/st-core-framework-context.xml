@@ -419,4 +419,40 @@
 			class="it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterFactory" />
 	</osgi:service>
 
+	<!-- Publishes the RDFLifter extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.RDFLifterExtensionPoint" />
+	</osgi:service>
+	
+		<!-- Publishes the RDFDeserializingLifter extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.rdflifter.rdfdeserializer.RDFDeserializingLifterFactory" />
+	</osgi:service>
+	
+	<!-- Publishes the Loader extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.loader.LoaderExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the StreamTargetingLoader extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.loader.StreamTargetingLoaderExtensionPoint" />
+	</osgi:service>
+
+	<!-- Publishes the RepositoryTargetingLoader extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.loader.RepositoryTargetingLoaderExtensionPoint" />
+	</osgi:service>
+
+
 </beans>

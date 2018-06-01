@@ -6,14 +6,14 @@ import org.springframework.core.convert.converter.Converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.uniroma2.art.semanticturkey.services.core.export.FilteringStep;
+import it.uniroma2.art.semanticturkey.services.core.export.TransformationStep;
 
 /**
- * Converts a (JSON) string to a {@link FilteringStep}.
+ * Converts a (JSON) string to a {@link TransformationStep}.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class StringToFilteringStepConverter implements Converter<String, FilteringStep> {
+public class StringToFilteringStepConverter implements Converter<String, TransformationStep> {
 
 	private final ObjectMapper mapper;
 
@@ -22,9 +22,9 @@ public class StringToFilteringStepConverter implements Converter<String, Filteri
 	}
 
 	@Override
-	public FilteringStep convert(String source) {
+	public TransformationStep convert(String source) {
 		try {
-			return mapper.readValue(source, FilteringStep.class);
+			return mapper.readValue(source, TransformationStep.class);
 		} catch (IOException e) {
 			throw new IllegalArgumentException(e);
 		}

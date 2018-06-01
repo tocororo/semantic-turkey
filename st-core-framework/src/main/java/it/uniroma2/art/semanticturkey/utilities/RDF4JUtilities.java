@@ -9,6 +9,8 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.repository.util.RDFLoader;
 import org.eclipse.rdf4j.rio.ParserConfig;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParser;
+import org.eclipse.rdf4j.rio.RDFParserRegistry;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
 
@@ -60,6 +62,15 @@ public abstract class RDF4JUtilities {
 	 */
 	public static Set<RDFFormat> getOutputFormats() {
 		return RDFWriterRegistry.getInstance().getKeys();
+	}
+
+	/**
+	 * Returns {@link RDFFormat}s for which an {@link RDFParser} is registered.
+	 * 
+	 * @return
+	 */
+	public static Set<RDFFormat> getInputFormats() {
+		return RDFParserRegistry.getInstance().getKeys();
 	}
 
 	/**

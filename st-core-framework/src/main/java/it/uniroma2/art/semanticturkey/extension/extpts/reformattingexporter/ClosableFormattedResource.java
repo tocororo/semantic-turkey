@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -15,7 +16,7 @@ import org.apache.commons.io.FileUtils;
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class ClosableFormattedResource implements AutoCloseable {
+public class ClosableFormattedResource implements Closeable {
 
 	private File backingFile;
 	private String defaultFileExtension;

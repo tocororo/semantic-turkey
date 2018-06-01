@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -56,8 +57,11 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.repository.util.Repositories;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFHandler;
+import org.eclipse.rdf4j.rio.RDFHandlerException;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.RDFParserFactory;
 import org.eclipse.rdf4j.rio.RDFParserRegistry;
@@ -103,6 +107,11 @@ import it.uniroma2.art.semanticturkey.validation.ValidationUtilities.ThrowingPro
 public class OntologyManagerImpl implements OntologyManager {
 
 	private static final Logger logger = LoggerFactory.getLogger(OntologyManagerImpl.class);
+
+	private static final Predicate<Statement> ONTOLOGY_METADATA_SPY_PREDICATE = stmt -> stmt.getPredicate()
+			.equals(OWL.IMPORTS)
+			|| (stmt.getPredicate().equals(RDF.TYPE) && stmt.getObject().equals(OWL.ONTOLOGY))
+			|| (stmt.getPredicate().equals(OWL.VERSIONIRI));
 
 	private volatile Repository repository;
 	private volatile NSPrefixMappings nsPrefixMappings;
@@ -532,10 +541,7 @@ public class OntologyManagerImpl implements OntologyManager {
 			InputStream in, RDFParser parser, Model caputeredImports) {
 		BackgroundGraphResult concurrentIter = new BackgroundGraphResult(parser, in, null, baseURI);
 		new Thread(concurrentIter).start();
-		return new IterationSpy<>(concurrentIter,
-				stmt -> stmt.getPredicate().equals(OWL.IMPORTS)
-						|| (stmt.getPredicate().equals(RDF.TYPE) && stmt.getObject().equals(OWL.ONTOLOGY))
-						|| (stmt.getPredicate().equals(OWL.VERSIONIRI)),
+		return new IterationSpy<>(concurrentIter, ONTOLOGY_METADATA_SPY_PREDICATE,
 				stmt -> caputeredImports.add(stmt));
 	}
 
@@ -1227,8 +1233,7 @@ public class OntologyManagerImpl implements OntologyManager {
 	private void removeNamespaceInternal(RepositoryConnection conn, String namespace)
 			throws RepositoryException {
 		Set<String> prefixesToDelete = QueryResults.stream(conn.getNamespaces())
-				.filter(ns -> ns.getName().equals(namespace)).map(Namespace::getPrefix)
-				.collect(toSet());
+				.filter(ns -> ns.getName().equals(namespace)).map(Namespace::getPrefix).collect(toSet());
 		for (String prefix : prefixesToDelete) {
 			conn.removeNamespace(prefix);
 		}
@@ -1361,6 +1366,46 @@ public class OntologyManagerImpl implements OntologyManager {
 
 		recoverImportsForOntology(conn, conn.getValueFactory().createIRI(baseURI), ImportModality.USER,
 				capturedOntologyMetadata, transitiveImportAllowance, failedImports, new HashSet<>());
+	}
+
+	@Override
+	public RDFHandler getRDFHandlerForLoadData(RepositoryConnection conn, String baseURI, Resource graph,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports) {
+		return new RDFInserter(conn) {
+
+			private Model capturedOntologyMetadata = new LinkedHashModel();
+
+			{
+				this.setPreserveBNodeIDs(false);
+				this.enforceContext(graph);
+			}
+			
+			@Override
+			public void startRDF() throws RDFHandlerException {
+				super.startRDF();
+				capturedOntologyMetadata.clear();
+			}
+
+			@Override
+			public void handleStatement(Statement st) throws RDFHandlerException {
+				super.handleStatement(st);
+				if (ONTOLOGY_METADATA_SPY_PREDICATE.test(st)) {
+					capturedOntologyMetadata.add(st);
+				}
+			}
+
+			@Override
+			public void endRDF() throws RDFHandlerException, OntologyManagerException {
+				try {
+					super.endRDF();
+					recoverImportsForOntology(conn, conn.getValueFactory().createIRI(baseURI),
+							ImportModality.USER, capturedOntologyMetadata, transitiveImportAllowance,
+							failedImports, new HashSet<>());
+				} catch (RDF4JException | MalformedURLException e) {
+					throw new RDFHandlerException(e);
+				}
+			}
+		};
 	}
 
 	@Override

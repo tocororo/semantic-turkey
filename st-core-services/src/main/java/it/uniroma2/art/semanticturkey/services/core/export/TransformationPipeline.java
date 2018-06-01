@@ -13,29 +13,29 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
- * A filtering pipeline consisting in a sequence of {@link FilteringStep}s.
+ * A filtering pipeline consisting in a sequence of {@link TransformationStep}s.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-@JsonDeserialize(using = FilteringPipeline.FilteringPipelineDeserializer.class)
-public class FilteringPipeline {
-	private FilteringStep[] steps;
+@JsonDeserialize(using = TransformationPipeline.TransformationPipelineDeserializer.class)
+public class TransformationPipeline {
+	private TransformationStep[] steps;
 
-	public FilteringPipeline(FilteringStep[] steps) {
+	public TransformationPipeline(TransformationStep[] steps) {
 		this.steps = steps;
 	}
 
-	public FilteringStep[] getSteps() {
+	public TransformationStep[] getSteps() {
 		return steps;
 	}
 
-	public static class FilteringPipelineDeserializer extends JsonDeserializer<FilteringPipeline> {
+	public static class TransformationPipelineDeserializer extends JsonDeserializer<TransformationPipeline> {
 
 		@Override
-		public FilteringPipeline deserialize(JsonParser p, DeserializationContext ctxt)
+		public TransformationPipeline deserialize(JsonParser p, DeserializationContext ctxt)
 				throws IOException, JsonProcessingException {
 
-			List<FilteringStep> steps = new ArrayList<>();
+			List<TransformationStep> steps = new ArrayList<>();
 			JsonToken tok = p.getCurrentToken();
 			if (tok != JsonToken.START_ARRAY) {
 				throw new JsonParseException(p, "Expected start of array");
@@ -44,7 +44,7 @@ public class FilteringPipeline {
 				if (tok == JsonToken.END_ARRAY)
 					break;
 
-				FilteringStep aStep = p.readValueAs(FilteringStep.class);
+				TransformationStep aStep = p.readValueAs(TransformationStep.class);
 				steps.add(aStep);
 			}
 
@@ -52,7 +52,7 @@ public class FilteringPipeline {
 				throw new JsonParseException(p, "Expected end of array");
 			}
 
-			return new FilteringPipeline(steps.toArray(new FilteringStep[steps.size()]));
+			return new TransformationPipeline(steps.toArray(new TransformationStep[steps.size()]));
 		}
 
 	}

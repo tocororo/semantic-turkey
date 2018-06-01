@@ -20,6 +20,7 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFHandler;
 
 import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
 
@@ -346,6 +347,25 @@ public interface OntologyManager {
 	public void loadOntologyData(RepositoryConnection conn, File inputFile, String baseURI, RDFFormat format,
 			Resource graph, TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws FileNotFoundException, IOException, RDF4JException;
+
+	/**
+	 * Returns an {@link RDFHandler} that adds the data to the ontology being edited (i.e. it is not a
+	 * read-only import of an external ontology that the working ontology depends on, but a mass add of RDF
+	 * triples to the main graph of the working ontology)
+	 * 
+	 * @param conn
+	 *            a connection to the managed ontology
+	 * @param baseURI
+	 *            the baseURI to be used when importing relative names from loaded RDF data
+	 * @param graph
+	 * @param transitiveImportAllowance
+	 * @param failedImports
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 * @throws RDF4JException
+	 */
+	public RDFHandler getRDFHandlerForLoadData(RepositoryConnection conn, String baseURI, Resource graph,
+			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports);
 
 	/**
 	 * Clear the managed ontology

@@ -60,8 +60,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.core.export.FilteringPipeline;
-import it.uniroma2.art.semanticturkey.services.core.export.FilteringStep;
+import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipeline;
+import it.uniroma2.art.semanticturkey.services.core.export.TransformationStep;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
@@ -120,7 +120,7 @@ public class Export extends STServiceAdapter {
 
 	/**
 	 * Exports the content of the currently used project. The RDF data can be transformed using a
-	 * {@link FilteringPipeline}, and optionally reformatted to a (usually non-RDF) format by means of a
+	 * {@link TransformationPipeline}, and optionally reformatted to a (usually non-RDF) format by means of a
 	 * {@link ReformattingExporter}. The response of this operation is the actual data, if no
 	 * {@code deployerSpec} is provided; otherwise, the standard response of a void service operation is
 	 * written to the output stream, while the data are deployed somewhere else.
@@ -129,7 +129,7 @@ public class Export extends STServiceAdapter {
 	 * @param graphs
 	 *            the graphs to be exported. An empty array means all graphs the name of which is an IRI
 	 * @param filteringPipeline
-	 *            a JSON string representing an array of {@link FilteringStep}. Each filter is applied to a
+	 *            a JSON string representing an array of {@link TransformationStep}. Each filter is applied to a
 	 *            subset of the exported graphs. No graph means every exported graph
 	 * @param includeInferred
 	 *            tells if inferred triples should be included
@@ -151,7 +151,7 @@ public class Export extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public void export(HttpServletResponse oRes, @Optional(defaultValue = "") IRI[] graphs,
-			@Optional(defaultValue = "[]") FilteringPipeline filteringPipeline,
+			@Optional(defaultValue = "[]") TransformationPipeline filteringPipeline,
 			@Optional(defaultValue = "false") boolean includeInferred, @Optional String outputFormat,
 			@Optional(defaultValue = "false") boolean force,
 			@Optional PluginSpecification reformattingExporterSpec,
@@ -163,7 +163,7 @@ public class Export extends STServiceAdapter {
 
 	public static void exportHelper(ExtensionPointManager exptManager, STServiceContext stServiceContext,
 			HttpServletResponse oRes, RepositoryConnection sourceRepositoryConnection, IRI[] graphs,
-			FilteringPipeline filteringPipeline, boolean includeInferred, String outputFormat, boolean force,
+			TransformationPipeline filteringPipeline, boolean includeInferred, String outputFormat, boolean force,
 			@Nullable PluginSpecification deployerSpec,
 			@Nullable PluginSpecification reformattingExporterSpec)
 			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
@@ -190,7 +190,7 @@ public class Export extends STServiceAdapter {
 					.toArray(IRI[]::new);
 		}
 
-		FilteringStep[] filteringSteps = filteringPipeline.getSteps();
+		TransformationStep[] filteringSteps = filteringPipeline.getSteps();
 
 		if (filteringSteps.length == 0) {
 			// No filter has been specified. Then, just dump the data without creating a working copy
@@ -214,7 +214,7 @@ public class Export extends STServiceAdapter {
 					// Applies each filter
 					for (int i = 0; i < filteringSteps.length; i++) {
 						IRI[] stepGraphs = step2graphs[i];
-						FilteringStep filteringStep = filteringSteps[i];
+						TransformationStep filteringStep = filteringSteps[i];
 						PluginSpecification filterSpec = filteringStep.getFilter();
 						RDFTransformer transformer = exptManager.instantiateExtension(RDFTransformer.class,
 								filterSpec);
@@ -314,7 +314,7 @@ public class Export extends STServiceAdapter {
 	 * @return
 	 * @throws IllegalArgumentException
 	 */
-	private static IRI[][] computeGraphsForStep(IRI[] graphs, FilteringStep[] filteringSteps)
+	private static IRI[][] computeGraphsForStep(IRI[] graphs, TransformationStep[] filteringSteps)
 			throws IllegalArgumentException {
 		Set<IRI> exportedGraphs = new HashSet<>();
 		exportedGraphs.addAll(Arrays.asList(graphs));
