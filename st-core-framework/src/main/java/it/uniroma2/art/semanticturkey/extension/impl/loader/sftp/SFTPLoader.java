@@ -65,7 +65,8 @@ public class SFTPLoader implements StreamTargetingLoader {
 					try (FileOutputStream os = new FileOutputStream(backingFile)) {
 						IOUtils.copy(is, os);
 					}
-					target.setTargetFormattedResource(new ClosableFormattedResource(backingFile, null, null));
+					target.setTargetFormattedResource(
+							new ClosableFormattedResource(backingFile, null, null, null));
 				}
 			}
 		}

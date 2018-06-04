@@ -253,7 +253,7 @@ public class InputOutput extends STServiceAdapter {
 				closer.register(inputServerFile::delete);
 				inputFile.transferTo(inputServerFile);
 
-				formattedResource = new ClosableFormattedResource(inputServerFile, null, null);
+				formattedResource = new ClosableFormattedResource(inputServerFile, null, null, null);
 			}
 
 			closer.register(formattedResource);

@@ -27,9 +27,10 @@ public class RDFSerializingExporter implements ReformattingExporter {
 		Objects.requireNonNull(format, "Format must be specified");
 		RDFFormat rdfFormat = RDF4JUtilities.getRDFFormat(format);
 
-		return ClosableFormattedResource.build(outputStream -> sourceRepositoryConnection
-				.export(Rio.createWriter(rdfFormat, outputStream), graphs), rdfFormat.getDefaultMIMEType(),
-				rdfFormat.getDefaultFileExtension());
+		return ClosableFormattedResource.build(
+				outputStream -> sourceRepositoryConnection.export(Rio.createWriter(rdfFormat, outputStream),
+						graphs),
+				rdfFormat.getDefaultMIMEType(), rdfFormat.getDefaultFileExtension(), rdfFormat.getCharset());
 	}
 
 }

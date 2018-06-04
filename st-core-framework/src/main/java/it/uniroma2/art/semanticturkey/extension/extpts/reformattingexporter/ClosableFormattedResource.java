@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.function.Consumer;
 
 import org.apache.commons.io.FileUtils;
@@ -21,11 +22,13 @@ public class ClosableFormattedResource implements Closeable {
 	private File backingFile;
 	private String defaultFileExtension;
 	private String mimeType;
+	private Charset charset;
 
-	public ClosableFormattedResource(File backingFile, String defaultFileExtension, String mimeType) {
+	public ClosableFormattedResource(File backingFile, String defaultFileExtension, String mimeType, Charset charset) {
 		this.backingFile = backingFile;
 		this.defaultFileExtension = defaultFileExtension;
 		this.mimeType = mimeType;
+		this.charset = charset;
 	}
 
 	public String getDefaultFileExtension() {
@@ -34,6 +37,10 @@ public class ClosableFormattedResource implements Closeable {
 
 	public String getMIMEType() {
 		return mimeType;
+	}
+	
+	public Charset getCharset() {
+		return charset;
 	}
 
 	public void writeTo(OutputStream outputStream) throws IOException {
@@ -52,12 +59,12 @@ public class ClosableFormattedResource implements Closeable {
 	}
 
 	public static ClosableFormattedResource build(Consumer<OutputStream> outputStreamConsumer,
-			String mimeType, String defaultFileExtension) throws IOException {
+			String mimeType, String defaultFileExtension, Charset charset) throws IOException {
 		File backingFile = File.createTempFile("reformattingexporter", null);
 		try (OutputStream os = new FileOutputStream(backingFile)) {
 			outputStreamConsumer.accept(os);
 		}
-		return new ClosableFormattedResource(backingFile, defaultFileExtension, mimeType);
+		return new ClosableFormattedResource(backingFile, defaultFileExtension, mimeType, charset);
 	}
 
 }

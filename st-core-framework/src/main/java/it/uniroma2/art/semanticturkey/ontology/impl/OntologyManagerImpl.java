@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.xerces.util.SynchronizedSymbolTable;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -1398,6 +1399,7 @@ public class OntologyManagerImpl implements OntologyManager {
 			public void endRDF() throws RDFHandlerException, OntologyManagerException {
 				try {
 					super.endRDF();
+					
 					recoverImportsForOntology(conn, conn.getValueFactory().createIRI(baseURI),
 							ImportModality.USER, capturedOntologyMetadata, transitiveImportAllowance,
 							failedImports, new HashSet<>());
