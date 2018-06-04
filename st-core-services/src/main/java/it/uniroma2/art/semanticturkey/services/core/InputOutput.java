@@ -5,7 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -29,7 +31,9 @@ import com.google.common.base.MoreObjects;
 import com.google.common.io.Closer;
 
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
+import it.uniroma2.art.semanticturkey.extension.extpts.commons.io.FormatCapabilityProvider;
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.FormattedResourceTarget;
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.Loader;
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.RepositoryTarget;
@@ -42,8 +46,10 @@ import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.resources.DataFormat;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -61,6 +67,24 @@ import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 public class InputOutput extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(InputOutput.class);
+
+	/**
+	 * Returns the formats that are accepted by an extension implementing {@link FormatCapabilityProvider}.
+	 * 
+	 * @param extensionID
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	public List<DataFormat> getSupportedFormats(String extensionID) {
+		ExtensionFactory<?> extensionPoint = exptManager.getExtension(extensionID);
+
+		if (extensionPoint instanceof FormatCapabilityProvider) {
+			return ((FormatCapabilityProvider) extensionPoint).getFormats();
+		} else {
+			return Collections.emptyList();
+		}
+	}
 
 	/**
 	 * Tries to match the extension of a file name against the list of RDF formats that can be parsed (see:

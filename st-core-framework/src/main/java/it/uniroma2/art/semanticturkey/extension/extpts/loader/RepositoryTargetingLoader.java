@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.extension.extpts.loader;
 
+import java.io.IOException;
+
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 /**
@@ -9,5 +11,5 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
  */
 public interface RepositoryTargetingLoader extends Loader {
 
-	void load(RepositoryTarget target);
+	void load(RepositoryTarget target) throws IOException;
 }

@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.extension.extpts.loader;
 
+import java.io.IOException;
+
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ClosableFormattedResource;
 
 /**
@@ -9,5 +11,5 @@ import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.Clos
  */
 public interface StreamTargetingLoader extends Loader {
 
-	void load(FormattedResourceTarget target);
+	void load(FormattedResourceTarget target) throws IOException;
 }

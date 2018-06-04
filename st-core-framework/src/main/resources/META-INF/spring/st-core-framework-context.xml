@@ -454,5 +454,12 @@
 			class="it.uniroma2.art.semanticturkey.extension.extpts.loader.RepositoryTargetingLoaderExtensionPoint" />
 	</osgi:service>
 
+	<!-- Publishes the SFTP Loader extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoaderFactory" />
+	</osgi:service>
+
 
 </beans>

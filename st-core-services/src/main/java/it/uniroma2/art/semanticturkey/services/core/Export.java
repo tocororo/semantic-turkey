@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -36,6 +36,7 @@ import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
+import it.uniroma2.art.semanticturkey.extension.extpts.commons.io.FormatCapabilityProvider;
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.Deployer;
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.FormattedResourceSource;
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RDFReporter;
@@ -43,7 +44,6 @@ import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RepositorySource
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.Source;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformer;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ClosableFormattedResource;
-import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.FormatCapabilityProvider;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingException;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingExporter;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
@@ -85,7 +85,7 @@ public class Export extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public Collection<AnnotatedValue<org.eclipse.rdf4j.model.Resource>> getNamedGraphs() throws Exception {
 		return Iterations.stream(getManagedConnection().getContextIDs())
-				.map(AnnotatedValue<org.eclipse.rdf4j.model.Resource>::new).collect(toList());
+				.map(AnnotatedValue<org.eclipse.rdf4j.model.Resource>::new).collect(toSet());
 	}
 
 	/**
