@@ -26,6 +26,9 @@ public class StoredImportConfiguration implements Configuration {
 	@STProperty(description = "An optional RDFLifter to triplify data fetched from some non-RDF source", displayName = "RDFLifter specification")
 	public ExtensionSpecificationByRef rdfLifterSpec;
 
+	@STProperty(description = "An optional data format", displayName = "Format")
+	public String format;
+
 	@STProperty(description = "A sequence of RDFTransformers applied to the imported data", displayName = "Transformation pipeline")
 	@Required
 	public List<ExtensionSpecificationByRef> transformationPipeline;
