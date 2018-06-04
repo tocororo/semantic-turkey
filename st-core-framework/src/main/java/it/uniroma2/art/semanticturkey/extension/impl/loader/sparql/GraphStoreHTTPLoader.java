@@ -48,19 +48,19 @@ public class GraphStoreHTTPLoader extends AbstractHTTPLoader<RepositoryTarget>
 		if (conf.graphStoreHTTPEndpoint != null) { // indirect identification
 			UriComponentsBuilder uriBuilder = UriComponentsBuilder
 					.fromHttpUrl(conf.graphStoreHTTPEndpoint.toExternalForm());
-			if (conf.destinationGraph == null) {
+			if (conf.sourceGraph == null) {
 				uriBuilder.queryParam("default");
 			} else {
-				uriBuilder.queryParam("graph", conf.destinationGraph);
+				uriBuilder.queryParam("graph", conf.sourceGraph);
 			}
 			return uriBuilder.build().toUri();
 		} else { // direct identification
-			if (conf.destinationGraph == null) {
+			if (conf.sourceGraph == null) {
 				throw new IllegalStateException(
 						"Either <graphStoreHTTPEndpoint> or <destinationGraph> should be defined");
 			}
 
-			return new URI(conf.destinationGraph.stringValue());
+			return new URI(conf.sourceGraph.stringValue());
 		}
 	}
 
@@ -89,6 +89,7 @@ public class GraphStoreHTTPLoader extends AbstractHTTPLoader<RepositoryTarget>
 			RDFFormat rdfFormat = Rio.getParserFormatForMIMEType(contentType.getMimeType()).orElseThrow(
 					() -> new IOException("Unsupported MIME type: " + contentType.getMimeType()));
 			RDFParser rdfParser = Rio.createParser(rdfFormat);
+			rdfParser.setRDFHandler(target.getTargetRepositoryConnection());
 			try (InputStream is = responseEntity.getContent()) {
 				rdfParser.parse(is, "");
 			}

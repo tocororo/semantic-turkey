@@ -18,12 +18,12 @@ public class GraphStoreHTTPLoaderFactory implements ExtensionFactory<GraphStoreH
 
 	@Override
 	public String getName() {
-		return "Graph Store HTTP Deployer";
+		return "Graph Store HTTP Loader";
 	}
 
 	@Override
 	public String getDescription() {
-		return "A deployer that uses the SPARQL 1.1 Graph Store HTTP Protocol";
+		return "A loader that uses the SPARQL 1.1 Graph Store HTTP Protocol";
 	}
 
 	@Override
