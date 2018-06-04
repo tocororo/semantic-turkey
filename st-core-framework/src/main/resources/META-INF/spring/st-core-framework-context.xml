@@ -425,14 +425,14 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.RDFLifterExtensionPoint" />
 	</osgi:service>
-	
-		<!-- Publishes the RDFDeserializingLifter extension -->
+
+	<!-- Publishes the RDFDeserializingLifter extension -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.rdflifter.rdfdeserializer.RDFDeserializingLifterFactory" />
 	</osgi:service>
-	
+
 	<!-- Publishes the Loader extension point -->
 
 	<osgi:service auto-export="interfaces">
@@ -474,5 +474,12 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderFactory" />
 	</osgi:service>
+
+	<!-- Publishes the Importer -->
+
+	<osgi:service auto-export="interfaces">
+		<bean class="it.uniroma2.art.semanticturkey.config.importer.Importer" />
+	</osgi:service>
+
 
 </beans>
