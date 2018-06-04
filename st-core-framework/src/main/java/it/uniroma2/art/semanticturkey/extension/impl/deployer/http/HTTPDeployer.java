@@ -17,12 +17,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.Deployer;
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.FormattedResourceSource;
-import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RepositorySource;
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.StreamSourcedDeployer;
 
 /**
- * Implementation of the {@link Deployer} extension point based uses the HTTP protocol. This implementation
- * can deploy data provided by a {@link RepositorySource} or by a {@link FormattedResourceSources}.
+ * Implementation of the {@link Deployer} extension point that uses the HTTP protocol. This implementation can
+ * deploy data provided by a {@link FormattedResourceSources}.
  * 
  * <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
