@@ -42,6 +42,7 @@ public class ServiceForSearches {
 	private boolean isInstanceWanted = false;
 	private boolean isPropertyWanted = false;
 	private boolean isCollectionWanted = false;
+	private boolean isDataRangeWanted = false;
 	private boolean isLexiconWanted = false;
 	private boolean isLexicalEntryWanted = false;
 	
@@ -67,6 +68,10 @@ public class ServiceForSearches {
 
 	public boolean isCollectionWanted() {
 		return isCollectionWanted;
+	}
+	
+	public boolean isDataRagenWanted() {
+		return isDataRangeWanted;
 	}
 	
 	public boolean isLexiconWanted() {
@@ -176,6 +181,18 @@ public class ServiceForSearches {
 				filterQuery += "\n{\n"+varResource+" a <"+cls.stringValue()+"> . } ";
 				otherWanted = true;
 			}
+		}
+		if(isDataRangeWanted) {
+			if(otherWanted){
+				filterQuery += "\nUNION ";
+			}
+			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
+					//consider the classes that are subclasses of RDFS.DATATYPE
+					"\n"+varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
+							+NTriplesUtil.toNTriplesString(RDFS.DATATYPE)+" ." +
+							"\n}";
+			
+			otherWanted = true;
 		}
 		if(isLexiconWanted) {
 			if(otherWanted) {
@@ -413,6 +430,8 @@ public class ServiceForSearches {
 					isPropertyWanted = true;
 				} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.skosCollection.name().toLowerCase())){
 					isCollectionWanted = true;
+				} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.dataRange.name().toLowerCase())){
+					isDataRangeWanted = true;
 				} else if(rolesArray[i].toLowerCase().equals(RDFResourceRole.limeLexicon.name().toLowerCase())) {
 					isLexiconWanted = true;
 				} else if (rolesArray[i].toLowerCase().equals(RDFResourceRole.ontolexLexicalEntry.name().toLowerCase())){
@@ -422,8 +441,8 @@ public class ServiceForSearches {
 		}
 		//@formatter:off
 		if(rolesArray!= null && !isClassWanted && !isConceptWanted && !isConceptSchemeWanted && 
-				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted && !isLexiconWanted && 
-				!isLexicalEntryWanted){
+				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted && !isDataRangeWanted && 
+				!isLexiconWanted && !isLexicalEntryWanted){
 			
 			String msg = "the serch roles should be at least one of: "+
 					RDFResourceRole.cls.name()+", "+
@@ -432,6 +451,7 @@ public class ServiceForSearches {
 					RDFResourceRole.individual+", "+
 					RDFResourceRole.property.name() +", "+
 					RDFResourceRole.skosCollection.name() +", "+
+					RDFResourceRole.dataRange.name() +", "+
 					RDFResourceRole.limeLexicon + " or "+
 					RDFResourceRole.ontolexLexicalEntry;
 			//TODO change the exception (previously was a fail)
@@ -749,9 +769,11 @@ public class ServiceForSearches {
 			role = RDFResourceRole.xLabel;
 		} else if(typeURI.equals(SKOS.CONCEPT_SCHEME.stringValue())){
 			role = RDFResourceRole.conceptScheme;
+		} else if(typeURI.equals(RDFS.DATATYPE.stringValue())){
+			role = RDFResourceRole.dataRange;
 		} else if(typeURI.equals(LIME.LEXICON.stringValue())) {
 			role = RDFResourceRole.limeLexicon;
-		} else if(typeURI.equals(LIME.LEXICAL_ENTRIES)) {
+		} else if(typeURI.equals(LIME.LEXICAL_ENTRIES.stringValue())) {
 			role = RDFResourceRole.ontolexLexicalEntry;
 		} else {
 			role = RDFResourceRole.individual;
