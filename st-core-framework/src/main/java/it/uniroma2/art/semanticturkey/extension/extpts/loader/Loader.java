@@ -2,7 +2,10 @@ package it.uniroma2.art.semanticturkey.extension.extpts.loader;
 
 import java.io.IOException;
 
+import javax.annotation.Nullable;
+
 import it.uniroma2.art.semanticturkey.extension.Extension;
+import it.uniroma2.art.semanticturkey.resources.DataFormat;
 
 /**
  * Extension point for loaders. They are placed at the start of an import chain to fetch data from some
@@ -16,9 +19,10 @@ public interface Loader extends Extension {
 	 * operation to concrete subclasses matching the given target.
 	 * 
 	 * @param source
+	 * @param acceptedFormat
 	 * @throws IOException
 	 */
-	default void load(Target target) throws IOException {
+	default void load(Target target, @Nullable DataFormat acceptedFormat) throws IOException {
 		boolean isStreamSource = (target instanceof FormattedResourceTarget);
 		boolean isRepositorySource = (target instanceof RepositoryTarget);
 
@@ -28,14 +32,17 @@ public interface Loader extends Extension {
 
 		if (isStreamSource) {
 			if (this instanceof StreamTargetingLoader) {
-				((StreamTargetingLoader) this).load((FormattedResourceTarget) target);
+				((StreamTargetingLoader) this).load((FormattedResourceTarget) target, acceptedFormat);
 			} else {
 				throw new IllegalArgumentException(
 						"Unable to handle " + FormattedResourceTarget.class.getSimpleName());
 			}
 		} else if (isRepositorySource) {
 			if (this instanceof RepositoryTargetingLoader) {
-				((RepositoryTargetingLoader) this).load((RepositoryTarget) target);
+				if (acceptedFormat != null) {
+					throw new IllegalArgumentException("A " + RepositoryTargetingLoader.class.getSimpleName() + " should not receive a non-null data format");
+				}
+				((RepositoryTargetingLoader) this).load((RepositoryTarget) target, acceptedFormat);
 			} else {
 				throw new IllegalArgumentException(
 						"Unable to handle " + RepositoryTarget.class.getSimpleName());

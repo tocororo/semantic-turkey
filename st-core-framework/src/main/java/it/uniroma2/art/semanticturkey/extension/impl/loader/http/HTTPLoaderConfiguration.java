@@ -35,6 +35,14 @@ public class HTTPLoaderConfiguration implements Configuration {
 	@STProperty(description = "Additional request headers", displayName = "Request Headers")
 	public Map<String, String> requestHeaders;
 
+	@STProperty(description = "Enables content negotiation based on the user-supplied data format", displayName = "Enable Content Negotiation")
+	@Required
+	public Boolean enableContentNegotiation = true;
+
+	@STProperty(description = "Tells the loader to report the content-type received by the server", displayName = "Report Content-Type")
+	@Required
+	public Boolean reportContentType = true;
+
 	@STProperty(description = "Username", displayName = "Username")
 	public String username;
 

@@ -8,6 +8,8 @@ import java.net.SocketAddress;
 import java.security.PublicKey;
 import java.util.AbstractMap.SimpleImmutableEntry;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
@@ -20,6 +22,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.loader.FormattedResourceT
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.Loader;
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.StreamTargetingLoader;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ClosableFormattedResource;
+import it.uniroma2.art.semanticturkey.resources.DataFormat;
 
 /**
  * Implementation of the {@link Loader} extension point that uses the SFTP protocol. This implementation can
@@ -36,7 +39,7 @@ public class SFTPLoader implements StreamTargetingLoader {
 	}
 
 	@Override
-	public void load(FormattedResourceTarget target) throws IOException {
+	public void load(FormattedResourceTarget target, @Nullable DataFormat acceptedFormat) throws IOException {
 		try (SshClient client = SshClient.setUpDefaultClient()) {
 			client.start();
 

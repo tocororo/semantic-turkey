@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.extension.impl.loader.http;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -25,6 +26,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.Loader;
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.Target;
+import it.uniroma2.art.semanticturkey.resources.DataFormat;
 
 /**
  * Abstract base class of HTTP loaders.
@@ -33,7 +35,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.loader.Target;
  */
 public abstract class AbstractHTTPLoader<T extends Target> implements Loader {
 
-	public void loadInternal(T target) throws IOException {
+	public void loadInternal(T target, DataFormat acceptedFormat) throws IOException {
 		URI address;
 		try {
 			address = getAddress();
@@ -66,12 +68,22 @@ public abstract class AbstractHTTPLoader<T extends Target> implements Loader {
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
 			HttpGet request = new HttpGet(address);
 
+			Map<String, String> requestHeaders = new LinkedHashMap<>();
+
+			if (acceptedFormat != null && isContentNegotiationEnabled()) {
+				requestHeaders.put("Accept", acceptedFormat.getDefaultMimeType());
+			}
+
+			// User headers overrides the default ones
+
 			@Nullable
-			Map<String, String> requestHeaders = getHttpRequestHeaders();
-			if (requestHeaders != null) {
-				for (Map.Entry<String, String> aHeader : requestHeaders.entrySet()) {
-					request.addHeader(aHeader.getKey(), aHeader.getValue());
-				}
+			Map<String, String> userSuppliedHeaders = getHttpRequestHeaders();
+			if (userSuppliedHeaders != null) {
+				requestHeaders.putAll(userSuppliedHeaders);
+			}
+
+			for (Map.Entry<String, String> aHeader : requestHeaders.entrySet()) {
+				request.addHeader(aHeader.getKey(), aHeader.getValue());
 			}
 
 			try (CloseableHttpResponse httpResponse = httpClient.execute(request, context)) {
@@ -85,6 +97,10 @@ public abstract class AbstractHTTPLoader<T extends Target> implements Loader {
 			}
 		}
 
+	}
+
+	protected boolean isContentNegotiationEnabled() {
+		return false;
 	}
 
 	protected abstract URI getAddress() throws URISyntaxException;

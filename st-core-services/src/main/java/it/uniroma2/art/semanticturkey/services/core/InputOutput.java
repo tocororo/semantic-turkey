@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -230,25 +231,57 @@ public class InputOutput extends STServiceAdapter {
 
 			ClosableFormattedResource formattedResource;
 
-			if (loaderSpec != null) {
-				Loader loader = exptManager.instantiateExtension(Loader.class, loaderSpec);
-
-				if (rdfLifterSpec != null) { // assume that the loader targets a stream
-					FormattedResourceTarget target = new FormattedResourceTarget();
-					loader.load(target);
-					formattedResource = target.getTargetFormattedResource();
-				} else { // assume that the loader targets the repository connection
-					formattedResource = null;
-					RepositoryTarget target = new RepositoryTarget(workingRepoInserter);
-					loader.load(target);
-				}
-			} else {
+			if (loaderSpec == null) {
 				if (rdfLifterSpec == null) {
 					rdfLifterSpec = new PluginSpecification(
 							"it.uniroma2.art.semanticturkey.extension.impl.rdflifter.rdfdeserializer.RDFDeserializingLifter",
 							null, null, null);
 				}
+			}
 
+			RDFLifter rdfLifter;
+			@Nullable
+			DataFormat parsedDataFormat;
+
+			if (rdfLifterSpec != null) {
+				ExtensionFactory<?> rdfLifterExt = exptManager.getExtension(rdfLifterSpec.getFactoryId());
+				if (format != null) {
+					if (rdfLifterExt instanceof FormatCapabilityProvider) {
+						parsedDataFormat = ((FormatCapabilityProvider) rdfLifterExt).getFormats().stream()
+								.filter(fmt -> fmt.getName().equals(format)).findAny().orElseThrow(
+										() -> new IllegalArgumentException("Unsupported format: " + format));
+					} else {
+						throw new IllegalArgumentException(
+								"It is not allowed to specify a data format, if the RDFLifter does not provide a list of supported formats");
+					}
+				} else {
+					parsedDataFormat = null;
+				}
+				rdfLifter = exptManager.instantiateExtension(RDFLifter.class, rdfLifterSpec);
+			} else {
+				rdfLifter = null;
+				if (format != null) {
+					throw new IllegalArgumentException(
+							"It is not allowed to specify a data format, if there is not downstream RDFLifter");
+				}
+				parsedDataFormat = null;
+			}
+
+			// At this point: parsedDataFormat != null iff format != null
+
+			if (loaderSpec != null) {
+				Loader loader = exptManager.instantiateExtension(Loader.class, loaderSpec);
+
+				if (rdfLifterSpec != null) { // assume that the loader targets a stream
+					FormattedResourceTarget target = new FormattedResourceTarget();
+					loader.load(target, parsedDataFormat);
+					formattedResource = target.getTargetFormattedResource();
+				} else { // assume that the loader targets the repository connection
+					formattedResource = null;
+					RepositoryTarget target = new RepositoryTarget(workingRepoInserter);
+					loader.load(target, parsedDataFormat);
+				}
+			} else {
 				// create a temp file (in karaf data/temp folder) to copy the received file
 				File inputServerFile = File.createTempFile("loadRDF", inputFile.getOriginalFilename());
 				closer.register(inputServerFile::delete);
@@ -263,8 +296,20 @@ public class InputOutput extends STServiceAdapter {
 
 			// Applies an RDFLifter, if necessary
 
-			if (rdfLifterSpec != null) {
-				RDFLifter rdfLifter = exptManager.instantiateExtension(RDFLifter.class, rdfLifterSpec);
+			if (rdfLifter != null) {
+				if (parsedDataFormat != null) {
+					String expectedMIMEType = parsedDataFormat.getDefaultMimeType();
+					@Nullable
+					String actualMIMEType = formattedResource.getMIMEType();
+
+					if (actualMIMEType != null && !Objects.equals(actualMIMEType, expectedMIMEType)) {
+						throw new IOException("Actual MIME type '" + actualMIMEType
+								+ "' does not match the expected one '" + expectedMIMEType + "'");
+					}
+
+					formattedResource.getMIMEType();
+				}
+
 				rdfLifter.lift(formattedResource, format, workingRepoInserter);
 			}
 

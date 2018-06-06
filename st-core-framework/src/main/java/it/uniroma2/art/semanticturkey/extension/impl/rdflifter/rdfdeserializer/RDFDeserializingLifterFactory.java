@@ -19,7 +19,7 @@ public class RDFDeserializingLifterFactory
 
 	@Override
 	public String getName() {
-		return "RDF Deserializing Exporter";
+		return "RDF Deserializing Lifter";
 	}
 
 	@Override

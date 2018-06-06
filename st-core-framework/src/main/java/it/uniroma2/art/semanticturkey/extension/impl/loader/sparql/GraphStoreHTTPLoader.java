@@ -7,6 +7,8 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.validation.constraints.Null;
+
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.Header;
@@ -24,6 +26,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.loader.Loader;
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.RepositoryTarget;
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.RepositoryTargetingLoader;
 import it.uniroma2.art.semanticturkey.extension.impl.loader.http.AbstractHTTPLoader;
+import it.uniroma2.art.semanticturkey.resources.DataFormat;
 
 /**
  * Implementation of the {@link Loader} that uses the SPARQL 1.1 HTTP Graph Store API.
@@ -40,8 +43,12 @@ public class GraphStoreHTTPLoader extends AbstractHTTPLoader<RepositoryTarget>
 	}
 
 	@Override
-	public void load(RepositoryTarget source) throws IOException {
-		loadInternal(source);
+	public void load(RepositoryTarget source, @Null DataFormat acceptedFormat) throws IOException {
+		if (acceptedFormat != null) {
+			throw new IllegalArgumentException("A " + GraphStoreHTTPLoader.class.getSimpleName()
+					+ " should not receive a non-null data format");
+		}
+		loadInternal(source, acceptedFormat);
 	}
 
 	protected URI getAddress() throws URISyntaxException {

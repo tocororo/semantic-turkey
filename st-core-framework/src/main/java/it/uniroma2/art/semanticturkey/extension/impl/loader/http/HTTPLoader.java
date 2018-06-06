@@ -22,6 +22,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.loader.FormattedResourceT
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.Loader;
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.StreamTargetingLoader;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ClosableFormattedResource;
+import it.uniroma2.art.semanticturkey.resources.DataFormat;
 
 /**
  * Implementation of the {@link Loader} extension point that uses the HTTP protocol. This implementation can
@@ -38,10 +39,10 @@ public class HTTPLoader extends AbstractHTTPLoader<FormattedResourceTarget> impl
 	}
 
 	@Override
-	public void load(FormattedResourceTarget target) throws IOException {
-		loadInternal(target);
+	public void load(FormattedResourceTarget target, DataFormat acceptedFormat) throws IOException {
+		loadInternal(target, acceptedFormat);
 	}
-	
+
 	@Override
 	protected URI getAddress() throws URISyntaxException {
 
@@ -74,24 +75,31 @@ public class HTTPLoader extends AbstractHTTPLoader<FormattedResourceTarget> impl
 	}
 
 	@Override
-	protected void processResponse(HttpResponse httpResponse, FormattedResourceTarget target) throws IOException {
+	protected boolean isContentNegotiationEnabled() {
+		return Boolean.TRUE.equals(conf.enableContentNegotiation);
+	}
+
+	@Override
+	protected void processResponse(HttpResponse httpResponse, FormattedResourceTarget target)
+			throws IOException {
 		HttpEntity responseEntity = httpResponse.getEntity();
 		if (responseEntity != null) {
 			ContentType contentType = Optional.ofNullable(responseEntity.getContentType())
 					.map(Header::getValue).map(ContentType::parse).orElse(null);
 			String mimeType;
 			Charset charset;
-			
-			if (contentType != null) {
+
+			if (contentType != null && Boolean.TRUE.equals(conf.reportContentType)) {
 				mimeType = contentType.getMimeType();
 				charset = contentType.getCharset();
 			} else {
 				mimeType = null;
 				charset = null;
 			}
-			
+
 			File backingFile = File.createTempFile("loadRDF", null);
-			target.setTargetFormattedResource(new ClosableFormattedResource(backingFile, null, mimeType, charset));
+			target.setTargetFormattedResource(
+					new ClosableFormattedResource(backingFile, null, mimeType, charset));
 			try (InputStream is = responseEntity.getContent()) {
 				FileUtils.copyInputStreamToFile(is, backingFile);
 			}
