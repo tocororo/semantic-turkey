@@ -205,7 +205,7 @@ public class ResourceView extends STServiceAdapter {
 							.map(Value::stringValue).orElse(""));
 
 			AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering(annotatedResource,
-					resource2attributes, predicate2resourceCreShow, null, retrievedStatements);
+					resource2attributes, predicate2resourceCreShow, null, retrievedStatements, true);
 			AbstractStatementConsumer.addQName(annotatedResource, resource2attributes);
 			description.put("resource", new ResourceSection(annotatedResource));
 

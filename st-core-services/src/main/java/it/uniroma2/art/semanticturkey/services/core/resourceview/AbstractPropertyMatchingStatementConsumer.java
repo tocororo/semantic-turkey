@@ -37,44 +37,101 @@ import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer.BehaviorOptions.RenderingEngineBehavior;
 import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
 
 public class AbstractPropertyMatchingStatementConsumer extends AbstractStatementConsumer {
 
-	public enum CollectionBehavior {
-		IGNORE, ALWAYS_ASSUME_COLLECTION
-	}
+	public static class BehaviorOptions {
 
-	public enum RootProprertiesBehavior {
-		SHOW, SHOW_IF_INFORMATIVE, HIDE
-	}
+		public enum CollectionBehavior {
+			IGNORE, ALWAYS_ASSUME_COLLECTION
+		}
 
-	public enum SubpropertiesBehavior {
-		INCLUDE, EXCLUDE
+		public enum RootPropertiesBehavior {
+			SHOW, SHOW_IF_INFORMATIVE, HIDE
+		}
+
+		public enum SubpropertiesBehavior {
+			INCLUDE, EXCLUDE
+		}
+
+		public enum RenderingEngineBehavior {
+			INCLUDE, EXCLUDE
+		}
+
+		private RootPropertiesBehavior rootPropertiesBehavior;
+		private CollectionBehavior collectionBehavior;
+		private SubpropertiesBehavior subpropertiesBehavior;
+		private RenderingEngineBehavior renderingEngineBehavior;
+
+		public BehaviorOptions(RootPropertiesBehavior rootPropertiesBehavior,
+				CollectionBehavior collectionBehavior, SubpropertiesBehavior subpropertiesBehavior,
+				RenderingEngineBehavior renderingEngineBehavior) {
+			this.rootPropertiesBehavior = rootPropertiesBehavior;
+			this.collectionBehavior = collectionBehavior;
+			this.subpropertiesBehavior = subpropertiesBehavior;
+			this.renderingEngineBehavior = renderingEngineBehavior;
+		}
+
+		public BehaviorOptions() {
+			this(RootPropertiesBehavior.HIDE, BehaviorOptions.CollectionBehavior.IGNORE,
+					SubpropertiesBehavior.INCLUDE, RenderingEngineBehavior.INCLUDE);
+		}
+
+		public BehaviorOptions setRootPropertiesBehavior(RootPropertiesBehavior rootPropertiesBehavior) {
+			this.rootPropertiesBehavior = rootPropertiesBehavior;
+			return this;
+		}
+
+		public RootPropertiesBehavior getRootPropertiesBehavior() {
+			return rootPropertiesBehavior;
+		}
+
+		public BehaviorOptions setCollectionBehavior(CollectionBehavior collectionBehavior) {
+			this.collectionBehavior = collectionBehavior;
+			return this;
+		}
+
+		public CollectionBehavior getCollectionBehavior() {
+			return collectionBehavior;
+		}
+
+		public BehaviorOptions setSubpropertiesBehavior(SubpropertiesBehavior subpropertiesBehavior) {
+			this.subpropertiesBehavior = subpropertiesBehavior;
+			return this;
+		}
+
+		public SubpropertiesBehavior getSubpropertiesBehavior() {
+			return subpropertiesBehavior;
+		}
+
+		public BehaviorOptions setRenderingEngineBehavior(RenderingEngineBehavior renderingEngineBehavior) {
+			this.renderingEngineBehavior = renderingEngineBehavior;
+			return this;
+		}
+
+		public RenderingEngineBehavior getRenderingEngineBehavior() {
+			return renderingEngineBehavior;
+		}
 	}
 
 	private CustomFormManager customFormManager;
 	private String sectionName;
 	private Set<IRI> matchedProperties;
-	private RootProprertiesBehavior rootProprertiesBehavior;
-	private CollectionBehavior collectionBehavior;
-	private SubpropertiesBehavior subpropertiesBehavior;
+	private BehaviorOptions behaviorOptions;
 
 	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager, String sectionName,
-			Set<IRI> matchedProperties, RootProprertiesBehavior rootProprertiesBehavior,
-			CollectionBehavior collectionBehavior, SubpropertiesBehavior subpropertiesBehavior) {
+			Set<IRI> matchedProperties, BehaviorOptions behaviorOptions) {
 		this.customFormManager = customFormManager;
 		this.sectionName = sectionName;
 		this.matchedProperties = matchedProperties;
-		this.rootProprertiesBehavior = rootProprertiesBehavior;
-		this.collectionBehavior = collectionBehavior;
-		this.subpropertiesBehavior = subpropertiesBehavior;
+		this.behaviorOptions = behaviorOptions;
 	}
 
 	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager, String sectionName,
 			Set<IRI> matchedProperties) {
-		this(customFormManager, sectionName, matchedProperties, RootProprertiesBehavior.HIDE,
-				CollectionBehavior.IGNORE, SubpropertiesBehavior.INCLUDE);
+		this(customFormManager, sectionName, matchedProperties, new BehaviorOptions());
 	}
 
 	@Override
@@ -106,7 +163,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 					.filter(stmt -> !processedStatements.contains(stmt)).collect(toList()));
 			relevantProperties = pendingDirectKnowledge.predicates();
 		} else {
-			if (subpropertiesBehavior == SubpropertiesBehavior.EXCLUDE) {
+			if (behaviorOptions.getSubpropertiesBehavior() == BehaviorOptions.SubpropertiesBehavior.EXCLUDE) {
 				relevantProperties = matchedProperties;
 			} else {
 				relevantProperties = Sets.union(matchedProperties.stream()
@@ -134,7 +191,8 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 				AnnotatedValue<?> annotatedObject = null;
 
 				if (object instanceof Resource) {
-					if (collectionBehavior == CollectionBehavior.ALWAYS_ASSUME_COLLECTION) {
+					if (behaviorOptions
+							.getCollectionBehavior() == BehaviorOptions.CollectionBehavior.ALWAYS_ASSUME_COLLECTION) {
 						AnnotatedResourceWithMembers<Resource, Value> annotatedObjectWithMembers = new AnnotatedResourceWithMembers<>(
 								(Resource) object);
 						annotatedObject = annotatedObjectWithMembers;
@@ -177,7 +235,8 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 											resource2attributes);
 									addShowViaDedicatedOrGenericRendering(
 											(AnnotatedValue<Resource>) annotatedMember, resource2attributes,
-											predicate2resourceCreShow, null, statements);
+											predicate2resourceCreShow, null, statements, behaviorOptions
+													.getRenderingEngineBehavior() == RenderingEngineBehavior.INCLUDE);
 									addQName((AnnotatedValue<Resource>) annotatedMember, resource2attributes);
 								}
 								annotatedMember.setAttribute("graphs", computeGraphs(graphs1));
@@ -208,7 +267,8 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 					}
 					addNature((AnnotatedValue<Resource>) annotatedObject, resource2attributes);
 					addShowViaDedicatedOrGenericRendering((AnnotatedValue<Resource>) annotatedObject,
-							resource2attributes, predicate2resourceCreShow, predicate, statements);
+							resource2attributes, predicate2resourceCreShow, predicate, statements,
+							behaviorOptions.getRenderingEngineBehavior() == RenderingEngineBehavior.INCLUDE);
 					addQName((AnnotatedValue<Resource>) annotatedObject, resource2attributes);
 				}
 
@@ -237,12 +297,13 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 				annotatedPredicate.setAttribute("role", RDFResourceRole.property.toString());
 			}
 			addShowViaDedicatedOrGenericRendering(annotatedPredicate, resource2attributes,
-					predicate2resourceCreShow, null, statements);
+					predicate2resourceCreShow, null, statements, true);
 			annotatedPredicate.setAttribute("hasCustomRange",
 					customFormManager.existsCustomFormGraphForResource(project, predicate));
 
-			if (rootProprertiesBehavior == RootProprertiesBehavior.SHOW
-					|| (rootProprertiesBehavior == RootProprertiesBehavior.SHOW_IF_INFORMATIVE
+			if (behaviorOptions.getRootPropertiesBehavior() == BehaviorOptions.RootPropertiesBehavior.SHOW
+					|| (behaviorOptions
+							.getRootPropertiesBehavior() == BehaviorOptions.RootPropertiesBehavior.SHOW_IF_INFORMATIVE
 							&& matchedProperties.size() > 1)) {
 				Set<IRI> rootProperties = matchedProperties.stream()
 						.filter(p -> propertyModel.contains(predicate, RDFS.SUBPROPERTYOF, p))

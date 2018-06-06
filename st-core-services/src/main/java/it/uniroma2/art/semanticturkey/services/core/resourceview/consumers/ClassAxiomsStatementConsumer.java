@@ -10,6 +10,7 @@ import com.google.common.collect.Sets;
 
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer.BehaviorOptions.RootPropertiesBehavior;
 
 public class ClassAxiomsStatementConsumer extends AbstractPropertyMatchingStatementConsumer {
 
@@ -21,7 +22,7 @@ public class ClassAxiomsStatementConsumer extends AbstractPropertyMatchingStatem
 
 	public ClassAxiomsStatementConsumer(CustomFormManager customFormManager) {
 		super(customFormManager, "classaxioms", Sets.newLinkedHashSet(Arrays.asList(relevantProperties)),
-				RootProprertiesBehavior.SHOW, CollectionBehavior.IGNORE, SubpropertiesBehavior.INCLUDE);
+				new BehaviorOptions().setRootPropertiesBehavior(RootPropertiesBehavior.SHOW));
 	}
 
 }

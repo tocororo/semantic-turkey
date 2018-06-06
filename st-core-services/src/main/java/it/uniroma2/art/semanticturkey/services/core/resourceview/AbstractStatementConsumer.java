@@ -69,7 +69,7 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 	}
 
 	public static String computeShow(Resource resource, Map<Resource, Map<String, Value>> resource2attributes,
-			Model statements) {
+			Model statements, boolean useRenderingEngine) {
 		Map<String, String> namespaceToprefixMap = statements.getNamespaces().stream()
 				.collect(toMap(Namespace::getName, Namespace::getPrefix, (v1, v2) -> v1 != null ? v1 : v2));
 		if (resource instanceof BNode) {
@@ -106,7 +106,7 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 
 				return values.stream().map(v -> {
 					if (v instanceof Resource) {
-						return computeShow((Resource) v, resource2attributes, statements);
+						return computeShow((Resource) v, resource2attributes, statements, useRenderingEngine);
 					} else {
 						return NTriplesUtil.toNTriplesString(v);
 					}
@@ -115,9 +115,9 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 				Resource inverseProp = Models.getPropertyResource(statements, resource, OWL.INVERSEOF)
 						.orElse(null);
 
-				return "INVERSE " + computeShow(inverseProp, resource2attributes, statements);
+				return "INVERSE " + computeShow(inverseProp, resource2attributes, statements, useRenderingEngine);
 			}
-		} else {
+		} else if (useRenderingEngine) {
 			Map<String, Value> resourceAttributes = resource2attributes.get(resource);
 
 			if (resourceAttributes != null) {
@@ -137,7 +137,7 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 	public static void addShowViaDedicatedOrGenericRendering(
 			AnnotatedValue<? extends Resource> annotatedResource,
 			Map<Resource, Map<String, Value>> resource2attributes,
-			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, IRI predicate, Model statements) {
+			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, IRI predicate, Model statements, boolean useRenderingEngine) {
 		Resource resource = annotatedResource.getValue();
 
 		Map<String, Value> resourceAttributes = resource2attributes.get(resource);
@@ -191,7 +191,7 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 				}
 			}
 		}
-		annotatedResource.setAttribute("show", computeShow(resource, resource2attributes, statements));
+		annotatedResource.setAttribute("show", computeShow(resource, resource2attributes, statements, useRenderingEngine));
 	}
 
 	public static <T extends Resource> void addRole(AnnotatedValue<T> annotatedResource,

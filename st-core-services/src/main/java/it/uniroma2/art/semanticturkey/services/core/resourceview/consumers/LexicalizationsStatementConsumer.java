@@ -11,6 +11,7 @@ import com.google.common.collect.Sets;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer.BehaviorOptions.RootPropertiesBehavior;
 
 public class LexicalizationsStatementConsumer extends AbstractPropertyMatchingStatementConsumer {
 
@@ -19,7 +20,7 @@ public class LexicalizationsStatementConsumer extends AbstractPropertyMatchingSt
 				Sets.newLinkedHashSet(Arrays.asList(RDFS.LABEL, SKOS.PREF_LABEL, SKOS.ALT_LABEL,
 						SKOS.HIDDEN_LABEL, SKOSXL.PREF_LABEL, SKOSXL.ALT_LABEL, SKOSXL.HIDDEN_LABEL,
 						ONTOLEX.IS_DENOTED_BY)),
-				RootProprertiesBehavior.SHOW, CollectionBehavior.IGNORE, SubpropertiesBehavior.INCLUDE);
+				new BehaviorOptions().setRootPropertiesBehavior(RootPropertiesBehavior.SHOW));
 	}
 
 }
