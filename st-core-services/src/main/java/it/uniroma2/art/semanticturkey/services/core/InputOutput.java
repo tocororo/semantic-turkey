@@ -123,7 +123,7 @@ public class InputOutput extends STServiceAdapter {
 	 * 
 	 * @param inputFile
 	 * @param baseURI
-	 * @param rdfFormat
+	 * @param format
 	 * @param transitiveImportAllowance
 	 * @param loaderSpec
 	 * @param rdfLifterSpec
@@ -145,7 +145,7 @@ public class InputOutput extends STServiceAdapter {
 	@Write
 	@PreAuthorize("#validateImplicitly ? @auth.isAuthorized('rdf', 'CV') : @auth.isAuthorized('rdf', 'C')")
 	public Collection<OntologyImport> loadRDF(@Optional MultipartFile inputFile, String baseURI,
-			@Optional String rdfFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
+			@Optional String format, TransitiveImportMethodAllowance transitiveImportAllowance,
 			@Optional PluginSpecification loaderSpec, @Optional PluginSpecification rdfLifterSpec,
 			@Optional(defaultValue = "[]") TransformationPipeline transformationPipeline,
 			@Optional(defaultValue = "false") boolean validateImplicitly)
@@ -165,7 +165,7 @@ public class InputOutput extends STServiceAdapter {
 			ValidationUtilities.executeWithoutValidation(
 					ValidationUtilities.isValidationEnabled(stServiceContext), conn, (conn2) -> {
 						try {
-							Collection<OntologyImport> tempRv = loadRDFInternal(inputFile, baseURI, rdfFormat,
+							Collection<OntologyImport> tempRv = loadRDFInternal(inputFile, baseURI, format,
 									transitiveImportAllowance, conn2, loaderSpec, rdfLifterSpec,
 									transformationPipeline);
 							rv.addAll(tempRv);
@@ -176,7 +176,7 @@ public class InputOutput extends STServiceAdapter {
 
 			return rv;
 		} else {
-			return loadRDFInternal(inputFile, baseURI, rdfFormat, transitiveImportAllowance, conn, loaderSpec,
+			return loadRDFInternal(inputFile, baseURI, format, transitiveImportAllowance, conn, loaderSpec,
 					rdfLifterSpec, transformationPipeline);
 		}
 	}
