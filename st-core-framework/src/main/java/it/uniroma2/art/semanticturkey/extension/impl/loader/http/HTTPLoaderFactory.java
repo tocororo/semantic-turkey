@@ -18,12 +18,12 @@ public class HTTPLoaderFactory implements ExtensionFactory<HTTPLoader>,
 
 	@Override
 	public String getName() {
-		return "HTTP Deployer";
+		return "HTTP Loader";
 	}
 
 	@Override
 	public String getDescription() {
-		return "A deployer that uses the HTTP Protocol";
+		return "A loader that uses the HTTP Protocol";
 	}
 
 	@Override
