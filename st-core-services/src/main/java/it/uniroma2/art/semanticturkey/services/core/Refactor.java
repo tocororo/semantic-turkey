@@ -727,9 +727,11 @@ public class Refactor extends STServiceAdapter  {
 		}
 		
 		//if the new predicate is skosxl:prefLabel and if the new concept already has a prefLabel with the same 
-		// language transform the already existing xlabel into a skosxl:altLabel
+		// language two thing can happen:
+		// - if force is false, then an exception is thrown 
+		// - if force is true, then transform the already existing xlabel (the current skosxl:prefLabel) into a skosxl:altLabel
 		if(predicate.equals(SKOSXL.PREF_LABEL)) {
-			String query = "SELECT ?otherXLabel" +
+			String query = "SELECT ?otherXLabel ?literalForm1" +
 					"\nWHERE{" +
 					"\n?xLabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?literalForm1 ."+
 					"\n"+NTriplesUtil.toNTriplesString(targetResource)+" "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?otherXLabel ."+
@@ -742,9 +744,18 @@ public class Refactor extends STServiceAdapter  {
 			try(TupleQueryResult  tupleQueryResult = tupleQuery.evaluate()){
 				while(tupleQueryResult.hasNext()) {
 					BindingSet bindingSet = tupleQueryResult.next();
-					Value otherXLabel = bindingSet.getValue("otherXLabel");
-					modelRemovals.add(targetResource, SKOSXL.PREF_LABEL, otherXLabel);
-					modelAdditions.add(targetResource, SKOSXL.ALT_LABEL, otherXLabel);
+					if(!force) {
+						Literal literal = (Literal) bindingSet.getValue("literalForm1");
+						String text = "xLabel " + NTriplesUtil.toNTriplesString(literal) + " cannot be"
+								+ " moved as skoxl:prefLabel for " + NTriplesUtil.toNTriplesString(targetResource) 
+								+ " since there is already a skosxl:prefLabel for the langauge "+literal.getLanguage().get() 
+								+". By forcing  this operation, the old skosxl:prefLabel will be set as skosxl:altLabel";
+						throw new AlreadyExistingLiteralFormForResourceException(text);
+					} else {
+						Value otherXLabel = bindingSet.getValue("otherXLabel");
+						modelRemovals.add(targetResource, SKOSXL.PREF_LABEL, otherXLabel);
+						modelAdditions.add(targetResource, SKOSXL.ALT_LABEL, otherXLabel);
+					}
 				}
 			}
 		}
