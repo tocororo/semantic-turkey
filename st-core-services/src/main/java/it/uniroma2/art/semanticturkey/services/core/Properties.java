@@ -604,9 +604,23 @@ public class Properties extends STServiceAdapter {
 			TypesAndRanges typesAndRanges = getRangeOnlyClasses(property);
 
 			ObjectNode rangesObjectNode = JsonNodeFactory.instance.objectNode();
-			rangesObjectNode.set("type",
+			//if there is just one range, which is RDFS.Resource, then the type is "undetermined",
+			//otherwise take the one specified by typesAndRanges.getTypeNormalized()
+			boolean specialCaseForType = false;
+			if(typesAndRanges.getRanges()!=null && typesAndRanges.getRanges().size()==1) {
+				Range range = typesAndRanges.getRanges().iterator().next();
+				if(range instanceof IRIRange) {
+					IRIRange iriRange = (IRIRange) range;
+					if(iriRange.getIRI().equals(RDFS.RESOURCE)) {
+						rangesObjectNode.set("type",JsonNodeFactory.instance.textNode("undetermined"));
+						specialCaseForType = true;
+					}
+				}
+			} 
+			if(!specialCaseForType) {
+				rangesObjectNode.set("type",
 					JsonNodeFactory.instance.textNode(typesAndRanges.getTypeNormalized()));
-
+			}
 			ArrayNode rangeArrayNode = JsonNodeFactory.instance.arrayNode();
 			for (Range range : typesAndRanges.getRanges()) {
 				rangeArrayNode.add(range.toJsonNode());
