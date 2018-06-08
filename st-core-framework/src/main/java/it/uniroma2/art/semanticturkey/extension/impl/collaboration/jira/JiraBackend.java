@@ -275,8 +275,10 @@ public class JiraBackend implements CollaborationBackend {
 	public void createProject(ObjectNode projectJson) 
 			throws STPropertyAccessException, JsonProcessingException, IOException, CollaborationBackendException, 
 			STPropertyUpdateException {
-		//first of all, check that there is a valid associated Jira Project
-		checkPrjConfiguration();
+		
+		if (stProject == null) {
+			throw new NullPointerException("Jira Backend not bound to a project");
+		}
 
 		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
