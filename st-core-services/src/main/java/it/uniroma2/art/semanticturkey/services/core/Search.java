@@ -287,7 +287,6 @@ public class Search extends STServiceAdapter {
 		qb.setResourceVariable(resourceVariableName);
 		qb.processRendering();
 		qb.processQName();
-		System.out.println("resoure variable = " + resourceVariableName);
 
 		return qb.runQuery();
 	}
