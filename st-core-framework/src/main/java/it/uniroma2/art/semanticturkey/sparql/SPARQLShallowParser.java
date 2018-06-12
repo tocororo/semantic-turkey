@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 /**
- * A parser performing a shallow anaylysis of a SPARQL query to contruct a mofifiable represetnation.
+ * A parser performing a shallow analysis of a SPARQL query to construct a modifiable representation.
  */
 public class SPARQLShallowParser {
 	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\?([a-zA-Z_]+)");
@@ -36,21 +36,24 @@ public class SPARQLShallowParser {
 		if (indexOfWhereKeyword == -1) {
 			throw new SPARQLShallowParserException("Could not determine the position of WHERE");
 		}
-		
-		Matcher variableMatcher = VARIABLE_PATTERN.matcher(query.substring(indexOfSelectKeyword, indexOfWhereKeyword));
+
+		Matcher variableMatcher = VARIABLE_PATTERN
+				.matcher(query.substring(indexOfSelectKeyword, indexOfWhereKeyword));
 		List<String> initialQueryVariables = new ArrayList<>();
 		while (variableMatcher.find()) {
 			initialQueryVariables.add(variableMatcher.group(1));
 		}
-		int indexOfGroupByKeyword = query.indexOf("GROUP BY");
+		int indexOfGroupByKeyword = query.lastIndexOf("GROUP BY");
 
-		if (indexOfGroupByKeyword == -1) {
-		} else {
+		if (indexOfGroupByKeyword != -1) {
 			indexOfGroupByKeyword = IntStream
-					.of(query.indexOf("HAVING"), query.indexOf("ORDER"), query.indexOf("LIMIT"))
+					.of(query.indexOf("HAVING", indexOfGroupByKeyword),
+							query.indexOf("ORDER", indexOfGroupByKeyword),
+							query.indexOf("LIMIT", indexOfGroupByKeyword))
 					.filter(v -> v != -1).min().orElse(query.length());
 		}
-		
-		return new TupleQueryShallowModel(query, initialQueryVariables, indexOfWhereKeyword, indexOfQueryPatternEnd, indexOfGroupByKeyword);
+
+		return new TupleQueryShallowModel(query, initialQueryVariables, indexOfWhereKeyword,
+				indexOfQueryPatternEnd, indexOfGroupByKeyword);
 	}
 }

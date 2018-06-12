@@ -24,6 +24,16 @@ import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 public class AnnotatedResourcesQueryResultsProcessor
 		implements QueryResultsProcessor<Collection<AnnotatedValue<Resource>>> {
 
+	private String resourceVariableName;
+
+	public AnnotatedResourcesQueryResultsProcessor() {
+		this("resource");
+	}
+
+	public AnnotatedResourcesQueryResultsProcessor(String resourceVariableName) {
+		this.resourceVariableName = resourceVariableName;
+	}
+
 	@Override
 	public Collection<AnnotatedValue<Resource>> process(TupleQueryResult overallQueryResults,
 			Map<Value, Map<String, Literal>> additionalColumns) {
@@ -32,15 +42,16 @@ public class AnnotatedResourcesQueryResultsProcessor
 		while (overallQueryResults.hasNext()) {
 			BindingSet bindings = overallQueryResults.next();
 
-			Value resource = bindings.getValue("resource");
+			Value resource = bindings.getValue(resourceVariableName);
 
 			if (resource == null) {
-				throw new QueryBuilderException("Variable ?resource is unbound in binding set: " + bindings);
+				throw new QueryBuilderException(
+						"Variable ?" + resourceVariableName + " is unbound in binding set: " + bindings);
 			}
 
 			if (!(resource instanceof Resource)) {
 				throw new QueryBuilderException(
-						"The value bound to ?resource is not a Resource: " + resource);
+						"The value bound to ?" + resourceVariableName + " is not a Resource: " + resource);
 			}
 
 			Map<String, Value> attributes = new HashMap<>();

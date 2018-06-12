@@ -5,8 +5,6 @@ import static java.util.stream.Collectors.joining;
 import java.util.ArrayList;
 import java.util.List;
 
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilderException;
-
 public class TupleQueryShallowModel {
 
 	private final String query;
@@ -28,8 +26,8 @@ public class TupleQueryShallowModel {
 	 * @param groupByInsertionIndex
 	 *            <code>-1</code> if GROUP BY not present
 	 */
-	public TupleQueryShallowModel(String query, List<String> queryVariables, int projectionInsertionIndex, int graphPatternInsertionIndex,
-			int groupByInsertionIndex) {
+	public TupleQueryShallowModel(String query, List<String> queryVariables, int projectionInsertionIndex,
+			int graphPatternInsertionIndex, int groupByInsertionIndex) {
 		this.query = query;
 		this.initialQueryVariables = queryVariables;
 		this.projectionInsertionIndex = projectionInsertionIndex;
@@ -39,7 +37,7 @@ public class TupleQueryShallowModel {
 		this.graphPatterns = new ArrayList<>();
 		this.additionalGroupingVariables = new ArrayList<>();
 	}
-	
+
 	public List<String> getSignature() {
 		return initialQueryVariables;
 	}
@@ -59,8 +57,8 @@ public class TupleQueryShallowModel {
 
 		if (groupByInsertionIndex != -1) {
 			sb.append(query.substring(graphPatternInsertionIndex, groupByInsertionIndex));
-			sb.append(
-					additionalGroupingVariables.stream().map(varName -> "?" + varName).collect(joining(" ", "", " ")));
+			sb.append(additionalGroupingVariables.stream().map(varName -> "?" + varName)
+					.collect(joining(" ", "", " ")));
 			sb.append(query.substring(groupByInsertionIndex));
 		} else {
 			sb.append(query.substring(graphPatternInsertionIndex));
@@ -71,16 +69,16 @@ public class TupleQueryShallowModel {
 
 	public TupleQueryShallowModel appendGraphPattern(GraphPattern gp) {
 		ProjectionElement pe = gp.getProjectionElement();
-		
+
 		if (!this.hasGroupBy() && pe.isAggregate()) {
 			throw new IllegalArgumentException("Could not add an aggregate");
 		}
-		
+
 		projectionElements.add(pe);
 		if (this.hasGroupBy() && !pe.isAggregate()) {
 			this.appendGroupBy(pe.getTargetVariable());
 		}
-		
+
 		graphPatterns.add(gp);
 		return this;
 	}

@@ -209,7 +209,7 @@ public class QueryBuilder {
 	 * @throws QueryEvaluationException
 	 */
 	public Collection<AnnotatedValue<Resource>> runQuery(RepositoryConnection conn) {
-		return runQuery(conn, QueryResultsProcessors.toAnnotatedResources());
+		return runQuery(conn, QueryResultsProcessors.toAnnotatedResources(resourceVariable));
 	}
 
 	/**

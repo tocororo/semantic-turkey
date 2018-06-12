@@ -4,7 +4,6 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -83,8 +82,6 @@ import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.annotation.AnnotationDescription;
 import net.bytebuddy.description.type.TypeDefinition;
 import net.bytebuddy.description.type.TypeDescription;
-import net.bytebuddy.description.type.TypeDescription.Generic;
-import net.bytebuddy.description.type.TypeDescription.Generic.Builder;
 import net.bytebuddy.dynamic.DynamicType.Builder.MethodDefinition.ReceiverTypeDefinition;
 import net.bytebuddy.dynamic.DynamicType.Unloaded;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
@@ -232,11 +229,11 @@ public class Search extends STServiceAdapter {
 		Set<String> boundVariablesNotRequiringValue = Sets.difference(boundVariables,
 				variablesRequiringValues);
 
-		if (!boundVariablesNotRequiringValue.isEmpty()) {
-			throw new IllegalArgumentException(
-					"It has been provided a value for variables that do not require one: "
-							+ boundVariablesNotRequiringValue);
-		}
+//		if (!boundVariablesNotRequiringValue.isEmpty()) {
+//			throw new IllegalArgumentException(
+//					"It has been provided a value for variables that do not require one: "
+//							+ boundVariablesNotRequiringValue);
+//		}
 
 		Set<String> valueMissingVariables = Sets.difference(variablesRequiringValues, boundVariables);
 
@@ -287,9 +284,10 @@ public class Search extends STServiceAdapter {
 				+ groundQueryStringWithoutProlog + "}\n" + generateNatureSPARQLWherePart(resourceVariableName)
 				+ "} GROUP BY ?" + resourceVariableName + " ");
 		qb.setIncludeInferred(includeInferred);
-
+		qb.setResourceVariable(resourceVariableName);
 		qb.processRendering();
 		qb.processQName();
+		System.out.println("resoure variable = " + resourceVariableName);
 
 		return qb.runQuery();
 	}
