@@ -61,6 +61,7 @@ public class StatementConsumerProvider {
 				customFormManager);
 		PropertyChainStatementConsumer propertyChainStatementConsumer = new PropertyChainStatementConsumer(
 				customFormManager);
+		propertyChainStatementConsumer.setRoleFilter(RDFResourceRole.objectProperty);
 		PropertyFacetsStatementConsumer propertyFacetsStatementConsumer = new PropertyFacetsStatementConsumer(
 				customFormManager);
 		DomainsStatementConsumer domainsStatementConsumer = new DomainsStatementConsumer(customFormManager);

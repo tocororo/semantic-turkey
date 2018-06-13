@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -23,6 +24,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -37,6 +39,7 @@ import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer.BehaviorOptions.RenderingEngineBehavior;
 import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
 
@@ -120,6 +123,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 	private String sectionName;
 	private Set<IRI> matchedProperties;
 	private BehaviorOptions behaviorOptions;
+	private RDFResourceRole roleFilter;
 
 	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager, String sectionName,
 			Set<IRI> matchedProperties, BehaviorOptions behaviorOptions) {
@@ -146,6 +150,16 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 			Set<Statement> processedStatements, Resource workingGraph,
 			Map<Resource, Map<String, Value>> resource2attributes,
 			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
+
+		if (roleFilter != null) {
+			String propertyNature = resource2attributes.getOrDefault(resource, Collections.emptyMap())
+					.getOrDefault("nature", SimpleValueFactory.getInstance().createLiteral("")).stringValue();
+			RDFResourceRole propertyRole = STServiceAdapter.getRoleFromNature(propertyNature);
+
+			if (!RDFResourceRole.subsumes(roleFilter, propertyRole)) {
+				return Collections.emptyMap();
+			}
+		}
 
 		boolean currentProject = false;
 		if (resourcePosition instanceof LocalResourcePosition) {
@@ -326,6 +340,11 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 	protected boolean shouldRetainEmptyGroup(IRI prop, Resource resource, ResourcePosition resourcePosition) {
 		return false;
 	}
+
+	public void setRoleFilter(RDFResourceRole role) {
+		this.roleFilter = role;
+	}
+
 }
 
 class NodeContext {
