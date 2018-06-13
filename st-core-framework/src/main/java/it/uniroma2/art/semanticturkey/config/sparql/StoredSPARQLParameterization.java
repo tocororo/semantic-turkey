@@ -46,6 +46,9 @@ public class StoredSPARQLParameterization implements Configuration {
 	@Required
 	public String relativeReference;
 
+	@STProperty(description = "A description of this parameterization", displayName = "Description")
+	public String description;
+
 	@STProperty(description = "Variable bindings", displayName = "Variable bindings")
 	public Map<String, VariableBinding> variableBindings;
 
@@ -53,8 +56,24 @@ public class StoredSPARQLParameterization implements Configuration {
 	@JsonSubTypes({ @JsonSubTypes.Type(value = GroundingVariableBinding.class),
 			@JsonSubTypes.Type(value = ConstraintVariableBinding.class) })
 	public abstract static class VariableBinding {
+		private final String displayName;
+		private final String description;
+
+		public VariableBinding(String displayName, String description) {
+			this.displayName = displayName;
+			this.description = description;
+		}
+
 		public String getBindingType() {
 			return this.getClass().getAnnotation(JsonTypeName.class).value();
+		}
+
+		public @Nullable String getDisplayName() {
+			return displayName;
+		}
+
+		public @Nullable String getDescription() {
+			return description;
 		}
 
 	}
@@ -63,7 +82,11 @@ public class StoredSPARQLParameterization implements Configuration {
 	public static class GroundingVariableBinding extends VariableBinding {
 		private final Value value;
 
-		public GroundingVariableBinding(@JsonProperty(value = "value", required = true) Value value) {
+		public GroundingVariableBinding(
+				@JsonProperty(value = "displayName", required = false) String displayName,
+				@JsonProperty(value = "description", required = false) String description,
+				@JsonProperty(value = "value", required = true) Value value) {
+			super(displayName, description);
 			this.value = value;
 		}
 
@@ -84,8 +107,12 @@ public class StoredSPARQLParameterization implements Configuration {
 		private final @Nullable IRI datatype;
 
 		public ConstraintVariableBinding(
+				@JsonProperty(value = "displayName", required = false) String displayName,
+				@JsonProperty(value = "description", required = false) String description,
 				@JsonProperty(value = "resourceRole", required = false) RDFResourceRole resourceRole,
 				@JsonProperty(value = "datatype", required = false) IRI datatype) {
+			super(displayName, description);
+
 			if (!(resourceRole != null ^ datatype != null)) {
 				throw new IllegalArgumentException(
 						"Exactly one between resourceRole and datatype shall be non-null");
