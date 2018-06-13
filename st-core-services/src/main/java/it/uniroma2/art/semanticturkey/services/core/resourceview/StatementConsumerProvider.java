@@ -61,7 +61,6 @@ public class StatementConsumerProvider {
 				customFormManager);
 		PropertyChainStatementConsumer propertyChainStatementConsumer = new PropertyChainStatementConsumer(
 				customFormManager);
-		propertyChainStatementConsumer.setRoleFilter(RDFResourceRole.objectProperty);
 		PropertyFacetsStatementConsumer propertyFacetsStatementConsumer = new PropertyFacetsStatementConsumer(
 				customFormManager);
 		DomainsStatementConsumer domainsStatementConsumer = new DomainsStatementConsumer(customFormManager);
@@ -111,6 +110,26 @@ public class StatementConsumerProvider {
 						propertyFacetsStatementConsumer, propertyDisjointWithStatementConsumer,
 						domainsStatementConsumer, rangesStatementConsumer, lexicalizationsStatementConsumer,
 						otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRole.objectProperty,
+				Arrays.asList(typesStatementConsumer, formBasedPreview, equivalentPropertyStatementConsumer,
+						subPropertyOfStatementConsumer, propertyChainStatementConsumer,
+						propertyFacetsStatementConsumer, propertyDisjointWithStatementConsumer,
+						domainsStatementConsumer, rangesStatementConsumer, lexicalizationsStatementConsumer,
+						otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRole.datatypeProperty,
+				Arrays.asList(typesStatementConsumer, formBasedPreview, equivalentPropertyStatementConsumer,
+						subPropertyOfStatementConsumer, propertyFacetsStatementConsumer,
+						propertyDisjointWithStatementConsumer, domainsStatementConsumer,
+						rangesStatementConsumer, lexicalizationsStatementConsumer,
+						otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRole.annotationProperty,
+				Arrays.asList(typesStatementConsumer, formBasedPreview, subPropertyOfStatementConsumer,
+						domainsStatementConsumer, rangesStatementConsumer, lexicalizationsStatementConsumer,
+						otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRole.ontologyProperty,
+				Arrays.asList(typesStatementConsumer, formBasedPreview, subPropertyOfStatementConsumer,
+						domainsStatementConsumer, rangesStatementConsumer, lexicalizationsStatementConsumer,
+						otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.conceptScheme,
 				Arrays.asList(typesStatementConsumer, formBasedPreview, lexicalizationsStatementConsumer,
 						skosNotesStatementConsumer, otherPropertiesStatementConsumer));
@@ -143,7 +162,17 @@ public class StatementConsumerProvider {
 
 	public List<StatementConsumer> getTemplateForResourceRole(RDFResourceRole role) {
 		if (role.isProperty()) {
-			return role2template.get(RDFResourceRole.property);
+			if (RDFResourceRole.subsumes(RDFResourceRole.objectProperty, role)) {
+				return role2template.get(RDFResourceRole.objectProperty);
+			} else if (RDFResourceRole.subsumes(RDFResourceRole.datatypeProperty, role)) {
+				return role2template.get(RDFResourceRole.datatypeProperty);
+			} else if (RDFResourceRole.subsumes(RDFResourceRole.ontologyProperty, role)) {
+				return role2template.get(RDFResourceRole.ontologyProperty);
+			} else if (RDFResourceRole.subsumes(RDFResourceRole.annotationProperty, role)) {
+				return role2template.get(RDFResourceRole.annotationProperty);
+			} else {
+				return role2template.get(RDFResourceRole.property);
+			}
 		} else {
 			List<StatementConsumer> result = role2template.get(role);
 

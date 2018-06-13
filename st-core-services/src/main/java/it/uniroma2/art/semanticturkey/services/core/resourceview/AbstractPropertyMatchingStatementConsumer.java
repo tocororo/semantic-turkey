@@ -123,7 +123,6 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 	private String sectionName;
 	private Set<IRI> matchedProperties;
 	private BehaviorOptions behaviorOptions;
-	private RDFResourceRole roleFilter;
 
 	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager, String sectionName,
 			Set<IRI> matchedProperties, BehaviorOptions behaviorOptions) {
@@ -150,16 +149,6 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 			Set<Statement> processedStatements, Resource workingGraph,
 			Map<Resource, Map<String, Value>> resource2attributes,
 			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
-
-		if (roleFilter != null) {
-			String propertyNature = resource2attributes.getOrDefault(resource, Collections.emptyMap())
-					.getOrDefault("nature", SimpleValueFactory.getInstance().createLiteral("")).stringValue();
-			RDFResourceRole propertyRole = STServiceAdapter.getRoleFromNature(propertyNature);
-
-			if (!RDFResourceRole.subsumes(roleFilter, propertyRole)) {
-				return Collections.emptyMap();
-			}
-		}
 
 		boolean currentProject = false;
 		if (resourcePosition instanceof LocalResourcePosition) {
@@ -339,10 +328,6 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 	protected boolean shouldRetainEmptyGroup(IRI prop, Resource resource, ResourcePosition resourcePosition) {
 		return false;
-	}
-
-	public void setRoleFilter(RDFResourceRole role) {
-		this.roleFilter = role;
 	}
 
 }
