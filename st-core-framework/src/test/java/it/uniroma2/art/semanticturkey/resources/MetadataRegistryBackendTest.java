@@ -146,9 +146,9 @@ public class MetadataRegistryBackendTest {
 	}
 
 	@Test
-	public void testDiscoverAgrovocFromBaseURIWithoutEndingSlash() throws MetadataDiscoveryException {
+	public void testDiscoverAgrovocFromVoID() throws MetadataDiscoveryException {
 		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(
-				SimpleValueFactory.getInstance().createIRI("http://aims.fao.org/aos/agrovoc"));
+				SimpleValueFactory.getInstance().createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"));
 
 		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
 				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
@@ -156,19 +156,6 @@ public class MetadataRegistryBackendTest {
 
 		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
 		assertAgrovocDataset(agrovocDataset);
-	}
-
-	@Test
-	public void testDiscoverAgrovocFromURISpace() throws MetadataDiscoveryException {
-		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(
-				SimpleValueFactory.getInstance().createIRI("http://aims.fao.org/aos/agrovoc/"));
-		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
-				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
-				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
-
-		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
-		assertAgrovocDataset(agrovocDataset);
-
 	}
 
 	public static void assertAgrovocDataset(DatasetMetadata agrovocDataset) throws AssertionError {
