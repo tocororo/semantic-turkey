@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -13,19 +14,25 @@ import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 
 public class AdvancedSearch {
 	
 	protected static Logger logger = LoggerFactory.getLogger(AdvancedSearch.class);
 
 	//@formatter:off
-	public Collection<AnnotatedValue<Resource>> searchResources(String inputText, String[] rolesArray, List<SearchMode> searchModeList,
+	//OLD
+	/*public Collection<AnnotatedValue<Resource>> searchResources(String inputText, String[] rolesArray, List<SearchMode> searchModeList,
 			SearchScope searchScope, List<String> langs, RepositoryConnection conn, 
 			InWhatToSearch inWhatToSearch, WhatToShow whatToShow) throws IllegalStateException{
 		List<AnnotatedValue<Resource>> annotateResList = new ArrayList<>();
@@ -59,7 +66,7 @@ public class AdvancedSearch {
 			} else {
 				first = false;
 			}
-			query += searchWithOrWithoutIndexes(varResource, varLabel, inputText, searchMode, null, langs, 
+			query += searchWithoutIndexes(varResource, varLabel, inputText, searchMode, langs, 
 					inWhatToSearch);
 		}
 		
@@ -103,13 +110,91 @@ public class AdvancedSearch {
 		}
 		
 		return annotateResList;
-	}
+	}*/
 	//@formatter:on
 	
 	
+	//@formatter:off
+	public List<AnnotatedValue<Resource>> searchResources(Literal label, String[] rolesArray, List<SearchMode> searchModeList,
+			RepositoryConnection conn, IRI targetLexMod, InWhatToSearch inWhatToSearch, WhatToShow whatToShow) {
+		List<AnnotatedValue<Resource>> annotateResList = new ArrayList<>();
+		ServiceForSearches serviceForSearches = new ServiceForSearches();
+		serviceForSearches.checksPreQuery(label.getLabel(), rolesArray, searchModeList.get(0), false);
+		
+		String varResource = "?resource";
+		String varType = "?type";
+		String varLabel = "?label";
+		String varSingleShow = "?singleShow";
+		String varShow = "?show";
+		
+		//prepare a query according to the searchMode and searchScope
+		String query = "SELECT DISTINCT "+varResource+" "+varType+ " (GROUP_CONCAT(DISTINCT ?singleShow; separator=\",\") AS ?show )" +
+				"\nWHERE{";
+		
+		//get the type 
+		//query+="\nOPTIONAL{"+varResource+ " a "+varType+" . }"; // maybe it should be removed, not useful
+		
+		boolean first = true;
+		for(SearchMode searchMode : searchModeList) {
+			//do a union from all the different searchMode
+			if(!first) {
+				query += "\nUNION";
+			} else {
+				first = false;
+			}
+			List<String> langs = new ArrayList<>();
+			langs.add(label.getLanguage().get());
+			query += searchWithoutIndexes(varResource, varLabel, label.getLabel(), searchMode, 
+					langs, inWhatToSearch);
+		}
+		
+		//filter the resource according to its type
+		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons(varResource, varType, null, null, null);
+		
+		//calculate the show
+		query+= calculateShow(varResource, varSingleShow, whatToShow );
+		
+		query+="\n}" + 
+				"\nGROUP BY ?resource ?type";
+		
+		
+		logger.debug("query = " + query);
+		
+		//TODO for the moment, create a tuple query, but it should be better to use the QueryBuilder
+		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+		//iterate over the results 
+		while(tupleQueryResult.hasNext()) {
+			BindingSet bindingSet = tupleQueryResult.next();
+			if(!bindingSet.hasBinding(varResource.substring(1))) {
+				//it is a null tuple, so process the next tuple, which should not exist, so the while will
+				// end
+				continue;
+			}
+			
+			IRI iriRes = (IRI) bindingSet.getBinding(varResource.substring(1)).getValue();
+			String show = bindingSet.getBinding(varShow.substring(1)).getValue().stringValue();
+			IRI type = (IRI) bindingSet.getBinding(varType.substring(1)).getValue();
+			
+			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(iriRes);
+			annotatedValue.setAttribute("show", show);
+			if(type!=null) {
+				annotatedValue.setAttribute("type", type);
+			}
+			
+			annotateResList.add(annotatedValue);
+			
+		}
+		
+		return annotateResList;
+		
+	}
+	//@formatter:on
+	
 
-	private String searchWithOrWithoutIndexes(String varResource, String varLabel, String inputText,
-			SearchMode searchMode, Object object, List<String> langs, InWhatToSearch inWhatToSearch) {
+	private String searchWithoutIndexes(String varResource, String varLabel, String inputText,
+			SearchMode searchMode, List<String> langs, InWhatToSearch inWhatToSearch) {
 		
 		//@formatter:of
 		String query="";
@@ -227,7 +312,97 @@ public class AdvancedSearch {
 		
 		return query;
 	}
-
+	
+	public List<Literal> getLabelsFromLangs(STServiceContext stServiceContext, IRI inputRes, IRI lexModel, 
+			List<String> langs, RepositoryConnection conn){
+		String query = "SELECT ?label"+
+				"\nWHERE {";
+		
+		
+		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
+			//search in the rdfs:label
+			query+="\n"+NTriplesUtil.toNTriplesString(inputRes)+" <"+RDFS.LABEL+"> ?label .";
+		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
+			//search in skos:prefLabel and skos:altLabel
+			query+="\n"+NTriplesUtil.toNTriplesString(inputRes)+" (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label .";
+		} else if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
+			//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
+			query+="\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
+					"\n"+NTriplesUtil.toNTriplesString(inputRes)+" (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." ;
+		} else if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)){
+			
+			//construct the complex path from a resource to a LexicalEntry
+			String directResToLexicalEntry = NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
+					"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
+					"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY)+
+					"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES);
+			String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
+					"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_LEXICALIZED_SENSE_OF)+
+					"|"+NTriplesUtil.toNTriplesString(ONTOLEX.REFERENCE)+
+					"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_REFERENCE_OF)+")"+
+					"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
+					"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
+			String allResToLexicalEntry = directResToLexicalEntry+"|"+doubleStepResToLexicalEntry;
+			
+			
+			query +="\n{" +
+				//search in dct:title
+				"\n"+NTriplesUtil.toNTriplesString(inputRes)+" <"+DCTERMS.TITLE+"> ?label ." +
+				"\n}"+	
+				//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+				"\nUNION" +
+				"\n{" +
+				"\n"+NTriplesUtil.toNTriplesString(inputRes)+" (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
+				"\n}" +
+				//search in allResToLexicalEntry/(ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+				"\nUNION" +
+				"\n{" +
+				"\n"+NTriplesUtil.toNTriplesString(inputRes)+" ("+allResToLexicalEntry+")/"+
+				"(<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
+				"\n}";
+		}
+		//now filter the labels according to the input languages list
+		boolean first = true;
+		query+="\nFILTER(";
+		for(String lang : langs) {
+			if(!first) {
+				query+=" || ";
+			}
+			query+=" lang(?label) = '"+lang+"' ";
+			first = false;
+		}
+		query+=")";
+		
+		
+		query+="\n}";
+		logger.debug("query: " + query);
+		
+		//execute the query
+		TupleQuery tupleQuery;
+		tupleQuery = conn.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		
+		//set the dataset to search just in the UserNamedGraphs
+		SimpleDataset dataset = new SimpleDataset();
+		for(Resource namedGraph : stServiceContext.getRGraphs()){
+			if(namedGraph instanceof IRI){
+				dataset.addDefaultGraph((IRI) namedGraph);
+			}
+		}
+		tupleQuery.setDataset(dataset);
+		
+		TupleQueryResult tupleBindingsIterator = tupleQuery.evaluate();
+		List<Literal> labelList = new ArrayList<>();
+		while(tupleBindingsIterator.hasNext()) {
+			BindingSet bindingSet = tupleBindingsIterator.next();
+			labelList.add((Literal) bindingSet.getValue("label"));
+		}
+		
+		return labelList;
+	}
+	
 	
 	private String searchUsingNoIndexes(String varToUse, String searchTerm, SearchMode searchMode, List<String> langs, 
 			boolean includeLocales){
@@ -500,6 +675,8 @@ public class AdvancedSearch {
 		}
 			
 	}
+
+	
 	
 	
 }

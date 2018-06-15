@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
@@ -29,6 +30,8 @@ import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,6 +41,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel.Status;
@@ -68,8 +72,13 @@ import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 @STService
 public class Alignment extends STServiceAdapter {
 	
+	protected static Logger logger = LoggerFactory.getLogger(Alignment.class);
+	
 	@Autowired
 	private MetadataRegistryBackend metadataRegistryBackend;
+	
+	@Autowired
+	private MediationFramework mediationFramework;
 	
 	@Autowired
 	private STServiceContext stServiceContext;
@@ -91,9 +100,10 @@ public class Alignment extends STServiceAdapter {
 	private Map<String, AlignmentModel> modelsMap = new HashMap<>();
 	
 	
+	//@formatter:off
 	//SERVICES FOR ALIGMENT FOR THE SEARCH
 	/**
-	 * Perform a search (a SPARQL query) on another resourse identifies by an IRI 
+	 * Perform a search (a SPARQL query) on another resoure identifies by an IRI 
 	 * @param searchTerm
 	 * @param datasetIRI
 	 * @param rolesArray
@@ -103,7 +113,7 @@ public class Alignment extends STServiceAdapter {
 	 * @param useIndexes
 	 * @return
 	 */
-	@STServiceOperation
+	/*@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchResources(String searchTerm, IRI datasetIRI, 
@@ -141,10 +151,133 @@ public class Alignment extends STServiceAdapter {
 		return advancedSearch.searchResources(searchTerm, rolesArray, searchModeList, searchScope, langs, conn, 
 				inWhatToSearch, whatToShow);
 	}
+	*/
+	//@formatter:on
 	
 	
+	//new service 
 	
 	// SERVICES FOR ALIGNMENT IN RESOURCE VIEW
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
+	public Collection<AnnotatedValue<Resource>> searchResources(IRI intputRes, IRI datasetIRI, 
+			String[] rolesArray, @Optional List<String> langs, 
+			@Optional List<SearchMode> searchModeList ) {
+		//get the datasetMetadata associated to the desired dataset
+		DatasetMetadata datasetMetadata = metadataRegistryBackend.getDatasetMetadata(datasetIRI);
+		if(datasetMetadata==null) {
+			throw new IllegalArgumentException("dataset "+datasetIRI.stringValue()+" has no datasetMetadata "
+					+ "associated");
+		}
+		
+		//consult metadataRegistryBackend to get the LexicalModel to see in what to search (to set inWhatToSearch)
+		AdvancedSearch advancedSearch = new AdvancedSearch();
+		
+		//if no languages are passed by the client, then ask MAPLE which languages should be used
+		if(langs == null || langs.size()==0) {
+			//TODO
+			//this service does not exists at the moment, so, once it does, call it in the right way
+			//langs = mediationFramework.getLanguages();
+		}
+		
+		//if not searchModeList is passed, then assume they are contains and fuzzy (since those two contains 
+		// all the others)
+		if(searchModeList == null || searchModeList.size()==0) {
+			searchModeList = new ArrayList<>();
+			searchModeList.add(SearchMode.contains);
+			searchModeList.add(SearchMode.fuzzy);
+		}
+		
+		//now get all the lexicalization in the desired languages, using the current Lexical Model
+		IRI currLexModel =  getProject().getLexicalizationModel();
+		List<Literal> labelsList = advancedSearch.getLabelsFromLangs(stServiceContext, intputRes, 
+				currLexModel, langs, getManagedConnection());
+		
+		//get the SPARQL endpoint from metadataRegistryBackend
+		java.util.Optional<IRI> sparqlEndPoint = datasetMetadata.getSparqlEndpoint();
+		if(!sparqlEndPoint.isPresent()) {
+			throw new IllegalArgumentException("dataset "+datasetIRI.stringValue()+" has no SPARQL endpoint "
+					+ "associated");
+		}
+		
+		
+		//get the lexical model for the target datasetIRI
+		//TODO
+		//IRI targetLexMod = mediationFramework();
+		IRI targetLexMod = Project.SKOSXL_LEXICALIZATION_MODEL;
+		
+		InWhatToSearch inWhatToSearch = advancedSearch.new InWhatToSearch();
+		WhatToShow whatToShow = advancedSearch.new WhatToShow();
+		//according to the Lexicalization model of the target dataset, set the corresponding values in 
+		// inWhatToSearch and whatToShow
+		if(targetLexMod.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
+			inWhatToSearch.setSearchInRDFLabel(true);
+			whatToShow.setShowRDFLabel(true);
+		} else if(targetLexMod.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
+			inWhatToSearch.setSearchInSkosLabel(true);
+			whatToShow.setShowSKOSLabel(true);
+		} else if(targetLexMod.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
+			inWhatToSearch.setSearchInSkosxlLabel(true);
+			whatToShow.setShowSKOSXLLabel(true);
+		} else if(targetLexMod.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+			inWhatToSearch.setSearchInDCTitle(true);
+			inWhatToSearch.setSearchInWrittenRep(true);
+			whatToShow.setShowDCTitle(true);
+			whatToShow.setShowWrittenRep(true);
+		}
+		
+		logger.debug("SPARQL endpoint = "+sparqlEndPoint.get().stringValue());
+		SPARQLRepository sparqlRepository = new SPARQLRepository(sparqlEndPoint.get().stringValue());
+		sparqlRepository.initialize();
+		
+		RepositoryConnection conn = sparqlRepository.getConnection();
+		
+		//for every label from the current project, get all matching resources from the target dataset
+		int maxCount = 0;
+		Map<String, Integer> resToCountMap = new HashMap<>();
+		Map<String, AnnotatedValue<Resource>> resToAnnValueMap = new HashMap<>();
+		
+ 		for(Literal label : labelsList) {
+			List<AnnotatedValue<Resource>> currentAnnValuList = advancedSearch.searchResources(label, 
+					rolesArray, searchModeList, conn, targetLexMod, inWhatToSearch, whatToShow);
+			//analyze the return list and find a way to rank the results
+			// maybe order them according to how may times a resource is returned
+			for(AnnotatedValue<Resource> annValue : currentAnnValuList) {
+				String stringValue = annValue.getStringValue();
+				if(!resToCountMap.containsKey(stringValue)) {
+					resToCountMap.put(stringValue, 1);
+					//since it is the first time this AnnotatedValue is found, add it to 
+					resToAnnValueMap.put(stringValue, annValue);
+					if(maxCount==0) {
+						maxCount = 1;
+					}
+				} else {
+					resToCountMap.put(stringValue, resToCountMap.get(stringValue)+1);
+					if(maxCount<resToCountMap.get(stringValue)) {
+						maxCount = resToCountMap.get(stringValue);
+					}
+				}
+			}
+		}
+ 		
+ 		//all labels have been analyze, so not order the Annotated Value according to how manytimes they were
+ 		// returned, so start by picing all Annotated Value returnd maxValue and go down to 1
+ 		List<AnnotatedValue<Resource>>annValueList = new ArrayList<>();
+ 		for(int i=maxCount; i>0; --i) {
+ 			for(String stringValue : resToCountMap.keySet()) {
+ 				if(resToCountMap.get(stringValue) == i) {
+ 					annValueList.add(resToAnnValueMap.get(stringValue));
+ 				}
+ 			}
+ 		}
+ 		
+ 		return annValueList;
+ 		
+		
+	}
+	
+	
 	
 	/**
 	 * Adds the given alignment triple only if predicate is a valid alignment property

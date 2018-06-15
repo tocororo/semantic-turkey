@@ -606,7 +606,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 						.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"),
 				"http://aims.fao.org/aos/agrovoc/", "Agrovoc", METADATAREGISTRY.STANDARD_DEREFERENCIATION,
 				SimpleValueFactory.getInstance()
-						.createIRI("http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc"),
+						.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"),
 				null);
 	}
 
