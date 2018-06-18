@@ -608,12 +608,13 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		try (RepositoryConnection conn = getConnection()) {
 			TupleQuery datasetQuery = conn.prepareTupleQuery(
-			// @formatter:off
+				// @formatter:off
 				"PREFIX dcterms: <http://purl.org/dc/terms/>                                          \n" +
 				"PREFIX void: <http://rdfs.org/ns/void#>                                              \n" +
 				"PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                          \n" +
 				"PREFIX owl: <http://www.w3.org/2002/07/owl#>                                         \n" +
 				"SELECT * WHERE {                                                                     \n" +
+				"   ?dataset a void:Dataset .                                                         \n" +
 				"   OPTIONAL {                                                                        \n" +
 				"     ?dataset void:uriSpace ?datasetUriSpace.                                        \n" +
 				"   }                                                                                 \n" +
@@ -648,11 +649,11 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 	}
 
-//	@Override
-//	public void getEmbeddedLexicalizationSets(IRI dataset) {
-//		// TODO Auto-generated method stub
-//
-//	}
+	// @Override
+	// public void getEmbeddedLexicalizationSets(IRI dataset) {
+	// // TODO Auto-generated method stub
+	//
+	// }
 
 	/*
 	 * (non-Javadoc)
