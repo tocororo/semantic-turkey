@@ -165,7 +165,7 @@ public class Alignment extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	public Collection<AnnotatedValue<Resource>> searchResources(IRI intputRes, IRI datasetIRI, 
+	public Collection<AnnotatedValue<Resource>> searchResources(IRI inputRes, IRI datasetIRI, 
 			String[] rolesArray, @Optional List<String> langs, 
 			@Optional List<SearchMode> searchModeList ) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		//get the datasetMetadata associated to the desired dataset
@@ -195,7 +195,7 @@ public class Alignment extends STServiceAdapter {
 		
 		//now get all the lexicalization in the desired languages, using the current Lexical Model
 		IRI currLexModel =  getProject().getLexicalizationModel();
-		List<Literal> labelsList = advancedSearch.getLabelsFromLangs(stServiceContext, intputRes, 
+		List<Literal> labelsList = advancedSearch.getLabelsFromLangs(stServiceContext, inputRes, 
 				currLexModel, langs, getManagedConnection());
 		
 		//get the SPARQL endpoint from metadataRegistryBackend
