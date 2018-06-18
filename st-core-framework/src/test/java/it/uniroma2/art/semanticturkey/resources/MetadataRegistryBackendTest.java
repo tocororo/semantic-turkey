@@ -249,7 +249,7 @@ public class MetadataRegistryBackendTest {
 			throws IllegalArgumentException, MetadataRegistryWritingException, AssessmentException {
 		IRI dbpediaDataset = vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc");
 		metadataRegistryBackend.addDataset(dbpediaDataset, "http://aims.fao.org/aos/agrovoc/", "Agrovoc",
-				true, vf.createIRI("http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc"));
+				true, vf.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"));
 
 		metadataRegistryBackend.assessLexicalizationModel(dbpediaDataset);
 
