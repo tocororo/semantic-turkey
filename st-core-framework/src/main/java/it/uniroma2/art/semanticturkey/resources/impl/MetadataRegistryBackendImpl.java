@@ -36,6 +36,7 @@ import java.util.Comparator;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -102,7 +103,9 @@ import it.uniroma2.art.semanticturkey.resources.MetadataDiscoveryException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryCreationException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryIntializationException;
+import it.uniroma2.art.semanticturkey.resources.MetadataRegistryStateException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryWritingException;
+import it.uniroma2.art.semanticturkey.resources.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 
@@ -495,6 +498,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                           \n" +
 				" PREFIX void: <http://rdfs.org/ns/void#>                                             \n" +
 				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                         \n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                        \n" +
                 "                                                                                     \n" +
 				" SELECT * {                                                                          \n" +
 				"   {SELECT ?record ?recordIssued ?recordModified WHERE {                             \n" +
@@ -600,15 +604,55 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	}
 
 	@Override
-	public DatasetMetadata getDatasetMetadata(IRI dataset) {
-		return new DatasetMetadata(
-				SimpleValueFactory.getInstance()
-						.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"),
-				"http://aims.fao.org/aos/agrovoc/", "Agrovoc", METADATAREGISTRY.STANDARD_DEREFERENCIATION,
-				SimpleValueFactory.getInstance()
-						.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"),
-				null);
+	public DatasetMetadata getDatasetMetadata(IRI dataset)
+			throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
+		try (RepositoryConnection conn = getConnection()) {
+			TupleQuery datasetQuery = conn.prepareTupleQuery(
+			// @formatter:off
+				"PREFIX dcterms: <http://purl.org/dc/terms/>                                          \n" +
+				"PREFIX void: <http://rdfs.org/ns/void#>                                              \n" +
+				"PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                          \n" +
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#>                                         \n" +
+				"SELECT * WHERE {                                                                     \n" +
+				"   OPTIONAL {                                                                        \n" +
+				"     ?dataset void:uriSpace ?datasetUriSpace.                                        \n" +
+				"   }                                                                                 \n" +
+				"   OPTIONAL {                                                                        \n" +
+				" 	?dataset dcterms:title ?datasetTitle .                                            \n" +
+				"   }                                                                                 \n" +
+				"   OPTIONAL {                                                                        \n" +
+				" 	?dataset mdreg:dereferenciationSystem ?datasetDereferenciationSystem .            \n" +
+				"   }                                                                                 \n" +
+				"   OPTIONAL {                                                                        \n" +
+				" 	?dataset void:sparqlEndpoint ?datasetSPARQLEndpoint .                             \n" +
+				"   }                                                                                 \n" +
+				"   OPTIONAL {                                                                        \n" +
+				" 	?dataset owl:versionInfo ?datasetVersionInfo .                                    \n" +
+				"   }                                                                                 \n" +
+				"}                                                                                    \n" +
+				"LIMIT 2                                                                              \n"
+				// @formatter:on
+			);
+			datasetQuery.setBinding("dataset", dataset);
+			List<BindingSet> retrievedDatasets = QueryResults.asList(datasetQuery.evaluate());
+			if (retrievedDatasets.size() > 1) {
+				throw new MetadataRegistryStateException(
+						"Ambiguous description for dataset " + NTriplesUtil.toNTriplesString(dataset));
+			}
+
+			if (retrievedDatasets.isEmpty()) {
+				throw new NoSuchDatasetMetadataException(dataset.stringValue());
+			}
+
+			return bindingset2datasetmetadata(retrievedDatasets.iterator().next());
+		}
 	}
+
+//	@Override
+//	public void getEmbeddedLexicalizationSets(IRI dataset) {
+//		// TODO Auto-generated method stub
+//
+//	}
 
 	/*
 	 * (non-Javadoc)

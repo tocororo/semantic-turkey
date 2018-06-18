@@ -75,8 +75,11 @@ public interface MetadataRegistryBackend {
 	 * 
 	 * @param dataset
 	 * @return
+	 * @throws MetadataRegistryStateException
+	 * @throws NoSuchDatasetMetadataException
 	 */
-	DatasetMetadata getDatasetMetadata(IRI dataset);
+	DatasetMetadata getDatasetMetadata(IRI dataset)
+			throws NoSuchDatasetMetadataException, MetadataRegistryStateException;
 
 	/**
 	 * Returns metadata about the dataset identified by the given URI. If no dataset is found, then the method

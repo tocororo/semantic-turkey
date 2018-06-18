@@ -53,6 +53,8 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.resources.MetadataRegistryStateException;
+import it.uniroma2.art.semanticturkey.resources.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.search.AdvancedSearch;
 import it.uniroma2.art.semanticturkey.search.AdvancedSearch.InWhatToSearch;
 import it.uniroma2.art.semanticturkey.search.AdvancedSearch.WhatToShow;
@@ -112,6 +114,8 @@ public class Alignment extends STServiceAdapter {
 	 * @param langs
 	 * @param useIndexes
 	 * @return
+	 * @throws MetadataRegistryStateException 
+	 * @throws NoSuchDatasetMetadataException 
 	 */
 	/*@STServiceOperation
 	@Read
@@ -163,7 +167,7 @@ public class Alignment extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchResources(IRI intputRes, IRI datasetIRI, 
 			String[] rolesArray, @Optional List<String> langs, 
-			@Optional List<SearchMode> searchModeList ) {
+			@Optional List<SearchMode> searchModeList ) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		//get the datasetMetadata associated to the desired dataset
 		DatasetMetadata datasetMetadata = metadataRegistryBackend.getDatasetMetadata(datasetIRI);
 		if(datasetMetadata==null) {

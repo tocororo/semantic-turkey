@@ -76,7 +76,8 @@ public class MetadataRegistryBackendTest {
 	}
 
 	@Test
-	public void test() throws IllegalArgumentException, MetadataRegistryWritingException, IOException {
+	public void test() throws IllegalArgumentException, MetadataRegistryWritingException, IOException,
+			NoSuchDatasetMetadataException, MetadataRegistryStateException {
 
 		// Adds the Agrovoc Dataset
 
@@ -84,6 +85,8 @@ public class MetadataRegistryBackendTest {
 				vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"),
 				"http://aims.fao.org/aos/agrovoc/", "Agrovoc", true,
 				vf.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"));
+
+		// Tests that the dataset is available via the catalog record
 
 		Collection<CatalogRecord> records = metadataRegistryBackend.getCatalogRecords();
 
@@ -97,17 +100,18 @@ public class MetadataRegistryBackendTest {
 
 		DatasetMetadata agrovocDataset = agrovocCatalogRecord.getAbstractDataset();
 
-		assertThat(agrovocDataset.getIdentity(),
-				is(equalTo(vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"))));
-		assertThat(agrovocDataset.getTitle().orElseThrow(() -> new AssertionError("Empty optional")),
-				is(equalTo("Agrovoc")));
-		assertThat(agrovocDataset.getUriSpace().orElseThrow(() -> new AssertionError("Empty optional")),
-				is(equalTo("http://aims.fao.org/aos/agrovoc/")));
-		assertThat(agrovocDataset.getSparqlEndpoint().orElseThrow(() -> new AssertionError("Empty optional")),
-				is(equalTo(vf.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"))));
+		assertAgrovocDataset(agrovocDataset);
+
 		assertThat(agrovocDataset.getVersionInfo().isPresent(), is(false));
 
 		assertThat(agrovocCatalogRecord.getVersions(), is(empty()));
+
+		// Tests that the dataset is available via direct lookup
+
+		agrovocDataset = metadataRegistryBackend
+				.getDatasetMetadata(vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"));
+
+		assertAgrovocDataset(agrovocDataset);
 
 		// Add a fictional version of the Agrovoc dataset
 
@@ -147,8 +151,8 @@ public class MetadataRegistryBackendTest {
 
 	@Test
 	public void testDiscoverAgrovocFromVoID() throws MetadataDiscoveryException {
-		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(
-				SimpleValueFactory.getInstance().createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"));
+		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(SimpleValueFactory.getInstance()
+				.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"));
 
 		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
 				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
@@ -247,11 +251,11 @@ public class MetadataRegistryBackendTest {
 	@Test
 	public void testAssessmentOfAgrovocLexicalizationModel()
 			throws IllegalArgumentException, MetadataRegistryWritingException, AssessmentException {
-		IRI dbpediaDataset = vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc");
-		metadataRegistryBackend.addDataset(dbpediaDataset, "http://aims.fao.org/aos/agrovoc/", "Agrovoc",
+		IRI agrovocDataset = vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc");
+		metadataRegistryBackend.addDataset(agrovocDataset, "http://aims.fao.org/aos/agrovoc/", "Agrovoc",
 				true, vf.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"));
 
-		metadataRegistryBackend.assessLexicalizationModel(dbpediaDataset);
+		metadataRegistryBackend.assessLexicalizationModel(agrovocDataset);
 
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
 			conn.export(
