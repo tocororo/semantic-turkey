@@ -83,7 +83,7 @@ public class MetadataRegistryBackendTest {
 		IRI agrovocCatalogRecordIRI = metadataRegistryBackend.addDataset(
 				vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"),
 				"http://aims.fao.org/aos/agrovoc/", "Agrovoc", true,
-				vf.createIRI("http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc"));
+				vf.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"));
 
 		Collection<CatalogRecord> records = metadataRegistryBackend.getCatalogRecords();
 
@@ -104,7 +104,7 @@ public class MetadataRegistryBackendTest {
 		assertThat(agrovocDataset.getUriSpace().orElseThrow(() -> new AssertionError("Empty optional")),
 				is(equalTo("http://aims.fao.org/aos/agrovoc/")));
 		assertThat(agrovocDataset.getSparqlEndpoint().orElseThrow(() -> new AssertionError("Empty optional")),
-				is(equalTo(vf.createIRI("http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc"))));
+				is(equalTo(vf.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"))));
 		assertThat(agrovocDataset.getVersionInfo().isPresent(), is(false));
 
 		assertThat(agrovocCatalogRecord.getVersions(), is(empty()));
@@ -146,9 +146,9 @@ public class MetadataRegistryBackendTest {
 	}
 
 	@Test
-	public void testDiscoverAgrovocFromBaseURIWithoutEndingSlash() throws MetadataDiscoveryException {
+	public void testDiscoverAgrovocFromVoID() throws MetadataDiscoveryException {
 		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(
-				SimpleValueFactory.getInstance().createIRI("http://aims.fao.org/aos/agrovoc"));
+				SimpleValueFactory.getInstance().createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"));
 
 		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
 				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
@@ -156,19 +156,6 @@ public class MetadataRegistryBackendTest {
 
 		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
 		assertAgrovocDataset(agrovocDataset);
-	}
-
-	@Test
-	public void testDiscoverAgrovocFromURISpace() throws MetadataDiscoveryException {
-		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(
-				SimpleValueFactory.getInstance().createIRI("http://aims.fao.org/aos/agrovoc/"));
-		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
-				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
-				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
-
-		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
-		assertAgrovocDataset(agrovocDataset);
-
 	}
 
 	public static void assertAgrovocDataset(DatasetMetadata agrovocDataset) throws AssertionError {
@@ -184,7 +171,7 @@ public class MetadataRegistryBackendTest {
 				equalTo(METADATAREGISTRY.STANDARD_DEREFERENCIATION));
 		assertThat(agrovocDataset.getSparqlEndpoint().orElseThrow(() -> new AssertionError("Empty optional")),
 				equalTo(SimpleValueFactory.getInstance()
-						.createIRI("http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc")));
+						.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql")));
 	}
 
 	@Test

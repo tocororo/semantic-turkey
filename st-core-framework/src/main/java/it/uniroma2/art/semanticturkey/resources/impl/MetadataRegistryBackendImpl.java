@@ -36,7 +36,6 @@ import java.util.Comparator;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -87,6 +86,8 @@ import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -111,6 +112,8 @@ import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
  * 
  */
 public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
+
+	private static final Logger logger = LoggerFactory.getLogger(MetadataRegistryBackendImpl.class);
 
 	private static final String METADATA_REGISTRY_DIRECTORY = "metadataRegistry";
 	private static final String METADATA_REGISTRY_FILE = "catalog.ttl";
@@ -603,7 +606,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 						.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"),
 				"http://aims.fao.org/aos/agrovoc/", "Agrovoc", METADATAREGISTRY.STANDARD_DEREFERENCIATION,
 				SimpleValueFactory.getInstance()
-						.createIRI("http://202.45.139.84:10035/catalogs/fao/repositories/agrovoc"),
+						.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"),
 				null);
 	}
 
@@ -724,12 +727,16 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	public IRI discoverDataset(IRI iri) throws MetadataDiscoveryException {
 		try {
 
+			logger.debug("Attempt to discover a dataset from {}", NTriplesUtil.toNTriplesString(iri));
+
 			Boolean datasetDeferenceable = null;
 
 			// Dereferences the provided IRI
 			RDFLoader rdfLoader = RDF4JUtilities.createRobustRDFLoader();
 			Model statements = new LinkedHashModel();
 			Model voidStatements = null;
+
+			logger.debug("About to download data");
 
 			try {
 				rdfLoader.load(new URL(iri.stringValue()), null, null, new StatementCollector(statements));
@@ -743,6 +750,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				datasetDeferenceable = true;
 			}
 
+			logger.debug("Was any statement downloaded? {}", datasetDeferenceable);
+
 			// Try to determine the dataset resource
 
 			// First attempt: look at the property void:inDataset
@@ -750,12 +759,15 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			@Nullable
 			IRI voidDataset = Models.getPropertyIRI(statements, iri, VOID.IN_DATASET).orElse(null);
 
+			logger.debug("Reference to VoID dataset: {}", voidDataset);
+
 			Literal datasetTitle = null;
 			IRI datasetSPARQLEndpoint = null;
 			String datasetUriSpace = null;
 
 			// Second Attempt: the provided IRI is the void:Dataset
 			if (voidDataset == null && statements.contains(iri, RDF.TYPE, VOID.DATASET)) {
+				logger.debug("The provided IRI is actually a VoID dataset");
 				voidDataset = iri;
 				voidStatements = statements;
 				// possible dereferenceablity of the dataset description tells nothing about the
@@ -768,6 +780,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				IRI candidateDataset = Models.subjectIRI(statements.filter(null, RDF.TYPE, OWL.ONTOLOGY))
 						.orElse(null);
 				if (candidateDataset != null) {
+					logger.debug("The provided IRI is an OWL ontology");
 					voidDataset = candidateDataset;
 					voidStatements = statements;
 					datasetDeferenceable = true;
@@ -778,9 +791,12 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 			if (datasetUriSpace == null && Boolean.TRUE.equals(datasetDeferenceable)) {
 				datasetUriSpace = iri.getNamespace();
+				logger.debug("Namespace inferred from specific resource: {}", datasetUriSpace);
 			}
 
 			if (voidStatements == null) {
+				logger.debug("Attempting to retrieve a VoID description");
+
 				voidStatements = new LinkedHashModel();
 
 				URL voidDownloadAddress;
@@ -794,17 +810,24 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 								iri.stringValue().endsWith("/") ? iri.stringValue() + "void.ttl"
 										: iri.stringValue() + "/void.ttl");
 					}
+
+					logger.debug("Guessed VoID download URL: {}", voidDownloadAddress);
 				} else {
 					voidDownloadAddress = new URL(voidDataset.stringValue());
+					logger.debug("using the retrieved VoID download URL: {}", voidDownloadAddress);
 				}
 
 				// Try to download the void:Dataset
 				try {
+					logger.debug("Downloading VoID description from URL: {}", voidDownloadAddress);
 					rdfLoader.load(voidDownloadAddress, null, null, new StatementCollector(voidStatements));
 				} catch (IOException | RDFParseException | RDFHandlerException e) {
 					// swallow exception
 				}
 			}
+
+			// Use the VoID metadata (if available) to identify the VoID dataset. This happens when the
+			// donwload URL was guessed
 
 			if (voidDataset == null) {
 				if (datasetUriSpace != null) {
@@ -831,9 +854,17 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					}).map(Statement::getSubject).filter(IRI.class::isInstance).map(IRI.class::cast).findAny()
 							.orElse(null);
 				}
+
+				logger.debug("Identified VoID dataset is {}", voidDataset);
 			}
 
+			// Use VoID metadata (if available). Case 2: guessed download URL. It is necesary to identify the
+			// specific dataset
+
 			if (voidDataset != null) {
+
+				logger.debug("Extract information hold by the VoID dataset");
+
 				if (voidStatements.contains(voidDataset, null, null)) {
 					datasetTitle = Models.getPropertyLiteral(voidStatements, voidDataset, DCTERMS.TITLE)
 							.orElse(datasetTitle);
@@ -847,46 +878,69 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					datasetUriSpace = Models.getPropertyString(voidStatements, voidDataset, VOID.URI_SPACE)
 							.orElse(datasetUriSpace);
 				}
+
+				logger.debug("Title = \"{}\", SPARQL endpoint = \"{}\", URI space = \"{}\"", datasetTitle,
+						datasetSPARQLEndpoint, datasetUriSpace);
 			}
 
-			if (datasetDeferenceable == null && datasetSPARQLEndpoint != null && datasetUriSpace != null) {
-				SPARQLRepository sparqlRepository = new SPARQLRepository(datasetSPARQLEndpoint.stringValue());
-				sparqlRepository.initialize();
-				try {
-					try (RepositoryConnection conn = sparqlRepository.getConnection()) {
-						TupleQuery query = conn.prepareTupleQuery(
+			if (datasetDeferenceable == null) {
+				logger.debug("Try to find an example resource for testing dereferenciation");
+
+				IRI exampleResource = null;
+
+				if (voidDataset != null) {
+					exampleResource = Models
+							.getPropertyIRI(voidStatements, voidDataset, VOID.EXAMPLE_RESOURCE).orElse(null);
+					logger.debug("Example resource using VoID description: {}", exampleResource);
+				}
+
+				if (exampleResource == null && datasetSPARQLEndpoint != null && datasetUriSpace != null) {
+					logger.debug("Attempt to identify an example resource using SPARQL");
+					SPARQLRepository sparqlRepository = new SPARQLRepository(
+							datasetSPARQLEndpoint.stringValue());
+					sparqlRepository.initialize();
+					try {
+						String exampleResourceQuery =
 						// @formatter:off
 							"SELECT ?resource {\n" +
 							"  ?resource ?p ?o .\n" +
 							"  FILTER(isIRI(?resource))\n" +
 							"  FILTER(STRSTARTS(STR(?resource), ?datasetUriSpace))\n" +
 							"}\n" +
-							"LIMIT 1\n"
+							"LIMIT 1\n";
 							// @formatter:on
-						);
-						query.setBinding("datasetUriSpace",
-								SimpleValueFactory.getInstance().createLiteral(datasetUriSpace));
-						List<BindingSet> querySolutions = QueryResults.asList(query.evaluate());
 
-						if (!querySolutions.isEmpty()) {
-							IRI exampleResource = (IRI) querySolutions.iterator().next().getValue("resource");
-							Model exampleResourceStatements = new LinkedHashModel();
-							try {
-								rdfLoader.load(new URL(exampleResource.stringValue()), null, null,
-										new StatementCollector(exampleResourceStatements));
-							} catch (IOException | RDFParseException | RDFHandlerException e) {
-								// swallow exception
-							}
-
-							datasetDeferenceable = exampleResourceStatements.contains(exampleResource, null,
-									null);
+						logger.debug("SPARQL Query to find example resource:\n{}", exampleResourceQuery);
+						try (RepositoryConnection conn = sparqlRepository.getConnection()) {
+							TupleQuery query = conn.prepareTupleQuery(exampleResourceQuery);
+							query.setBinding("datasetUriSpace",
+									SimpleValueFactory.getInstance().createLiteral(datasetUriSpace));
+							exampleResource = (IRI) QueryResults.asList(query.evaluate()).stream()
+									.map(bs -> bs.getValue("resource")).findAny().orElse(null);
+							logger.debug("Example resource using SPARQL: {}", exampleResource);
 						}
 
+					} finally {
+						sparqlRepository.shutDown();
+					}
+				}
+
+				if (exampleResource != null) {
+					logger.debug("Attempt to dereference example resource: {}", exampleResource);
+
+					Model exampleResourceStatements = new LinkedHashModel();
+					try {
+						rdfLoader.load(new URL(exampleResource.stringValue()), null, null,
+								new StatementCollector(exampleResourceStatements));
+					} catch (IOException | RDFParseException | RDFHandlerException e) {
+						// swallow exception
 					}
 
-				} finally {
-					sparqlRepository.shutDown();
+					datasetDeferenceable = exampleResourceStatements.contains(exampleResource, null, null);
+
+					logger.debug("Did dereferenciation succeed? {}", datasetDeferenceable);
 				}
+
 			}
 
 			if (datasetUriSpace != null) {

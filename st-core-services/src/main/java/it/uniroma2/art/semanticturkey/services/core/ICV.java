@@ -666,7 +666,7 @@ public class ICV extends STServiceAdapter {
 		String q = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_missingLang)\n"
 				+ "WHERE {\n";
 		
-		q += rolePartForQuery(rolesArray, "?resource");
+		q += rolePartForQuery(rolesArray, "?resource", true);
 		
 		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
 			q+= "?resource " + NTriplesUtil.toNTriplesString(SKOSXL.ALT_LABEL) +" ?altLabel . \n" 
@@ -717,7 +717,7 @@ public class ICV extends STServiceAdapter {
 				+ "WHERE {\n";
 		
 		//now look for the roles
-		query+=rolePartForQuery(rolesArray, "?resource");
+		query+=rolePartForQuery(rolesArray, "?resource", true);
 		
 		//now add the part that, using the lexicalization model, search for resources not having a language
 		IRI lexModel = getProject().getLexicalizationModel();
@@ -861,7 +861,7 @@ public class ICV extends STServiceAdapter {
 		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_duplicateLang)\n"
 				+ "WHERE {\n";
 		
-		query+=rolePartForQuery(rolesArray, "?resource");
+		query+=rolePartForQuery(rolesArray, "?resource", true);
 		
 		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
 			query += "?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?xlabel1 .\n"
@@ -910,7 +910,7 @@ public class ICV extends STServiceAdapter {
 		String query = "SELECT DISTINCT ?resource ?attr_xlabel ?attr_label \n"
 				+ "WHERE {\n";
 		
-		query+=rolePartForQuery(rolesArray, "?resource");
+		query+=rolePartForQuery(rolesArray, "?resource", true);
 		
 		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
 			query += "?resource ("+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+"|"+
@@ -956,7 +956,7 @@ public class ICV extends STServiceAdapter {
 		String query = "SELECT ?resource ?attr_xlabel ?attr_label \n"
 				+ "WHERE {\n";
 		
-		query+=rolePartForQuery(rolesArray, "?resource");
+		query+=rolePartForQuery(rolesArray, "?resource", true);
 		
 		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
 			query += "?resource ("+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+"|"+
@@ -995,35 +995,52 @@ public class ICV extends STServiceAdapter {
 			throws UnsupportedLexicalizationModelException  {
 		IRI lexModel = getProject().getLexicalizationModel();
 		
+		//pass one role at a time
+		Collection<AnnotatedValue<Resource>> annValueList = new ArrayList<>();
+		for(RDFResourceRole role : rolesArray){
+			RDFResourceRole[] tempRolesArray = {role};
+			annValueList.addAll(listResourcesWithSameLabels(tempRolesArray, lexModel));
+		}
+		return annValueList;
+	}
+	
+	private Collection<AnnotatedValue<Resource>> listResourcesWithSameLabels(RDFResourceRole[] rolesArray, IRI lexModel) 
+			throws UnsupportedLexicalizationModelException  {
 		if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
 				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
 			String msg = "The only Lexicalization Model supported by this service are SKOS and SKOSXL";
 			throw new UnsupportedLexicalizationModelException(msg);
 		}
-		String query = "SELECT DISTINCT ?resource ?attr_xlabel ?attr_label \n"
-				+ "WHERE {\n";
+		String query = "SELECT DISTINCT ?resource ?attr_xlabel ?attr_label"
+				+ "\nWHERE {";
 		
-		query+=rolePartForQuery(rolesArray, "?resource");
-		query+=rolePartForQuery(rolesArray, "?resource2");
-		query+="?propScheme "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
+		query+=rolePartForQuery(rolesArray, "?resource", true);
+		//query+=rolePartForQuery(rolesArray, "?resource2"); // old
+		query+="\n?propScheme "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+
 				NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME)+" .";
 		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
-			query += "?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?attr_xlabel .\n"
-					+ "?attr_xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label .\n"
-					+ "?resource2 "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?attr_xlabel2 .\n"
-					+ "?attr_xlabel2 "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label .\n"
-					+ "?resource ?propScheme ?scheme . \n "
-					+ "?resource2 ?propScheme ?scheme . \n ";
+			query += "\n?resource "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?attr_xlabel ."
+					+ "\n?attr_xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label ."
+					+ "\n?attr_xlabel2 "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label ."
+					+ "\n?resource2 "+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+" ?attr_xlabel2 ."
+					+ rolePartForQuery(rolesArray, "?resource2", false);
+			if(rolesArray!=null && rolesArray.length==1 && rolesArray[0].equals(RDFResourceRole.concept)) {
+					query+= "\n?resource ?propScheme ?scheme . "
+							+ "\n?resource2 ?propScheme ?scheme . ";
+			}
 		} else { //if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) ){
-			query += "?resource "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?attr_label .\n"
-					+ "?resource2 "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?attr_label .\n"
-					+ "?resource ?propScheme ?scheme . \n "
-					+ "?resource2 ?propScheme ?scheme . \n ";
+			query += "\n?resource "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?attr_label ."
+					+ "\n?resource2 "+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+" ?attr_label ."
+					+ rolePartForQuery(rolesArray, "?resource2", false);
+			if(rolesArray!=null && rolesArray.length==1 && rolesArray[0].equals(RDFResourceRole.concept)) {
+				query+= "\n?resource ?propScheme ?scheme .  "
+					+ "\n?resource2 ?propScheme ?scheme . ";
+			}
 		}
 		
-		query += "FILTER(?resource != ?resource2) \n"
-				+"}\n"
-				+ "GROUP BY ?resource ?attr_xlabel ?attr_label";
+		query += "\nFILTER(?resource != ?resource2)"
+				+"\n}"
+				+ "\nGROUP BY ?resource ?attr_xlabel ?attr_label";
 		
 		logger.debug("query [listResourcesWithSameLabels]:\n" + query);
 		QueryBuilder qb = createQueryBuilder(query);
@@ -1054,7 +1071,7 @@ public class ICV extends STServiceAdapter {
 		}
 		String query = "SELECT DISTINCT ?resource ?attr_xlabel ?attr_label \n"
 				+ "WHERE {\n";
-		query+=rolePartForQuery(rolesArray, "?resource");
+		query+=rolePartForQuery(rolesArray, "?resource", true);
 		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
 			query += "?resource "+getSkosxlPrefOrAltOrHidden()+" ?attr_xlabel .\n"
 					+ "?attr_xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label .\n"
@@ -1103,7 +1120,7 @@ public class ICV extends STServiceAdapter {
 		String query = "SELECT ?resource (GROUP_CONCAT(DISTINCT ?lang; separator=\",\") AS ?attr_missingLang) \n"
 				+ "WHERE {\n";
 		
-		query+=rolePartForQuery(rolesArray, "?resource");
+		query+=rolePartForQuery(rolesArray, "?resource", true);
 		
 		
 		boolean first = true;
@@ -2449,27 +2466,29 @@ public class ICV extends STServiceAdapter {
 //	}
 //	
 	
-	private String rolePartForQuery(RDFResourceRole[] rolesArray, String var) {
+	private String rolePartForQuery(RDFResourceRole[] rolesArray, String var, boolean useSubQuery) {
 		String query = "";
 		String union="";
 		boolean first=true;
-		query += "{SELECT "+var+" \n"
-				+ "WHERE {\n";
+		if(useSubQuery) {
+			query += "\n{SELECT "+var+" "
+					+ "\nWHERE {";
+		}
 		for(RDFResourceRole role : rolesArray) {
 			if(!first) {
-				union = "UNION\n";
+				union = "\nUNION";
 			}
 			
 			if(role.equals(RDFResourceRole.concept)) {
-				query+=union+"{ "+var+" a <"+SKOS.CONCEPT.stringValue()+"> . } \n";
+				query+=union+"\n{ "+var+" a <"+SKOS.CONCEPT.stringValue()+"> . } ";
 				first=false;
 			} else if(role.equals(RDFResourceRole.cls)) {
-				query+=union+"{ "+var+" a ?type .  \n"
+				query+=union+"\n{ "+var+" a ?type .  "
 						+ "\nFILTER(?type = <"+OWL.CLASS.stringValue()+"> || "
 								+ "?type = <"+RDFS.CLASS.stringValue()+"> ) } \n";
 				first = false;
 			} else if(role.equals(RDFResourceRole.property)) {
-				query+=union+"{ "+var+" a ?type .  \n"
+				query+=union+"\n{ "+var+" a ?type .  "
 						+ "\nFILTER(?type = <"+RDF.PROPERTY.stringValue()+"> || "
 						+ "?type = <"+OWL.OBJECTPROPERTY.stringValue()+"> || "
 						+ "?type = <"+OWL.DATATYPEPROPERTY.stringValue()+"> || "
@@ -2478,23 +2497,25 @@ public class ICV extends STServiceAdapter {
 						"\n}";
 				first = false;
 			} else if(role.equals(RDFResourceRole.conceptScheme)) {
-				query+=union+"{ "+var+" a <"+SKOS.CONCEPT_SCHEME.stringValue()+"> . } \n";
+				query+=union+"\n{ "+var+" a <"+SKOS.CONCEPT_SCHEME.stringValue()+"> . } ";
 				first=false;
 			} else if(role.equals(RDFResourceRole.conceptScheme)) {
-				query+=union+"{ "+var+" a ?type .  \n"
+				query+=union+"\n{ "+var+" a ?type .  "
 						+ "\nFILTER(?type = <"+SKOS.COLLECTION.stringValue()+"> || "
-						+ "?type = <"+SKOS.ORDERED_COLLECTION.stringValue()+"> ) }\n";
+						+ "?type = <"+SKOS.ORDERED_COLLECTION.stringValue()+"> ) }";
 				first = false;
 			} else if (role.equals(RDFResourceRole.individual)) {
-				query+=union+"{ "+var+" a ?type .  \n"
-						+"?type a ?classType . \n"
+				query+=union+"\n{ "+var+" a ?type .  "
+						+"\n?type a ?classType . "
 						+ "\nFILTER(?classType = <"+OWL.CLASS.stringValue()+"> || "
 								+ "?classType = <"+RDFS.CLASS.stringValue()+"> ) } \n";
 				first = false;
 			}
 		}
 		
-		query +="}\n}\n";
+		if(useSubQuery) {
+			query +="\n}\n}";
+		}
 		return query;
 	}
 	
