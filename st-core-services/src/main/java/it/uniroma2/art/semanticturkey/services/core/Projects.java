@@ -75,7 +75,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
 import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary;
 import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary.RemoteRepositorySummary;
-import it.uniroma2.art.semanticturkey.user.PUBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
@@ -102,7 +102,7 @@ public class Projects extends STServiceAdapter {
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, WrongPropertiesException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, PUBindingException, RBACException,
+			UnloadablePluginConfigurationException, ProjectBindingException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, InvalidConfigurationException,
 			STPropertyAccessException {
 
@@ -357,14 +357,14 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectInexistentException
 	 * @throws InvalidProjectNameException
 	 * @throws IOException
-	 * @throws PUBindingException
+	 * @throws ProjectBindingException
 	 * @throws RBACException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, PUBindingException, RBACException {
+			ForbiddenProjectAccessException, ProjectBindingException, RBACException {
 
 		ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
 	}
@@ -447,7 +447,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws DuplicatedResourceException
 	 * @throws ProjectCreationException
 	 * @throws IOException
-	 * @throws PUBindingException
+	 * @throws ProjectBindingException
 	 * @throws ProjectAccessException
 	 * @throws ProjectInexistentException
 	 */
@@ -456,7 +456,7 @@ public class Projects extends STServiceAdapter {
 	public void importProject(MultipartFile importPackage, String newProjectName)
 			throws IOException, ProjectCreationException, DuplicatedResourceException,
 			ProjectInconsistentException, ProjectUpdateException, InvalidProjectNameException,
-			PUBindingException, ProjectInexistentException, ProjectAccessException {
+			ProjectBindingException, ProjectInexistentException, ProjectAccessException {
 
 		logger.debug("requested to import project from file: " + importPackage);
 

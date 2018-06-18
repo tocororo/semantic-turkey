@@ -39,22 +39,19 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.user.Role.RoleLevel;
 import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 
-public class ProjectUserBindingsRepoHelper {
+public class ProjectGroupBindingsRepoHelper {
 	
-	protected static Logger logger = LoggerFactory.getLogger(ProjectUserBindingsRepoHelper.class);
+	protected static Logger logger = LoggerFactory.getLogger(ProjectGroupBindingsRepoHelper.class);
 	
-	private static String BINDING_USER = "user";
-	private static String BINDING_ROLE = "role";
-	private static String BINDING_LANGUAGE = "language";
 	private static String BINDING_GROUP = "group";
 	private static String BINDING_PROJECT = "project";
+	private static String BINDING_OWNED_SCHEME = "scheme";
 	
 	private Repository repository;
 	
-	public ProjectUserBindingsRepoHelper() {
+	public ProjectGroupBindingsRepoHelper() {
 		MemoryStore memStore = new MemoryStore();
 		memStore.setPersist(false);
 		repository = new SailRepository(memStore);
@@ -68,29 +65,21 @@ public class ProjectUserBindingsRepoHelper {
 	}
 	
 	/**
-	 * Insert the given ProjectUserBinding into the repository
-	 * @param puBinding
+	 * Insert the given ProjectGroupBinding into the repository
+	 * @param pgBinding
 	 */
-	public void insertBinding(ProjectUserBinding puBinding) {
+	public void insertBinding(ProjectGroupBinding pgBinding) {
 		String query = "INSERT DATA {"
 				+ " _:binding a " + NTriplesUtil.toNTriplesString(UserVocabulary.BINDING) + " ."
-				+ " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.USER_PROP) + " " 
-				+ NTriplesUtil.toNTriplesString(puBinding.getUser().getIRI()) + " ."
+				+ " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_PROP) + " " 
+				+ NTriplesUtil.toNTriplesString(pgBinding.getGroup().getIRI()) + " ."
 				+ " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.PROJECT_PROP) + " " 
-				+ NTriplesUtil.toNTriplesString(getProjectIRI(puBinding.getProject())) + " .";
-		for (Role role : puBinding.getRoles()) {
-			query += " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.ROLE_PROP) + " " 
-					+ NTriplesUtil.toNTriplesString(getRoleIRI(role, puBinding.getProject())) + " .";
-		}
-		for (String lang : puBinding.getLanguages()) {
-			query += " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROP) + " '" + lang + "' .";
-		}
-		if (puBinding.getGroup() != null) {
-			query += " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_PROP) + " " 
-					+ NTriplesUtil.toNTriplesString(puBinding.getGroup().getIRI()) + " .";
+				+ NTriplesUtil.toNTriplesString(getProjectIRI(pgBinding.getProject())) + " .";
+		for (IRI scheme : pgBinding.getOwnedSchemes()) {
+			query += " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.OWNED_SCHEME_PROP) + " " 
+					+ NTriplesUtil.toNTriplesString(scheme) + " .";
 		}
 		query += " }";
-		
 		//execute query
 		logger.debug(query);
 		try (RepositoryConnection conn = repository.getConnection()) {
@@ -100,19 +89,17 @@ public class ProjectUserBindingsRepoHelper {
 	}
 	
 	/**
-	 * Returns the binding about the given user and project
+	 * Returns the bindings
 	 * @param userEmail
 	 * @param projectName
 	 * @return
 	 */
-	public Collection<ProjectUserBinding> listPUBindings() {
+	public Collection<ProjectGroupBinding> listPGBindings() {
 		String query = "SELECT * WHERE {"
 				+ " ?binding a " + NTriplesUtil.toNTriplesString(UserVocabulary.BINDING) + " ."
-				+ " ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.USER_PROP) + " ?" + BINDING_USER + " ."
+				+ " ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_PROP) + " ?" + BINDING_GROUP + " ."
 				+ " ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.PROJECT_PROP) + " ?" + BINDING_PROJECT + " ."
-				+ " OPTIONAL { ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.ROLE_PROP) + " ?" + BINDING_ROLE + " . }"
-				+ " OPTIONAL { ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROP) + " ?" + BINDING_LANGUAGE + " . }"
-				+ " OPTIONAL { ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_PROP) + " ?" + BINDING_GROUP + " . }"
+				+ " OPTIONAL { ?binding " + NTriplesUtil.toNTriplesString(UserVocabulary.OWNED_SCHEME_PROP) + " ?" + BINDING_OWNED_SCHEME + " . }"
 				+ " }";
 		// execute query
 		logger.debug(query);
@@ -121,7 +108,7 @@ public class ProjectUserBindingsRepoHelper {
 			TupleQuery tq = conn.prepareTupleQuery(query);
 			result = tq.evaluate();
 			// collect bindings
-			return getPUBindingsFromTupleResult(result);
+			return getPGBindingsFromTupleResult(result);
 		} finally {
 			if (result != null) {
 				result.close();
@@ -129,9 +116,9 @@ public class ProjectUserBindingsRepoHelper {
 		}
 	}
 	
-	private Collection<ProjectUserBinding> getPUBindingsFromTupleResult(TupleQueryResult result) {
+	private Collection<ProjectGroupBinding> getPGBindingsFromTupleResult(TupleQueryResult result) {
 		// collect puBindings
-		Collection<ProjectUserBinding> list = new ArrayList<>();
+		Collection<ProjectGroupBinding> list = new ArrayList<>();
 		tupleLoop: while (result.hasNext()) {
 			BindingSet tuple = result.next();
 
@@ -143,52 +130,36 @@ public class ProjectUserBindingsRepoHelper {
 				continue; // => binding ignored
 			}
 			
-			IRI userIRI = (IRI) tuple.getValue(BINDING_USER);
-			STUser user = UsersManager.getUserByIRI(userIRI);
-			if (user == null) { //there is a binding that references a no more existing user
-				logger.warn("Invalid binding: IRI " + userIRI.stringValue() + " references to a not existing user."
-						+ " Project-User bindings with this user will be ignored");
+			IRI groupIRI = (IRI) tuple.getValue(BINDING_GROUP);
+			UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIRI);
+			if (group == null) { //there is a binding that references a no more existing user
+				logger.warn("Invalid binding: IRI " + groupIRI.stringValue() + " references to a not existing group."
+						+ " Project-Group bindings with this group will be ignored");
 				continue; // => binding ignored
 			}
 			
-			ProjectUserBinding puBinding = new ProjectUserBinding(project, user);
+			ProjectGroupBinding pgBinding = new ProjectGroupBinding(project, group);
 			
-			Role role = null;
-			if (tuple.getBinding(BINDING_ROLE) != null) {
-				role = getRoleFromIRI((IRI) tuple.getValue(BINDING_ROLE));
+			IRI scheme = null;
+			if (tuple.getBinding(BINDING_OWNED_SCHEME) != null) {
+				scheme = (IRI) tuple.getValue(BINDING_OWNED_SCHEME);
 			}
-			String lang = null;
-			if (tuple.getBinding(BINDING_LANGUAGE) != null) {
-				lang = tuple.getValue(BINDING_LANGUAGE).stringValue();
-			}
-			// Check if the current tuple is about a binding already fetched (and so it differs just for role or lang)
-			for (ProjectUserBinding b : list) {
-				if (b.getProject().getName().equals(project.getName()) && b.getUser().getIRI().equals(user.getIRI())) {
-					// binding already in list => add the role or the lang to it
-					if (role != null) {
-						b.addRole(role);
-					}
-					if (lang != null) {
-						b.addLanguage(lang);
+			// Check if the current tuple is about a binding already fetched (and so it differs just for scheme)
+			for (ProjectGroupBinding b : list) {
+				if (b.getProject().getName().equals(project.getName()) && b.getGroup().getIRI().equals(group.getIRI())) {
+					// binding already in list => add the scheme to it
+					if (scheme != null) {
+						b.addScheme(scheme);
 					}
 					continue tupleLoop;
 				}
 			}
-			//if it reach this point, current binding was not already fetched so add the role to the binding
-			if (role != null) {
-				puBinding.addRole(role);
-			}
-			if (lang != null) {
-				puBinding.addLanguage(lang);
+			//if it reach this point, current binding was not already fetched so add the scheme to the binding
+			if (scheme != null) {
+				pgBinding.addScheme(scheme);
 			}
 			
-			UsersGroup group = null;
-			if (tuple.getBinding(BINDING_GROUP) != null) {
-				group = UsersGroupsManager.getGroupByIRI((IRI) tuple.getBinding(BINDING_GROUP).getValue());
-				puBinding.assignGroup(group);
-			}
-			
-			list.add(puBinding);
+			list.add(pgBinding);
 		}
 		return list;
 	}
@@ -226,15 +197,6 @@ public class ProjectUserBindingsRepoHelper {
 		return SimpleValueFactory.getInstance().createIRI(UserVocabulary.PROJECTSBASEURI, encodeProjectName(project));
 	}
 	
-	private IRI getRoleIRI(Role role, AbstractProject project) {
-		SimpleValueFactory vf = SimpleValueFactory.getInstance();
-		if (role.getLevel() == RoleLevel.project) {
-			return vf.createIRI(UserVocabulary.ROLESBASEURI, encodeProjectName(project) + "/" + role.getName());
-		} else { //system level
-			return vf.createIRI(UserVocabulary.ROLESBASEURI, role.getName());
-		}
-	}
-	
 	private AbstractProject getProjectFromIRI(IRI projectIRI) {
 		try {
 			String projectName = "";
@@ -249,24 +211,6 @@ public class ProjectUserBindingsRepoHelper {
 				+ " references to a not existing project");
 			return null;
 		}
-	}
-	
-	private Role getRoleFromIRI(IRI roleIRI) {
-		String roleString = roleIRI.stringValue(); 
-		String projAndRole = roleString.substring(UserVocabulary.ROLESBASEURI.length());
-		try {
-			projAndRole = URLDecoder.decode(projAndRole, "UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		}
-		int separatorIdx = projAndRole.indexOf("/");
-		if (separatorIdx == -1) { //no separator => uri doesn't contain the project name => system role
-			return new Role(projAndRole, RoleLevel.system);
-		} else {
-			String roleName = projAndRole.substring(separatorIdx + 1);
-			return new Role(roleName, RoleLevel.project);
-		}
-		
 	}
 	
 	public static String encodeProjectName(AbstractProject project) {

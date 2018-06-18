@@ -54,7 +54,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.user.PUBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
@@ -188,7 +188,7 @@ public class Users extends STServiceAdapter {
 	 * @throws ProjectAccessException 
 	 * @throws UserCreationException 
 	 * @throws ParseException 
-	 * @throws PUBindingException 
+	 * @throws ProjectBindingException 
 	 * @throws STPropertyUpdateException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -196,7 +196,7 @@ public class Users extends STServiceAdapter {
 			@Optional String birthday, @Optional String gender, @Optional String country, @Optional String address,
 			@Optional String affiliation, @Optional String url, @Optional String avatarUrl, @Optional String phone, 
 			@Optional Collection<String> languageProficiencies)
-					throws ProjectAccessException, UserException, ParseException, PUBindingException, STPropertyUpdateException {
+					throws ProjectAccessException, UserException, ParseException, ProjectBindingException, STPropertyUpdateException {
 		STUser user;
 		if (iri != null) {
 			user = new STUser(iri, email, password, givenName, familyName);
@@ -456,15 +456,15 @@ public class Users extends STServiceAdapter {
 	 * @param enable
 	 * @return
 	 * @throws IOException 
-	 * @throws PUBindingException 
+	 * @throws ProjectBindingException 
 	 */
 	//TODO move to Administration?
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'C')")
 	public ObjectNode enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled)
-			throws UserException, PUBindingException  {
+			throws UserException, ProjectBindingException  {
 		if (UsersManager.getLoggedUser().getEmail().equals(email)) {
-			throw new PUBindingException("Cannot disable current logged user");
+			throw new ProjectBindingException("Cannot disable current logged user");
 		}
 		STUser user = UsersManager.getUserByEmail(email);
 		if (enabled) {

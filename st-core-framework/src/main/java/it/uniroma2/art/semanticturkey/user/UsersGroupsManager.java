@@ -46,8 +46,8 @@ public class UsersGroupsManager {
 		if (getGroupByShortName(group.getShortName()) != null) {
 			throw new UsersGroupException("Name " + group.getShortName() + " already used by another group");
 		}
-		if (getGroupByIRI(group.getIri()) != null) {
-			throw new UsersGroupException("IRI " + group.getIri().stringValue() + " already used by another group");
+		if (getGroupByIRI(group.getIRI()) != null) {
+			throw new UsersGroupException("IRI " + group.getIRI().stringValue() + " already used by another group");
 		}
 		groupList.add(group);
 		createOrUpdateGroupDetailsFolder(group); // serialize group detials
@@ -71,7 +71,7 @@ public class UsersGroupsManager {
 	public static UsersGroup getGroupByIRI(IRI iri) {
 		UsersGroup group = null;
 		for (UsersGroup g : groupList) {
-			if (g.getIri().equals(iri)) {
+			if (g.getIRI().equals(iri)) {
 				group = g;
 			}
 		}
@@ -204,7 +204,7 @@ public class UsersGroupsManager {
 	 * @return
 	 */
 	public static File getGroupFolder(UsersGroup group) {
-		return new File(Resources.getGroupsDir() + File.separator + UsersGroup.encodeGroupIri(group.getIri()));
+		return new File(Resources.getGroupsDir() + File.separator + UsersGroup.encodeGroupIri(group.getIRI()));
 	}
 	
 	/**
@@ -232,7 +232,7 @@ public class UsersGroupsManager {
 	 * @return
 	 */
 	private static File getGroupDetailsFile(UsersGroup group) {
-		File groupFolder = new File(Resources.getGroupsDir() + File.separator + UsersGroup.encodeGroupIri(group.getIri()));
+		File groupFolder = new File(Resources.getGroupsDir() + File.separator + UsersGroup.encodeGroupIri(group.getIRI()));
 		if (!groupFolder.exists()) {
 			groupFolder.mkdir();
 		}

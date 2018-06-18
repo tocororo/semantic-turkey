@@ -11,7 +11,8 @@ import org.springframework.stereotype.Component;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
-import it.uniroma2.art.semanticturkey.user.PUBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.RoleCreationException;
 import it.uniroma2.art.semanticturkey.user.UserException;
@@ -23,7 +24,7 @@ public class AccessControlManager {
 	
 	@PostConstruct
 	public void init() throws UserException, RDFParseException, RepositoryException,
-		IOException, ProjectAccessException, RoleCreationException, PUBindingException, RBACException {
+		IOException, ProjectAccessException, RoleCreationException, ProjectBindingException, RBACException {
 		
 		//init users manager so it loads users and roles from ST data
 		UsersManager.loadUsers();
@@ -35,6 +36,9 @@ public class AccessControlManager {
 		
 		//init users groups
 		UsersGroupsManager.loadGroups();
+		
+		//init project-group bindings
+		ProjectGroupBindingsManager.loadPGBindings();
 		
 		/*
 		 * init project-user binding manager so it loads bindings from ST data

@@ -44,11 +44,15 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
-import it.uniroma2.art.semanticturkey.user.PUBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectGroupBinding;
+import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersGroup;
+import it.uniroma2.art.semanticturkey.user.UsersGroupsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
@@ -295,20 +299,33 @@ public class Resources {
 					}
 				}
 			}
-		} catch (ProjectAccessException | PUBindingException e) {
+		} catch (ProjectAccessException | ProjectBindingException e) {
 			throw new STInitializationException(e);
 		}
 	}
 	
 	/**
 	 * Initializes a folders structure with a pg_binding folder 
-	 * Maybe there's no need to create
 	 * - a folder per project
 	 * 		- which in turn contains a folder for group
-	 * Since these should be created once the properties manager tries to access the settings into them
+	 * 			- which in turn contains a property file that describe relations between project and user
+	 * @throws STInitializationException 
 	 */
-	public static void initializePGBindingFileStructure() {
-		projectGroupBindingsDir.mkdir();
+	public static void initializePGBindingFileStructure() throws STInitializationException {
+		try {
+			// create project-group bindings
+			projectGroupBindingsDir.mkdir();
+			for (AbstractProject abstrProj : ProjectManager.listProjects()) {
+				if (abstrProj instanceof Project) {
+					for (UsersGroup group : UsersGroupsManager.listGroups()) {
+						ProjectGroupBinding pgBinding = new ProjectGroupBinding(abstrProj, group);
+						ProjectGroupBindingsManager.createPGBinding(pgBinding);
+					}
+				}
+			}
+		} catch (ProjectAccessException | ProjectBindingException e) {
+			throw new STInitializationException(e);
+		}
 	}
 	
 	/**

@@ -59,7 +59,7 @@ public class ProjectUserBindingsManager {
 	 * @param puBinding
 	 * @throws IOException 
 	 */
-	public static void createPUBinding(ProjectUserBinding puBinding) throws PUBindingException {
+	public static void createPUBinding(ProjectUserBinding puBinding) throws ProjectBindingException {
 		puBindingList.add(puBinding);
 		createOrUpdatePUBindingFolder(puBinding);
 	}
@@ -101,7 +101,7 @@ public class ProjectUserBindingsManager {
 	 * @return
 	 */
 	public static boolean existsPUBindingsOfProject(AbstractProject project) {
-		return !getProjBindingsFolder(project).exists();
+		return getProjBindingsFolder(project).exists();
 	}
 	
 	/**
@@ -111,7 +111,7 @@ public class ProjectUserBindingsManager {
 	 * @param projectName
 	 * @throws IOException 
 	 */
-	public static void createPUBindingsOfProject(AbstractProject project) throws PUBindingException {
+	public static void createPUBindingsOfProject(AbstractProject project) throws ProjectBindingException {
 		Collection<STUser> users = UsersManager.listUsers();
 		//for each user creates the binding with the given project
 		for (STUser u : users) {
@@ -143,7 +143,7 @@ public class ProjectUserBindingsManager {
 	 * @throws ProjectAccessException 
 	 * @throws IOException 
 	 */
-	public static void createPUBindingsOfUser(STUser user) throws ProjectAccessException, PUBindingException {
+	public static void createPUBindingsOfUser(STUser user) throws ProjectAccessException, ProjectBindingException {
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		//for each project creates the binding with the given user
 		for (AbstractProject abstrProj : projects) {
@@ -180,9 +180,9 @@ public class ProjectUserBindingsManager {
 	 * @param userEmail
 	 * @param projectName
 	 * @param roles
-	 * @throws PUBindingException
+	 * @throws ProjectBindingException
 	 */
-	public static void addRolesToPUBinding(STUser user, AbstractProject project, Collection<Role> roles) throws PUBindingException {
+	public static void addRolesToPUBinding(STUser user, AbstractProject project, Collection<Role> roles) throws ProjectBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
 			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				for (Role r : roles) {
@@ -199,9 +199,9 @@ public class ProjectUserBindingsManager {
 	 * @param userEmail
 	 * @param projectName
 	 * @param roles
-	 * @throws PUBindingException
+	 * @throws ProjectBindingException
 	 */
-	public static void addRoleToPUBinding(STUser user, AbstractProject project, Role role) throws PUBindingException {
+	public static void addRoleToPUBinding(STUser user, AbstractProject project, Role role) throws ProjectBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
 			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				pub.addRole(role);
@@ -216,9 +216,9 @@ public class ProjectUserBindingsManager {
 	 * @param userEmail
 	 * @param projectName
 	 * @param role
-	 * @throws PUBindingException
+	 * @throws ProjectBindingException
 	 */
-	public static void removeRoleFromPUBinding(STUser user, AbstractProject project, Role role) throws PUBindingException {
+	public static void removeRoleFromPUBinding(STUser user, AbstractProject project, Role role) throws ProjectBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
 			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				Collection<Role> roles = pub.getRoles();
@@ -235,9 +235,9 @@ public class ProjectUserBindingsManager {
 	 * @param user
 	 * @param project
 	 * @param role
-	 * @throws PUBindingException
+	 * @throws ProjectBindingException
 	 */
-	public static void removeAllRoleFromPUBinding(STUser user, AbstractProject project) throws PUBindingException {
+	public static void removeAllRoleFromPUBinding(STUser user, AbstractProject project) throws ProjectBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
 			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				pub.setRoles(new ArrayList<Role>());
@@ -250,9 +250,9 @@ public class ProjectUserBindingsManager {
 	/**
 	 * Removes a role from all the bindings of the given project (useful in case a role is deleted)
 	 * @param role
-	 * @throws PUBindingException 
+	 * @throws ProjectBindingException 
 	 */
-	public static void removeRoleFromPUBindings(AbstractProject project, Role role) throws PUBindingException {
+	public static void removeRoleFromPUBindings(AbstractProject project, Role role) throws ProjectBindingException {
 		for (ProjectUserBinding pub : listPUBindingsOfProject(project)) {
 			Collection<Role> roles = pub.getRoles();
 			roles.remove(role);
@@ -284,10 +284,10 @@ public class ProjectUserBindingsManager {
 	 * @param userEmail
 	 * @param projectName
 	 * @param languages
-	 * @throws PUBindingException
+	 * @throws ProjectBindingException
 	 */
 	public static void addLanguagesToPUBinding(STUser user, AbstractProject project, Collection<String> languages)
-			throws PUBindingException {
+			throws ProjectBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
 			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				for (String l : languages) {
@@ -304,9 +304,9 @@ public class ProjectUserBindingsManager {
 	 * @param userEmail
 	 * @param projectName
 	 * @param role
-	 * @throws PUBindingException
+	 * @throws ProjectBindingException
 	 */
-	public static void updateLanguagesToPUBinding(STUser user, AbstractProject project, Collection<String> languages) throws PUBindingException {
+	public static void updateLanguagesToPUBinding(STUser user, AbstractProject project, Collection<String> languages) throws ProjectBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
 			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				pub.setLanguages(languages);
@@ -325,9 +325,9 @@ public class ProjectUserBindingsManager {
 	 * @param user
 	 * @param project
 	 * @param group
-	 * @throws PUBindingException
+	 * @throws ProjectBindingException
 	 */
-	public static void assignGroupToPUBinding(STUser user, AbstractProject project, UsersGroup group) throws PUBindingException {
+	public static void assignGroupToPUBinding(STUser user, AbstractProject project, UsersGroup group) throws ProjectBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
 			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				pub.assignGroup(group);
@@ -341,9 +341,9 @@ public class ProjectUserBindingsManager {
 	 * Remove the group assigned to the user in the given project-user pair
 	 * @param user
 	 * @param project
-	 * @throws PUBindingException
+	 * @throws ProjectBindingException
 	 */
-	public static void removeGroupFromPUBinding(STUser user, AbstractProject project) throws PUBindingException {
+	public static void removeGroupFromPUBinding(STUser user, AbstractProject project) throws ProjectBindingException {
 		for (ProjectUserBinding pub : puBindingList) {
 			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				pub.removeGroup();
@@ -374,16 +374,16 @@ public class ProjectUserBindingsManager {
 	/**
 	 * Creates a folder for the given project-user bidning and serializes the details about it in a file.
 	 * If the folder is already created, simply update the info in the details file.
-	 * @throws PUBindingException 
+	 * @throws ProjectBindingException 
 	 */
-	private static void createOrUpdatePUBindingFolder(ProjectUserBinding puBinding) throws PUBindingException {
+	private static void createOrUpdatePUBindingFolder(ProjectUserBinding puBinding) throws ProjectBindingException {
 		try {
 			ProjectUserBindingsRepoHelper tempPUBindingsRepoHelper = new ProjectUserBindingsRepoHelper();
 			tempPUBindingsRepoHelper.insertBinding(puBinding);
 			tempPUBindingsRepoHelper.saveBindingDetailsFile(getPUBindingDetailsFile(puBinding));
 			tempPUBindingsRepoHelper.shutDownRepository();
 		} catch (IOException e) {
-			throw new PUBindingException(e);
+			throw new ProjectBindingException(e);
 		}
 	}
 	

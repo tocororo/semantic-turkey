@@ -96,7 +96,7 @@ import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
-import it.uniroma2.art.semanticturkey.user.PUBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
@@ -877,13 +877,13 @@ public class ProjectManager {
 	 * @throws ProjectInexistentException
 	 * @throws ProjectAccessException
 	 * @throws ForbiddenProjectAccessException
-	 * @throws PUBindingException
+	 * @throws ProjectBindingException
 	 * @throws RBACException
 	 */
 	public static Project accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, PUBindingException, RBACException {
+			ForbiddenProjectAccessException, ProjectBindingException, RBACException {
 
 		Project project = getProjectDescription(projectName);
 
@@ -903,13 +903,16 @@ public class ProjectManager {
 					openProjects.addProject(project, consumer, requestedAccessLevel, requestedLockLevel);
 				}
 
-				// if there aren't the folders for the project-user bindings of the current project, create
-				// them
-				// this scenario could happen when the project is imported
-				// (by means the import function or the copy of a project folder in
-				// SemanticTurkeyData/projects)
-				if (ProjectUserBindingsManager.existsPUBindingsOfProject(project)) {
+				/*
+				 *  if there aren't the folders for the project-user bindings of the current project, create them.
+				 *  this scenario could happen when the project is imported
+				 *  (by means the import function or the copy of a project folder in SemanticTurkeyData/projects)
+				 */
+				if (!ProjectUserBindingsManager.existsPUBindingsOfProject(project)) {
 					ProjectUserBindingsManager.createPUBindingsOfProject(project);
+				}
+				if (!ProjectGroupBindingsManager.existsPGBindingsOfProject(project)) {
+					ProjectGroupBindingsManager.createPGBindingsOfProject(project);
 				}
 				RBACManager.loadRBACProcessor(project);
 
@@ -1316,11 +1319,11 @@ public class ProjectManager {
 	 * @throws ForbiddenProjectAccessException
 	 * @throws InvalidProjectNameException
 	 * @throws RBACException
-	 * @throws PUBindingException
+	 * @throws ProjectBindingException
 	 */
 	public static Project openProject(String projectName)
 			throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException,
-			ForbiddenProjectAccessException, PUBindingException, RBACException {
+			ForbiddenProjectAccessException, ProjectBindingException, RBACException {
 		Project project;
 		project = accessProject(ProjectConsumer.SYSTEM, projectName, AccessLevel.RW, LockLevel.NO);
 		setCurrentProject(project);
@@ -1350,7 +1353,7 @@ public class ProjectManager {
 			ProjectInexistentException, ProjectAccessException, ForbiddenProjectAccessException,
 			DuplicatedResourceException, ProjectCreationException, ClassNotFoundException,
 			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
-			WrongPropertiesException, PUBindingException, RBACException, UnsupportedModelException,
+			WrongPropertiesException, ProjectBindingException, RBACException, UnsupportedModelException,
 			UnsupportedLexicalizationModelException, ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException {
 
 		// Currently, only continuous editing projects

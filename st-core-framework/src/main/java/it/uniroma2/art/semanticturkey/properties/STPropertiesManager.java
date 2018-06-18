@@ -1431,7 +1431,7 @@ public class STPropertiesManager {
 	 */
 	public static File getPGBindingPropertyFolder(Project project, UsersGroup group, String pluginID) {
 		File prefFolder = new File(Resources.getProjectGroupBindingsDir() + File.separator + project.getName()
-				+ File.separator + UsersGroup.encodeGroupIri(group.getIri()) + File.separator + "plugins"
+				+ File.separator + UsersGroup.encodeGroupIri(group.getIRI()) + File.separator + "plugins"
 				+ File.separator + pluginID);
 		if (!prefFolder.exists()) {
 			prefFolder.mkdirs();

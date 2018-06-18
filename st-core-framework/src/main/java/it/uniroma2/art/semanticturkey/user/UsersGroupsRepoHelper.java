@@ -111,7 +111,7 @@ public class UsersGroupsRepoHelper {
 		}
 		query += " }";
 		
-		query = query.replace("?" + BINDING_IRI, NTriplesUtil.toNTriplesString(group.getIri()));
+		query = query.replace("?" + BINDING_IRI, NTriplesUtil.toNTriplesString(group.getIRI()));
 		
 		//execute query
 		logger.debug(query);

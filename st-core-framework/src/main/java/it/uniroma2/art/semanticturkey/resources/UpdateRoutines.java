@@ -37,6 +37,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
@@ -73,7 +74,7 @@ public class UpdateRoutines {
 
 	protected static Logger logger = LoggerFactory.getLogger(UpdateRoutines.class);
 
-	public static void startUpdatesCheckAndRepair() throws IOException, STPropertyAccessException {
+	public static void startUpdatesCheckAndRepair() throws IOException, STPropertyAccessException, STInitializationException {
 		VersionNumber stVersionNumber = Config.getVersionNumber();
 		VersionNumber stDataVersionNumber = Config.getSTDataVersionNumber();
 		logger.debug("version number of installed Semantic Turkey is: " + stVersionNumber);
@@ -107,7 +108,7 @@ public class UpdateRoutines {
 		updatePUSettingsSystemDefaults();
 	}
 	
-	private static void alignFrom3To4() throws IOException, STPropertyAccessException {
+	private static void alignFrom3To4() throws IOException, STPropertyAccessException, STInitializationException {
 		logger.debug("Version 4.0.0 renamed some settings files");
 		//users\<username>\plugins\<plugin>\system-preferences.props -> settings.props
 		//users\<username>\plugins\<plugin>\project-preference-defaults.props -> pu-settings-defaults.props

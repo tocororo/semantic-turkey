@@ -47,7 +47,8 @@ public class UserVocabulary {
 	public static final IRI LANGUAGE_PROP;
 	public static final IRI USER_PROP;
 	public static final IRI GROUP_PROP;
-	public static final IRI PROJECT;
+	public static final IRI PROJECT_PROP;
+	public static final IRI OWNED_SCHEME_PROP;
     
 	static {
 		ValueFactory fact = SimpleValueFactory.getInstance();
@@ -73,7 +74,8 @@ public class UserVocabulary {
     	LANGUAGE_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "language");
     	GROUP_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "group");
     	USER_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "user");
-    	PROJECT = fact.createIRI(UserVocabulary.PUVOC_NS, "project");
+    	PROJECT_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "project");
+    	OWNED_SCHEME_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "owned_scheme");
 	}
 
 }

@@ -32,11 +32,11 @@ public class UsersGroup {
 		this.shortName = shortName;
 	}
 
-	public IRI getIri() {
+	public IRI getIRI() {
 		return iri;
 	}
 
-	public void setIri(IRI iri) {
+	public void setIRI(IRI iri) {
 		this.iri = iri;
 	}
 
