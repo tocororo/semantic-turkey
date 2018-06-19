@@ -29,6 +29,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -56,6 +58,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.eclipse.rdf4j.model.vocabulary.DCAT;
@@ -93,12 +96,14 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
+import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.resources.CatalogRecord;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
+import it.uniroma2.art.semanticturkey.resources.LexicalizationSetMetadata;
 import it.uniroma2.art.semanticturkey.resources.MetadataDiscoveryException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryCreationException;
@@ -395,6 +400,93 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 	}
 
+	@Override
+	public synchronized void addEmbeddedLexicalizationSet(IRI dataset, @Nullable IRI lexicalizationSet,
+			@Nullable IRI lexiconDataset, IRI lexicalizationModel, String language,
+			@Nullable BigInteger references, @Nullable BigInteger lexicalEntries,
+			@Nullable BigInteger lexicalizations, @Nullable BigDecimal percentage,
+			@Nullable BigDecimal avgNumOfLexicalizations) throws MetadataRegistryWritingException {
+		try (RepositoryConnection conn = getConnection()) {
+			ValueFactory vf = conn.getValueFactory();
+
+			checkLocallyDefined(conn, dataset);
+			checkNotLocallyDefined(conn, lexicalizationSet);
+
+			Update update = conn.prepareUpdate(
+			// @formatter:off
+				"PREFIX dcterms: <http://purl.org/dc/terms/>                       \n" +
+				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>                         \n" +
+				"PREFIX void: <http://rdfs.org/ns/void#>                           \n" +
+				"PREFIX lime: <http://www.w3.org/ns/lemon/lime#>                   \n" +
+				"                                                                  \n" +
+				"DELETE {                                                          \n" +
+				"  ?record dcterms:modified ?oldModified .                         \n" +
+				"}                                                                 \n" +
+				"INSERT {                                                          \n" +
+				"  ?record dcterms:modified ?now .                                 \n" +
+				"		                                                           \n" +
+				"  ?dataset void:subset ?lexicalizationSet .                       \n" +
+                "                                                                  \n" +
+				"  ?lexicalizationSet a lime:LexicalizationSet ;                   \n" +
+				"	lime:referenceDataset ?dataset ;                               \n" +
+				"	lime:lexiconDataset ?lexiconDataset ;                          \n" +
+				"	lime:lexicalizationModel ?lexicalizationModel ;                \n" +
+				"	lime:language ?language ;                                      \n" +
+				"	lime:references ?references ;                                  \n" +
+				"	lime:lexicalEntries ?lexicalEntries ;                          \n" +
+				"	lime:lexicalizations ?lexicalizations ;                        \n" +
+				"	lime:percentage ?percentage ;                                  \n" +
+				"	lime:avgNumOfLexicalizations ?avgNumOfLexicalizations          \n" +
+				"	.                                                              \n" +
+				"}                                                                 \n" +
+				"WHERE {                                                           \n" +
+				"  ?record foaf:primaryTopic|foaf:topic ?dataset .                 \n" +                                
+				"  OPTIONAL { ?record dcterms:modified ?oldModified . }            \n" +
+				"  BIND(NOW() AS ?now)                                             \n" +
+				"}                                                                 \n"
+				// @formatter:on
+			);
+			update.setBinding("dataset", dataset);
+			update.setBinding("lexicalizationSet", lexicalizationSet != null ? lexicalizationSet
+					: vf.createIRI(DEFAULTNS, UUID.randomUUID().toString()));
+			if (lexiconDataset != null) {
+				update.setBinding("lexiconDataset", lexiconDataset);
+			}
+
+			update.setBinding("lexicalizationModel", lexicalizationModel);
+			update.setBinding("language", vf.createLiteral(language, XMLSchema.LANGUAGE));
+
+			if (references != null) {
+				update.setBinding("references", vf.createLiteral(references));
+			}
+
+			if (lexicalEntries != null) {
+				update.setBinding("lexicalEntries", vf.createLiteral(lexicalEntries));
+			}
+
+			if (lexicalizations != null) {
+				update.setBinding("lexicalizations", vf.createLiteral(lexicalizations));
+			}
+
+			if (percentage != null) {
+				update.setBinding("percentage", vf.createLiteral(percentage));
+			}
+
+			if (avgNumOfLexicalizations != null) {
+				update.setBinding("avgNumOfLexicalizations", vf.createLiteral(avgNumOfLexicalizations));
+			}
+
+			update.execute();
+
+			try {
+				saveToFile(conn);
+			} catch (IOException e) {
+				throw new MetadataRegistryWritingException(e);
+			}
+
+		}
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -608,7 +700,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		try (RepositoryConnection conn = getConnection()) {
 			TupleQuery datasetQuery = conn.prepareTupleQuery(
-				// @formatter:off
+			// @formatter:off
 				"PREFIX dcterms: <http://purl.org/dc/terms/>                                          \n" +
 				"PREFIX void: <http://rdfs.org/ns/void#>                                              \n" +
 				"PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                          \n" +
@@ -649,11 +741,73 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 	}
 
-	// @Override
-	// public void getEmbeddedLexicalizationSets(IRI dataset) {
-	// // TODO Auto-generated method stub
-	//
-	// }
+	@Override
+	public Collection<LexicalizationSetMetadata> getEmbeddedLexicalizationSets(IRI dataset) {
+		try (RepositoryConnection conn = getConnection()) {
+			checkLocallyDefined(conn, dataset);
+
+			TupleQuery tupleQuery = conn.prepareTupleQuery(
+			// @formatter:off
+				"PREFIX dcterms: <http://purl.org/dc/terms/>                                                   \n" +
+				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                                     \n" +
+				"PREFIX void: <http://rdfs.org/ns/void#>                                                       \n" +
+				"PREFIX lime: <http://www.w3.org/ns/lemon/lime#>                                               \n" +
+				"                                                                                              \n" +
+				"SELECT * WHERE {                                                                              \n" +
+				"  ?lexicalizationSetReferenceDataset void:subset ?lexicalizationSet .                         \n" +
+                "                                                                                              \n" +
+				"  ?lexicalizationSet a lime:LexicalizationSet .                                               \n" +
+				"  ?lexicalizationSet lime:referenceDataset ?lexicalizationSetReferenceDataset .               \n" +
+				"  OPTIONAL {                                                                                  \n" +
+				"    ?lexicalizationSet lime:lexiconDataset ?lexicalizationSetLexiconDataset                   \n" +
+				"  }                                                                                           \n" +
+				"  ?lexicalizationSet lime:lexicalizationModel ?lexicalizationSetLexicalizationModel .         \n" +
+				"  ?lexicalizationSet lime:language ?lexicalizationSetLanguage .                               \n" +
+				"  OPTIONAL {                                                                                  \n" +
+				"    ?lexicalizationSet lime:references ?lexicalizationSetReferences                           \n" +
+				"  }                                                                                           \n" +
+				"  OPTIONAL {                                                                                  \n" +
+				"    ?lexicalizationSet lime:lexicalEntries ?lexicalizationSetLexicalEntries                   \n" +
+				"  }                                                                                           \n" +
+				"  OPTIONAL {                                                                                  \n" +
+				"    ?lexicalizationSet lime:lexicalizations ?lexicalizationSetLexicalizations                 \n" +
+				"  }                                                                                           \n" +
+				"  OPTIONAL {                                                                                  \n" +
+				"    ?lexicalizationSet lime:percentage ?lexicalizationSetPercentage                           \n" +
+				"  }                                                                                           \n" +
+				"  OPTIONAL {                                                                                  \n" +
+				"    ?lexicalizationSet lime:avgNumOfLexicalizations ?lexicalizationSetAvgNumOfLexicalizations \n" +
+				"  }                                                                                           \n" +
+				"}                                                                                             \n"
+				// @formatter:on
+			);
+			tupleQuery.setBinding("lexicalizationSetReferenceDataset", dataset);
+			return QueryResults.stream(tupleQuery.evaluate()).map(this::bindingset2lexicalizationsetmetadata)
+					.collect(toList());
+		}
+	}
+
+	protected LexicalizationSetMetadata bindingset2lexicalizationsetmetadata(BindingSet bs) {
+		IRI identity = (IRI) bs.getValue("lexicalizationSet");
+		IRI referenceDataset = (IRI) bs.getValue("lexicalizationSetReferenceDataset");
+		IRI lexiconDataset = (IRI) bs.getValue("lexicalizationSetLexiconDataset");
+		IRI lexicalizationModel = (IRI) bs.getValue("lexicalizationSetLexicalizationModel");
+		String language = bs.getValue("lexicalizationSetLanguage").stringValue();
+		BigInteger references = Optional.ofNullable(bs.getValue("lexicalizationSetReferences"))
+				.map(l -> Literals.getIntegerValue(l, null)).orElse(null);
+		BigInteger lexicalEntries = Optional.ofNullable(bs.getValue("lexicalizationSetLexicalEntries"))
+				.map(l -> Literals.getIntegerValue(l, null)).orElse(null);
+		BigInteger lexicalizations = Optional.ofNullable(bs.getValue("lexicalizationSetLexicalizations"))
+				.map(l -> Literals.getIntegerValue(l, null)).orElse(null);
+		BigDecimal percentage = Optional.ofNullable(bs.getValue("lexicalizationSetPercentage"))
+				.map(l -> Literals.getDecimalValue(l, null)).orElse(null);
+		BigDecimal avgNumOfLexicalizations = Optional
+				.ofNullable(bs.getValue("lexicalizationSetAvgNumOfLexicalizations"))
+				.map(l -> Literals.getDecimalValue(l, null)).orElse(null);
+
+		return new LexicalizationSetMetadata(identity, referenceDataset, lexiconDataset, lexicalizationModel,
+				language, references, lexicalEntries, lexicalizations, percentage, avgNumOfLexicalizations);
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -741,7 +895,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		return null;
 	}
 
-	private DatasetMetadata bindingset2datasetmetadata(BindingSet bs) {
+	protected DatasetMetadata bindingset2datasetmetadata(BindingSet bs) {
 		IRI dataset = (IRI) bs.getValue("dataset");
 
 		@Nullable
@@ -903,8 +1057,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				logger.debug("Identified VoID dataset is {}", voidDataset);
 			}
 
-			// Use VoID metadata (if available). Case 2: guessed download URL. It is necesary to identify the
-			// specific dataset
+			// Use VoID metadata (if available)
 
 			if (voidDataset != null) {
 
@@ -989,9 +1142,51 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			}
 
 			if (datasetUriSpace != null) {
-				return addDataset(voidDataset, datasetUriSpace,
+				IRI catalogRecordIRI = addDataset(voidDataset, datasetUriSpace,
 						datasetTitle != null ? datasetTitle.stringValue() : null, datasetDeferenceable,
 						datasetSPARQLEndpoint);
+
+				if (voidDataset != null) {
+					for (IRI subset : Models
+							.objectIRIs(voidStatements.filter(voidDataset, VOID.SUBSET, null))) {
+						if (voidStatements.contains(subset, RDF.TYPE, LIME.LEXICALIZATION_SET)
+								&& voidStatements.contains(subset, LIME.REFERENCE_DATASET, voidDataset)) {
+							IRI lexiconDataset = Models
+									.getPropertyIRI(voidStatements, subset, LIME.LEXICON_DATASET)
+									.orElse(null);
+							IRI lexicalizationModel = Models
+									.getPropertyIRI(voidStatements, subset, LIME.LEXICALIZATION_MODEL)
+									.orElse(null);
+							String language = Models.getPropertyString(voidStatements, subset, LIME.LANGUAGE)
+									.orElse(null);
+							BigInteger lexicalEntries = Models
+									.getPropertyLiteral(voidStatements, subset, LIME.LEXICAL_ENTRIES)
+									.map(l -> Literals.getIntegerValue(l, BigInteger.ZERO)).orElse(null);
+							BigInteger references = Models
+									.getPropertyLiteral(voidStatements, subset, LIME.REFERENCES)
+									.map(l -> Literals.getIntegerValue(l, BigInteger.ZERO)).orElse(null);
+							BigInteger lexicalizations = Models
+									.getPropertyLiteral(voidStatements, subset, LIME.LEXICALIZATIONS)
+									.map(l -> Literals.getIntegerValue(l, BigInteger.ZERO)).orElse(null);
+							BigDecimal percentage = Models
+									.getPropertyLiteral(voidStatements, subset, LIME.PERCENTAGE)
+									.map(l -> Literals.getDecimalValue(l, BigDecimal.ZERO)).orElse(null);
+							BigDecimal avgNumOfLexicalizations = Models
+									.getPropertyLiteral(voidStatements, subset,
+											LIME.AVG_NUM_OF_LEXICALIZATIONS)
+									.map(l -> Literals.getDecimalValue(l, BigDecimal.ZERO)).orElse(null);
+
+							if (language == null || lexicalizationModel == null)
+								continue;
+
+							addEmbeddedLexicalizationSet(voidDataset, null, lexiconDataset,
+									lexicalizationModel, language, references, lexicalEntries,
+									lexicalizations, percentage, avgNumOfLexicalizations);
+						}
+					}
+				}
+
+				return catalogRecordIRI;
 			} else {
 				throw new MetadataDiscoveryException(
 						"Could not discover a dataset from " + RenderUtils.toSPARQL(iri));

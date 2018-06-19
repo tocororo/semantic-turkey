@@ -1,7 +1,11 @@
 package it.uniroma2.art.semanticturkey.resources;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collection;
+
+import javax.annotation.Nullable;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -46,6 +50,28 @@ public interface MetadataRegistryBackend {
 			throws IllegalArgumentException, IOException;
 
 	/**
+	 * Adds an embedded lexicalization set for a dataset.
+	 * 
+	 * @param dataset
+	 * @param lexicalizationSet
+	 *            if {@code null} is passed, a local IRI is created
+	 * @param lexicon
+	 * @param lexicalizationModel
+	 * @param language
+	 * @param references
+	 * @param lexicalEntries
+	 * @param lexicalizations
+	 * @param percentage
+	 * @param avgNumOfLexicalizations
+	 * @throws MetadataRegistryWritingException
+	 */
+	void addEmbeddedLexicalizationSet(IRI dataset, @Nullable IRI lexicalizationSet, @Nullable IRI lexicon,
+			IRI lexicalizationModel, String language, @Nullable BigInteger references,
+			@Nullable BigInteger lexicalEntries, @Nullable BigInteger lexicalizations,
+			@Nullable BigDecimal percentage, @Nullable BigDecimal avgNumOfLexicalizations)
+			throws MetadataRegistryWritingException;
+
+	/**
 	 * Sets whether a dataset is derefereanceable or not. If {@code value} is {@code true}, then sets
 	 * {@code mdreg:standardDereferenciation} and if {@code false} sets {@code mdreg:noDereferenciation}
 	 * 
@@ -68,6 +94,11 @@ public interface MetadataRegistryBackend {
 	 */
 	void setSPARQLEndpoint(IRI dataset, IRI endpoint) throws IllegalArgumentException, IOException;
 
+	/**
+	 * Returns the catalog records
+	 * 
+	 * @return
+	 */
 	Collection<CatalogRecord> getCatalogRecords();
 
 	/**
@@ -80,6 +111,14 @@ public interface MetadataRegistryBackend {
 	 */
 	DatasetMetadata getDatasetMetadata(IRI dataset)
 			throws NoSuchDatasetMetadataException, MetadataRegistryStateException;
+
+	/**
+	 * Returns the lexicalization sets associated with the given dataset
+	 * 
+	 * @param dataset
+	 * @return
+	 */
+	Collection<LexicalizationSetMetadata> getEmbeddedLexicalizationSets(IRI dataset);
 
 	/**
 	 * Returns metadata about the dataset identified by the given URI. If no dataset is found, then the method

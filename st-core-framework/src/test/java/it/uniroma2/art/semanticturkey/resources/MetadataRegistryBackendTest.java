@@ -2,6 +2,8 @@ package it.uniroma2.art.semanticturkey.resources;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 
@@ -13,6 +15,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,6 +36,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFrameworkRule;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.impl.MetadataRegistryBackendImpl;
 import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 
@@ -113,7 +117,7 @@ public class MetadataRegistryBackendTest {
 
 		assertAgrovocDataset(agrovocDataset);
 
-		// Add a fictional version of the Agrovoc dataset
+		// Adds a fictional version of the Agrovoc dataset
 
 		metadataRegistryBackend.addDatasetVersion(agrovocCatalogRecordIRI, null, "999.99");
 
@@ -134,6 +138,35 @@ public class MetadataRegistryBackendTest {
 
 		assertThat(agrovoc999_99.getVersionInfo().orElseThrow(() -> new AssertionError("Empty optional")),
 				is(equalTo("999.99")));
+
+		// Adds an embedded lexicalization set for Agrovoc
+
+		metadataRegistryBackend.addEmbeddedLexicalizationSet(agrovocDataset.getIdentity(), null, null,
+				Project.SKOSXL_LEXICALIZATION_MODEL, "en", BigInteger.valueOf(1000), BigInteger.valueOf(2000),
+				BigInteger.valueOf(2000), BigDecimal.valueOf(1), BigDecimal.valueOf(2));
+
+		Collection<LexicalizationSetMetadata> agrovocEmbeddedLexicalizationSets = metadataRegistryBackend
+				.getEmbeddedLexicalizationSets(agrovocDataset.getIdentity());
+
+		assertThat(agrovocEmbeddedLexicalizationSets, hasSize(1));
+
+		LexicalizationSetMetadata agrovocLexicalizatioSet = agrovocEmbeddedLexicalizationSets.iterator()
+				.next();
+
+		assertThat(agrovocLexicalizatioSet.getReferenceDataset(), equalTo(agrovocDataset.getIdentity()));
+		assertFalse(agrovocLexicalizatioSet.getLexiconDataset().isPresent());
+		assertThat(agrovocLexicalizatioSet.getLexicalizationModel(),
+				equalTo(Project.SKOSXL_LEXICALIZATION_MODEL));
+		assertThat(agrovocLexicalizatioSet.getLanguage(), equalTo("en"));
+
+		assertThat(agrovocLexicalizatioSet.getReferences().get(), equalTo(BigInteger.valueOf(1000)));
+		assertThat(agrovocLexicalizatioSet.getReferences().get(), equalTo(BigInteger.valueOf(1000)));
+		assertThat(agrovocLexicalizatioSet.getLexicalEntries().get(), equalTo(BigInteger.valueOf(2000)));
+		assertThat(agrovocLexicalizatioSet.getLexicalizations().get(), equalTo(BigInteger.valueOf(2000)));
+		assertThat(agrovocLexicalizatioSet.getPercentage().get(), equalTo(BigDecimal.valueOf(1)));
+		assertThat(agrovocLexicalizatioSet.getAvgNumOfLexicalizations().get(),
+				equalTo(BigDecimal.valueOf(2)));
+
 	}
 
 	@Test
@@ -146,7 +179,10 @@ public class MetadataRegistryBackendTest {
 				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
 
 		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
+		Collection<LexicalizationSetMetadata> agrovocLexicalizationSets = metadataRegistryBackend
+				.getEmbeddedLexicalizationSets(agrovocDataset.getIdentity());
 		assertAgrovocDataset(agrovocDataset);
+		assertAgrovocLexicalizationSets(agrovocLexicalizationSets);
 	}
 
 	@Test
@@ -159,7 +195,11 @@ public class MetadataRegistryBackendTest {
 				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
 
 		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
+		Collection<LexicalizationSetMetadata> agrovocLexicalizationSets = metadataRegistryBackend
+				.getEmbeddedLexicalizationSets(agrovocDataset.getIdentity());
+
 		assertAgrovocDataset(agrovocDataset);
+		assertAgrovocLexicalizationSets(agrovocLexicalizationSets);
 	}
 
 	public static void assertAgrovocDataset(DatasetMetadata agrovocDataset) throws AssertionError {
@@ -176,6 +216,14 @@ public class MetadataRegistryBackendTest {
 		assertThat(agrovocDataset.getSparqlEndpoint().orElseThrow(() -> new AssertionError("Empty optional")),
 				equalTo(SimpleValueFactory.getInstance()
 						.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql")));
+	}
+
+	private void assertAgrovocLexicalizationSets(
+			Collection<LexicalizationSetMetadata> agrovocLexicalizationSets) {
+		assertThat(agrovocLexicalizationSets, hasSize(Matchers.greaterThan(20)));
+		LexicalizationSetMetadata lexicalizationSet = agrovocLexicalizationSets.iterator().next();
+
+		assertThat(lexicalizationSet.getLexicalizationModel(), equalTo(Project.SKOSXL_LEXICALIZATION_MODEL));
 	}
 
 	@Test

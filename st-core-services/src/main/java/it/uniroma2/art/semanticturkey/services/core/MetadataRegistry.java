@@ -14,10 +14,13 @@ import it.uniroma2.art.semanticturkey.data.access.UnknownResourcePosition;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.resources.CatalogRecord;
+import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
+import it.uniroma2.art.semanticturkey.resources.LexicalizationSetMetadata;
 import it.uniroma2.art.semanticturkey.resources.MetadataDiscoveryException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryStateException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryWritingException;
+import it.uniroma2.art.semanticturkey.resources.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -150,6 +153,28 @@ public class MetadataRegistry extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
 	public Collection<CatalogRecord> getCatalogRecords() {
 		return metadataRegistryBackend.getCatalogRecords();
+	}
+
+	/**
+	 * Returns metadata about a given dataset
+	 * 
+	 * @throws MetadataRegistryStateException
+	 * @throws NoSuchDatasetMetadataException
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+	public DatasetMetadata getDatasetMetadata(IRI dataset)
+			throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
+		return metadataRegistryBackend.getDatasetMetadata(dataset);
+	}
+
+	/**
+	 * Returns metadata about the lexicalization sets embedded in a given dataset
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+	public Collection<LexicalizationSetMetadata> getEmbeddedLexicalizationSets(IRI dataset) {
+		return metadataRegistryBackend.getEmbeddedLexicalizationSets(dataset);
 	}
 
 	/**
