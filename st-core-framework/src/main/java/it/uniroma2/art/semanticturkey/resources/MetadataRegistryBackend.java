@@ -72,6 +72,15 @@ public interface MetadataRegistryBackend {
 			throws MetadataRegistryWritingException;
 
 	/**
+	 * Deletes an embeded lexicalization set
+	 * 
+	 * @param lexicalizationSet
+	 * @throws MetadataRegistryWritingException
+	 * @throws MetadataRegistryStateException 
+	 */
+	void deleteEmbeddedLexicalizationSet(IRI lexicalizationSet) throws MetadataRegistryWritingException, MetadataRegistryStateException;
+
+	/**
 	 * Sets whether a dataset is derefereanceable or not. If {@code value} is {@code true}, then sets
 	 * {@code mdreg:standardDereferenciation} and if {@code false} sets {@code mdreg:noDereferenciation}
 	 * 

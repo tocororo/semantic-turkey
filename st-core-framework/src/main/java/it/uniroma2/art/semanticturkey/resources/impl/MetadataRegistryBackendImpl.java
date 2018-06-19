@@ -53,6 +53,7 @@ import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -484,6 +485,59 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				throw new MetadataRegistryWritingException(e);
 			}
 
+		}
+	}
+
+	@Override
+	public synchronized void deleteEmbeddedLexicalizationSet(IRI lexicalizationSet)
+			throws MetadataRegistryWritingException, MetadataRegistryStateException {
+		try (RepositoryConnection conn = getConnection()) {
+
+			if (!conn.hasStatement(lexicalizationSet, RDF.TYPE, LIME.LEXICALIZATION_SET, false)) {
+				throw new IllegalArgumentException("Not a lexicalization set: " + lexicalizationSet);
+			}
+
+			Set<Resource> containerDatsets = QueryResults
+					.asModel(conn.getStatements(null, VOID.SUBSET, lexicalizationSet, false)).subjects();
+
+			if (containerDatsets.isEmpty()) {
+				throw new IllegalArgumentException(
+						"Not an embedded lexicalization set: " + lexicalizationSet);
+			}
+
+			if (containerDatsets.size() > 1) {
+				throw new MetadataRegistryStateException(
+						"Lexicalization set contained in multiple datasets: " + containerDatsets);
+			}
+			
+			Update update = conn.prepareUpdate(
+				// @formatter:off
+				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
+				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
+				"                                                                                 \n" +
+				" DELETE {                                                                        \n" +
+				"   ?record dcterms:modified ?oldModified .                                       \n" +
+				"   ?lexicalizationSet ?p1 ?o1 .                                                  \n" +
+				"   ?s2 ?p2 ?lexicalizationSet .                                                  \n" +
+				" }                                                                               \n" +
+				" INSERT {                                                                        \n" +
+				"   ?record dcterms:modified ?now .                                               \n" +
+				" }                                                                               \n" +
+				" WHERE {                                                                         \n" +
+				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
+				"   { ?lexicalizationSet ?p1 ?o1 } UNION { ?s2 ?p2 ?lexicalizationSet}            \n" +
+				"   BIND(NOW() AS ?now)                                                           \n" +
+				" }                                                                               \n"
+				// @formatter:on
+			);
+			update.setBinding("lexicalizationSet", lexicalizationSet);
+			update.execute();
+			
+			try {
+				saveToFile(conn);
+			} catch (IOException e) {
+				throw new MetadataRegistryWritingException(e);
+			}
 		}
 	}
 

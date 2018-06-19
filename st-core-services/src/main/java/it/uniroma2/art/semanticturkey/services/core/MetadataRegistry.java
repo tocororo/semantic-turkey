@@ -1,6 +1,8 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collection;
 
 import org.eclipse.rdf4j.model.IRI;
@@ -8,6 +10,7 @@ import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.UnknownResourcePosition;
@@ -169,6 +172,48 @@ public class MetadataRegistry extends STServiceAdapter {
 	}
 
 	/**
+	 * Adds an embedded lexicalization set for a dataset.
+	 * 
+	 * @param dataset
+	 * @param lexicalizationSet
+	 *            if {@code null} is passed, a local IRI is created
+	 * @param lexiconDataset
+	 * @param lexicalizationModel
+	 * @param language
+	 * @param references
+	 * @param lexicalEntries
+	 * @param lexicalizations
+	 * @param percentage
+	 * @param avgNumOfLexicalizations
+	 * @throws MetadataRegistryWritingException
+	 */
+	@STServiceOperation(method=RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
+	public void addEmbeddedLexicalizationSets(IRI dataset, @Optional IRI lexicalizationSet,
+			@Optional IRI lexiconDataset, IRI lexicalizationModel, String language,
+			@Optional BigInteger references, @Optional BigInteger lexicalEntries,
+			@Optional BigInteger lexicalizations, @Optional BigDecimal percentage,
+			@Optional BigDecimal avgNumOfLexicalizations) throws MetadataRegistryWritingException {
+		metadataRegistryBackend.addEmbeddedLexicalizationSet(dataset, lexicalizationSet, lexiconDataset,
+				lexicalizationModel, language, references, lexicalEntries, lexicalizations, percentage,
+				avgNumOfLexicalizations);
+	}
+
+	/**
+	 * Delete an embedded lexicalization set
+	 * 
+	 * @param lexicalizationSet
+	 * @throws MetadataRegistryWritingException
+	 * @throws MetadataRegistryStateException 
+	 */
+	@STServiceOperation(method=RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
+	public void deleteEmbeddedLexicalizationSet(IRI lexicalizationSet)
+			throws MetadataRegistryWritingException, MetadataRegistryStateException {
+		metadataRegistryBackend.deleteEmbeddedLexicalizationSet(lexicalizationSet);
+	}
+
+	/**
 	 * Returns metadata about the lexicalization sets embedded in a given dataset
 	 */
 	@STServiceOperation
@@ -183,11 +228,12 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * 
 	 * @param dataset
 	 * @return the lexicalization model
+	 * @throws AssessmentException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
-	public IRI assessLexicalizationModel(IRI dataset) {
-		throw new UnsupportedOperationException();
+	public void assessLexicalizationModel(IRI dataset) throws AssessmentException {
+		metadataRegistryBackend.assessLexicalizationModel(dataset);
 	}
 
 	/**
