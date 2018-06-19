@@ -827,16 +827,16 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'C')")
 	public void addBroaderConcept(
 			@LocallyDefined @Modified(role = RDFResourceRole.concept) IRI concept,
-			@LocallyDefined IRI broaderConcept, @Optional @LocallyDefined IRI broaderProp ) {
+			@LocallyDefined IRI broaderConcept, @Optional @LocallyDefined IRI broaderProp) {
 
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
-		//broaderProp  = checkHierachicalProp(broaderProp );
+		if (broaderProp == null) {
+			broaderProp = org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER;
+		}
 		
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 
-		//modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
-		//		org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER, broaderConcept)); OLD
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
 				broaderProp , broaderConcept));
 		
