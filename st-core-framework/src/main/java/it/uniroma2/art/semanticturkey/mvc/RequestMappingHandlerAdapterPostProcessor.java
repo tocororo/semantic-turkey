@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
+import it.uniroma2.art.semanticturkey.json.PairSerializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JBNodeDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JIRIDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JLiteralDeserializer;
@@ -54,6 +55,7 @@ public class RequestMappingHandlerAdapterPostProcessor implements BeanPostProces
 		customTypeHandlers.addDeserializer(IRI.class, new RDF4JIRIDeserializer());
 		customTypeHandlers.addDeserializer(Literal.class, new RDF4JLiteralDeserializer());
 		customTypeHandlers.addSerializer(Value.class, new RDF4JValueSerializer());
+		customTypeHandlers.addSerializer(new PairSerializer());
 
 		ObjectMapper newObjectMapper = new ObjectMapper();
 		newObjectMapper.registerModule(customTypeHandlers);
