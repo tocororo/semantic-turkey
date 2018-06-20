@@ -46,17 +46,10 @@ public class JacksonMethodArgumentResolver implements HandlerMethodArgumentResol
 	private ObjectMapper objectMapper;
 	private RequestParamMethodArgumentResolver delegate;
 
-	public JacksonMethodArgumentResolver(ConfigurableBeanFactory beanFactory, boolean useDefaultResolution) {
+	public JacksonMethodArgumentResolver(ConfigurableBeanFactory beanFactory, boolean useDefaultResolution,
+			ObjectMapper objectMapper) {
 		// super(beanFactory, useDefaultResolution);
-		SimpleModule stdDeserializers = new SimpleModule();
-		stdDeserializers.addDeserializer(Value.class, new RDF4JValueDeserializer());
-		stdDeserializers.addDeserializer(Resource.class, new RDF4JResourceDeserializer());
-		stdDeserializers.addDeserializer(BNode.class, new RDF4JBNodeDeserializer());
-		stdDeserializers.addDeserializer(IRI.class, new RDF4JIRIDeserializer());
-		stdDeserializers.addDeserializer(Literal.class, new RDF4JLiteralDeserializer());
-		this.objectMapper = new ObjectMapper();
-		objectMapper.registerModule(stdDeserializers);
-
+		this.objectMapper = objectMapper;
 		this.delegate = new RequestParamMethodArgumentResolver(beanFactory, false);
 	}
 
