@@ -39,29 +39,23 @@ public class StringToResourcePositionConverter implements Converter<String, Reso
 			return new LocalResourcePosition(project);
 		} else if (resourcePositionString.startsWith(REMOTE_PREFIX)) {
 			String datasetId = resourcePositionString.substring(REMOTE_PREFIX.length());
-			// DatasetMetadata meta =
-			// datasetMetadataRepository.findDatasetForResource(VocabUtilities.nodeFactory.createURIResource(datasetId));
-			// DatasetMetadata meta =
-			// datasetMetadataRepository.findDatasetForResource(RDF4JMigrationUtils.convert2art(SimpleValueFactory.getInstance().createIRI(datasetId)));
 			DatasetMetadata meta;
 			try {
 				meta = datasetMetadataRepository
 						.getDatasetMetadata(SimpleValueFactory.getInstance().createIRI(datasetId));
-			} catch (NoSuchDatasetMetadataException | MetadataRegistryStateException e) {
-				meta = datasetMetadataRepository
-						.findDatasetForResource(SimpleValueFactory.getInstance().createIRI(datasetId));
-			}
-
-			if (meta == null) {
+			} catch (NoSuchDatasetMetadataException e) {
 				throw new IllegalArgumentException(String.format(
 						"The dataset mentioned in a remote resource position is not known: %s", datasetId));
+			} catch (MetadataRegistryStateException e) {
+				throw new IllegalArgumentException(String.format(
+						"An exception occurred attempting to access dataset metadata: %s", datasetId));
 			}
 			return new RemoteResourcePosition(meta);
 		} else if (resourcePositionString.startsWith(UNKNOWN_PREFIX)) {
 			return new UnknownResourcePosition();
 		} else {
 			throw new IllegalArgumentException(String.format(
-					"Cannot recognize a valid prefix in the given string serialization of a resource position",
+					"Cannot recognize a valid prefix in the given string serialization of a resource position: %s",
 					resourcePositionString));
 		}
 	}
