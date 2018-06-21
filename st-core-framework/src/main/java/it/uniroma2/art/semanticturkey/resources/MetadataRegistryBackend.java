@@ -50,6 +50,15 @@ public interface MetadataRegistryBackend {
 			throws IllegalArgumentException, IOException;
 
 	/**
+	 * Deletes a dataset version. The provided {@code dataset} is the identity of the specific version that
+	 * will be deleted.
+	 * 
+	 * @param dataset
+	 * @throws MetadataRegistryWritingException 
+	 */
+	void deleteDatasetVersion(IRI dataset) throws MetadataRegistryWritingException;
+
+	/**
 	 * Adds an embedded lexicalization set for a dataset.
 	 * 
 	 * @param dataset
@@ -76,9 +85,10 @@ public interface MetadataRegistryBackend {
 	 * 
 	 * @param lexicalizationSet
 	 * @throws MetadataRegistryWritingException
-	 * @throws MetadataRegistryStateException 
+	 * @throws MetadataRegistryStateException
 	 */
-	void deleteEmbeddedLexicalizationSet(IRI lexicalizationSet) throws MetadataRegistryWritingException, MetadataRegistryStateException;
+	void deleteEmbeddedLexicalizationSet(IRI lexicalizationSet)
+			throws MetadataRegistryWritingException, MetadataRegistryStateException;
 
 	/**
 	 * Sets whether a dataset is derefereanceable or not. If {@code value} is {@code true}, then sets

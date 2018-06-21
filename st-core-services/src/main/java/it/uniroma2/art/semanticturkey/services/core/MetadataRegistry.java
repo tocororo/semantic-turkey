@@ -145,8 +145,8 @@ public class MetadataRegistry extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'D')")
-	public void deleteDatasetVersions(IRI dataset) {
-		throw new UnsupportedOperationException();
+	public void deleteDatasetVersion(IRI dataset) {
+		metadataRegistryBackend.deleteDatasetVersion(dataset);
 	}
 
 	/**

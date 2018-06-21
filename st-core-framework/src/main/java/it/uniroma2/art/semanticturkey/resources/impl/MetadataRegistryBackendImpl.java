@@ -402,6 +402,44 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	}
 
 	@Override
+	public void deleteDatasetVersion(IRI dataset) throws MetadataRegistryWritingException {
+		try (RepositoryConnection conn = getConnection()) {
+			Update updateCatalogModified = conn.prepareUpdate(
+			//@formatter:off
+				"PREFIX dcat: <http://www.w3.org/ns/dcat#>                            \n" +
+				"PREFIX dcterms: <http://purl.org/dc/terms/>                          \n" +
+				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>                            \n" +
+				"PREFIX void: <http://rdfs.org/ns/void#>                              \n" +
+				"                                                                     \n" +
+				"DELETE {                                                             \n" +
+				"  ?record dcterms:modified ?oldModified .                            \n" +
+				"}                                                                    \n" +
+				"INSERT {                                                             \n" +
+				"  ?record dcterms:modified ?now .                                    \n" +
+				"}                                                                    \n" +
+				"WHERE {                                                              \n" +
+				"  ?record a dcat:CatalogRecord ;                                     \n" +
+				"    foaf:topic ?dataset .                                            \n" +                                      
+				"  OPTIONAL { ?record dcterms:modified ?oldModified . }               \n" +
+				"  BIND(NOW() AS ?now)                                                \n" +
+				"}                                                         	          \n"
+				//@formatter:on
+			);
+			updateCatalogModified.setBinding("dataset", dataset);
+			updateCatalogModified.execute();
+
+			conn.remove(QueryResults
+					.asModel(conn.prepareGraphQuery("DESCRIBE " + RenderUtils.toSPARQL(dataset)).evaluate()));
+
+			try {
+				saveToFile(conn);
+			} catch (IOException e) {
+				throw new MetadataRegistryWritingException(e);
+			}
+		}
+	}
+
+	@Override
 	public synchronized void addEmbeddedLexicalizationSet(IRI dataset, @Nullable IRI lexicalizationSet,
 			@Nullable IRI lexiconDataset, IRI lexicalizationModel, String language,
 			@Nullable BigInteger references, @Nullable BigInteger lexicalEntries,
@@ -509,9 +547,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				throw new MetadataRegistryStateException(
 						"Lexicalization set contained in multiple datasets: " + containerDatsets);
 			}
-			
+
 			Update update = conn.prepareUpdate(
-				// @formatter:off
+			// @formatter:off
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
 				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
 				"                                                                                 \n" +
@@ -532,7 +570,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			);
 			update.setBinding("lexicalizationSet", lexicalizationSet);
 			update.execute();
-			
+
 			try {
 				saveToFile(conn);
 			} catch (IOException e) {
