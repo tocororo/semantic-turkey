@@ -349,6 +349,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	@Override
 	public synchronized void deleteCatalogRecord(IRI catalogRecord) throws MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
+
+			checkLocallyDefined(conn, catalogRecord);
+
 			GraphQuery query = conn.prepareGraphQuery(
 			// @formatter:off
 				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                  \n" +
@@ -376,6 +379,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	public synchronized void addDatasetVersion(IRI catalogRecord, @Nullable IRI dataset, String versionInfo)
 			throws IllegalArgumentException, MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
+			checkLocallyDefined(conn, catalogRecord);
+			checkNotLocallyDefined(conn, dataset);
+
 			ValueFactory vf = conn.getValueFactory();
 
 			checkLocallyDefined(conn, catalogRecord);
@@ -443,6 +449,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	@Override
 	public synchronized void deleteDatasetVersion(IRI dataset) throws MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
+
+			checkLocallyDefined(conn, dataset);
+
 			Update updateCatalogModified = conn.prepareUpdate(
 			//@formatter:off
 				"PREFIX dcat: <http://www.w3.org/ns/dcat#>                            \n" +
@@ -481,6 +490,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			@Nullable BigInteger lexicalizations, @Nullable BigDecimal percentage,
 			@Nullable BigDecimal avgNumOfLexicalizations) throws MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
+			checkLocallyDefined(conn, dataset);
+			checkNotLocallyDefined(conn, lexicalizationSet);
+
 			ValueFactory vf = conn.getValueFactory();
 
 			checkLocallyDefined(conn, dataset);
@@ -560,6 +572,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	public synchronized void deleteEmbeddedLexicalizationSet(IRI lexicalizationSet)
 			throws MetadataRegistryWritingException, MetadataRegistryStateException {
 		try (RepositoryConnection conn = getConnection()) {
+
+			checkLocallyDefined(conn, lexicalizationSet);
 
 			if (!conn.hasStatement(lexicalizationSet, RDF.TYPE, LIME.LEXICALIZATION_SET, false)) {
 				throw new IllegalArgumentException("Not a lexicalization set: " + lexicalizationSet);
