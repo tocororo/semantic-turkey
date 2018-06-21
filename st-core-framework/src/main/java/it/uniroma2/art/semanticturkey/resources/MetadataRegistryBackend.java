@@ -37,6 +37,14 @@ public interface MetadataRegistryBackend {
 			throws IllegalArgumentException, MetadataRegistryWritingException;
 
 	/**
+	 * Deletes a dcat:CatalogRecord
+	 * 
+	 * @param catalogRecord
+	 * @throws MetadataRegistryWritingException 
+	 */
+	void deleteCatalogRecord(IRI catalogRecord) throws MetadataRegistryWritingException;
+
+	/**
 	 * Adds {@code dataset} to the specified {@code catalogRecord} as a specific {@code versionInfo}.
 	 * 
 	 * @param catalogRecord
@@ -54,7 +62,7 @@ public interface MetadataRegistryBackend {
 	 * will be deleted.
 	 * 
 	 * @param dataset
-	 * @throws MetadataRegistryWritingException 
+	 * @throws MetadataRegistryWritingException
 	 */
 	void deleteDatasetVersion(IRI dataset) throws MetadataRegistryWritingException;
 

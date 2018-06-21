@@ -71,6 +71,7 @@ import org.eclipse.rdf4j.model.vocabulary.VOID;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
@@ -337,6 +338,35 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	/*
 	 * (non-Javadoc)
 	 * 
+	 * @see
+	 * it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend#deleteCatalogRecord(org.eclipse.rdf4j.
+	 * model.IRI)
+	 */
+	@Override
+	public synchronized void deleteCatalogRecord(IRI catalogRecord) throws MetadataRegistryWritingException {
+		try (RepositoryConnection conn = getConnection()) {
+			GraphQuery query = conn.prepareGraphQuery(
+			// @formatter:off
+				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                  \n" +
+				"PREFIX void: <http://rdfs.org/ns/void#>                                    \n" +
+				"	                                                                        \n" +
+				"DESCRIBE * WHERE {                                                         \n" +
+				"  ?catalogRecord (foaf:topic|foaf:primaryTopic)/void:subset* ?dataset      \n" +
+				"}                                                                          \n"
+				// @formatter:on
+			);
+			query.setBinding("catalogRecord", catalogRecord);
+			conn.remove(QueryResults.asModel(query.evaluate()));
+
+			saveToFile(conn);
+		} catch (IOException e) {
+			throw new MetadataRegistryWritingException(e);
+		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.uniroma2.art.semanticturkey.resources.M#addDatasetVersion(org.eclipse.rdf4j.model.IRI,
 	 * org.eclipse.rdf4j.model.IRI, java.lang.String)
 	 */
@@ -401,8 +431,15 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend#deleteDatasetVersion(org.eclipse.rdf4j
+	 * .model.IRI)
+	 */
 	@Override
-	public void deleteDatasetVersion(IRI dataset) throws MetadataRegistryWritingException {
+	public synchronized void deleteDatasetVersion(IRI dataset) throws MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
 			Update updateCatalogModified = conn.prepareUpdate(
 			//@formatter:off

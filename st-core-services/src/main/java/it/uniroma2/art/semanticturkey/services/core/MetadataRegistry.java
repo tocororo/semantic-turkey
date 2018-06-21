@@ -131,21 +131,23 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * Deletes a catalog record
 	 * 
 	 * @param catalogRecord
+	 * @throws MetadataRegistryWritingException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'D')")
-	public void deleteCatalogRecord(IRI catalogRecord) {
-		throw new UnsupportedOperationException();
+	public void deleteCatalogRecord(IRI catalogRecord) throws MetadataRegistryWritingException {
+		metadataRegistryBackend.deleteCatalogRecord(catalogRecord);
 	}
 
 	/**
 	 * Deletes a dataset version
 	 * 
 	 * @param dataset
+	 * @throws MetadataRegistryWritingException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'D')")
-	public void deleteDatasetVersion(IRI dataset) {
+	public void deleteDatasetVersion(IRI dataset) throws MetadataRegistryWritingException {
 		metadataRegistryBackend.deleteDatasetVersion(dataset);
 	}
 
