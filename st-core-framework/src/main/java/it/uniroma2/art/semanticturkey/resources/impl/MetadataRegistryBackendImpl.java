@@ -213,15 +213,19 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 	}
 
-	private void saveToFile(RepositoryConnection conn) throws IOException {
-		RDFWriterFactory rdfWriterFactory = RDFWriterRegistry.getInstance().get(CATALOG_FORMAT)
-				.orElseThrow(() -> new IllegalStateException(
-						"Unable to locate factory of the writer for " + CATALOG_FORMAT.getName()));
-		try (Writer writer = new OutputStreamWriter(new FileOutputStream(catalogFile),
-				StandardCharsets.UTF_8)) {
-			RDFWriter rdfWriter = rdfWriterFactory.getWriter(writer);
-			rdfWriter.set(BasicWriterSettings.PRETTY_PRINT, true);
-			conn.export(rdfWriter);
+	private void saveToFile() throws MetadataRegistryWritingException {
+		try (RepositoryConnection conn = getConnection()) {
+			RDFWriterFactory rdfWriterFactory = RDFWriterRegistry.getInstance().get(CATALOG_FORMAT)
+					.orElseThrow(() -> new IllegalStateException(
+							"Unable to locate factory of the writer for " + CATALOG_FORMAT.getName()));
+			try (Writer writer = new OutputStreamWriter(new FileOutputStream(catalogFile),
+					StandardCharsets.UTF_8)) {
+				RDFWriter rdfWriter = rdfWriterFactory.getWriter(writer);
+				rdfWriter.set(BasicWriterSettings.PRETTY_PRINT, true);
+				conn.export(rdfWriter);
+			}
+		} catch (IOException e) {
+			throw new MetadataRegistryWritingException(e);
 		}
 	}
 
@@ -264,6 +268,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	public synchronized IRI addDataset(@Nullable IRI dataset, String uriSpace, @Nullable String title,
 			@Nullable Boolean dereferenceable, @Nullable IRI sparqlEndpoint)
 			throws IllegalArgumentException, MetadataRegistryWritingException {
+
+		IRI record;
+
 		try (RepositoryConnection conn = getConnection()) {
 			ValueFactory vf = conn.getValueFactory();
 
@@ -305,7 +312,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			update.setBinding("dataset",
 					dataset != null ? dataset : vf.createIRI(DEFAULTNS, UUID.randomUUID().toString()));
 
-			IRI record = vf.createIRI(DEFAULTNS, UUID.randomUUID().toString());
+			record = vf.createIRI(DEFAULTNS, UUID.randomUUID().toString());
 			update.setBinding("record", record);
 
 			update.setBinding("uriSpace", vf.createLiteral(uriSpace));
@@ -324,15 +331,12 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			update.setBinding("catalogExt", vf.createIRI(DEFAULTNS + UUID.randomUUID().toString()));
 
 			update.execute();
-
-			try {
-				saveToFile(conn);
-			} catch (IOException e) {
-				throw new MetadataRegistryWritingException(e);
-			}
-
-			return record;
 		}
+
+		saveToFile();
+
+		return record;
+
 	}
 
 	/*
@@ -357,11 +361,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			);
 			query.setBinding("catalogRecord", catalogRecord);
 			conn.remove(QueryResults.asModel(query.evaluate()));
-
-			saveToFile(conn);
-		} catch (IOException e) {
-			throw new MetadataRegistryWritingException(e);
 		}
+
+		saveToFile();
 	}
 
 	/*
@@ -372,7 +374,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	 */
 	@Override
 	public synchronized void addDatasetVersion(IRI catalogRecord, @Nullable IRI dataset, String versionInfo)
-			throws IllegalArgumentException, IOException {
+			throws IllegalArgumentException, MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
 			ValueFactory vf = conn.getValueFactory();
 
@@ -426,9 +428,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					dataset != null ? dataset : vf.createIRI(DEFAULTNS, UUID.randomUUID().toString()));
 			update.setBinding("versionInfo", vf.createLiteral(versionInfo));
 			update.execute();
-
-			saveToFile(conn);
 		}
+
+		saveToFile();
 	}
 
 	/*
@@ -467,13 +469,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 			conn.remove(QueryResults
 					.asModel(conn.prepareGraphQuery("DESCRIBE " + RenderUtils.toSPARQL(dataset)).evaluate()));
-
-			try {
-				saveToFile(conn);
-			} catch (IOException e) {
-				throw new MetadataRegistryWritingException(e);
-			}
 		}
+
+		saveToFile();
 	}
 
 	@Override
@@ -553,14 +551,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			}
 
 			update.execute();
-
-			try {
-				saveToFile(conn);
-			} catch (IOException e) {
-				throw new MetadataRegistryWritingException(e);
-			}
-
 		}
+
+		saveToFile();
 	}
 
 	@Override
@@ -607,13 +600,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			);
 			update.setBinding("lexicalizationSet", lexicalizationSet);
 			update.execute();
-
-			try {
-				saveToFile(conn);
-			} catch (IOException e) {
-				throw new MetadataRegistryWritingException(e);
-			}
 		}
+
+		saveToFile();
 	}
 
 	/*
@@ -624,7 +613,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	 */
 	@Override
 	public synchronized void setDereferenciability(IRI dataset, @Nullable Boolean value)
-			throws IllegalArgumentException, IOException {
+			throws IllegalArgumentException, MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
 			checkLocallyDefined(conn, dataset);
 			Update update = conn.prepareUpdate(
@@ -656,9 +645,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 						: METADATAREGISTRY.NO_DEREFERENCIATION);
 			}
 			update.execute();
-
-			saveToFile(conn);
 		}
+
+		saveToFile();
 	}
 
 	/*
@@ -669,7 +658,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	 */
 	@Override
 	public synchronized void setSPARQLEndpoint(IRI dataset, @Nullable IRI endpoint)
-			throws IllegalArgumentException, IOException {
+			throws IllegalArgumentException, MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
 			checkLocallyDefined(conn, dataset);
 			Update update = conn.prepareUpdate(
@@ -699,9 +688,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				update.setBinding("endpoint", endpoint);
 			}
 			update.execute();
-
-			saveToFile(conn);
 		}
+
+		saveToFile();
 	}
 
 	/*
@@ -710,7 +699,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	 * @see it.uniroma2.art.semanticturkey.resources.M#getCatalogRecords()
 	 */
 	@Override
-	public synchronized Collection<CatalogRecord> getCatalogRecords() {
+	public Collection<CatalogRecord> getCatalogRecords() {
 		try (RepositoryConnection conn = getConnection()) {
 			TupleQuery query = conn.prepareTupleQuery(
 			// @formatter:off
@@ -944,7 +933,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	 * @see it.uniroma2.art.semanticturkey.resources.M#findDatasetForResource(org.eclipse.rdf4j.model.IRI)
 	 */
 	@Override
-	public synchronized DatasetMetadata findDatasetForResource(IRI iriResource) {
+	public DatasetMetadata findDatasetForResource(IRI iriResource) {
 		// -------------------------------------------------------------------------------------------
 		// The following resolution strategy might be subject to ambiguity in some rare circumstances
 

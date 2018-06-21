@@ -86,11 +86,12 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * @param versionInfo
 	 * @throws IOException
 	 * @throws IllegalArgumentException
+	 * @throws MetadataRegistryWritingException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
 	public void addDatasetVersion(IRI catalogRecord, @Optional IRI dataset, String versionInfo)
-			throws IllegalArgumentException, IOException {
+			throws IllegalArgumentException, MetadataRegistryWritingException {
 		metadataRegistryBackend.addDatasetVersion(catalogRecord, dataset, versionInfo);
 	}
 
@@ -101,13 +102,13 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * 
 	 * @param dataset
 	 * @param value
-	 * @throws IOException
 	 * @throws IllegalArgumentException
+	 * @throws MetadataRegistryWritingException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
 	public void setDereferenciability(IRI dataset, @Optional Boolean value)
-			throws IllegalArgumentException, IOException {
+			throws IllegalArgumentException, MetadataRegistryWritingException {
 		metadataRegistryBackend.setDereferenciability(dataset, value);
 	}
 
@@ -118,12 +119,13 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * @param endpoint
 	 *            if {@code null}, the endpoint is left unspecified
 	 * @throws IllegalArgumentException
+	 * @throws MetadataRegistryWritingException
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
 	public void setSPARQLEndpoint(IRI dataset, @Optional IRI endpoint)
-			throws IllegalArgumentException, IOException {
+			throws IllegalArgumentException, MetadataRegistryWritingException {
 		metadataRegistryBackend.setSPARQLEndpoint(dataset, endpoint);
 	}
 
@@ -131,7 +133,7 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * Deletes a catalog record
 	 * 
 	 * @param catalogRecord
-	 * @throws MetadataRegistryWritingException 
+	 * @throws MetadataRegistryWritingException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'D')")
@@ -143,7 +145,7 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * Deletes a dataset version
 	 * 
 	 * @param dataset
-	 * @throws MetadataRegistryWritingException 
+	 * @throws MetadataRegistryWritingException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'D')")
@@ -189,7 +191,7 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * @param avgNumOfLexicalizations
 	 * @throws MetadataRegistryWritingException
 	 */
-	@STServiceOperation(method=RequestMethod.POST)
+	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
 	public void addEmbeddedLexicalizationSet(IRI dataset, @Optional IRI lexicalizationSet,
 			@Optional IRI lexiconDataset, IRI lexicalizationModel, String language,
@@ -206,9 +208,9 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * 
 	 * @param lexicalizationSet
 	 * @throws MetadataRegistryWritingException
-	 * @throws MetadataRegistryStateException 
+	 * @throws MetadataRegistryStateException
 	 */
-	@STServiceOperation(method=RequestMethod.POST)
+	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'D')")
 	public void deleteEmbeddedLexicalizationSet(IRI lexicalizationSet)
 			throws MetadataRegistryWritingException, MetadataRegistryStateException {
@@ -230,7 +232,7 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * 
 	 * @param dataset
 	 * @return the lexicalization model
-	 * @throws AssessmentException 
+	 * @throws AssessmentException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")

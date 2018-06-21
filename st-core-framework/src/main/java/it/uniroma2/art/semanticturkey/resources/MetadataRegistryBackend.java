@@ -40,7 +40,7 @@ public interface MetadataRegistryBackend {
 	 * Deletes a dcat:CatalogRecord
 	 * 
 	 * @param catalogRecord
-	 * @throws MetadataRegistryWritingException 
+	 * @throws MetadataRegistryWritingException
 	 */
 	void deleteCatalogRecord(IRI catalogRecord) throws MetadataRegistryWritingException;
 
@@ -53,9 +53,10 @@ public interface MetadataRegistryBackend {
 	 * @param versionInfo
 	 * @throws IllegalArgumentException
 	 * @throws IOException
+	 * @throws MetadataRegistryWritingException
 	 */
 	void addDatasetVersion(IRI catalogRecord, IRI dataset, String versionInfo)
-			throws IllegalArgumentException, IOException;
+			throws IllegalArgumentException, MetadataRegistryWritingException;
 
 	/**
 	 * Deletes a dataset version. The provided {@code dataset} is the identity of the specific version that
@@ -107,8 +108,9 @@ public interface MetadataRegistryBackend {
 	 *            if {@code null}, the dereferenciability is left unspecified
 	 * @throws IllegalArgumentException
 	 * @throws IOException
+	 * @throws MetadataRegistryWritingException 
 	 */
-	void setDereferenciability(IRI dataset, Boolean value) throws IllegalArgumentException, IOException;
+	void setDereferenciability(IRI dataset, Boolean value) throws IllegalArgumentException, MetadataRegistryWritingException;
 
 	/**
 	 * Sets the SPARQL endpoint of a dataset.
@@ -117,9 +119,10 @@ public interface MetadataRegistryBackend {
 	 * @param endpoint
 	 *            if {@code null}, the endpoint is left unspecified
 	 * @throws IllegalArgumentException
+	 * @throws MetadataRegistryWritingException 
 	 * @throws IOException
 	 */
-	void setSPARQLEndpoint(IRI dataset, IRI endpoint) throws IllegalArgumentException, IOException;
+	void setSPARQLEndpoint(IRI dataset, IRI endpoint) throws IllegalArgumentException, MetadataRegistryWritingException;
 
 	/**
 	 * Returns the catalog records
