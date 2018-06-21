@@ -189,7 +189,7 @@ public class MetadataRegistry extends STServiceAdapter {
 	 */
 	@STServiceOperation(method=RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
-	public void addEmbeddedLexicalizationSets(IRI dataset, @Optional IRI lexicalizationSet,
+	public void addEmbeddedLexicalizationSet(IRI dataset, @Optional IRI lexicalizationSet,
 			@Optional IRI lexiconDataset, IRI lexicalizationModel, String language,
 			@Optional BigInteger references, @Optional BigInteger lexicalEntries,
 			@Optional BigInteger lexicalizations, @Optional BigDecimal percentage,
@@ -207,7 +207,7 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * @throws MetadataRegistryStateException 
 	 */
 	@STServiceOperation(method=RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'D')")
 	public void deleteEmbeddedLexicalizationSet(IRI lexicalizationSet)
 			throws MetadataRegistryWritingException, MetadataRegistryStateException {
 		metadataRegistryBackend.deleteEmbeddedLexicalizationSet(lexicalizationSet);
