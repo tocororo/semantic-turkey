@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
@@ -1334,10 +1335,44 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	 * @see it.uniroma2.art.semanticturkey.resources.M#assessLexicalizationModel(org.eclipse.rdf4j.model.IRI)
 	 */
 	@Override
-	public void assessLexicalizationModel(IRI dataset) throws AssessmentException {
+	public synchronized void assessLexicalizationModel(IRI dataset)
+			throws AssessmentException, MetadataRegistryWritingException {
+		Function<RepositoryConnection, Model> computeDatasetDescription = conn -> QueryResults
+				.asModel(conn.prepareGraphQuery("DESCRIBE * WHERE { " + RenderUtils.toSPARQL(dataset) + " <"
+						+ VOID.SUBSET + ">* ?dataset  }").evaluate());
+
 		try (RepositoryConnection metadataConn = metadataRegistry.getConnection()) {
+			Model originalDescription = computeDatasetDescription.apply(metadataConn);
 			mediationFramework.assessLexicalizationModel(metadataConn, dataset);
+			Model possibilyUpdatedDescription = computeDatasetDescription.apply(metadataConn);
+
+			if (!Models.isomorphic(originalDescription, possibilyUpdatedDescription)) {
+				Update updateModificationDate = metadataConn.prepareUpdate(
+					// @formatter:off
+					" PREFIX dcterms: <http://purl.org/dc/terms/>                                \n" +
+					" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                  \n" +
+					" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                  \n" +
+					"                                                                            \n" +
+					" DELETE {                                                                   \n" +
+					"   ?record dcterms:modified ?oldModified .                                  \n" +
+					" }                                                                          \n" +
+					" INSERT {                                                                   \n" +
+					"   ?record dcterms:modified ?now .                                          \n" +
+					" }                                                                          \n" +
+					" WHERE {                                                                    \n" +
+					"   ?record foaf:topic|foaf:primaryTopic ?dataset ; a dcat:CatalogRecord .   \n" +
+					"   OPTIONAL { ?record dcterms:modified ?oldModified . }                     \n" +
+					"   BIND(NOW() AS ?now)                                                      \n" +
+					" }                                                                          \n"
+					// @formatter:on
+				);
+				updateModificationDate.setBinding("dataset", dataset);
+				updateModificationDate.execute();
+			}
+
 		}
+
+		saveToFile();
 	}
 
 }

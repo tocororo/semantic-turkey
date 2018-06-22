@@ -173,9 +173,10 @@ public interface MetadataRegistryBackend {
 	 * Assess the lexicalization model of the given {@code dataset}
 	 * 
 	 * @param dataset
+	 * @throws MetadataRegistryWritingException 
 	 * @throws MetadataDiscoveryException
 	 */
-	void assessLexicalizationModel(IRI dataset) throws AssessmentException;
+	void assessLexicalizationModel(IRI dataset) throws AssessmentException, MetadataRegistryWritingException;
 
 	RepositoryConnection getConnection();
 

@@ -233,10 +233,12 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * @param dataset
 	 * @return the lexicalization model
 	 * @throws AssessmentException
+	 * @throws MetadataRegistryWritingException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
-	public void assessLexicalizationModel(IRI dataset) throws AssessmentException {
+	public void assessLexicalizationModel(IRI dataset)
+			throws AssessmentException, MetadataRegistryWritingException {
 		metadataRegistryBackend.assessLexicalizationModel(dataset);
 	}
 
