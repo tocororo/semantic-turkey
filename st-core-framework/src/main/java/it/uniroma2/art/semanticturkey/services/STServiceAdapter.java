@@ -10,13 +10,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -95,11 +93,9 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	@Autowired
 	protected ExtensionPointManager exptManager;
 
-	private final ValueFactory sesVf;
 	private final ServletUtilities servletUtilities;
 
 	protected STServiceAdapter() {
-		sesVf = SimpleValueFactory.getInstance();
 		servletUtilities = ServletUtilities.getService();
 	}
 
@@ -192,17 +188,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	 * @throws URIGenerationException
 	 */
 	public IRI generateIRI(String xRole, Map<String, Value> valueMapping) throws URIGenerationException {
-		try {
-			Map<String, Value> artValueMapping = valueMapping.entrySet().stream()
-					.collect(Collectors.toMap(Map.Entry::getKey, (entry) -> entry.getValue()));
-
-			IRI iriRes = getProject().getURIGenerator().generateIRI(stServiceContext, xRole, artValueMapping);
-
-			return sesVf.createIRI(iriRes.stringValue());
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw e;
-		}
+		return getProject().getURIGenerator().generateIRI(stServiceContext, xRole, valueMapping);
 	}
 
 	/**
@@ -417,13 +403,13 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 
 	protected Reference parseReference(String relativeReference) {
 		int colonPos = relativeReference.indexOf(":");
-	
+
 		if (colonPos == -1)
 			throw new IllegalArgumentException("Invalid reference: " + relativeReference);
-	
+
 		Scope scope = Scope.deserializeScope(relativeReference.substring(0, colonPos));
 		String identifier = relativeReference.substring(colonPos + 1);
-	
+
 		switch (scope) {
 		case SYSTEM:
 			return new Reference(null, null, identifier);
