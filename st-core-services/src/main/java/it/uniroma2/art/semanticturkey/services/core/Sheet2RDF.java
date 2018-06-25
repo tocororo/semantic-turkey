@@ -178,8 +178,6 @@ public class Sheet2RDF extends STServiceAdapter {
 		
 		headerJson.set("lang", jsonFactory.textNode(h.getRangeLanguage()));
 		
-		
-		
 		ObjectNode rangeJson = jsonFactory.objectNode();
 		headerJson.set("range", rangeJson);
 		rangeJson.set("type", jsonFactory.textNode(h.getRangeType().name()));
@@ -204,6 +202,8 @@ public class Sheet2RDF extends STServiceAdapter {
 			converterJson.set("type", null);
 		}
 		
+		headerJson.set("memoize", jsonFactory.booleanNode(h.isMemoize()));
+		
 		return headerJson;
 	}
 	
@@ -227,6 +227,7 @@ public class Sheet2RDF extends STServiceAdapter {
 			@Optional IRI rangeClass,
 			@Optional RDFCapabilityType converterType,
 			@Optional String converterMention, 
+			@Optional (defaultValue = "false") boolean memoize,
 //			@Optional String lang,
 //			@Optional IRI rangeDatatype, 
 			@Optional (defaultValue = "false") boolean applyToAll) throws PRParserException {
@@ -263,6 +264,8 @@ public class Sheet2RDF extends STServiceAdapter {
 				converter = converterResolver.getConverter(headerResource);
 			}
 			h.setConverter(converter);
+			
+			h.setMemoize(memoize);
 			
 			if (rangeType != null) {
 				h.setRangeType(rangeType);
