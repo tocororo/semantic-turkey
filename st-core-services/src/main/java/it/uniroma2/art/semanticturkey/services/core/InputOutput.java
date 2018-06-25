@@ -315,15 +315,16 @@ public class InputOutput extends STServiceAdapter {
 				}
 
 				rdfLifter.lift(formattedResource, format, workingRepoInserter, new LifterContext() {
-					
+
 					@Override
 					public IRI getLexicalizationModel() {
 						return getProject().getLexicalizationModel();
 					}
-					
+
 					@Override
-					public IRI generateIRI(String xRole, Map<String, Value> valueMapping) throws URIGenerationException {
-						return generateIRI(xRole, valueMapping);
+					public IRI generateIRI(String xRole, Map<String, Value> valueMapping)
+							throws URIGenerationException {
+						return InputOutput.this.generateIRI(xRole, valueMapping);
 					}
 				});
 			}
