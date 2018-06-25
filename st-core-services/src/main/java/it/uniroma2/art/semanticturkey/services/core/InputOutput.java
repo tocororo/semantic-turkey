@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -15,6 +16,7 @@ import javax.annotation.Nullable;
 
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -38,6 +40,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.commons.io.FormatCapabili
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.FormattedResourceTarget;
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.Loader;
 import it.uniroma2.art.semanticturkey.extension.extpts.loader.RepositoryTarget;
+import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LifterContext;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LiftingException;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.RDFLifter;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformer;
@@ -45,6 +48,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.Clos
 import it.uniroma2.art.semanticturkey.ontology.OntologyImport;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
+import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.DataFormat;
@@ -310,7 +314,18 @@ public class InputOutput extends STServiceAdapter {
 					formattedResource.getMIMEType();
 				}
 
-				rdfLifter.lift(formattedResource, format, workingRepoInserter);
+				rdfLifter.lift(formattedResource, format, workingRepoInserter, new LifterContext() {
+					
+					@Override
+					public IRI getLexicalizationModel() {
+						return getProject().getLexicalizationModel();
+					}
+					
+					@Override
+					public IRI generateIRI(String xRole, Map<String, Value> valueMapping) throws URIGenerationException {
+						return generateIRI(xRole, valueMapping);
+					}
+				});
 			}
 
 			// At this point, data have been loaded to an RDF repository (either destination or temporary, the

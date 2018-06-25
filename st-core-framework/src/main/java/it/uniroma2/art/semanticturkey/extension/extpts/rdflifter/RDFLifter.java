@@ -16,5 +16,5 @@ import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.Clos
  */
 public interface RDFLifter extends Extension {
 	public void lift(ClosableFormattedResource sourceFormattedResource, String format,
-			RDFHandler targetRDFHandle) throws LiftingException, IOException;
+			RDFHandler targetRDFHandle, LifterContext lifterContext) throws LiftingException, IOException;
 }

@@ -7,6 +7,7 @@ import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.Rio;
 
+import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LifterContext;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LiftingException;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.RDFLifter;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ClosableFormattedResource;
@@ -21,7 +22,7 @@ public class RDFDeserializingLifter implements RDFLifter {
 
 	@Override
 	public void lift(ClosableFormattedResource sourceFormattedResource, String format,
-			RDFHandler targetRDFHandler) throws LiftingException, IOException {
+			RDFHandler targetRDFHandler, LifterContext lifterContext) throws LiftingException, IOException {
 
 		RDFFormat rdfFormat = RDF4JUtilities.getRDFFormat(format);
 
