@@ -11,6 +11,7 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ClosableFormattedResource;
+import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ExporterContext;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingExporter;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 
@@ -23,7 +24,7 @@ public class RDFSerializingExporter implements ReformattingExporter {
 
 	@Override
 	public ClosableFormattedResource export(RepositoryConnection sourceRepositoryConnection, IRI[] graphs,
-			@Nullable String format) throws IOException {
+			@Nullable String format, ExporterContext exporterContext) throws IOException {
 		Objects.requireNonNull(format, "Format must be specified");
 		RDFFormat rdfFormat = RDF4JUtilities.getRDFFormat(format);
 

@@ -18,5 +18,5 @@ import it.uniroma2.art.semanticturkey.extension.extpts.deployer.Deployer;
  */
 public interface ReformattingExporter extends Extension {
 	public ClosableFormattedResource export(RepositoryConnection sourceRepositoryConnection, IRI[] graphs,
-			@Nullable String format) throws ReformattingException, IOException;
+			@Nullable String format, ExporterContext exporterContext) throws ReformattingException, IOException;
 }

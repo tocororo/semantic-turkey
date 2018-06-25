@@ -129,8 +129,8 @@ public class Export extends STServiceAdapter {
 	 * @param graphs
 	 *            the graphs to be exported. An empty array means all graphs the name of which is an IRI
 	 * @param filteringPipeline
-	 *            a JSON string representing an array of {@link TransformationStep}. Each filter is applied to a
-	 *            subset of the exported graphs. No graph means every exported graph
+	 *            a JSON string representing an array of {@link TransformationStep}. Each filter is applied to
+	 *            a subset of the exported graphs. No graph means every exported graph
 	 * @param includeInferred
 	 *            tells if inferred triples should be included
 	 * @param outputFormat
@@ -163,8 +163,8 @@ public class Export extends STServiceAdapter {
 
 	public static void exportHelper(ExtensionPointManager exptManager, STServiceContext stServiceContext,
 			HttpServletResponse oRes, RepositoryConnection sourceRepositoryConnection, IRI[] graphs,
-			TransformationPipeline filteringPipeline, boolean includeInferred, String outputFormat, boolean force,
-			@Nullable PluginSpecification deployerSpec,
+			TransformationPipeline filteringPipeline, boolean includeInferred, String outputFormat,
+			boolean force, @Nullable PluginSpecification deployerSpec,
 			@Nullable PluginSpecification reformattingExporterSpec)
 			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException,
@@ -275,7 +275,8 @@ public class Export extends STServiceAdapter {
 		}
 
 		try (ClosableFormattedResource formattedResource = reformattingExporter == null ? null
-				: reformattingExporter.export(workingRepositoryConnection, graphs, outputFormat)) {
+				: reformattingExporter.export(workingRepositoryConnection, graphs, outputFormat,
+						() -> stServiceContext.getProject().getLexicalizationModel())) {
 
 			Source source;
 			if (formattedResource != null) {
