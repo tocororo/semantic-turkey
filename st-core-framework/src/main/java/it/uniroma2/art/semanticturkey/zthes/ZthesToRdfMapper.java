@@ -30,7 +30,6 @@ import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LifterContext;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
-import it.uniroma2.art.semanticturkey.zthes.TermNote.NoteLabel;
 
 public class ZthesToRdfMapper {
 	
@@ -54,7 +53,11 @@ public class ZthesToRdfMapper {
 	private Map<String, IRI> idConceptMap;
 	
 	/*
-	 * TODO 
+	 * termId - xLabel: maps the ID of the terms with the created/assigned xLabel (in case of SKOSXL lexModel).
+	 * This map is useful when the same term is referenced multiple time and the created/assigned concept
+	 * is get through createConcept() method. Since this method create also the xLabel of the concept
+	 * is necessary to cache and retrieve it in case it has already been created (and so avoid to create multiple
+	 * xLabel for the same concept)
 	 */
 	private Map<String, IRI> idXLabelMap;
 	
@@ -210,9 +213,9 @@ public class ZthesToRdfMapper {
 		List<TermNote> notes = term.getTermNotes();
 		for (TermNote note : notes) {
 			Literal noteLiteral = vf.createLiteral(note.getNote());
-			if (note.getLabel() == NoteLabel.Definition) {
+			if (note.getLabel().equalsIgnoreCase("definition")) {
 				model.add(concept, SKOS.DEFINITION, noteLiteral);
-			} else { //TODO in case of label different or not specified???
+			} else { //TODO in case of label different or not specified it's ok to stay "generic" with skos:note???
 				model.add(concept, SKOS.NOTE, noteLiteral);
 			}
 		}

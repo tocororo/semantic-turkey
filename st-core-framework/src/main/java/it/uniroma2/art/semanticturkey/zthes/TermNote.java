@@ -2,14 +2,12 @@ package it.uniroma2.art.semanticturkey.zthes;
 
 public class TermNote {
 	
-	public enum NoteLabel { Definition }
-	
 	public static class Attr {
 		public static final String LABEL = "label";
 	}
 
 	private String note; //content
-	private NoteLabel label; //attr
+	private String label; //attr
 	
 	public TermNote(String note) {
 		this.note = note;
@@ -23,11 +21,11 @@ public class TermNote {
 		this.note = note;
 	}
 
-	public NoteLabel getLabel() {
+	public String getLabel() {
 		return label;
 	}
 
-	public void setLabel(NoteLabel label) {
+	public void setLabel(String label) {
 		this.label = label;
 	}
 

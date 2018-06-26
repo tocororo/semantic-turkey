@@ -29,7 +29,6 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ExporterContext;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
-import it.uniroma2.art.semanticturkey.zthes.TermNote.NoteLabel;
 
 public class RdfToZthesMapper {
 	
@@ -194,9 +193,7 @@ public class RdfToZthesMapper {
 			IRI pred = (IRI) bs.getBinding("notePred").getValue();
 			String note = bs.getBinding("noteValue").getValue().stringValue();
 			TermNote termNote = new TermNote(note);
-			if (pred.equals(SKOS.DEFINITION)) {
-				termNote.setLabel(NoteLabel.Definition);//TODO what else label? 
-			}
+			termNote.setLabel(pred.getLocalName());
 			term.addTermNote(termNote);
 		}
 	}

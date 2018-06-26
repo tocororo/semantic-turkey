@@ -22,8 +22,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import it.uniroma2.art.semanticturkey.zthes.TermNote.NoteLabel;
-
 public class XmlReader {
 	
 	private Document doc;
@@ -237,14 +235,14 @@ public class XmlReader {
 	private TermNote parseTermNote(Element termNoteElement) {
 		TermNote termNote = new TermNote(termNoteElement.getTextContent());
 		//Optional attributes
-		NoteLabel label = null;
+		String label = null;
 		NamedNodeMap nodeAttrs = termNoteElement.getAttributes();
 		for (int i = 0; i < nodeAttrs.getLength(); i++) {
 			Node nodeAttr = nodeAttrs.item(i);
 			if (nodeAttr.getNodeType() == Node.ATTRIBUTE_NODE) {
 				Attr attr = (Attr) nodeAttr;
 				if (attr.getName().equals(TermNote.Attr.LABEL)) {
-					label = NoteLabel.valueOf(attr.getValue());
+					label = attr.getValue();
 				}
 			}
 		}
