@@ -17,6 +17,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategyExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
+import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
@@ -64,6 +65,8 @@ public interface ExtensionPointManager {
 	Collection<ConfigurationManager<?>> getConfigurationManagers();
 
 	ConfigurationManager<?> getConfigurationManager(String componentID) throws NoSuchConfigurationManager;
+
+	SettingsManager getSettingsManager(String componentID) throws NoSuchSettingsManager;
 
 	/**
 	 * Returns the stored configurations associated with a given component

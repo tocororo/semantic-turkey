@@ -209,7 +209,8 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 		return getConfigurationManager(componentIdentifier).getConfiguration(reference);
 	}
 
-	private SettingsManager getSettingsManager(String componentIdentifier) throws NoSuchSettingsManager {
+	@Override
+	public SettingsManager getSettingsManager(String componentIdentifier) throws NoSuchSettingsManager {
 		for (Object settingsManager : settingsManagerTracker.getServices()) {
 			SettingsManager settingsManager2 = (SettingsManager) settingsManager;
 			if (Objects.equals(componentIdentifier, settingsManager2.getId())) {

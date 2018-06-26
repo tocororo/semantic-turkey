@@ -350,6 +350,13 @@
 			class="it.uniroma2.art.semanticturkey.config.sparql.SPARQLParameterizationStore" />
 	</osgi:service>
 
+	<!-- Publishes the ProjectMetadataStore -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.settings.metadata.ProjectMetadataStore" />
+	</osgi:service>
+
 	<!-- Publishes the CustomSearchStore -->
 
 	<osgi:service auto-export="interfaces">
