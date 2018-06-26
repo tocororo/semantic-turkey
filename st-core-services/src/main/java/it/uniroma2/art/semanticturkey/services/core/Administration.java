@@ -67,6 +67,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws STPropertyAccessException 
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAdmin()")
 	public JsonNode getAdministrationConfig() throws JSONException, STPropertyAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode configNode = jsonFactory.objectNode();
@@ -507,6 +508,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws RBACException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('rbac(role, capability)', 'U')")
 	public void updateCapabilityForRole(String role, String oldCapability, String newCapability) throws RBACException {
 		RBACManager.removeCapability(getProject(), role, oldCapability);
 		RBACManager.addCapability(getProject(), role, newCapability);
