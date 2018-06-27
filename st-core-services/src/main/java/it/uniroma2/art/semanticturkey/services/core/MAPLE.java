@@ -7,11 +7,8 @@ import java.util.UUID;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.felix.bundlerepository.Repository;
-import org.dom4j.util.NonLazyDocumentFactory;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.VOID;
@@ -26,14 +23,8 @@ import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
-import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.config.SortedResourcesFactoryBean;
-
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.profiler.LIMEProfiler;
@@ -42,7 +33,6 @@ import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.maple.orchestration.ProfilingException;
 import it.uniroma2.art.maple.problem.MediationProblem;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
-import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
