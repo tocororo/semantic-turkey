@@ -32,9 +32,9 @@ public class UpdatePropertyValueRDFTransformer implements RDFTransformer {
 	public UpdatePropertyValueRDFTransformer(UpdatePropertyValueRDFTransformerConfiguration config) {
 		ValueFactory vf = SimpleValueFactory.getInstance();
 
-		this.resource = NTriplesUtil.parseResource(config.resource, vf);
-		this.property = NTriplesUtil.parseURI(config.property, vf);
-		this.value = NTriplesUtil.parseValue(config.value, vf);
+		this.resource = config.resource;
+		this.property = config.property;
+		this.value = config.value;
 		this.oldValue = config.oldValue != null && !config.oldValue.isEmpty()
 				? NTriplesUtil.parseValue(config.oldValue, vf) : null;
 
