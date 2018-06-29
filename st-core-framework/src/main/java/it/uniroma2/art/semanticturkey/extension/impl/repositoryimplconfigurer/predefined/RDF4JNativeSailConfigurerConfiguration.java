@@ -1,13 +1,10 @@
 package it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined;
 
-import it.uniroma2.art.semanticturkey.properties.ContentType;
-import it.uniroma2.art.semanticturkey.properties.ContentTypeVocabulary;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 public class RDF4JNativeSailConfigurerConfiguration extends RDF4JSailConfigurerConfiguration {
 
 	@STProperty(description = "Specifies whether updates should be synced to disk forcefully; defaults to false")
-	@ContentType(ContentTypeVocabulary.BOOLEAN)
 	public Boolean forceSync = false;
 
 	@STProperty(description = "specifies the triple indexes to be created for optimizing"

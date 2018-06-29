@@ -1,8 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xlabeldereification;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
-import it.uniroma2.art.semanticturkey.properties.ContentType;
-import it.uniroma2.art.semanticturkey.properties.ContentTypeVocabulary;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 /**
@@ -16,6 +14,5 @@ public class XLabelDereificationRDFTransformerConfiguration implements Configura
 	}
 
 	@STProperty(description = "Preserves reified labels in the output")
-	@ContentType(ContentTypeVocabulary.BOOLEAN)
 	public boolean preserveReifiedLabels = true;
 }

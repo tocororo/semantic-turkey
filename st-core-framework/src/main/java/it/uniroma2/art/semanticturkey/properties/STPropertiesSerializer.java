@@ -97,7 +97,9 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 				gen.writeBooleanField("required", value.isRequiredProperty(prop));
 				String contentType = value.getPropertyContentType(prop);
 				if (contentType != null) {
-					gen.writeStringField("type", contentType);
+					gen.writeObjectFieldStart("type");
+					gen.writeStringField("name", contentType);
+					gen.writeEndObject();
 				} else {
 					gen.writeFieldName("type");
 					writeTypeDescription(parType, gen, provider);

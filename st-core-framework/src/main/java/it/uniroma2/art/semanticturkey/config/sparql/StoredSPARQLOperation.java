@@ -1,8 +1,6 @@
 package it.uniroma2.art.semanticturkey.config.sparql;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
-import it.uniroma2.art.semanticturkey.properties.ContentType;
-import it.uniroma2.art.semanticturkey.properties.ContentTypeVocabulary;
 import it.uniroma2.art.semanticturkey.properties.Enumeration;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
@@ -24,7 +22,6 @@ public class StoredSPARQLOperation implements Configuration {
 	public String type;
 	
 	@STProperty(description="Tells whether to inlude inferred statements in the evaluation of the query")
-	@ContentType(ContentTypeVocabulary.BOOLEAN)
 	@Required
 	public Boolean includeInferred;
 }

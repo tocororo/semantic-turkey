@@ -1,8 +1,5 @@
 package it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined;
 
-import it.uniroma2.art.semanticturkey.config.Configuration;
-import it.uniroma2.art.semanticturkey.properties.ContentType;
-import it.uniroma2.art.semanticturkey.properties.ContentTypeVocabulary;
 import it.uniroma2.art.semanticturkey.properties.Enumeration;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
@@ -45,27 +42,21 @@ public abstract class AbstractGraphDBConfigurerConfiguration
 	public String storageFolder = "storage";
 
 	@STProperty(description = "Use context index (owlim:enable-context-index)")
-	@ContentType(ContentTypeVocabulary.BOOLEAN)
 	public boolean enableContextIndex = false;
 
 	@STProperty(description = "Use predicate indices (owlim:enablePredicateList)")
-	@ContentType(ContentTypeVocabulary.BOOLEAN)
 	public boolean enablePredicateList = true;
 
 	@STProperty(description = "Cache literal language tags (owlim:in-memory-literal-properties)")
-	@ContentType(ContentTypeVocabulary.BOOLEAN)
 	public boolean inMemoryLiteralProperties = true;
 
 	@STProperty(description = "Enable literal index (owlim:enable-literal-index)")
-	@ContentType(ContentTypeVocabulary.BOOLEAN)
 	public boolean enableLiteralIndex = true;
 
 	@STProperty(description = "Check for inconsistencies (owlim:check-for-inconsistencies)")
-	@ContentType(ContentTypeVocabulary.BOOLEAN)
 	public boolean checkForInconsistencies = false;
 
 	@STProperty(description = "Disable OWL sameAs (owlim:disable-sameAs)")
-	@ContentType(ContentTypeVocabulary.BOOLEAN)
 	public boolean disableSameAs = true;
 
 	@STProperty(description = "Query time-out (seconds) (owlim:query-timeout)")
@@ -75,10 +66,8 @@ public abstract class AbstractGraphDBConfigurerConfiguration
 	public int queryLimitResults = 0;
 
 	@STProperty(description = "Throw exception on query time-out (owlim:throw-QueryEvaluationException-on-timeout)")
-	@ContentType(ContentTypeVocabulary.BOOLEAN)
 	public boolean throwQueryEvaluationExceptionOnTimeout = false;
 
 	@STProperty(description = "Read-only (owlim:read-only)")
-	@ContentType(ContentTypeVocabulary.BOOLEAN)
 	public boolean readOnly = false;
 }
