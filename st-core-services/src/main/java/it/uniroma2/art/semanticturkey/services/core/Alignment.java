@@ -41,25 +41,26 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel.Status;
 import it.uniroma2.art.semanticturkey.alignment.Cell;
 import it.uniroma2.art.semanticturkey.alignment.InvalidAlignmentRelationException;
+import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
+import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
+import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
-import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryStateException;
 import it.uniroma2.art.semanticturkey.resources.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.search.AdvancedSearch;
 import it.uniroma2.art.semanticturkey.search.AdvancedSearch.InWhatToSearch;
 import it.uniroma2.art.semanticturkey.search.AdvancedSearch.WhatToShow;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
-import it.uniroma2.art.semanticturkey.search.SearchScope;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -76,11 +77,14 @@ public class Alignment extends STServiceAdapter {
 	
 	protected static Logger logger = LoggerFactory.getLogger(Alignment.class);
 	
-	@Autowired
-	private MetadataRegistryBackend metadataRegistryBackend;
+	//@Autowired
+	//private MetadataRegistryBackend metadataRegistryBackend;
+	
+	//@Autowired
+	//private MediationFramework mediationFramework;
 	
 	@Autowired
-	private MediationFramework mediationFramework;
+	protected ExtensionPointManager exptManager;
 	
 	@Autowired
 	private STServiceContext stServiceContext;
@@ -162,28 +166,31 @@ public class Alignment extends STServiceAdapter {
 	//new service 
 	
 	// SERVICES FOR ALIGNMENT IN RESOURCE VIEW
+	/**
+	 * Returns a list of Resoruces which are "similar" to the one in input. This service should be used to 
+	 * obtain a list of possible candidate for an alignment between a local resource and resources in a remote 
+	 * dataset   
+	 * @param intputRes the input resources from which to obtain the lexicalizations used in the search in 
+	 * the remote dataset
+	 * @param resourcePosition the remote dataset or a local project
+	 * @param rolesArray the roles to which the returned resources should belong to
+	 * @param langs the optional list of languages that will be used for the search (if no language is passed, 
+	 * then MAPLE is used to obtain the common languages between the current project and the remote dataset)
+	 * @param searchModeList the optional list of searchMode that will be used in the search (is no value is 
+	 * passed, then 'contains' and 'fuzzy' are used)
+	 * @param targetLexModel the optional Lexical Model of the target dataset
+	 * @return the list of remote resources obtained from the search
+	 * @throws MetadataRegistryStateException 
+	 * @throws NoSuchDatasetMetadataException 
+	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	public Collection<AnnotatedValue<Resource>> searchResources(IRI inputRes, IRI datasetIRI, 
-			String[] rolesArray, @Optional List<String> langs, 
-			@Optional List<SearchMode> searchModeList ) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
-		//get the datasetMetadata associated to the desired dataset
-		DatasetMetadata datasetMetadata = metadataRegistryBackend.getDatasetMetadata(datasetIRI);
-		if(datasetMetadata==null) {
-			throw new IllegalArgumentException("dataset "+datasetIRI.stringValue()+" has no datasetMetadata "
-					+ "associated");
-		}
+	public Collection<AnnotatedValue<Resource>> searchResources(IRI intputRes, ResourcePosition resourcePosition, 
+			String[] rolesArray,  
+			@Optional List<SearchMode> searchModeList,
+			Map<String, IRI> langToLexModel) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		
-		//consult metadataRegistryBackend to get the LexicalModel to see in what to search (to set inWhatToSearch)
-		AdvancedSearch advancedSearch = new AdvancedSearch();
-		
-		//if no languages are passed by the client, then ask MAPLE which languages should be used
-		if(langs == null || langs.size()==0) {
-			//TODO
-			//this service does not exists at the moment, so, once it does, call it in the right way
-			//langs = mediationFramework.getLanguages();
-		}
 		
 		//if not searchModeList is passed, then assume they are contains and fuzzy (since those two contains 
 		// all the others)
@@ -193,58 +200,163 @@ public class Alignment extends STServiceAdapter {
 			searchModeList.add(SearchMode.fuzzy);
 		}
 		
-		//now get all the lexicalization in the desired languages, using the current Lexical Model
+		//check that all passed targetLexModel hve one of the right value
+		for(IRI targetLexModel : langToLexModel.values()) {
+			if(targetLexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) || 
+					targetLexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) ||
+					targetLexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) ||
+					targetLexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+				throw new IllegalArgumentException("targetLexModel "+targetLexModel.stringValue()+" is not a "
+						+ "valid Lexicalization Model  ");
+			}
+		}
+		
+		
+		//consult metadataRegistryBackend to get the LexicalModel to see in what to search (to set inWhatToSearch)
+		AdvancedSearch advancedSearch = new AdvancedSearch();
+		///now get all the lexicalization in the desired languages, using the current Lexical Model
 		IRI currLexModel =  getProject().getLexicalizationModel();
-		List<Literal> labelsList = advancedSearch.getLabelsFromLangs(stServiceContext, inputRes, 
+		List<String> langs = new ArrayList<>();
+		langs.addAll(langToLexModel.keySet());
+		List<Literal> labelsList = advancedSearch.getLabelsFromLangs(stServiceContext, intputRes, 
 				currLexModel, langs, getManagedConnection());
 		
-		//get the SPARQL endpoint from metadataRegistryBackend
-		java.util.Optional<IRI> sparqlEndPoint = datasetMetadata.getSparqlEndpoint();
-		if(!sparqlEndPoint.isPresent()) {
-			throw new IllegalArgumentException("dataset "+datasetIRI.stringValue()+" has no SPARQL endpoint "
-					+ "associated");
+		//according to the resourcePosition, behave in a specific way
+		if(resourcePosition instanceof LocalResourcePosition) {
+			/*Project otherProject = ((LocalResourcePosition)resourcePosition).getProject();
+
+			IRI lexModel = otherProject.getLexicalizationModel();
+			
+			SearchStrategies searchStrategy = STRepositoryInfoUtils.getSearchStrategy(
+					otherProject.getRepositoryManager().getSTRepositoryInfo("core"));
+
+			
+			//iterate over the labelsList, get the associated language and then get the lexModel from langToLexModel for 
+			// such language and execute one query per language-LexModel
+			for(Literal label : labelsList) {
+
+				
+				
+				String query = ServiceForSearches.getPrefixes() + "\n"
+						+ SearchStrategyUtils.instantiateSearchStrategy(exptManager, searchStrategy)
+							.searchResource(stServiceContext, searchString, rolesArray,
+								false, false, false, searchMode, null, langs, false, lexModel,
+								searchInRDFSLabel, searchInSKOSLabel, searchInSKOSXLLabel, searchInOntolex);
+	
+				logger.debug("query = " + query);
+	
+				QueryBuilder qb;
+				qb = new QueryBuilder(stServiceContext, query);
+				qb.processRendering();
+				qb.runQuery();
+				//TODO save single resource and then combine them
+				
+			}*/
+
+			//TODO
+			return null;
+			
+		} else if(resourcePosition instanceof RemoteResourcePosition) {
+		
+			//get the datasetMetadata associated to the desired dataset
+			
+			DatasetMetadata datasetMetadata = ((RemoteResourcePosition) resourcePosition).getDatasetMetadata();
+			if(datasetMetadata==null) {
+				throw new IllegalArgumentException("dataset "+resourcePosition.getPosition()+" has no datasetMetadata "
+						+ "associated");
+			}
+			
+			//get the SPARQL endpoint from metadataRegistryBackend
+			java.util.Optional<IRI> sparqlEndPoint = datasetMetadata.getSparqlEndpoint();
+			if(!sparqlEndPoint.isPresent()) {
+				throw new IllegalArgumentException("dataset "+datasetMetadata.getIdentity()+" has no SPARQL endpoint "
+						+ "associated");
+			}
+			
+			logger.debug("SPARQL endpoint = "+sparqlEndPoint.get().stringValue());
+			SPARQLRepository sparqlRepository = new SPARQLRepository(sparqlEndPoint.get().stringValue());
+			sparqlRepository.initialize();
+			
+			RepositoryConnection conn = sparqlRepository.getConnection();
+			
+			//call the function to obtain the desired list of annotated Resources
+			return searchResources(labelsList, conn, rolesArray, searchModeList, langToLexModel);
+		} else {
+			throw new IllegalArgumentException("Unsupported resource position");
+		}
+	}
+	
+	
+	public Collection<AnnotatedValue<Resource>> searchResources(List<Literal> labelsList, 
+			RepositoryConnection remoteConn, String[] rolesArray, List<SearchMode> searchModeList,
+			Map<String, IRI> langToLexModel) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
+		
+		//check that the optional targetLexModel has one of the right value
+		if(langToLexModel==null || langToLexModel.size()==0){
+			throw new IllegalArgumentException("targetLexModel is mandatory is not a "
+					+ "valid Lexicalization Model  ");
+		} 
+		
+		//check that all passed targetLexModel hve one of the right value
+		for(IRI targetLexModel : langToLexModel.values()) {
+			if(!targetLexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) &&
+					!targetLexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) &&
+					!targetLexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) &&
+					!targetLexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+				throw new IllegalArgumentException("targetLexModel "+targetLexModel.stringValue()+" is not a "
+						+ "valid Lexicalization Model  ");
+			}
 		}
 		
+		//consult metadataRegistryBackend to get the LexicalModel to see in what to search (to set inWhatToSearch)
+		AdvancedSearch advancedSearch = new AdvancedSearch();
 		
-		//get the lexical model for the target datasetIRI
-		//TODO
-		//IRI targetLexMod = mediationFramework();
-		IRI targetLexMod = Project.SKOSXL_LEXICALIZATION_MODEL;
-		
-		InWhatToSearch inWhatToSearch = advancedSearch.new InWhatToSearch();
-		WhatToShow whatToShow = advancedSearch.new WhatToShow();
-		//according to the Lexicalization model of the target dataset, set the corresponding values in 
-		// inWhatToSearch and whatToShow
-		if(targetLexMod.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
-			inWhatToSearch.setSearchInRDFLabel(true);
-			whatToShow.setShowRDFLabel(true);
-		} else if(targetLexMod.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
-			inWhatToSearch.setSearchInSkosLabel(true);
-			whatToShow.setShowSKOSLabel(true);
-		} else if(targetLexMod.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
-			inWhatToSearch.setSearchInSkosxlLabel(true);
-			whatToShow.setShowSKOSXLLabel(true);
-		} else if(targetLexMod.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
-			inWhatToSearch.setSearchInDCTitle(true);
-			inWhatToSearch.setSearchInWrittenRep(true);
-			whatToShow.setShowDCTitle(true);
-			whatToShow.setShowWrittenRep(true);
+		//if not searchModeList is passed, then assume they are contains and fuzzy (since those two contains 
+		// all the others)
+		if(searchModeList == null || searchModeList.size()==0) {
+			throw new IllegalArgumentException("At least one searchMode should be passed");
 		}
-		
-		logger.debug("SPARQL endpoint = "+sparqlEndPoint.get().stringValue());
-		SPARQLRepository sparqlRepository = new SPARQLRepository(sparqlEndPoint.get().stringValue());
-		sparqlRepository.initialize();
-		
-		RepositoryConnection conn = sparqlRepository.getConnection();
-		
-		//for every label from the current project, get all matching resources from the target dataset
-		int maxCount = 0;
+
+		//the structures containing the results, which will be later ordered and returned
 		Map<String, Integer> resToCountMap = new HashMap<>();
 		Map<String, AnnotatedValue<Resource>> resToAnnValueMap = new HashMap<>();
+		int maxCount = 0;
 		
- 		for(Literal label : labelsList) {
+		//iterate over the labelsList, get the associated language and then get the lexModel from langToLexModel for 
+		// such language and execute one query per language-LexModel
+		for(Literal label :labelsList) {
+			if(!label.getLanguage().isPresent()) {
+				//the is no language in this Literal
+				continue;
+			}
+			String lang = label.getLanguage().get();
+			IRI targetLexModel = langToLexModel.get(lang);
+			
+			InWhatToSearch inWhatToSearch = advancedSearch.new InWhatToSearch();
+			WhatToShow whatToShow = advancedSearch.new WhatToShow();
+			//according to the Lexicalization model of the target dataset, set the corresponding values in 
+			// inWhatToSearch and whatToShow
+			if(targetLexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
+				inWhatToSearch.setSearchInRDFLabel(true);
+				whatToShow.setShowRDFLabel(true);
+			} else if(targetLexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
+				inWhatToSearch.setSearchInSkosLabel(true);
+				whatToShow.setShowSKOSLabel(true);
+			} else if(targetLexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
+				inWhatToSearch.setSearchInSkosxlLabel(true);
+				whatToShow.setShowSKOSXLLabel(true);
+			} else if(targetLexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+				inWhatToSearch.setSearchInDCTitle(true);
+				inWhatToSearch.setSearchInWrittenRep(true);
+				whatToShow.setShowDCTitle(true);
+				whatToShow.setShowWrittenRep(true);
+			}
+			
+			
+			//do one search per label
 			List<AnnotatedValue<Resource>> currentAnnValuList = advancedSearch.searchResources(label, 
-					rolesArray, searchModeList, conn, targetLexMod, inWhatToSearch, whatToShow);
+					rolesArray, searchModeList, remoteConn, targetLexModel, inWhatToSearch, whatToShow);
+			
 			//analyze the return list and find a way to rank the results
 			// maybe order them according to how may times a resource is returned
 			for(AnnotatedValue<Resource> annValue : currentAnnValuList) {
@@ -263,10 +375,15 @@ public class Alignment extends STServiceAdapter {
 					}
 				}
 			}
+			
+			
+			
+			
 		}
  		
- 		//all labels have been analyze, so not order the Annotated Value according to how manytimes they were
- 		// returned, so start by picing all Annotated Value returnd maxValue and go down to 1
+ 		//all labels have been analyze, so not order the Annotated Value according to how many times they were
+ 		// returned, so start by picking all Annotated Value returned maxValue and go down to 1
+ 		//TODO, add the type of matched (fuzzy, exact, contains), the languages matched, and other info
  		List<AnnotatedValue<Resource>>annValueList = new ArrayList<>();
  		for(int i=maxCount; i>0; --i) {
  			for(String stringValue : resToCountMap.keySet()) {
@@ -275,10 +392,7 @@ public class Alignment extends STServiceAdapter {
  				}
  			}
  		}
- 		
  		return annValueList;
- 		
-		
 	}
 	
 	

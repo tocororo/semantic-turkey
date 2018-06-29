@@ -298,17 +298,22 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		String query = "";
 
 		if (searchMode == SearchMode.startsWith) {
-			query = "\nFILTER regex(str(" + variable + "), '^" + value + "', 'i')";
+			query = "\nFILTER regex(str(" + variable + "), '^" + value + "', 'i')" +
+					"\nBIND('startsWith' AS ?match)";
 		} else if (searchMode == SearchMode.endsWith) {
-			query = "\nFILTER regex(str(" + variable + "), '" + value + "$', 'i')";
+			query = "\nFILTER regex(str(" + variable + "), '" + value + "$', 'i')" +
+					"\nBIND('endsWith' AS ?match)";
 		} else if (searchMode == SearchMode.contains) {
-			query = "\nFILTER regex(str(" + variable + "), '" + value + "', 'i')";
+			query = "\nFILTER regex(str(" + variable + "), '" + value + "', 'i')" +
+					"\nBIND('contains' AS ?match)";
 		} else if (searchMode == SearchMode.fuzzy) {
 			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".");
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
-			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')";
+			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')" +
+					"\nBIND('fuzzy' AS ?match)";
 		} else { // searchMode.equals(exact)
-			query = "\nFILTER regex(str(" + variable + "), '^" + value + "$', 'i')";
+			query = "\nFILTER regex(str(" + variable + "), '^" + value + "$', 'i')" +
+					"\nBIND('exact' AS ?match)";
 		}
 		
 		//if at least one language is specified, then filter the results of the label having such language

@@ -559,19 +559,22 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the 
 					//single word, so filter them afterward
 					queryPart+
-					"\nFILTER regex(str("+varToUse+"), '^"+value+"', 'i')";
+					"\nFILTER regex(str("+varToUse+"), '^"+value+"', 'i')" +
+					"\nBIND('startsWith' AS ?match)";
 		} else if(searchMode == SearchMode.endsWith){
 			query="\n"+variable+" <"+indexToUse+"> '*"+value+"' ."+
 					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the 
 					//single word, so filter them afterward
 					queryPart+
-					"\nFILTER regex(str("+varToUse+"), '"+value+"$', 'i')";
+					"\nFILTER regex(str("+varToUse+"), '"+value+"$', 'i')" +
+					"\nBIND('endsWith' AS ?match)";
 		} else if(searchMode == SearchMode.contains){
 			query="\n"+variable+" <"+indexToUse+"> '*"+value+"*' ."+
 					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the 
 					//single word, so filter them afterward
 					queryPart+
-					"\nFILTER regex(str("+varToUse+"), '"+value+"', 'i')";
+					"\nFILTER regex(str("+varToUse+"), '"+value+"', 'i')" + 
+					"\nBIND('contains' AS ?match)";
 			
 		} else if(searchMode == SearchMode.fuzzy){
 			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements 
@@ -583,11 +586,13 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".");
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += queryPart+
-					"\nFILTER regex(str("+varToUse+"), \""+wordForNoIndexAsString+"\", 'i')";
+					"\nFILTER regex(str("+varToUse+"), \""+wordForNoIndexAsString+"\", 'i')" +
+					"\nBIND('fuzzy' AS ?match)";
 			
 		} else { // searchMode.equals(exact)
 			query="\n"+variable+" <"+indexToUse+"> '"+value+"' ." +
-					"\nFILTER regex(str("+varToUse+"), '^"+value+"$', 'i')";
+					"\nFILTER regex(str("+varToUse+"), '^"+value+"$', 'i')" + 
+					"\nBIND('exact' AS ?match)";
 		}
 		
 		//if at least one language is specified, then filter the results of the label having such language

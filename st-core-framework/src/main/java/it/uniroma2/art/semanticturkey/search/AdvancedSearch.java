@@ -1,8 +1,9 @@
 package it.uniroma2.art.semanticturkey.search;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -21,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.semanticturkey.extension.impl.search.regex.RegexSearchStrategy;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -115,8 +117,9 @@ public class AdvancedSearch {
 	
 	
 	//@formatter:off
-	public List<AnnotatedValue<Resource>> searchResources(Literal label, String[] rolesArray, List<SearchMode> searchModeList,
-			RepositoryConnection conn, IRI targetLexMod, InWhatToSearch inWhatToSearch, WhatToShow whatToShow) {
+	public List<AnnotatedValue<Resource>> searchResources(Literal label, String[] rolesArray, 
+			List<SearchMode> searchModeList, RepositoryConnection conn, IRI targetLexMod, 
+			InWhatToSearch inWhatToSearch, WhatToShow whatToShow) {
 		List<AnnotatedValue<Resource>> annotateResList = new ArrayList<>();
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(label.getLabel(), rolesArray, searchModeList.get(0), false);
@@ -125,10 +128,13 @@ public class AdvancedSearch {
 		String varType = "?type";
 		String varLabel = "?label";
 		String varSingleShow = "?singleShow";
-		String varShow = "?show";
+		//String varShow = "?show";
+		String varMatch = "?match";
 		
 		//prepare a query according to the searchMode and searchScope
-		String query = "SELECT DISTINCT "+varResource+" "+varType+ " (GROUP_CONCAT(DISTINCT ?singleShow; separator=\",\") AS ?show )" +
+		String query = "SELECT DISTINCT "+varResource+" "+varType + " " +varSingleShow + " "+ varMatch+
+				//" (GROUP_CONCAT(DISTINCT ?singleShow; separator=\",\") AS ?show ) " +
+				//"(GROUP_CONCAT(DISTINCT ?match; separator=\",\") AS ?matchType) " +
 				"\nWHERE{";
 		
 		//get the type 
@@ -144,7 +150,7 @@ public class AdvancedSearch {
 			}
 			List<String> langs = new ArrayList<>();
 			langs.add(label.getLanguage().get());
-			query += searchWithoutIndexes(varResource, varLabel, label.getLabel(), searchMode, 
+			query += prepareQueryforResourceUsingSearchString(varResource, varLabel, label.getLabel(), searchMode, 
 					langs, inWhatToSearch);
 		}
 		
@@ -154,18 +160,24 @@ public class AdvancedSearch {
 		//calculate the show
 		query+= calculateShow(varResource, varSingleShow, whatToShow );
 		
-		query+="\n}" + 
-				"\nGROUP BY ?resource ?type";
+		query+="\n}"; 
+				//"\nGROUP BY ?resource ?type";
 		
 		
 		logger.debug("query = " + query);
+		//System.out.println("query3 = "+query); // da cancellare
 		
-		//TODO for the moment, create a tuple query, but it should be better to use the QueryBuilder
 		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
 		tupleQuery.setIncludeInferred(false);
 		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
-		//iterate over the results 
+		List<String> resList = new ArrayList<>();
+		Map<String, String> resToShow = new HashMap<>();
+		Map<String, String> resToMatchMode = new HashMap<>();
+		Map<String, IRI> resToIri = new HashMap<>();
+		Map<String, IRI> resToType = new HashMap<>();
 		while(tupleQueryResult.hasNext()) {
+			//since it may be not possible to do a GROUP_CONCAT, a post processing is required (to aggregate
+			// ?singleShow and ?match)
 			BindingSet bindingSet = tupleQueryResult.next();
 			if(!bindingSet.hasBinding(varResource.substring(1))) {
 				//it is a null tuple, so process the next tuple, which should not exist, so the while will
@@ -174,26 +186,63 @@ public class AdvancedSearch {
 			}
 			
 			IRI iriRes = (IRI) bindingSet.getBinding(varResource.substring(1)).getValue();
-			String show = bindingSet.getBinding(varShow.substring(1)).getValue().stringValue();
-			IRI type = (IRI) bindingSet.getBinding(varType.substring(1)).getValue();
-			
-			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(iriRes);
-			annotatedValue.setAttribute("show", show);
-			if(type!=null) {
-				annotatedValue.setAttribute("type", type);
+			String res = iriRes.stringValue();
+			String singleShow = "";
+			if(bindingSet.hasBinding(varSingleShow.substring(1))) {
+				singleShow  = bindingSet.getBinding(varSingleShow.substring(1)).getValue().stringValue();
+			}
+			String match = "";
+			if(bindingSet.hasBinding(varMatch.substring(1))) {
+				match  = bindingSet.getBinding(varMatch.substring(1)).getValue().stringValue();
+			}
+			IRI type = null;
+			if(bindingSet.hasBinding(varType.substring(1))) {
+				type = (IRI) bindingSet.getBinding(varType.substring(1)).getValue();
 			}
 			
-			annotateResList.add(annotatedValue);
+			if(!resList.contains(res)) {
+				resList.add(res);
+			}
+			if(!resToIri.containsKey(res)) {
+				resToIri.put(res, iriRes);
+			}
+			if(type != null && !resToType.containsKey(res)) {
+				resToType.put(res, type);
+			}
+			//the show part
+			if(singleShow!="" && !resToShow.containsKey(res)) {
+				resToShow.put(res, "");
+			}
+			if(singleShow!="" && !resToShow.get(res).contains(singleShow)) {
+				resToShow.put(res, resToShow.get(res)+","+singleShow);
+			}
+			//the match part
+			if(match!="" && !resToMatchMode.containsKey(res)) {
+				resToMatchMode.put(res, "");
+			}
+			if(match!="" && !resToMatchMode.get(res).contains(match)) {
+				resToMatchMode.put(res, resToMatchMode.get(res)+","+match);
+			}
 			
 		}
 		
+		//construct each AnnotatedValue and then add them to the returned list
+		for(String res : resList) {
+			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(resToIri.get(res));
+			annotatedValue.setAttribute("show", resToShow.get(res).substring(1));
+			if(resToType.get(res)!=null) {
+				annotatedValue.setAttribute("type", resToType.get(res).stringValue());
+			}
+			annotatedValue.setAttribute("matchType", resToMatchMode.get(res).substring(1));
+			
+			annotateResList.add(annotatedValue);
+		}
 		return annotateResList;
-		
 	}
 	//@formatter:on
 	
 
-	private String searchWithoutIndexes(String varResource, String varLabel, String inputText,
+	private String prepareQueryforResourceUsingSearchString(String varResource, String varLabel, String inputText,
 			SearchMode searchMode, List<String> langs, InWhatToSearch inWhatToSearch) {
 		
 		//@formatter:of
@@ -201,10 +250,12 @@ public class AdvancedSearch {
 		
 		//prepare an inner query, which seems to be working faster (since it executed by GraphDB before the
 		// rest of the query and it uses the Lucene indexes)
-		query+="\n{SELECT ?resource ?type "+
+		query+="\n{SELECT ?resource ?type ?match"+
 				"\nWHERE{";
 		
-		if(inWhatToSearch.isSearchInLocalName()){
+		//search only in 
+		
+		/*if(inWhatToSearch.isSearchInLocalName()){
 			//the part related to the localName (with the indexes)
 			query+="\n{";
 			
@@ -224,13 +275,13 @@ public class AdvancedSearch {
 							inWhatToSearch.isSearchIncludingLocales()) +
 					"\n}"+
 					"\nUNION";
-		}
+		}*/
 		
 		//if there is a part related to the localName or the URI, then the part related to the label
 		// is inside { and } and linked to the previous part with an UNION
-		if(inWhatToSearch.isSearchInLocalName() || inWhatToSearch.isSearchInURI()){
+		/*if(inWhatToSearch.isSearchInLocalName() || inWhatToSearch.isSearchInURI()){
 			query+="\n{";
-		}
+		}*/
 		
 		
 		boolean first = true;
@@ -246,6 +297,19 @@ public class AdvancedSearch {
 			inWhatToSearch.setSearchInWrittenRep(true);
 
 		}
+		
+		//construct the complex path from a resource to a LexicalEntry
+		String directResToLexicalEntry = NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
+				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY)+
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES);
+		String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_LEXICALIZED_SENSE_OF)+
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.REFERENCE)+
+				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_REFERENCE_OF)+")"+
+				"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
+				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
+		String allResToLexicalEntry = directResToLexicalEntry+"|"+doubleStepResToLexicalEntry;
 		
 		if(inWhatToSearch.isSearchInRDFLabel()) {
 			//search in the rdfs:label
@@ -293,6 +357,13 @@ public class AdvancedSearch {
 			query+="\n{" +
 					"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
 					"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+					"\n}" +
+					//search in allResToLexicalEntry/(ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+					"\nUNION" +
+					"\n{" +
+					"\n?resource ("+allResToLexicalEntry+")/"+
+					"(<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+					"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
 					"\n}";
 			first = false;
 		}
@@ -301,9 +372,9 @@ public class AdvancedSearch {
 		query += searchUsingNoIndexes(varLabel, inputText, searchMode, langs, 
 					inWhatToSearch.isSearchIncludingLocales());
 		
-		if(inWhatToSearch.isSearchInLocalName() || inWhatToSearch.isSearchInURI()){
+		/*if(inWhatToSearch.isSearchInLocalName() || inWhatToSearch.isSearchInURI()){
 			query+="\n}";
-		}
+		}*/
 		
 		//close the nested query and the outer query
 		query+="\n}"+
@@ -363,17 +434,20 @@ public class AdvancedSearch {
 				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
 				"\n}";
 		}
-		//now filter the labels according to the input languages list
-		boolean first = true;
-		query+="\nFILTER(";
-		for(String lang : langs) {
-			if(!first) {
-				query+=" || ";
+		//now filter the labels according to the input languages list (if such list is not null and contains at least 
+		// one elemetn)
+		if(langs!=null && langs.size()>0) {
+			boolean first = true;
+			query+="\nFILTER(";
+			for(String lang : langs) {
+				if(!first) {
+					query+=" || ";
+				}
+				query+=" lang(?label) = '"+lang+"' ";
+				first = false;
 			}
-			query+=" lang(?label) = '"+lang+"' ";
-			first = false;
+			query+=")";
 		}
-		query+=")";
 		
 		
 		query+="\n}";
@@ -406,41 +480,10 @@ public class AdvancedSearch {
 	
 	private String searchUsingNoIndexes(String varToUse, String searchTerm, SearchMode searchMode, List<String> langs, 
 			boolean includeLocales){
-		String query ="";
 		
-		if(searchMode == SearchMode.startsWith){
-			query="\nFILTER regex(str("+varToUse+"), '^"+searchTerm+"', 'i')";
-		} else if(searchMode == SearchMode.endsWith){
-			query="\nFILTER regex(str("+varToUse+"), '"+searchTerm+"$', 'i')";
-		} else if(searchMode == SearchMode.contains){
-			query="\nFILTER regex(str("+varToUse+"), '"+searchTerm+"', 'i')";
-		} else if(searchMode == SearchMode.fuzzy){
-			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(searchTerm, ".");
-			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
-			query += "\nFILTER regex(str("+varToUse+"), \""+wordForNoIndexAsString+"\", 'i')";
-		} else{ // searchMode.equals(exact)
-			query="\nFILTER regex(str("+varToUse+"), '^"+searchTerm+"$', 'i')";
-		}
-		
-		//if at least one language is specified, then filter the results of the label having such language
-		if(langs!=null && langs.size()>0) {
-			boolean first=true;
-			query+="\nFILTER(";
-			for(String lang : langs) {
-				if(!first) {
-					query+=" || ";
-				}
-				first=false;
-				if(includeLocales) {
-					query+="regex(lang("+varToUse+"), '^"+lang+"')";
-				} else {
-					query+="lang("+varToUse+")="+"'"+lang+"'";
-				}
-			}
-			query+=")";
-		}
-		
-		return query;
+		RegexSearchStrategy regexSearchStrategy = new RegexSearchStrategy();
+		return regexSearchStrategy.searchSpecificModePrepareQuery(varToUse, searchTerm, searchMode, null, langs, 
+				includeLocales);
 	}
 	
 	private String calculateShow(String varResource, String varSingleShow, WhatToShow whatToShow) {
@@ -526,8 +569,8 @@ public class AdvancedSearch {
 		private boolean searchInSkosxlLabel;
 		private boolean searchInDCTitle;
 		private boolean searchInWrittenRep;
-		private boolean searchInLocalName;
-		private boolean searchInURI;
+		//private boolean searchInLocalName;
+		//private boolean searchInURI;
 		private boolean searchIncludingLocales;
 		
 		public InWhatToSearch() {
@@ -536,8 +579,8 @@ public class AdvancedSearch {
 			searchInSkosxlLabel = false;
 			searchInDCTitle = false;
 			searchInWrittenRep = false;
-			searchInLocalName = false;
-			searchInURI = false;
+			//searchInLocalName = false;
+			//searchInURI = false;
 			searchIncludingLocales = false;
 		}
 
@@ -581,7 +624,7 @@ public class AdvancedSearch {
 			this.searchInWrittenRep = searchInWrittenRep;
 		}
 		
-		public boolean isSearchInLocalName() {
+		/*public boolean isSearchInLocalName() {
 			return searchInLocalName;
 		}
 
@@ -595,7 +638,7 @@ public class AdvancedSearch {
 
 		public void setSearchInURI(boolean searchInURI) {
 			this.searchInURI = searchInURI;
-		}
+		}*/
 		
 		public boolean isSearchIncludingLocales() {
 			return searchIncludingLocales;
