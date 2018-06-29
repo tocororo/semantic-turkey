@@ -1,13 +1,12 @@
 package it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty;
 
+import javax.annotation.Nullable;
+
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformer;
 import it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.FilterUtils;
@@ -27,16 +26,14 @@ public class UpdatePropertyValueRDFTransformer implements RDFTransformer {
 	private Resource resource;
 	private IRI property;
 	private Value value;
+	@Nullable
 	private Value oldValue;
 
 	public UpdatePropertyValueRDFTransformer(UpdatePropertyValueRDFTransformerConfiguration config) {
-		ValueFactory vf = SimpleValueFactory.getInstance();
-
 		this.resource = config.resource;
 		this.property = config.property;
 		this.value = config.value;
-		this.oldValue = config.oldValue != null && !config.oldValue.isEmpty()
-				? NTriplesUtil.parseValue(config.oldValue, vf) : null;
+		this.oldValue = config.oldValue;
 
 	}
 
@@ -44,11 +41,12 @@ public class UpdatePropertyValueRDFTransformer implements RDFTransformer {
 	public void transform(RepositoryConnection sourceRepositoryConnection,
 			RepositoryConnection workingRepositoryConnection, IRI[] graphs) throws RDF4JException {
 		IRI[] expandedGraphs = FilterUtils.expandGraphs(workingRepositoryConnection, graphs);
-		
-		if (expandedGraphs.length == 0) return;
-		
-		workingRepositoryConnection.remove(resource,  property, oldValue, expandedGraphs);
-		workingRepositoryConnection.add(resource,  property, value, expandedGraphs);
+
+		if (expandedGraphs.length == 0)
+			return;
+
+		workingRepositoryConnection.remove(resource, property, oldValue, expandedGraphs);
+		workingRepositoryConnection.add(resource, property, value, expandedGraphs);
 	}
 
 }

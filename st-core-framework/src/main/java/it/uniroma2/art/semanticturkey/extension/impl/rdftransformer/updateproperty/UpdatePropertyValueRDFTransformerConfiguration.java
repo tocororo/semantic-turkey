@@ -36,6 +36,6 @@ public class UpdatePropertyValueRDFTransformerConfiguration implements Configura
 	@STProperty(description = "if set, the triple <resource, property, oldValue> is "
 			+ "replaced by <resource, property, value>. If not set, then all <resource, property, *> are "
 			+ "deleted and <resource, property, value> is written")
-	public String oldValue = null;
+	public Value oldValue = null;
 
 }
