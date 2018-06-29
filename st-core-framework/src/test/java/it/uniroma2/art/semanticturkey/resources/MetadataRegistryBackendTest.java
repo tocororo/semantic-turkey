@@ -287,7 +287,7 @@ public class MetadataRegistryBackendTest {
 		metadataRegistryBackend.addDataset(dbpediaDataset, "http://dbpedia.org/resource/", "DBpedia", true,
 				vf.createIRI("http://dbpedia.org/sparql"));
 
-		metadataRegistryBackend.assessLexicalizationModel(dbpediaDataset);
+		metadataRegistryBackend.discoverLexicalizationSets(dbpediaDataset);
 
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
 			conn.export(
@@ -303,7 +303,7 @@ public class MetadataRegistryBackendTest {
 		metadataRegistryBackend.addDataset(agrovocDataset, "http://aims.fao.org/aos/agrovoc/", "Agrovoc",
 				true, vf.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"));
 
-		metadataRegistryBackend.assessLexicalizationModel(agrovocDataset);
+		metadataRegistryBackend.discoverLexicalizationSets(agrovocDataset);
 
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
 			conn.export(

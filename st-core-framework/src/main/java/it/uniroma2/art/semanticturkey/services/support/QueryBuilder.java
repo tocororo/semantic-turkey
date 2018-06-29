@@ -99,11 +99,21 @@ public class QueryBuilder {
 	 * @throws QueryBuilderException
 	 */
 	public void processRendering() throws QueryBuilderException {
-		if (renderingEngine != null) {
+		process(serviceContext.getProject().getRenderingEngine(), resourceVariable, "attr_show");
+	}
+
+	/**
+	 * Attaches the rendering of the retrieved resources.
+	 * 
+	 * @param renderingEngine
+	 * @throws QueryBuilderException
+	 */
+	public void processRendering(RenderingEngine renderingEngine) throws QueryBuilderException {
+		if (this.renderingEngine != null) {
 			throw new QueryBuilderException("Rendering engine already configured");
 		}
-		renderingEngine = serviceContext.getProject().getRenderingEngine();
-		process(renderingEngine, resourceVariable, "attr_show");
+		this.renderingEngine = renderingEngine;
+		process(this.renderingEngine, resourceVariable, "attr_show");
 	}
 
 	/**

@@ -86,6 +86,8 @@ import com.google.common.collect.Sets;
 
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.maple.orchestration.AssessmentException;
+import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
@@ -95,6 +97,7 @@ import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
@@ -103,6 +106,8 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
 import it.uniroma2.art.semanticturkey.rendering.AbstractLabelBasedRenderingEngineConfiguration;
 import it.uniroma2.art.semanticturkey.rendering.BaseRenderingEngine;
+import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
+import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -126,7 +131,6 @@ import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.utilities.ErrorRecoveringValueFactory;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
-import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 
 /**
  * This service produces a view showing the details of a resource. This service operates uniformly (as much as
@@ -150,6 +154,12 @@ public class ResourceView extends STServiceAdapter {
 	@Autowired
 	private CustomFormManager customFormManager;
 
+	@Autowired
+	private MetadataRegistryBackend metadataRegistryBackend;
+
+	@Autowired
+	private MediationFramework mediationFramework;
+
 	private ThreadLocal<Map<Project, RepositoryConnection>> projectConnectionHolder = ThreadLocal
 			.withInitial(HashMap::new);
 
@@ -170,8 +180,10 @@ public class ResourceView extends STServiceAdapter {
 
 			MutableLong excludedObjectsCount = new MutableLong();
 
-			Model retrievedStatements = retrieveStatements(resourcePosition, resource, includeInferred,
-					ignorePropertyExclusions, excludedObjectsCount);
+			AccessMethod accessMethod = computeAccessMethod(resourcePosition);
+
+			Model retrievedStatements = accessMethod.retrieveStatements(resourcePosition, resource,
+					includeInferred, ignorePropertyExclusions, excludedObjectsCount);
 
 			// A resource is editable iff it is a locally defined resource (i.e. it is the subject of at least
 			// one triple in the working graph)
@@ -184,9 +196,9 @@ public class ResourceView extends STServiceAdapter {
 
 			Set<IRI> resourcePredicates = retrievedStatements.filter(resource, null, null).predicates();
 
-			SubjectAndObjectsInfos subjectAndObjectsAddtionalInfo = retrieveSubjectAndObjectsAddtionalInformation(
-					resourcePosition, resource, includeInferred, resourcePredicates,
-					ignorePropertyExclusions);
+			SubjectAndObjectsInfos subjectAndObjectsAddtionalInfo = accessMethod
+					.retrieveSubjectAndObjectsAddtionalInformation(resourcePosition, resource,
+							includeInferred, resourcePredicates, ignorePropertyExclusions);
 
 			Map<Resource, Map<String, Value>> resource2attributes = subjectAndObjectsAddtionalInfo.resource2attributes;
 			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow = subjectAndObjectsAddtionalInfo.predicate2resourceCreShow;
@@ -198,6 +210,7 @@ public class ResourceView extends STServiceAdapter {
 			annotatedResource.setAttribute("resourcePosition", resourcePosition.toString());
 			annotatedResource.setAttribute("explicit", subjectResourceEditable);
 			annotatedResource.setAttribute("excludedObjectsCount", excludedObjectsCount.longValue());
+			annotatedResource.setAttribute("accessMethod", accessMethod.getName());
 			AbstractStatementConsumer.addNature(annotatedResource, resource2attributes);
 
 			RDFResourceRole resourceRole = getRoleFromNature(
@@ -218,8 +231,8 @@ public class ResourceView extends STServiceAdapter {
 			// Always consider special predicates, even if they are not mentioned, because it may be the case
 			// that they are shown anyway in the resource view
 			Set<IRI> predicatesToEnrich = Sets.union(resourcePredicates, specialProperties);
-			Model propertyModel = retrievePredicateInformation(resourcePosition, predicatesToEnrich,
-					specialProperties, resource2attributes, retrievedStatements);
+			Model propertyModel = accessMethod.retrievePredicateInformation(resourcePosition,
+					predicatesToEnrich, specialProperties, resource2attributes, retrievedStatements);
 
 			for (StatementConsumer aConsumer : viewTemplate) {
 				Map<String, ResourceViewSection> producedSections = aConsumer.consumeStatements(project,
@@ -239,6 +252,24 @@ public class ResourceView extends STServiceAdapter {
 				}
 			}
 			projectConnectionHolder.remove();
+		}
+	}
+
+	protected AccessMethod computeAccessMethod(ResourcePosition resourcePosition) {
+		if (resourcePosition instanceof LocalResourcePosition) {
+			return new LocalProjectAccessMethod(((LocalResourcePosition) resourcePosition).getProject());
+		} else if (resourcePosition instanceof RemoteResourcePosition) {
+			DatasetMetadata datasetMetadata = ((RemoteResourcePosition) resourcePosition)
+					.getDatasetMetadata();
+			if (!datasetMetadata.isAccessible()) {
+				throw new IllegalArgumentException("Dataset %s is not accessible. "
+						+ "Please verify that in the Metadata Registry there is the SPARQL endpoint of this dataset or it is dereferenceable.");
+			}
+
+			return datasetMetadata.getSparqlEndpoint().<AccessMethod>map(SPARQLAccessMethod::new)
+					.orElseGet(DerefenciationAccessMethod::new);
+		} else {
+			return new DerefenciationAccessMethod();
 		}
 	}
 
@@ -334,240 +365,6 @@ public class ResourceView extends STServiceAdapter {
 				SKOS.PREF_LABEL, SKOS.ALT_LABEL, SKOS.HIDDEN_LABEL);
 	}
 
-	private Model retrievePredicateInformation(ResourcePosition resourcePosition, Set<IRI> resourcePredicates,
-			Set<IRI> specialProperties, Map<Resource, Map<String, Value>> resource2attributes,
-			Model statements) throws ProjectAccessException {
-		SimpleValueFactory vf = SimpleValueFactory.getInstance();
-
-		String predicatesValuesFrag = Sets.union(resourcePredicates, specialProperties).stream()
-				.map(p -> "(" + NTriplesUtil.toNTriplesString(p) + ")").collect(joining(" "));
-		String specialPredicatesValuesFrag = specialProperties.stream()
-				.map(p -> "(" + NTriplesUtil.toNTriplesString(p) + ")").collect(joining(" "));
-
-		if (resourcePosition instanceof LocalResourcePosition) {
-			RepositoryConnection acquireManagedConnection = acquireManagedConnectionToProject(getProject(),
-					((LocalResourcePosition) resourcePosition).getProject());
-
-			QueryBuilder qb = createQueryBuilder(String.format(
-			// @formatter:off  
-					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                             \n" +
-					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                         \n" +
-					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                              \n" +
-					" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                      \n" +
-					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                               \n" +
-					" 	SELECT ?resource (GROUP_CONCAT(DISTINCT $parentProp; separator = \"><\") AS ?attr_parents)" + generateNatureSPARQLSelectPart() + " WHERE {     \n" +
-					" 	  VALUES(?resource){                                                          \n" +
-					" 	    %s						                                                  \n" +
-					" 	  }                                                                           \n" +
-					" 	  VALUES(?specialProp){                                                       \n" +
-					" 	    %s						                                                  \n" +
-					" 	  }                                                                           \n" +
-					" 	  OPTIONAL {                                                                  \n" +
-					" 	    ?resource rdfs:subPropertyOf* ?specialProp                                \n" +
-					" 	    BIND(STR(?specialProp) as $parentProp)                                    \n" +
-					" 	  }	                                                                          \n" +
-					generateNatureSPARQLWherePart("resource") +
-					" 	}                                                                             \n" +
-					" 	GROUP BY ?resource                                                            \n"
-				// @formatter:on
-					, predicatesValuesFrag, specialPredicatesValuesFrag));
-			qb.processRole();
-			Model propertyModel = new LinkedHashModel();
-			qb.runQuery(acquireManagedConnection).stream().forEach(annotatedPredicate -> {
-				List<IRI> parents = Arrays
-						.stream(annotatedPredicate.getAttributes().get("parents").stringValue().split("><"))
-						.filter(s -> !s.isEmpty()).map(s -> vf.createIRI(s)).collect(toList());
-				IRI predicate = (IRI) annotatedPredicate.getValue();
-				parents.forEach(parent -> {
-					propertyModel.add(predicate, RDFS.SUBPROPERTYOF, parent);
-				});
-
-				Map<String, Value> attrs = resource2attributes.get(predicate);
-				if (attrs == null) {
-					attrs = new HashMap<>();
-					resource2attributes.put(predicate, attrs);
-				}
-				attrs.putAll(annotatedPredicate.getAttributes());
-			});
-
-			Map<String, String> ns2prefixMap = new HashMap<>();
-			for (Namespace ns : statements.getNamespaces()) {
-				ns2prefixMap.put(ns.getName(), ns.getPrefix());
-			}
-			for (IRI predicate : resourcePredicates) {
-				Map<String, Value> attrs = resource2attributes.computeIfAbsent(predicate,
-						k -> new HashMap<>());
-
-				String prefix = ns2prefixMap.get(predicate.getNamespace());
-				if (prefix == null) {
-					attrs.put("show", vf.createLiteral(predicate.stringValue()));
-				} else {
-					attrs.put("show", vf.createLiteral(prefix + ":" + predicate.getLocalName()));
-				}
-			}
-
-			return propertyModel;
-		}
-
-		Model propertiesModel = new LinkedHashModel();
-		specialProperties.stream().forEach(p -> propertiesModel.add(p, RDFS.SUBPROPERTYOF, p));
-		return propertiesModel;
-	}
-
-	private SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
-			ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
-			Set<IRI> resourcePredicates, boolean ignorePropertyExclusions) throws ProjectAccessException {
-		if (resourcePosition instanceof LocalResourcePosition) {
-			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
-
-			String propertyExclusionFilterWithVarPredicate = getPropertyExclusionFilter(resourcePosition,
-					"predicate", ignorePropertyExclusions);
-
-			StringBuilder sb = new StringBuilder();
-			sb.append(
-			// @formatter:off
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                         \n" +
-				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                              \n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                      \n" +
-				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                               \n" +
-				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                               \n" +
-				" SELECT ?resource ?predicate (MAX(?attr_creShowTemp) as ?predattr_creShow) " + generateNatureSPARQLSelectPart() + " WHERE { \n" +
-				"   {                                                                               \n" +
-				"       {                                                                           \n" +
-				"         ?subjectResource ?predicate ?tempResource .                               \n" +
-				"         " + propertyExclusionFilterWithVarPredicate +
-				"       }                                                                           \n" +
-				"     ?tempResource (rdf:rest*/rdf:first)* ?resource                                \n" +
-				"   } UNION {                                                                       \n" +
-				"     bind(?subjectResource as ?resource)                                           \n" +
-				"   }                                                                               \n" +
-				"   FILTER(!isLITERAL(?resource))                                                   \n" +
-				generateNatureSPARQLWherePart("resource")
-				// @formatter:on
-			);
-
-			Multimap<List<IRI>, IRI> chain2pred = HashMultimap.create();
-
-			for (IRI pred : resourcePredicates) {
-				customFormManager.getCustomForms(getProject(), pred).stream()
-						.filter(CustomFormGraph.class::isInstance).map(CustomFormGraph.class::cast)
-						.forEach(cf -> {
-							List<IRI> chain = cf.getShowPropertyChain();
-
-							if (chain == null || chain.isEmpty())
-								return;
-
-							chain2pred.put(chain, pred);
-						});
-			}
-
-			int i = 0;
-
-			for (List<IRI> chain : chain2pred.keySet()) {
-				String selectorCollection = chain2pred.get(chain).stream().map(RenderUtils::toSPARQL)
-						.collect(joining(",", "(", ")"));
-
-				String showChain = chain.stream().map(RenderUtils::toSPARQL).collect(joining("/"));
-
-				sb.append(
-				// @formatter:off
-					"     OPTIONAL {                                                          \n" +
-					"        ?subjectResource ?predicate ?resource .                          \n" +
-					"        " + propertyExclusionFilterWithVarPredicate +
-					"        FILTER(?predicate IN " + selectorCollection + ")                 \n" + 	
-					"        ?resource " +  showChain + " ?attr_creShowTemp" + (i++) + " .    \n" +
-					"     }                                                                   \n"
-					// @formatter:on
-				);
-			}
-
-			if (i != 0) {
-				sb.append("     BIND(COALESCE(\n");
-
-				for (int j = 0; j < i; j++) {
-					sb.append("       ?attr_creShowTemp" + j);
-					if (j + 1 != i) {
-						sb.append(", ");
-					}
-					sb.append("\n");
-				}
-
-				sb.append("     ) AS ?attr_creShowTemp) \n");
-			}
-
-			sb.append(
-			// @formatter:off
-				" }                                                                           \n" +
-				" GROUP BY ?resource ?predicate                                               \n"
-				// @formatter:on
-			);
-
-			QueryBuilder qb = createQueryBuilder(sb.toString());
-			qb.processRendering();
-			qb.processQName();
-			qb.process(XLabelLiteralFormQueryProcessor.INSTANCE, "resource", "attr_literalForm");
-			qb.process(DecompComponentRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
-					"attr_decompComponentRendering");
-			qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_ontolexFormRendering");
-			qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
-					"attr_ontolexLexicalEntryRendering");
-			qb.process(LexiconRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_limeLexiconRendering");
-			qb.setBinding("subjectResource", resource);
-			qb.setIncludeInferred(includeInferred); // inference is required to properly render / assign
-													// nature to inferred objects
-
-			Collection<BindingSet> bindingSets = qb.runQuery(
-					acquireManagedConnectionToProject(getProject(), localResourcePosition.getProject()),
-					QueryResultsProcessors.toBindingSets());
-
-			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow = new HashMap<>();
-			Map<Resource, Map<String, Value>> resource2attributes = new HashMap<>();
-
-			for (BindingSet bs : bindingSets) {
-				IRI predicate = (IRI) bs.getValue("predicate");
-
-				Map<Resource, Literal> resource2CreShow = predicate2resourceCreShow.computeIfAbsent(predicate,
-						key -> new HashMap<>());
-
-				Value resourceValue = bs.getValue("resource");
-
-				if (!(resourceValue instanceof Resource))
-					continue;
-
-				Resource resourceResource = (Resource) resourceValue;
-
-				Map<String, Value> attributes = resource2attributes.computeIfAbsent(resourceResource,
-						key -> new HashMap<>());
-
-				for (Binding b : bs) {
-					String bindingName = b.getName();
-					Value bindingValue = b.getValue();
-
-					if (bindingValue == null)
-						continue;
-
-					if (bindingName.startsWith("attr_")) {
-						attributes.put(bindingName.substring("attr_".length()), bindingValue);
-					}
-
-					if (bindingName.equals("predattr_creShow")) {
-						Literal bindingValueAsLiteral = (Literal) bindingValue;
-
-						if (bindingValueAsLiteral.getLabel().isEmpty())
-							continue;
-
-						resource2CreShow.put(resourceResource, bindingValueAsLiteral);
-					}
-				}
-
-			}
-
-			return new SubjectAndObjectsInfos(resource2attributes, predicate2resourceCreShow);
-		}
-
-		return new SubjectAndObjectsInfos(Collections.emptyMap(), Collections.emptyMap());
-	}
-
 	private static class SubjectAndObjectsInfos {
 
 		public SubjectAndObjectsInfos(Map<Resource, Map<String, Value>> resource2attributes,
@@ -578,181 +375,6 @@ public class ResourceView extends STServiceAdapter {
 
 		public final Map<Resource, Map<String, Value>> resource2attributes;
 		public final Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow;
-	}
-
-	private Model retrieveStatements(ResourcePosition resourcePosition, Resource resource,
-			boolean includeInferred, boolean ignorePropertyExclusions, MutableLong excludedObjectsCount)
-			throws ProjectAccessException, RDF4JException, IOException {
-		if (resourcePosition instanceof LocalResourcePosition) {
-			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
-
-			Project resourceHoldingProject = localResourcePosition.getProject();
-
-			RepositoryConnection managedConnection = acquireManagedConnectionToProject(getProject(),
-					resourceHoldingProject);
-
-			Model retrievedStatements = new LinkedHashModel();
-
-			TupleQuery tupleQuery = managedConnection.prepareTupleQuery(
-			// @formatter:off
-					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>              \n" +
-					" SELECT ?g ?s ?p ?o ?g2 ?s2 ?p2 ?o2{                                    \n" +
-					"     GRAPH ?g {                                                         \n" +
-					"       ?s ?p ?o .                                                       \n" +
-					"       " + getPropertyExclusionFilter(localResourcePosition, "p", ignorePropertyExclusions ) +
-					"     }                                                                  \n" +
-					"     OPTIONAL {                                                         \n" +
-					"       ?o rdf:rest* ?s2                                                 \n" +
-					"       FILTER(isBLANK(?o))                                              \n" +
-					"       GRAPH ?g2 {                                                      \n" +
-					"         ?s2 ?p2 ?o2 .                                                  \n" +
-					"         " + getPropertyExclusionFilter(localResourcePosition, "p2", ignorePropertyExclusions ) +
-					"       }                                                                \n" +
-					"     }                                                                  \n" +
-					" }	                                                                     \n"
-					// @formatter:on
-			);
-			tupleQuery.setBinding("s", resource);
-			tupleQuery.setIncludeInferred(false);
-			try (TupleQueryResult result = tupleQuery.evaluate()) {
-				while (result.hasNext()) {
-					BindingSet bindingSet = result.next();
-					Resource g = (Resource) bindingSet.getValue("g");
-					Resource s = (Resource) bindingSet.getValue("s");
-					IRI p = (IRI) bindingSet.getValue("p");
-					Value o = bindingSet.getValue("o");
-					retrievedStatements.add(s, p, o, g);
-
-					if (bindingSet.hasBinding("g2")) {
-						Resource g2 = (Resource) bindingSet.getValue("g2");
-						Resource s2 = (Resource) bindingSet.getValue("s2");
-						IRI p2 = (IRI) bindingSet.getValue("p2");
-						Value o2 = bindingSet.getValue("o2");
-
-						retrievedStatements.add(s2, p2, o2, g2);
-					}
-				}
-			}
-
-			GraphQuery describeQuery = managedConnection
-					.prepareGraphQuery("DESCRIBE ?x WHERE {BIND(?y as ?x)}");
-			describeQuery.setBinding("y", resource);
-			describeQuery.setIncludeInferred(includeInferred);
-
-			Set<IRI> excludedProperties = getExcludedProperties(localResourcePosition);
-
-			QueryResults.stream(describeQuery.evaluate()).forEach(stmt -> {
-				Resource subject = stmt.getSubject();
-				IRI predicate = stmt.getPredicate();
-				Value object = stmt.getObject();
-
-				if (excludedProperties.contains(predicate)) {
-					if (subject.equals(resource)) {
-						excludedObjectsCount.increment();
-					}
-					return;
-				}
-
-				if (retrievedStatements.contains(subject, predicate, object))
-					return;
-
-				retrievedStatements.add(subject, predicate, object, INFERENCE_GRAPH);
-			});
-
-			return retrievedStatements;
-		}
-
-		if (!(resource instanceof IRI)) {
-			throw new IllegalArgumentException(
-					"Could not retrieve the description of a blank node from a remote dataset");
-		}
-
-		if (resourcePosition instanceof RemoteResourcePosition) {
-			Model retrievedStatements = new LinkedHashModel();
-
-			RemoteResourcePosition remotePosition = (RemoteResourcePosition) resourcePosition;
-			String sparqlEndpoint = remotePosition.getDatasetMetadata().getSparqlEndpoint()
-					.map(Value::stringValue).orElse(null);
-
-			if (sparqlEndpoint != null) {
-				Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint);
-				sparqlRepository.initialize();
-				try {
-					try (RepositoryConnection conn = sparqlRepository.getConnection()) {
-						TupleQuery tupleQuery = conn.prepareTupleQuery(
-						// @formatter:off
-							" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>              \n" +
-							" SELECT ?g ?s ?p ?o ?g2 ?s2 ?p2 ?o2{                                    \n" +
-							"     ?s ?p ?o .                                                         \n" +
-							"     OPTIONAL {                                                         \n" +
-							"     	GRAPH ?g {                                                       \n" +
-							"     	  ?s ?p ?o .                                                     \n" +
-							"    	 }                                                               \n" +
-							"     }                                                                  \n" +
-//							"     OPTIONAL {                                                         \n" +
-//							"       ?o rdf:rest* ?s2                                                 \n" +
-//							"       FILTER(isBLANK(?o))                                              \n" +
-//							"       GRAPH ?g2 {                                                      \n" +
-//							"         ?s2 ?p2 ?o2 .                                                  \n" +
-//							"       }                                                                \n" +
-//							"     }                                                                  \n" +
-							" }	                                                                     \n"
-							// @formatter:on
-						);
-						tupleQuery.setBinding("s", resource);
-						try (TupleQueryResult result = tupleQuery.evaluate()) {
-							while (result.hasNext()) {
-								BindingSet bindingSet = result.next();
-								Resource g = (Resource) bindingSet.getValue("g");
-								Resource s = (Resource) bindingSet.getValue("s");
-								IRI p = (IRI) bindingSet.getValue("p");
-								Value o = bindingSet.getValue("o");
-								if (g != null) {
-									retrievedStatements.add(s, p, o, g);
-								} else {
-									retrievedStatements.add(s, p, o);
-								}
-
-								if (bindingSet.hasBinding("g2")) {
-									Resource g2 = (Resource) bindingSet.getValue("g2");
-									Resource s2 = (Resource) bindingSet.getValue("s2");
-									IRI p2 = (IRI) bindingSet.getValue("p2");
-									Value o2 = bindingSet.getValue("o2");
-
-									retrievedStatements.add(s2, p2, o2, g2);
-								}
-							}
-						}
-
-						// At this point, we know that resource is an IRI
-						GraphQuery describeQuery = conn
-								.prepareGraphQuery("DESCRIBE " + RenderUtils.toSPARQL(resource));
-						QueryResults.stream(describeQuery.evaluate()).forEach(stmt -> {
-							Resource subject = stmt.getSubject();
-							IRI predicate = stmt.getPredicate();
-							Value object = stmt.getObject();
-							if (retrievedStatements.contains(subject, predicate, object))
-								return;
-
-							retrievedStatements.add(subject, predicate, object);
-						});
-					}
-					return retrievedStatements;
-				} finally {
-					sparqlRepository.shutDown();
-				}
-			} else if (!remotePosition.getDatasetMetadata().getDereferenciationSystem()
-					.map(METADATAREGISTRY.STANDARD_DEREFERENCIATION::equals).orElse(false)) {
-				throw new IllegalArgumentException(
-						"Could not dereference dataset:" + remotePosition.getDatasetMetadata().getUriSpace());
-			}
-		}
-
-		Model retrievedStatements = new LinkedHashModel();
-		RDFLoader rdfLoader = RDF4JUtilities.createRobustRDFLoader();
-		StatementCollector statementCollector = new StatementCollector(retrievedStatements);
-		rdfLoader.load(new URL(resource.stringValue()), null, null, statementCollector);
-		return retrievedStatements;
 	}
 
 	/**
@@ -841,6 +463,545 @@ public class ResourceView extends STServiceAdapter {
 
 			return projectConnectionHolder.get().computeIfAbsent(resourceHoldingProject,
 					p -> RDF4JRepositoryUtils.wrapReadOnlyConnection(p.getRepository().getConnection()));
+		}
+	}
+
+	/**
+	 * Root class of access methods, such as local access, SPARQL or dereferenciation
+	 */
+	public abstract class AccessMethod {
+		public abstract String getName();
+
+		public abstract Model retrieveStatements(ResourcePosition resourcePosition, Resource resource,
+				boolean includeInferred, boolean ignorePropertyExclusions, MutableLong excludedObjectsCount)
+				throws ProjectAccessException, RDF4JException, IOException;
+
+		public Model retrievePredicateInformation(ResourcePosition resourcePosition,
+				Set<IRI> resourcePredicates, Set<IRI> specialProperties,
+				Map<Resource, Map<String, Value>> resource2attributes, Model statements)
+				throws ProjectAccessException {
+			Model propertiesModel = new LinkedHashModel();
+			specialProperties.stream().forEach(p -> propertiesModel.add(p, RDFS.SUBPROPERTYOF, p));
+			return propertiesModel;
+		}
+
+		public abstract SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
+				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
+				Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
+				throws ProjectAccessException, AssessmentException;
+
+		/**
+		 * Base method that can be used by subclasses for implementing the API
+		 * 
+		 * @param conn
+		 * @param resourcePosition
+		 * @param resourcePredicates
+		 * @param specialProperties
+		 * @param resource2attributes
+		 * @param statements
+		 * @return
+		 * @throws ProjectAccessException
+		 */
+		protected Model retrievePredicateInformation(RepositoryConnection conn,
+				ResourcePosition resourcePosition, Set<IRI> resourcePredicates, Set<IRI> specialProperties,
+				Map<Resource, Map<String, Value>> resource2attributes, Model statements)
+				throws ProjectAccessException {
+
+			SimpleValueFactory vf = SimpleValueFactory.getInstance();
+
+			String predicatesValuesFrag = Sets.union(resourcePredicates, specialProperties).stream()
+					.map(p -> "(" + NTriplesUtil.toNTriplesString(p) + ")").collect(joining(" "));
+			String specialPredicatesValuesFrag = specialProperties.stream()
+					.map(p -> "(" + NTriplesUtil.toNTriplesString(p) + ")").collect(joining(" "));
+
+			QueryBuilder qb = createQueryBuilder(String.format(
+			// @formatter:off  
+					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                             \n" +
+					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                         \n" +
+					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                              \n" +
+					" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                      \n" +
+					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                               \n" +
+					" 	SELECT ?resource (GROUP_CONCAT(DISTINCT $parentProp; separator = \"><\") AS ?attr_parents)" + generateNatureSPARQLSelectPart() + " WHERE {     \n" +
+					" 	  VALUES(?resource){                                                          \n" +
+					" 	    %s						                                                  \n" +
+					" 	  }                                                                           \n" +
+					" 	  VALUES(?specialProp){                                                       \n" +
+					" 	    %s						                                                  \n" +
+					" 	  }                                                                           \n" +
+					" 	  OPTIONAL {                                                                  \n" +
+					" 	    ?resource rdfs:subPropertyOf* ?specialProp                                \n" +
+					" 	    BIND(STR(?specialProp) as $parentProp)                                    \n" +
+					" 	  }	                                                                          \n" +
+					generateNatureSPARQLWherePart("resource") +
+					" 	}                                                                             \n" +
+					" 	GROUP BY ?resource                                                            \n"
+				// @formatter:on
+					, predicatesValuesFrag, specialPredicatesValuesFrag));
+			qb.processRole();
+			Model propertyModel = new LinkedHashModel();
+			qb.runQuery(conn).stream().forEach(annotatedPredicate -> {
+				List<IRI> parents = Arrays
+						.stream(annotatedPredicate.getAttributes().get("parents").stringValue().split("><"))
+						.filter(s -> !s.isEmpty()).map(s -> vf.createIRI(s)).collect(toList());
+				IRI predicate = (IRI) annotatedPredicate.getValue();
+				parents.forEach(parent -> {
+					propertyModel.add(predicate, RDFS.SUBPROPERTYOF, parent);
+				});
+
+				Map<String, Value> attrs = resource2attributes.get(predicate);
+				if (attrs == null) {
+					attrs = new HashMap<>();
+					resource2attributes.put(predicate, attrs);
+				}
+				attrs.putAll(annotatedPredicate.getAttributes());
+			});
+
+			Map<String, String> ns2prefixMap = new HashMap<>();
+			for (Namespace ns : statements.getNamespaces()) {
+				ns2prefixMap.put(ns.getName(), ns.getPrefix());
+			}
+			for (IRI predicate : resourcePredicates) {
+				Map<String, Value> attrs = resource2attributes.computeIfAbsent(predicate,
+						k -> new HashMap<>());
+
+				String prefix = ns2prefixMap.get(predicate.getNamespace());
+				if (prefix == null) {
+					attrs.put("show", vf.createLiteral(predicate.stringValue()));
+				} else {
+					attrs.put("show", vf.createLiteral(prefix + ":" + predicate.getLocalName()));
+				}
+			}
+
+			return propertyModel;
+		}
+
+		/**
+		 * Base method that can be used by subclasses for implementing the API
+		 */
+		protected SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
+				RepositoryConnection conn, RenderingEngine renderingEngine, ResourcePosition resourcePosition,
+				Resource resource, boolean includeInferred, Set<IRI> resourcePredicates,
+				boolean ignorePropertyExclusions) throws ProjectAccessException {
+			String propertyExclusionFilterWithVarPredicate = getPropertyExclusionFilter(resourcePosition,
+					"predicate", ignorePropertyExclusions);
+
+			StringBuilder sb = new StringBuilder();
+			sb.append(
+			// @formatter:off
+					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                         \n" +
+					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                              \n" +
+					" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                      \n" +
+					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                               \n" +
+					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                               \n" +
+					" SELECT ?resource ?predicate (MAX(?attr_creShowTemp) as ?predattr_creShow) " + generateNatureSPARQLSelectPart() + " WHERE { \n" +
+					"   {                                                                               \n" +
+					"       {                                                                           \n" +
+					"         ?subjectResource ?predicate ?tempResource .                               \n" +
+					"         " + propertyExclusionFilterWithVarPredicate +
+					"       }                                                                           \n" +
+					"     ?tempResource (rdf:rest*/rdf:first)* ?resource                                \n" +
+					"   } UNION {                                                                       \n" +
+					"     bind(?subjectResource as ?resource)                                           \n" +
+					"   }                                                                               \n" +
+					"   FILTER(!isLITERAL(?resource))                                                   \n" +
+					generateNatureSPARQLWherePart("resource")
+					// @formatter:on
+			);
+
+			Multimap<List<IRI>, IRI> chain2pred = HashMultimap.create();
+
+			for (IRI pred : resourcePredicates) {
+				customFormManager.getCustomForms(getProject(), pred).stream()
+						.filter(CustomFormGraph.class::isInstance).map(CustomFormGraph.class::cast)
+						.forEach(cf -> {
+							List<IRI> chain = cf.getShowPropertyChain();
+
+							if (chain == null || chain.isEmpty())
+								return;
+
+							chain2pred.put(chain, pred);
+						});
+			}
+
+			int i = 0;
+
+			for (List<IRI> chain : chain2pred.keySet()) {
+				String selectorCollection = chain2pred.get(chain).stream().map(RenderUtils::toSPARQL)
+						.collect(joining(",", "(", ")"));
+
+				String showChain = chain.stream().map(RenderUtils::toSPARQL).collect(joining("/"));
+
+				sb.append(
+				// @formatter:off
+						"     OPTIONAL {                                                          \n" +
+						"        ?subjectResource ?predicate ?resource .                          \n" +
+						"        " + propertyExclusionFilterWithVarPredicate +
+						"        FILTER(?predicate IN " + selectorCollection + ")                 \n" + 	
+						"        ?resource " +  showChain + " ?attr_creShowTemp" + (i++) + " .    \n" +
+						"     }                                                                   \n"
+						// @formatter:on
+				);
+			}
+
+			if (i != 0) {
+				sb.append("     BIND(COALESCE(\n");
+
+				for (int j = 0; j < i; j++) {
+					sb.append("       ?attr_creShowTemp" + j);
+					if (j + 1 != i) {
+						sb.append(", ");
+					}
+					sb.append("\n");
+				}
+
+				sb.append("     ) AS ?attr_creShowTemp) \n");
+			}
+
+			sb.append(
+			// @formatter:off
+					" }                                                                           \n" +
+					" GROUP BY ?resource ?predicate                                               \n"
+					// @formatter:on
+			);
+
+			System.out.println("@@\n" + sb.toString());
+			QueryBuilder qb = createQueryBuilder(sb.toString());
+			if (renderingEngine != null) {
+				qb.processRendering(renderingEngine);
+			}
+			qb.processQName();
+			qb.process(XLabelLiteralFormQueryProcessor.INSTANCE, "resource", "attr_literalForm");
+			qb.process(DecompComponentRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
+					"attr_decompComponentRendering");
+			qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_ontolexFormRendering");
+			qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
+					"attr_ontolexLexicalEntryRendering");
+			qb.process(LexiconRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_limeLexiconRendering");
+			qb.setBinding("subjectResource", resource);
+			qb.setIncludeInferred(includeInferred); // inference is required to properly render / assign
+													// nature to inferred objects
+
+			Repository repo = null;
+			Collection<BindingSet> bindingSets;
+			try {
+				bindingSets = qb.runQuery(conn, QueryResultsProcessors.toBindingSets());
+			} finally {
+				if (repo != null) {
+					conn.close();
+					repo.shutDown();
+				}
+			}
+			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow = new HashMap<>();
+			Map<Resource, Map<String, Value>> resource2attributes = new HashMap<>();
+
+			for (BindingSet bs : bindingSets) {
+				IRI predicate = (IRI) bs.getValue("predicate");
+
+				Map<Resource, Literal> resource2CreShow = predicate2resourceCreShow.computeIfAbsent(predicate,
+						key -> new HashMap<>());
+
+				Value resourceValue = bs.getValue("resource");
+
+				if (!(resourceValue instanceof Resource))
+					continue;
+
+				Resource resourceResource = (Resource) resourceValue;
+
+				Map<String, Value> attributes = resource2attributes.computeIfAbsent(resourceResource,
+						key -> new HashMap<>());
+
+				for (Binding b : bs) {
+					String bindingName = b.getName();
+					Value bindingValue = b.getValue();
+
+					if (bindingValue == null)
+						continue;
+
+					if (bindingName.startsWith("attr_")) {
+						attributes.put(bindingName.substring("attr_".length()), bindingValue);
+					}
+
+					if (bindingName.equals("predattr_creShow")) {
+						Literal bindingValueAsLiteral = (Literal) bindingValue;
+
+						if (bindingValueAsLiteral.getLabel().isEmpty())
+							continue;
+
+						resource2CreShow.put(resourceResource, bindingValueAsLiteral);
+					}
+				}
+
+			}
+
+			return new SubjectAndObjectsInfos(resource2attributes, predicate2resourceCreShow);
+		}
+	}
+
+	public class LocalProjectAccessMethod extends AccessMethod {
+
+		private Project resourceHoldingProject;
+
+		public LocalProjectAccessMethod(Project project) {
+			this.resourceHoldingProject = project;
+		}
+
+		@Override
+		public String getName() {
+			return "local";
+		}
+
+		@Override
+		public Model retrieveStatements(ResourcePosition resourcePosition, Resource resource,
+				boolean includeInferred, boolean ignorePropertyExclusions, MutableLong excludedObjectsCount)
+				throws ProjectAccessException, RDF4JException, IOException {
+			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
+			RepositoryConnection managedConnection = acquireManagedConnectionToProject(getProject(),
+					resourceHoldingProject);
+
+			Model retrievedStatements = new LinkedHashModel();
+
+			TupleQuery tupleQuery = managedConnection.prepareTupleQuery(
+		// @formatter:off
+					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>              \n" +
+					" SELECT ?g ?s ?p ?o ?g2 ?s2 ?p2 ?o2{                                    \n" +
+					"     GRAPH ?g {                                                         \n" +
+					"       ?s ?p ?o .                                                       \n" +
+					"       " + getPropertyExclusionFilter(localResourcePosition, "p", ignorePropertyExclusions ) +
+					"     }                                                                  \n" +
+					"     OPTIONAL {                                                         \n" +
+					"       ?o rdf:rest* ?s2                                                 \n" +
+					"       FILTER(isBLANK(?o))                                              \n" +
+					"       GRAPH ?g2 {                                                      \n" +
+					"         ?s2 ?p2 ?o2 .                                                  \n" +
+					"         " + getPropertyExclusionFilter(localResourcePosition, "p2", ignorePropertyExclusions ) +
+					"       }                                                                \n" +
+					"     }                                                                  \n" +
+					" }	                                                                     \n"
+					// @formatter:on
+			);
+			tupleQuery.setBinding("s", resource);
+			tupleQuery.setIncludeInferred(false);
+			try (TupleQueryResult result = tupleQuery.evaluate()) {
+				while (result.hasNext()) {
+					BindingSet bindingSet = result.next();
+					Resource g = (Resource) bindingSet.getValue("g");
+					Resource s = (Resource) bindingSet.getValue("s");
+					IRI p = (IRI) bindingSet.getValue("p");
+					Value o = bindingSet.getValue("o");
+					retrievedStatements.add(s, p, o, g);
+
+					if (bindingSet.hasBinding("g2")) {
+						Resource g2 = (Resource) bindingSet.getValue("g2");
+						Resource s2 = (Resource) bindingSet.getValue("s2");
+						IRI p2 = (IRI) bindingSet.getValue("p2");
+						Value o2 = bindingSet.getValue("o2");
+
+						retrievedStatements.add(s2, p2, o2, g2);
+					}
+				}
+			}
+
+			GraphQuery describeQuery = managedConnection
+					.prepareGraphQuery("DESCRIBE ?x WHERE {BIND(?y as ?x)}");
+			describeQuery.setBinding("y", resource);
+			describeQuery.setIncludeInferred(includeInferred);
+
+			Set<IRI> excludedProperties = getExcludedProperties(localResourcePosition);
+
+			QueryResults.stream(describeQuery.evaluate()).forEach(stmt -> {
+				Resource subject = stmt.getSubject();
+				IRI predicate = stmt.getPredicate();
+				Value object = stmt.getObject();
+
+				if (excludedProperties.contains(predicate)) {
+					if (subject.equals(resource)) {
+						excludedObjectsCount.increment();
+					}
+					return;
+				}
+
+				if (retrievedStatements.contains(subject, predicate, object))
+					return;
+
+				retrievedStatements.add(subject, predicate, object, INFERENCE_GRAPH);
+			});
+
+			return retrievedStatements;
+		}
+
+		@Override
+		public Model retrievePredicateInformation(ResourcePosition resourcePosition,
+				Set<IRI> resourcePredicates, Set<IRI> specialProperties,
+				Map<Resource, Map<String, Value>> resource2attributes, Model statements)
+				throws ProjectAccessException {
+			RepositoryConnection managedConnection = acquireManagedConnectionToProject(getProject(),
+					resourceHoldingProject);
+			return super.retrievePredicateInformation(managedConnection, resourcePosition, resourcePredicates,
+					specialProperties, resource2attributes, statements);
+		}
+
+		@Override
+		public SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
+				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
+				Set<IRI> resourcePredicates, boolean ignorePropertyExclusions) throws ProjectAccessException {
+			RepositoryConnection managedConnection = acquireManagedConnectionToProject(getProject(),
+					resourceHoldingProject);
+			return super.retrieveSubjectAndObjectsAddtionalInformation(managedConnection,
+					resourceHoldingProject.getRenderingEngine(), resourcePosition, resource, includeInferred,
+					resourcePredicates, ignorePropertyExclusions);
+		}
+
+	}
+
+	public class SPARQLAccessMethod extends AccessMethod {
+		private IRI sparqlEndpoint;
+
+		public SPARQLAccessMethod(IRI sparqlEndpoint) {
+			this.sparqlEndpoint = sparqlEndpoint;
+		}
+
+		@Override
+		public String getName() {
+			return "sparql";
+		}
+
+		@Override
+		public Model retrieveStatements(ResourcePosition resourcePosition, Resource resource,
+				boolean includeInferred, boolean ignorePropertyExclusions, MutableLong excludedObjectsCount)
+				throws ProjectAccessException, RDF4JException, IOException {
+			Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint.stringValue());
+			sparqlRepository.initialize();
+			try {
+				Model retrievedStatements = new LinkedHashModel();
+				try (RepositoryConnection conn = sparqlRepository.getConnection()) {
+					TupleQuery tupleQuery = conn.prepareTupleQuery(
+				// @formatter:off
+						" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>              \n" +
+						" SELECT ?g ?s ?p ?o ?g2 ?s2 ?p2 ?o2{                                    \n" +
+						"     ?s ?p ?o .                                                         \n" +
+						"     OPTIONAL {                                                         \n" +
+						"     	GRAPH ?g {                                                       \n" +
+						"     	  ?s ?p ?o .                                                     \n" +
+						"    	 }                                                               \n" +
+						"     }                                                                  \n" +
+						"     OPTIONAL {                                                         \n" +
+						"       ?o rdf:rest* ?s2                                                 \n" +
+						"       FILTER(isBLANK(?o))                                              \n" +
+						"       GRAPH ?g2 {                                                      \n" +
+						"         ?s2 ?p2 ?o2 .                                                  \n" +
+						"       }                                                                \n" +
+						"     }                                                                  \n" +
+						" }	                                                                     \n"
+						// @formatter:on
+					);
+					tupleQuery.setBinding("s", resource);
+					try (TupleQueryResult result = tupleQuery.evaluate()) {
+						while (result.hasNext()) {
+							BindingSet bindingSet = result.next();
+							Resource g = (Resource) bindingSet.getValue("g");
+							Resource s = (Resource) bindingSet.getValue("s");
+							IRI p = (IRI) bindingSet.getValue("p");
+							Value o = bindingSet.getValue("o");
+							if (g != null) {
+								retrievedStatements.add(s, p, o, g);
+							} else {
+								retrievedStatements.add(s, p, o);
+							}
+
+							if (bindingSet.hasBinding("g2")) {
+								Resource g2 = (Resource) bindingSet.getValue("g2");
+								Resource s2 = (Resource) bindingSet.getValue("s2");
+								IRI p2 = (IRI) bindingSet.getValue("p2");
+								Value o2 = bindingSet.getValue("o2");
+
+								retrievedStatements.add(s2, p2, o2, g2);
+							}
+						}
+					}
+
+					// At this point, we know that resource is an IRI
+					GraphQuery describeQuery = conn
+							.prepareGraphQuery("DESCRIBE " + RenderUtils.toSPARQL(resource));
+					QueryResults.stream(describeQuery.evaluate()).forEach(stmt -> {
+						Resource subject = stmt.getSubject();
+						IRI predicate = stmt.getPredicate();
+						Value object = stmt.getObject();
+						if (retrievedStatements.contains(subject, predicate, object))
+							return;
+
+						retrievedStatements.add(subject, predicate, object);
+					});
+				}
+				return retrievedStatements;
+			} finally {
+				sparqlRepository.shutDown();
+			}
+		}
+
+		// @Override
+		// public Model retrievePredicateInformation(ResourcePosition resourcePosition,
+		// Set<IRI> resourcePredicates, Set<IRI> specialProperties,
+		// Map<Resource, Map<String, Value>> resource2attributes, Model statements)
+		// throws ProjectAccessException {
+		// Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint.stringValue());
+		// sparqlRepository.initialize();
+		// try {
+		// try (RepositoryConnection conn = sparqlRepository.getConnection()) {
+		//
+		// return super.retrievePredicateInformation(conn, resourcePosition, resourcePredicates,
+		// specialProperties, resource2attributes, statements);
+		// }
+		// } finally {
+		// sparqlRepository.shutDown();
+		// }
+		// }
+
+		@Override
+		public SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
+				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
+				Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
+				throws ProjectAccessException, AssessmentException {
+			Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint.stringValue());
+			sparqlRepository.initialize();
+			try (RepositoryConnection conn = sparqlRepository.getConnection()) {
+				IRI dataset = ((RemoteResourcePosition) resourcePosition).getDatasetMetadata().getIdentity();
+				java.util.Optional<IRI> lexicalizationModel = mediationFramework
+						.assessLexicalizationModel(dataset, metadataRegistryBackend.extractProfile(dataset));
+				RenderingEngine renderingEngine = BaseRenderingEngine
+						.getRenderingEngineForLexicalizationModel(
+								lexicalizationModel.orElse(Project.RDFS_LEXICALIZATION_MODEL))
+						.orElse(null);
+				return super.retrieveSubjectAndObjectsAddtionalInformation(conn, renderingEngine,
+						resourcePosition, resource, includeInferred, resourcePredicates,
+						ignorePropertyExclusions);
+			} finally {
+				sparqlRepository.shutDown();
+			}
+		}
+	}
+
+	public class DerefenciationAccessMethod extends AccessMethod {
+		@Override
+		public String getName() {
+			return "dereferenciation";
+		}
+
+		@Override
+		public Model retrieveStatements(ResourcePosition resourcePosition, Resource resource,
+				boolean includeInferred, boolean ignorePropertyExclusions, MutableLong excludedObjectsCount)
+				throws ProjectAccessException, RDF4JException, IOException {
+			Model retrievedStatements = new LinkedHashModel();
+			RDFLoader rdfLoader = RDF4JUtilities.createRobustRDFLoader();
+			StatementCollector statementCollector = new StatementCollector(retrievedStatements);
+			rdfLoader.load(new URL(resource.stringValue()), null, null, statementCollector);
+			return retrievedStatements;
+		}
+
+		@Override
+		public SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
+				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
+				Set<IRI> resourcePredicates, boolean ignorePropertyExclusions) throws ProjectAccessException {
+			return new SubjectAndObjectsInfos(Collections.emptyMap(), Collections.emptyMap());
 		}
 	}
 }

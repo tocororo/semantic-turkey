@@ -8,6 +8,7 @@ import java.util.Collection;
 import javax.annotation.Nullable;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import it.uniroma2.art.maple.orchestration.AssessmentException;
@@ -176,8 +177,10 @@ public interface MetadataRegistryBackend {
 	 * @throws MetadataRegistryWritingException 
 	 * @throws MetadataDiscoveryException
 	 */
-	void assessLexicalizationModel(IRI dataset) throws AssessmentException, MetadataRegistryWritingException;
+	void discoverLexicalizationSets(IRI dataset) throws AssessmentException, MetadataRegistryWritingException;
 
 	RepositoryConnection getConnection();
+
+	Model extractProfile(IRI dataset);
 
 }

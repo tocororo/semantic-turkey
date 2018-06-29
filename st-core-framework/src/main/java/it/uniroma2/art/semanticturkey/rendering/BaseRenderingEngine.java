@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,6 +23,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.parser.sparql.SPARQLUtil;
 import org.eclipse.rdf4j.repository.Repository;
@@ -35,6 +37,14 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
 
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.OntoLexLemonRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.RDFSRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSXLRenderingEngineConfiguration;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
@@ -89,8 +99,9 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	public BaseRenderingEngine(AbstractLabelBasedRenderingEngineConfiguration config) {
 		this(config, true);
 	}
-	
-	public BaseRenderingEngine(AbstractLabelBasedRenderingEngineConfiguration config, boolean fallbackToTerm) {
+
+	public BaseRenderingEngine(AbstractLabelBasedRenderingEngineConfiguration config,
+			boolean fallbackToTerm) {
 		this.config = config;
 		this.languages = config.languages;
 
@@ -118,9 +129,8 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		while (m.find()) {
 			if (languagesPropValue == null) {
 				try {
-					languagesPropValue = STPropertiesManager.getPUSetting(
-							STPropertiesManager.PREF_LANGUAGES, currentProject, UsersManager.getLoggedUser(),
-							RenderingEngine.class.getName());
+					languagesPropValue = STPropertiesManager.getPUSetting(STPropertiesManager.PREF_LANGUAGES,
+							currentProject, UsersManager.getLoggedUser(), RenderingEngine.class.getName());
 				} catch (STPropertyAccessException e) {
 					logger.debug("Could not access property: " + STPropertiesManager.PREF_LANGUAGES, e);
 				}
@@ -197,9 +207,10 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 			Literal rawLabelLiteral = ((Literal) bindingSet.getValue("label"));
 			String show;
 			if (rawLabelLiteral == null || rawLabelLiteral.getLabel().isEmpty()) {
-				
-				if (!fallbackToTerm) return;
-				
+
+				if (!fallbackToTerm)
+					return;
+
 				show = resource.toString();
 				if (resource instanceof IRI) {
 					IRI resourceIRI = (IRI) resource;
@@ -243,9 +254,10 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 					String lang = keyIt.next();
 
 					Collection<String> labels = lang2label.get(lang);
-					
-					if (labels.isEmpty()) continue;
-					
+
+					if (labels.isEmpty())
+						continue;
+
 					if (sb.length() != 0) {
 						sb.append(", ");
 					}
@@ -253,12 +265,11 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 					if (lang.isEmpty()) {
 						sb.append(labels.stream().collect(joining(", ")));
 					} else {
-						sb.append(labels.stream().map(l -> l + " (" + lang + ")")
-								.collect(joining(", ")));
+						sb.append(labels.stream().map(l -> l + " (" + lang + ")").collect(joining(", ")));
 					}
 
 				}
-				
+
 				show = sb.toString();
 			}
 
@@ -266,5 +277,21 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		});
 
 		return renderings;
+	}
+
+	public static Optional<RenderingEngine> getRenderingEngineForLexicalizationModel(
+			IRI lexicalizationModel) {
+		if (lexicalizationModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
+			return Optional.of(new RDFSRenderingEngine(new RDFSRenderingEngineConfiguration()));
+		} else if (lexicalizationModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
+			return Optional.of(new SKOSRenderingEngine(new SKOSRenderingEngineConfiguration()));
+		} else if (lexicalizationModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
+			return Optional.of(new SKOSXLRenderingEngine(new SKOSXLRenderingEngineConfiguration()));
+		} else if (lexicalizationModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+			return Optional
+					.of(new OntoLexLemonRenderingEngine(new OntoLexLemonRenderingEngineConfiguration()));
+		} else {
+			return Optional.empty();
+		}
 	}
 }

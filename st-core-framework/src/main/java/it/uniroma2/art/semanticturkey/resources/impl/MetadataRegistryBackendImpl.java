@@ -1332,10 +1332,12 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see it.uniroma2.art.semanticturkey.resources.M#assessLexicalizationModel(org.eclipse.rdf4j.model.IRI)
+	 * @see
+	 * it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend#discoverLexicalizationSets(org.eclipse
+	 * .rdf4j.model.IRI)
 	 */
 	@Override
-	public synchronized void assessLexicalizationModel(IRI dataset)
+	public synchronized void discoverLexicalizationSets(IRI dataset)
 			throws AssessmentException, MetadataRegistryWritingException {
 		Function<RepositoryConnection, Model> computeDatasetDescription = conn -> QueryResults
 				.asModel(conn.prepareGraphQuery("DESCRIBE * WHERE { " + RenderUtils.toSPARQL(dataset) + " <"
@@ -1343,12 +1345,12 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 		try (RepositoryConnection metadataConn = metadataRegistry.getConnection()) {
 			Model originalDescription = computeDatasetDescription.apply(metadataConn);
-			mediationFramework.assessLexicalizationModel(metadataConn, dataset);
+			mediationFramework.discoverLexicalizationSets(metadataConn, dataset);
 			Model possibilyUpdatedDescription = computeDatasetDescription.apply(metadataConn);
 
 			if (!Models.isomorphic(originalDescription, possibilyUpdatedDescription)) {
 				Update updateModificationDate = metadataConn.prepareUpdate(
-					// @formatter:off
+				// @formatter:off
 					" PREFIX dcterms: <http://purl.org/dc/terms/>                                \n" +
 					" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                  \n" +
 					" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                  \n" +
@@ -1373,6 +1375,14 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 
 		saveToFile();
+	}
+
+	@Override
+	public Model extractProfile(IRI dataset) {
+		try (RepositoryConnection conn = getConnection()) {
+			return QueryResults.asModel(conn.prepareGraphQuery("DESCRIBE * WHERE { "
+					+ RenderUtils.toSPARQL(dataset) + " <" + VOID.SUBSET + ">* ?dataset  }").evaluate());
+		}
 	}
 
 }
