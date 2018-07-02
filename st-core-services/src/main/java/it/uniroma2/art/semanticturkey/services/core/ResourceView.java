@@ -71,16 +71,22 @@ import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.repository.util.RDFLoader;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
@@ -94,9 +100,11 @@ import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
@@ -198,7 +206,8 @@ public class ResourceView extends STServiceAdapter {
 
 			SubjectAndObjectsInfos subjectAndObjectsAddtionalInfo = accessMethod
 					.retrieveSubjectAndObjectsAddtionalInformation(resourcePosition, resource,
-							includeInferred, resourcePredicates, ignorePropertyExclusions);
+							includeInferred, retrievedStatements, resourcePredicates,
+							ignorePropertyExclusions);
 
 			Map<Resource, Map<String, Value>> resource2attributes = subjectAndObjectsAddtionalInfo.resource2attributes;
 			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow = subjectAndObjectsAddtionalInfo.predicate2resourceCreShow;
@@ -206,7 +215,7 @@ public class ResourceView extends STServiceAdapter {
 			Set<Statement> processedStatements = new HashSet<>();
 
 			Map<String, ResourceViewSection> description = new LinkedHashMap<>();
-			AnnotatedValue<Resource> annotatedResource = new AnnotatedValue<Resource>(resource);
+			AnnotatedValue<Resource> annotatedResource = new AnnotatedValue<>(resource);
 			annotatedResource.setAttribute("resourcePosition", resourcePosition.toString());
 			annotatedResource.setAttribute("explicit", subjectResourceEditable);
 			annotatedResource.setAttribute("excludedObjectsCount", excludedObjectsCount.longValue());
@@ -487,7 +496,7 @@ public class ResourceView extends STServiceAdapter {
 
 		public abstract SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
 				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
-				Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
+				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
 				throws ProjectAccessException, AssessmentException;
 
 		/**
@@ -843,7 +852,8 @@ public class ResourceView extends STServiceAdapter {
 		@Override
 		public SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
 				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
-				Set<IRI> resourcePredicates, boolean ignorePropertyExclusions) throws ProjectAccessException {
+				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
+				throws ProjectAccessException {
 			RepositoryConnection managedConnection = acquireManagedConnectionToProject(getProject(),
 					resourceHoldingProject);
 			return super.retrieveSubjectAndObjectsAddtionalInformation(managedConnection,
@@ -959,7 +969,7 @@ public class ResourceView extends STServiceAdapter {
 		@Override
 		public SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
 				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
-				Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
+				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
 				throws ProjectAccessException, AssessmentException {
 			Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint.stringValue());
 			sparqlRepository.initialize();
@@ -994,14 +1004,44 @@ public class ResourceView extends STServiceAdapter {
 			RDFLoader rdfLoader = RDF4JUtilities.createRobustRDFLoader();
 			StatementCollector statementCollector = new StatementCollector(retrievedStatements);
 			rdfLoader.load(new URL(resource.stringValue()), null, null, statementCollector);
+
+			// Move the null context to a graph named after the resource
+			Model nullCtx = new LinkedHashModel(
+					retrievedStatements.filter(null, null, null, (Resource) null));
+			if (!nullCtx.isEmpty()) {
+				nullCtx.forEach(stmt -> retrievedStatements.add(stmt.getSubject(), stmt.getPredicate(),
+						stmt.getObject(), resource));
+				retrievedStatements.clear((Resource) null);
+			}
 			return retrievedStatements;
 		}
 
 		@Override
 		public SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
 				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
-				Set<IRI> resourcePredicates, boolean ignorePropertyExclusions) throws ProjectAccessException {
-			return new SubjectAndObjectsInfos(Collections.emptyMap(), Collections.emptyMap());
+				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
+				throws ProjectAccessException {
+			Repository repo = new SailRepository(new MemoryStore());
+			repo.initialize();
+			try (RepositoryConnection conn = repo.getConnection()) {
+				conn.add(statements);
+				// It is necessary to load the OWL vocabulary, becase the nature processor assumes its
+				// presence
+				try {
+					conn.add(OntologyManager.class.getResource("owl.rdf"), null, RDFFormat.RDFXML,
+							conn.getValueFactory().createIRI("http://www.w3.org/2002/07/owl"));
+				} catch (RDFParseException | RepositoryException | IOException e) {
+					throw new RuntimeException(e);
+				}
+				String nature = NatureRecognitionOrchestrator.computeNature(resource, conn);
+				Map<Resource, Map<String, Value>> resourceAttributes = new HashMap<>();
+				Map<String, Value> subjectAttributes = new HashMap<>();
+				subjectAttributes.put("nature", SimpleValueFactory.getInstance().createLiteral(nature));
+				resourceAttributes.put(resource, subjectAttributes);
+				return new SubjectAndObjectsInfos(resourceAttributes, Collections.emptyMap());
+			} finally {
+				repo.shutDown();
+			}
 		}
 	}
 }
