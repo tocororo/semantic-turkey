@@ -85,8 +85,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
@@ -587,11 +585,15 @@ public class ResourceView extends STServiceAdapter {
 
 		/**
 		 * Base method that can be used by subclasses for implementing the API
+		 * 
+		 * @param useGroupBy
+		 *            TODO
 		 */
-		protected SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
-				RepositoryConnection conn, RenderingEngine renderingEngine, ResourcePosition resourcePosition,
-				Resource resource, boolean includeInferred, Set<IRI> resourcePredicates,
-				boolean ignorePropertyExclusions) throws ProjectAccessException {
+		protected SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformationFromConnection(
+				RepositoryConnection conn, Model statements, RenderingEngine renderingEngine,
+				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
+				Set<IRI> resourcePredicates, boolean ignorePropertyExclusions, boolean useGroupBy)
+				throws ProjectAccessException {
 			String propertyExclusionFilterWithVarPredicate = getPropertyExclusionFilter(resourcePosition,
 					"predicate", ignorePropertyExclusions);
 
@@ -603,7 +605,7 @@ public class ResourceView extends STServiceAdapter {
 					" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                      \n" +
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                               \n" +
 					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                               \n" +
-					" SELECT ?resource ?predicate (MAX(?attr_creShowTemp) as ?predattr_creShow) " + generateNatureSPARQLSelectPart() + " WHERE { \n" +
+					" SELECT ?resource " + (useGroupBy ? "?predicate (MAX(?attr_creShowTemp) as ?predattr_creShow) " + generateNatureSPARQLSelectPart() : "") + " WHERE { \n" +
 					"   {                                                                               \n" +
 					"       {                                                                           \n" +
 					"         ?subjectResource ?predicate ?tempResource .                               \n" +
@@ -614,34 +616,35 @@ public class ResourceView extends STServiceAdapter {
 					"     bind(?subjectResource as ?resource)                                           \n" +
 					"   }                                                                               \n" +
 					"   FILTER(!isLITERAL(?resource))                                                   \n" +
-					generateNatureSPARQLWherePart("resource")
+					(useGroupBy ? generateNatureSPARQLWherePart("resource") : "")
 					// @formatter:on
 			);
 
-			Multimap<List<IRI>, IRI> chain2pred = HashMultimap.create();
+			if (useGroupBy) {
+				Multimap<List<IRI>, IRI> chain2pred = HashMultimap.create();
 
-			for (IRI pred : resourcePredicates) {
-				customFormManager.getCustomForms(getProject(), pred).stream()
-						.filter(CustomFormGraph.class::isInstance).map(CustomFormGraph.class::cast)
-						.forEach(cf -> {
-							List<IRI> chain = cf.getShowPropertyChain();
+				for (IRI pred : resourcePredicates) {
+					customFormManager.getCustomForms(getProject(), pred).stream()
+							.filter(CustomFormGraph.class::isInstance).map(CustomFormGraph.class::cast)
+							.forEach(cf -> {
+								List<IRI> chain = cf.getShowPropertyChain();
 
-							if (chain == null || chain.isEmpty())
-								return;
+								if (chain == null || chain.isEmpty())
+									return;
 
-							chain2pred.put(chain, pred);
-						});
-			}
+								chain2pred.put(chain, pred);
+							});
+				}
 
-			int i = 0;
+				int i = 0;
 
-			for (List<IRI> chain : chain2pred.keySet()) {
-				String selectorCollection = chain2pred.get(chain).stream().map(RenderUtils::toSPARQL)
-						.collect(joining(",", "(", ")"));
+				for (List<IRI> chain : chain2pred.keySet()) {
+					String selectorCollection = chain2pred.get(chain).stream().map(RenderUtils::toSPARQL)
+							.collect(joining(",", "(", ")"));
 
-				String showChain = chain.stream().map(RenderUtils::toSPARQL).collect(joining("/"));
+					String showChain = chain.stream().map(RenderUtils::toSPARQL).collect(joining("/"));
 
-				sb.append(
+					sb.append(
 				// @formatter:off
 						"     OPTIONAL {                                                          \n" +
 						"        ?subjectResource ?predicate ?resource .                          \n" +
@@ -650,42 +653,48 @@ public class ResourceView extends STServiceAdapter {
 						"        ?resource " +  showChain + " ?attr_creShowTemp" + (i++) + " .    \n" +
 						"     }                                                                   \n"
 						// @formatter:on
-				);
-			}
-
-			if (i != 0) {
-				sb.append("     BIND(COALESCE(\n");
-
-				for (int j = 0; j < i; j++) {
-					sb.append("       ?attr_creShowTemp" + j);
-					if (j + 1 != i) {
-						sb.append(", ");
-					}
-					sb.append("\n");
+					);
 				}
 
-				sb.append("     ) AS ?attr_creShowTemp) \n");
-			}
+				if (i != 0) {
+					sb.append("     BIND(COALESCE(\n");
 
-			sb.append(
+					for (int j = 0; j < i; j++) {
+						sb.append("       ?attr_creShowTemp" + j);
+						if (j + 1 != i) {
+							sb.append(", ");
+						}
+						sb.append("\n");
+					}
+
+					sb.append("     ) AS ?attr_creShowTemp) \n");
+				}
+
+				sb.append(
 			// @formatter:off
 					" }                                                                           \n" +
 					" GROUP BY ?resource ?predicate                                               \n"
 					// @formatter:on
-			);
+				);
 
+			} else {
+				sb.append(" }\n");
+			}
 			QueryBuilder qb = createQueryBuilder(sb.toString());
-			if (renderingEngine != null) {
+			if (useGroupBy && renderingEngine != null) {
 				qb.processRendering(renderingEngine);
 			}
 			qb.processQName();
 			qb.process(XLabelLiteralFormQueryProcessor.INSTANCE, "resource", "attr_literalForm");
-			qb.process(DecompComponentRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
-					"attr_decompComponentRendering");
-			qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_ontolexFormRendering");
-			qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
-					"attr_ontolexLexicalEntryRendering");
-			qb.process(LexiconRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_limeLexiconRendering");
+			if (useGroupBy) {
+				qb.process(DecompComponentRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
+						"attr_decompComponentRendering");
+				qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_ontolexFormRendering");
+				qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
+						"attr_ontolexLexicalEntryRendering");
+				qb.process(LexiconRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
+						"attr_limeLexiconRendering");
+			}
 			qb.setBinding("subjectResource", resource);
 			qb.setIncludeInferred(includeInferred); // inference is required to properly render / assign
 													// nature to inferred objects
@@ -706,8 +715,9 @@ public class ResourceView extends STServiceAdapter {
 			for (BindingSet bs : bindingSets) {
 				IRI predicate = (IRI) bs.getValue("predicate");
 
-				Map<Resource, Literal> resource2CreShow = predicate2resourceCreShow.computeIfAbsent(predicate,
-						key -> new HashMap<>());
+				Map<Resource, Literal> resource2CreShow = useGroupBy
+						? predicate2resourceCreShow.computeIfAbsent(predicate, key -> new HashMap<>())
+						: Collections.emptyMap();
 
 				Value resourceValue = bs.getValue("resource");
 
@@ -739,6 +749,21 @@ public class ResourceView extends STServiceAdapter {
 						resource2CreShow.put(resourceResource, bindingValueAsLiteral);
 					}
 				}
+
+			}
+
+			if (!useGroupBy) {
+				SubjectAndObjectsInfos tempSubjectsAndObjectsInfos = this
+						.retrieveSubjectAndObjectsAddtionalInformationFromStatements(resourcePosition,
+								resource, includeInferred, statements, resourcePredicates,
+								ignorePropertyExclusions);
+				Map<String, Value> subjectAttributes = tempSubjectsAndObjectsInfos.resource2attributes
+						.get(resource);
+				resource2attributes.merge(resource, subjectAttributes, (m1, m2) -> {
+					Map<String, Value> m3 = new HashMap<>(m1);
+					m3.putAll(m2);
+					return m3;
+				});
 
 			}
 
@@ -887,9 +912,9 @@ public class ResourceView extends STServiceAdapter {
 				throws ProjectAccessException {
 			RepositoryConnection managedConnection = acquireManagedConnectionToProject(getProject(),
 					resourceHoldingProject);
-			return super.retrieveSubjectAndObjectsAddtionalInformation(managedConnection,
-					resourceHoldingProject.getRenderingEngine(), resourcePosition, resource, includeInferred,
-					resourcePredicates, ignorePropertyExclusions);
+			return super.retrieveSubjectAndObjectsAddtionalInformationFromConnection(managedConnection,
+					statements, resourceHoldingProject.getRenderingEngine(), resourcePosition, resource,
+					includeInferred, resourcePredicates, ignorePropertyExclusions, true);
 		}
 
 	}
@@ -1009,7 +1034,6 @@ public class ResourceView extends STServiceAdapter {
 				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
 				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
 				throws ProjectAccessException, AssessmentException {
-			// if (useGroupBy) {
 			Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint.stringValue());
 			sparqlRepository.initialize();
 			try (RepositoryConnection conn = sparqlRepository.getConnection()) {
@@ -1020,15 +1044,12 @@ public class ResourceView extends STServiceAdapter {
 						.getRenderingEngineForLexicalizationModel(
 								lexicalizationModel.orElse(Project.RDFS_LEXICALIZATION_MODEL))
 						.orElse(null);
-				return super.retrieveSubjectAndObjectsAddtionalInformation(conn, renderingEngine,
-						resourcePosition, resource, includeInferred, resourcePredicates,
-						ignorePropertyExclusions);
+				return super.retrieveSubjectAndObjectsAddtionalInformationFromConnection(conn, statements,
+						renderingEngine, resourcePosition, resource, includeInferred, resourcePredicates,
+						ignorePropertyExclusions, useGroupBy);
 			} finally {
 				sparqlRepository.shutDown();
 			}
-			// } else {
-			//
-			// }
 		}
 	}
 
