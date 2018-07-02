@@ -11,13 +11,9 @@ rule it.uniroma2.art.semanticturkey.customform.form.reifiednote id:reifiednote {
  		reifNoteId uri(coda:randIdGen("note", {})) .
 		noteLang literal userPrompt/lang .
 		noteLit literal(coda:langString($noteLang)) userPrompt/note .
-		source literal userPrompt/source .
-		related uri userPrompt/related .
 	}
 	graph = {
 		$reifNoteId rdf:value $noteLit .
-		OPTIONAL { $reifNoteId dc:related $related . }
-		OPTIONAL { $reifNoteId dc:source $source . }
 	}
 }
 ]]></ref>
