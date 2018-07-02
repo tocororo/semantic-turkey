@@ -321,30 +321,39 @@ public class CustomForms extends STServiceAdapter {
 		CODACore codaCore = getInitializedCodaCore(repoConnection);
 		CustomFormGraph cf = getCustomFormGraphSeed(getProject(), codaCore, cfManager, repoConnection,
 				resource, Collections.singleton(predicate), false);
+		
+		Update update;
 		if (cf == null) { //
 			/*
 			 * If property hasn't a CustomForm simply delete all triples where resource occurs. note: this
 			 * case should never be verified cause this service should be called only when the predicate has a
 			 * CustomForm
 			 */
-			String query = "delete where { " + "<" + resource.stringValue() + "> ?p1 ?o1 . " + "?s2 ?p2 <"
-					+ resource.stringValue() + "> " + "}";
-			Update update = repoConnection.prepareUpdate(query);
-			update.setIncludeInferred(false);
-			update.execute();
+			StringBuilder queryBuilder = new StringBuilder();
+			queryBuilder.append("delete { ");
+			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
+			queryBuilder.append(" <" + resource.stringValue() + "> ?p1 ?o1 . ");
+			queryBuilder.append(" ?s2 ?p2 <" + resource.stringValue() + "> . ");
+			queryBuilder.append(" }"); //close graph {}
+			queryBuilder.append(" } where { ");
+			queryBuilder.append(" <" + resource.stringValue() + "> ?p1 ?o1 . ");
+			queryBuilder.append(" ?s2 ?p2 <" + resource.stringValue() + "> . ");
+			queryBuilder.append(" }");
+			update = repoConnection.prepareUpdate(queryBuilder.toString());
 		} else { // otherwise remove with a SPARQL delete the graph defined by the CustomFormGraph
 			StringBuilder queryBuilder = new StringBuilder();
 			queryBuilder.append("delete { ");
+			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
 			queryBuilder.append(cf.getGraphSectionAsString(codaCore, false));
+			queryBuilder.append(" }"); //close graph {}
 			queryBuilder.append(" } where { ");
 			queryBuilder.append(cf.getGraphSectionAsString(codaCore, true));
 			queryBuilder.append(" }");
-
-			Update update = repoConnection.prepareUpdate(queryBuilder.toString());
+			update = repoConnection.prepareUpdate(queryBuilder.toString());
 			update.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), resource);
-			update.setIncludeInferred(false);
-			update.execute();
 		}
+		update.setIncludeInferred(false);
+		update.execute();
 		shutDownCodaCore(codaCore);
 	}
 
