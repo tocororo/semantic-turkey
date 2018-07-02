@@ -275,7 +275,8 @@ public class ResourceView extends STServiceAdapter {
 						+ "Please verify that in the Metadata Registry there is the SPARQL endpoint of this dataset or it is dereferenceable.");
 			}
 
-			return datasetMetadata.getSparqlEndpoint().<AccessMethod>map(SPARQLAccessMethod::new)
+			return datasetMetadata.getSparqlEndpoint()
+					.<AccessMethod>map(iri -> new SPARQLAccessMethod(iri, false))
 					.orElseGet(DerefenciationAccessMethod::new);
 		} else {
 			return new DerefenciationAccessMethod();
@@ -673,7 +674,6 @@ public class ResourceView extends STServiceAdapter {
 					// @formatter:on
 			);
 
-			System.out.println("@@\n" + sb.toString());
 			QueryBuilder qb = createQueryBuilder(sb.toString());
 			if (renderingEngine != null) {
 				qb.processRendering(renderingEngine);
@@ -744,6 +744,37 @@ public class ResourceView extends STServiceAdapter {
 
 			return new SubjectAndObjectsInfos(resource2attributes, predicate2resourceCreShow);
 		}
+
+		/**
+		 * Base method that can be used by subclasses for implementing the API
+		 */
+		protected SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformationFromStatements(
+				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
+				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
+				throws ProjectAccessException {
+			Repository repo = new SailRepository(new MemoryStore());
+			repo.initialize();
+			try (RepositoryConnection conn = repo.getConnection()) {
+				conn.add(statements);
+				// It is necessary to load the OWL vocabulary, because the nature processor assumes its
+				// presence
+				try {
+					conn.add(OntologyManager.class.getResource("owl.rdf"), null, RDFFormat.RDFXML,
+							conn.getValueFactory().createIRI("http://www.w3.org/2002/07/owl"));
+				} catch (RDFParseException | RepositoryException | IOException e) {
+					throw new RuntimeException(e);
+				}
+				String nature = NatureRecognitionOrchestrator.computeNature(resource, conn);
+				Map<Resource, Map<String, Value>> resourceAttributes = new HashMap<>();
+				Map<String, Value> subjectAttributes = new HashMap<>();
+				subjectAttributes.put("nature", SimpleValueFactory.getInstance().createLiteral(nature));
+				resourceAttributes.put(resource, subjectAttributes);
+				return new SubjectAndObjectsInfos(resourceAttributes, Collections.emptyMap());
+			} finally {
+				repo.shutDown();
+			}
+		}
+
 	}
 
 	public class LocalProjectAccessMethod extends AccessMethod {
@@ -865,9 +896,11 @@ public class ResourceView extends STServiceAdapter {
 
 	public class SPARQLAccessMethod extends AccessMethod {
 		private IRI sparqlEndpoint;
+		private boolean useGroupBy;
 
-		public SPARQLAccessMethod(IRI sparqlEndpoint) {
+		public SPARQLAccessMethod(IRI sparqlEndpoint, boolean useGroupBy) {
 			this.sparqlEndpoint = sparqlEndpoint;
+			this.useGroupBy = useGroupBy;
 		}
 
 		@Override
@@ -948,29 +981,35 @@ public class ResourceView extends STServiceAdapter {
 			}
 		}
 
-		// @Override
-		// public Model retrievePredicateInformation(ResourcePosition resourcePosition,
-		// Set<IRI> resourcePredicates, Set<IRI> specialProperties,
-		// Map<Resource, Map<String, Value>> resource2attributes, Model statements)
-		// throws ProjectAccessException {
-		// Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint.stringValue());
-		// sparqlRepository.initialize();
-		// try {
-		// try (RepositoryConnection conn = sparqlRepository.getConnection()) {
-		//
-		// return super.retrievePredicateInformation(conn, resourcePosition, resourcePredicates,
-		// specialProperties, resource2attributes, statements);
-		// }
-		// } finally {
-		// sparqlRepository.shutDown();
-		// }
-		// }
+		@Override
+		public Model retrievePredicateInformation(ResourcePosition resourcePosition,
+				Set<IRI> resourcePredicates, Set<IRI> specialProperties,
+				Map<Resource, Map<String, Value>> resource2attributes, Model statements)
+				throws ProjectAccessException {
+			if (useGroupBy) {
+				Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint.stringValue());
+				sparqlRepository.initialize();
+				try {
+					try (RepositoryConnection conn = sparqlRepository.getConnection()) {
+
+						return super.retrievePredicateInformation(conn, resourcePosition, resourcePredicates,
+								specialProperties, resource2attributes, statements);
+					}
+				} finally {
+					sparqlRepository.shutDown();
+				}
+			} else {
+				return super.retrievePredicateInformation(resourcePosition, resourcePredicates,
+						specialProperties, resource2attributes, statements);
+			}
+		}
 
 		@Override
 		public SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
 				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
 				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
 				throws ProjectAccessException, AssessmentException {
+			// if (useGroupBy) {
 			Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint.stringValue());
 			sparqlRepository.initialize();
 			try (RepositoryConnection conn = sparqlRepository.getConnection()) {
@@ -987,6 +1026,9 @@ public class ResourceView extends STServiceAdapter {
 			} finally {
 				sparqlRepository.shutDown();
 			}
+			// } else {
+			//
+			// }
 		}
 	}
 
@@ -1021,28 +1063,10 @@ public class ResourceView extends STServiceAdapter {
 				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
 				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
 				throws ProjectAccessException {
-			Repository repo = new SailRepository(new MemoryStore());
-			repo.initialize();
-			try (RepositoryConnection conn = repo.getConnection()) {
-				conn.add(statements);
-				// It is necessary to load the OWL vocabulary, becase the nature processor assumes its
-				// presence
-				try {
-					conn.add(OntologyManager.class.getResource("owl.rdf"), null, RDFFormat.RDFXML,
-							conn.getValueFactory().createIRI("http://www.w3.org/2002/07/owl"));
-				} catch (RDFParseException | RepositoryException | IOException e) {
-					throw new RuntimeException(e);
-				}
-				String nature = NatureRecognitionOrchestrator.computeNature(resource, conn);
-				Map<Resource, Map<String, Value>> resourceAttributes = new HashMap<>();
-				Map<String, Value> subjectAttributes = new HashMap<>();
-				subjectAttributes.put("nature", SimpleValueFactory.getInstance().createLiteral(nature));
-				resourceAttributes.put(resource, subjectAttributes);
-				return new SubjectAndObjectsInfos(resourceAttributes, Collections.emptyMap());
-			} finally {
-				repo.shutDown();
-			}
+			return super.retrieveSubjectAndObjectsAddtionalInformationFromStatements(resourcePosition,
+					resource, includeInferred, statements, resourcePredicates, ignorePropertyExclusions);
 		}
+
 	}
 }
 
