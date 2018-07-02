@@ -930,7 +930,7 @@ public class ResourceView extends STServiceAdapter {
 
 		@Override
 		public String getName() {
-			return "sparql";
+			return useGroupBy ? "sparql" : "sparql-degraded";
 		}
 
 		@Override
