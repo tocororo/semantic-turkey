@@ -324,6 +324,7 @@ public class AdvancedSearch {
 			}
 			//search in skos:prefLabel and skos:altLabel
 			query+="\n{" +
+				"\n?resource a ?type ." + 
 				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
 				"\n}";
 			first = false;
@@ -336,6 +337,7 @@ public class AdvancedSearch {
 			query+="\n{" +
 					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
 					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+					"\n?resource a ?type ." + 
 					"\n}";
 			first = false;
 		}
@@ -346,6 +348,7 @@ public class AdvancedSearch {
 			//search in dct:title
 			query+="\n{" +
 				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
+				"\n?resource a ?type ." + 
 				"\n}";
 			first = false;
 		}
@@ -357,6 +360,7 @@ public class AdvancedSearch {
 			query+="\n{" +
 					"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
 					"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+					"\n?resource a ?type ." + 
 					"\n}" +
 					//search in allResToLexicalEntry/(ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
 					"\nUNION" +
@@ -364,6 +368,7 @@ public class AdvancedSearch {
 					"\n?resource ("+allResToLexicalEntry+")/"+
 					"(<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
 					"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
+					"\n?resource a ?type ." + 
 					"\n}";
 			first = false;
 		}

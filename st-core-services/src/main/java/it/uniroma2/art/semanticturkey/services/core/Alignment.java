@@ -54,6 +54,7 @@ import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryStateException;
 import it.uniroma2.art.semanticturkey.resources.NoSuchDatasetMetadataException;
@@ -61,16 +62,23 @@ import it.uniroma2.art.semanticturkey.search.AdvancedSearch;
 import it.uniroma2.art.semanticturkey.search.AdvancedSearch.InWhatToSearch;
 import it.uniroma2.art.semanticturkey.search.AdvancedSearch.WhatToShow;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
+import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
+import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.SimpleSTServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
+
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 
 @STService
 public class Alignment extends STServiceAdapter {
@@ -182,15 +190,18 @@ public class Alignment extends STServiceAdapter {
 	 * @return the list of remote resources obtained from the search
 	 * @throws MetadataRegistryStateException 
 	 * @throws NoSuchDatasetMetadataException 
+	 * @throws STPropertyAccessException 
+	 * @throws IllegalStateException 
 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	public Collection<AnnotatedValue<Resource>> searchResources(IRI intputRes, ResourcePosition resourcePosition, 
+	public Collection<AnnotatedValue<Resource>> searchResources(IRI inputRes, ResourcePosition resourcePosition, 
 			String[] rolesArray,  
 			@Optional List<SearchMode> searchModeList,
-			Map<String, IRI> langToLexModel) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
-		
+			Map<String, IRI> langToLexModel) throws NoSuchDatasetMetadataException, 
+			MetadataRegistryStateException, IllegalStateException, STPropertyAccessException {
+		logger.debug("starting Alignment.serachResources");
 		
 		//if not searchModeList is passed, then assume they are contains and fuzzy (since those two contains 
 		// all the others)
@@ -202,10 +213,10 @@ public class Alignment extends STServiceAdapter {
 		
 		//check that all passed targetLexModel hve one of the right value
 		for(IRI targetLexModel : langToLexModel.values()) {
-			if(targetLexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) || 
-					targetLexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) ||
-					targetLexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) ||
-					targetLexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+			if(!targetLexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) &&
+					!targetLexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) &&
+					!targetLexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) &&
+					!targetLexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
 				throw new IllegalArgumentException("targetLexModel "+targetLexModel.stringValue()+" is not a "
 						+ "valid Lexicalization Model  ");
 			}
@@ -218,43 +229,84 @@ public class Alignment extends STServiceAdapter {
 		IRI currLexModel =  getProject().getLexicalizationModel();
 		List<String> langs = new ArrayList<>();
 		langs.addAll(langToLexModel.keySet());
-		List<Literal> labelsList = advancedSearch.getLabelsFromLangs(stServiceContext, intputRes, 
+		List<Literal> labelsList = advancedSearch.getLabelsFromLangs(stServiceContext, inputRes, 
 				currLexModel, langs, getManagedConnection());
 		
 		//according to the resourcePosition, behave in a specific way
 		if(resourcePosition instanceof LocalResourcePosition) {
-			/*Project otherProject = ((LocalResourcePosition)resourcePosition).getProject();
-
+			//it is another local project, so get the project and construct an instance of a redux 
+			// STServiceContext
+			Project otherProject = ((LocalResourcePosition)resourcePosition).getProject();
+			//TODO test if it is enough to pass the otherProject or if other infos are needed by 
+			// instantiateSearchStrategy and QueryBuilder
+			SimpleSTServiceContext simpleSTServiceContext = new SimpleSTServiceContext(otherProject);
+			
 			IRI lexModel = otherProject.getLexicalizationModel();
 			
 			SearchStrategies searchStrategy = STRepositoryInfoUtils.getSearchStrategy(
 					otherProject.getRepositoryManager().getSTRepositoryInfo("core"));
 
 			
+			//the structures containing the results, which will be later ordered and returned
+			Map<String, Integer> resToCountMap = new HashMap<>();
+			Map<String, AnnotatedValue<Resource>> resToAnnValueMap = new HashMap<>();
+			int maxCount = 0;
+			
 			//iterate over the labelsList, get the associated language and then get the lexModel from langToLexModel for 
 			// such language and execute one query per language-LexModel
 			for(Literal label : labelsList) {
 
+				//for every element of searchModeList do a search
+				for(SearchMode searchMode : searchModeList) {
 				
+					//depending on the LexicalModel, decide in what to search
+					String lang = label.getLanguage().get();
+					IRI otherLexModel = langToLexModel.get(lang);
+					String query = ServiceForSearches.getPrefixes() + "\n"
+							+ SearchStrategyUtils.instantiateSearchStrategy(exptManager, searchStrategy)
+								.searchResource(simpleSTServiceContext, label.getLabel(), rolesArray,
+									false, false, false, searchMode, null, langs, false, lexModel,
+									false, false, false, false);
+		
+					logger.debug("query = " + query);
+		
+					QueryBuilder qb;
+					qb = new QueryBuilder(simpleSTServiceContext, query);
+					qb.processRendering();
+					Collection<AnnotatedValue<Resource>> currentAnnValuList = qb.runQuery();
+					//analyze the return list and find a way to rank the results
+					// maybe order them according to how may times a resource is returned
+					for(AnnotatedValue<Resource> annValue : currentAnnValuList) {
+						String stringValue = annValue.getStringValue();
+						if(!resToCountMap.containsKey(stringValue)) {
+							resToCountMap.put(stringValue, 1);
+							//since it is the first time this AnnotatedValue is found, add it to 
+							resToAnnValueMap.put(stringValue, annValue);
+							if(maxCount==0) {
+								maxCount = 1;
+							}
+						} else {
+							resToCountMap.put(stringValue, resToCountMap.get(stringValue)+1);
+							if(maxCount<resToCountMap.get(stringValue)) {
+								maxCount = resToCountMap.get(stringValue);
+							}
+						}
+					}
+				}
 				
-				String query = ServiceForSearches.getPrefixes() + "\n"
-						+ SearchStrategyUtils.instantiateSearchStrategy(exptManager, searchStrategy)
-							.searchResource(stServiceContext, searchString, rolesArray,
-								false, false, false, searchMode, null, langs, false, lexModel,
-								searchInRDFSLabel, searchInSKOSLabel, searchInSKOSXLLabel, searchInOntolex);
-	
-				logger.debug("query = " + query);
-	
-				QueryBuilder qb;
-				qb = new QueryBuilder(stServiceContext, query);
-				qb.processRendering();
-				qb.runQuery();
-				//TODO save single resource and then combine them
-				
-			}*/
-
-			//TODO
-			return null;
+			}
+			
+			//all labels have been analyze, so not order the Annotated Value according to how many times they were
+	 		// returned, so start by picking all Annotated Value returned maxValue and go down to 1
+	 		List<AnnotatedValue<Resource>>annValueList = new ArrayList<>();
+	 		for(int i=maxCount; i>0; --i) {
+	 			for(String stringValue : resToCountMap.keySet()) {
+	 				if(resToCountMap.get(stringValue) == i) {
+	 					annValueList.add(resToAnnValueMap.get(stringValue));
+	 				}
+	 			}
+	 		}
+	 		return annValueList;
 			
 		} else if(resourcePosition instanceof RemoteResourcePosition) {
 		
@@ -280,14 +332,14 @@ public class Alignment extends STServiceAdapter {
 			RepositoryConnection conn = sparqlRepository.getConnection();
 			
 			//call the function to obtain the desired list of annotated Resources
-			return searchResources(labelsList, conn, rolesArray, searchModeList, langToLexModel);
+			return searchResourcesForRemote(labelsList, conn, rolesArray, searchModeList, langToLexModel);
 		} else {
 			throw new IllegalArgumentException("Unsupported resource position");
 		}
 	}
 	
 	
-	public Collection<AnnotatedValue<Resource>> searchResources(List<Literal> labelsList, 
+	public Collection<AnnotatedValue<Resource>> searchResourcesForRemote(List<Literal> labelsList, 
 			RepositoryConnection remoteConn, String[] rolesArray, List<SearchMode> searchModeList,
 			Map<String, IRI> langToLexModel) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		
@@ -375,15 +427,10 @@ public class Alignment extends STServiceAdapter {
 					}
 				}
 			}
-			
-			
-			
-			
 		}
  		
  		//all labels have been analyze, so not order the Annotated Value according to how many times they were
  		// returned, so start by picking all Annotated Value returned maxValue and go down to 1
- 		//TODO, add the type of matched (fuzzy, exact, contains), the languages matched, and other info
  		List<AnnotatedValue<Resource>>annValueList = new ArrayList<>();
  		for(int i=maxCount; i>0; --i) {
  			for(String stringValue : resToCountMap.keySet()) {
