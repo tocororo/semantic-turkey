@@ -146,7 +146,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
 		//@formatter:off
-		String query = "SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?scheme; separator=\",\") AS ?attr_schemes)"+ 
+		String query = "SELECT DISTINCT ?resource ?attr_matchMode (GROUP_CONCAT(DISTINCT ?scheme; separator=\",\") AS ?attr_schemes)"+ 
 				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
 			"\nWHERE{";
 		
@@ -169,7 +169,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		query+=NatureRecognitionOrchestrator.getNatureSPARQLWherePart("?resource") +
 						
 				"\n}"+
-				"\nGROUP BY ?resource ";
+				"\nGROUP BY ?resource ?attr_matchMode ";
 		//@formatter:on
 		
 		return query;
@@ -560,21 +560,21 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					//single word, so filter them afterward
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '^"+value+"', 'i')" +
-					"\nBIND('startsWith' AS ?match)";
+					"\nBIND('startsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.endsWith){
 			query="\n"+variable+" <"+indexToUse+"> '*"+value+"' ."+
 					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the 
 					//single word, so filter them afterward
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '"+value+"$', 'i')" +
-					"\nBIND('endsWith' AS ?match)";
+					"\nBIND('endsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.contains){
 			query="\n"+variable+" <"+indexToUse+"> '*"+value+"*' ."+
 					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the 
 					//single word, so filter them afterward
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '"+value+"', 'i')" + 
-					"\nBIND('contains' AS ?match)";
+					"\nBIND('contains' AS ?attr_matchMode)";
 			
 		} else if(searchMode == SearchMode.fuzzy){
 			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements 
@@ -587,12 +587,12 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += queryPart+
 					"\nFILTER regex(str("+varToUse+"), \""+wordForNoIndexAsString+"\", 'i')" +
-					"\nBIND('fuzzy' AS ?match)";
+					"\nBIND('fuzzy' AS ?attr_matchMode)";
 			
 		} else { // searchMode.equals(exact)
 			query="\n"+variable+" <"+indexToUse+"> '"+value+"' ." +
 					"\nFILTER regex(str("+varToUse+"), '^"+value+"$', 'i')" + 
-					"\nBIND('exact' AS ?match)";
+					"\nBIND('exact' AS ?attr_matchMode)";
 		}
 		
 		//if at least one language is specified, then filter the results of the label having such language

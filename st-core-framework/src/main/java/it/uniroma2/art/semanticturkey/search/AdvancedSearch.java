@@ -129,7 +129,7 @@ public class AdvancedSearch {
 		String varLabel = "?label";
 		String varSingleShow = "?singleShow";
 		//String varShow = "?show";
-		String varMatch = "?match";
+		String varMatch = "?attr_matchMode";
 		
 		//prepare a query according to the searchMode and searchScope
 		String query = "SELECT DISTINCT "+varResource+" "+varType + " " +varSingleShow + " "+ varMatch+
@@ -233,7 +233,7 @@ public class AdvancedSearch {
 			if(resToType.get(res)!=null) {
 				annotatedValue.setAttribute("type", resToType.get(res).stringValue());
 			}
-			annotatedValue.setAttribute("matchType", resToMatchMode.get(res).substring(1));
+			annotatedValue.setAttribute("matchMode", resToMatchMode.get(res).substring(1));
 			
 			annotateResList.add(annotatedValue);
 		}
@@ -250,7 +250,7 @@ public class AdvancedSearch {
 		
 		//prepare an inner query, which seems to be working faster (since it executed by GraphDB before the
 		// rest of the query and it uses the Lucene indexes)
-		query+="\n{SELECT ?resource ?type ?match"+
+		query+="\n{SELECT ?resource ?type ?attr_matchMode"+
 				"\nWHERE{";
 		
 		//search only in 

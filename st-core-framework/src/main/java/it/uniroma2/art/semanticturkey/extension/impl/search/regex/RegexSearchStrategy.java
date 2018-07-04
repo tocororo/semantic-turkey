@@ -61,7 +61,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		// create the query to be executed for the search
 		//@formatter:off
 		String query = 
-				"SELECT DISTINCT ?resource (GROUP_CONCAT(DISTINCT ?scheme; separator=\",\") AS ?attr_schemes)"+ 
+				"SELECT DISTINCT ?resource ?attr_matchMode (GROUP_CONCAT(DISTINCT ?scheme; separator=\",\") AS ?attr_schemes)"+ 
 				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
 			"\nWHERE{"; // +
 		//get the candidate resources
@@ -82,7 +82,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		query+=NatureRecognitionOrchestrator.getNatureSPARQLWherePart("?resource") +
 		
 				"\n}"+
-				"\nGROUP BY ?resource ";
+				"\nGROUP BY ?resource ?attr_matchMode ";
 		//@formatter:on
 
 		return query;
@@ -299,21 +299,21 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 		if (searchMode == SearchMode.startsWith) {
 			query = "\nFILTER regex(str(" + variable + "), '^" + value + "', 'i')" +
-					"\nBIND('startsWith' AS ?match)";
+					"\nBIND('startsWith' AS ?attr_matchMode)";
 		} else if (searchMode == SearchMode.endsWith) {
 			query = "\nFILTER regex(str(" + variable + "), '" + value + "$', 'i')" +
-					"\nBIND('endsWith' AS ?match)";
+					"\nBIND('endsWith' AS ?attr_matchMode)";
 		} else if (searchMode == SearchMode.contains) {
 			query = "\nFILTER regex(str(" + variable + "), '" + value + "', 'i')" +
-					"\nBIND('contains' AS ?match)";
+					"\nBIND('contains' AS ?attr_matchMode)";
 		} else if (searchMode == SearchMode.fuzzy) {
 			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".");
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')" +
-					"\nBIND('fuzzy' AS ?match)";
+					"\nBIND('fuzzy' AS ?attr_matchMode)";
 		} else { // searchMode.equals(exact)
 			query = "\nFILTER regex(str(" + variable + "), '^" + value + "$', 'i')" +
-					"\nBIND('exact' AS ?match)";
+					"\nBIND('exact' AS ?attr_matchMode)";
 		}
 		
 		//if at least one language is specified, then filter the results of the label having such language

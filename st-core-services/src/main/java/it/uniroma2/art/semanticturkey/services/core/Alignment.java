@@ -202,7 +202,7 @@ public class Alignment extends STServiceAdapter {
 			Map<String, IRI> langToLexModel) throws NoSuchDatasetMetadataException, 
 			MetadataRegistryStateException, IllegalStateException, STPropertyAccessException {
 		logger.debug("starting Alignment.serachResources");
-		
+		//@formatter:off
 		//if not searchModeList is passed, then assume they are contains and fuzzy (since those two contains 
 		// all the others)
 		if(searchModeList == null || searchModeList.size()==0) {
@@ -232,6 +232,8 @@ public class Alignment extends STServiceAdapter {
 		List<Literal> labelsList = advancedSearch.getLabelsFromLangs(stServiceContext, inputRes, 
 				currLexModel, langs, getManagedConnection());
 		
+		Collection<AnnotatedValue<Resource>> annValueList;
+		
 		//according to the resourcePosition, behave in a specific way
 		if(resourcePosition instanceof LocalResourcePosition) {
 			//it is another local project, so get the project and construct an instance of a redux 
@@ -248,9 +250,9 @@ public class Alignment extends STServiceAdapter {
 
 			
 			//the structures containing the results, which will be later ordered and returned
-			Map<String, Integer> resToCountMap = new HashMap<>();
+			//Map<String, Integer> resToCountMap = new HashMap<>();
 			Map<String, AnnotatedValue<Resource>> resToAnnValueMap = new HashMap<>();
-			int maxCount = 0;
+			//int maxCount = 0;
 			
 			//iterate over the labelsList, get the associated language and then get the lexModel from langToLexModel for 
 			// such language and execute one query per language-LexModel
@@ -259,9 +261,7 @@ public class Alignment extends STServiceAdapter {
 				//for every element of searchModeList do a search
 				for(SearchMode searchMode : searchModeList) {
 				
-					//depending on the LexicalModel, decide in what to search
 					String lang = label.getLanguage().get();
-					IRI otherLexModel = langToLexModel.get(lang);
 					String query = ServiceForSearches.getPrefixes() + "\n"
 							+ SearchStrategyUtils.instantiateSearchStrategy(exptManager, searchStrategy)
 								.searchResource(simpleSTServiceContext, label.getLabel(), rolesArray,
@@ -273,41 +273,51 @@ public class Alignment extends STServiceAdapter {
 					QueryBuilder qb;
 					qb = new QueryBuilder(simpleSTServiceContext, query);
 					qb.processRendering();
+					//execute the SPARQL query and obtain the results
 					Collection<AnnotatedValue<Resource>> currentAnnValuList = qb.runQuery();
-					//analyze the return list and find a way to rank the results
-					// maybe order them according to how may times a resource is returned
 					for(AnnotatedValue<Resource> annValue : currentAnnValuList) {
 						String stringValue = annValue.getStringValue();
-						if(!resToCountMap.containsKey(stringValue)) {
-							resToCountMap.put(stringValue, 1);
-							//since it is the first time this AnnotatedValue is found, add it to 
-							resToAnnValueMap.put(stringValue, annValue);
-							if(maxCount==0) {
-								maxCount = 1;
+						if(resToAnnValueMap.containsKey(stringValue)) {
+							//there is already an AnnotatedValue for the retrieve resource, so add the new matching 
+							// language
+							String matchedLang = resToAnnValueMap.get(stringValue).getAttributes()
+									.get("matchedLang").stringValue();
+							boolean addLang = true;
+							String[] langsMatched = matchedLang.split(",");
+							for(String prevMatchedLang : langsMatched) {
+								if(prevMatchedLang==lang) {
+									addLang = false;
+								}
+							}
+							if(addLang) {
+								matchedLang+=","+lang;
+								resToAnnValueMap.get(stringValue).setAttribute("matchedLang", matchedLang);
+							}
+							//check if this returned AnnotatedValue has a different matchMode, if so
+							// add it to the list ones already present in the 
+							String matchedMode = resToAnnValueMap.get(stringValue).getAttributes()
+									.get("matchMode").stringValue();
+							boolean addMatchMode = true;
+							String[] matchedModeArray = matchedMode.split(",");
+							for(String singleMachedMode : matchedModeArray) {
+								if(singleMachedMode==annValue.getAttributes().get("matchMode").stringValue()) {
+									addMatchMode = false;
+								}
+							}
+							if(addMatchMode) {
+								//add the matchMode from the annValue to the Annotated Valued stored in the map
+								matchedMode+=","+annValue.getAttributes().get("matchMode").stringValue();
+								resToAnnValueMap.get(stringValue).setAttribute("matchMode", matchedMode);
 							}
 						} else {
-							resToCountMap.put(stringValue, resToCountMap.get(stringValue)+1);
-							if(maxCount<resToCountMap.get(stringValue)) {
-								maxCount = resToCountMap.get(stringValue);
-							}
+							//it is the first AnnotatedValue returned for the retrieve Resource
+							annValue.setAttribute("matchedLang", lang);
+							resToAnnValueMap.put(stringValue, annValue);
 						}
 					}
 				}
-				
 			}
-			
-			//all labels have been analyze, so not order the Annotated Value according to how many times they were
-	 		// returned, so start by picking all Annotated Value returned maxValue and go down to 1
-	 		List<AnnotatedValue<Resource>>annValueList = new ArrayList<>();
-	 		for(int i=maxCount; i>0; --i) {
-	 			for(String stringValue : resToCountMap.keySet()) {
-	 				if(resToCountMap.get(stringValue) == i) {
-	 					annValueList.add(resToAnnValueMap.get(stringValue));
-	 				}
-	 			}
-	 		}
-	 		return annValueList;
-			
+			return orderResultsFromSearch(resToAnnValueMap.values());
 		} else if(resourcePosition instanceof RemoteResourcePosition) {
 		
 			//get the datasetMetadata associated to the desired dataset
@@ -332,10 +342,13 @@ public class Alignment extends STServiceAdapter {
 			RepositoryConnection conn = sparqlRepository.getConnection();
 			
 			//call the function to obtain the desired list of annotated Resources
-			return searchResourcesForRemote(labelsList, conn, rolesArray, searchModeList, langToLexModel);
+			annValueList = searchResourcesForRemote(labelsList, conn, rolesArray, searchModeList, langToLexModel);
 		} else {
 			throw new IllegalArgumentException("Unsupported resource position");
 		}
+		
+		return orderResultsFromSearch(annValueList);
+		//@formatter:on
 	}
 	
 	
@@ -370,9 +383,9 @@ public class Alignment extends STServiceAdapter {
 		}
 
 		//the structures containing the results, which will be later ordered and returned
-		Map<String, Integer> resToCountMap = new HashMap<>();
+		//Map<String, Integer> resToCountMap = new HashMap<>();
 		Map<String, AnnotatedValue<Resource>> resToAnnValueMap = new HashMap<>();
-		int maxCount = 0;
+		//int maxCount = 0;
 		
 		//iterate over the labelsList, get the associated language and then get the lexModel from langToLexModel for 
 		// such language and execute one query per language-LexModel
@@ -403,6 +416,10 @@ public class Alignment extends STServiceAdapter {
 				whatToShow.setShowDCTitle(true);
 				whatToShow.setShowWrittenRep(true);
 			}
+			//add the language regarding the show
+			for(String langToShow : langToLexModel.keySet() ) {
+				whatToShow.addLang(langToShow);
+			}
 			
 			
 			//do one search per label
@@ -413,33 +430,43 @@ public class Alignment extends STServiceAdapter {
 			// maybe order them according to how may times a resource is returned
 			for(AnnotatedValue<Resource> annValue : currentAnnValuList) {
 				String stringValue = annValue.getStringValue();
-				if(!resToCountMap.containsKey(stringValue)) {
-					resToCountMap.put(stringValue, 1);
-					//since it is the first time this AnnotatedValue is found, add it to 
-					resToAnnValueMap.put(stringValue, annValue);
-					if(maxCount==0) {
-						maxCount = 1;
-					}
+				if(resToAnnValueMap.containsKey(stringValue)) {
+					//there is already an AnnotatedValue for the retrieve resource, so add the new matching 
+					// language
+					String matchedLang = resToAnnValueMap.get(stringValue).getAttributes()
+							.get("matchedLang").stringValue()+","+lang;
+					resToAnnValueMap.get(stringValue).setAttribute("matchedLang", matchedLang);
 				} else {
-					resToCountMap.put(stringValue, resToCountMap.get(stringValue)+1);
-					if(maxCount<resToCountMap.get(stringValue)) {
-						maxCount = resToCountMap.get(stringValue);
-					}
+					//it is the first AnnotatedValue returned for the retrieve Resource
+					annValue.setAttribute("matchedLang", lang);
+					resToAnnValueMap.put(stringValue, annValue);
 				}
 			}
 		}
- 		
- 		//all labels have been analyze, so not order the Annotated Value according to how many times they were
- 		// returned, so start by picking all Annotated Value returned maxValue and go down to 1
- 		List<AnnotatedValue<Resource>>annValueList = new ArrayList<>();
- 		for(int i=maxCount; i>0; --i) {
- 			for(String stringValue : resToCountMap.keySet()) {
- 				if(resToCountMap.get(stringValue) == i) {
- 					annValueList.add(resToAnnValueMap.get(stringValue));
- 				}
- 			}
- 		}
- 		return annValueList;
+ 		//all labels have been analyze, so return the Annotated Value
+		return resToAnnValueMap.values();
+	}
+	
+	public Collection<AnnotatedValue<Resource>> orderResultsFromSearch(Collection<AnnotatedValue<Resource>> 
+			annList){
+		List<AnnotatedValue<Resource>> orderedAnnValueList = new ArrayList<>();
+		
+		List<AnnotatedValue<Resource>> restAnnValueList = new ArrayList<>();
+		
+		//order the result by placing first the one obtained from an exact match
+		for(AnnotatedValue<Resource> annValue : annList) {
+			String matchType = annValue.getAttributes().get("matchMode").stringValue();
+			if(matchType.contains("exact")) {
+				orderedAnnValueList.add(annValue);
+			} else {
+				restAnnValueList.add(annValue);
+			}
+		}
+		
+		//add to the ordered list the other elements
+		orderedAnnValueList.addAll(restAnnValueList);
+		
+		return orderedAnnValueList;
 	}
 	
 	
