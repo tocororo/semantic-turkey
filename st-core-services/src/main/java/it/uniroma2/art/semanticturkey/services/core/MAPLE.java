@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -13,9 +14,9 @@ import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.VOID;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
-import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -29,9 +30,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.profiler.LIMEProfiler;
 import it.uniroma2.art.lime.profiler.ProfilerException;
+import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.maple.orchestration.ProfilingException;
 import it.uniroma2.art.maple.problem.MediationProblem;
+import it.uniroma2.art.maple.problem.ResourceLexicalizationSet;
+import it.uniroma2.art.maple.problem.SingleResourceMatchingProblem;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
@@ -148,7 +152,8 @@ public class MAPLE extends STServiceAdapter {
 	}
 
 	/**
-	 * Profiles a mediation problem.
+	 * Profiles a mediation problem between the current project and the provided resource position (i.e.
+	 * another local project or remote dataset).
 	 * 
 	 * @param resourcePosition
 	 * @return
@@ -168,22 +173,71 @@ public class MAPLE extends STServiceAdapter {
 			UnsupportedRDFormatException, IllegalStateException, IOException, STPropertyAccessException,
 			NoSuchSettingsManager, InvalidConfigurationException {
 
+		Pair<IRI, Model> targetDatasetDescription = getDatasetDescriptionFromResourcePosition(
+				resourcePosition);
+
+		Pair<IRI, Model> sourceDatasetDescription = getProjectMetadata(getProject());
+
+		return mediationFramework.profileProblem(sourceDatasetDescription.getLeft(),
+				sourceDatasetDescription.getRight(), targetDatasetDescription.getLeft(),
+				targetDatasetDescription.getRight());
+	}
+
+	/**
+	 * Profiles the problem of matching the provided resource in the current project against the provided
+	 * resource position (i.e. another local project or remote dataset).
+	 * 
+	 * @param sourceResource
+	 * @param targetPosition
+	 * @return
+	 * @throws AssessmentException
+	 * @throws IllegalArgumentException
+	 * @throws RepositoryException
+	 * @throws ProfilingException
+	 * @throws ForbiddenProjectAccessException
+	 * @throws RDFParseException
+	 * @throws UnsupportedRDFormatException
+	 * @throws IllegalStateException
+	 * @throws IOException
+	 * @throws STPropertyAccessException
+	 * @throws NoSuchSettingsManager
+	 * @throws InvalidConfigurationException
+	 */
+	@STServiceOperation
+	@Read
+	public SingleResourceMatchingProblem profileSingleResourceMatchProblem(IRI sourceResource,
+			ResourcePosition targetPosition) throws AssessmentException, RDFParseException,
+			RepositoryException, UnsupportedRDFormatException, IllegalStateException,
+			IllegalArgumentException, IOException, STPropertyAccessException, NoSuchSettingsManager,
+			ForbiddenProjectAccessException, InvalidConfigurationException, ProfilingException {
+
+		Pair<IRI, Model> targetDatasetDescription = getDatasetDescriptionFromResourcePosition(targetPosition);
+
+		List<ResourceLexicalizationSet> resourceLexicalizationSets = mediationFramework
+				.discoverLexicalizationSetsForResource(getManagedConnection(), sourceResource);
+		return mediationFramework.profileSingleResourceMatchingProblem(sourceResource,
+				resourceLexicalizationSets, targetDatasetDescription.getKey(),
+				targetDatasetDescription.getValue());
+	}
+
+	protected Pair<IRI, Model> getDatasetDescriptionFromResourcePosition(ResourcePosition targetPosition)
+			throws RDFParseException, UnsupportedRDFormatException, IOException, IllegalStateException,
+			STPropertyAccessException, NoSuchSettingsManager, ForbiddenProjectAccessException,
+			InvalidConfigurationException, RepositoryException, IllegalArgumentException {
 		// The variables below will be initialized differently depending on the kind of target
 		Pair<IRI, Model> targetDatasetDecription;
 
-		if (resourcePosition instanceof LocalResourcePosition) { // local project
+		if (targetPosition instanceof LocalResourcePosition) { // local project
 			targetDatasetDecription = getProjectMetadata(
-					((LocalResourcePosition) resourcePosition).getProject());
-		} else if (resourcePosition instanceof RemoteResourcePosition) { // remote dataset
+					((LocalResourcePosition) targetPosition).getProject());
+		} else if (targetPosition instanceof RemoteResourcePosition) { // remote dataset
 			// Extracts metadata from the metadata registry
-			it.uniroma2.art.semanticturkey.resources.DatasetMetadata targetDatasetMetadata = ((RemoteResourcePosition) resourcePosition)
+			it.uniroma2.art.semanticturkey.resources.DatasetMetadata targetDatasetMetadata = ((RemoteResourcePosition) targetPosition)
 					.getDatasetMetadata();
 
 			try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
-				GraphQuery graphQuery = conn.prepareGraphQuery(
-						"PREFIX void: <http://rdfs.org/ns/void#> DESCRIBE ?y WHERE {?x void:subset* ?y}");
-				graphQuery.setBinding("x", targetDatasetMetadata.getIdentity());
-				Model targetDatasetProfile = QueryResults.asModel(graphQuery.evaluate());
+				Model targetDatasetProfile = metadataRegistryBackend
+						.extractProfile(targetDatasetMetadata.getIdentity());
 
 				targetDatasetDecription = ImmutablePair.of(targetDatasetMetadata.getIdentity(),
 						targetDatasetProfile);
@@ -192,12 +246,7 @@ public class MAPLE extends STServiceAdapter {
 		} else {
 			throw new IllegalArgumentException("Unsupported resource position");
 		}
-
-		Pair<IRI, Model> sourceDatasetDecription = getProjectMetadata(getProject());
-
-		return mediationFramework.profileProblem(sourceDatasetDecription.getLeft(),
-				sourceDatasetDecription.getRight(), targetDatasetDecription.getLeft(),
-				targetDatasetDecription.getRight());
+		return targetDatasetDecription;
 	}
 
 	protected Pair<IRI, Model> getProjectMetadata(Project project) throws RDFParseException,
