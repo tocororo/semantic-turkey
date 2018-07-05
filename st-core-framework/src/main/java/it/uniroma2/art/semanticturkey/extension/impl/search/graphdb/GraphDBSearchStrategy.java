@@ -392,7 +392,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		
 		//prepare an inner query, which seems to be working faster (since it executed by GraphDB before the
 		// rest of the query and it uses the Lucene indexes)
-		query+="\n{SELECT ?resource ?type "+
+		query+="\n{SELECT ?resource ?type ?attr_matchMode "+
 				"\nWHERE{";
 		
 		if(useLocalName){
