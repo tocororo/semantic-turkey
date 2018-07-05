@@ -508,7 +508,7 @@ public class AdvancedSearch {
 				query+="\nUNION";
 			}
 			query+="\n{" +
-				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) "+varShow+" ."+
+				"\n?resource <"+SKOS.PREF_LABEL.stringValue()+"> "+varShow+" ."+
 				"\n}";
 			first = false;
 		}
@@ -517,7 +517,7 @@ public class AdvancedSearch {
 				query+="\nUNION";
 			}
 			query+="\n{" +
-				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+				"\n?resource <"+SKOSXL.PREF_LABEL.stringValue()+"> ?skosxlLabel ." +
 				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> "+varShow+" ." +
 				"\n}";
 			first = false;

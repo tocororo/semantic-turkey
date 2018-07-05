@@ -247,6 +247,8 @@ public class SKOS extends STServiceAdapter {
 		
 		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse, 
 				getManagedConnection(), includeSubProperties);
+		
+		
 		// @formatter:off
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
@@ -2079,8 +2081,8 @@ public class SKOS extends STServiceAdapter {
 	}
 	
 	public static List<IRI> getHierachicalProps(List<IRI> broaderProps, List<IRI> narrowerProps ) {
-		if((broaderProps==null || broaderProps.size()==0) && 
-				(narrowerProps==null || narrowerProps.size()==0) ) {
+		if((broaderProps==null || broaderProps.isEmpty()) && 
+				(narrowerProps==null || narrowerProps.isEmpty()) ) {
 			List<IRI> broaderPropsToUse = new ArrayList<>();
 			broaderPropsToUse.add(org.eclipse.rdf4j.model.vocabulary.SKOS.BROADER);
 			return broaderPropsToUse;
@@ -2099,7 +2101,7 @@ public class SKOS extends STServiceAdapter {
 	 * return the inverse of the input broaderProp  or null if it ha no inverse
 	 */
 	public static List<IRI> getInverseOfHierachicalProp(List<IRI> broaderProps , List<IRI> narrowerProps) {
-		if (narrowerProps != null) {
+		if (narrowerProps != null && !narrowerProps.isEmpty()) {
 			return narrowerProps;
 		}
 		//if the hierachical property is null or empty, then return NARROWER

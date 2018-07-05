@@ -464,12 +464,14 @@ public class Search extends STServiceAdapter {
 			//@formatter:off
 			query = "SELECT DISTINCT ?broader ?broaderOfBroader ?isTopConcept ?isTop" + 
 					"\nWHERE{" +
+					
+					"\nBIND("+NTriplesUtil.toNTriplesString(resourceURI)+" AS ?resource )" +
+					"\n?subConceptClass <"+RDFS.SUBCLASSOF.stringValue()+">* <"+SKOS.CONCEPT.stringValue()+">." +
+					
 					"\n{" + 
-					//"\n<" + resourceURI.stringValue() + "> (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+"> )* ?broader ."; OLD
 					"\n"+it.uniroma2.art.semanticturkey.services.core.SKOS
-					.combinePathWithVarOrIri(resourceURI, "?broader", broaderNarrowerPath, true);
-					//.preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp,
-					//		resourceURI, "?broader", getManagedConnection(), true, includeSubProperties);
+					.combinePathWithVarOrIri("?resource", "?broader", broaderNarrowerPath, true)+
+					"\n?broader a ?type"; //to get only those resources defined in this project
 			if (schemesIRI != null && schemesIRI.size()==1) {
 				query += "\n?broader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> ."+
 						"\nOPTIONAL{" +
@@ -484,29 +486,20 @@ public class Search extends STServiceAdapter {
 						"\n?broader (<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) ?scheme2 ." +
 						ServiceForSearches.filterWithOrValues(schemesIRI, "?scheme2") +
 						"\n}";
-			}
-			else if(schemesIRI==null || schemesIRI.size()==0) { //the schemes is either null or an empty list
+			} else if(schemesIRI==null || schemesIRI.size()==0) { //the schemes is either null or an empty list
 				//check if the selected broader has no brother itself, in this case it is consider a topConcept
 				query +="\nOPTIONAL{" +
 						"\nBIND (\"true\" AS ?isTopConcept)" +
-						//OLD
-						/*"\nFILTER NOT EXISTS{ " +
-						"\n?broader (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+">) ?broaderOfBroader ."+
-						"}"+*/
 						"\nMINUS{" +
 						"\n"+it.uniroma2.art.semanticturkey.services.core.SKOS
-						.combinePathWithVarOrIri(resourceURI, "?broader", broaderNarrowerPath, false)+
-							//.prepareHierarchicalPartForQuery(broaderProp, narrowerProp, "?broader", 
-							//	"?broaderOfBroader", false, includeSubProperties) +
+						.combinePathWithVarOrIri("?resource", "?broader", broaderNarrowerPath, false)+
 						"\n}" +
 						"\n}";
 			}
 			query += "\nOPTIONAL{" +
-					//"\n?broader (<" + SKOS.BROADER.stringValue() + "> | ^<"+SKOS.NARROWER.stringValue()+">) ?broaderOfBroader ."; OLD
 					"\n"+it.uniroma2.art.semanticturkey.services.core.SKOS
-					.combinePathWithVarOrIri("?broader", "?broaderOfBroader", broaderNarrowerPath, false);
-					//	.prepareHierarchicalPartForQuery(broaderProp, narrowerProp, "?broader", 
-					//		"?broaderOfBroader", false, includeSubProperties);
+					.combinePathWithVarOrIri("?broader", "?broaderOfBroader", broaderNarrowerPath, false) + 
+					"\n?broaderOfBroader a ?type"; //to get only those resources defined in this project
 			if (schemesIRI != null && schemesIRI.size()==1) {
 				query += "\n?broaderOfBroader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> . ";
 			} else if(schemesIRI != null && schemesIRI.size()>1){
@@ -520,7 +513,7 @@ public class Search extends STServiceAdapter {
 			//this union is used when the first part does not return anything, so when the desired concept
 			// does not have any broader, but it is defined as topConcept (to either a specified scheme or
 			// to at least one)
-			query+= "\n<" + resourceURI.stringValue() + "> a <"+SKOS.CONCEPT+"> .";
+			query+= "\n<" + resourceURI.stringValue() + "> a ?subConceptClass .";
 			if(schemesIRI != null && schemesIRI.size()==1){
 					query+="\n<"+resourceURI.stringValue()+"> " +
 							"(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) <"+schemesIRI.get(0).stringValue()+"> .";
@@ -540,7 +533,7 @@ public class Search extends STServiceAdapter {
 			if(schemesIRI == null){
 				query+="\nUNION" +
 						"\n{" +
-						"\n<" + resourceURI.stringValue() + "> a <"+SKOS.CONCEPT+"> ." +
+						"\n<" + resourceURI.stringValue() + "> a ?subConceptClass ." +
 						//OLD
 						/*"\nFILTER(NOT EXISTS{<"+resourceURI.stringValue()+"> "
 								+ "(<"+SKOS.BROADER+"> | ^<"+SKOS.NARROWER+">) ?genericConcept })" +*/
