@@ -146,6 +146,8 @@ public class RdfToZthesMapper {
 					String formattedDate = new SimpleDateFormat("dd.MM.yyyy").format(date);
 //					ptPivot.setTermModifiedDate(formatter.format(date));
 					preferredTerms.forEach(pt -> pt.setTermCreatedDate(formattedDate));
+				} else if (predicate.equals(DCTERMS.CREATOR)) {
+					preferredTerms.forEach(pt -> pt.setTermCreatedBy(stmt.getObject().stringValue()));
 				} else if (predicate.equals(OWL2Fragment.DEPRECATED) && stmt.getObject().stringValue().equals("true")) {
 //					ptPivot.setTermStatus(TermStatus.deactivated);
 					preferredTerms.forEach(pt -> pt.setTermStatus(TermStatus.deactivated));

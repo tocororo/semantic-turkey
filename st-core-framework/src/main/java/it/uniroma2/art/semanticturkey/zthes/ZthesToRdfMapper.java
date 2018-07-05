@@ -103,6 +103,7 @@ public class ZthesToRdfMapper {
 	private void mapAttributes(IRI termResource, Term term) {
 		enrichTermCreatedDate(termResource, term);
 		enrichTermModifiedDate(termResource, term);
+		enrichTermCreatedBy(termResource, term);
 		enrichTermStatus(termResource, term);
 		enrichNotes(termResource, term);
 	}
@@ -209,13 +210,31 @@ public class ZthesToRdfMapper {
 		}
 	}
 	
+	private void enrichTermCreatedBy(IRI resource, Term term) {
+		//dct:creator
+		String createdBy = term.getTermCreatedBy();
+		if (createdBy != null) {
+			model.add(resource, DCTERMS.CREATOR, vf.createLiteral(createdBy));
+		}
+	}
+	
 	private void enrichNotes(IRI concept, Term term) {
 		List<TermNote> notes = term.getTermNotes();
 		for (TermNote note : notes) {
 			Literal noteLiteral = vf.createLiteral(note.getNote());
-			if (note.getLabel().equalsIgnoreCase("definition")) {
+			if (note.getLabel().equalsIgnoreCase("changeNote")) {
+				model.add(concept, SKOS.CHANGE_NOTE, noteLiteral);
+			} else if (note.getLabel().equalsIgnoreCase("definition")) {
 				model.add(concept, SKOS.DEFINITION, noteLiteral);
-			} else { //TODO in case of label different or not specified it's ok to stay "generic" with skos:note???
+			} else if (note.getLabel().equalsIgnoreCase("editorialNote")) {
+				model.add(concept, SKOS.EDITORIAL_NOTE, noteLiteral);
+			} else if (note.getLabel().equalsIgnoreCase("example")) {
+				model.add(concept, SKOS.EXAMPLE, noteLiteral);
+			} else if (note.getLabel().equalsIgnoreCase("historyNote")) {
+				model.add(concept, SKOS.HISTORY_NOTE, noteLiteral);
+			} else if (note.getLabel().equalsIgnoreCase("scopeNote")) {
+				model.add(concept, SKOS.SCOPE_NOTE, noteLiteral);
+			} else { //default case
 				model.add(concept, SKOS.NOTE, noteLiteral);
 			}
 		}
