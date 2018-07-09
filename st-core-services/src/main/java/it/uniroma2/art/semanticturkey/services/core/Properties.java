@@ -464,8 +464,18 @@ public class Properties extends STServiceAdapter {
                 "																		\n" +
 				" SELECT ?resource WHERE {												\n" +
 				"     ?res 	rdf:type	?type		 .									\n" +
-				"     ?resource 	rdfs:domain	?type		 .							\n" +
-				"     FILTER(isIRI(?resource)) 											\n" +
+				
+				
+				"     {?resource 	rdfs:domain	?type		 .							\n" +
+				"     FILTER(isIRI(?resource))}											\n" +
+		
+				"	  UNION																\n" +
+				
+				"     {?unionList 	rdf:rest*/rdf:first		?type.	 					\n" +
+				"     ?union 	owl:unionOf		?unionList	 .							\n" +
+				"     ?resource 	rdfs:domain	?union		 .							\n" +
+				"     FILTER(isIRI(?resource))}											\n" +
+				
 				"     {?resource 	rdf:type	?typeOfProp  .							\n" + 
 				"		FILTER (NOT EXISTS {?resource rdfs:subPropertyOf ?superProp})}	\n" + 
 				"		UNION															\n" + 
