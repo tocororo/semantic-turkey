@@ -131,7 +131,8 @@ public class Properties extends STServiceAdapter {
 				" 	{ ?resource 	rdf:type owl:AnnotationProperty .}						\n" +
 				"	UNION																	\n" +
 				" 	{ ?resource 	rdf:type owl:OntologyProperty .}						\n" +
-				"	FILTER (NOT EXISTS{ ?resource rdfs:subPropertyOf ?superProp})			\n" +
+				"	FILTER (NOT EXISTS{ ?resource rdfs:subPropertyOf ?superProp .			\n" +
+				"	?superProp a ?superType})												\n" +
 				"	FILTER(isIRI(?resource))												\n" +
 				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
