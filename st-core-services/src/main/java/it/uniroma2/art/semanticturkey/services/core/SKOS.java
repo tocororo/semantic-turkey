@@ -56,6 +56,7 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Deleted;
 import it.uniroma2.art.semanticturkey.services.annotations.DisplayName;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -63,6 +64,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.SchemeAssignment;
 import it.uniroma2.art.semanticturkey.services.annotations.Selection;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
@@ -603,7 +605,7 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', '{lang: ''' +@auth.langof(#label)+ '''}', 'C')")
 	public AnnotatedValue<IRI> createConcept(
 			@Optional @NotLocallyDefined IRI newConcept, @Optional @LanguageTaggedString Literal label,
-			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefinedResources List<IRI> conceptSchemes,
+			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefinedResources @SchemeAssignment List<IRI> conceptSchemes,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#Concept") IRI conceptCls,
 			@Optional CustomFormValue customFormValue,
 			@Optional(defaultValue="true") boolean checkExistingAltLabel, @Optional @LocallyDefined IRI broaderProp )
@@ -851,7 +853,7 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'C')")
 	public void addConceptToScheme(
 			@LocallyDefined @Modified(role = RDFResourceRole.concept) IRI concept,
-			@LocallyDefined IRI scheme) {
+			@LocallyDefined @SchemeAssignment IRI scheme) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 
@@ -865,7 +867,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'C')")
 	public void addTopConcept(@Modified(role = RDFResourceRole.concept) IRI concept,
-			@LocallyDefined IRI scheme) {
+			@LocallyDefined @SchemeAssignment IRI scheme) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 
@@ -1266,7 +1268,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'D')")
-	public void deleteConceptScheme(@LocallyDefined IRI scheme) {
+	public void deleteConceptScheme(@LocallyDefined @SchemeAssignment IRI scheme) {
 		String query = 
 				"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>					\n"
 				+ "DELETE {																\n"
@@ -1309,7 +1311,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'D')")
-	public void deleteConcept(@LocallyDefined IRI concept) throws DeniedOperationException {
+	public void deleteConcept(@LocallyDefined @Deleted IRI concept) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader

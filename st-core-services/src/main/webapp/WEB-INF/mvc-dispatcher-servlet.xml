@@ -54,6 +54,12 @@
 		<property name="proxyTargetClass" value="true"></property>
 		<property name="order" value="90" />
 	</bean>
+	
+	<bean
+		class="it.uniroma2.art.semanticturkey.user.SchemesOwnershipPostProcessor">
+		<property name="proxyTargetClass" value="true"></property>
+		<property name="order" value="90" />
+	</bean>
 
 	<bean id="stServiceAspect" class="it.uniroma2.art.semanticturkey.tx.STServiceAspect">
 		<property name="order" value="100" />

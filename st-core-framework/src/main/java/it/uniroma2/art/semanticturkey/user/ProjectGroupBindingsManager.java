@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.model.IRI;
@@ -259,14 +260,17 @@ public class ProjectGroupBindingsManager {
 	}
 	
 	/**
-	 * Returns true if user belongs to a group that has ownership on the given scheme
+	 * Returns true if user belongs to a group that has ownership on the given schemes. This method evaluates the 
+	 * ownership of the scheme in OR or in AND according to the {@code or} parameter. 
 	 * @param user
 	 * @param project
-	 * @param scheme
+	 * @param schemes
+	 * @param or if {@code true} the method returns true if one of the schemes is owned by the user's group,
+	 * 	if {@code false} returns true if all the schemes are owned by the user's group
 	 * @return
-	 * @throws STPropertyAccessException 
+	 * @throws STPropertyAccessException
 	 */
-	public static boolean hasUserOwnershipOfScheme(STUser user, Project project, IRI scheme) throws STPropertyAccessException {
+	public static boolean hasUserOwnershipOfSchemes(STUser user, Project project, List<IRI> schemes, boolean or) throws STPropertyAccessException {
 		if (user.isAdmin()) {
 			return true;
 		}
@@ -274,7 +278,25 @@ public class ProjectGroupBindingsManager {
 		if (group == null) {
 			return true;
 		}
-		return getPGBinding(group, project).getOwnedSchemes().contains(scheme);
+		Collection<IRI> ownedSchems = getPGBinding(group, project).getOwnedSchemes();
+		if (ownedSchems.isEmpty()) { //no schemes owned by the group
+			return false;
+		}
+		if (or) { //OR mode, check if at least one scheme is in the ownedSchemes
+			for (IRI s : schemes) {
+				if (ownedSchems.contains(s)) {
+					return true;
+				}
+			}
+		} else { //AND mode, check if all the schemes are in the ownedSchemes
+			for (IRI s : schemes) {
+				if (!ownedSchems.contains(s)) {
+					return false; //found one scheme not owned
+				}
+			}
+			return true; //if this code is reached, every scheme
+		}
+		return false;
 	}
 	
 	/* =================================
