@@ -622,10 +622,36 @@ public class Properties extends STServiceAdapter {
 					JsonNodeFactory.instance.textNode(typesAndRanges.getTypeNormalized()));
 			}
 			ArrayNode rangeArrayNode = JsonNodeFactory.instance.arrayNode();
-			for (Range range : typesAndRanges.getRanges()) {
+			
+			//iterate over the ranges to see if RDFS:Resources and OWL:Thing are among them, if so:
+			// - if there's rdfs:Resource and |R| > 1, R := R \ {rdfs:Resource}
+			// - if there's owl:Thing and |R| > 1, R := R \ {rdfs:Resource}    # obviously, consider that R might 
+			//		have already been reduced in step 2, and you have to consider the new R here
+			Set<Range> ranges = typesAndRanges.getRanges();
+			Range rdfsResourceRange = null;
+			Range owlThingRange = null;
+			for (Range range : ranges) {
+				if(range instanceof IRIRange) {
+					IRIRange iriRange = (IRIRange)range;
+					if(iriRange.getIRI().equals(RDFS.RESOURCE)) {
+						rdfsResourceRange = iriRange;
+					} else if(iriRange.getIRI().equals(OWL.THING)) {
+						owlThingRange = iriRange;
+					}
+				}
+			}
+			if(rdfsResourceRange!=null && typesAndRanges.getRanges().size()>0) {
+				ranges.remove(rdfsResourceRange);
+			}
+			if(owlThingRange!=null && typesAndRanges.getRanges().size()>0) {
+				ranges.remove(owlThingRange);
+			}
+			
+			
+			for (Range range : ranges) {
 				rangeArrayNode.add(range.toJsonNode());
 			}
-			if (!typesAndRanges.getRanges().isEmpty()) {
+			if (!ranges.isEmpty()) {
 				rangesObjectNode.set("rangeCollection", rangeArrayNode);
 			}
 			response.set("ranges", rangesObjectNode);
