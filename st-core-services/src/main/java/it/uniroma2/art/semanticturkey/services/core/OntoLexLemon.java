@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.toSet;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,6 +20,7 @@ import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
@@ -179,6 +181,28 @@ public class OntoLexLemon extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(limeLexicon)', 'D')")
 	public void deleteLexicon(@LocallyDefined IRI lexicon) {
 		throw new RuntimeException("To be implemented");
+	}
+	
+	/**
+	 * Returns the language of a lexicon
+	 * @param lexicon
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(limeLexicon)', 'R')")
+	public String getLexiconLanguage(@LocallyDefined IRI lexicon) {
+		String language = null;
+		RepositoryConnection repoConn = getManagedConnection();
+		String query = "SELECT ?lexiconLanguage WHERE {\n"
+				+ NTriplesUtil.toNTriplesString(lexicon) + " " + NTriplesUtil.toNTriplesString(LIME.LANGUAGE) + " ?lexiconLanguage .\n"
+				+ "} LIMIT 1";
+		List<BindingSet> result = QueryResults.asList(repoConn.prepareTupleQuery(query).evaluate());
+		
+		if (!result.isEmpty()) {
+			language = result.get(0).getValue("lexiconLanguage").stringValue();
+		}
+		return language;
 	}
 
 	/* --- Lexical entries --- */
