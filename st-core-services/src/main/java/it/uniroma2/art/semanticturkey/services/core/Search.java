@@ -591,7 +591,7 @@ public class Search extends STServiceAdapter {
 					"\nFILTER(isIRI(?superClass))"; 
 			
 			//if the input root is different from owl:Thing e rdfs:Resource the ?superClass should be 
-			// rdfs:subClass of such root
+			// rdfs:subClass* of such root
 			if(!root.equals(OWL.THING) && !root.equals(RDFS.RESOURCE)) {
 				query += "\n?superClass <" + RDFS.SUBCLASSOF.stringValue() + ">* <"+root.stringValue()+"> ."; 	
 			}
@@ -603,7 +603,7 @@ public class Search extends STServiceAdapter {
 					"\nOPTIONAL{" +
 					"\n?superClass <" + RDFS.SUBCLASSOF.stringValue() + "> ?superSuperClass ." +
 					"\nFILTER(isIRI(?superSuperClass))";
-			//if the input root is different from owl:Thing e rdfs:Resource the ?superClass, in this OPTIONAL,
+			//if the input root is different from owl:Thing and rdfs:Resource the ?superClass, in this OPTIONAL,
 			// should be different from the input root
 			if(!root.equals(OWL.THING) && !root.equals(RDFS.RESOURCE)) {
 				query += "\n FILTER(?superClass != <"+root.stringValue()+"> )"; 	
@@ -616,11 +616,19 @@ public class Search extends STServiceAdapter {
 					"\n}" + 
 					"\n}" +
 					"\nUNION" +
-					"\n{" +
-					"\n<"+resourceURI.stringValue()+"> a <"+OWL.CLASS.stringValue()+">." +
-					"\nFILTER NOT EXISTS{<"+resourceURI.stringValue()+"> <"+RDFS.SUBCLASSOF.stringValue()+"> _:b1}" +
-					"\nBIND(\"true\" AS ?isTop )" +
-					"\n}" +
+					"\n{";
+			if(!root.equals(OWL.THING) && !root.equals(RDFS.RESOURCE)) {
+				query+=
+						"\n<"+resourceURI.stringValue()+"> a <"+OWL.CLASS.stringValue()+">." +
+						"\nFILTER (<"+resourceURI.stringValue()+"> = <"+root.stringValue()+">) " +
+						"\nBIND(\"true\" AS ?isTop )";
+			} else {
+				query+=
+						"\n<"+resourceURI.stringValue()+"> a <"+OWL.CLASS.stringValue()+">." +
+						"\nFILTER NOT EXISTS{<"+resourceURI.stringValue()+"> <"+RDFS.SUBCLASSOF.stringValue()+"> _:b1}" +
+						"\nBIND(\"true\" AS ?isTop )";
+			}
+			query+="\n}" +
 					"\n}";
 			//@formatter:on
 		} else if (role.equals(RDFResourceRole.skosCollection)) {
