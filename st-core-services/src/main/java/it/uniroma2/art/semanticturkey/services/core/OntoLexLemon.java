@@ -269,6 +269,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		if (customFormValue != null) {
 			StandardForm stdForm = new StandardForm();
 			stdForm.addFormEntry(StandardForm.Prompt.resource, newLexicalEntryIRI.stringValue());
+			stdForm.addFormEntry(StandardForm.Prompt.lexicon, lexicon.stringValue());
 
 			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
 			enrichWithCustomForm(getManagedConnection(), modelAdditions, modelRemovals, cForm,

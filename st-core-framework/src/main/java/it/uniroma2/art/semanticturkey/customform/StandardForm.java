@@ -12,6 +12,7 @@ public class StandardForm {
 		public static final String xLabel = "xLabel";
 		public static final String lexicalForm = "lexicalForm"; //TODO check
 		public static final String schemes = "schemes";
+		public static final String lexicon = "lexicon"; //lexicon of a new created lexicalEntry
 	}
 	
 	Map<String, Object> form;
