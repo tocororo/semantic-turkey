@@ -230,9 +230,10 @@ public class ProjectManager {
 		if (isOpen(projectName))
 			throw new ProjectDeletionException("cannot delete a project while it is open");
 
-		// delete the folders about project-user bindings
+		// delete the folders about project-user and project-group bindings
 		try {
 			ProjectUserBindingsManager.deletePUBindingsOfProject(projectName);
+			ProjectGroupBindingsManager.deletePGBindingsOfProject(projectName);
 		} catch (IOException e) {
 			throw new ProjectDeletionException(e);
 		}
