@@ -446,6 +446,38 @@ public class OntoLexLemon extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	/**
+	 * Returns the senses of a lexicalEntry
+	 * @param lexicalEntry
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'R')")
+	public Collection<AnnotatedValue<Resource>> getLexicalEntrySenses(@LocallyDefined IRI lexicalEntry) {
+		QueryBuilder qb = createQueryBuilder(
+		// @formatter:off
+			" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					        \n" +
+			" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						        \n" +
+			" PREFIX owl: <http://www.w3.org/2002/07/owl#>								        \n" +                                      
+			" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						        \n" +
+			" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						        \n" +
+			" prefix ontolex: <http://www.w3.org/ns/lemon/ontolex#>                             \n" +
+			" prefix lime: <http://www.w3.org/ns/lemon/lime#>                                   \n" +
+            "                                                                                   \n" +
+			" SELECT ?resource " + generateNatureSPARQLSelectPart() +" WHERE {                  \n" +
+			"   ?entry ontolex:sense ?resource .                             	                \n" +
+			generateNatureSPARQLWherePart("?resource") +
+			" }                                                                                 \n" +
+			" GROUP BY ?resource                                                                \n"
+			// @formatter:on
+		);
+		qb.setBinding("entry", lexicalEntry);
+		qb.processQName();
+		qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
+		return qb.runQuery();
+	}
+	
 
 	/**
 	 * Adds a subterm to an {@code ontolex:LexicalEntry}.
