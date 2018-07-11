@@ -12,12 +12,15 @@ public class ProjectUserBinding {
 	private Collection<Role> roles;
 	private Collection<String> languages;
 	private UsersGroup group;
+	private boolean groupLimitation;
 	
 	public ProjectUserBinding(AbstractProject project, STUser user) {
 		this.project = project;;
 		this.user = user;
 		this.roles = new ArrayList<>();
 		this.languages = new ArrayList<>();
+		// set false as default, eventually it will changed when retrieving data from the bindings.ttl files
+		this.groupLimitation = false;
 	}
 	
 	public AbstractProject getProject() {
@@ -74,6 +77,14 @@ public class ProjectUserBinding {
 	
 	public UsersGroup getGroup() {
 		return this.group;
+	}
+	
+	public void setSubjectToGroupLimitations(boolean groupLimitation) {
+		this.groupLimitation = groupLimitation;
+	}
+	
+	public boolean isSubjectToGroupLimitations() {
+		return groupLimitation;
 	}
 	
 	@Override

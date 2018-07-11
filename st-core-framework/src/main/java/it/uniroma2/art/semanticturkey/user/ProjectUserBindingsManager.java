@@ -338,6 +338,23 @@ public class ProjectUserBindingsManager {
 	}
 	
 	/**
+	 * Assigns a group to the binding between the given project-user pair
+	 * @param user
+	 * @param project
+	 * @param group
+	 * @throws ProjectBindingException
+	 */
+	public static void setGroupLimitationsToPUBinding(STUser user, AbstractProject project, UsersGroup group, boolean limitations) throws ProjectBindingException {
+		for (ProjectUserBinding pub : puBindingList) {
+			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
+				pub.setSubjectToGroupLimitations(limitations);
+				createOrUpdatePUBindingFolder(pub);
+				return;
+			}
+		}
+	}
+	
+	/**
 	 * Remove the group assigned to the user in the given project-user pair
 	 * @param user
 	 * @param project

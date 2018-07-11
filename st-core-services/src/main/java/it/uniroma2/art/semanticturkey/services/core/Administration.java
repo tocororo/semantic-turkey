@@ -175,6 +175,7 @@ public class Administration extends STServiceAdapter {
 		
 		if (puBinding.getGroup() != null) {
 			bindingNode.set("group", puBinding.getGroup().getAsJsonObject());
+			bindingNode.set("groupLimitations", jsonFactory.booleanNode(puBinding.isSubjectToGroupLimitations()));
 		} else {
 			bindingNode.set("group", null);
 		}

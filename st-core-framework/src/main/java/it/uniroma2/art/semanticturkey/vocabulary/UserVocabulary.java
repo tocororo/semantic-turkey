@@ -49,6 +49,7 @@ public class UserVocabulary {
 	public static final IRI GROUP_PROP;
 	public static final IRI PROJECT_PROP;
 	public static final IRI OWNED_SCHEME_PROP;
+	public static final IRI GROUP_LIMITATIONS_PROP;
     
 	static {
 		ValueFactory fact = SimpleValueFactory.getInstance();
@@ -76,6 +77,7 @@ public class UserVocabulary {
     	USER_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "user");
     	PROJECT_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "project");
     	OWNED_SCHEME_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "owned_scheme");
+    	GROUP_LIMITATIONS_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "subjectToGroupLimitations");
 	}
 
 }

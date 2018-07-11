@@ -189,6 +189,36 @@ public class UsersGroups extends STServiceAdapter {
 		ProjectUserBindingsManager.assignGroupToPUBinding(user, project, group);
 	}
 	
+	/**
+	 * Changes the application of the limitations of a group in a user-project binding
+	 * @param projectName
+	 * @param email
+	 * @param groupIri
+	 * @param limitations
+	 * @throws ProjectBindingException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void setGroupLimitationsToUser(String projectName, String email, IRI groupIri, boolean limitations) throws ProjectBindingException,
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+		STUser user = UsersManager.getUserByEmail(email);
+		if (user == null) {
+			throw new ProjectBindingException("No user found with email " + email);
+		}
+		Project project = ProjectManager.getProjectDescription(projectName);
+		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
+		if (puBinding == null) {
+			throw new ProjectBindingException("No binding found for user with email " + email + " and project " + projectName);
+		}
+		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
+		if (group == null) {
+			throw new ProjectBindingException("Group not found");
+		}
+		ProjectUserBindingsManager.setGroupLimitationsToPUBinding(user, project, group, limitations);
+	}
 	
 	/**
 	 * Remove the group assigned to the user in the given project

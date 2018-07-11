@@ -274,9 +274,14 @@ public class ProjectGroupBindingsManager {
 		if (user.isAdmin()) {
 			return true;
 		}
-		UsersGroup group = ProjectUserBindingsManager.getPUBinding(user, project).getGroup();
+		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
+		UsersGroup group = puBinding.getGroup();
 		if (group == null) {
 			return true;
+		} else {
+			if (!puBinding.isSubjectToGroupLimitations()) {
+				return true; //user belongs to a group but is not subject to its limitations
+			}
 		}
 		Collection<IRI> ownedSchems = getPGBinding(group, project).getOwnedSchemes();
 		if (ownedSchems.isEmpty()) { //no schemes owned by the group
