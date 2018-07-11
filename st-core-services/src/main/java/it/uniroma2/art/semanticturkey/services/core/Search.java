@@ -471,7 +471,7 @@ public class Search extends STServiceAdapter {
 					"\n{" + 
 					"\n"+it.uniroma2.art.semanticturkey.services.core.SKOS
 					.combinePathWithVarOrIri("?resource", "?broader", broaderNarrowerPath, true)+
-					"\n?broader a ?type"; //to get only those resources defined in this project
+					"\n?broader a ?type ."; //to get only those resources defined in this project
 			if (schemesIRI != null && schemesIRI.size()==1) {
 				query += "\n?broader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> ."+
 						"\nOPTIONAL{" +
@@ -499,7 +499,7 @@ public class Search extends STServiceAdapter {
 			query += "\nOPTIONAL{" +
 					"\n"+it.uniroma2.art.semanticturkey.services.core.SKOS
 					.combinePathWithVarOrIri("?broader", "?broaderOfBroader", broaderNarrowerPath, false) + 
-					"\n?broaderOfBroader a ?type"; //to get only those resources defined in this project
+					"\n?broaderOfBroader a ?type ."; //to get only those resources defined in this project
 			if (schemesIRI != null && schemesIRI.size()==1) {
 				query += "\n?broaderOfBroader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> . ";
 			} else if(schemesIRI != null && schemesIRI.size()>1){
