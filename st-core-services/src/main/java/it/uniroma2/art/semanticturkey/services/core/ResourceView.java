@@ -58,6 +58,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
@@ -137,6 +138,7 @@ import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.utilities.ErrorRecoveringValueFactory;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
+import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 
 /**
  * This service produces a view showing the details of a resource. This service operates uniformly (as much as
@@ -269,12 +271,14 @@ public class ResourceView extends STServiceAdapter {
 			DatasetMetadata datasetMetadata = ((RemoteResourcePosition) resourcePosition)
 					.getDatasetMetadata();
 			if (!datasetMetadata.isAccessible()) {
-				throw new IllegalArgumentException("Dataset %s is not accessible. "
-						+ "Please verify that in the Metadata Registry there is the SPARQL endpoint of this dataset or it is dereferenceable.");
+				throw new IllegalArgumentException(String.format("Dataset %s is not accessible. "
+						+ "Please verify that in the Metadata Registry there is the SPARQL endpoint of this dataset or it is dereferenceable.",
+						datasetMetadata.getIdentity()));
 			}
 
-			return datasetMetadata.getSparqlEndpoint()
-					.<AccessMethod>map(iri -> new SPARQLAccessMethod(iri, false))
+			return datasetMetadata.getSparqlEndpointMetadata()
+					.<AccessMethod>map(meta -> new SPARQLAccessMethod(meta.getEndpoint(),
+							!meta.getLimitations().contains(METADATAREGISTRY.NO_AGGREGATION)))
 					.orElseGet(DerefenciationAccessMethod::new);
 		} else {
 			return new DerefenciationAccessMethod();
@@ -549,7 +553,8 @@ public class ResourceView extends STServiceAdapter {
 			Model propertyModel = new LinkedHashModel();
 			qb.runQuery(conn).stream().forEach(annotatedPredicate -> {
 				List<IRI> parents = Arrays
-						.stream(annotatedPredicate.getAttributes().get("parents").stringValue().split("><"))
+						.stream(annotatedPredicate.getAttributes().getOrDefault("parents", RDF.NIL)
+								.stringValue().split("><"))
 						.filter(s -> !s.isEmpty()).map(s -> vf.createIRI(s)).collect(toList());
 				IRI predicate = (IRI) annotatedPredicate.getValue();
 				parents.forEach(parent -> {

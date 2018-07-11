@@ -213,7 +213,9 @@ public class MetadataRegistryBackendTest {
 				agrovocDataset.getDereferenciationSystem()
 						.orElseThrow(() -> new AssertionError("Empty optional")),
 				equalTo(METADATAREGISTRY.STANDARD_DEREFERENCIATION));
-		assertThat(agrovocDataset.getSparqlEndpoint().orElseThrow(() -> new AssertionError("Empty optional")),
+		assertThat(
+				agrovocDataset.getSparqlEndpointMetadata().orElseThrow(() -> new AssertionError("Empty optional"))
+						.getEndpoint(),
 				equalTo(SimpleValueFactory.getInstance()
 						.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql")));
 	}

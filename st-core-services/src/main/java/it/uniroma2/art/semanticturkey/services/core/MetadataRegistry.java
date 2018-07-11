@@ -130,6 +130,45 @@ public class MetadataRegistry extends STServiceAdapter {
 	}
 
 	/**
+	 * Sets the given <em>limitation</em> for the provided <em>endpoint</em>
+	 * 
+	 * @param endpoint
+	 * @param limitation
+	 * @throws MetadataRegistryWritingException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
+	public void setSPARQLEndpointLimitation(IRI endpoint, IRI limitation)
+			throws MetadataRegistryWritingException {
+		metadataRegistryBackend.setSPARQLEndpointLimitation(endpoint, limitation);
+	}
+
+	/**
+	 * Removes the given <em>limitation</em> from the provided <em>endpoint</em>
+	 * 
+	 * @param endpoint
+	 * @param limitation
+	 * @throws MetadataRegistryWritingException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
+	public void removeSPARQLEndpointLimitation(IRI endpoint, IRI limitation)
+			throws MetadataRegistryWritingException {
+		metadataRegistryBackend.removeSPARQLEndpointLimitation(endpoint, limitation);
+	}
+
+	/**
+	 * Returns the limitations associated with the provided <em>endpoint</em>
+	 * 
+	 * @param endpoint
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+	public Collection<IRI> getSPARQLEndpointLimitations(IRI endpoint) {
+		return metadataRegistryBackend.getSPARQLEndpointLimitations(endpoint);
+	}
+
+	/**
 	 * Deletes a catalog record
 	 * 
 	 * @param catalogRecord

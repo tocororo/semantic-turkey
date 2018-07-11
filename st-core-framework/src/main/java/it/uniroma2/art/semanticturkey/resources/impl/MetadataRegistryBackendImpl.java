@@ -33,6 +33,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.GregorianCalendar;
@@ -43,6 +44,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import javax.annotation.Nullable;
@@ -77,6 +79,7 @@ import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.impl.MapBindingSet;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -106,6 +109,7 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.resources.CatalogRecord;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
+import it.uniroma2.art.semanticturkey.resources.DatasetMetadata.SPARQLEndpointMedatadata;
 import it.uniroma2.art.semanticturkey.resources.LexicalizationSetMetadata;
 import it.uniroma2.art.semanticturkey.resources.MetadataDiscoveryException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
@@ -708,6 +712,83 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		saveToFile();
 	}
 
+	@Override
+	public Set<IRI> getSPARQLEndpointLimitations(IRI endpoint) {
+		try (RepositoryConnection conn = getConnection()) {
+			return Models.objectIRIs(QueryResults.asModel(
+					conn.getStatements(endpoint, METADATAREGISTRY.SPARQL_ENDPOINT_LIMITATION, null, false)));
+
+		}
+	}
+
+	@Override
+	public synchronized void setSPARQLEndpointLimitation(IRI endpoint, IRI limitation)
+			throws MetadataRegistryWritingException {
+		try (RepositoryConnection conn = getConnection()) {
+			Update update = conn.prepareUpdate(
+			// @formatter:off
+				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
+				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
+				" PREFIX void: <http://rdfs.org/ns/void#>                                         \n" +
+				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                     \n" +
+				"                                                                                 \n" +
+				" DELETE {                                                                        \n" +
+				"   ?record dcterms:modified ?oldModified .                                       \n" +
+				" }                                                                               \n" +
+				" INSERT {                                                                        \n" +
+				"   ?record dcterms:modified ?now .                                               \n" +
+				"   ?endpoint mdreg:sparqlEndpointLimitation ?limitation .                        \n" + 
+				" }                                                                               \n" +
+				" WHERE {                                                                         \n" +
+				"   ?dataset void:sparqlEndpoint ?endpoint .                                      \n" +
+				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
+				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
+				"   BIND(NOW() AS ?now)                                                           \n" +
+				" }                                                                               \n"
+				// @formatter:on
+			);
+			update.setBinding("endpoint", endpoint);
+			update.setBinding("limitation", limitation);
+			update.execute();
+		}
+
+		saveToFile();
+	}
+
+	@Override
+	public synchronized void removeSPARQLEndpointLimitation(IRI endpoint, IRI limitation)
+			throws MetadataRegistryWritingException {
+		try (RepositoryConnection conn = getConnection()) {
+			Update update = conn.prepareUpdate(
+			// @formatter:off
+				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
+				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
+				" PREFIX void: <http://rdfs.org/ns/void#>                                         \n" +
+				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                     \n" +
+				"                                                                                 \n" +
+				" DELETE {                                                                        \n" +
+				"   ?record dcterms:modified ?oldModified .                                       \n" +
+				"   ?endpoint mdreg:sparqlEndpointLimitation ?limitation .                        \n" + 
+				" }                                                                               \n" +
+				" INSERT {                                                                        \n" +
+				"   ?record dcterms:modified ?now .                                               \n" +
+				" }                                                                               \n" +
+				" WHERE {                                                                         \n" +
+				"   ?dataset void:sparqlEndpoint ?endpoint .                                      \n" +
+				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
+				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
+				"   BIND(NOW() AS ?now)                                                           \n" +
+				" }                                                                               \n"
+				// @formatter:on
+			);
+			update.setBinding("endpoint", endpoint);
+			update.setBinding("limitation", limitation);
+			update.execute();
+		}
+
+		saveToFile();
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -725,7 +806,14 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                         \n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                        \n" +
                 "                                                                                     \n" +
-				" SELECT * {                                                                          \n" +
+				" SELECT ?record (MIN(?recordIssued) as ?recordIssuedT)                               \n" +
+                "        (MAX(?recordModified) as ?recordModifiedT) ?dataset                          \n" +
+				"        (MIN(?datasetRole) as ?datasetRoleT) (MIN(?datasetUriSpace) as ?datasetUriSpaceT) \n" +
+                "        (MIN(?datasetTitle) as ?datasetTitleT)                                            \n" +
+                "        (MIN(?datasetDereferenciationSystem) as ?datasetDereferenciationSystemT)          \n" +
+				"        (GROUP_CONCAT(CONCAT(STR(?datasetSPARQLEndpoint), \"|_|\", COALESCE(STR(?datasetSPARQLEndpointLimitation), \"-\")); separator=\"|_|\") as ?datasetSPARQLEndpointT) \n" +
+				"        (MIN(?datasetVersionInfo) as ?datasetVersionInfoT)                           \n" +
+                "{                                                                                    \n" +
 				"   {SELECT ?record ?recordIssued ?recordModified WHERE {                             \n" +
 				"     ?catalog a dcat:Catalog ;                                                       \n" +
 				"       dcat:record ?record .                                                         \n" +
@@ -746,7 +834,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" 	  BIND(foaf:topic as ?datasetRole)                                                \n" +
 				"   }                                                                                 \n" +
 				"   OPTIONAL {                                                                        \n" +
-				"     ?dataset void:uriSpace ?datasetUriSpace.                                        \n" +
+				"     ?dataset void:uriSpace ?datasetUriSpace .                                       \n" +
 				"   }                                                                                 \n" +
 				"   OPTIONAL {                                                                        \n" +
 				" 	?dataset dcterms:title ?datasetTitle .                                            \n" +
@@ -756,12 +844,14 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"   }                                                                                 \n" +
 				"   OPTIONAL {                                                                        \n" +
 				" 	?dataset void:sparqlEndpoint ?datasetSPARQLEndpoint .                             \n" +
+				"   OPTIONAL { ?datasetSPARQLEndpoint mdreg:sparqlEndpointLimitation ?datasetSPARQLEndpointLimitation . } \n" +
 				"   }                                                                                 \n" +
 				"   OPTIONAL {                                                                        \n" +
 				" 	?dataset owl:versionInfo ?datasetVersionInfo .                                    \n" +
 				"   }                                                                                 \n" +
 				"                                                                                     \n" +
-				" }                                                                                   \n"
+				" }                                                                                   \n" +
+				" GROUP BY ?record ?dataset"
 				// @formatter:on
 			);
 			query.setIncludeInferred(false);
@@ -782,16 +872,16 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					records.add(record);
 
 					if (!record2issued.containsKey(record)) {
-						record2issued.put(record, ((Literal) bs.getValue("recordIssued")).calendarValue()
+						record2issued.put(record, ((Literal) bs.getValue("recordIssuedT")).calendarValue()
 								.toGregorianCalendar());
 					}
 
-					if (!record2modified.containsKey(record) && bs.hasBinding("recordModified")) {
-						record2modified.put(record, ((Literal) bs.getValue("recordModified")).calendarValue()
+					if (!record2modified.containsKey(record) && bs.hasBinding("recordModifiedT")) {
+						record2modified.put(record, ((Literal) bs.getValue("recordModifiedT")).calendarValue()
 								.toGregorianCalendar());
 					}
 
-					Value datasetRole = bs.getValue("datasetRole");
+					Value datasetRole = bs.getValue("datasetRoleT");
 
 					boolean primary;
 
@@ -831,47 +921,97 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	@Override
 	public DatasetMetadata getDatasetMetadata(IRI dataset)
 			throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
+		MapBindingSet bindings = new MapBindingSet();
+		bindings.addBinding("dataset", dataset);
+		return getUnambiguousDatasetMetadata(bindings)
+				.orElseThrow(() -> new NoSuchDatasetMetadataException(bindings));
+	}
+
+	public List<DatasetMetadata> listDatasetMetadata(BindingSet bindingSet, int limit) {
+		BiFunction<String, String, String> wrapWithOptional = (var,
+				pattern) -> bindingSet.hasBinding(var) ? pattern : "OPTIONAL {\n" + pattern + "\n}\n";
+
 		try (RepositoryConnection conn = getConnection()) {
-			TupleQuery datasetQuery = conn.prepareTupleQuery(
+			StringBuilder tupleQuerySb = new StringBuilder(
 			// @formatter:off
 				"PREFIX dcterms: <http://purl.org/dc/terms/>                                          \n" +
 				"PREFIX void: <http://rdfs.org/ns/void#>                                              \n" +
 				"PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                          \n" +
 				"PREFIX owl: <http://www.w3.org/2002/07/owl#>                                         \n" +
-				"SELECT * WHERE {                                                                     \n" +
+				"SELECT ?dataset (MIN(?datasetUriSpace) as ?datasetUriSpaceT) (MIN(?datasetTitle) as ?datasetTitleT) \n" +
+			    "       (MIN(?datasetDereferenciationSystem) as ?datasetDereferenciationSystemT) \n" +
+				"       (GROUP_CONCAT(CONCAT(STR(?datasetSPARQLEndpoint), \"|_|\", COALESCE(STR(?datasetSPARQLEndpointLimitation), \"-\")); separator=\"|_|\") as ?datasetSPARQLEndpointT) \n" +
+				"       (MIN(?datasetVersionInfo) as ?datasetVersionInfoT) \n" +
+				"WHERE {                                                                              \n");
+			// @formatter:on
+
+			List<String> bindingNames = new ArrayList<>(bindingSet.getBindingNames());
+
+			if (!bindingNames.isEmpty()) {
+				tupleQuerySb.append("VALUES(\n");
+				for (String n : bindingNames) {
+					tupleQuerySb.append(" 	?").append(n).append("\n");
+				}
+				tupleQuerySb.append(") {\n");
+				tupleQuerySb.append(" 	(\n");
+				for (String n : bindingNames) {
+					tupleQuerySb.append(" 	").append(RenderUtils.toSPARQL(bindingSet.getValue(n)))
+							.append("\n");
+				}
+				tupleQuerySb.append(" 	)\n");
+				tupleQuerySb.append("}\n");
+
+			}
+
+			tupleQuerySb.append(
+			// @formatter:off
 				"   ?dataset a void:Dataset .                                                         \n" +
-				"   OPTIONAL {                                                                        \n" +
-				"     ?dataset void:uriSpace ?datasetUriSpace.                                        \n" +
-				"   }                                                                                 \n" +
-				"   OPTIONAL {                                                                        \n" +
-				" 	?dataset dcterms:title ?datasetTitle .                                            \n" +
-				"   }                                                                                 \n" +
-				"   OPTIONAL {                                                                        \n" +
-				" 	?dataset mdreg:dereferenciationSystem ?datasetDereferenciationSystem .            \n" +
-				"   }                                                                                 \n" +
-				"   OPTIONAL {                                                                        \n" +
-				" 	?dataset void:sparqlEndpoint ?datasetSPARQLEndpoint .                             \n" +
-				"   }                                                                                 \n" +
-				"   OPTIONAL {                                                                        \n" +
-				" 	?dataset owl:versionInfo ?datasetVersionInfo .                                    \n" +
-				"   }                                                                                 \n" +
+				wrapWithOptional.apply("datasetUriSpace",
+				"     ?dataset void:uriSpace ?datasetUriSpace .                                      \n"
+				) +
+				wrapWithOptional.apply("datasetTitle",
+				" 	  ?dataset dcterms:title ?datasetTitle .                                         \n"
+				) +
+				wrapWithOptional.apply("datasetDereferenciationSystem",
+				" 	?dataset mdreg:dereferenciationSystem ?datasetDereferenciationSystem .            \n"
+				) + 
+				wrapWithOptional.apply("datasetSPARQLEndpoint",
+				" 	?dataset void:sparqlEndpoint ?datasetSPARQLEndpoint .                           \n" +
+				"   OPTIONAL { ?datasetSPARQLEndpoint mdreg:sparqlEndpointLimitation ?datasetSPARQLEndpointLimitation . } \n"
+				)+
+				wrapWithOptional.apply("datasetVersionInfo",
+				" 	?dataset owl:versionInfo ?datasetVersionInfo .                                    \n"
+				)+
 				"}                                                                                    \n" +
-				"LIMIT 2                                                                              \n"
-				// @formatter:on
-			);
-			datasetQuery.setBinding("dataset", dataset);
-			List<BindingSet> retrievedDatasets = QueryResults.asList(datasetQuery.evaluate());
-			if (retrievedDatasets.size() > 1) {
-				throw new MetadataRegistryStateException(
-						"Ambiguous description for dataset " + NTriplesUtil.toNTriplesString(dataset));
-			}
+				"GROUP BY ?dataset                                                                    \n" +
+				"HAVING BOUND(?dataset)                                                               \n" +
+				(limit > 0 ? "LIMIT " + limit + "\n" : ""));
+			// @formatter:on
 
-			if (retrievedDatasets.isEmpty()) {
-				throw new NoSuchDatasetMetadataException(dataset.stringValue());
-			}
-
-			return bindingset2datasetmetadata(retrievedDatasets.iterator().next());
+			TupleQuery datasetQuery = conn.prepareTupleQuery(tupleQuerySb.toString());
+			return QueryResults.stream(datasetQuery.evaluate())
+					.map(this::bindingset2datasetmetadata).collect(toList());
 		}
+	}
+
+	public Optional<DatasetMetadata> getDatasetMetadata(BindingSet bindingSet) {
+		return listDatasetMetadata(bindingSet, 1).stream().findFirst();
+	}
+
+	public Optional<DatasetMetadata> getUnambiguousDatasetMetadata(BindingSet bindingSet)
+			throws MetadataRegistryStateException {
+		List<DatasetMetadata> candidates = listDatasetMetadata(bindingSet, 2);
+
+		if (candidates.size() > 1) {
+			throw new MetadataRegistryStateException(
+					"Ambiguous constraints over datasets: " + bindingSet.toString());
+		}
+
+		if (candidates.isEmpty()) {
+			return Optional.empty();
+		}
+
+		return Optional.of(candidates.iterator().next());
 	}
 
 	@Override
@@ -954,44 +1094,17 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 		try (RepositoryConnection conn = getConnection()) {
 			ValueFactory vf = conn.getValueFactory();
-
-			TupleQuery query = conn.prepareTupleQuery(
-			// @formatter:off
-					" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                           \n" +
-					" PREFIX dcterms: <http://purl.org/dc/terms/>                                         \n" +
-					" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                           \n" +
-					" PREFIX void: <http://rdfs.org/ns/void#>                                             \n" +
-					" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                         \n" +
-	                "                                                                                     \n" +
-					" SELECT * {                                                                          \n" +
-					"   ?dataset void:uriSpace ?datasetUriSpace.                                          \n" +
-					"   OPTIONAL {                                                                        \n" +
-					" 	?dataset dcterms:title ?datasetTitle .                                            \n" +
-					"   }                                                                                 \n" +
-					"   OPTIONAL {                                                                        \n" +
-					" 	?dataset mdreg:dereferenciationSystem ?datasetDereferenciationSystem .            \n" +
-					"   }                                                                                 \n" +
-					"   OPTIONAL {                                                                        \n" +
-					" 	?dataset void:sparqlEndpoint ?datasetSPARQLEndpoint .                             \n" +
-					"   }                                                                                 \n" +
-					"   OPTIONAL {                                                                        \n" +
-					" 	?dataset owl:versionInfo ?datasetVersionInfo .                                    \n" +
-					"   }                                                                                 \n" +
-					"                                                                                     \n" +
-					" }                                                                                   \n" +
-					" LIMIT 1                                                                             \n"
-					// @formatter:on
-			);
-			query.setIncludeInferred(false);
+			Optional<DatasetMetadata> dataset;
 
 			// -----------------------------------------
 			// Case 1: The provided URI is the base URI
 
-			query.setBinding("datasetUriSpace", vf.createLiteral(iriResource.stringValue()));
-			BindingSet bs = QueryResults.singleResult(query.evaluate());
+			MapBindingSet bindings = new MapBindingSet();
+			bindings.addBinding("datasetUriSpace", vf.createLiteral(iriResource.stringValue()));
+			dataset = getDatasetMetadata(bindings);
 
-			if (bs != null) {
-				return bindingset2datasetmetadata(bs);
+			if (dataset.isPresent()) {
+				return dataset.get();
 			}
 
 			// ------------------------------------------
@@ -1000,11 +1113,13 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 			String namespace = iriResource.getNamespace();
 
-			query.setBinding("datasetUriSpace", vf.createLiteral(namespace));
-			bs = QueryResults.singleResult(query.evaluate());
+			bindings.clear();
+			bindings.addBinding("datasetUriSpace", vf.createLiteral(namespace));
 
-			if (bs != null) {
-				return bindingset2datasetmetadata(bs);
+			dataset = getDatasetMetadata(bindings);
+
+			if (dataset.isPresent()) {
+				return dataset.get();
 			}
 
 			// --------------------------------------------
@@ -1012,13 +1127,14 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			// e.g., [http://example.org]#Person
 
 			if (namespace.endsWith("#")) {
-				query.setBinding("datasetUriSpace",
+				bindings.clear();
+				bindings.addBinding("datasetUriSpace",
 						vf.createLiteral(namespace.substring(0, namespace.length() - 1)));
 
-				bs = QueryResults.singleResult(query.evaluate());
+				dataset = getDatasetMetadata(bindings);
 
-				if (bs != null) {
-					return bindingset2datasetmetadata(bs);
+				if (dataset.isPresent()) {
+					return dataset.get();
 				}
 			} else {
 				return null;
@@ -1032,21 +1148,50 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		IRI dataset = (IRI) bs.getValue("dataset");
 
 		@Nullable
-		String uriSpace = Optional.ofNullable(bs.getValue("datasetUriSpace")).map(Value::stringValue)
-				.orElse(null);
+		String uriSpace = Optional.ofNullable(bs.getValue("datasetUriSpaceT")).map(Value::stringValue)
+				.filter(s -> !s.isEmpty()).orElse(null);
 		@Nullable
-		String title = Optional.ofNullable(bs.getValue("datasetTitle")).map(Value::stringValue).orElse(null);
+		String title = Optional.ofNullable(bs.getValue("datasetTitleT")).map(Value::stringValue)
+				.filter(s -> !s.isEmpty()).orElse(null);
 		@Nullable
-		IRI dereferenciationSystem = Optional.ofNullable(bs.getValue("datasetDereferenciationSystem"))
-				.map(IRI.class::cast).orElse(null);
+		IRI dereferenciationSystem = Optional.ofNullable(bs.getValue("datasetDereferenciationSystemT"))
+				.filter(s -> !s.stringValue().isEmpty()).map(IRI.class::cast).orElse(null);
 		@Nullable
-		IRI sparqlEndpoint = Optional.ofNullable(bs.getValue("datasetSPARQLEndpoint")).map(IRI.class::cast)
-				.orElse(null);
+		String sparqlEndpointSpec = Optional.ofNullable(bs.getValue("datasetSPARQLEndpointT"))
+				.map(Value::stringValue).filter(s -> !s.isEmpty()).orElse(null);
+
 		@Nullable
-		String versionInfo = Optional.ofNullable(bs.getValue("datasetVersionInfo")).map(Value::stringValue)
+		SPARQLEndpointMedatadata sparqlEndpointMetadata;
+		if (sparqlEndpointSpec != null) {
+			String[] sparqlEndpointParts = sparqlEndpointSpec.split("\\|_\\|");
+
+			IRI sparqlEndpoint = null;
+			Set<IRI> endpointLimitations = new HashSet<>();
+			for (int i = 0; i < sparqlEndpointParts.length; i += 2) {
+				SimpleValueFactory vf = SimpleValueFactory.getInstance();
+				IRI endpoint = vf.createIRI(sparqlEndpointParts[i]);
+				String endpointLimitation = sparqlEndpointParts[i + 1];
+
+				if (sparqlEndpoint == null) {
+					sparqlEndpoint = endpoint;
+				} else if (!sparqlEndpoint.equals(endpoint)) {
+					continue;
+				}
+
+				if (!endpointLimitation.equals("-")) {
+					endpointLimitations.add(vf.createIRI(endpointLimitation));
+				}
+			}
+			sparqlEndpointMetadata = new SPARQLEndpointMedatadata(sparqlEndpoint, endpointLimitations);
+		} else {
+			sparqlEndpointMetadata = null;
+		}
+
+		@Nullable
+		String versionInfo = Optional.ofNullable(bs.getValue("datasetVersionInfoT")).map(Value::stringValue)
 				.orElse(null);
 
-		return new DatasetMetadata(dataset, uriSpace, title, dereferenciationSystem, sparqlEndpoint,
+		return new DatasetMetadata(dataset, uriSpace, title, dereferenciationSystem, sparqlEndpointMetadata,
 				versionInfo);
 	}
 

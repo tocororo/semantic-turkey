@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -109,9 +110,10 @@ public interface MetadataRegistryBackend {
 	 *            if {@code null}, the dereferenciability is left unspecified
 	 * @throws IllegalArgumentException
 	 * @throws IOException
-	 * @throws MetadataRegistryWritingException 
+	 * @throws MetadataRegistryWritingException
 	 */
-	void setDereferenciability(IRI dataset, Boolean value) throws IllegalArgumentException, MetadataRegistryWritingException;
+	void setDereferenciability(IRI dataset, Boolean value)
+			throws IllegalArgumentException, MetadataRegistryWritingException;
 
 	/**
 	 * Sets the SPARQL endpoint of a dataset.
@@ -120,10 +122,37 @@ public interface MetadataRegistryBackend {
 	 * @param endpoint
 	 *            if {@code null}, the endpoint is left unspecified
 	 * @throws IllegalArgumentException
-	 * @throws MetadataRegistryWritingException 
+	 * @throws MetadataRegistryWritingException
 	 * @throws IOException
 	 */
-	void setSPARQLEndpoint(IRI dataset, IRI endpoint) throws IllegalArgumentException, MetadataRegistryWritingException;
+	void setSPARQLEndpoint(IRI dataset, IRI endpoint)
+			throws IllegalArgumentException, MetadataRegistryWritingException;
+
+	/**
+	 * Returns a list of limitations associated with the provided <em>endpoint</em>
+	 * 
+	 * @param endpoint
+	 * @return
+	 */
+	Set<IRI> getSPARQLEndpointLimitations(IRI endpoint);
+
+	/**
+	 * Sets the given <em>limitation</em> for the provided <em>endpoint</em>
+	 * 
+	 * @param endpoint
+	 * @param limitation
+	 * @throws MetadataRegistryWritingException
+	 */
+	void setSPARQLEndpointLimitation(IRI endpoint, IRI limitation) throws MetadataRegistryWritingException;
+
+	/**
+	 * Removes the given <em>limitation</em> from the provided <em>endpoint</em>
+	 * 
+	 * @param endpoint
+	 * @param limitation
+	 * @throws MetadataRegistryWritingException
+	 */
+	void removeSPARQLEndpointLimitation(IRI endpoint, IRI limitation) throws MetadataRegistryWritingException;
 
 	/**
 	 * Returns the catalog records
@@ -174,7 +203,7 @@ public interface MetadataRegistryBackend {
 	 * Assess the lexicalization model of the given {@code dataset}
 	 * 
 	 * @param dataset
-	 * @throws MetadataRegistryWritingException 
+	 * @throws MetadataRegistryWritingException
 	 * @throws MetadataDiscoveryException
 	 */
 	void discoverLexicalizationSets(IRI dataset) throws AssessmentException, MetadataRegistryWritingException;

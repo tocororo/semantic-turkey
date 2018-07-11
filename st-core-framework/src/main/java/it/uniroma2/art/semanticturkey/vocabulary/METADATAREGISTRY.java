@@ -23,16 +23,29 @@ public abstract class METADATAREGISTRY {
 	 */
 	public static final Namespace NS = new SimpleNamespace(PREFIX, NAMESPACE);
 
+	/** http://semanticturkey.uniroma2.it/ns/mdreg#dereferenciationSystem */
 	public static final IRI DEREFERENCIATION_SYSTEM;
+
+	/** http://semanticturkey.uniroma2.it/ns/mdreg#standardDereferenciation */
 	public static final IRI STANDARD_DEREFERENCIATION;
+
+	/** http://semanticturkey.uniroma2.it/ns/mdreg#noDereferenciation */
 	public static final IRI NO_DEREFERENCIATION;
+
+	/** http://semanticturkey.uniroma2.it/ns/mdreg#sparqlEndpointLimitation */
+	public static final IRI SPARQL_ENDPOINT_LIMITATION;
 	
+	/** http://semanticturkey.uniroma2.it/ns/mdreg#noAggregation */
+	public static final IRI NO_AGGREGATION;
+
 	static {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
 		DEREFERENCIATION_SYSTEM = vf.createIRI(NAMESPACE, "dereferenciationSystem");
 		STANDARD_DEREFERENCIATION = vf.createIRI(NAMESPACE, "standardDereferenciation");
 		NO_DEREFERENCIATION = vf.createIRI(NAMESPACE, "noDereferenciation");
+		SPARQL_ENDPOINT_LIMITATION = vf.createIRI(NAMESPACE, "sparqlEndpointLimitation");
+		NO_AGGREGATION = vf.createIRI(NAMESPACE, "noAggregation");
 	}
 
 }
