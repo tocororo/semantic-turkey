@@ -120,13 +120,28 @@ public class MetadataRegistry extends STServiceAdapter {
 	 *            if {@code null}, the endpoint is left unspecified
 	 * @throws IllegalArgumentException
 	 * @throws MetadataRegistryWritingException
-	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
 	public void setSPARQLEndpoint(IRI dataset, @Optional IRI endpoint)
 			throws IllegalArgumentException, MetadataRegistryWritingException {
 		metadataRegistryBackend.setSPARQLEndpoint(dataset, endpoint);
+	}
+
+	/**
+	 * Sets the title of a dataset.
+	 * 
+	 * @param dataset
+	 * @param title
+	 *            if {@code null}, the title is left unspecified
+	 * @throws IllegalArgumentException
+	 * @throws MetadataRegistryWritingException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
+	public void setTitle(IRI dataset, @Optional String title)
+			throws IllegalArgumentException, MetadataRegistryWritingException {
+		metadataRegistryBackend.setTitle(dataset, title);
 	}
 
 	/**

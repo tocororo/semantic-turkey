@@ -129,6 +129,18 @@ public interface MetadataRegistryBackend {
 			throws IllegalArgumentException, MetadataRegistryWritingException;
 
 	/**
+	 * Sets the title of a dataset.
+	 * 
+	 * @param dataset
+	 * @param title
+	 *            if {@code null}, the title is left unspecified
+	 * @throws IllegalArgumentException
+	 * @throws MetadataRegistryWritingException
+	 */
+	void setTitle(IRI dataset, String title)
+			throws IllegalArgumentException, MetadataRegistryWritingException;
+
+	/**
 	 * Returns a list of limitations associated with the provided <em>endpoint</em>
 	 * 
 	 * @param endpoint
