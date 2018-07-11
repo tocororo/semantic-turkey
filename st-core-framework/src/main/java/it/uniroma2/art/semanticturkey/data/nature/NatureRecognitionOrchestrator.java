@@ -22,7 +22,7 @@ public class NatureRecognitionOrchestrator {
 			varName = "?"+varName;
 		}
 		sparqlPartText =
-		" OPTIONAL { \n" +
+		" \nOPTIONAL { \n" +
 		"  values($st) {(rdfs:Datatype)} \n" +
 		"  graph $go { \n" +
 		" "+varName+" a $st . \n" +

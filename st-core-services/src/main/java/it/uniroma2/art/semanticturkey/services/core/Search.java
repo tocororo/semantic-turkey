@@ -562,7 +562,7 @@ public class Search extends STServiceAdapter {
 					"\n?superProperty a ?type ."+ //to get only those properties defined in this project
 					"\nOPTIONAL{" +
 					"\n?superProperty <" + RDFS.SUBPROPERTYOF.stringValue() + "> ?superSuperProperty ." +
-					"\n?superSuperProperty a ?type ."+ //to get only those properties defined in this project
+					"\n?superSuperProperty a ?type2 ."+ //to get only those properties defined in this project
 					"\n}" + 
 					"\n}" +
 					"\nUNION" +
@@ -575,7 +575,7 @@ public class Search extends STServiceAdapter {
 					"?type = <"+OWL.ANNOTATIONPROPERTY.stringValue()+"> || " +
 					"?type = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )" +
 					"\nFILTER NOT EXISTS{<"+resourceURI.stringValue()+"> <"+RDFS.SUBPROPERTYOF.stringValue()+"> ?tempProp ."+
-					"\n?tempProp a ?type .}" +
+					"\n?tempProp a ?type2 .}" +
 					"\nBIND(\"true\" AS ?isTop )" +
 					"\n}" +
 					"\n}";
