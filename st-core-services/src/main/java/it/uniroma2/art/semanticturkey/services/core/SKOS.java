@@ -289,7 +289,18 @@ public class SKOS extends STServiceAdapter {
 					//		"?resource", true, includeSubProperties) + 										 "\n"+
 					combinePathWithVarOrIri("?aNarrowerConcept", "?resource", broaderNarrowerPath, false)+"\n" +
 					"         			?subPropInScheme2 rdfs:subPropertyOf* skos:inScheme .         	 \n" +
-					"                   ?aNarrowerConcept ?subPropInScheme2 ?scheme . } as ?attr_more )   \n" +
+					"                   ?aNarrowerConcept ?subPropInScheme2 ?scheme2 . 					 \n" +
+					"FILTER (";
+			first=true;
+			for(IRI scheme : schemes){
+				if(!first){
+					query+= " || ";
+				}
+				first=false;
+				query+="?scheme2="+NTriplesUtil.toNTriplesString(scheme);
+			}	
+			query += ") 																				\n" +		 
+					"} as ?attr_more )   \n" +
 					"     }                                                                              \n" +
 					
 					//adding the nature in the query (will be replaced by the appropriate processor), 

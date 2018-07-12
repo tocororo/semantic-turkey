@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -441,6 +442,49 @@ public class Search extends STServiceAdapter {
 			@Optional @LocallyDefinedResources List<IRI> narrowerProps,
 			@Optional(defaultValue = "true") boolean includeSubProperties) throws InvalidParameterException {
 
+		
+		
+		//if at least one scheme is passed, the gat all top concept of such scheme(s) and then later uses 
+		// this information to remove path not going to a topConcept+
+		List<String> topConceptList = new ArrayList<>();
+		if(schemesIRI!=null && schemesIRI.size()>0) {
+			String topConceptAndInverse = "<" + SKOS.TOP_CONCEPT_OF+ "> | ^<"+SKOS.HAS_TOP_CONCEPT+">";
+			String query = "SELECT DISTINCT ?topConcept ?scheme" +
+					"\nWHERE{" +
+					"\n?topConcept "+topConceptAndInverse+" ?scheme ." +
+					"\n}";
+			logger.debug("query: " + query);
+
+			TupleQuery tupleQuery = getManagedConnection().prepareTupleQuery(query);
+			tupleQuery.setIncludeInferred(false);
+
+			// set the dataset to search just in the UserNamedGraphs
+			SimpleDataset dataset = new SimpleDataset();
+			Resource[] namedGraphs = getUserNamedGraphs();
+			for (Resource namedGraph : namedGraphs) {
+				if (namedGraph instanceof IRI) {
+					dataset.addDefaultGraph((IRI) namedGraph);
+				}
+			}
+			tupleQuery.setDataset(dataset);
+
+			// execute the query
+			TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+			while(tupleQueryResult.hasNext()) {
+				BindingSet bindingSet = tupleQueryResult.next();
+				String topConcept = bindingSet.getValue("topConcept").stringValue();
+				IRI scheme = (IRI) bindingSet.getValue("scheme");
+				//check that the scheme belong to the input scheme
+				for(IRI inputScheme : schemesIRI) {
+					if(scheme.equals(inputScheme)) {
+						topConceptList.add(topConcept);
+					}
+				}
+			}
+		}
+		
+		
+		
 		// ARTURIResource inputResource = owlModel.createURIResource(resourceURI);
 
 		// check if the client passed a hierachicalProp, otherwise, set it as skos:broader
@@ -460,15 +504,26 @@ public class Search extends STServiceAdapter {
 			superResourceVar = "broader";
 			superSuperResourceVar = "broaderOfBroader";
 			String inSchemeOrTopConcept = "<" + SKOS.IN_SCHEME.stringValue() + ">|<" + SKOS.TOP_CONCEPT_OF
-					+ ">";
+					+ "> | ^<"+SKOS.HAS_TOP_CONCEPT+">";
+			
 			//@formatter:off
 			query = "SELECT DISTINCT ?broader ?broaderOfBroader ?isTopConcept ?isTop" + 
 					"\nWHERE{" +
 					
 					"\nBIND("+NTriplesUtil.toNTriplesString(resourceURI)+" AS ?resource )" +
-					"\n?subConceptClass <"+RDFS.SUBCLASSOF.stringValue()+">* <"+SKOS.CONCEPT.stringValue()+">." +
+					"\n?subConceptClass <"+RDFS.SUBCLASSOF.stringValue()+">* <"+SKOS.CONCEPT.stringValue()+">.";
 					
-					"\n{" + 
+					
+			//if a scheme is passed, check that the ?resource belong to such scheme(s)
+			if(schemesIRI != null && schemesIRI.size()>0) {
+				if(schemesIRI.size()==1) {
+					query += "\n?resource " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> .";
+				} else { // schemesIRI.size()>1
+					query +="\n?resource ("+inSchemeOrTopConcept+") ?schemeRes ." +
+					ServiceForSearches.filterWithOrValues(schemesIRI, "?schemeRes");
+				}
+			}
+			query += "\n{" + 
 					"\n"+it.uniroma2.art.semanticturkey.services.core.SKOS
 					.combinePathWithVarOrIri("?resource", "?broader", broaderNarrowerPath, true)+
 					"\n?broader a ?type ."; //to get only those resources defined in this project
@@ -478,7 +533,7 @@ public class Search extends STServiceAdapter {
 						"\nBIND (\"true\" AS ?isTopConcept)" +
 						"\n?broader (<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) <"+schemesIRI.get(0).stringValue()+"> ." +
 						"\n}";
-			} else if(schemesIRI != null &&schemesIRI.size()>1){
+			} else if(schemesIRI != null && schemesIRI.size()>1){
 				query += "\n?broader " + inSchemeOrTopConcept + " ?scheme1 ."+
 						ServiceForSearches.filterWithOrValues(schemesIRI, "?scheme1") +
 						"\nOPTIONAL{" +
@@ -771,6 +826,16 @@ public class Search extends STServiceAdapter {
 			List<String> listWithOneElem = new ArrayList<>();
 			listWithOneElem.add(resourceURI.stringValue());
 			pathList.add(listWithOneElem);
+		}
+		
+		//if the input schemesIRI is not null and contains at least one scheme, remove all path not
+		// starting with a topConcept (check if the list of topConcepts contains at least one element)
+		if(topConceptList.size()>0) {
+			Iterator<List<String>> iter = pathList.iterator();
+			if(!topConceptList.contains(iter.next().get(0))){
+				//the current path does not start with a topConcept, so remove it
+				iter.remove();
+			}
 		}
 
 		// now construct the response
