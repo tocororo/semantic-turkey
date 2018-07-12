@@ -262,6 +262,8 @@ public class OntoLexLemon extends STServiceAdapter {
 
 		modelAdditions.add(newLexicalEntryIRI, RDF.TYPE, lexicalEntryCls);
 		modelAdditions.add(newLexicalEntryIRI, ONTOLEX.CANONICAL_FORM, canonicalFormIRI);
+		modelAdditions.add(newLexicalEntryIRI, LIME.LANGUAGE,
+				SimpleValueFactory.getInstance().createLiteral(lexiconLanguage, XMLSchema.LANGUAGE));
 		modelAdditions.add(lexicon, LIME.ENTRY, newLexicalEntryIRI);
 
 		modelAdditions.add(canonicalFormIRI, RDF.TYPE, ONTOLEX.FORM);
