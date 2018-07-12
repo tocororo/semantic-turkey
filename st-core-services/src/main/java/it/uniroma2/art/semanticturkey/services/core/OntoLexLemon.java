@@ -34,6 +34,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import com.google.common.base.Objects;
+
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
@@ -182,9 +184,10 @@ public class OntoLexLemon extends STServiceAdapter {
 	public void deleteLexicon(@LocallyDefined IRI lexicon) {
 		throw new RuntimeException("To be implemented");
 	}
-	
+
 	/**
 	 * Returns the language of a lexicon
+	 * 
 	 * @param lexicon
 	 * @return
 	 */
@@ -194,11 +197,10 @@ public class OntoLexLemon extends STServiceAdapter {
 	public String getLexiconLanguage(@LocallyDefined IRI lexicon) {
 		String language = null;
 		RepositoryConnection repoConn = getManagedConnection();
-		String query = "SELECT ?lexiconLanguage WHERE {\n"
-				+ NTriplesUtil.toNTriplesString(lexicon) + " " + NTriplesUtil.toNTriplesString(LIME.LANGUAGE) + " ?lexiconLanguage .\n"
-				+ "} LIMIT 1";
+		String query = "SELECT ?lexiconLanguage WHERE {\n" + NTriplesUtil.toNTriplesString(lexicon) + " "
+				+ NTriplesUtil.toNTriplesString(LIME.LANGUAGE) + " ?lexiconLanguage .\n" + "} LIMIT 1";
 		List<BindingSet> result = QueryResults.asList(repoConn.prepareTupleQuery(query).evaluate());
-		
+
 		if (!result.isEmpty()) {
 			language = result.get(0).getValue("lexiconLanguage").stringValue();
 		}
@@ -232,12 +234,15 @@ public class OntoLexLemon extends STServiceAdapter {
 
 		RepositoryConnection repConn = getManagedConnection();
 
-		if (!isLanguageComaptibleWithLexiconMetadata(repConn,
-				canonicalForm.getLanguage().orElseThrow(
-						() -> new IllegalArgumentException("Missing language tag in canonical form")),
-				lexicon)) {
-			throw new IllegalArgumentException(
-					"The canonical form is expressed in a natural language not compatible with the lexicon");
+		String lexiconLanguage = getLexiconLanguageInternal(repConn, lexicon).orElseThrow(
+				() -> new IllegalArgumentException("The provided lexicon does not declare any language"));
+
+		String formLanguage = canonicalForm.getLanguage()
+				.orElseThrow(() -> new IllegalArgumentException("Missing language tag in canonical form"));
+
+		if (!langMatches(formLanguage, lexiconLanguage)) {
+			throw new IllegalArgumentException("The canonical form is expressed in a natural language ("
+					+ formLanguage + ") not compatible with the lexicon (" + lexiconLanguage + ")");
 		}
 
 		Model modelAdditions = new LinkedHashModel();
@@ -311,6 +316,91 @@ public class OntoLexLemon extends STServiceAdapter {
 	}
 
 	/**
+	 * Checks whether the provided language is compatible with the given language range
+	 * 
+	 * @param language
+	 * @param languageRange
+	 * @return
+	 */
+	public static boolean langMatches(String language, String languageRange) {
+		if ("*".equals(languageRange)) {
+			return true;
+		} else if (Objects.equal(language, languageRange)) {
+			return true;
+		} else if (languageRange.length() >= language.length()) {
+			return false;
+		} else {
+			return language.startsWith(languageRange) && language.charAt(languageRange.length()) == '-';
+		}
+	}
+
+	/**
+	 * Returns the language declared by the provided lexicon
+	 * 
+	 * @param conn
+	 * @param lexicon
+	 * @return
+	 */
+	public static java.util.Optional<String> getLexiconLanguageInternal(RepositoryConnection conn,
+			IRI lexicon) {
+		return Models.objectString(QueryResults.asModel(conn.getStatements(lexicon, LIME.LANGUAGE, null)));
+	}
+
+	/**
+	 * Returns the language declared by the provided lexical entry, or as fallback the one declared by the
+	 * lexicon
+	 * 
+	 * @param conn
+	 * @param lexicalEntry
+	 * @return
+	 */
+	public static java.util.Optional<String> getLexicalEntryLanguageInternal(RepositoryConnection conn,
+			IRI lexicalEntry) {
+		TupleQuery query = conn.prepareTupleQuery(
+		// @formatter:off
+			"PREFIX lime: <http://www.w3.org/ns/lemon/lime#>\n" +
+			"SELECT ?lang {\n" +
+			"  ?lexicalEntry lime:language|^lime:entry/lime:language ?lang . \n" +
+			"}\n" +
+			"LIMIT 1\n"
+			// @formatter:on
+		);
+		query.setIncludeInferred(false);
+		query.setBinding("lexicalEntry", lexicalEntry);
+		return QueryResults.asSet(query.evaluate()).stream().map(bs -> bs.getValue("lang").stringValue())
+				.findFirst();
+	}
+
+	/**
+	 * Returns the language declared by the provided lexical entry, or as fallback the one declared by the
+	 * lexicon
+	 * 
+	 * @param conn
+	 * @param form
+	 * @return
+	 */
+	public static java.util.Optional<String> getFormLanguageInternal(RepositoryConnection conn,
+			Resource form) {
+		TupleQuery query = conn.prepareTupleQuery(
+		// @formatter:off
+			"PREFIX lime: <http://www.w3.org/ns/lemon/lime#>\n" +
+			"PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>\n" +
+			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
+			"SELECT ?lang {\n" +
+			"  ?lexicalEntry ?p ?form . \n" +
+			"  FILTER EXISTS { ?p rdfs:subPropertyOf* ontolex:lexicalForm } \n" +
+			"  ?lexicalEntry lime:language|^lime:entry/lime:language ?lang . \n" +
+			"}\n" +
+			"LIMIT 1\n"
+			// @formatter:on
+		);
+		query.setIncludeInferred(false);
+		query.setBinding("form", form);
+		return QueryResults.asSet(query.evaluate()).stream().map(bs -> bs.getValue("lang").stringValue())
+				.findFirst();
+	}
+
+	/**
 	 * Returns the entries in a given lexicon that starts with the supplied index consisting of two
 	 * characters.
 	 * 
@@ -363,9 +453,10 @@ public class OntoLexLemon extends STServiceAdapter {
 	public void deleteLexicalEntry(@LocallyDefined IRI lexicalEntry) {
 		throw new RuntimeException("To be implemented");
 	}
-	
+
 	/**
-	 * Returns the 2-digits index of the given lexicalEntry 
+	 * Returns the 2-digits index of the given lexicalEntry
+	 * 
 	 * @param lexicalEntry
 	 * @return
 	 */
@@ -414,9 +505,10 @@ public class OntoLexLemon extends STServiceAdapter {
 		return index;
 		//@formatter:on
 	}
-	
+
 	/**
 	 * Returns the lexicons which the lexicalEntry belongs to
+	 * 
 	 * @param lexicalEntry
 	 * @return
 	 */
@@ -446,9 +538,10 @@ public class OntoLexLemon extends STServiceAdapter {
 		qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
 		return qb.runQuery();
 	}
-	
+
 	/**
 	 * Returns the senses of a lexicalEntry
+	 * 
 	 * @param lexicalEntry
 	 * @return
 	 */
@@ -478,7 +571,6 @@ public class OntoLexLemon extends STServiceAdapter {
 		qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
 		return qb.runQuery();
 	}
-	
 
 	/**
 	 * Adds a subterm to an {@code ontolex:LexicalEntry}.
@@ -563,6 +655,19 @@ public class OntoLexLemon extends STServiceAdapter {
 			@LanguageTaggedString Literal writtenRep, @LocallyDefined IRI lexicalEntry,
 			@Optional CustomFormValue customFormValue, IRI property, boolean replaces)
 			throws URIGenerationException, ProjectInconsistentException, CODAException, CustomFormException {
+
+		RepositoryConnection repoConnection = getManagedConnection();
+
+		String lexicalEntryLanguage = getLexicalEntryLanguageInternal(repoConnection, lexicalEntry)
+				.orElseThrow(() -> new RuntimeException("The lexical entry does not declare any language"));
+		String formLanguage = writtenRep.getLanguage()
+				.orElseThrow(() -> new RuntimeException("The form does not declare any language"));
+
+		if (!langMatches(formLanguage, lexicalEntryLanguage)) {
+			throw new IllegalArgumentException("The form is expressed in a natural language (" + formLanguage
+					+ ") not compatible with the lexical entry (" + lexicalEntryLanguage + ")");
+		}
+
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 
@@ -584,8 +689,6 @@ public class OntoLexLemon extends STServiceAdapter {
 
 		VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
 				RDFResourceRole.ontolexLexicalEntry);
-
-		RepositoryConnection repoConnection = getManagedConnection();
 
 		if (replaces) {
 			Model previousFormStatements = QueryResults
@@ -658,7 +761,19 @@ public class OntoLexLemon extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexForm, formRepresentations)', 'C')")
 	public void addFormRepresentation(@LocallyDefined @Modified Resource form, Literal representation,
 			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/ns/lemon/ontolex#representation") IRI property) {
+
 		RepositoryConnection repConn = getManagedConnection();
+
+		String formLanguage = getFormLanguageInternal(repConn, form)
+				.orElseThrow(() -> new RuntimeException("The form does not declare any language"));
+		String representationLanguage = representation.getLanguage()
+				.orElseThrow(() -> new RuntimeException("The representation does not declare any language"));
+
+		if (!langMatches(representationLanguage, formLanguage)) {
+			throw new IllegalArgumentException("The representation is expressed in a natural language ("
+					+ representationLanguage + ") not compatible with the form (" + formLanguage + ")");
+		}
+
 		repConn.add(form, property, representation, getWorkingGraph());
 	}
 
