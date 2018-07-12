@@ -612,6 +612,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" }                                                                               \n" +
 				" WHERE {                                                                         \n" +
 				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
+				"   OPTIONAL {                                                                    \n" +
+				"     ?record dcterms:modified ?oldModified .                                     \n" +
+				"   }                                                                             \n" +
 				"   { ?lexicalizationSet ?p1 ?o1 } UNION { ?s2 ?p2 ?lexicalizationSet}            \n" +
 				"   BIND(NOW() AS ?now)                                                           \n" +
 				" }                                                                               \n"
