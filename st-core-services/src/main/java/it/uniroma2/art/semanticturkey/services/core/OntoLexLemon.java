@@ -291,6 +291,19 @@ public class OntoLexLemon extends STServiceAdapter {
 		annotatedValue.setAttribute("explicit", true);
 		return annotatedValue;
 	}
+	
+	/**
+	 * Returns the language declared by the provided lexical entry, or as fallback the one declared by the
+	 * lexicon
+	 * @param lexicalEntry
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'R')")
+	public String getLexicalEntryLanguage(@LocallyDefined IRI lexicalEntry) {
+		return OntoLexLemon.getLexicalEntryLanguageInternal(getManagedConnection(), lexicalEntry).orElse(null);
+	}
 
 	/**
 	 * Checks whether the given language is compatible to the one specified in the lexicon
@@ -793,6 +806,19 @@ public class OntoLexLemon extends STServiceAdapter {
 			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/ns/lemon/ontolex#representation") IRI property) {
 		RepositoryConnection repConn = getManagedConnection();
 		repConn.remove(form, property, representation, getWorkingGraph());
+	}
+	
+	/**
+	 * Returns the language declared by the provided lexical entry, or as fallback the one declared by the
+	 * lexicon
+	 * @param lexicalEntry
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexForm)', 'R')")
+	public String getFormLanguage(@LocallyDefined Resource form) {
+		return OntoLexLemon.getFormLanguageInternal(getManagedConnection(), form).orElse(null);
 	}
 
 	/* --- Lexicalizations --- */
