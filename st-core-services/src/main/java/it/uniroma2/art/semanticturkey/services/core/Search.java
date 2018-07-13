@@ -547,7 +547,7 @@ public class Search extends STServiceAdapter {
 						"\nBIND (\"true\" AS ?isTopConcept)" +
 						"\nMINUS{" +
 						"\n"+it.uniroma2.art.semanticturkey.services.core.SKOS
-						.combinePathWithVarOrIri("?resource", "?broader", broaderNarrowerPath, false)+
+						.combinePathWithVarOrIri("?broader", "?broader2", broaderNarrowerPath, false)+
 						"\n}" +
 						"\n}";
 			}
