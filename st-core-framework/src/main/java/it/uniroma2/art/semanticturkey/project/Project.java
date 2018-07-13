@@ -76,6 +76,8 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
 
+import it.uniroma2.art.lime.model.vocabulary.DECOMP;
+import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
@@ -544,12 +546,28 @@ public abstract class Project extends AbstractProject {
 				conn.commit();
 			}
 
-			IRI skoxlOnt = OntologyManager
+			IRI skosxlOnt = OntologyManager
 					.computeCanonicalURI(SimpleValueFactory.getInstance().createIRI(SKOSXL.NAMESPACE));
-			if (coreVocabularies.entrySet().stream().anyMatch(
-					entry -> OntologyManager.computeCanonicalURI(entry.getKey()).equals(skoxlOnt))) {
-				conn.setNamespace("skosxl", SKOSXL.NAMESPACE);
-			}
+			IRI limeOnt = OntologyManager
+					.computeCanonicalURI(SimpleValueFactory.getInstance().createIRI(LIME.NAMESPACE));
+			IRI decompOnt = OntologyManager
+					.computeCanonicalURI(SimpleValueFactory.getInstance().createIRI(DECOMP.NAMESPACE));
+
+			coreVocabularies.entrySet().stream().map(Map.Entry::getKey)
+					.map(OntologyManager::computeCanonicalURI).forEach(ont -> {
+						if (Objects.equals(ont, skosxlOnt)) {
+							conn.setNamespace("skosxl", SKOSXL.NAMESPACE);
+						}
+
+						if (Objects.equals(ont, limeOnt)) {
+							conn.setNamespace("lime", LIME.NAMESPACE);
+						}
+
+						if (Objects.equals(ont, decompOnt)) {
+							conn.setNamespace("decomp", DECOMP.NAMESPACE);
+						}
+					});
+
 			logger.debug("Core vocabularies loaded");
 		}
 	}
