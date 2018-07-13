@@ -8,3 +8,5 @@ capability(pm(project),"RUV").
 capability(pm(project,_),"CRUDV").
 
 capability(cform,"CRUDV").
+
+capability(um(user),"R").
