@@ -8,6 +8,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -75,10 +76,27 @@ public class RequestMappingHandlerAdapterPostProcessor implements BeanPostProces
 			MappingJackson2HttpMessageConverter jacksonMessageConverter = new MappingJackson2HttpMessageConverter();
 			jacksonMessageConverter.setObjectMapper(objectMapper);
 
+			List<HttpMessageConverter<?>> originalMessageConverters = requestMappingHandlerAdapter
+					.getMessageConverters();
 			List<HttpMessageConverter<?>> enrichedMessageConverterList = new ArrayList<>(
-					requestMappingHandlerAdapter.getMessageConverters().size() + 1);
-			enrichedMessageConverterList.add(jacksonMessageConverter);
-			enrichedMessageConverterList.addAll(requestMappingHandlerAdapter.getMessageConverters());
+					originalMessageConverters.size() + 1);
+
+			boolean replaced = false;
+			for (HttpMessageConverter<?> msgConv : originalMessageConverters) {
+				if (AopUtils.getTargetClass(msgConv).equals(MappingJackson2HttpMessageConverter.class)) {
+					if (!replaced) {
+						enrichedMessageConverterList.add(jacksonMessageConverter);
+						replaced = true;
+					}
+				} else {
+					enrichedMessageConverterList.add(msgConv);
+				}
+			}
+
+			if (!replaced) {
+				enrichedMessageConverterList.add(jacksonMessageConverter);
+			}
+			
 			requestMappingHandlerAdapter.setMessageConverters(enrichedMessageConverterList);
 			return bean;
 		} else {
