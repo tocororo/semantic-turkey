@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -84,8 +84,8 @@ public class Export extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public Collection<AnnotatedValue<org.eclipse.rdf4j.model.Resource>> getNamedGraphs() throws Exception {
-		return Iterations.stream(getManagedConnection().getContextIDs())
-				.map(AnnotatedValue<org.eclipse.rdf4j.model.Resource>::new).collect(toSet());
+		return Iterations.stream(getManagedConnection().getContextIDs()).distinct()
+				.map(AnnotatedValue<org.eclipse.rdf4j.model.Resource>::new).collect(toList());
 	}
 
 	/**
