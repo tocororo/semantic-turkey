@@ -6,6 +6,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -82,6 +83,7 @@ public class Collaboration extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project, collaboration)', 'C')")
 	public void activateCollaboratioOnProject(String backendId)
 			throws ProjectUpdateException, ReservedPropertyUpdateException {
 		Project project = getProject();
@@ -127,6 +129,7 @@ public class Collaboration extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project, collaboration)', 'C')")
 	public void assignProject(ObjectNode projectJson)
 			throws STPropertyAccessException, IOException, CollaborationBackendException,
 			STPropertyUpdateException {
@@ -135,6 +138,7 @@ public class Collaboration extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project, collaboration)', 'C')")
 	public void createProject(ObjectNode projectJson) throws STPropertyAccessException,
 			JsonProcessingException, IOException, CollaborationBackendException, STPropertyUpdateException {
 		getCollaborationBackend().createProject(projectJson);
