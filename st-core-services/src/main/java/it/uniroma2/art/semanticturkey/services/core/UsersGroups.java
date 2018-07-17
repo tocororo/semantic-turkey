@@ -170,7 +170,7 @@ public class UsersGroups extends STServiceAdapter {
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAdmin()")
+	@PreAuthorize("@auth.isAuthorized('pm(project, group)', 'U')")
 	public void assignGroupToUser(String projectName, String email, IRI groupIri) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		STUser user = UsersManager.getUserByEmail(email);
@@ -201,7 +201,7 @@ public class UsersGroups extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAdmin()")
+	@PreAuthorize("@auth.isAuthorized('pm(project, group)', 'U')")
 	public void setGroupLimitationsToUser(String projectName, String email, IRI groupIri, boolean limitations) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		STUser user = UsersManager.getUserByEmail(email);
@@ -230,7 +230,7 @@ public class UsersGroups extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAdmin()")
+	@PreAuthorize("@auth.isAuthorized('pm(project, group)', 'U')")
 	public void removeGroupFromUser(String projectName, String email) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		STUser user = UsersManager.getUserByEmail(email);
@@ -256,7 +256,7 @@ public class UsersGroups extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAdmin()")
+	@PreAuthorize("@auth.isAuthorized('pm(project, group)', 'U')")
 	public void addOwnedSchemeToGroup(String projectName, IRI groupIri, IRI scheme) 
 			throws ProjectBindingException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
@@ -278,7 +278,7 @@ public class UsersGroups extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAdmin()")
+	@PreAuthorize("@auth.isAuthorized('pm(project, group)', 'U')")
 	public void removeOwnedSchemeFromGroup(String projectName, IRI groupIri, IRI scheme) 
 			throws ProjectBindingException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
