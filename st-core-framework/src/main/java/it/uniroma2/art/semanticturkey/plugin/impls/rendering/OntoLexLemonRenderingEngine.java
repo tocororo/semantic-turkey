@@ -29,7 +29,9 @@ public class OntoLexLemonRenderingEngine extends BaseRenderingEngine implements 
 			"\n?entry <"+ONTOLEX.CANONICAL_FORM.stringValue()+"> [ <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?labelInternal ] .\n" +
 			"\n}" +
 			"\nUNION" +
-			"\n{?resource <"+DCTERMS.TITLE+"> ?labelInternal . }");
+			"\n{?resource <"+DCTERMS.TITLE+"> ?labelInternal . }" +
+			"\nUNION" +
+			"\n{?resource rdfs:label ?labelInternal . }");
 			//@formatter:on
 	}
 

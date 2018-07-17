@@ -1901,7 +1901,8 @@ public class SKOS extends STServiceAdapter {
 			AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException {
 		IRI lexModel = getProject().getLexicalizationModel();
 		IRI xLabelIRI = null;
-		if (lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
+		if (lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)
+				|| lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
 			modelAdditions.add(resource, RDFS.LABEL, label);
 		} else if (lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
 			checkIfAddPrefLabelIsPossible(getManagedConnection(), label, resource, newResource, conceptSchemes);
