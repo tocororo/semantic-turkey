@@ -157,6 +157,8 @@ public class StatementConsumerProvider {
 						otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.ontolexForm, Arrays.asList(typesStatementConsumer,
 				representationsStatementConsumer, formBasedPreview, otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRole.ontolexLexicalSense,
+				Arrays.asList(typesStatementConsumer, otherPropertiesStatementConsumer));
 
 	}
 
