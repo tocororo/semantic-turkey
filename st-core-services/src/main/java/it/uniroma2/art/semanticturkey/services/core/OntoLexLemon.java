@@ -25,6 +25,8 @@ import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.algebra.evaluation.federation.RepositoryFederatedService;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
@@ -182,7 +184,117 @@ public class OntoLexLemon extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(limeLexicon)', 'D')")
 	public void deleteLexicon(@LocallyDefined IRI lexicon) {
-		throw new RuntimeException("To be implemented");
+		// note: the following update is a copy with minor modification of the one for the deletion of a
+		// lexical entry
+		RepositoryConnection conn = getManagedConnection();
+
+		Update update = conn.prepareUpdate(
+		// @formatter:off
+			"PREFIX owl: <http://www.w3.org/2002/07/owl#>                                                \n" +
+			"PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>                                     \n" +
+			"PREFIX synsem: <http://www.w3.org/ns/lemon/synsem#>                                         \n" +
+			"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                         \n" +
+			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                                        \n" +
+			"PREFIX lexinfo: <http://www.lexinfo.net/ontology/2.0/lexinfo#>                              \n" +
+			"PREFIX lemon: <http://lemon-model.net/lemon#>                                               \n" +
+			"PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>                                       \n" +
+			"PREFIX lime: <http://www.w3.org/ns/lemon/lime#>                                             \n" +
+			"PREFIX decomp: <http://www.w3.org/ns/lemon/decomp#>                                         \n" +
+            "                                                                                            \n" +
+			"delete {                                                                                    \n" +
+            "   graph ?workingGraph {                                                                    \n" +
+			"     ?lexicon ?pl1 ?ol1 .                                                                   \n" +
+			"     ?sl2 ?pl2 ?ol2 .                                                                       \n" +
+			"     ?lexicalEntry ?p1 ?o1 .                                                                \n" +
+			"     ?lexicalRelation ?p14 ?o14 .                                                           \n" +
+			"     ?s15 ?p15 ?lexicalRelation .                                                           \n" +
+			"     ?s2 ?p2 ?lexicalEntry .                                                                \n" +
+			"     ?lexicalRelation ?p14 ?o14 .                                                           \n" +
+			"     ?s15 ?p15 ?lexicalRelation .                                                           \n" +
+			"     ?s1 ?p1 ?lexicalEntry .                                                                \n" +
+			"     ?lexicalForm ?p16 ?o16 .                                                               \n" +
+			"     ?s17 ?p17 ?lexicalForm .                                                               \n" +
+			"     ?lexicalSense ?p3 ?o3 .                                                                \n" +
+			"     ?s4 ?p4 ?lexicalSense .                                                                \n" +
+			"     ?ontoMap ?p7 ?o7 .                                                                     \n" +
+			"     ?s8 ?p8 ?ontoMap .                                                                     \n" +
+			"     ?senseRelation ?p12 ?o12 .                                                             \n" +
+			"     ?s13 ?p13 ?senseRelation .                                                             \n" +
+			"     ?synFrame ?p5 ?o5 .                                                                    \n" +
+			"     ?s6 ?p6 ?synFrame .                                                                    \n" +
+			"     ?synArg ?p9 ?o9 .                                                                      \n" +
+			"     ?component ?p10 ?o10 .                                                                 \n" +
+			"     ?s11 ?p11 ?component .                                                                 \n" +
+			"   }                                                                                        \n" +
+			"}                                                                                           \n" +
+			"where {                                                                                     \n" +
+			"  {                                                                                         \n" +
+			"    ?lexicon ?pl1 ?ol1 .                                                                    \n" +
+			"  } union {                                                                                 \n" +
+			"    ?sl2 ?pl2 ?lexicon .                                                                    \n" +
+			"  } union {                                                                                 \n" +
+			"    ?entryProp rdfs:subPropertyOf* lime:entry .                                               \n" +
+			"    ?lexicon ?entryProp ?lexicalEntry .                                                       \n" +
+			"    {                                                                                         \n" +
+			"      ?lexicalEntry ?p1 ?o1                                                                   \n" +
+			"    } union {                                                                                 \n" +
+			"      ?relatesProp rdfs:subPropertyOf* vartrans:relates .                                     \n" +
+			"      ?lexicalRelation ?relatesProp ?lexicalEntry .                                           \n" +
+			"      { ?lexicalRelation ?p14 ?o14 } union { ?s15 ?p15 ?lexicalRelation }                     \n" +
+			"    } union {                                                                                 \n" +
+			"      ?s2 ?p2 ?lexicalEntry                                                                   \n" +
+			"    } union {                                                                                 \n" +
+			"      ?lexicalFormProp rdfs:subPropertyOf* ontolex:lexicalForm .                              \n" +
+			"      ?lexicalEntry ?lexicalFormProp ?lexicalForm .                                           \n" +
+			"      { ?lexicalForm ?p16 ?o16 } union { ?s17 ?p17 ?lexicalForm }                             \n" +
+			"    } union {                                                                                 \n" +
+			"      {                                                                                       \n" +
+			"        ?senseProp rdfs:subPropertyOf* ontolex:sense .                                        \n" +
+			"        ?lexicalEntry ?senseProp ?lexicalSense .                                              \n" +
+			"      } union {                                                                               \n" +
+			"        ?isSenseOfProp rdfs:subPropertyOf* ontolex:isSenseOf .                                \n" +
+			"        ?lexicalSense ?isSenseOfProp ?lexicalEntry                                            \n" +
+			"      }                                                                                       \n" +
+			"      { ?lexicalSense ?p3 ?o3 } union { ?s4 ?p4 ?lexicalSense . } union {                     \n" +
+			"              ?lexicalSense ^synsem:ontoMapping/synsem:submap* ?ontoMap .                     \n" +
+			"              { ?ontoMap ?p7 ?o7 } union { ?s8 ?p8 ?ontoMap }                                 \n" +
+			"      } union {                                                                               \n" +
+			"        ?relatesProp rdfs:subPropertyOf* vartrans:relates .                                   \n" +
+			"        ?senseRelation ?relatesProp ?lexicalSense .                                           \n" +
+			"        { ?senseRelation ?p12 ?o12 } union { ?s13 ?p13 ?senseRelation }                       \n" +
+			"      }                                                                                       \n" +
+			"    } union {                                                                                 \n" +
+			"      ?synFrameProp rdfs:subPropertyOf* synsem:synBehavior .                                  \n" +
+			"      ?lexicalEntry ?synFrameProp ?synFrame .                                                 \n" +
+			"      { ?synFrame ?p5 ?o5 } union { ?s6 ?p6 ?synFrame } union {                               \n" +
+			"          { ?synArgProp rdfs:subPropertyOf* synsem:synArg } union { ?synArgProp rdfs:subPropertyOf* lemon:synArg } \n" +
+			"          ?synFrame ?synArgProp ?synArg .                                                     \n" +
+			"          ?synArg ?p9 ?o9 .                                                                   \n" +
+			"        }                                                                                     \n" +
+			"    } union {                                                                                 \n" +
+			"      {                                                                                       \n" +
+			"          ?lexicalEntry decomp:constituent+ ?component .                                      \n" +
+			"      } union {                                                                               \n" +
+			"        ?component decomp:correspondsTo ?lexicalEntry .                                       \n" +
+			"        FILTER NOT EXISTS {                                                                   \n" +
+			"          ?decompProp2 rdfs:subPropertyOf* decomp:constituent .                               \n" +
+			"          [] ?decompProp2 ?component .                                                        \n" +
+			"        }                                                                                     \n" +
+			"      }                                                                                       \n" +
+			"      {                                                                                       \n" +
+			"        ?component ?p10 ?o10                                                                  \n" +
+			"      } union {                                                                               \n" +
+			"        ?s11 ?p11 ?component .                                                                \n" +
+			"      }                                                                                       \n" +
+			"    }                                                                                         \n" +
+			"  }                                                                                           \n" +
+			"}	                                                                                           \n"
+			
+			// @formatter:on
+		);
+		update.setBinding("lexicon", lexicon);
+		update.setBinding("workingGraph", getWorkingGraph());
+		update.execute();
 	}
 
 	/**
@@ -291,10 +403,11 @@ public class OntoLexLemon extends STServiceAdapter {
 		annotatedValue.setAttribute("explicit", true);
 		return annotatedValue;
 	}
-	
+
 	/**
 	 * Returns the language declared by the provided lexical entry, or as fallback the one declared by the
 	 * lexicon
+	 * 
 	 * @param lexicalEntry
 	 * @return
 	 */
@@ -302,7 +415,8 @@ public class OntoLexLemon extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'R')")
 	public String getLexicalEntryLanguage(@LocallyDefined IRI lexicalEntry) {
-		return OntoLexLemon.getLexicalEntryLanguageInternal(getManagedConnection(), lexicalEntry).orElse(null);
+		return OntoLexLemon.getLexicalEntryLanguageInternal(getManagedConnection(), lexicalEntry)
+				.orElse(null);
 	}
 
 	/**
@@ -466,7 +580,104 @@ public class OntoLexLemon extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'D')")
 	public void deleteLexicalEntry(@LocallyDefined IRI lexicalEntry) {
-		throw new RuntimeException("To be implemented");
+		RepositoryConnection conn = getManagedConnection();
+
+		Update update = conn.prepareUpdate(
+		// @formatter:off
+			"PREFIX owl: <http://www.w3.org/2002/07/owl#>                                                \n" +
+			"PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>                                     \n" +
+			"PREFIX synsem: <http://www.w3.org/ns/lemon/synsem#>                                         \n" +
+			"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                         \n" +
+			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                                        \n" +
+			"PREFIX lexinfo: <http://www.lexinfo.net/ontology/2.0/lexinfo#>                              \n" +
+			"PREFIX lemon: <http://lemon-model.net/lemon#>                                               \n" +
+			"PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>                                       \n" +
+			"PREFIX lime: <http://www.w3.org/ns/lemon/lime#>                                             \n" +
+			"PREFIX decomp: <http://www.w3.org/ns/lemon/decomp#>                                         \n" +
+            "                                                                                            \n" +
+			"delete {                                                                                    \n" +
+            "   graph ?workingGraph {                                                                    \n" +
+			"     ?lexicalEntry ?p1 ?o1 .                                                                \n" +
+			"     ?lexicalRelation ?p14 ?o14 .                                                           \n" +
+			"     ?s15 ?p15 ?lexicalRelation .                                                           \n" +
+			"     ?s2 ?p2 ?lexicalEntry .                                                                \n" +
+			"     ?lexicalRelation ?p14 ?o14 .                                                           \n" +
+			"     ?s15 ?p15 ?lexicalRelation .                                                           \n" +
+			"     ?s1 ?p1 ?lexicalEntry .                                                                \n" +
+			"     ?lexicalForm ?p16 ?o16 .                                                               \n" +
+			"     ?s17 ?p17 ?lexicalForm .                                                               \n" +
+			"     ?lexicalSense ?p3 ?o3 .                                                                \n" +
+			"     ?s4 ?p4 ?lexicalSense .                                                                \n" +
+			"     ?ontoMap ?p7 ?o7 .                                                                     \n" +
+			"     ?s8 ?p8 ?ontoMap .                                                                     \n" +
+			"     ?senseRelation ?p12 ?o12 .                                                             \n" +
+			"     ?s13 ?p13 ?senseRelation .                                                             \n" +
+			"     ?synFrame ?p5 ?o5 .                                                                    \n" +
+			"     ?s6 ?p6 ?synFrame .                                                                    \n" +
+			"     ?synArg ?p9 ?o9 .                                                                      \n" +
+			"     ?component ?p10 ?o10 .                                                                 \n" +
+			"     ?s11 ?p11 ?component .                                                                 \n" +
+			"   }                                                                                        \n" +
+			"}                                                                                           \n" +
+			"where {                                                                                     \n" +
+			"  {                                                                                         \n" +
+			"    ?lexicalEntry ?p1 ?o1                                                                   \n" +
+			"  } union {                                                                                 \n" +
+			"    ?relatesProp rdfs:subPropertyOf* vartrans:relates .                                     \n" +
+			"    ?lexicalRelation ?relatesProp ?lexicalEntry .                                           \n" +
+			"    { ?lexicalRelation ?p14 ?o14 } union { ?s15 ?p15 ?lexicalRelation }                     \n" +
+			"  } union {                                                                                 \n" +
+			"    ?s2 ?p2 ?lexicalEntry                                                                   \n" +
+			"  } union {                                                                                 \n" +
+			"    ?lexicalFormProp rdfs:subPropertyOf* ontolex:lexicalForm .                              \n" +
+			"    ?lexicalEntry ?lexicalFormProp ?lexicalForm .                                           \n" +
+			"    { ?lexicalForm ?p16 ?o16 } union { ?s17 ?p17 ?lexicalForm }                             \n" +
+			"  } union {                                                                                 \n" +
+			"    {                                                                                       \n" +
+			"      ?senseProp rdfs:subPropertyOf* ontolex:sense .                                        \n" +
+			"      ?lexicalEntry ?senseProp ?lexicalSense .                                              \n" +
+			"    } union {                                                                               \n" +
+			"      ?isSenseOfProp rdfs:subPropertyOf* ontolex:isSenseOf .                                \n" +
+			"      ?lexicalSense ?isSenseOfProp ?lexicalEntry                                            \n" +
+			"    }                                                                                       \n" +
+			"    { ?lexicalSense ?p3 ?o3 } union { ?s4 ?p4 ?lexicalSense . } union {                     \n" +
+			"            ?lexicalSense ^synsem:ontoMapping/synsem:submap* ?ontoMap .                     \n" +
+			"            { ?ontoMap ?p7 ?o7 } union { ?s8 ?p8 ?ontoMap }                                 \n" +
+			"    } union {                                                                               \n" +
+			"      ?relatesProp rdfs:subPropertyOf* vartrans:relates .                                   \n" +
+			"      ?senseRelation ?relatesProp ?lexicalSense .                                           \n" +
+			"      { ?senseRelation ?p12 ?o12 } union { ?s13 ?p13 ?senseRelation }                       \n" +
+			"    }                                                                                       \n" +
+			"  } union {                                                                                 \n" +
+			"    ?synFrameProp rdfs:subPropertyOf* synsem:synBehavior .                                  \n" +
+			"    ?lexicalEntry ?synFrameProp ?synFrame .                                                 \n" +
+			"    { ?synFrame ?p5 ?o5 } union { ?s6 ?p6 ?synFrame } union {                               \n" +
+			"        { ?synArgProp rdfs:subPropertyOf* synsem:synArg } union { ?synArgProp rdfs:subPropertyOf* lemon:synArg } \n" +
+			"        ?synFrame ?synArgProp ?synArg .                                                     \n" +
+			"        ?synArg ?p9 ?o9 .                                                                   \n" +
+			"      }                                                                                     \n" +
+			"  } union {                                                                                 \n" +
+			"    {                                                                                       \n" +
+			"        ?lexicalEntry decomp:constituent+ ?component .                                      \n" +
+			"    } union {                                                                               \n" +
+			"      ?component decomp:correspondsTo ?lexicalEntry .                                       \n" +
+			"      FILTER NOT EXISTS {                                                                   \n" +
+			"        ?decompProp2 rdfs:subPropertyOf* decomp:constituent .                               \n" +
+			"        [] ?decompProp2 ?component .                                                        \n" +
+			"      }                                                                                     \n" +
+			"    }                                                                                       \n" +
+			"    {                                                                                       \n" +
+			"      ?component ?p10 ?o10                                                                  \n" +
+			"    } union {                                                                               \n" +
+			"      ?s11 ?p11 ?component .                                                                \n" +
+			"    }                                                                                       \n" +
+			"  }                                                                                         \n" +
+			"}	                                                                                         \n"
+			// @formatter:on
+		);
+		update.setBinding("lexicalEntry", lexicalEntry);
+		update.setBinding("workingGraph", getWorkingGraph());
+		update.execute();
 	}
 
 	/**
@@ -807,10 +1018,11 @@ public class OntoLexLemon extends STServiceAdapter {
 		RepositoryConnection repConn = getManagedConnection();
 		repConn.remove(form, property, representation, getWorkingGraph());
 	}
-	
+
 	/**
 	 * Returns the language declared by the provided lexical entry, or as fallback the one declared by the
 	 * lexicon
+	 * 
 	 * @param lexicalEntry
 	 * @return
 	 */
