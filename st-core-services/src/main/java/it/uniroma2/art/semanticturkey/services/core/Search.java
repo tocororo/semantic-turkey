@@ -50,6 +50,7 @@ import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.Pair;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.TripleForSearch;
@@ -225,6 +226,9 @@ public class Search extends STServiceAdapter {
 			@Optional(defaultValue="false") boolean searchInOntolex) 
 					throws IllegalStateException, STPropertyAccessException {
 		IRI lexModel = getProject().getLexicalizationModel();
+		if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+			searchInRDFSLabel = true;
+		}
 		if (!ValidationUtilities.isValidationEnabled(stServiceContext)) {
 			if (statusFilter == StatusFilter.UNDER_VALIDATION
 					|| statusFilter == StatusFilter.UNDER_VALIDATION_FOR_DEPRECATION) {
@@ -338,6 +342,9 @@ public class Search extends STServiceAdapter {
 			@Optional(defaultValue = "false") boolean searchInOntolex)
 			throws IllegalStateException, STPropertyAccessException {
 		IRI lexModel = getProject().getLexicalizationModel();
+		if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+			searchInRDFSLabel = true;
+		}
 		String query = ServiceForSearches.getPrefixes() + "\n"
 				+ instantiateSearchStrategy().searchResource(stServiceContext, searchString, rolesArray,
 						useLocalName, useURI, useNotes, searchMode, schemes, langs, includeLocales, lexModel,
