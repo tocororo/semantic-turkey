@@ -197,12 +197,14 @@ public class Sheet2RDF extends STServiceAdapter {
 		if (converter != null) {
 			converterJson.set("uri", jsonFactory.textNode(h.getConverter().getContractUri()));
 			converterJson.set("type", jsonFactory.textNode(h.getConverter().getType().name()));
+			converterJson.set("xRole", jsonFactory.textNode(h.getConverter().getxRole()));
+			converterJson.set("memoize", jsonFactory.booleanNode(h.isMemoize()));
 		} else {
 			converterJson.set("uri", null);
 			converterJson.set("type", null);
+			converterJson.set("xRole", jsonFactory.textNode(h.getConverter().getxRole()));
+			converterJson.set("memoize", jsonFactory.booleanNode(h.isMemoize()));
 		}
-		
-		headerJson.set("memoize", jsonFactory.booleanNode(h.isMemoize()));
 		
 		return headerJson;
 	}
@@ -226,7 +228,8 @@ public class Sheet2RDF extends STServiceAdapter {
 			@Optional RDFTypesEnum rangeType,
 			@Optional IRI rangeClass,
 			@Optional RDFCapabilityType converterType,
-			@Optional String converterMention, 
+			@Optional String converterMention,
+			@Optional String converterXRole,
 			@Optional (defaultValue = "false") boolean memoize,
 //			@Optional String lang,
 //			@Optional IRI rangeDatatype, 
@@ -259,6 +262,7 @@ public class Sheet2RDF extends STServiceAdapter {
 				ConverterMention mention = ctx.getCodaCore().parseConverterMention(converterMention, ctx.getSheet2RDFCore().getMergedPrefixMapping());
 				String convUri = mention.getURI();
 				converter = new CODAConverter(converterType, convUri);
+				converter.setxRole(converterXRole);
 			} else { 
 				//resolve the converter with the default choice for the resource assigned to the header
 				converter = converterResolver.getConverter(headerResource);
