@@ -2,19 +2,27 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import static java.util.stream.Collectors.toSet;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -22,12 +30,18 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.MalformedQueryException;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.UpdateExecutionException;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.hibernate.validator.constraints.Length;
 import org.slf4j.Logger;
@@ -36,7 +50,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.Sets;
 
+import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
@@ -51,6 +67,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
@@ -68,6 +85,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.user.OperationOnResourceDeniedException;
 import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
@@ -833,6 +851,214 @@ public class OntoLexLemon extends STServiceAdapter {
 			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/ns/lemon/decomp#subterm") @Optional(defaultValue = "<http://www.w3.org/ns/lemon/decomp#subterm>") IRI property) {
 		RepositoryConnection repConn = getManagedConnection();
 		repConn.remove(lexicalEntry, property, sublexicalEntry, getWorkingGraph());
+	}
+
+	/**
+	 * Sets the constituents of a lexical entry
+	 * 
+	 * @param lexicalEntry
+	 * @param constituentLexicalEntries
+	 * @param ordered
+	 * @throws DeniedOperationException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, constituents)', 'C')")
+	public void setLexicalEntryConstituents(@LocallyDefined @Modified IRI lexicalEntry,
+			List<IRI> constituentLexicalEntries, boolean ordered)
+			throws URIGenerationException, DeniedOperationException {
+		Model triples2remove = prepareClearLexicalEntryConstituents(lexicalEntry);
+
+		RepositoryConnection conn = getManagedConnection();
+		ValueFactory vf = conn.getValueFactory();
+
+		TupleQuery subComponentsQuery = conn.prepareTupleQuery(
+		// @formatter:off
+			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                                                            \n" +
+			"PREFIX decomp: <http://www.w3.org/ns/lemon/decomp#>                                                             \n" +
+			"PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>                                                                 \n" +
+			"SELECT DISTINCT ?lexicalEntry ?component ?index WHERE {                                                         \n" +
+			"    VALUES(?lexicalEntry) {                                                                                     \n" +
+			constituentLexicalEntries.stream().map(RenderUtils::toSPARQL).collect(Collectors.joining(")\n    (", "    (", ")\n")) +
+			"    }                                                                                                           \n" +
+			"    ?constProp rdfs:subPropertyOf* decomp:constituent .                                                         \n" +
+			"    ?lexicalEntry ?constProp ?component .                                                                       \n" +
+			(ordered ?
+			"    optional {                                                                                                  \n" +
+			"        ?lexicalEntry ?prop ?component .                                                                        \n" +
+			"        FILTER(REGEX(str(?prop),                                                                                \n" +
+			"                \"^http://www\\\\.w3\\\\.org/1999/02/22-rdf-syntax-ns#_(\\\\d+)$\"))                            \n" +
+			"   		bind(strdt(                                                                                          \n" +
+			"                replace(str(?prop), \"^http://www\\\\.w3\\\\.org/1999/02/22-rdf-syntax-ns#_(\\\\d+)$\", \"$1\"),\n" +
+			"                xsd:integer)                                                                                    \n" +
+			"            as ?index)                                                                                          \n" +
+			"    }                                                                                                           \n" +
+			"}                                                                                                               \n"
+			:
+			""
+			) +
+			"order by ?index                                                                                                 \n"
+			// @formatter:on
+		);
+
+		logger.debug("subcomponents query:\n{}", subComponentsQuery);
+		subComponentsQuery.setIncludeInferred(false);
+		List<BindingSet> subComponentsBindings = QueryResults.asList(subComponentsQuery.evaluate());
+
+		logger.debug("retrieved subcomponents: {}", subComponentsBindings);
+
+		Map<IRI, List<BindingSet>> lexicalEntry2subComponents = subComponentsBindings.stream()
+				.collect(Collectors.groupingBy(bs -> (IRI) bs.getValue("lexicalEntry")));
+
+		Model triples2add = new LinkedHashModel();
+
+		int index = 1;
+
+		for (IRI constituentLexicalEntry : constituentLexicalEntries) {
+			@Nullable
+			List<BindingSet> subComponentBindingSets = lexicalEntry2subComponents
+					.get(constituentLexicalEntry);
+
+			if (subComponentBindingSets == null) {
+				IRI component = generateIRI("ontolexComponent", Collections.emptyMap());
+				triples2add.add(lexicalEntry, DECOMP.CONSTITUENT, component);
+				triples2add.add(component, RDF.TYPE, DECOMP.COMPONENT);
+				triples2add.add(component, DECOMP.CORRESPONDS_TO, constituentLexicalEntry);
+
+				if (ordered) {
+					triples2add.add(lexicalEntry,
+							vf.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#_" + (index++)),
+							component);
+				}
+			} else {
+
+				triples2add.add(lexicalEntry, DECOMP.SUBTERM, constituentLexicalEntry);
+
+				BigInteger previousIndex = BigInteger.valueOf(-1);
+
+				for (BindingSet bs : subComponentBindingSets) {
+					Resource component = (Resource) bs.getValue("component");
+					triples2add.add(lexicalEntry, DECOMP.CONSTITUENT, component);
+
+					if (ordered) {
+						@Nullable
+						BigInteger currentIndex = java.util.Optional.ofNullable(bs.getValue("index"))
+								.map(Literal.class::cast)
+								.map(l -> Literals.getIntegerValue(l, BigInteger.ZERO)).orElse(null);
+
+						if (currentIndex == null) {
+							throw new IllegalArgumentException("A component of the lexical entry \""
+									+ constituentLexicalEntry + "\" is not ordered");
+						} else if (currentIndex.equals(previousIndex)) {
+							throw new IllegalArgumentException(
+									"The ordering of the components of the lexical " + "entry \""
+											+ constituentLexicalEntries + "\" is ambiguous");
+						}
+
+						triples2add.add(lexicalEntry,
+								vf.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#_" + (index++)),
+								component);
+					}
+				}
+			}
+		}
+
+		conn.remove(Sets.difference(triples2remove, triples2add), getWorkingGraph());
+		conn.add(Sets.difference(triples2add, triples2remove), getWorkingGraph());
+	}
+
+	/**
+	 * Sets the constituents of a lexical entry
+	 * 
+	 * @param lexicalEntry
+	 * @param constituents
+	 * @param ordered
+	 * @throws DeniedOperationException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, constituents)', 'D')")
+	public void clearLexicalEntryConstituents(@LocallyDefined @Modified IRI lexicalEntry)
+			throws DeniedOperationException {
+		Model triple2remove = prepareClearLexicalEntryConstituents(lexicalEntry);
+		getManagedConnection().remove(triple2remove, getWorkingGraph());
+	}
+
+	public Model prepareClearLexicalEntryConstituents(IRI lexicalEntry)
+			throws RepositoryException, MalformedQueryException, QueryEvaluationException,
+			DeniedOperationException, UpdateExecutionException {
+		RepositoryConnection conn = getManagedConnection();
+
+		// Checks that the operation can be done (e.g. it does not invole any statement pending for acceptance
+		// or removal)
+
+		String checkQueryString =
+		// @formatter:off
+			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                                                  \n" +
+			"PREFIX decomp: <http://www.w3.org/ns/lemon/decomp#>                                                   \n" +
+			"ASK {                                                                                                 \n" +
+			"   VALUES(?lexicalEntry ?workingGraph) {                                                              \n" +
+			"      (" + RenderUtils.toSPARQL(lexicalEntry) + " " + RenderUtils.toSPARQL(getWorkingGraph()) + ")    \n" +
+			"   }                                                                                                  \n" +
+			"   ?decompProp rdfs:subPropertyOf* decomp:constituent .                                               \n" +
+			"   graph ?g { ?lexicalEntry ?decompProp ?component . }                                                \n" +
+			"	OPTIONAL {                                                                                         \n" +
+			"		graph ?g2 {                                                                                    \n" +
+			"			?lexicalEntry ?prop ?component                                                             \n" +
+			"		}                                                                                              \n" +
+			"		FILTER(REGEX(str(?prop), \"^http://www\\\\.w3\\\\.org/1999/02/22-rdf-syntax-ns#_(\\\\d+)$\"))  \n" +
+			"		FILTER(!sameTerm(?g2, ?workingGraph))                                                          \n" +
+			"	}                                                                                                  \n" +
+			"	FILTER(!sameTerm(?g, ?workingGraph))                                                               \n" +
+			"}                                                                                                     \n";
+			// @formatter:on
+
+		BooleanQuery checkQuery = conn.prepareBooleanQuery(checkQueryString);
+		logger.debug("check query:\n{}", checkQueryString);
+
+		checkQuery.setIncludeInferred(false);
+		if (checkQuery.evaluate()) {
+			throw new DeniedOperationException(
+					"The operation would require to alter triples outside of the working graph");
+		}
+
+		// Deletes the triples
+
+		GraphQuery deleteQuery = conn.prepareGraphQuery(
+		// @formatter:off
+			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                                              \n" +
+			"PREFIX decomp: <http://www.w3.org/ns/lemon/decomp#>                                               \n" +
+			"CONSTRUCT {                                                                                       \n" +
+			"	?lexicalEntry ?decompProp ?component .                                                         \n" +
+			"	?lexicalEntry ?nProp ?component .                                                              \n" +
+			"	?comp ?compP ?compO .                                                                          \n" +
+			"}                                                                                                 \n" +
+			"WHERE {                                                                                           \n" +
+			"   ?decompProp rdfs:subPropertyOf* decomp:constituent .                                           \n" +
+			"   GRAPH ?workingGraph { ?lexicalEntry ?decompProp ?component . }                                 \n" +
+			"	OPTIONAL {                                                                                     \n" +
+			"	   GRAPH ?workingGraph {                                                                       \n" +
+			"			?lexicalEntry ?nProp ?component .                                                            \n" +
+			"			FILTER(REGEX(str(?nProp), \"^http://www\\\\.w3\\\\.org/1999/02/22-rdf-syntax-ns#_(\\\\d+)$\"))\n" +
+			"		}                                                                                          \n" +
+			"	}                                                                                              \n" +
+			"	optional {                                                                                     \n" +
+			"		?component decomp:constituent* ?comp .                                                     \n" +
+			"		FILTER NOT EXISTS {                                                                        \n" +
+			"		  ?decompProp2 rdfs:subPropertyOf* decomp:constituent .                                    \n" +
+			"		  ?decompProp3 rdfs:subPropertyOf* decomp:constituent .                                    \n" +
+			"		  ?parentComp1 ?decompProp2 ?component .                                                   \n" +
+			"		  ?parentComp2 ?decompProp2 ?component .                                                   \n" +
+			"		  FILTER(!sameTerm(?parentComp1, ?parentComp2))                                            \n" +
+			"		}		                                                                                   \n" +
+			"		GRAPH ?workingGraph { ?comp ?compP ?compO . }                                              \n" +
+			"	}                                                                                              \n" +
+			"}                                                                                                 \n"
+			// @formatter:on
+		);
+		deleteQuery.setBinding("lexicalEntry", lexicalEntry);
+		deleteQuery.setBinding("workingGraph", getWorkingGraph());
+		return QueryResults.asModel(deleteQuery.evaluate());
 	}
 
 	/* --- Forms --- */

@@ -3,7 +3,10 @@ package it.uniroma2.art.semanticturkey.services.core.history;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -81,7 +84,7 @@ public class SupportRepositoryUtils {
 		}
 
 		String timeComparisonVar = useRevisionNumber ? "revisionNumber" : "endTime";
-		
+
 		switch (timeSorting) {
 		case Ascending:
 			orderBy += " ASC(?" + timeComparisonVar + ")";
@@ -132,8 +135,24 @@ public class SupportRepositoryUtils {
 
 		if (serializedParameters.isEmpty())
 			return Collections.emptyList();
+		Pattern pattern = Pattern.compile("(?<!\\\\)(\\\\\\\\)*(?<separator>\\$)");
 
-		String[] splits = serializedParameters.split("(?<!\\\\)\\$");
+		Matcher matcher = pattern.matcher(serializedParameters);
+
+		List<String> splitList = new ArrayList<>(16);
+
+		int index = 0;
+		while (matcher.find()) {
+			int sepIndex = matcher.start("separator");
+			splitList.add(serializedParameters.substring(index, sepIndex));
+			index = sepIndex + 1;
+		}
+
+		if (index < serializedParameters.length()) {
+			splitList.add(serializedParameters.substring(index));
+		}
+
+		String[] splits = splitList.toArray(new String[splitList.size()]);
 
 		int nParams = splits.length / 2;
 
@@ -142,7 +161,8 @@ public class SupportRepositoryUtils {
 			rv.add(null);
 		}
 		for (int i = 0; i < splits.length; i += 2) {
-			String pIRI = splits[i].replaceAll("\\\\\\$", "$");
+			String pIRI = splits[i].replaceAll("\\\\\\$", Matcher.quoteReplacement("$"))
+					.replaceAll("\\\\\\\\", Matcher.quoteReplacement("\\"));
 			int startParamIndex = pIRI.lastIndexOf("/param-") + 7;
 			int endParamIndex = pIRI.indexOf("-", startParamIndex);
 
@@ -150,8 +170,8 @@ public class SupportRepositoryUtils {
 
 			String pName = pIRI.substring(endParamIndex + 1);
 
-			String pValue = splits[i + 1].replaceAll("\\\\\\$", "$");
-
+			String pValue = splits[i + 1].replaceAll("\\\\\\$", Matcher.quoteReplacement("$"))
+					.replaceAll("\\\\\\\\", Matcher.quoteReplacement("\\"));
 			if (SESAME.NIL.stringValue().equals(pValue)) {
 				pValue = null;
 			}
@@ -162,7 +182,8 @@ public class SupportRepositoryUtils {
 		return rv;
 	}
 
-	public static void computeOperationDisplay(STServiceTracker stServiceTracker, AnnotatedValue<IRI> operation) {
+	public static void computeOperationDisplay(STServiceTracker stServiceTracker,
+			AnnotatedValue<IRI> operation) {
 		String displayName = stServiceTracker.getOperationDescription(operation.getValue())
 				.flatMap(OperationDescription::getDisplayName).filter(s -> !s.isEmpty()).orElseGet(() -> {
 					int operationStartIndex = operation.getValue().stringValue().lastIndexOf("/");

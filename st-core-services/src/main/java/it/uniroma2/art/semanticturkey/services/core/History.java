@@ -139,7 +139,7 @@ public class History extends STServiceAdapter {
 				"        (MAX(?startTimeT) as ?startTime)                                      \n" +
 				"        (MAX(?endTimeT) as ?endTime)                                          \n" +
 				"        (MAX(?operationT) as ?operation)                                      \n" +
-				"        (GROUP_CONCAT(DISTINCT CONCAT(STR(?param), \"$\", REPLACE(STR(?paramValue), \"\\\\$\", \"\\\\$\")); separator=\"$\") as ?parameters) \n" + 
+				"        (GROUP_CONCAT(DISTINCT CONCAT(STR(?param), \"$\", REPLACE(REPLACE(STR(?paramValue), \"\\\\\\\\\", \"$0$0\"), \"\\\\$\", \"\\\\\\\\$0\")); separator=\"$\") as ?parameters)\n" + 
 				"        (MAX(?agentT) as ?agent)                                              \n" +
 				" FROM " + RenderUtils.toSPARQL(historyGraph) + "\n" +
 				" {                                                                            \n" +
