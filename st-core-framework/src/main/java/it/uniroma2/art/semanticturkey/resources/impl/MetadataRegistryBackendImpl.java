@@ -891,7 +891,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"   }                                                                                 \n" +
 				"                                                                                     \n" +
 				" }                                                                                   \n" +
-				" GROUP BY ?record ?dataset"
+				" GROUP BY ?record ?dataset                                                           \n" +
+				" HAVING BOUND(?record)                                                               \n"
 				// @formatter:on
 			);
 			query.setIncludeInferred(false);
