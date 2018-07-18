@@ -26,7 +26,6 @@ import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.query.algebra.evaluation.federation.RepositoryFederatedService;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
@@ -276,10 +275,13 @@ public class OntoLexLemon extends STServiceAdapter {
 			"          ?lexicalEntry decomp:constituent+ ?component .                                      \n" +
 			"      } union {                                                                               \n" +
 			"        ?component decomp:correspondsTo ?lexicalEntry .                                       \n" +
-			"        FILTER NOT EXISTS {                                                                   \n" +
-			"          ?decompProp2 rdfs:subPropertyOf* decomp:constituent .                               \n" +
-			"          [] ?decompProp2 ?component .                                                        \n" +
-			"        }                                                                                     \n" +
+			"      }                                                                                       \n" +
+			"      FILTER NOT EXISTS {                                                                     \n" +
+			"        ?decompProp2 rdfs:subPropertyOf* decomp:constituent .                                 \n" +
+			"        ?decompProp3 rdfs:subPropertyOf* decomp:constituent .                                 \n" +
+			"        ?parentComp1 ?decompProp2 ?component .                                                \n" +
+			"        ?parentComp2 ?decompProp2 ?component .                                                \n" +
+		    "        FILTER(!sameTerm(?parentComp1, ?parentComp2))                                         \n" +
 			"      }                                                                                       \n" +
 			"      {                                                                                       \n" +
 			"        ?component ?p10 ?o10                                                                  \n" +
@@ -661,10 +663,13 @@ public class OntoLexLemon extends STServiceAdapter {
 			"        ?lexicalEntry decomp:constituent+ ?component .                                      \n" +
 			"    } union {                                                                               \n" +
 			"      ?component decomp:correspondsTo ?lexicalEntry .                                       \n" +
-			"      FILTER NOT EXISTS {                                                                   \n" +
-			"        ?decompProp2 rdfs:subPropertyOf* decomp:constituent .                               \n" +
-			"        [] ?decompProp2 ?component .                                                        \n" +
-			"      }                                                                                     \n" +
+			"    }                                                                                       \n" +
+			"    FILTER NOT EXISTS {                                                                     \n" +
+			"      ?decompProp2 rdfs:subPropertyOf* decomp:constituent .                                 \n" +
+			"      ?decompProp3 rdfs:subPropertyOf* decomp:constituent .                                 \n" +
+			"      ?parentComp1 ?decompProp2 ?component .                                                \n" +
+			"      ?parentComp2 ?decompProp2 ?component .                                                \n" +
+		    "      FILTER(!sameTerm(?parentComp1, ?parentComp2))                                         \n" +
 			"    }                                                                                       \n" +
 			"    {                                                                                       \n" +
 			"      ?component ?p10 ?o10                                                                  \n" +

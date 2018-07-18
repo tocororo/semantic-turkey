@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,6 +17,7 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -24,14 +26,12 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
@@ -158,7 +158,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 		Map<IRI, AnnotatedValue<IRI>> propMap = new HashMap<>();
 		Multimap<IRI, AnnotatedValue<?>> valueMultiMap = HashMultimap.create();
 
-		Set<IRI> relevantProperties;
+		Collection<IRI> relevantProperties;
 		LinkedHashModel pendingDirectKnowledge;
 
 		if (matchedProperties.isEmpty()) {
@@ -169,9 +169,8 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 			if (behaviorOptions.getSubpropertiesBehavior() == BehaviorOptions.SubpropertiesBehavior.EXCLUDE) {
 				relevantProperties = matchedProperties;
 			} else {
-				relevantProperties = Sets.union(matchedProperties.stream()
-						.flatMap(prop -> propertyModel.filter(null, RDFS.SUBPROPERTYOF, prop).stream())
-						.map(stmt -> (IRI) stmt.getSubject()).collect(toSet()), matchedProperties);
+				relevantProperties = computeRelavantProperties(propertyModel, statements,
+						processedStatements);
 			}
 			pendingDirectKnowledge = new LinkedHashModel(statements.filter(resource, null, null).stream()
 					.filter(stmt -> !processedStatements.contains(stmt)
@@ -321,13 +320,33 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 		PredicateObjectsList predicateObjectsList = new PredicateObjectsList(propMap, valueMultiMap);
 		Map<String, ResourceViewSection> rv = new LinkedHashMap<>();
-		rv.put(sectionName, new PredicateObjectsListSection(predicateObjectsList));
+
+		RDFResourceRole resourceRole = STServiceAdapter.getRoleFromNature(java.util.Optional
+				.ofNullable(resource2attributes.getOrDefault(resource, Collections.emptyMap()).get("nature"))
+				.map(Value::stringValue).orElse(""));
+
+		if (!valueMultiMap.isEmpty() || shouldRetainEmptyResult(sectionName, resourceRole)) {
+			rv.put(sectionName, new PredicateObjectsListSection(predicateObjectsList));
+		}
 
 		return rv;
 	}
 
+	protected List<IRI> computeRelavantProperties(Model propertyModel, Model statements,
+			Set<Statement> processedStatements) {
+		return Stream
+				.concat(matchedProperties.stream()
+						.flatMap(prop -> propertyModel.filter(null, RDFS.SUBPROPERTYOF, prop).stream())
+						.map(stmt -> (IRI) stmt.getSubject()), matchedProperties.stream())
+				.distinct().collect(toList());
+	}
+
 	protected boolean shouldRetainEmptyGroup(IRI prop, Resource resource, ResourcePosition resourcePosition) {
 		return false;
+	}
+
+	protected boolean shouldRetainEmptyResult(String sectionName, RDFResourceRole resourceRole) {
+		return true;
 	}
 
 }

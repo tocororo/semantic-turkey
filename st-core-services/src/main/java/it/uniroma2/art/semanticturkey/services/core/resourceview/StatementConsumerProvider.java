@@ -13,6 +13,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.BroadersStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.ClassAxiomsStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.ConstituentsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DenotationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyDisjointWithStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DomainsStatementConsumer;
@@ -28,6 +29,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.Ontol
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.OtherPropertiesStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyChainStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyFacetsStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.RDFSMembersStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.RangesStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.FormRepresentationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SKOSCollectionMembersStatementConsumer;
@@ -92,8 +94,13 @@ public class StatementConsumerProvider {
 				customFormManager, codaProvider);
 		SubtermsStatementConsumer subtermsStatementConsumer = new SubtermsStatementConsumer(
 				customFormManager);
+		ConstituentsStatementConsumer constituentsStatementConsumer = new ConstituentsStatementConsumer(
+				customFormManager);
 
 		FormRepresentationsStatementConsumer representationsStatementConsumer = new FormRepresentationsStatementConsumer(
+				customFormManager);
+
+		RDFSMembersStatementConsumer rdfsMembersStatementConsumer = new RDFSMembersStatementConsumer(
 				customFormManager);
 
 		role2template = new HashMap<>();
@@ -150,11 +157,10 @@ public class StatementConsumerProvider {
 				Arrays.asList(typesStatementConsumer, formBasedPreview, labelRelationStatementConsumer,
 						skosNotesStatementConsumer, otherPropertiesStatementConsumer));
 
-		role2template.put(RDFResourceRole.ontolexLexicalEntry,
-				Arrays.asList(typesStatementConsumer, lexicalFormsStatementConsumer,
-						subtermsStatementConsumer, formBasedPreview, lexicalSensesStatementConsumer,
-						denotationsStatementConsumer, evokedLexicalConcepts,
-						otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRole.ontolexLexicalEntry, Arrays.asList(typesStatementConsumer,
+				lexicalFormsStatementConsumer, subtermsStatementConsumer, constituentsStatementConsumer,
+				rdfsMembersStatementConsumer, formBasedPreview, lexicalSensesStatementConsumer,
+				denotationsStatementConsumer, evokedLexicalConcepts, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.ontolexForm, Arrays.asList(typesStatementConsumer,
 				representationsStatementConsumer, formBasedPreview, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.ontolexLexicalSense,
