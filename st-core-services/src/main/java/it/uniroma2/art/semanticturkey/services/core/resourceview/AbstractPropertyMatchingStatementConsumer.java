@@ -5,9 +5,9 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -30,7 +30,7 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -156,7 +156,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 		}
 
 		Map<IRI, AnnotatedValue<IRI>> propMap = new LinkedHashMap<>();
-		Multimap<IRI, AnnotatedValue<?>> valueMultiMap = HashMultimap.create();
+		Multimap<IRI, AnnotatedValue<?>> valueMultiMap = LinkedHashMultimap.create();
 
 		Collection<IRI> relevantProperties;
 		LinkedHashModel pendingDirectKnowledge;
@@ -185,6 +185,9 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 			Map<Value, List<Statement>> statementsByObject = pendingDirectKnowledge
 					.filter(resource, predicate, null).stream().collect(groupingBy(Statement::getObject));
+
+			List<AnnotatedValue<?>> predicateValues = new ArrayList<AnnotatedValue<?>>(
+					statementsByObject.keySet().size());
 
 			for (Map.Entry<Value, List<Statement>> entry : statementsByObject.entrySet()) {
 				Value object = entry.getKey();
@@ -282,10 +285,14 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 
 				annotatedObject.setAttribute("graphs", computeGraphs(graphs));
 
-				valueMultiMap.put(predicate, annotatedObject);
+				predicateValues.add(annotatedObject);
 
 				processedStatements.addAll(entry.getValue());
 			}
+
+			sortPredicateValues(predicateValues, statements, resource);
+
+			valueMultiMap.putAll(predicate, predicateValues);
 
 			if (!valueMultiMap.containsKey(predicate)
 					&& !shouldRetainEmptyGroup(predicate, resource, resourcePosition)) {
@@ -339,6 +346,11 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 						.flatMap(prop -> propertyModel.filter(null, RDFS.SUBPROPERTYOF, prop).stream())
 						.map(stmt -> (IRI) stmt.getSubject()), matchedProperties.stream())
 				.distinct().collect(toList());
+	}
+
+	protected void sortPredicateValues(List<AnnotatedValue<?>> values, Model statements,
+			Resource subjectResource) {
+		// do nothing
 	}
 
 	protected boolean shouldRetainEmptyGroup(IRI prop, Resource resource, ResourcePosition resourcePosition) {
