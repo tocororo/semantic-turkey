@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 @Documented
-@Transactional(readOnly = false)
+@Transactional(readOnly = false, rollbackFor = Throwable.class)
 public @interface Write {
 
 }
