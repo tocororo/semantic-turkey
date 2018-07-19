@@ -30,19 +30,25 @@ public class RDFSMembersStatementConsumer extends AbstractPropertyMatchingStatem
 	@Override
 	protected List<IRI> computeRelavantProperties(Model propertyModel, Model statements,
 			Set<Statement> processedStatements) {
-		return Stream.concat(statements.predicates().stream()
-				.filter(iri -> uriPattern.matcher(iri.stringValue()).matches()).sorted((i1, i2) -> {
+		return Stream.concat(
+				statements.predicates().stream()
+						.filter(iri -> uriPattern.matcher(iri.stringValue()).matches()),
+				super.computeRelavantProperties(propertyModel, statements, processedStatements).stream())
+				.sorted((i1, i2) -> {
 					String s1 = i1.stringValue();
 					String s2 = i2.stringValue();
 
-					int int1 = Integer
-							.parseInt(s1.substring("http://www.w3.org/1999/02/22-rdf-syntax-ns#_".length()));
-					int int2 = Integer
-							.parseInt(s2.substring("http://www.w3.org/1999/02/22-rdf-syntax-ns#_".length()));
+					if (uriPattern.matcher(s1).matches() && uriPattern.matcher(s2).matches()) {
+						int int1 = Integer.parseInt(
+								s1.substring("http://www.w3.org/1999/02/22-rdf-syntax-ns#_".length()));
+						int int2 = Integer.parseInt(
+								s2.substring("http://www.w3.org/1999/02/22-rdf-syntax-ns#_".length()));
 
-					return Integer.compare(int1, int2);
-				}), super.computeRelavantProperties(propertyModel, statements, processedStatements).stream())
-				.distinct().collect(Collectors.toList());
+						return Integer.compare(int1, int2);
+					} else {
+						return s1.compareTo(s2);
+					}
+				}).distinct().collect(Collectors.toList());
 	}
 
 	@Override

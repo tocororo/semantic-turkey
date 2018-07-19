@@ -155,7 +155,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 			currentProject = ((LocalResourcePosition) resourcePosition).getProject().equals(project);
 		}
 
-		Map<IRI, AnnotatedValue<IRI>> propMap = new HashMap<>();
+		Map<IRI, AnnotatedValue<IRI>> propMap = new LinkedHashMap<>();
 		Multimap<IRI, AnnotatedValue<?>> valueMultiMap = HashMultimap.create();
 
 		Collection<IRI> relevantProperties;
