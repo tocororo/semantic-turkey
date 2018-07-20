@@ -2,7 +2,6 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import static java.util.stream.Collectors.toSet;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,6 +56,7 @@ import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
@@ -85,7 +85,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
-import it.uniroma2.art.semanticturkey.user.OperationOnResourceDeniedException;
 import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
@@ -865,19 +864,24 @@ public class OntoLexLemon extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, constituents)', 'C')")
 	public void setLexicalEntryConstituents(@LocallyDefined @Modified IRI lexicalEntry,
-			List<IRI> constituentLexicalEntries, boolean ordered)
+			@LocallyDefinedResources List<IRI> constituentLexicalEntries, boolean ordered)
 			throws URIGenerationException, DeniedOperationException {
 		Model triples2remove = prepareClearLexicalEntryConstituents(lexicalEntry);
 
 		RepositoryConnection conn = getManagedConnection();
 		ValueFactory vf = conn.getValueFactory();
 
+		if (constituentLexicalEntries.stream().anyMatch(lexicalEntry::equals)) {
+			throw new IllegalArgumentException(
+					"A lexical entry should not be used as a constituent of itself");
+		}
+
 		TupleQuery subComponentsQuery = conn.prepareTupleQuery(
 		// @formatter:off
 			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                                                            \n" +
 			"PREFIX decomp: <http://www.w3.org/ns/lemon/decomp#>                                                             \n" +
 			"PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>                                                                 \n" +
-			"SELECT DISTINCT ?lexicalEntry ?component ?index WHERE {                                                         \n" +
+			"SELECT DISTINCT ?lexicalEntry ?component ?componentLexicalEntry ?index WHERE {                                  \n" +
 			"    VALUES(?lexicalEntry) {                                                                                     \n" +
 			constituentLexicalEntries.stream().map(RenderUtils::toSPARQL).collect(Collectors.joining(")\n    (", "    (", ")\n")) +
 			"    }                                                                                                           \n" +
@@ -892,12 +896,16 @@ public class OntoLexLemon extends STServiceAdapter {
 			"                replace(str(?prop), \"^http://www\\\\.w3\\\\.org/1999/02/22-rdf-syntax-ns#_(\\\\d+)$\", \"$1\"),\n" +
 			"                xsd:integer)                                                                                    \n" +
 			"            as ?index)                                                                                          \n" +
-			"    }                                                                                                           \n" +
-			"}                                                                                                               \n"
+			"    }                                                                                                           \n"
 			:
 			""
 			) +
-			"order by ?index                                                                                                 \n"
+			"	optional {                                                                                                    \n" +
+			"       ?corrProp rdfs:subPropertyOf* decomp:correspondsTo .                                                      \n" +
+			"       ?component ?corrProp ?componentLexicalEntry .                                                             \n" +
+			"   }                                                                                                             \n" +
+			"}                                                                                                                \n" +
+			"ORDER BY ?index                                                                                                  \n"
 			// @formatter:on
 		);
 
@@ -937,8 +945,21 @@ public class OntoLexLemon extends STServiceAdapter {
 				BigInteger previousIndex = BigInteger.valueOf(-1);
 
 				for (BindingSet bs : subComponentBindingSets) {
-					Resource component = (Resource) bs.getValue("component");
-					triples2add.add(lexicalEntry, DECOMP.CONSTITUENT, component);
+					Resource subComponent = (Resource) bs.getValue("component");
+					Resource subComponentLexicalEntry = (Resource) bs.getValue("componentLexicalEntry");
+
+					if (subComponentLexicalEntry == null) {
+						throw new IllegalArgumentException(
+								"A component of the lexical entry \"" + constituentLexicalEntry
+										+ "\" used as a constituent is not bound to any lexical entry");
+					}
+
+					if (subComponentLexicalEntry.equals(lexicalEntry)) {
+						throw new IllegalArgumentException(
+								"A lexical entry should not be used as a constituent of another lexical entry used as a constituent of the former");
+					}
+
+					triples2add.add(lexicalEntry, DECOMP.CONSTITUENT, subComponent);
 
 					if (ordered) {
 						@Nullable
@@ -957,7 +978,7 @@ public class OntoLexLemon extends STServiceAdapter {
 
 						triples2add.add(lexicalEntry,
 								vf.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#_" + (index++)),
-								component);
+								subComponent);
 					}
 				}
 			}
