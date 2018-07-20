@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -36,7 +37,6 @@ import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.UpdateExecutionException;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
@@ -55,6 +55,7 @@ import com.google.common.collect.Sets;
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
@@ -86,6 +87,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
@@ -1517,17 +1519,28 @@ public class OntoLexLemon extends STServiceAdapter {
 		}
 		RepositoryConnection conn = getManagedConnection();
 
+		Resource workingGraph = getWorkingGraph();
+		
 		BooleanQuery definedQuery = conn.prepareBooleanQuery(
 		// @formatter:off
-			" ASK {                             \n" +
-			"   GRAPH ?g {                      \n" +
-			"     ?subject ?p ?o .              \n" +
-			"   }                               \n" +
-			" }                                 \n"
+			" ASK {                                 \n" +
+			"   VALUES(?g) {                        \n" +
+			"      (" + RenderUtils.toSPARQL(workingGraph) + ")\n" + 
+			(
+			ValidationUtilities.isValidationEnabled(stServiceContext)
+			?
+			"      (" + RenderUtils.toSPARQL(VALIDATION.stagingAddGraph(workingGraph)) + ")\n" + 
+			"      (" + RenderUtils.toSPARQL(VALIDATION.stagingRemoveGraph(workingGraph)) + ")\n"
+			:
+			""
+			) + 
+			"   }                                   \n" +
+			"   GRAPH ?g {                          \n" +
+			"     ?subject ?p ?o .                  \n" +
+			"   }                                   \n" +
+			" }                                     \n");
 			// @formatter:on
-		);
 		definedQuery.setIncludeInferred(false);
-		definedQuery.setBinding("g", getWorkingGraph());
 
 		definedQuery.setBinding("subject", lexicalEntry);
 		boolean lexicalEntryLocallyDefined = definedQuery.evaluate();
