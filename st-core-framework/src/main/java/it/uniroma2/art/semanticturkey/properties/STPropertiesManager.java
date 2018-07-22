@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
@@ -663,7 +664,17 @@ public class STPropertiesManager {
 	public static void storeSTPropertiesInYAML(STProperties properties, File propertiesFile,
 			boolean storeObjType) throws JsonGenerationException, JsonMappingException, IOException {
 		ObjectMapper mapper = createObjectMapper();
-		mapper.writeValue(propertiesFile, properties);
+		ObjectNode objectNode = mapper.valueToTree(properties);
+
+		if (storeObjType) {
+			ObjectNode newObjectNode = JsonNodeFactory.instance.objectNode();
+			newObjectNode.put(SETTINGS_TYPE_PROPERTY, properties.getClass().getName());
+			newObjectNode.setAll(objectNode);
+			
+			objectNode = newObjectNode;
+		}
+
+		mapper.writeValue(propertiesFile, objectNode);
 	}
 
 	public static <T extends STProperties> T loadSTPropertiesFromYAMLFiles(Class<T> valueType,
