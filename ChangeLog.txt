@@ -1,29 +1,56 @@
 version 4.0
-date: dd/mm/yyyy
-  * Enabled the refinement of label type when creating/linking a skosxl:Label
-  * Enabled the possibility to specify a specific broader and narrower properties when dealing with the concept tree and
-    also whether to use their subproperties
-  * Improvements to the OntologyManager component (e.g. core vocabularies are no longer deleted when an
-    explicit import of them is removed)
-  * Improvements to the change tracker Sail (e.g. possibility to query the version of the Sail)
-  * Enabled the possibility to edit the credentials for the repositories associated with a project
-  * New Extension Management framework (partial release)
-  * Introduction of a SPARQL store (e.g. saved queries/updates)
-  * Support for the W3C OntoLex-Lemon Model
-  * New Metadata Registry
-  * Improvements to the Exporter subsystem:
-    * possibility to reformat the data to a (usually) non-RDF format
-    * possibility to deploy the (optionally reformatted) data somewhere, instead of simply downloading it
-  * New concrete deployers:
-    * HTTP Deployer
-    * SPARQL 1.1 HTTP Graph Store API Deployer
-    * SFTP Deployer
+date: 23/07/2018
   * Update to Apache Karaf 4.2.0
   * Update to RDF4J 2.2.4
+  * Integrated MAPLE (http://bitbucket.org/art-uniroma2/maple) for supporting alignment processes
+  * Implemented support for semi-automatic alignment to local or remote resources on the Web
+  * Creation of a Metadata Registry and its related editor
+  * Extended support for OWL2
+  * Support for management of datatypes
+  * automatic creation of an owl:Ontology resource when this is not available
+  * Enabled the refinement of label type when creating/linking a skosxl:Label
+  * Implemented the management of User Groups, their constraints on ConceptSchemes and their introduction in 
+    the property defaults chain
+  * Enabled the possibility to specify different subproperties of skos:broader and skos:narrower properties 
+    for painting the concept tree and also whether to use their subproperties and to store this setting as
+    a default for users belonging to a group
+  * Various improvements to the OntologyManager component (e.g. core vocabularies are no longer deleted when 
+    an explicit import of them is removed)
+  * Various improvements to the change tracker Sail (e.g. possibility to query the version of the Sail)
+  * Enabled the possibility to edit the credentials for the repositories associated with a project
+  * New Extension Management framework (partial release)
+  * Introduced Advanced Search: a search with different constraints that can be setup by the user through a 
+    dedicated UI
   * implemented the fuzzy search
-  * implemented advanced search
-  * implemented custom search (based on parameterizations of stored SPARQL queries)
-  * automatic creation of an owl:Ontology resource
+  * SPARQL queries/updates now can be stored
+  * SPARQL parameterized operations: possibility to store the operations with preassigned/described parameters,
+    so that these can be run through a form by non-SPARQL-savvy users
+  * Custom Search (end-user customized search based on stored SPARQL parameterized queries)  
+  * Support for the W3C OntoLex-Lemon Model
+  * Browsing extended to connected local projects and to the Linked Open Data through http dereferenciation or
+    SPARQL querying (depending on dataset availability, as stored in the Metadata Registry)
+  * Improvements to the Load Data :
+    * possibility to load the data from some specific sources instead of simply uploading it
+    * possibility to lift data from a (usually) non-RDF format to RDF
+    * introduction of RDF transformers for refactoring the data before loading it
+  * Improvements to the Export :
+    * possibility to reformat the data to a (usually) non-RDF format
+    * possibility to deploy the (optionally reformatted) data somewhere, instead of simply downloading it
+    * renamed the export filters into the new RDF transformers for refactoring the data before exporting
+  * New concrete deployers/loaders:
+    * SPARQL 1.1 HTTP Graph Store API Deployer/Loader
+    * HTTP Deployer/Loader    
+    * SFTP Deployer/Loader
+  * Implemented RDFLifter and ReformattingExporter for the zThes format
+  * Changes and improvements to the Collaboration System
+    * enabled possibility to add a resource to an existing issue
+    * improved JIRA project creation from ST and assited connection to an existing one  
+  * Added support for the change password feature
+  * Added the new role "lurker" to the system roles
+  * Improved the configurations of the system e-mail sender
+  * Improvements to Sheet2RDF
+  * Improved some ICVs
+  * Bug fixes
   
 version 3.0
 date: 08/02/2018
@@ -47,7 +74,7 @@ date: 08/02/2018
   * Automatically update the ACL for a project after this has been modified
   * intercept the exception of change tracking sail missing and provide a dedicated message
   * avatar URL property for users
-  â€¢	fixed the windows-carriage returns in some of the batch files to be used for UNIX operating systems
+  •	fixed the windows-carriage returns in some of the batch files to be used for UNIX operating systems
   * Bug fixes.
 
 version 2.0
