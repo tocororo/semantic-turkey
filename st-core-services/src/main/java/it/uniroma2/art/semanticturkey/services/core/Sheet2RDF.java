@@ -195,14 +195,14 @@ public class Sheet2RDF extends STServiceAdapter {
 		headerJson.set("converter", converterJson);
 		CODAConverter converter = h.getConverter();
 		if (converter != null) {
-			converterJson.set("uri", jsonFactory.textNode(h.getConverter().getContractUri()));
-			converterJson.set("type", jsonFactory.textNode(h.getConverter().getType().name()));
-			converterJson.set("xRole", jsonFactory.textNode(h.getConverter().getxRole()));
+			converterJson.set("uri", jsonFactory.textNode(converter.getContractUri()));
+			converterJson.set("type", jsonFactory.textNode(converter.getType().name()));
+			converterJson.set("xRole", jsonFactory.textNode(converter.getxRole()));
 			converterJson.set("memoize", jsonFactory.booleanNode(h.isMemoize()));
 		} else {
 			converterJson.set("uri", null);
 			converterJson.set("type", null);
-			converterJson.set("xRole", jsonFactory.textNode(h.getConverter().getxRole()));
+			converterJson.set("xRole", null);
 			converterJson.set("memoize", jsonFactory.booleanNode(h.isMemoize()));
 		}
 		
