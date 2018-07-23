@@ -153,6 +153,7 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>2.10.1</version>
 				<configuration>
+					<additionalparam>-Xdoclint:none</additionalparam>
 					<links>
 						<link>http://semanticturkey.uniroma2.it/doc/dev/modules/st-codegen-annotations/apidocs/</link>
 						<link>http://semanticturkey.uniroma2.it/doc/dev/modules/st-codegen-processor/apidocs/</link>
