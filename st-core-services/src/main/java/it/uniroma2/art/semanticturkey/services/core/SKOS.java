@@ -2210,14 +2210,15 @@ public class SKOS extends STServiceAdapter {
 				query+="\n{ ?subProp <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* "
 						+ "<"+broaderProp.stringValue()+"> . }";
 			}
-			
-			for(IRI inverseHierachicalProp : inverseHierachicalProps) {
-				if(!first) {
-					query+="\nUNION";
+			if(inverseHierachicalProps!=null) {
+				for(IRI inverseHierachicalProp : inverseHierachicalProps) {
+					if(!first) {
+						query+="\nUNION";
+					}
+					first = false;
+					query+="\n{ ?subInverseProp <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* "
+								+ "<"+inverseHierachicalProp.stringValue()+"> . }";
 				}
-				first = false;
-				query+="\n{ ?subInverseProp <"+org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue()+">* "
-							+ "<"+inverseHierachicalProp.stringValue()+"> . }";
 			}
 			
 			query +="\n}";
