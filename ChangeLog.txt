@@ -1,3 +1,7 @@
+version 4.0.1
+date: 26/07/2018
+  * Fixed a bug in getTopConcepts when passing a specific broader property and no narrower property
+
 version 4.0
 date: 23/07/2018
   * Update to Apache Karaf 4.2.0
@@ -74,7 +78,7 @@ date: 08/02/2018
   * Automatically update the ACL for a project after this has been modified
   * intercept the exception of change tracking sail missing and provide a dedicated message
   * avatar URL property for users
-  •	fixed the windows-carriage returns in some of the batch files to be used for UNIX operating systems
+  ï¿½	fixed the windows-carriage returns in some of the batch files to be used for UNIX operating systems
   * Bug fixes.
 
 version 2.0
