@@ -1,3 +1,9 @@
+version 4.0.2
+date: xx/yy/2018
+  * Fixed a bug that caused an exception when configuring the Template-based Native URI Generator
+  * Minor improvement to the configuration of CODA-based URI Generators, in order to accept new, unforeseen
+    properties
+
 version 4.0.1
 date: 26/07/2018
   * Fixed a bug in getTopConcepts when passing a specific broader property and no narrower property
