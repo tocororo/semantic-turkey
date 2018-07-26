@@ -23,6 +23,7 @@
 
 package it.uniroma2.art.semanticturkey.plugin.configuration;
 
+import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -41,6 +42,8 @@ import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
  */
 public abstract class AbstractPluginConfiguration extends STPropertiesImpl implements STProperties {
 
+	private static final String field4stringAnnotatedType = "";
+
 	Class<? extends AbstractPluginConfiguration> thisClass;
 
 	protected Map<String, String> additionalConfigurationParameters = new LinkedHashMap<String, String>();
@@ -54,6 +57,19 @@ public abstract class AbstractPluginConfiguration extends STPropertiesImpl imple
 		Collection<String> properties = super.getProperties();
 		properties.addAll(additionalConfigurationParameters.keySet());
 		return properties;
+	}
+
+	@Override
+	public String getPropertyDisplayName(String id) throws PropertyNotFoundException {
+		try {
+			return super.getPropertyDisplayName(id);
+		} catch (PropertyNotFoundException e) {
+			if (additionalConfigurationParameters.containsKey(id)) {
+				return id;
+			} else {
+				throw new PropertyNotFoundException(String.format("Parameter %s not found", id));
+			}
+ 		}
 	}
 
 	@Override
@@ -84,6 +100,24 @@ public abstract class AbstractPluginConfiguration extends STPropertiesImpl imple
 				throw e1;
 			} else {
 				additionalConfigurationParameters.put(id, value.toString());
+			}
+		}
+	}
+
+	@Override
+	public AnnotatedType getPropertyAnnotatedType(String id) throws PropertyNotFoundException {
+		try {
+			return super.getPropertyAnnotatedType(id);
+		} catch (PropertyNotFoundException e) {
+			if (additionalConfigurationParameters.containsKey(id)) {
+				try {
+					return this.getClass().getDeclaredField("field4stringAnnotatedType").getAnnotatedType();
+				} catch (NoSuchFieldException | SecurityException e1) {
+					throw new RuntimeException(
+							"The field \"field4stringAnnotatedType\" was erroneously removed from AbstractPluginConfiguration");
+				}
+			} else {
+				throw new PropertyNotFoundException(e);
 			}
 		}
 	}
