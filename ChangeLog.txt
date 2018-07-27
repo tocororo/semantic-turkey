@@ -1,5 +1,5 @@
 version 4.0.2
-date: xx/yy/2018
+date: 27/07/2018
   * Fixed a bug that caused an exception when configuring the Template-based Native URI Generator
   * Minor improvement to the configuration of CODA-based URI Generators, in order to accept new, unforeseen
     properties
