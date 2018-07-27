@@ -3,6 +3,7 @@ date: xx/yy/2018
   * Fixed a bug that caused an exception when configuring the Template-based Native URI Generator
   * Minor improvement to the configuration of CODA-based URI Generators, in order to accept new, unforeseen
     properties
+  * Fixed a bug that didn't remove a UsersGroup from a Project-User binding when the group was deleted
 
 version 4.0.1
 date: 26/07/2018
