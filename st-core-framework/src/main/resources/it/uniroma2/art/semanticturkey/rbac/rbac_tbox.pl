@@ -61,6 +61,19 @@ chk_capability(rdf(SKOSELEMENT), CRUDV) :-
 chk_capability(rdf(SKOSELEMENT,_), CRUDV) :-
 	capability(rdf(skos), CRUDV),
 	vocabulary(SKOSELEMENT, skos).
+	
+	
+/*****************************
+** shortcuts for rdf(ontolex). **
+*****************************/
+
+chk_capability(rdf(ONTOLEXELEMENT), CRUDV) :-
+	capability(rdf(ontolex), CRUDV),
+	vocabulary(ONTOLEXELEMENT, ontolex).
+	
+chk_capability(rdf(ONTOLEXELEMENT,_), CRUDV) :-
+	capability(rdf(ontolex), CRUDV),
+	vocabulary(ONTOLEXELEMENT, ontolex).	
 
 	
 % this tells that a simple rdf(lexicalization(LANG)) implies to be able to lexicalize (in LANG) for every resource	
@@ -107,9 +120,37 @@ chk_capability(rdf(xLabel,_), CRUDV) :-
 %	write('no language lexicalization expansion for editing SKOSXL labels  | '),
 	capability(rdf(lexicalization), CRUDV).	
 	
+
+chk_capability(rdf(ontolexForm), CRUDV) :-
+%	write('lexicalization expansion for cruding SKOSXL labels | '),
+	capability(rdf(lexicalization), CRUDV).
+
+chk_capability(rdf(ontolexForm,_), CRUDV) :-
+%	write('no language lexicalization expansion for editing SKOSXL labels  | '),
+	capability(rdf(lexicalization), CRUDV).	
+	
+chk_capability(rdf(ontolexLexicalEntry), CRUDV) :-
+%	write('lexicalization expansion for cruding SKOSXL labels | '),
+	capability(rdf(lexicalization), CRUDV).
+
+chk_capability(rdf(ontolexLexicalEntry,_), CRUDV) :-
+%	write('no language lexicalization expansion for editing SKOSXL labels  | '),
+	capability(rdf(lexicalization), CRUDV).		
+
+chk_capability(rdf(limeLexicon), CRUDV) :-
+%	write('lexicalization expansion for cruding SKOSXL labels | '),
+	capability(rdf(lexicalization), CRUDV).
+
+chk_capability(rdf(limeLexicon,_), CRUDV) :-
+%	write('no language lexicalization expansion for editing SKOSXL labels  | '),
+	capability(rdf(lexicalization), CRUDV).			
+	
 chk_capability(rdf(_,notes), CRUDV) :-
 % write('notes expansion'),
 capability(rdf(notes), CRUDV).
+
+
+
 
 
 /*********************************
@@ -164,11 +205,17 @@ role(conceptScheme).
 role(xLabel).
 role(xLabel(_)).
 role(skosCollection).
-role(skosOrderedCollection).
+role(ontolexForm).
+role(ontolexLexicalEntry).
+role(limeLexicon).
 	
 vocabulary(concept, skos).
 vocabulary(conceptScheme, skos).
 vocabulary(skosCollection, skos).
+
+vocabulary(ontolexForm, ontolex).
+vocabulary(ontolexLexicalEntry, ontolex).
+vocabulary(limeLexicon, ontolex).
 
 
 	
