@@ -184,10 +184,10 @@ public class RdfToZthesMapper {
 				+ NTriplesUtil.toNTriplesString(concept) + " ?notePred ?note .\n"
 				+ "OPTIONAL {\n"
 				+ "FILTER(isLiteral(?note))\n"
-				+ NTriplesUtil.toNTriplesString(concept) + " ?notePred ?note .\n"
-				+ "BIND(?note as ?noteValue)\n"
+				+ NTriplesUtil.toNTriplesString(concept) + " ?notePred ?noteValue .\n"
 				+ "}\n"
 				+ "OPTIONAL { ?note " + NTriplesUtil.toNTriplesString(RDF.VALUE) + " ?noteValue }\n"
+				+ "FILTER(BOUND(?noteValue))\n"
 				+ "}";
 		TupleQueryResult results = sourceConnection.prepareTupleQuery(query).evaluate();
 		while (results.hasNext()) {
