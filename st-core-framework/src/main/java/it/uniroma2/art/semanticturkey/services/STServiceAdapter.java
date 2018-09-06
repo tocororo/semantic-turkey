@@ -59,11 +59,6 @@ import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
-import it.uniroma2.art.semanticturkey.servlet.Response;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
-import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
-import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
-import it.uniroma2.art.semanticturkey.servlet.XMLResponseREPLY;
 import it.uniroma2.art.semanticturkey.sparql.SPARQLUtilities;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.tx.STServiceAspect;
@@ -92,12 +87,6 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 
 	@Autowired
 	protected ExtensionPointManager exptManager;
-
-	private final ServletUtilities servletUtilities;
-
-	protected STServiceAdapter() {
-		servletUtilities = ServletUtilities.getService();
-	}
 
 	protected PlatformTransactionManager getPlatformTransactionManager() {
 		return txManager;
@@ -329,32 +318,6 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 		return null;
 	}
 
-	// Semi-deprecated
-
-	protected XMLResponseREPLY createReplyResponse(RepliesStatus status) {
-		return servletUtilities.createReplyResponse(stServiceContext.getRequest().getServiceMethod(), status);
-	}
-
-	protected XMLResponseREPLY createReplyFAIL(String message) {
-		return servletUtilities.createReplyFAIL(stServiceContext.getRequest().getServiceMethod(), message);
-	}
-
-	protected XMLResponseREPLY createBooleanResponse(boolean resp) {
-		return servletUtilities.createBooleanResponse(stServiceContext.getRequest().getServiceMethod(), resp);
-	}
-
-	protected Response logAndSendException(Exception e, String msg) {
-		e.printStackTrace(System.err);
-		// getLogger().error(e.toString());
-		return servletUtilities.createExceptionResponse(stServiceContext.getRequest().getServiceMethod(),
-				msg);
-	}
-
-	protected Response logAndSendException(String msg, SerializationType sertype) {
-		// getLogger().error(msg);
-		return servletUtilities.createExceptionResponse(stServiceContext.getRequest().getServiceMethod(), msg,
-				sertype);
-	}
 
 	// TEMP SERVICE, WHICH WILL BE REPLACED BY THE APPROPRIATE PROCESSOR IN QueryBuilder
 	// variables being used: $st, $go, $dep and ?attr_nature

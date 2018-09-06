@@ -29,12 +29,15 @@ package it.uniroma2.art.semanticturkey.servlet;
 public class ServiceVocabulary {
     public final static String responseRoot = "stresponse";
     public final static String responseType = "type";
+    
+    public final static String exceptionName = "exception";
 
     public final static String request = "request";
     
     public final static String data = "data";
     
     public final static String msg = "msg";
+    public final static String stackTrace = "stackTrace";
     public final static String status = "status";
     public final static String reply = "reply";    
 

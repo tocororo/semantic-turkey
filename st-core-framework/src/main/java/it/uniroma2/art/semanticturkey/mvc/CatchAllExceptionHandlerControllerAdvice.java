@@ -63,7 +63,7 @@ public class CatchAllExceptionHandlerControllerAdvice {
 		}
 
 		// Despite MethodConstraintViolationException being a RuntimeException, return an ST exception
-		Response stResp = servUtils.createExceptionResponse(extractServicRequestName(request),
+		Response stResp = servUtils.createExceptionResponse(extractServicRequestName(request), ex,
 				errorMsg.toString());
 
 		return formatResponse(stResp, request);
@@ -82,7 +82,7 @@ public class CatchAllExceptionHandlerControllerAdvice {
 			stResp = servUtils.createErrorResponse(extractServicRequestName(request), ex.toString());
 		} else {
 			// otherwise, it is a foreseen failure, therefore return an ST exception
-			stResp = servUtils.createExceptionResponse(extractServicRequestName(request), ex.toString());
+			stResp = servUtils.createExceptionResponse(extractServicRequestName(request), ex, ex.toString());
 		}
 		return formatResponse(stResp, request);
 	}
