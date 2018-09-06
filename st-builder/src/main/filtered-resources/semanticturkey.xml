@@ -46,6 +46,9 @@
 
 		<!-- Javax Validation -->
 		<bundle dependency="true">mvn:javax.validation/validation-api/1.1.0.Final</bundle>
+		
+		<!-- Javax Mail -->
+		<bundle dependency="true">mvn:com.sun.mail/javax.mail/1.6.2</bundle>
 
 		<!-- Support for Hibernate validation -->
 		<bundle dependency="true">mvn:org.jsoup/com.springsource.org.jsoup/1.5.2</bundle>

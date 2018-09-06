@@ -69,6 +69,8 @@ public class STPropertiesManager {
 	public static final String SETTING_MAIL_SMTP_AUTH = "mail.smtp.auth";
 	public static final String SETTING_MAIL_SMTP_HOST= "mail.smtp.host";
 	public static final String SETTING_MAIL_SMTP_PORT = "mail.smtp.port";
+	public static final String SETTING_MAIL_SMTP_SSL_ENABLE = "mail.smtp.ssl.enable";
+	public static final String SETTING_MAIL_SMTP_STARTTLS_ENABLE = "mail.smtp.starttls.enable";
 	public static final String SETTING_MAIL_FROM_ADDRESS = "mail.from.address";
 	public static final String SETTING_MAIL_FROM_PASSWORD = "mail.from.password";
 	public static final String SETTING_MAIL_FROM_ALIAS = "mail.from.alias";

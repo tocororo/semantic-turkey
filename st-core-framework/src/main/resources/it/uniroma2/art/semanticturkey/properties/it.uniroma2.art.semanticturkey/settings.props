@@ -5,3 +5,5 @@ mail.from.alias=VocBench Admin
 mail.smtp.host=smtp.gmail.com
 mail.smtp.port=465
 mail.smtp.auth=true
+mail.smtp.ssl.enable=true
+mail.smtp.starttls.enable=false

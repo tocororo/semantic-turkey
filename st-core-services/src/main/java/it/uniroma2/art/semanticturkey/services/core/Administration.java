@@ -4,10 +4,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
@@ -55,6 +57,7 @@ import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.user.RoleCreationException;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.utilities.EmailSender;
 
 @STService
 @Controller
@@ -85,6 +88,10 @@ public class Administration extends STServiceAdapter {
 				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_HOST)));
 		configNode.set("mailSmtpPort", jsonFactory.textNode(
 				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_PORT)));
+		configNode.set("mailSmtpSslEnable", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_SSL_ENABLE)));
+		configNode.set("mailSmtpStarttlsEnable", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_STARTTLS_ENABLE)));
 		return configNode;
 	}
 	
@@ -101,23 +108,42 @@ public class Administration extends STServiceAdapter {
 	
 	/**
 	 * 
-	 * @param mailFromAddress
-	 * @param mailFromPassword
-	 * @param mailFromAlias
 	 * @param mailSmtpHost
 	 * @param mailSmtpPort
+	 * @param mailSmtpAuth
+	 * @param mailSmtpSsl
+	 * @param mailSmtpTls
+	 * @param mailFromAddress
+	 * @param mailFromAlias
+	 * @param mailFromPassword
 	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void updateEmailConfig(String mailSmtpHost, String mailSmtpPort, String mailSmtpAuth, String mailFromAddress,
-			String mailFromAlias, @Optional String mailFromPassword) throws STPropertyUpdateException {
+	public void updateEmailConfig(String mailSmtpHost, String mailSmtpPort, boolean mailSmtpAuth,
+			boolean mailSmtpSsl, boolean mailSmtpTls, String mailFromAddress, String mailFromAlias, 
+			@Optional String mailFromPassword) throws STPropertyUpdateException {
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_HOST, mailSmtpHost);
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_PORT, mailSmtpPort);
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_AUTH, mailSmtpAuth);
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_AUTH, mailSmtpAuth+"");
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_SSL_ENABLE, mailSmtpSsl+"");
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_STARTTLS_ENABLE, mailSmtpTls+"");
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ADDRESS, mailFromAddress);
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ALIAS, mailFromAlias);
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_PASSWORD, mailFromPassword);
+	}
+	
+	/**
+	 * 
+	 * @param mailTo
+	 * @throws UnsupportedEncodingException
+	 * @throws MessagingException
+	 * @throws STPropertyAccessException
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAdmin()")
+	public void testEmailConfig(String mailTo) throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
+		EmailSender.sendTestMailConfig(mailTo);
 	}
 	
 	
