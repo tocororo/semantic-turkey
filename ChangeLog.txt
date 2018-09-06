@@ -1,3 +1,9 @@
+version 5.0-SNAPSHOT
+date: dd/MM/yyyy
+  * Updated e-mail configuration;
+  * Added stackTrace info in error response and changed the serialization to JSON format; 
+  * Bugfixes
+
 version 4.0.2
 date: 27/07/2018
   * Fixed a bug that caused an exception when configuring the Template-based Native URI Generator
