@@ -1074,20 +1074,47 @@ public class CustomForms extends STServiceAdapter {
 
 	/**
 	 * Used to check if a property chain (manually created by the user client-side) is correct.
+	 * The property chain is written as a sequence of comma separated IRI or qname.
+	 * In case of invalid IRIs or QName with unknown prefix, it throws a CustomFormException
 	 * 
 	 * @param propChain
 	 * @return
 	 * @throws CustomFormException
 	 */
 	@STServiceOperation
-	public void validateShowPropertyChain(String propChain) throws CustomFormException {
+	public List<AnnotatedValue<IRI>> validateShowPropertyChain(String propChain) throws CustomFormException {
+		ArrayList<AnnotatedValue<IRI>> chain = new ArrayList<AnnotatedValue<IRI>>();
+		SimpleValueFactory svf = SimpleValueFactory.getInstance();
+		
+		Map<String, String> allMappings = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		
 		String[] splitted = propChain.split(",");
 		for (String s : splitted) {
+			String iri = s.trim();
+			//check if is qname, eventually resolve it
+			if (iri.contains(":") && !iri.contains(":/")) {
+				boolean prefFound = false;
+				for (Map.Entry<String, String> entry: allMappings.entrySet()) {
+					if (iri.startsWith(entry.getKey()+":")) {
+						iri = iri.replace(entry.getKey()+":", entry.getValue());
+						prefFound = true;
+						break;
+					}
+					if (!prefFound) {
+						throw new CustomFormException("'" + s + "' is not a valid QName. Unkwown prefix '" 
+								+ iri.substring(0, iri.indexOf(":")) + "'.");
+					}
+				}
+			}
 			if (!URIUtil.isValidURIReference(s.trim())) {
 				throw new CustomFormException("'" + s + "' is not a valid URI");
 			}
+			chain.add(new AnnotatedValue<IRI>(svf.createIRI(iri)));
 		}
+		return chain;
 	}
+	
+	
 
 	/**
 	 * Tries to validate a pearl code.
