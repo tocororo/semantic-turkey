@@ -28,7 +28,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
@@ -66,20 +65,6 @@ public class ServletUtilities {
 			}
 		}
 		return null;
-	}
-
-	/**
-	 * creates an element to host a single typed value in a response
-	 * 
-	 * @param response
-	 * @param type
-	 * @return
-	 */
-	public Element createValueElement(XMLResponseREPLY response, String type) {
-		Element dataElem = response.getDataElement();
-		Element valueElem = XMLHelp.newElement(dataElem, ServiceVocabulary.value);
-		valueElem.setAttribute(ServiceVocabulary.valueType, type);
-		return valueElem;
 	}
 
 	public JSONResponseEXCEPTION createExceptionResponse(String request, Exception ex, String msg) {
@@ -132,8 +117,8 @@ public class ServletUtilities {
 		return null;
 	}
 
-	public XMLResponseERROR createErrorResponse(String request, String msg) {
-		return (XMLResponseERROR) createErrorResponse(request, msg, SerializationType.json);
+	public JSONResponseERROR createErrorResponse(String request, String msg) {
+		return (JSONResponseERROR) createErrorResponse(request, msg, SerializationType.json);
 	}
 
 	public ResponseProblem createNoSuchHandlerExceptionResponse(String request, SerializationType ser_type) {
