@@ -26,30 +26,49 @@
  */
 package it.uniroma2.art.semanticturkey.servlet;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
  * Defines a JSON serialization based ERROR response  
  * 
- * @autor Ramon Orrù
- * 
  */
 
-public class JSONResponseERROR extends JSONResponseProblem{
+public class JSONResponseERROR extends JSONResponseProblem {
 
 	JSONResponseERROR(JSONObject json_content, String request) throws JSONException {
 		super(json_content,request);
 		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.responseType, ServiceVocabulary.type_error);
 	}
 
-	JSONResponseERROR(JSONObject json_content, String request, String msg) throws JSONException {
+	JSONResponseERROR(JSONObject json_content, String request, Exception e, String msg) throws JSONException {
 		super(json_content, request);
 		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.responseType, ServiceVocabulary.type_error);
+		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.exceptionName, e.getClass().getCanonicalName());
 		setMessage(msg);
+		setStackTrace(e);
 	}
 
 	public boolean isAffirmative() {
 		return false;
 	}
+	
+	public void setStackTrace(Exception e) {
+		try {
+    		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.stackTrace, ExceptionUtils.getStackTrace(e));
+		} catch (JSONException ex) {
+			e.printStackTrace();
+		}
+    }
+
+    public String getStackTrace() {
+    	try {
+			return content.getJSONObject(ServiceVocabulary.responseRoot).getString(ServiceVocabulary.stackTrace);
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return "";
+    }
+
 }

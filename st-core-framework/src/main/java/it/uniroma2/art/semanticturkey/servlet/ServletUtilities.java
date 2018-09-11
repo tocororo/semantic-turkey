@@ -101,14 +101,14 @@ public class ServletUtilities {
 	 * @return
 	 * @throws JSONException
 	 */
-	public ResponseProblem createErrorResponse(String request, String msg, SerializationType ser_type) {
+	public ResponseProblem createErrorResponse(String request, Exception ex, String msg, SerializationType ser_type) {
 		if (ser_type == SerializationType.xml) {
 			Document xml = XMLHelp.createNewDoc();
 			return new XMLResponseERROR(xml, request, msg);
 		} else {
 			JSONObject json_content = new JSONObject();
 			try {
-				return new JSONResponseERROR(json_content, request, msg);
+				return new JSONResponseERROR(json_content, request, ex, msg);
 			} catch (JSONException e) {
 				logger.error("Error in Json response creation:" + e.getMessage());
 				e.printStackTrace();
@@ -117,8 +117,8 @@ public class ServletUtilities {
 		return null;
 	}
 
-	public JSONResponseERROR createErrorResponse(String request, String msg) {
-		return (JSONResponseERROR) createErrorResponse(request, msg, SerializationType.json);
+	public JSONResponseERROR createErrorResponse(String request, Exception ex, String msg) {
+		return (JSONResponseERROR) createErrorResponse(request, ex, msg, SerializationType.json);
 	}
 
 	public ResponseProblem createNoSuchHandlerExceptionResponse(String request, SerializationType ser_type) {
