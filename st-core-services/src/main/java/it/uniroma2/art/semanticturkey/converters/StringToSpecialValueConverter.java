@@ -26,12 +26,21 @@ public class StringToSpecialValueConverter implements Converter<String, SpecialV
 	public SpecialValue convert(String source) {
 		SpecialValue sv = new SpecialValue();
 		conversionService = (ConversionService) applicationContext.getBean(conversionServiceId);
-		try { //try to convert from String to Value (rdf4j)
-			Value value = conversionService.convert(source, Value.class);
-			sv.setRdf4jValue(value);
-		} catch (ConversionFailedException e) { //in case of conversion failed, try to convert to CustomFormValue
+		/*
+		 * Try to convert the String to a SpecialValue testing the converters
+		 * - String -> CustomFormValue
+		 * - String -> Value (rdf4j)
+		 * The choice of the order is due since if both converter fail, it throws the exception about the 
+		 * conversion to Value (otherwise it would throw the exception about the conversion to CustomFormValue
+		 * that is not so clear)
+		 */
+		try { //try to convert to CustomFormValue
 			CustomFormValue cfValue = conversionService.convert(source, CustomFormValue.class);
 			sv.setCustomFormValue(cfValue);
+		} catch (ConversionFailedException e) { //in case of conversion failed, try to convert from String to Value (rdf4j)
+			Value value = conversionService.convert(source, Value.class);
+			sv.setRdf4jValue(value);
+			
 		}
 		return sv;
 	}
