@@ -7,15 +7,8 @@ import java.security.SecureRandom;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Properties;
 
-import javax.mail.Message;
 import javax.mail.MessagingException;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.rdf4j.model.IRI;
@@ -240,8 +233,8 @@ public class Users extends STServiceAdapter {
 		ProjectUserBindingsManager.createPUBindingsOfUser(user);
 		
 		try {
-			EmailSender.sendRegistrationMailToUser(email, givenName, familyName);
-			EmailSender.sendRegistrationMailToAdmin(email, givenName, familyName);
+			EmailSender.sendRegistrationMailToUser(user);
+			EmailSender.sendRegistrationMailToAdmin(user);
 		} catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {
 			logger.error(Utilities.printFullStackTrace(e));
 		}
@@ -458,18 +451,22 @@ public class Users extends STServiceAdapter {
 	 * @return
 	 * @throws IOException 
 	 * @throws ProjectBindingException 
+	 * @throws STPropertyAccessException 
+	 * @throws MessagingException 
+	 * @throws UnsupportedEncodingException 
 	 */
 	//TODO move to Administration?
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'C')")
 	public ObjectNode enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled)
-			throws UserException, ProjectBindingException  {
+			throws UserException, ProjectBindingException, UnsupportedEncodingException, MessagingException, STPropertyAccessException  {
 		if (UsersManager.getLoggedUser().getEmail().equals(email)) {
 			throw new ProjectBindingException("Cannot disable current logged user");
 		}
 		STUser user = UsersManager.getUserByEmail(email);
 		if (enabled) {
 			user = UsersManager.updateUserStatus(user, UserStatus.ACTIVE);
+			EmailSender.sendEnabledMailToUser(user);
 		} else {
 			user = UsersManager.updateUserStatus(user, UserStatus.INACTIVE);
 		}

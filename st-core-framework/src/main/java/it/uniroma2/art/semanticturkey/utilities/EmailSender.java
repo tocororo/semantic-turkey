@@ -26,19 +26,35 @@ public class EmailSender {
 	 * @throws UnsupportedEncodingException
 	 * @throws STPropertyAccessException 
 	 */
-	public static void sendRegistrationMailToUser(String toEmail, String givenName, String familyName) 
+	public static void sendRegistrationMailToUser(STUser user) 
 			throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
 		String emailAdminAddress = STPropertiesManager.getSystemSetting(
 				STPropertiesManager.SETTING_ADMIN_ADDRESS);
-		String text = "Dear " + givenName + " " + familyName + ","
+		String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
 				+ "\nthank you for registering as a user of VocBench 3."
 				+ " Your request has been received. Please wait for the administrator to approve it."
-				+ " After approval, you can log into VocBench with the e-mail " + toEmail + " and your chosen password."
+				+ " After approval, you can log into VocBench with the e-mail " + user.getEmail() + " and your chosen password."
 				+ "\nThanks for your interest."
 				+ "\nIf you want to unregister, please send an email with your e-mail address and the subject:"
 				+ " 'VocBench - Unregister' to " + emailAdminAddress + "."
 				+ "\nRegards,\nThe VocBench Team.";
-		sendMail(toEmail, "VocBench registration", text);
+		sendMail(user.getEmail(), "VocBench registration", text);
+	}
+	
+	/**
+	 * Sends an email to a user to inform that his/her account has been enabled
+	 * @param user
+	 * @throws MessagingException
+	 * @throws UnsupportedEncodingException
+	 * @throws STPropertyAccessException
+	 */
+	public static void sendEnabledMailToUser(STUser user) 
+			throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
+		String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
+				+ "\nthe administrator has enabled your account."
+				+ " You can now log into VocBench with the e-mail " + user.getEmail() + " and your chosen password."
+				+ "\nRegards,\nThe VocBench Team.";
+		sendMail(user.getEmail(), "VocBench account enabled", text);
 	}
 	
 	/**
@@ -47,15 +63,15 @@ public class EmailSender {
 	 * @throws UnsupportedEncodingException 
 	 * @throws STPropertyAccessException 
 	 */
-	public static void sendRegistrationMailToAdmin(String userEmail, String userGivenName, String userFamilyName)
+	public static void sendRegistrationMailToAdmin(STUser user)
 			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
 		String emailAdminAddress = STPropertiesManager.getSystemSetting(
 				STPropertiesManager.SETTING_ADMIN_ADDRESS);
 		String text = "Dear VocBench administrator,"
 				+ "\nthere is a new user registration request for VocBench."
-				+ "\nGiven Name: " + userGivenName
-				+ "\nFamily Name: " + userFamilyName
-				+ "\nE-mail: " + userEmail
+				+ "\nGiven Name: " + user.getGivenName()
+				+ "\nFamily Name: " + user.getFamilyName()
+				+ "\nE-mail: " + user.getEmail()
 				+ "\nPlease activate the account.\nRegards,\nThe VocBench Team.";
 		sendMail(emailAdminAddress, "VocBench registration", text);
 	}
