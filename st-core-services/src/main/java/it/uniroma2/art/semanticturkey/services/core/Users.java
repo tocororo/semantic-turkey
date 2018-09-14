@@ -451,22 +451,23 @@ public class Users extends STServiceAdapter {
 	 * @return
 	 * @throws IOException 
 	 * @throws ProjectBindingException 
-	 * @throws STPropertyAccessException 
-	 * @throws MessagingException 
-	 * @throws UnsupportedEncodingException 
 	 */
 	//TODO move to Administration?
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'C')")
 	public ObjectNode enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled)
-			throws UserException, ProjectBindingException, UnsupportedEncodingException, MessagingException, STPropertyAccessException  {
+			throws UserException, ProjectBindingException {
 		if (UsersManager.getLoggedUser().getEmail().equals(email)) {
 			throw new ProjectBindingException("Cannot disable current logged user");
 		}
 		STUser user = UsersManager.getUserByEmail(email);
 		if (enabled) {
 			user = UsersManager.updateUserStatus(user, UserStatus.ACTIVE);
-			EmailSender.sendEnabledMailToUser(user);
+			try {
+				EmailSender.sendEnabledMailToUser(user);
+			} catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {
+				logger.error(Utilities.printFullStackTrace(e));
+			}
 		} else {
 			user = UsersManager.updateUserStatus(user, UserStatus.INACTIVE);
 		}
