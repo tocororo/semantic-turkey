@@ -578,6 +578,10 @@ public class JiraBackend implements CollaborationBackend {
 		
 		for(int i=0; i<issueNum; i++) {
 			JsonNode issue = issuesArray.get(i);
+			if(issue==null) {
+				//it is not a real issue, so just skip it
+				continue;
+			}
 			ObjectNode issueRedux = parseIssue(issue, projectSettings);
 			String issueId = issueRedux.get("id").asText();
 			if(!issueIdList.contains(issueId)) {
