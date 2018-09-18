@@ -176,8 +176,6 @@ public class Sheet2RDF extends STServiceAdapter {
 			headerJson.set("resource", null);
 		}
 		
-		headerJson.set("lang", jsonFactory.textNode(h.getRangeLanguage()));
-		
 		ObjectNode rangeJson = jsonFactory.objectNode();
 		headerJson.set("range", rangeJson);
 		rangeJson.set("type", jsonFactory.textNode(h.getRangeType().name()));
@@ -185,10 +183,13 @@ public class Sheet2RDF extends STServiceAdapter {
 			AnnotatedValue<Resource> annotatedRes= new AnnotatedValue<Resource>(h.getRangeClass());
 			//compute role, qname, ecc?
 			rangeJson.putPOJO("cls", annotatedRes);
-		} else if (h.getRangeType().equals(RDFTypesEnum.typedLiteral) && h.getRangeDatatype() != null) {
-			AnnotatedValue<Resource> annotatedRes= new AnnotatedValue<Resource>(h.getRangeDatatype());
-			//compute role, qname, ecc?
-			rangeJson.putPOJO("resource", annotatedRes);
+		} else if (h.getRangeType().equals(RDFTypesEnum.literal)) {
+			if (h.getRangeDatatype() != null) {
+				AnnotatedValue<Resource> annotatedRes= new AnnotatedValue<Resource>(h.getRangeDatatype());
+				rangeJson.putPOJO("resource", annotatedRes);
+			} else if (h.getRangeLanguage() != null) {
+				rangeJson.put("lang", h.getRangeLanguage());
+			}
 		}
 		
 		ObjectNode converterJson = jsonFactory.objectNode();
@@ -231,8 +232,8 @@ public class Sheet2RDF extends STServiceAdapter {
 			@Optional String converterMention,
 			@Optional String converterXRole,
 			@Optional (defaultValue = "false") boolean memoize,
-//			@Optional String lang,
-//			@Optional IRI rangeDatatype, 
+			@Optional String lang,
+			@Optional IRI rangeDatatype, 
 			@Optional (defaultValue = "false") boolean applyToAll) throws PRParserException {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		HeadersStruct headersStruct = ctx.getSheet2RDFCore().getHeadersStruct();
@@ -256,7 +257,7 @@ public class Sheet2RDF extends STServiceAdapter {
 			h.setIsClass(S2RDFUtils.isClass(headerResource, connection));
 			
 			//update converter
-			CODAConverter converter;
+			CODAConverter converter = null;
 			if (converterMention != null && converterType != null) { //converter is provided by the client
 				//set converter contract description retrieving the ConverterContractDescription object from its uri
 				ConverterMention mention = ctx.getCodaCore().parseConverterMention(converterMention, ctx.getSheet2RDFCore().getMergedPrefixMapping());
@@ -265,7 +266,7 @@ public class Sheet2RDF extends STServiceAdapter {
 				converter.setxRole(converterXRole);
 			} else { 
 				//resolve the converter with the default choice for the resource assigned to the header
-				converter = converterResolver.getConverter(headerResource);
+//				converter = converterResolver.getConverter(headerResource);
 			}
 			h.setConverter(converter);
 			
@@ -275,10 +276,10 @@ public class Sheet2RDF extends STServiceAdapter {
 				h.setRangeType(rangeType);
 			}
 			
-//			//Set the optional fields, so that if not passed they will be set to null
-//			h.setRangeLanguage(lang);
+			//Set the optional fields, so that if not passed they will be set to null
+			h.setRangeLanguage(lang);
 			h.setRangeClass(rangeClass);
-//			h.setRangeDatatype(rangeDatatype);
+			h.setRangeDatatype(rangeDatatype);
 		}
 	}
 	
