@@ -42,7 +42,7 @@ public interface CollaborationBackend extends Extension {
 	public JsonNode listIssuesAssignedToResource(IRI resource)
 			throws STPropertyAccessException, IOException, CollaborationBackendException;
 
-	public JsonNode listIssues()
+	public JsonNode listIssues(int pageOffset)
 			throws STPropertyAccessException, IOException, CollaborationBackendException;
 	
 	public JsonNode listUsers()

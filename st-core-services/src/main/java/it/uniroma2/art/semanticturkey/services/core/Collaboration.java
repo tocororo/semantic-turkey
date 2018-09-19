@@ -157,9 +157,9 @@ public class Collaboration extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.GET)
-	public JsonNode listIssues()
+	public JsonNode listIssues(int pageOffset)
 			throws STPropertyAccessException, IOException, CollaborationBackendException {
-		return getCollaborationBackend().listIssues();
+		return getCollaborationBackend().listIssues(pageOffset);
 	}
 
 	@STServiceOperation(method = RequestMethod.GET)

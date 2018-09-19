@@ -498,8 +498,11 @@ public class JiraBackend implements CollaborationBackend {
 	
 	
 	@Override
-	public JsonNode listIssues() throws STPropertyAccessException, IOException, 
+	public JsonNode listIssues(int pageOffset) throws STPropertyAccessException, IOException, 
 			CollaborationBackendException {
+		int maxResult = 100;
+		int startAt = pageOffset*maxResult;
+		
 		//first of all, check that there is a valid associated Jira Project
 		checkPrjConfiguration();
 		
@@ -529,8 +532,8 @@ public class JiraBackend implements CollaborationBackend {
 		
 		String postJsonData = "{"
 				+"\n\"jql\":\""+jqlString+"\","
-				+"\n\"startAt\":0"
-				//+"\n\"maxResults\":100,"
+				+"\n\"startAt\":"+startAt+","
+				+"\n\"maxResults\":"+maxResult+""
 				/*+"\n\"fields\": ["
 				+"\n\"status\","
 				+"\n\"labels\","
@@ -568,7 +571,7 @@ public class JiraBackend implements CollaborationBackend {
 		ObjectMapper objectMapper = new ObjectMapper();
 		JsonNode rootNode = objectMapper.readTree(response.toString());
 		
-		int issueNum = Integer.parseInt(rootNode.get("total").asText());
+		int total = Integer.parseInt(rootNode.get("total").asText());
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		
 		
@@ -577,7 +580,7 @@ public class JiraBackend implements CollaborationBackend {
 		List<ObjectNode> issueNodeList = new ArrayList<>();
 		List<String> issueIdList = new ArrayList<>();
 		
-		for(int i=0; i<issueNum; i++) {
+		for(int i=0; i<issuesArray.size(); i++) {
 			JsonNode issue = issuesArray.get(i);
 			if(issue==null) {
 				//it is not a real issue, so just skip it
@@ -591,12 +594,28 @@ public class JiraBackend implements CollaborationBackend {
 			}
 		}
 		//now construct the response using the issue contained in the issueNodeList 
-		ArrayNode resToIssuesCompleteResponse = jsonFactory.arrayNode();
+		ArrayNode arrayNode = jsonFactory.arrayNode();
 		for(ObjectNode issueRedux : issueNodeList) {
-			resToIssuesCompleteResponse.add(issueRedux);
+			arrayNode.add(issueRedux);
 		}
 		
-		return resToIssuesCompleteResponse;
+		int start = pageOffset*maxResult;
+		int end = start + arrayNode.size() ;
+		String more = (end<total) ? "true" : "false";
+		int numPagesTotal = total/maxResult;
+		if(total%maxResult != 0) {
+			++numPagesTotal;
+		}
+		
+		ObjectNode objectNode = jsonFactory.objectNode();
+		objectNode.set("more", jsonFactory.textNode(more));
+		objectNode.set("numIssues", jsonFactory.textNode(total+""));
+		objectNode.set("numPagesTotal", jsonFactory.textNode(numPagesTotal+""));
+		
+		objectNode.set("issues",arrayNode);
+		
+		
+		return objectNode;
 	}
 	
 	@Override
