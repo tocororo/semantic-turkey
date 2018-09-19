@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Scanner;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -836,7 +837,22 @@ public class JiraBackend implements CollaborationBackend {
 			optionalSlash = "/";
 		}
 		String urlIssue = projectSettings.serverURL+optionalSlash+"browse/"+issueKey;
-		ArrayNode labelsArray = (ArrayNode) issue.get("fields").get("labels");
+		//check the labels, which is an array. Consider only those labels not having a whitespace and than can
+		// be converted as an IRI
+		ArrayNode tempLabelsArray = (ArrayNode) issue.get("fields").get("labels");
+		ArrayNode labelsArray = jsonFactory.arrayNode();
+		for(JsonNode label : tempLabelsArray) {
+			String iriOrNot = label.asText();
+			if(!iriOrNot.contains(" ")) {
+				try {
+					SimpleValueFactory.getInstance().createIRI(iriOrNot);
+					labelsArray.add(iriOrNot);
+				} catch (IllegalArgumentException e) {
+					//do nothing
+				}
+			}
+		}
+		
 		String resolution="";
 		if(issue.get("fields").get("resolution") != null && 
 				issue.get("fields").get("resolution").get("name")!=null) {
