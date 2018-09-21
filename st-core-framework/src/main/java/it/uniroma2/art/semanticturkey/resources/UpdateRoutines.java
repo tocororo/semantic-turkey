@@ -165,8 +165,6 @@ public class UpdateRoutines {
 		
 		logger.debug("Version 4.0.0 added groups and pg_bindings folders");
 		Resources.initializeGroups();
-		Resources.initializePGBindingFileStructure();
-		
 	}
 	
 	public static void repairProject(String projectName) throws IOException, InvalidProjectNameException,
