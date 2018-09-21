@@ -93,10 +93,13 @@ public class ProjectUserBinding {
 		for (Role r: this.roles) {
 			rolesAsStringList.add(r.getName());
 		}
-		return "<" + this.project.getName() + "," + this.user.getIRI().stringValue() + ">:\n"
+		String asString = "<" + this.project.getName() + "," + this.user.getIRI().stringValue() + ">:\n"
 				+ "\tRoles:" + this.roles
-				+ "\tLanguages:" + this.languages
-				+ "\tGroup:" + this.group.getShortName();
+				+ "\tLanguages:" + this.languages;
+		if (this.group != null) {
+			asString += "\tGroup:" + this.group.getShortName();
+		}
+		return asString;
 	}
 
 }

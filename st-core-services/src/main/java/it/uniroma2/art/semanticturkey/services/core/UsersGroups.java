@@ -186,9 +186,8 @@ public class UsersGroups extends STServiceAdapter {
 			throw new ProjectBindingException("No user found with email " + email);
 		}
 		Project project = ProjectManager.getProjectDescription(projectName);
-		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
-		if (puBinding == null) {
-			throw new ProjectBindingException("No binding found for user with email " + email + " and project " + projectName);
+		if (project == null) {
+			throw new ProjectBindingException("Project " + projectName + " doesn't exist");
 		}
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
 		if (group == null) {
@@ -217,9 +216,8 @@ public class UsersGroups extends STServiceAdapter {
 			throw new ProjectBindingException("No user found with email " + email);
 		}
 		Project project = ProjectManager.getProjectDescription(projectName);
-		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
-		if (puBinding == null) {
-			throw new ProjectBindingException("No binding found for user with email " + email + " and project " + projectName);
+		if (project == null) {
+			throw new ProjectBindingException("Project " + projectName + " doesn't exist");
 		}
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
 		if (group == null) {
@@ -246,9 +244,8 @@ public class UsersGroups extends STServiceAdapter {
 			throw new ProjectBindingException("No user found with email " + email);
 		}
 		Project project = ProjectManager.getProjectDescription(projectName);
-		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
-		if (puBinding == null) {
-			throw new ProjectBindingException("No binding found for user with email " + email + " and project " + projectName);
+		if (project == null) {
+			throw new ProjectBindingException("Project " + projectName + " doesn't exist");
 		}
 		ProjectUserBindingsManager.removeGroupFromPUBinding(user, project);
 	}
@@ -313,10 +310,10 @@ public class UsersGroups extends STServiceAdapter {
 			throw new ProjectBindingException("No group found " + groupIri);
 		}
 		Project project = ProjectManager.getProjectDescription(projectName);
-		ProjectGroupBinding pgBinding = ProjectGroupBindingsManager.getPGBinding(group, project);
-		if (pgBinding == null) {
-			throw new ProjectBindingException("No binding found for group " + group.getIRI() + " and project " + projectName);
+		if (project == null) {
+			throw new ProjectBindingException("Project " + projectName + " doesn't exist");
 		}
+		ProjectGroupBinding pgBinding = ProjectGroupBindingsManager.getPGBinding(group, project);
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode bindingNode = jsonFactory.objectNode();
 		bindingNode.set("groupIri", jsonFactory.textNode(pgBinding.getGroup().getIRI().stringValue()));

@@ -29,14 +29,34 @@ public class ProjectUserBindingsManager {
 	 * @throws IOException 
 	 * @throws RepositoryException 
 	 * @throws RDFParseException 
+	 * @throws ProjectAccessException 
 	 */
-	public static void loadPUBindings() throws RDFParseException, RepositoryException, IOException {
+	public static void loadPUBindings() throws RDFParseException, RepositoryException, IOException, ProjectAccessException {
+		Collection<AbstractProject> projects = ProjectManager.listProjects();
+		Collection<STUser> users = UsersManager.listUsers();
+		
 		ProjectUserBindingsRepoHelper repoHelper = new ProjectUserBindingsRepoHelper();
-		Collection<File> bindingsFolders = getAllPUBindingFiles();
-		for (File f : bindingsFolders) {
-			repoHelper.loadBindingDetails(f);
+		
+		/*
+		 * Iterate all over the project-user pair. If the PUB details file exists, load it into the repo,
+		 * otherwise create the PUBinding and add it to the PUBlist.
+		 * At the end of the iteration, add to the PUBList also all the PUB loaded into the repo.
+		 */
+		for (AbstractProject absProj : projects) {
+			if (absProj instanceof Project) {
+				Project project = (Project) absProj;
+				for (STUser user : users) {
+					File pubFile = getPUBindingDetailsFile(project, user);
+					if (pubFile.exists()) { //if exists add it to the repo
+						repoHelper.loadBindingDetails(pubFile);
+					} else { //otherwise create the "empty" PUB and add it to the list
+						puBindingList.add(new ProjectUserBinding(project, user));
+					}
+				}
+			}
 		}
-		puBindingList = repoHelper.listPUBindings();
+		//add to the list all the PUB loaded into the repo
+		puBindingList.addAll(repoHelper.listPUBindings());
 		repoHelper.shutDownRepository();
 		
 		//For debug
@@ -55,17 +75,7 @@ public class ProjectUserBindingsManager {
 	}
 	
 	/**
-	 * Adds a project-user binding 
-	 * @param puBinding
-	 * @throws IOException 
-	 */
-	public static void createPUBinding(ProjectUserBinding puBinding) throws ProjectBindingException {
-		puBindingList.add(puBinding);
-		createOrUpdatePUBindingFolder(puBinding);
-	}
-	
-	/**
-	 * Returns the ProjectUserBinding that binds the given user and project. Null if there is no binding
+	 * Returns the ProjectUserBinding that binds the given user and project
 	 * @param user
 	 * @param projectName
 	 * @return
@@ -76,6 +86,13 @@ public class ProjectUserBindingsManager {
 			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
 				puBinding = pub;
 			}
+		}
+		if (puBinding == null) {
+			/*
+			 * if the binding doesn't exist initializes it, just in the list, not in the filesystem, it will be
+			 * eventually stored on the filesystem in case it changes
+			 */
+			puBinding = new ProjectUserBinding(project, user);
 		}
 		return puBinding;
 	}
@@ -108,14 +125,14 @@ public class ProjectUserBindingsManager {
 	 * Creates all the project-user bindings folders related to the given project.
 	 * Useful when a project is created/imported
 	 * and the existing users
-	 * @param projectName
+	 * @param project
 	 * @throws IOException 
 	 */
 	public static void createPUBindingsOfProject(AbstractProject project) throws ProjectBindingException {
 		Collection<STUser> users = UsersManager.listUsers();
 		//for each user creates the binding with the given project
 		for (STUser u : users) {
-			createPUBinding(new ProjectUserBinding(project, u));
+			puBindingList.add(new ProjectUserBinding(project, u));
 		}
 	}
 	
@@ -148,7 +165,7 @@ public class ProjectUserBindingsManager {
 		//for each project creates the binding with the given user
 		for (AbstractProject abstrProj : projects) {
 			if (abstrProj instanceof Project) {
-				createPUBinding(new ProjectUserBinding(abstrProj, user));
+				puBindingList.add(new ProjectUserBinding(abstrProj, user));
 			}
 		}
 	}
@@ -183,15 +200,11 @@ public class ProjectUserBindingsManager {
 	 * @throws ProjectBindingException
 	 */
 	public static void addRolesToPUBinding(STUser user, AbstractProject project, Collection<Role> roles) throws ProjectBindingException {
-		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
-				for (Role r : roles) {
-					pub.addRole(r);
-				}
-				createOrUpdatePUBindingFolder(pub);
-				return;
-			}
+		ProjectUserBinding pub = getPUBinding(user, project);
+		for (Role r : roles) {
+			pub.addRole(r);
 		}
+		createOrUpdatePUBindingFolder(pub);
 	}
 	
 	/**
@@ -202,13 +215,9 @@ public class ProjectUserBindingsManager {
 	 * @throws ProjectBindingException
 	 */
 	public static void addRoleToPUBinding(STUser user, AbstractProject project, Role role) throws ProjectBindingException {
-		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
-				pub.addRole(role);
-				createOrUpdatePUBindingFolder(pub);
-				return;
-			}
-		}
+		ProjectUserBinding pub = getPUBinding(user, project);
+		pub.addRole(role);
+		createOrUpdatePUBindingFolder(pub);
 	}
 	
 	/**
@@ -219,15 +228,11 @@ public class ProjectUserBindingsManager {
 	 * @throws ProjectBindingException
 	 */
 	public static void removeRoleFromPUBinding(STUser user, AbstractProject project, Role role) throws ProjectBindingException {
-		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
-				Collection<Role> roles = pub.getRoles();
-				roles.remove(role);
-				pub.setRoles(roles);
-				createOrUpdatePUBindingFolder(pub);
-				return;
-			}
-		}
+		ProjectUserBinding pub = getPUBinding(user, project);
+		Collection<Role> roles = pub.getRoles();
+		roles.remove(role);
+		pub.setRoles(roles);
+		createOrUpdatePUBindingFolder(pub);
 	}
 	
 	/**
@@ -238,13 +243,9 @@ public class ProjectUserBindingsManager {
 	 * @throws ProjectBindingException
 	 */
 	public static void removeAllRoleFromPUBinding(STUser user, AbstractProject project) throws ProjectBindingException {
-		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
-				pub.setRoles(new ArrayList<Role>());
-				createOrUpdatePUBindingFolder(pub);
-				return;
-			}
-		}
+		ProjectUserBinding pub = getPUBinding(user, project);
+		pub.setRoles(new ArrayList<Role>());
+		createOrUpdatePUBindingFolder(pub);
 	}
 	
 	/**
@@ -288,15 +289,11 @@ public class ProjectUserBindingsManager {
 	 */
 	public static void addLanguagesToPUBinding(STUser user, AbstractProject project, Collection<String> languages)
 			throws ProjectBindingException {
-		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
-				for (String l : languages) {
-					pub.addLanguage(l);
-				}
-				createOrUpdatePUBindingFolder(pub);
-				return;
-			}
+		ProjectUserBinding pub = getPUBinding(user, project);
+		for (String l : languages) {
+			pub.addLanguage(l);
 		}
+		createOrUpdatePUBindingFolder(pub);
 	}
 	
 	/**
@@ -307,13 +304,9 @@ public class ProjectUserBindingsManager {
 	 * @throws ProjectBindingException
 	 */
 	public static void updateLanguagesToPUBinding(STUser user, AbstractProject project, Collection<String> languages) throws ProjectBindingException {
-		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
-				pub.setLanguages(languages);
-				createOrUpdatePUBindingFolder(pub);
-				return;
-			}
-		}
+		ProjectUserBinding pub = getPUBinding(user, project);
+		pub.setLanguages(languages);
+		createOrUpdatePUBindingFolder(pub);
 	}
 	
 	/* =================================
@@ -328,13 +321,9 @@ public class ProjectUserBindingsManager {
 	 * @throws ProjectBindingException
 	 */
 	public static void assignGroupToPUBinding(STUser user, AbstractProject project, UsersGroup group) throws ProjectBindingException {
-		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
-				pub.assignGroup(group);
-				createOrUpdatePUBindingFolder(pub);
-				return;
-			}
-		}
+		ProjectUserBinding pub = getPUBinding(user, project);
+		pub.assignGroup(group);
+		createOrUpdatePUBindingFolder(pub);
 	}
 	
 	/**
@@ -345,13 +334,9 @@ public class ProjectUserBindingsManager {
 	 * @throws ProjectBindingException
 	 */
 	public static void setGroupLimitationsToPUBinding(STUser user, AbstractProject project, UsersGroup group, boolean limitations) throws ProjectBindingException {
-		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
-				pub.setSubjectToGroupLimitations(limitations);
-				createOrUpdatePUBindingFolder(pub);
-				return;
-			}
-		}
+		ProjectUserBinding pub = getPUBinding(user, project);
+		pub.setSubjectToGroupLimitations(limitations);
+		createOrUpdatePUBindingFolder(pub);
 	}
 	
 	/**
@@ -361,13 +346,9 @@ public class ProjectUserBindingsManager {
 	 * @throws ProjectBindingException
 	 */
 	public static void removeGroupFromPUBinding(STUser user, AbstractProject project) throws ProjectBindingException {
-		for (ProjectUserBinding pub : puBindingList) {
-			if (pub.getUser().getIRI().equals(user.getIRI()) && pub.getProject().getName().equals(project.getName())) {
-				pub.removeGroup();
-				createOrUpdatePUBindingFolder(pub);
-				return;
-			}
-		}
+		ProjectUserBinding pub = getPUBinding(user, project);
+		pub.removeGroup();
+		createOrUpdatePUBindingFolder(pub);
 	}
 	
 	/**
@@ -397,7 +378,7 @@ public class ProjectUserBindingsManager {
 		try {
 			ProjectUserBindingsRepoHelper tempPUBindingsRepoHelper = new ProjectUserBindingsRepoHelper();
 			tempPUBindingsRepoHelper.insertBinding(puBinding);
-			tempPUBindingsRepoHelper.saveBindingDetailsFile(getPUBindingDetailsFile(puBinding));
+			tempPUBindingsRepoHelper.saveBindingDetailsFile(getPUBindingDetailsFile(puBinding.getProject(), puBinding.getUser()));
 			tempPUBindingsRepoHelper.shutDownRepository();
 		} catch (IOException e) {
 			throw new ProjectBindingException(e);
@@ -472,35 +453,14 @@ public class ProjectUserBindingsManager {
 	 * @param puBinding
 	 * @return
 	 */
-	private static File getPUBindingDetailsFile(ProjectUserBinding puBinding) {
-		File bindingFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + puBinding.getProject().getName() 
-			+ File.separator + STUser.encodeUserIri(puBinding.getUser().getIRI()));
+	private static File getPUBindingDetailsFile(AbstractProject project, STUser user) {
+		File bindingFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + 
+				project.getName() + File.separator + 
+				STUser.encodeUserIri(user.getIRI()));
 		if (!bindingFolder.exists()) {
 			bindingFolder.mkdirs();
 		}
 		return new File(bindingFolder + File.separator + PU_BINDING_DETAILS_FILE_NAME);
-	}
-	
-	/**
-	 * Returns all the binding.ttl files for every project-user bindings
-	 * @return
-	 */
-	private static Collection<File> getAllPUBindingFiles() {
-		Collection<File> puBindingDetailsFolders = new ArrayList<>(); 
-		Collection<File> projBindFolders = getAllProjBindingsFolders();
-		//get all subfolder of "pu_binding/<projectName>" folder (one subfolder for each user)
-		for (File projFolder : projBindFolders) {
-			String[] userDirectories = projFolder.list(new FilenameFilter() {
-				public boolean accept(File current, String name) {
-					return new File(current, name).isDirectory();
-				}
-			});
-			for (String userDir : userDirectories) {
-				puBindingDetailsFolders.add(new File(projFolder + File.separator + userDir 
-						+ File.separator + PU_BINDING_DETAILS_FILE_NAME));
-			}
-		}
-		return puBindingDetailsFolders;
 	}
 	
 }

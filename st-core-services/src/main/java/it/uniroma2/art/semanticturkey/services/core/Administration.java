@@ -166,9 +166,6 @@ public class Administration extends STServiceAdapter {
 		}
 		Project project = ProjectManager.getProjectDescription(projectName);
 		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
-		if (puBinding == null) {
-			throw new ProjectBindingException("No binding found for user with email " + email + " and project " + projectName);
-		}
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode bindingNode = jsonFactory.objectNode();
 		bindingNode.set("userEmail", jsonFactory.textNode(puBinding.getUser().getEmail()));
@@ -225,9 +222,8 @@ public class Administration extends STServiceAdapter {
 			throw new ProjectBindingException("No user found with email " + email);
 		}
 		Project project = ProjectManager.getProjectDescription(projectName);
-		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
-		if (puBinding == null) {
-			throw new ProjectBindingException("No binding found for user with email " + email + " and project " + projectName);
+		if (project == null) {
+			throw new ProjectBindingException("Project " + projectName + " doesn't exist");
 		}
 		Collection<Role> roleList = new ArrayList<>();
 		for (String r : roles) {
@@ -257,9 +253,8 @@ public class Administration extends STServiceAdapter {
 			throw new ProjectBindingException("No user found with email " + email);
 		}
 		Project project = ProjectManager.getProjectDescription(projectName);
-		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
-		if (puBinding == null) {
-			throw new ProjectBindingException("No binding found for user with email " + email + " and project " + projectName);
+		if (project == null) {
+			throw new ProjectBindingException("Project " + projectName + " doesn't exist");
 		}
 		//removes all role from the binding
 		ProjectUserBindingsManager.removeAllRoleFromPUBinding(user, project);
@@ -277,9 +272,8 @@ public class Administration extends STServiceAdapter {
 			throw new ProjectBindingException("No user found with email " + email);
 		}
 		Project project = ProjectManager.getProjectDescription(projectName);
-		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
-		if (puBinding == null) {
-			throw new ProjectBindingException("No binding found for user with email " + email + " and project " + projectName);
+		if (project == null) {
+			throw new ProjectBindingException("Project " + projectName + " doesn't exist");
 		}
 		Role aRole = RBACManager.getRole(project, role);
 		if (aRole == null) {
@@ -300,9 +294,8 @@ public class Administration extends STServiceAdapter {
 			throw new ProjectBindingException("No user found with email " + email);
 		}
 		Project project = ProjectManager.getProjectDescription(projectName);
-		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
-		if (puBinding == null) {
-			throw new ProjectBindingException("No binding found for user with email " + email + " and project " + projectName);
+		if (project == null) {
+			throw new ProjectBindingException("Project " + projectName + " doesn't exist");
 		}
 		ProjectUserBindingsManager.updateLanguagesToPUBinding(user, project, languages);
 	}

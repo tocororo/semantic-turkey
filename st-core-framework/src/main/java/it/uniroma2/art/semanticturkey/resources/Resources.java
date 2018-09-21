@@ -35,25 +35,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
-import it.uniroma2.art.semanticturkey.project.AbstractProject;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
-import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
-import it.uniroma2.art.semanticturkey.user.ProjectGroupBinding;
-import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
-import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UsersGroup;
-import it.uniroma2.art.semanticturkey.user.UsersGroupsManager;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
 /**
@@ -265,8 +252,6 @@ public class Resources {
 				throw new STInitializationException("Unable to locate/create the correct files/folders");
 			initializeCustomFormFileStructure();
 			initializeRoles();
-			initializePUBindingFileStructure();
-			initializePGBindingFileStructure();
 			initializeSystemProperties();
 						
 		} else {
@@ -276,56 +261,6 @@ public class Resources {
 
 	public static File getOSGiPath() {
 		return OSGiPath;
-	}
-	
-	
-	/**
-	 * Initializes a folders structure with a pu_binding folder containing 
-	 * - a folder per project
-	 * 		- which in turn contains a folder for user
-	 * 			- which in turn contains a property file that describe relations between project and user
-	 * @throws ProjectAccessException
-	 * @throws IOException 
-	 */
-	private static void initializePUBindingFileStructure() throws STInitializationException {
-		try {
-			// create project-user bindings
-			projectUserBindingsDir.mkdir();
-			for (AbstractProject abstrProj : ProjectManager.listProjects()) {
-				if (abstrProj instanceof Project) {
-					for (STUser user : UsersManager.listUsers()) {
-						ProjectUserBinding puBinding = new ProjectUserBinding(abstrProj, user);
-						ProjectUserBindingsManager.createPUBinding(puBinding);
-					}
-				}
-			}
-		} catch (ProjectAccessException | ProjectBindingException e) {
-			throw new STInitializationException(e);
-		}
-	}
-	
-	/**
-	 * Initializes a folders structure with a pg_binding folder 
-	 * - a folder per project
-	 * 		- which in turn contains a folder for group
-	 * 			- which in turn contains a property file that describe relations between project and user
-	 * @throws STInitializationException 
-	 */
-	public static void initializePGBindingFileStructure() throws STInitializationException {
-		try {
-			// create project-group bindings
-			projectGroupBindingsDir.mkdir();
-			for (AbstractProject abstrProj : ProjectManager.listProjects()) {
-				if (abstrProj instanceof Project) {
-					for (UsersGroup group : UsersGroupsManager.listGroups()) {
-						ProjectGroupBinding pgBinding = new ProjectGroupBinding(abstrProj, group);
-						ProjectGroupBindingsManager.createPGBinding(pgBinding);
-					}
-				}
-			}
-		} catch (ProjectAccessException | ProjectBindingException e) {
-			throw new STInitializationException(e);
-		}
 	}
 	
 	/**
@@ -433,7 +368,7 @@ public class Resources {
 							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine/pu-settings-defaults.props"),
 					STPropertiesManager.getPUSettingsSystemDefaultsFile(RenderingEngine.class.getName())
 			);
-		} catch (IOException | STPropertyAccessException e) {
+		} catch (IOException e) {
 			throw new STInitializationException(e);
 		}
 	}

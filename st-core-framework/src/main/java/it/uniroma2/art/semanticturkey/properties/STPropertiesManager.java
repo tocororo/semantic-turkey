@@ -222,7 +222,7 @@ public class STPropertiesManager {
 			}
 			File propFile = getPUSettingsFile(project, user, pluginID);
 			storeSTPropertiesInYAML(preferences, propFile, false);
-		} catch (STPropertyAccessException | IOException e) {
+		} catch (IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}
@@ -348,7 +348,7 @@ public class STPropertiesManager {
 			}
 			File propFile = getPGSettingsFile(project, group, pluginID);
 			storeSTPropertiesInYAML(preferences, propFile, false);
-		} catch (STPropertyAccessException | IOException e) {
+		} catch (IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}
@@ -759,7 +759,7 @@ public class STPropertiesManager {
 			}
 			File settingsFile = getUserSettingsFile(user, pluginID);
 			storeSTPropertiesInYAML(preferences, settingsFile, false);
-		} catch (STPropertyAccessException | IOException e) {
+		} catch (IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}
@@ -940,7 +940,7 @@ public class STPropertiesManager {
 			}
 			File settingsFile = getProjectSettingsFile(project, pluginID);
 			storeSTPropertiesInYAML(settings, settingsFile, false);
-		} catch (STPropertyAccessException | IOException e) {
+		} catch (IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}
@@ -1106,7 +1106,7 @@ public class STPropertiesManager {
 			}
 			File settingsFile = getSystemSettingsFile(pluginID);
 			storeSTPropertiesInYAML(settings, settingsFile, false);
-		} catch (STPropertyAccessException | IOException e) {
+		} catch (IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}
@@ -1132,39 +1132,19 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getUserSettingsDefaultsFile(String pluginID) throws STPropertyAccessException {
-		try {
-			File propFile = new File(
-					getSystemPropertyFolder(pluginID) + File.separator + USER_SETTINGS_DEFAULTS_FILE_NAME);
-			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
-				Properties properties = new Properties();
-				updatePropertyFile(properties, propFile);
-			}
-			return propFile;
-		} catch (STPropertyUpdateException e) {
-			throw new STPropertyAccessException(e);
-		}
+	private static File getUserSettingsDefaultsFile(String pluginID) {
+		return new File(getSystemPropertyFolder(pluginID) + File.separator + USER_SETTINGS_DEFAULTS_FILE_NAME);
 	}
 
 	/**
-	 * Returns the Properties file <STData>/system/plugins/<plugin>/pu-settings-defaults.props * @param
-	 * pluginID
+	 * Returns the Properties file <STData>/system/plugins/<plugin>/pu-settings-defaults.props 
+	 * @param pluginID
 	 * 
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static File getPUSettingsSystemDefaultsFile(String pluginID) throws STPropertyAccessException {
-		try {
-			File propFile = new File(getSystemPropertyFolder(pluginID) + File.separator
-					+ PU_SETTINGS_SYSTEM_DEFAULTS_FILE_NAME);
-			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
-				Properties properties = new Properties();
-				updatePropertyFile(properties, propFile);
-			}
-			return propFile;
-		} catch (STPropertyUpdateException e) {
-			throw new STPropertyAccessException(e);
-		}
+	public static File getPUSettingsSystemDefaultsFile(String pluginID) {
+		return new File(getSystemPropertyFolder(pluginID) + File.separator + PU_SETTINGS_SYSTEM_DEFAULTS_FILE_NAME);
 	}
 
 	/**
@@ -1174,18 +1154,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static File getProjectSettingsDefaultsFile(String pluginID) throws STPropertyAccessException {
-		try {
-			File propFile = new File(
-					getSystemPropertyFolder(pluginID) + File.separator + PROJECT_SETTINGS_DEFAULTS_FILE_NAME);
-			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
-				Properties properties = new Properties();
-				updatePropertyFile(properties, propFile);
-			}
-			return propFile;
-		} catch (STPropertyUpdateException e) {
-			throw new STPropertyAccessException(e);
-		}
+	public static File getProjectSettingsDefaultsFile(String pluginID) {
+		return new File(getSystemPropertyFolder(pluginID) + File.separator + PROJECT_SETTINGS_DEFAULTS_FILE_NAME);
 	}
 
 	/**
@@ -1195,18 +1165,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static File getSystemSettingsFile(String pluginID) throws STPropertyAccessException {
-		try {
-			File propFile = new File(
-					getSystemPropertyFolder(pluginID) + File.separator + SYSTEM_SETTINGS_FILE_NAME);
-			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
-				Properties properties = new Properties();
-				updatePropertyFile(properties, propFile);
-			}
-			return propFile;
-		} catch (STPropertyUpdateException e) {
-			throw new STPropertyAccessException(e);
-		}
+	public static File getSystemSettingsFile(String pluginID) {
+		return new File(getSystemPropertyFolder(pluginID) + File.separator + SYSTEM_SETTINGS_FILE_NAME);
 	}
 
 	/**
@@ -1217,19 +1177,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getPUSettingsProjectDefaultsFile(Project project, String pluginID)
-			throws STPropertyAccessException {
-		try {
-			File propFile = new File(getProjectPropertyFolder(project, pluginID) + File.separator
-					+ PU_SETTINGS_PROJECT_DEFAULTS_FILE_NAME);
-			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
-				Properties properties = new Properties();
-				updatePropertyFile(properties, propFile);
-			}
-			return propFile;
-		} catch (STPropertyUpdateException e) {
-			throw new STPropertyAccessException(e);
-		}
+	private static File getPUSettingsProjectDefaultsFile(Project project, String pluginID) {
+		return new File(getProjectPropertyFolder(project, pluginID) + File.separator + PU_SETTINGS_PROJECT_DEFAULTS_FILE_NAME);
 	}
 
 	/**
@@ -1240,19 +1189,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getProjectSettingsFile(Project project, String pluginID)
-			throws STPropertyAccessException {
-		try {
-			File propFile = new File(getProjectPropertyFolder(project, pluginID) + File.separator
-					+ PROJECT_SETTINGS_FILE_NAME);
-			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
-				Properties properties = new Properties();
-				updatePropertyFile(properties, propFile);
-			}
-			return propFile;
-		} catch (STPropertyUpdateException e) {
-			throw new STPropertyAccessException(e);
-		}
+	private static File getProjectSettingsFile(Project project, String pluginID) {
+		return new File(getProjectPropertyFolder(project, pluginID) + File.separator + PROJECT_SETTINGS_FILE_NAME);
 	}
 
 	/**
@@ -1263,19 +1201,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getPUSettingsUserDefaultsFile(STUser user, String pluginID)
-			throws STPropertyAccessException {
-		try {
-			File propFile = new File(getUserPropertyFolder(user, pluginID) + File.separator
-					+ PU_SETTINGS_USER_DEFAULTS_FILE_NAME);
-			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
-				Properties properties = new Properties();
-				updatePropertyFile(properties, propFile);
-			}
-			return propFile;
-		} catch (STPropertyUpdateException e) {
-			throw new STPropertyAccessException(e);
-		}
+	private static File getPUSettingsUserDefaultsFile(STUser user, String pluginID) {
+		return new File(getUserPropertyFolder(user, pluginID) + File.separator + PU_SETTINGS_USER_DEFAULTS_FILE_NAME);
 	}
 
 	/**
@@ -1286,18 +1213,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getUserSettingsFile(STUser user, String pluginID) throws STPropertyAccessException {
-		try {
-			File propFile = new File(
-					getUserPropertyFolder(user, pluginID) + File.separator + USER_SETTINGS_FILE_NAME);
-			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
-				Properties properties = new Properties();
-				updatePropertyFile(properties, propFile);
-			}
-			return propFile;
-		} catch (STPropertyUpdateException e) {
-			throw new STPropertyAccessException(e);
-		}
+	private static File getUserSettingsFile(STUser user, String pluginID) {
+		return new File(getUserPropertyFolder(user, pluginID) + File.separator + USER_SETTINGS_FILE_NAME);
 	}
 
 	/**
@@ -1309,19 +1226,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getPUSettingsFile(Project project, STUser user, String pluginID)
-			throws STPropertyAccessException {
-		try {
-			File propFile = new File(getPUBindingPropertyFolder(project, user, pluginID) + File.separator
-					+ PU_SETTINGS_FILE_NAME);
-			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
-				Properties properties = new Properties();
-				updatePropertyFile(properties, propFile);
-			}
-			return propFile;
-		} catch (STPropertyUpdateException e) {
-			throw new STPropertyAccessException(e);
-		}
+	private static File getPUSettingsFile(Project project, STUser user, String pluginID) {
+		return new File(getPUBindingPropertyFolder(project, user, pluginID) + File.separator + PU_SETTINGS_FILE_NAME);
 	}
 
 	/**
@@ -1333,19 +1239,8 @@ public class STPropertiesManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	private static File getPGSettingsFile(Project project, UsersGroup group, String pluginID)
-			throws STPropertyAccessException {
-		try {
-			File propFile = new File(getPGBindingPropertyFolder(project, group, pluginID) + File.separator
-					+ PG_SETTINGS_FILE_NAME);
-			if (!propFile.exists()) { // if .props file doesn't exist, create and initialize it
-				Properties properties = new Properties();
-				updatePropertyFile(properties, propFile);
-			}
-			return propFile;
-		} catch (STPropertyUpdateException e) {
-			throw new STPropertyAccessException(e);
-		}
+	private static File getPGSettingsFile(Project project, UsersGroup group, String pluginID) {
+		return new File(getPGBindingPropertyFolder(project, group, pluginID) + File.separator + PG_SETTINGS_FILE_NAME);
 	}
 	
 	/*
@@ -1366,9 +1261,6 @@ public class STPropertiesManager {
 	public static File getSystemPropertyFolder(String pluginID) {
 		File prefFolder = new File(
 				Resources.getSystemDir() + File.separator + "plugins" + File.separator + pluginID);
-		if (!prefFolder.exists()) {
-			prefFolder.mkdirs();
-		}
 		return prefFolder;
 	}
 
@@ -1382,9 +1274,6 @@ public class STPropertiesManager {
 	public static File getProjectPropertyFolder(Project project, String pluginID) {
 		File prefFolder = new File(Resources.getProjectsDir() + File.separator + project.getName()
 				+ File.separator + "plugins" + File.separator + pluginID);
-		if (!prefFolder.exists()) {
-			prefFolder.mkdirs();
-		}
 		return prefFolder;
 	}
 
@@ -1399,9 +1288,6 @@ public class STPropertiesManager {
 		File prefFolder = new File(
 				Resources.getUsersDir() + File.separator + STUser.encodeUserIri(user.getIRI())
 						+ File.separator + "plugins" + File.separator + pluginID);
-		if (!prefFolder.exists()) {
-			prefFolder.mkdirs();
-		}
 		return prefFolder;
 	}
 
@@ -1417,9 +1303,6 @@ public class STPropertiesManager {
 		File prefFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + project.getName()
 				+ File.separator + STUser.encodeUserIri(user.getIRI()) + File.separator + "plugins"
 				+ File.separator + pluginID);
-		if (!prefFolder.exists()) {
-			prefFolder.mkdirs();
-		}
 		return prefFolder;
 	}
 	
@@ -1435,9 +1318,6 @@ public class STPropertiesManager {
 		File prefFolder = new File(Resources.getProjectGroupBindingsDir() + File.separator + project.getName()
 				+ File.separator + UsersGroup.encodeGroupIri(group.getIRI()) + File.separator + "plugins"
 				+ File.separator + pluginID);
-		if (!prefFolder.exists()) {
-			prefFolder.mkdirs();
-		}
 		return prefFolder;
 	}
 
@@ -1460,6 +1340,9 @@ public class STPropertiesManager {
 			throws STPropertyUpdateException {
 		FileOutputStream os = null;
 		try {
+			if (!propFile.getParentFile().exists()) { //if path doesn't exist, first create it
+				propFile.getParentFile().mkdirs();
+			}
 			os = new FileOutputStream(propFile);
 			properties.store(os, null);
 			os.close();
@@ -1477,6 +1360,9 @@ public class STPropertiesManager {
 	}
 
 	private static Properties loadProperties(File propertiesFile) throws STPropertyAccessException {
+		if (!propertiesFile.exists()) { //properties file doesn't exist (properties never edited) => returns an empty Properties
+			return new Properties();
+		}
 		FileInputStream fis = null;
 		try {
 			fis = new FileInputStream(propertiesFile);

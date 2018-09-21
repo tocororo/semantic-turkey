@@ -32,14 +32,34 @@ public class ProjectGroupBindingsManager {
 	 * @throws IOException 
 	 * @throws RepositoryException 
 	 * @throws RDFParseException 
+	 * @throws ProjectAccessException 
 	 */
-	public static void loadPGBindings() throws RDFParseException, RepositoryException, IOException {
+	public static void loadPGBindings() throws RDFParseException, RepositoryException, IOException, ProjectAccessException {
+		Collection<AbstractProject> projects = ProjectManager.listProjects();
+		Collection<UsersGroup> groups = UsersGroupsManager.listGroups();
+		
 		ProjectGroupBindingsRepoHelper repoHelper = new ProjectGroupBindingsRepoHelper();
-		Collection<File> bindingsFolders = getAllPGBindingFiles();
-		for (File f : bindingsFolders) {
-			repoHelper.loadBindingDetails(f);
+		
+		/*
+		 * Iterate all over the project-group pair. If the PGB details file exists, load it into the repo,
+		 * otherwise create the PGBinding and add it to the PUBlist.
+		 * At the end of the iteration, add to the PGBList also all the PGB loaded into the repo.
+		 */
+		for (AbstractProject absProj : projects) {
+			if (absProj instanceof Project) {
+				Project project = (Project) absProj;
+				for (UsersGroup group : groups) {
+					File pgbFile = getPGBindingDetailsFile(project, group);
+					if (pgbFile.exists()) { //if exists add it to the repo
+						repoHelper.loadBindingDetails(pgbFile);
+					} else { //otherwise create the "empty" PUB and add it to the list
+						pgBindingList.add(new ProjectGroupBinding(project, group));
+					}
+				}
+			}
 		}
-		pgBindingList = repoHelper.listPGBindings();
+		//add to the list all the PGB loaded into the repo
+		pgBindingList.addAll(repoHelper.listPGBindings());
 		repoHelper.shutDownRepository();
 		
 		//For debug
@@ -58,18 +78,8 @@ public class ProjectGroupBindingsManager {
 	}
 	
 	/**
-	 * Adds a project-group binding 
-	 * @param pgBinding
-	 * @throws IOException 
-	 */
-	public static void createPGBinding(ProjectGroupBinding pgBinding) throws ProjectBindingException {
-		pgBindingList.add(pgBinding);
-		createOrUpdatePGBindingFolder(pgBinding);
-	}
-	
-	/**
-	 * Returns the ProjectGroupBinding that binds the given user and project. Null if there is no binding
-	 * @param user
+	 * Returns the ProjectGroupBinding that binds the given group and project
+	 * @param group
 	 * @param projectName
 	 * @return
 	 */
@@ -79,6 +89,13 @@ public class ProjectGroupBindingsManager {
 			if (pgb.getGroup().getIRI().equals(group.getIRI()) && pgb.getProject().getName().equals(project.getName())) {
 				pgBinding = pgb;
 			}
+		}
+		if (pgBinding == null) {
+			/*
+			 * if the binding doesn't exist initializes it, just in the list, not in the filesystem, it will be
+			 * eventually stored on the filesystem in case it changes
+			 */
+			pgBinding = new ProjectGroupBinding(project, group);
 		}
 		return pgBinding;
 	}
@@ -117,7 +134,7 @@ public class ProjectGroupBindingsManager {
 		Collection<UsersGroup> groups = UsersGroupsManager.listGroups();
 		//for each group creates the binding with the given project
 		for (UsersGroup g : groups) {
-			createPGBinding(new ProjectGroupBinding(project, g));
+			pgBindingList.add(new ProjectGroupBinding(project, g));
 		}
 	}
 	
@@ -148,7 +165,7 @@ public class ProjectGroupBindingsManager {
 		//for each project creates the binding with the given group
 		for (AbstractProject abstrProj : projects) {
 			if (abstrProj instanceof Project) {
-				createPGBinding(new ProjectGroupBinding(abstrProj, group));
+				pgBindingList.add(new ProjectGroupBinding(abstrProj, group));
 			}
 		}
 	}
@@ -183,15 +200,11 @@ public class ProjectGroupBindingsManager {
 	 * @throws ProjectBindingException
 	 */
 	public static void addSchemesToPGBinding(UsersGroup group, AbstractProject project, Collection<IRI> schemes) throws ProjectBindingException {
-		for (ProjectGroupBinding pgb : pgBindingList) {
-			if (pgb.getGroup().getIRI().equals(group.getIRI()) && pgb.getProject().getName().equals(project.getName())) {
-				for (IRI s : schemes) {
-					pgb.addScheme(s);
-				}
-				createOrUpdatePGBindingFolder(pgb);
-				return;
-			}
+		ProjectGroupBinding pgb = getPGBinding(group, project);
+		for (IRI s : schemes) {
+			pgb.addScheme(s);
 		}
+		createOrUpdatePGBindingFolder(pgb);
 	}
 	
 	/**
@@ -202,13 +215,9 @@ public class ProjectGroupBindingsManager {
 	 * @throws ProjectBindingException
 	 */
 	public static void addSchemeToPGBinding(UsersGroup group, AbstractProject project, IRI scheme) throws ProjectBindingException {
-		for (ProjectGroupBinding pgb : pgBindingList) {
-			if (pgb.getGroup().getIRI().equals(group.getIRI()) && pgb.getProject().getName().equals(project.getName())) {
-				pgb.addScheme(scheme);
-				createOrUpdatePGBindingFolder(pgb);
-				return;
-			}
-		}
+		ProjectGroupBinding pgb = getPGBinding(group, project);
+		pgb.addScheme(scheme);
+		createOrUpdatePGBindingFolder(pgb);
 	}
 	
 	/**
@@ -219,13 +228,9 @@ public class ProjectGroupBindingsManager {
 	 * @throws ProjectBindingException
 	 */
 	public static void removeSchemeFromPGBinding(UsersGroup group, AbstractProject project, IRI scheme) throws ProjectBindingException {
-		for (ProjectGroupBinding pgb : pgBindingList) {
-			if (pgb.getGroup().getIRI().equals(group.getIRI()) && pgb.getProject().getName().equals(project.getName())) {
-				pgb.removeScheme(scheme);
-				createOrUpdatePGBindingFolder(pgb);
-				return;
-			}
-		}
+		ProjectGroupBinding pgb = getPGBinding(group, project);
+		pgb.removeScheme(scheme);
+		createOrUpdatePGBindingFolder(pgb);
 	}
 	
 	/**
@@ -236,13 +241,9 @@ public class ProjectGroupBindingsManager {
 	 * @throws ProjectBindingException
 	 */
 	public static void removeAllSchemesFromPGBinding(UsersGroup group, AbstractProject project) throws ProjectBindingException {
-		for (ProjectGroupBinding pgb : pgBindingList) {
-			if (pgb.getGroup().getIRI().equals(group.getIRI()) && pgb.getProject().getName().equals(project.getName())) {
-				pgb.setSchemes(new ArrayList<IRI>());
-				createOrUpdatePGBindingFolder(pgb);
-				return;
-			}
-		}
+		ProjectGroupBinding pgb = getPGBinding(group, project);
+		pgb.setSchemes(new ArrayList<IRI>());
+		createOrUpdatePGBindingFolder(pgb);
 	}
 	
 	/**
@@ -317,7 +318,7 @@ public class ProjectGroupBindingsManager {
 		try {
 			ProjectGroupBindingsRepoHelper tempPGBindingsRepoHelper = new ProjectGroupBindingsRepoHelper();
 			tempPGBindingsRepoHelper.insertBinding(pgBinding);
-			tempPGBindingsRepoHelper.saveBindingDetailsFile(getPGBindingDetailsFile(pgBinding));
+			tempPGBindingsRepoHelper.saveBindingDetailsFile(getPGBindingDetailsFile(pgBinding.getProject(), pgBinding.getGroup()));
 			tempPGBindingsRepoHelper.shutDownRepository();
 		} catch (IOException e) {
 			throw new ProjectBindingException(e);
@@ -373,9 +374,10 @@ public class ProjectGroupBindingsManager {
 	 * @param pgBinding
 	 * @return
 	 */
-	private static File getPGBindingDetailsFile(ProjectGroupBinding pgBinding) {
-		File bindingFolder = new File(Resources.getProjectGroupBindingsDir() + File.separator + pgBinding.getProject().getName() 
-			+ File.separator + UsersGroup.encodeGroupIri(pgBinding.getGroup().getIRI()));
+	private static File getPGBindingDetailsFile(AbstractProject project, UsersGroup group) {
+		File bindingFolder = new File(Resources.getProjectGroupBindingsDir() + File.separator + 
+				project.getName() + File.separator + 
+				UsersGroup.encodeGroupIri(group.getIRI()));
 		if (!bindingFolder.exists()) {
 			bindingFolder.mkdirs();
 		}
@@ -427,28 +429,5 @@ public class ProjectGroupBindingsManager {
 	public static File getPUBindingsFolder(AbstractProject project, STUser user) {
 		return new File(getProjBindingsFolder(project) + File.separator + STUser.encodeUserIri(user.getIRI()));
 	}
-	
-	/**
-	 * Returns all the binding.ttl files for every project-user bindings
-	 * @return
-	 */
-	private static Collection<File> getAllPGBindingFiles() {
-		Collection<File> pgBindingDetailsFolders = new ArrayList<>(); 
-		Collection<File> projBindFolders = getAllProjBindingsFolders();
-		//get all subfolder of "pg_binding/<projectName>" folder (one subfolder for each group)
-		for (File projFolder : projBindFolders) {
-			String[] groupDirectories = projFolder.list(new FilenameFilter() {
-				public boolean accept(File current, String name) {
-					return new File(current, name).isDirectory();
-				}
-			});
-			for (String groupDir : groupDirectories) {
-				pgBindingDetailsFolders.add(new File(projFolder + File.separator + groupDir 
-						+ File.separator + PG_BINDING_DETAILS_FILE_NAME));
-			}
-		}
-		return pgBindingDetailsFolders;
-	}
-	
 	
 }
