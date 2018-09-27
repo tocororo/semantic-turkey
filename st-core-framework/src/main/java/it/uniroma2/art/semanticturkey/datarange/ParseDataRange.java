@@ -22,11 +22,15 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 public class ParseDataRange {
+	
+	private static Logger logger = LoggerFactory.getLogger(ParseDataRange.class);
 
 	public static DataRangeAbstract getLiteralEnumeration(BNode startingBNode, RepositoryConnection conn) {
 		// see https://www.w3.org/TR/2012/REC-owl2-syntax-20121211/#Data_Ranges
@@ -55,7 +59,7 @@ public class ParseDataRange {
 						"\nWHERE {" +
 						"\n?inputBNode 	a 	"+dataypeString+" . "+
 						"\n?inputBNode "+oneOfString+" ?bnodeList ." +
-						//?gnodeList is the first element of the list (and the list itself, since this is how 
+						//?bnodeList is the first element of the list (and the list itself, since this is how 
 						//list are in RDF)
 						"\n filter isBlank(?bnodeList) " +
 						"\n}" +
@@ -77,6 +81,7 @@ public class ParseDataRange {
 		
 		
 		// @formatter:on
+		logger.debug("query [getLiteralEnumeration]:\n" + query);
 		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
 		tupleQuery.setIncludeInferred(false);
 		tupleQuery.setBinding("inputBNode", startingBNode);
@@ -105,7 +110,7 @@ public class ParseDataRange {
 			}
 		}
 
-		if (bnodeToNextBNode.isEmpty()) {
+		if (bnodeToLiteralMap.isEmpty()) {
 			// the query found no solution, so return and empty list
 			return new DataRangeDataOneOf(startingBNode, literalList, conn.getValueFactory());
 		}
@@ -118,7 +123,7 @@ public class ParseDataRange {
 			lastBNodeConsidered = bnodeToNextBNode.get(lastBNodeConsidered);
 			literalList.add(literal);
 			if (lastBNodeConsidered == null) {
-				// the last element, in not in the map, since its next is rdf:nil
+				// the last element, is not in the map, since its next is rdf:nil
 				stop = true;
 			}
 		}
