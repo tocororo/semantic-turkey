@@ -7,6 +7,7 @@ import java.security.SecureRandom;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 import javax.mail.MessagingException;
@@ -21,6 +22,7 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -99,28 +101,26 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'R')")
 	public JsonNode listUsers() {
-		List<STUser> onlineUsers = new ArrayList<>();
-		for (Object principal: sessionRegistry.getAllPrincipals()) {
-		    if (principal instanceof STUser) {
-		    	onlineUsers.add((STUser) principal);
-		    }
-		}
-		
+		List<Object> principals = sessionRegistry.getAllPrincipals();
 		Collection<STUser> users = UsersManager.listUsers();
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode userArrayNode = jsonFactory.arrayNode();
 		for (STUser user : users) {
 			ObjectNode userJson = user.getAsJsonObject();
 			userJson.set("online", jsonFactory.booleanNode(false));
-			for (STUser ou : onlineUsers) {
-				if (user.getIRI().equals(ou.getIRI())) {
-					userJson.set("online", jsonFactory.booleanNode(true));
-					break;
+			for (Object principal : principals) {
+				if (principal instanceof STUser && user.getIRI().equals(((STUser) principal).getIRI())) {
+					for (SessionInformation sessionInfo : sessionRegistry.getAllSessions(principal, false)) {
+						Date lastRequest = sessionInfo.getLastRequest();
+						Date now = new Date();
+						if (now.getTime() - lastRequest.getTime() <= 5*60*1000) { //lastRequest done less than 5 minutes ago
+							userJson.set("online", jsonFactory.booleanNode(true));
+						}
+					}
 				}
 			}
 			userArrayNode.add(userJson);
 		}
-		
 		return userArrayNode;
 	}
 	

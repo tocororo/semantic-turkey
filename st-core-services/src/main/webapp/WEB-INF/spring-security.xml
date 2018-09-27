@@ -68,7 +68,7 @@
 		<custom-filter position="CHANNEL_FILTER" ref="corsFilter" />
 		
         <session-management session-fixation-protection="migrateSession"> 
-            <concurrency-control session-registry-alias="sessionRegistry"/>
+            <concurrency-control session-registry-alias="sessionRegistry" max-sessions="10"/>
         </session-management>
 
 	</http>
