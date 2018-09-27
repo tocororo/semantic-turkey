@@ -7,6 +7,7 @@ import java.security.SecureRandom;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
@@ -14,11 +15,13 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -63,6 +66,9 @@ public class Users extends STServiceAdapter {
 	
 	private static Logger logger = LoggerFactory.getLogger(Users.class);
 	
+	@Autowired
+	private SessionRegistry sessionRegistry;
+	
 	/**
 	 * If there are no registered users return an empty response;
 	 * If there is a user logged, returns a user object that is a json representation of the logged user.
@@ -93,12 +99,28 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'R')")
 	public JsonNode listUsers() {
+		List<STUser> onlineUsers = new ArrayList<>();
+		for (Object principal: sessionRegistry.getAllPrincipals()) {
+		    if (principal instanceof STUser) {
+		    	onlineUsers.add((STUser) principal);
+		    }
+		}
+		
 		Collection<STUser> users = UsersManager.listUsers();
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode userArrayNode = jsonFactory.arrayNode();
 		for (STUser user : users) {
-			userArrayNode.add(user.getAsJsonObject());
+			ObjectNode userJson = user.getAsJsonObject();
+			userJson.set("online", jsonFactory.booleanNode(false));
+			for (STUser ou : onlineUsers) {
+				if (user.getIRI().equals(ou.getIRI())) {
+					userJson.set("online", jsonFactory.booleanNode(true));
+					break;
+				}
+			}
+			userArrayNode.add(userJson);
 		}
+		
 		return userArrayNode;
 	}
 	
@@ -123,8 +145,6 @@ public class Users extends STServiceAdapter {
 		}
 		return capabilitiesJsonArray;
 	}
-	
-	
 	
 	/**
 	 * Returns all the users that have at least a role in the given project

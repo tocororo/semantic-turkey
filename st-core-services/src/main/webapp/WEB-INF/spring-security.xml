@@ -66,6 +66,11 @@
 		<!-- Use this filter at position CHANNEL_FILTER (1st) in order to add CORS 
 			headers to responses -->
 		<custom-filter position="CHANNEL_FILTER" ref="corsFilter" />
+		
+        <session-management session-fixation-protection="migrateSession"> 
+            <concurrency-control session-registry-alias="sessionRegistry"/>
+        </session-management>
+
 	</http>
 
 	<authentication-manager>
