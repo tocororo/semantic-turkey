@@ -179,11 +179,12 @@ public class Sheet2RDF extends STServiceAdapter {
 		ObjectNode rangeJson = jsonFactory.objectNode();
 		headerJson.set("range", rangeJson);
 		rangeJson.set("type", jsonFactory.textNode(h.getRangeType().name()));
-		if (h.getRangeType().equals(RDFTypesEnum.resource) && h.getRangeClass() != null) {
-			AnnotatedValue<Resource> annotatedRes= new AnnotatedValue<Resource>(h.getRangeClass());
+		if (h.getRangeClass() != null) {
+			AnnotatedValue<Resource> annotatedRes = new AnnotatedValue<Resource>(h.getRangeClass());
 			//compute role, qname, ecc?
-			rangeJson.putPOJO("cls", annotatedRes);
-		} else if (h.getRangeType().equals(RDFTypesEnum.literal)) {
+			rangeJson.putPOJO("resource", annotatedRes);
+		}
+		if (h.getRangeType().equals(RDFTypesEnum.literal)) {
 			if (h.getRangeDatatype() != null) {
 				AnnotatedValue<Resource> annotatedRes= new AnnotatedValue<Resource>(h.getRangeDatatype());
 				rangeJson.putPOJO("resource", annotatedRes);
