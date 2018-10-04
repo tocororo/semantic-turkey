@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -53,6 +54,7 @@ public abstract class ConfigurationSupport {
 	}
 
 	public static Collection<String> listConfigurationIdentifiers(File folder) {
+		if (!folder.exists()) return Collections.emptyList();
 		return Arrays.stream(folder.list(new WildcardFileFilter("*.cfg")))
 				.map(name -> name.substring(0, name.length() - 4 /* .cfg length */)).collect(toList());
 	}
