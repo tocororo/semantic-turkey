@@ -74,7 +74,7 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
  */
 public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
-	private static final Logger logger = LoggerFactory.getLogger(ChangeTracker.class);
+	private static final Logger logger = LoggerFactory.getLogger(ChangeTrackerConnection.class);
 
 	private SailConnectionListener connectionListener;
 	private final ChangeTracker sail;

@@ -13,10 +13,24 @@
 	<packaging>pom</packaging>
 	<description>Semantic turkey builder subproject. It creates the karaf archive with the application already deployed.</description>
 
+	<repositories>
+		<repository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</repository>
+	</repositories>
+	
 	<properties>
-		<!-- When updating the version of Karaf, remember to copy from the distribution and then modifiy the
-		files org.ops4j.pax.logging.cfg, org.ops4j.pax.web.cfg, org.apache.karaf.features.cfg -->
-		<karaf.version>4.2.0</karaf.version>
+		<!-- When updating the version of Karaf, remember to copy from the distribution and then modify the
+		files org.ops4j.pax.logging.cfg, org.ops4j.pax.web.cfg, org.apache.karaf.features.cfg; additionally,
+		update the version of Karaf indicated in branding.properties (module st-console) -->
+		<karaf.version>4.2.1</karaf.version>
 		<maven.build.timestamp.format>yyyy-MM-dd</maven.build.timestamp.format>
 		<!-- The following property definition is requred because of a bug described 
 			here: https://dzone.com/articles/stamping-version-number-and -->
@@ -198,7 +212,6 @@
 								<feature>semantic_turkey</feature>
 							</features>
 							<addTransitiveFeatures>true</addTransitiveFeatures>
-
 							<!-- In 2.3.3 this property defaults to ${project.build.directory}/features-repo -->
 							<!-- <repository>${project.build.directory}/features-repo</repository> -->
 						</configuration>

@@ -62,8 +62,7 @@ public class ChangeTrackerFactory implements SailFactory {
 				if (type.equals("graphdb:FreeSail")) {
 					interactiveNotifications = ChangeTracker.OPTIONAL_FALSE;
 					break;
-				} else if (type.equals("openrdf:MemoryStore")
-						|| type.equals("openrdf:NativeStore")) {
+				} else if (type.equals("openrdf:MemoryStore") || type.equals("openrdf:NativeStore")) {
 					interactiveNotifications = ChangeTracker.OPTIONAL_TRUE;
 					break;
 				}
@@ -72,6 +71,6 @@ public class ChangeTrackerFactory implements SailFactory {
 
 		return new ChangeTracker(serverURL, metadataRepoId, metadataNS, metadataGraph, includeGraph,
 				excludeGraph, validationEnabled, interactiveNotifications, validationGraph);
-	}
+		}
 
 }

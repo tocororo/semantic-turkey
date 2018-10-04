@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.rdf4j.IsolationLevel;
@@ -15,9 +16,9 @@ import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.RepositoryResolver;
 import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
 import org.eclipse.rdf4j.repository.http.HTTPRepository;
-import org.eclipse.rdf4j.repository.sail.config.RepositoryResolver;
 import org.eclipse.rdf4j.repository.sail.config.RepositoryResolverClient;
 import org.eclipse.rdf4j.sail.NotifyingSail;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
@@ -28,13 +29,12 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.MoreObjects;
 
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 
 /**
  * A {@link NotifyingSail} keeping track of changes to an underlying {@code Sail}. Each commit containing at
  * least one relevant update is recorded into the <i>support repository</i>. The representation of the history
- * conforms to the vocabulary {@link CHANGELOG}.
+ * conforms to the vocabulary {@link it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG}.
  * <p>
  * A change is recorded only if it is an effective update to the underlying data: i.e. either adding a triple
  * that wasn't already assert, or removing a previously asserted triples. Self-canceling operations are
@@ -77,31 +77,24 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class ChangeTracker extends NotifyingSailWrapper implements RepositoryResolverClient {
+	protected static final Logger logger = LoggerFactory.getLogger(ChangeTracker.class);
 
 	public static final Optional<Boolean> OPTIONAL_TRUE = Optional.of(true);
 	public static final Optional<Boolean> OPTIONAL_FALSE = Optional.of(false);
-
 	public static final String PROPERTIES = "changetracker.properties";
-
-	private static final Logger logger = LoggerFactory.getLogger(ChangeTracker.class);
-	private static final Properties props;
-	private static final String PROP_VERSION = "version";
-	private static final String version;
-
-	final String supportRepoId;
-	final String serverURL;
-	final String metadataNS;
-	final IRI historyGraph;
-	final IRI validationGraph;
-
-	Repository supportRepo;
-
-	final Model graphManagement;
-
-	final boolean validationEnabled;
-	final Optional<Boolean> interactiveNotifications;
-
-	private RepositoryResolver repositoryResolver;
+	protected static final Properties props;
+	protected static final String PROP_VERSION = "version";
+	protected static final String version;
+	protected final String supportRepoId;
+	protected final String serverURL;
+	protected final String metadataNS;
+	protected final IRI historyGraph;
+	protected final IRI validationGraph;
+	protected Repository supportRepo;
+	protected final Model graphManagement;
+	protected final boolean validationEnabled;
+	protected final Optional<Boolean> interactiveNotifications;
+	private Function<String, Repository> repositoryResolver;
 
 	static {
 		props = new Properties();
@@ -116,6 +109,10 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 					"Exception preventing initialization of class " + ChangeTracker.class.getSimpleName(), e);
 			throw new IllegalStateException(e);
 		}
+	}
+
+	public static String getVersion() {
+		return version;
 	}
 
 	public ChangeTracker(/* @Nullable */ String serverURL, String supportRepoId, String metadataNS,
@@ -144,6 +141,14 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 		}
 	}
 
+	public void setRepositoryResolver(RepositoryResolver resolver) {
+		this.repositoryResolver = resolver::getRepository;
+	}
+
+	public void setRepositoryResolver(org.eclipse.rdf4j.repository.sail.config.RepositoryResolver resolver) {
+		this.repositoryResolver = resolver::getRepository;
+	}
+
 	@Override
 	public void initialize() throws SailException {
 		super.initialize();
@@ -151,7 +156,7 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 		if (serverURL != null) {
 			supportRepo = new HTTPRepository(serverURL, supportRepoId);
 		} else {
-			supportRepo = new RepositoryWrapper(repositoryResolver.getRepository(supportRepoId)) {
+			supportRepo = new RepositoryWrapper(repositoryResolver.apply(supportRepoId)) {
 				@Override
 				public void shutDown() throws RepositoryException {
 					// Ignore shutdown of the referenced repository
@@ -209,15 +214,6 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 					.filter(level -> level.isCompatibleWith(IsolationLevels.SERIALIZABLE))
 					.collect(Collectors.toList());
 		}
-	}
-
-	@Override
-	public void setRepositoryResolver(RepositoryResolver repositoryResolver) {
-		this.repositoryResolver = repositoryResolver;
-	}
-
-	public static String getVersion() {
-		return version;
 	}
 
 }

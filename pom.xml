@@ -87,10 +87,10 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 
 		<dist.client>${dist}/st-client</dist.client>
 		<dist.client.lib>${dist.client}/${dist.lib}</dist.client.lib>
-		<coda.version>1.6</coda.version>
+		<coda.version>1.6.1-SNAPSHOT</coda.version>
 		<spring.version>3.2.14.RELEASE</spring.version>
 		<spring-security.version>3.1.4.RELEASE</spring-security.version>
-		<rdf4j.version>2.2.4</rdf4j.version>
+		<rdf4j.version>2.4.0</rdf4j.version>
 		<graphdb.version>8.0.4</graphdb.version>
 		<junit.version>4.12</junit.version>
 		<antlr4.version>4.7</antlr4.version>
@@ -233,61 +233,61 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 
 	<repositories>
 
-		<repository>
-			<id>clojars.org</id>
-			<url>http://clojars.org/repo</url>
-		</repository>
+<!-- 		<repository> -->
+<!-- 			<id>clojars.org</id> -->
+<!-- 			<url>http://clojars.org/repo</url> -->
+<!-- 		</repository> -->
 
-		<repository>
-			<id>com.springsource.repository.bundles.release</id>
-			<name>SpringSource EBR - SpringSource Bundle Releases</name>
-			<url>http://repository.springsource.com/maven/bundles/release</url>
-		</repository>
+<!-- 		<repository> -->
+<!-- 			<id>com.springsource.repository.bundles.release</id> -->
+<!-- 			<name>SpringSource EBR - SpringSource Bundle Releases</name> -->
+<!-- 			<url>http://repository.springsource.com/maven/bundles/release</url> -->
+<!-- 		</repository> -->
 
-		<repository>
-			<id>com.springsource.repository.bundles.external</id>
-			<name>SpringSource EBR - External Bundle Releases</name>
-			<url>http://repository.springsource.com/maven/bundles/external</url>
-		</repository>
+<!-- 		<repository> -->
+<!-- 			<id>com.springsource.repository.bundles.external</id> -->
+<!-- 			<name>SpringSource EBR - External Bundle Releases</name> -->
+<!-- 			<url>http://repository.springsource.com/maven/bundles/external</url> -->
+<!-- 		</repository> -->
 
-		<repository>
-			<id>com.springsource.repository.bundles.milestone</id>
-			<name>EBR Spring Milestone Repository</name>
-			<url>http://repository.springsource.com/maven/bundles/milestone</url>
-		</repository>
+<!-- 		<repository> -->
+<!-- 			<id>com.springsource.repository.bundles.milestone</id> -->
+<!-- 			<name>EBR Spring Milestone Repository</name> -->
+<!-- 			<url>http://repository.springsource.com/maven/bundles/milestone</url> -->
+<!-- 		</repository> -->
 
-		<repository>
-			<id>spring-maven-milestone</id>
-			<name>Springframework Maven Repository</name>
-			<url>http://s3.amazonaws.com/maven.springframework.org/milestone</url>
-		</repository>
+<!-- 		<repository> -->
+<!-- 			<id>spring-maven-milestone</id> -->
+<!-- 			<name>Springframework Maven Repository</name> -->
+<!-- 			<url>http://s3.amazonaws.com/maven.springframework.org/milestone</url> -->
+<!-- 		</repository> -->
 
-		<repository>
-			<id>spring-osgified-artifacts</id>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-			<name>Springframework Maven OSGified Artifacts Repository</name>
-			<url>http://maven.springframework.org/osgi</url>
-		</repository>
+<!-- 		<repository> -->
+<!-- 			<id>spring-osgified-artifacts</id> -->
+<!-- 			<snapshots> -->
+<!-- 				<enabled>true</enabled> -->
+<!-- 			</snapshots> -->
+<!-- 			<name>Springframework Maven OSGified Artifacts Repository</name> -->
+<!-- 			<url>http://maven.springframework.org/osgi</url> -->
+<!-- 		</repository> -->
 
-		<repository>
-			<id>com.springsource.repository.libraries.release</id>
-			<name>SpringSource Enterprise Bundle Repository - SpringSource Library Releases</name>
-			<url>http://repository.springsource.com/maven/libraries/release</url>
-		</repository>
+<!-- 		<repository> -->
+<!-- 			<id>com.springsource.repository.libraries.release</id> -->
+<!-- 			<name>SpringSource Enterprise Bundle Repository - SpringSource Library Releases</name> -->
+<!-- 			<url>http://repository.springsource.com/maven/libraries/release</url> -->
+<!-- 		</repository> -->
 
-		<repository>
-			<id>com.springsource.repository.libraries.external</id>
-			<name>SpringSource Enterprise Bundle Repository - External Library Releases</name>
-			<url>http://repository.springsource.com/maven/libraries/external</url>
-		</repository>
+<!-- 		<repository> -->
+<!-- 			<id>com.springsource.repository.libraries.external</id> -->
+<!-- 			<name>SpringSource Enterprise Bundle Repository - External Library Releases</name> -->
+<!-- 			<url>http://repository.springsource.com/maven/libraries/external</url> -->
+<!-- 		</repository> -->
 
-		<repository>
-			<id>zodiac-repository</id>
-			<name>Zodiac Milestone Repository</name>
-			<url>http://zodiac.springsource.com/maven/bundles/milestone </url>
-		</repository>
+<!-- 		<repository> -->
+<!-- 			<id>zodiac-repository</id> -->
+<!-- 			<name>Zodiac Milestone Repository</name> -->
+<!-- 			<url>http://zodiac.springsource.com/maven/bundles/milestone </url> -->
+<!-- 		</repository> -->
 
 	</repositories>
 	<licenses>
