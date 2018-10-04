@@ -664,6 +664,9 @@ public class STPropertiesManager {
 
 	public static void storeSTPropertiesInYAML(STProperties properties, File propertiesFile,
 			boolean storeObjType) throws JsonGenerationException, JsonMappingException, IOException {
+		if (!propertiesFile.getParentFile().exists()) { //if path doesn't exist, first create it
+			propertiesFile.getParentFile().mkdirs();
+		}
 		ObjectMapper mapper = createObjectMapper();
 		mapper.writeValue(propertiesFile, properties);
 	}
