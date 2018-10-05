@@ -67,14 +67,13 @@
 			</directory>
 			<outputDirectory></outputDirectory>
 			<excludes>
-				<exclude>**/demos/**</exclude>
 				<exclude>bin/**</exclude>
+				<exclude>examples/**</exclude>
 				<exclude>LICENSE</exclude>
 				<exclude>NOTICE</exclude>
-				<exclude>README</exclude>
-				<exclude>RELEASE-NOTES</exclude>
-				<exclude>karaf-manual*.html</exclude>
-				<exclude>karaf-manual*.pdf</exclude>
+				<exclude>README.md</exclude>
+				<exclude>RELEASE-NOTES.md</exclude>
+				<exclude>BUILDING.md</exclude>
 			</excludes>
 		</fileSet>
 
