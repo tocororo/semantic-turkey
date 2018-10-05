@@ -345,7 +345,7 @@ public class CustomFormModel {
 		// delete the CF file
 		File[] cfFiles = CustomFormManager.getFormsFolder(project).listFiles();
 		for (File f : cfFiles) {// search for the custom form file with the given id/name
-			if (f.getName().equals(customForm + ".xml")) {
+			if (f.getName().equals(customForm.getId() + ".xml")) {
 				f.delete();
 				break;
 			}

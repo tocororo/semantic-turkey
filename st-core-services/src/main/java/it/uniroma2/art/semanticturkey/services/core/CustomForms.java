@@ -625,11 +625,9 @@ public class CustomForms extends STServiceAdapter {
 				}
 				String newFormCollId;
 				if (newId != null) {
-					if (!newId.startsWith(FormCollection.PREFIX) || newId.contains(" ")
-							|| newId.trim().isEmpty()) { // check if ID is valid
+					if (newId.contains(" ") || newId.trim().isEmpty()) { // check if ID is valid
 						throw new CustomFormException("The provided ID '" + newId + "' is not valid."
-								+ " It must begin with the prefix '" + FormCollection.PREFIX
-								+ "' and it must not contain whitespaces");
+								+ " It must not contain whitespaces");
 					}
 					newFormCollId = newId;
 				} else {
@@ -898,8 +896,8 @@ public class CustomForms extends STServiceAdapter {
 			// replace in pearl rule the namespace
 			ref = ref.replace(sourceId, targetId);
 			// and the rule ID
-			String sourceRuleId = sourceId.replace(CustomForm.PREFIX, "id:");
-			String targetRuleId = targetId.replace(CustomForm.PREFIX, "id:");
+			String sourceRuleId = "id:" + sourceId.substring(0, sourceId.lastIndexOf("."));
+			String targetRuleId = "id:" + targetId.substring(0, sourceId.lastIndexOf("."));
 			ref = ref.replace(sourceRuleId, targetRuleId);
 			cfManager.createCustomForm(getProject(), sourceCF.getType(), targetId, sourceCF.getName(),
 					sourceCF.getDescription(), ref, sourceCF.asCustomFormGraph().getShowPropertyChain());
@@ -963,11 +961,9 @@ public class CustomForms extends STServiceAdapter {
 				String newCustomFormId;
 				String newRef;
 				if (newId != null) {
-					if (!newId.startsWith(CustomForm.PREFIX) || newId.contains(" ")
-							|| newId.trim().isEmpty()) { // check if ID is valid
+					if (newId.contains(" ") || newId.trim().isEmpty()) { // check if ID is valid
 						throw new CustomFormException("The provided ID '" + newId + "' is not valid."
-								+ " It must begin with the prefix '" + CustomForm.PREFIX
-								+ "' and it must not contain whitespaces");
+								+ " It must not contain whitespaces");
 					}
 					newCustomFormId = newId;
 					if (parsedCustomForm.isTypeGraph()) {
@@ -975,8 +971,8 @@ public class CustomForms extends STServiceAdapter {
 						// replace in pearl rule the id
 						newRef = newRef.replace(parsedCustomForm.getId(), newCustomFormId);
 						// and the rule ID
-						String sourceRuleId = parsedCustomForm.getId().replace(CustomForm.PREFIX, "id:");
-						String targetRuleId = newCustomFormId.replace(CustomForm.PREFIX, "id:");
+						String sourceRuleId = "id:" + parsedCustomForm.getId().substring(0, parsedCustomForm.getId().lastIndexOf("."));
+						String targetRuleId = "id:" + newCustomFormId.substring(0, newCustomFormId.lastIndexOf("."));
 						newRef = newRef.replace(sourceRuleId, targetRuleId);
 					} else { // node
 						newRef = parsedCustomForm.getRef();

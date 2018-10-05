@@ -74,22 +74,20 @@ public class CustomFormXMLHelper {
 		Collection<CustomForm> customForms = new ArrayList<>();
 		File[] formFiles = formsFolder.listFiles();
 		for (File f : formFiles) {
-			if (f.getName().startsWith(CustomForm.PREFIX)) {
-				logger.debug("Loading CustomForm file " + f.getPath());
-				try {
-					CustomForm cf = parseAndCreateCustomForm(f);
-					cf.setLevel(CustomFormLevel.system);
-					//check existence of CustomForm with the same ID at system level
-					if (retrieveCustomForm(customForms, cf.getId(), CustomFormLevel.system) != null) {
-						brokenCFS.add(new BrokenCFStructure(cf.getId(), CustomForm.class.getSimpleName(), 
-								CustomFormLevel.system, f, "A CustomForm with the same ID already exists at system level"));
-					} else {
-						customForms.add(cf);
-					}
-				} catch (CustomFormParseException e) {
-					brokenCFS.add(new BrokenCFStructure("Not Determined", CustomForm.class.getSimpleName(), 
-							CustomFormLevel.system, f, "Failed parsing XML file: " + e.getMessage()));
+			logger.debug("Loading CustomForm file " + f.getPath());
+			try {
+				CustomForm cf = parseAndCreateCustomForm(f);
+				cf.setLevel(CustomFormLevel.system);
+				//check existence of CustomForm with the same ID at system level
+				if (retrieveCustomForm(customForms, cf.getId(), CustomFormLevel.system) != null) {
+					brokenCFS.add(new BrokenCFStructure(cf.getId(), CustomForm.class.getSimpleName(), 
+							CustomFormLevel.system, f, "A CustomForm with the same ID already exists at system level"));
+				} else {
+					customForms.add(cf);
 				}
+			} catch (CustomFormParseException e) {
+				brokenCFS.add(new BrokenCFStructure("Not Determined", CustomForm.class.getSimpleName(), 
+						CustomFormLevel.system, f, "Failed parsing XML file: " + e.getMessage()));
 			}
 		}
 		return customForms;
@@ -123,22 +121,20 @@ public class CustomFormXMLHelper {
 		Collection<CustomForm> customForms = new ArrayList<>();
 		File[] formFiles = formsFolder.listFiles();
 		for (File f : formFiles) {
-			if (f.getName().startsWith(CustomForm.PREFIX)) {
-				logger.debug("Loading CustomForm file " + f.getPath());
-				try {
-					CustomForm cf = parseAndCreateCustomForm(f);
-					cf.setLevel(CustomFormLevel.project);
-					//check existence of CustomForm with the same ID in the same project
-					if (retrieveCustomForm(customForms, cf.getId(), CustomFormLevel.project) != null) {
-						brokenCFS.add(new BrokenCFStructure(cf.getId(), CustomForm.class.getSimpleName(),
-								CustomFormLevel.project, f, "A CustomForm with the same ID already exists in the project"));
-					} else {
-						customForms.add(cf);
-					}
-				} catch (CustomFormParseException e) {
-					brokenCFS.add(new BrokenCFStructure("Not Determined", CustomForm.class.getSimpleName(),
-							CustomFormLevel.project, f, "Failed parsing XML file: " + e.getMessage()));
+			logger.debug("Loading CustomForm file " + f.getPath());
+			try {
+				CustomForm cf = parseAndCreateCustomForm(f);
+				cf.setLevel(CustomFormLevel.project);
+				//check existence of CustomForm with the same ID in the same project
+				if (retrieveCustomForm(customForms, cf.getId(), CustomFormLevel.project) != null) {
+					brokenCFS.add(new BrokenCFStructure(cf.getId(), CustomForm.class.getSimpleName(),
+							CustomFormLevel.project, f, "A CustomForm with the same ID already exists in the project"));
+				} else {
+					customForms.add(cf);
 				}
+			} catch (CustomFormParseException e) {
+				brokenCFS.add(new BrokenCFStructure("Not Determined", CustomForm.class.getSimpleName(),
+						CustomFormLevel.project, f, "Failed parsing XML file: " + e.getMessage()));
 			}
 		}
 		return customForms;
@@ -180,27 +176,25 @@ public class CustomFormXMLHelper {
 		Collection<FormCollection> formCollections = new ArrayList<>();
 		File[] formCollFiles = formCollFolder.listFiles();
 		for (File f : formCollFiles) {
-			if (f.getName().startsWith(FormCollection.PREFIX)) {
-				logger.debug("Loading FormCollection file " + f.getPath());
-				try {
-					FormCollection fc = parseAndCreateFormCollection(f, customForms, formCollectionLevel, brokenCFS);
-					fc.setLevel(formCollectionLevel);
-					//check existence of FormCollection with the same ID at system/project level
-					if (retrieveFormCollection(formCollections, fc.getId(), formCollectionLevel) != null) {
-						if (formCollectionLevel == CustomFormLevel.system) {
-							brokenCFS.add(new BrokenCFStructure(fc.getId(), FormCollection.class.getSimpleName(),
-									formCollectionLevel, f, "A FormCollection with the same ID already exists at system level"));
-						} else {
-							brokenCFS.add(new BrokenCFStructure(fc.getId(), FormCollection.class.getSimpleName(),
-									formCollectionLevel, f, "A FormCollection with the same ID already exists in the project"));
-						}
+			logger.debug("Loading FormCollection file " + f.getPath());
+			try {
+				FormCollection fc = parseAndCreateFormCollection(f, customForms, formCollectionLevel, brokenCFS);
+				fc.setLevel(formCollectionLevel);
+				//check existence of FormCollection with the same ID at system/project level
+				if (retrieveFormCollection(formCollections, fc.getId(), formCollectionLevel) != null) {
+					if (formCollectionLevel == CustomFormLevel.system) {
+						brokenCFS.add(new BrokenCFStructure(fc.getId(), FormCollection.class.getSimpleName(),
+								formCollectionLevel, f, "A FormCollection with the same ID already exists at system level"));
 					} else {
-						formCollections.add(fc);
+						brokenCFS.add(new BrokenCFStructure(fc.getId(), FormCollection.class.getSimpleName(),
+								formCollectionLevel, f, "A FormCollection with the same ID already exists in the project"));
 					}
-				} catch (CustomFormParseException e) {
-					brokenCFS.add(new BrokenCFStructure("Not Determined", FormCollection.class.getSimpleName(),
-							formCollectionLevel, f, "Failed parsing XML file: " + e.getMessage()));
+				} else {
+					formCollections.add(fc);
 				}
+			} catch (CustomFormParseException e) {
+				brokenCFS.add(new BrokenCFStructure("Not Determined", FormCollection.class.getSimpleName(),
+						formCollectionLevel, f, "Failed parsing XML file: " + e.getMessage()));
 			}
 		}
 		return formCollections;
