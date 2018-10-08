@@ -352,6 +352,10 @@ public class PreferencesSettings extends STServiceAdapter {
 		boolean expFeatBool = "true".equals(expFeatValue);
 		respNode.set(STPropertiesManager.SETTING_EXP_FEATURES_ENABLED, jsonFactory.booleanNode(expFeatBool));
 		
+		String showFlagValue = STPropertiesManager.getPUSettingSystemDefault(STPropertiesManager.PREF_SHOW_FLAGS);
+		boolean showFlagBool = "true".equals(showFlagValue);
+		respNode.set(STPropertiesManager.PREF_SHOW_FLAGS, jsonFactory.booleanNode(showFlagBool));
+		
 		return respNode;
 	}
 	
