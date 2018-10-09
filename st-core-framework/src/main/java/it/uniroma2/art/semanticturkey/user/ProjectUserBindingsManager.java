@@ -21,7 +21,7 @@ public class ProjectUserBindingsManager {
 	
 	private static final String PU_BINDING_DETAILS_FILE_NAME = "binding.ttl";
 	
-	private static Collection<ProjectUserBinding> puBindingList = new ArrayList<>();
+	private static Collection<ProjectUserBinding> puBindingList;
 	
 	/**
 	 * Loads all the bindings into the repository
@@ -32,6 +32,7 @@ public class ProjectUserBindingsManager {
 	 * @throws ProjectAccessException 
 	 */
 	public static void loadPUBindings() throws RDFParseException, RepositoryException, IOException, ProjectAccessException {
+		puBindingList = new ArrayList<>();
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		Collection<STUser> users = UsersManager.listUsers();
 		

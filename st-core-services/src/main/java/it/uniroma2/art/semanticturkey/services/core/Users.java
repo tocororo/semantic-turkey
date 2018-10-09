@@ -169,7 +169,7 @@ public class Users extends STServiceAdapter {
 		boundUsers.add(UsersManager.getAdminUser()); 
 		//add user only if has a role in project
 		for (ProjectUserBinding pub : puBindings) {
-			if (!pub.getRoles().isEmpty()) {
+			if (!pub.getRoles().isEmpty() || !pub.getLanguages().isEmpty() || pub.getGroup() != null) {
 				STUser user = pub.getUser();
 				if (!boundUsers.contains(user)) {
 					boundUsers.add(user);

@@ -238,7 +238,7 @@ public class Administration extends STServiceAdapter {
 	}
 	
 	/**
-	 * Removes all roles from the user in the given project
+	 * Removes roles, languages and groups from the user in the given project
 	 * @throws ProjectBindingException 
 	 * @throws ProjectAccessException 
 	 * @throws ProjectInexistentException 
@@ -246,7 +246,7 @@ public class Administration extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'D')")
-	public void removeAllRolesFromUser(String projectName, String email) throws ProjectBindingException,
+	public void removeUserFromProject(String projectName, String email) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
@@ -258,6 +258,8 @@ public class Administration extends STServiceAdapter {
 		}
 		//removes all role from the binding
 		ProjectUserBindingsManager.removeAllRoleFromPUBinding(user, project);
+		ProjectUserBindingsManager.removeGroupFromPUBinding(user, project);
+		ProjectUserBindingsManager.updateLanguagesToPUBinding(user, project, new ArrayList<>());
 	}
 	
 	/**

@@ -24,7 +24,7 @@ public class ProjectGroupBindingsManager {
 	
 	private static final String PG_BINDING_DETAILS_FILE_NAME = "binding.ttl";
 	
-	private static Collection<ProjectGroupBinding> pgBindingList = new ArrayList<>();
+	private static Collection<ProjectGroupBinding> pgBindingList;
 	
 	/**
 	 * Loads all the bindings into the repository
@@ -35,6 +35,7 @@ public class ProjectGroupBindingsManager {
 	 * @throws ProjectAccessException 
 	 */
 	public static void loadPGBindings() throws RDFParseException, RepositoryException, IOException, ProjectAccessException {
+		pgBindingList = new ArrayList<>();
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		Collection<UsersGroup> groups = UsersGroupsManager.listGroups();
 		
