@@ -49,7 +49,7 @@ public class Resources extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'U')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', '{lang: [''' +@auth.langof(#value)+ ''', ''' +@auth.langof(#newValue)+ ''']}', 'U')")
 	public void updateTriple(@Modified Resource subject, IRI property, Value value, Value newValue) {
 		logger.debug("request to update a triple");
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -81,7 +81,7 @@ public class Resources extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', '{lang: ''' +@auth.langof(#value)+ '''}', 'D')")
 	public void removeValue(@LocallyDefined @Modified Resource subject, IRI property, Value value) {
 		getManagedConnection().remove(subject, property, value, getWorkingGraph());
 	}

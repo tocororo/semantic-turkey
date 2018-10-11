@@ -189,8 +189,19 @@ public class STAuthorizationEvaluator {
 			}
 			//check on the user responsibilities
 			//at the moment the only check is to the lang capability
-			String lang = (String) userRespMap.get("lang");
-			if (lang != null && !lang.equals("null")) {
+			ArrayList<String> langs = new ArrayList<>();
+			
+			Object langValue = userRespMap.get("lang");
+			if (langValue instanceof String) {
+				String langString = (String) langValue;
+				if (langString != null && !langString.equals("null")) {
+					langs.add(langString);
+				}
+			} else if (langValue instanceof ArrayList) {
+				langs = (ArrayList<String>) langValue;
+			}
+			
+			if (!langs.isEmpty()) {
 				Collection<String> assignedLangs = ProjectUserBindingsManager.getPUBinding(
 						loggedUser, targetForRBAC).getLanguages();
 				
@@ -201,11 +212,15 @@ public class STAuthorizationEvaluator {
 					projLangTags.add(l.getTag());
 				}
 				
-				//if the lang capability is not in project languages or is not assigned to the user, do not authorize
-				if (!assignedLangs.contains(lang) || !projLangTags.contains(lang)) {
-					logger.debug("language proficiency '" + lang + "' not authorized");
-					authorized = false;
+				//in order to be authorized, all the languages must be among the project languages 
+				//and the languages assigned to the user
+				for (String l : langs) {
+					if (!assignedLangs.contains(l) || !projLangTags.contains(l)) {
+						logger.debug("language proficiency '" + l + "' not authorized");
+						authorized = false;
+					}
 				}
+				
 			}
 		}
 //		System.out.println("prolog goal satisfied? " + authorized);
