@@ -10,3 +10,5 @@ capability(pm(project,_),"CRUDV").
 capability(cform,"CRUDV").
 
 capability(um(user),"R").
+
+capability(sys(metadataRegistry), "R").

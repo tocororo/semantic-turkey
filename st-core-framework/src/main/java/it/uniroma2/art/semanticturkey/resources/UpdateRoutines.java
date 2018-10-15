@@ -88,6 +88,9 @@ public class UpdateRoutines {
 			if (stDataVersionNumber.compareTo(new VersionNumber(4, 0, 0)) < 0) {
 				alignFrom3To4();
 			}
+			if (stDataVersionNumber.compareTo(new VersionNumber(5, 0, 0)) < 0) {
+				alignFrom4To5();
+			}
 			Config.setSTDataVersionNumber(stVersionNumber);
 		}
 
@@ -165,6 +168,13 @@ public class UpdateRoutines {
 		
 		logger.debug("Version 4.0.0 added groups and pg_bindings folders");
 		Resources.initializeGroups();
+	}
+	
+	private static void alignFrom4To5() throws IOException {
+		logger.debug("Version 5.0.0 added a capability to some roles");
+		Role[] roles = { RBACManager.DefaultRole.LEXICOGRAPHER, RBACManager.DefaultRole.MAPPER, RBACManager.DefaultRole.ONTOLOGIST,
+				RBACManager.DefaultRole.PROJECTMANAGER, RBACManager.DefaultRole.RDF_GEEK, RBACManager.DefaultRole.THESAURUS_EDITOR };
+		updateRoles(roles);
 	}
 	
 	public static void repairProject(String projectName) throws IOException, InvalidProjectNameException,

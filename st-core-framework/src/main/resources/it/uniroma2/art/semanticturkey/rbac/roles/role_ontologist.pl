@@ -6,3 +6,5 @@ capability(rdf(resource,_),"CRUDV").
 
 capability(rdf(sparql),"R").
 capability(rdf,"R").
+
+capability(sys(metadataRegistry), "R").
