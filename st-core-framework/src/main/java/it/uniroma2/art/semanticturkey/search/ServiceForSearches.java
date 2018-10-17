@@ -10,6 +10,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -24,9 +25,14 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy.StatusFilter;
 import it.uniroma2.art.semanticturkey.properties.Pair;
+import it.uniroma2.art.semanticturkey.properties.TripleForSearch;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 public class ServiceForSearches {
 
@@ -377,23 +383,30 @@ public class ServiceForSearches {
 			boolean searchInSubTypes) {
 		String query = "\nSELECT "+varToUse
 				+"\nWHERE{";
-		
-		String subClassWithA = "a";
-		if(searchInSubTypes) {
-			subClassWithA+="/"+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"*";
-		}
-		
+			
 		if (typesListOfList == null || typesListOfList.size() ==0) {
 			query+="\n"+varToUse+" a ?genericType .";
 		}else if(typesListOfList.size()==1 && typesListOfList.get(0).size()==1) {
 			IRI type = typesListOfList.get(0).get(0);
-			query+="\n"+varToUse+" "+subClassWithA+" "+NTriplesUtil.toNTriplesString(type)+" .";
+			if(searchInSubTypes) {
+				query+="\n?genericSubType" +NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* " +NTriplesUtil.toNTriplesString(type)+" ." +
+						"\n"+varToUse+" a ?genericSubType .";
+			} else {
+				query+="\n"+varToUse+" a "+NTriplesUtil.toNTriplesString(type)+" .";
+			}
 		} else {
 			//the input type list of list is more complicate than a single value, so behave according 
 			// (an OR of AND)
-			query+=filterWithOrOfAndValues(varToUse, subClassWithA, typesListOfList);
+			if(searchInSubTypes) {
+				query+=filterWithOrOfAndValues("?genericSubType", 
+						NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"*", typesListOfList) +
+					"\n"+varToUse+" a ?genericSubType .";
+			} else {
+				query+=filterWithOrOfAndValues(varToUse, "a", typesListOfList);
+			}
 		}
 		query+= "\n}";
+		//@formatter:on
 		
 		return query;
 	}
@@ -471,6 +484,83 @@ public class ServiceForSearches {
 		}
 		
 //		return searchModeSelected;
+	}
+	
+	public static String prepareQueryWithStatusOutgoingIngoing(StatusFilter statusFilter,
+			List<Pair<IRI, List<Value>>> outgoingLinks,
+			List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
+			List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy, String baseURI,
+			boolean includeLocales) {
+		String query = "";
+		//@formatter:off
+		
+		//the part relative to the status
+		if(statusFilter!=null) {
+			if(statusFilter.equals(StatusFilter.ANYTHING)) {
+				//do nothing in this case
+			} else if(statusFilter.equals(StatusFilter.NOT_DEPRECATED)) {
+				//check that the resource is not marked as deprecated
+				query += "\nFILTER NOT EXISTS{" +
+						"\n{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }" +
+						"\nUNION"+
+						"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }" +
+						"\nUNION"+
+						"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)+" }" +
+						"\n}";
+						
+			} else if(statusFilter.equals(StatusFilter.ONLY_DEPRECATED)) {
+				//check that the resource is marked as deprecated
+				query += 
+					"\n{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }" +
+					"\nUNION"+
+					"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }" +
+					"\nUNION"+
+					"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)+" }";
+			} else if(statusFilter.equals(StatusFilter.UNDER_VALIDATION)) {
+				//check that in the validation graph there is the triple 
+				// ?resource a ?type
+				IRI validationGraph = (IRI) VALIDATION.stagingAddGraph(SimpleValueFactory.getInstance()
+						.createIRI(baseURI));
+				query+="\nGRAPH "+NTriplesUtil.toNTriplesString(validationGraph)+" { "+
+						"?resource a ?type_for_validation ." +
+						"}";
+			} else if(statusFilter.equals(StatusFilter.UNDER_VALIDATION_FOR_DEPRECATION)) {
+				//check that in the validation graph the resource is marked as deprecated
+				IRI validationGraph = (IRI) VALIDATION.stagingAddGraph(SimpleValueFactory.getInstance()
+						.createIRI(baseURI));
+				String valGraph = NTriplesUtil.toNTriplesString(validationGraph);
+				query +="\n{GRAPH "+valGraph+"{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }}" +
+						"\nUNION"+
+						"\n{GRAPH "+valGraph+"{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }}" +
+						"\nUNION"+
+						"\n{GRAPH "+valGraph+"{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)+" }}";
+			}
+		}
+		
+		//the outgoingLinks part
+		if(outgoingLinks!=null && outgoingLinks.size()>0) {
+			query += ServiceForSearches.filterWithOrOfAndPairValues(outgoingLinks, "?resource", "out", false);
+		}
+		//the outgoingSearch part
+		int cont=1;
+		if(outgoingSearch!=null && outgoingSearch.size()>0) {
+			String valueOfProp = "?valueOfProp_"+cont;
+			for(TripleForSearch<IRI, String, SearchMode> tripleForSearch : outgoingSearch) {
+				query += "\n?resource "+NTriplesUtil.toNTriplesString(tripleForSearch.getPredicate())+" "+valueOfProp+" ." +
+						searchStrategy.searchSpecificModePrepareQuery(valueOfProp, 
+								tripleForSearch.getSearchString(), tripleForSearch.getMode(), null, null, 
+								includeLocales, false);
+			}
+		}
+		
+		//the ingoingLinks part	
+		if(ingoingLinks!=null && ingoingLinks.size()>0) {
+			query += ServiceForSearches.filterWithOrOfAndPairValues(ingoingLinks, "?resource", "in", true);
+		}
+		
+		//@formatter:on
+		
+		return query;
 	}
 	
 	public static List<String> wordsForFuzzySearch(String text, String replaceChar){
@@ -893,6 +983,8 @@ public class ServiceForSearches {
 			return false;
 		}
 	}
+
+	
 
 	
 }

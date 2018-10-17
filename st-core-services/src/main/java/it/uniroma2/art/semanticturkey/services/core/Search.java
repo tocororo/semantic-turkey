@@ -50,6 +50,7 @@ import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy.StatusFilter;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.Pair;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
@@ -200,9 +201,7 @@ public class Search extends STServiceAdapter {
 		return qb.runQuery();
 	}
 
-	public enum StatusFilter {
-		NOT_DEPRECATED, ONLY_DEPRECATED, UNDER_VALIDATION, UNDER_VALIDATION_FOR_DEPRECATION, ANYTHING
-	}
+	
 	
 	//@formatter:off
 	@STServiceOperation(method = RequestMethod.POST)
@@ -242,79 +241,19 @@ public class Search extends STServiceAdapter {
 				"\nWHERE{" +
 				"\n{";
 		
-		//use the searchInstancesOfClasse to construct the first part of the query (the subquery)
+		//use the searchInstancesOfClass to construct the first part of the query (the subquery)
 		query += instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, types, searchString,
 				useLocalName, useURI, useNotes, searchMode, langs, includeLocales, true, true, lexModel,
-				searchInRDFSLabel, searchInSKOSLabel, searchInSKOSXLLabel, searchInOntolex);
-		//use the other parameters to filter the results
+				searchInRDFSLabel, searchInSKOSLabel, searchInSKOSXLLabel, searchInOntolex, schemes, 
+				statusFilter, outgoingLinks, outgoingSearch, ingoingLinks, instantiateSearchStrategy(), 
+				getProject().getBaseURI());
+		
+		
 		query+="\n}";
-		// the statusFilter
-		if(statusFilter.equals(StatusFilter.ANYTHING)) {
-			//do nothing in this case
-		} else if(statusFilter.equals(StatusFilter.NOT_DEPRECATED)) {
-			//check that the resource is not marked as deprecated
-			query += "\nFILTER NOT EXISTS{" +
-					"\n{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }" +
-					"\nUNION"+
-					"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }" +
-					"\nUNION"+
-					"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)+" }" +
-					"\n}";
-					
-		} else if(statusFilter.equals(StatusFilter.ONLY_DEPRECATED)) {
-			//check that the resource is marked as deprecated
-			query += 
-				"\n{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }" +
-				"\nUNION"+
-				"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }" +
-				"\nUNION"+
-				"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)+" }";
-		} else if(statusFilter.equals(StatusFilter.UNDER_VALIDATION)) {
-			//check that in the validation graph there is the triple 
-			// ?resource a ?type
-			IRI validationGraph = (IRI) VALIDATION.stagingAddGraph(SimpleValueFactory.getInstance()
-					.createIRI(getProject().getBaseURI()));
-			query+="\nGRAPH "+NTriplesUtil.toNTriplesString(validationGraph)+" { "+
-					"?resource a ?type_for_validation ." +
-					"}";
-		} else if(statusFilter.equals(StatusFilter.UNDER_VALIDATION_FOR_DEPRECATION)) {
-			//check that in the validation graph the resource is marked as deprecated
-			IRI validationGraph = (IRI) VALIDATION.stagingAddGraph(SimpleValueFactory.getInstance()
-					.createIRI(getProject().getBaseURI()));
-			String valGraph = NTriplesUtil.toNTriplesString(validationGraph);
-			query +="\n{GRAPH "+valGraph+"{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }}" +
-					"\nUNION"+
-					"\n{GRAPH "+valGraph+"{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }}" +
-					"\nUNION"+
-					"\n{GRAPH "+valGraph+"{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDPROPERTY)+" }}";
-		}
-		
-		//the schemes part
-		String schemeOrTopConcept="(<"+SKOS.IN_SCHEME.stringValue()+">|<"+SKOS.TOP_CONCEPT_OF+">|"
-				+ "^<"+SKOS.HAS_TOP_CONCEPT+">)";
-		query += ServiceForSearches.filterWithOrOfAndValues("?resource", schemeOrTopConcept, schemes);
 		
 		
-		//the outgoingLinks part
-		if(outgoingLinks!=null && outgoingLinks.size()>0) {
-			query += ServiceForSearches.filterWithOrOfAndPairValues(outgoingLinks, "?resource", "out", false);
-		}
-		//the outgoingSearch part
-		int cont=1;
-		if(outgoingSearch!=null && outgoingSearch.size()>0) {
-			String valueOfProp = "?valueOfProp_"+cont;
-			for(TripleForSearch<IRI, String, SearchMode> tripleForSearch : outgoingSearch) {
-				query += "\n?resource "+NTriplesUtil.toNTriplesString(tripleForSearch.getPredicate())+" "+valueOfProp+" ." +
-						instantiateSearchStrategy().searchSpecificModePrepareQuery(valueOfProp, 
-								tripleForSearch.getSearchString(), tripleForSearch.getMode(), null, null, 
-								includeLocales, false);
-			}
-		}
+	
 		
-		//the ingoingLinks part	
-		if(ingoingLinks!=null && ingoingLinks.size()>0) {
-			query += ServiceForSearches.filterWithOrOfAndPairValues(ingoingLinks, "?resource", "in", true);
-		}
 		query+= "\nFILTER(BOUND(?resource))" + //used only to not have problem with the OPTIONAL in qb.processRendering(); 
 				"\n}" +
 			"\nGROUP BY ?resource ?attr_nature ?attr_scheme";
@@ -324,7 +263,7 @@ public class Search extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = new QueryBuilder(stServiceContext, query);
 		qb.processRendering();
-		qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
+		//qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
 		return qb.runQuery();
 	}
 	//@formatter:on
@@ -400,7 +339,8 @@ public class Search extends STServiceAdapter {
 		String query = ServiceForSearches.getPrefixes() + "\n"
 				+ instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, clsListList,
 						searchString, useLocalName, useURI, useNotes, searchMode, langs, includeLocales,
-						false, false, lexModel, false, false, false, false);
+						false, false, lexModel, false, false, false, false, null, null, null, null, null, 
+						instantiateSearchStrategy(), getProject().getBaseURI());
 
 		logger.debug("query = " + query);
 

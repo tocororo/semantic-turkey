@@ -6,15 +6,17 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import it.uniroma2.art.semanticturkey.extension.Extension;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.Pair;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.TripleForSearch;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 
 /**
@@ -22,6 +24,10 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
  */
 public interface SearchStrategy extends Extension {
 
+	public enum StatusFilter {
+		NOT_DEPRECATED, ONLY_DEPRECATED, UNDER_VALIDATION, UNDER_VALIDATION_FOR_DEPRECATION, ANYTHING
+	}
+	
 	/**
 	 * Performs initialization steps, such as the creation of indexes. It may be a no-op method, if no
 	 * specific initialization is required.
@@ -55,7 +61,11 @@ public interface SearchStrategy extends Extension {
 			String searchString, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode,
 			@Nullable List<String> langs, boolean includeLocales, boolean searchStringCanBeNull,
 			boolean searchInSubTypes,  IRI lexModel, boolean searchInRDFSLabel, boolean searchInSKOSLabel, 
-			boolean searchInSKOSXLLabel, boolean searchInOntolex) 
+			boolean searchInSKOSXLLabel, boolean searchInOntolex, @Nullable List<List<IRI>> schemes,
+			StatusFilter statusFilter, @Nullable List<Pair<IRI, List<Value>>> outgoingLinks,
+			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch, 
+			@JsonSerialized List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy, 
+			String baseURI) 
 					throws IllegalStateException, 
 			STPropertyAccessException;
 	

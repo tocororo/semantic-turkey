@@ -3,7 +3,10 @@ package it.uniroma2.art.semanticturkey.extension.impl.search.regex;
 import java.util.Collection;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -19,9 +22,12 @@ import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy.StatusFilter;
 import it.uniroma2.art.semanticturkey.extension.impl.search.AbstractSearchStrategy;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.Pair;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.TripleForSearch;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -242,7 +248,11 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			List<List<IRI>> clsListList, String searchString, boolean useLocalName, boolean useURI, 
 			boolean useNotes, SearchMode searchMode,@Optional List<String> langs, boolean includeLocales,
 			boolean searchStringCanBeNull, boolean searchInSubTypes, IRI lexModel, boolean searchInRDFSLabel, 
-			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex) 
+			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex,
+			@Nullable List<List<IRI>> schemes, StatusFilter statusFilter, 
+			@Nullable List<Pair<IRI, List<Value>>> outgoingLinks,
+			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch, 
+			@Nullable List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy, String baseURI) 
 					throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
@@ -269,6 +279,20 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 					useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
 					searchInSKOSXLLabel, searchInOntolex, true);
 		}
+		
+		
+		//the part relative to the schemes
+		//the schemes part
+		String schemeOrTopConcept="(<"+SKOS.IN_SCHEME.stringValue()+">|<"+SKOS.TOP_CONCEPT_OF+">|"
+				+ "^<"+SKOS.HAS_TOP_CONCEPT+">)";
+		query += ServiceForSearches.filterWithOrOfAndValues("?resource", schemeOrTopConcept, schemes);
+		
+		//the part relative to the Status, the outgoingLinks, the outgoingSearch and ingoingLinks
+		query += ServiceForSearches.prepareQueryWithStatusOutgoingIngoing(statusFilter, outgoingLinks, 
+				outgoingSearch, ingoingLinks, searchStrategy, baseURI, includeLocales);
+		
+		
+		
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
 		//add the show part in SPARQL query
 		//query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject());
