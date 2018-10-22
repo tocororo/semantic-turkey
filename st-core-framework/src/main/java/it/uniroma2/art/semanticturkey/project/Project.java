@@ -620,7 +620,7 @@ public abstract class Project extends AbstractProject {
 				ImmutablePair.of(OntologyManager.class.getResource("owl.rdf"), RDFFormat.RDFXML));
 
 		// Note: deliberate cascade from OntoLex-Lemon model to SKOS model
-		switch (getLexicalizationModel().stringValue()) {
+		switch (getModel().stringValue()) {
 		case ONTOLEXLEMON_LEXICALIZATION_MODEL_STRING:
 			coreVocabularies.put(vf.createIRI("http://www.w3.org/ns/lemon/ontolex"),
 					ImmutablePair.of(ONTOLEX.class.getResource("ontolex.rdf"), RDFFormat.RDFXML));
