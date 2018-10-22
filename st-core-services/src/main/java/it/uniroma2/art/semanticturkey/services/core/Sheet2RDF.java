@@ -170,7 +170,7 @@ public class Sheet2RDF extends STServiceAdapter {
 			} else {
 				annotatedRes.setAttribute("role", RDFResourceRole.property.name());
 			}
-			annotatedRes.setAttribute("show", S2RDFUtils.asQName(headerRes.stringValue(), s2rdfCore.getMergedPrefixMapping()));
+			annotatedRes.setAttribute("show", S2RDFUtils.asQName(headerRes, s2rdfCore.getMergedPrefixMapping()));
 			headerJson.putPOJO("resource", annotatedRes);
 		} else {
 			headerJson.set("resource", null);
