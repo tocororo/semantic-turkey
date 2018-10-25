@@ -57,18 +57,20 @@ public class Validation extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(validation)', 'V')")
 	public ValidationPaginationInfo getStagedCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
-			@Optional String timeLowerBound, @Optional String timeUpperBound,
-			@Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
+			@Optional(defaultValue = "") IRI[] performerFilter, @Optional String timeLowerBound,
+			@Optional String timeUpperBound, @Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
 		IRI validationGraph = SupportRepositoryUtils.obtainValidationGraph(getManagedConnection());
 
 		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound,
 				timeUpperBound);
 		String operationSPARQLFilter = SupportRepositoryUtils.computeOperationSPARQLFilter(operationFilter);
+		String performerSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(performerFilter,
+				"performerT");
 
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
 			String queryString =
-					// @formatter:off
+			// @formatter:off
 					" PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                 \n" +
 					" PREFIX prov: <http://www.w3.org/ns/prov#>                                    \n" +
 					" PREFIX dcterms: <http://purl.org/dc/terms/>                                  \n" +
@@ -79,10 +81,17 @@ public class Validation extends STServiceAdapter {
 					"     ?commit prov:startedAtTime ?startTimeT .                                 \n" +
 					"     ?commit prov:endedAtTime ?endTimeT .                                     \n" +
 					timeBoundsSPARQLFilter +
-					"     OPTIONAL {                                                               \n" +
-					"         ?commit prov:used ?operationT .                                      \n" +
-					"     }                                                                        \n" +
+					SupportRepositoryUtils.conditionalOptional(operationSPARQLFilter.isEmpty(),
+					"     ?commit prov:used ?operationT .                                          \n"
+					) +
 					operationSPARQLFilter +
+					SupportRepositoryUtils.conditionalOptional(performerSPARQLFilter.isEmpty(),
+					"     ?commit prov:qualifiedAssociation [                                  \n" +
+					"         prov:agent ?performerT ;                                         \n" +
+					"         prov:hadRole <" + STCHANGELOG.PERFORMER + ">\n" +
+					"     ]                                                                    \n"
+					) +
+					performerSPARQLFilter +
 					" }                                                                            \n"
 					// @formatter:on
 			;
@@ -92,7 +101,8 @@ public class Validation extends STServiceAdapter {
 			BindingSet bindingSet = QueryResults.singleResult(tupleQuery.evaluate());
 			long commitCount = ((Literal) bindingSet.getValue("commitCount")).longValue();
 			GregorianCalendar tipTime = commitCount != 0
-					? ((Literal) bindingSet.getValue("tipTime")).calendarValue().toGregorianCalendar() : null;
+					? ((Literal) bindingSet.getValue("tipTime")).calendarValue().toGregorianCalendar()
+					: null;
 
 			return new ValidationPaginationInfo(tipTime,
 					(commitCount / limit) + (commitCount % limit == 0 ? 0 : 1));
@@ -103,8 +113,8 @@ public class Validation extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
 	public Collection<CommitInfo> getCommits(@Optional(defaultValue = "") IRI[] operationFilter,
-			@Optional String timeLowerBound, String timeUpperBound,
-			@Optional(defaultValue = "Unordered") SortingDirection operationSorting,
+			@Optional(defaultValue = "") IRI[] performerFilter, @Optional String timeLowerBound,
+			String timeUpperBound, @Optional(defaultValue = "Unordered") SortingDirection operationSorting,
 			@Optional(defaultValue = "Descending") SortingDirection timeSorting,
 			@Optional(defaultValue = "0") long page, @Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
 
@@ -112,6 +122,9 @@ public class Validation extends STServiceAdapter {
 
 		String operationSPARQLFilter = SupportRepositoryUtils.computeOperationSPARQLFilter(operationFilter);
 
+		String performerSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(performerFilter,
+				"performerT");
+		
 		String orderBySPARQLFragment = SupportRepositoryUtils.computeOrderBySPARQLFragment(operationSorting,
 				timeSorting, false);
 
@@ -121,7 +134,7 @@ public class Validation extends STServiceAdapter {
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
 			String queryString =
-				// @formatter:off
+			// @formatter:off
 				" PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                 \n" +
 			    " PREFIX stcl: <http://semanticturkey.uniroma2.it/ns/st-changelog#>            \n" +
 				" PREFIX prov: <http://www.w3.org/ns/prov#>                                    \n" +
@@ -131,29 +144,32 @@ public class Validation extends STServiceAdapter {
 				"        (MAX(?endTimeT) as ?endTime)                                          \n" +
 				"        (MAX(?operationT) as ?operation)                                      \n" +
 				"        (GROUP_CONCAT(DISTINCT CONCAT(STR(?param), \"$\", REPLACE(REPLACE(STR(?paramValue), \"\\\\\\\\\", \"$0$0\"), \"\\\\$\", \"\\\\\\\\$0\")); separator=\"$\") as ?parameters)\n" + 
-				"        (MAX(?agentT) as ?agent)                                              \n" +
+				"        (MAX(?performerT) as ?agent)                                          \n" +
 				" FROM " + RenderUtils.toSPARQL(validationGraph) + "\n" +
 				" {                                                                            \n" +
 				"     ?commit a cl:Commit .                                                    \n" +
 				"     ?commit prov:startedAtTime ?startTimeT .                                 \n" +
 				"     ?commit prov:endedAtTime ?endTimeT .                                     \n" +
 				timeBoundsSPARQLFilter +
-				"     OPTIONAL {                                                               \n" +
-				"         ?commit prov:used ?operationT .                                      \n" +
-				"     }                                                                        \n" +
+				SupportRepositoryUtils.conditionalOptional(operationSPARQLFilter.isEmpty(),
+				"     ?commit prov:used ?operationT .                                          \n"
+				) +
 			    "     OPTIONAL {                                                               \n" +
 			    "         ?commit stcl:parameters ?params .                                    \n" +
 			    "         ?params ?param ?paramValue .                                         \n" +
 			    "         FILTER(STRSTARTS(STR(?param), STR(?operationT)))                     \n" +
 			    "     }                                                                        \n" +
 				operationSPARQLFilter +
-				"     OPTIONAL {                                                               \n" +
-				"         ?commit prov:qualifiedAssociation [                                  \n" +
-				"             prov:agent ?agentT                                               \n" +
-				"         ]                                                                    \n" +
-				"     }                                                                        \n" +
+				SupportRepositoryUtils.conditionalOptional(performerSPARQLFilter.isEmpty(),
+				"     ?commit prov:qualifiedAssociation [                                  \n" +
+				"         prov:agent ?performerT ;                                         \n" +
+				"         prov:hadRole <" + STCHANGELOG.PERFORMER + ">\n" +
+				"     ]                                                                    \n"
+				) +
+				performerSPARQLFilter +
 				" }                                                                            \n" +
 				" GROUP BY ?commit                                                             \n" +
+				" HAVING(BOUND(?commit))                                                       \n" +
 				orderBySPARQLFragment +
 				" OFFSET " + (page * limit) + "                                                \n" +
 				" LIMIT " + limit + "                                                          \n";
@@ -219,7 +235,7 @@ public class Validation extends STServiceAdapter {
 		operationMetadata.setUserIRI(UsersManager.getLoggedUser().getIRI(), STCHANGELOG.VALIDATOR);
 		getManagedConnection().add(operationMetadata.toRDF(), CHANGETRACKER.COMMIT_METADATA);
 		getManagedConnection().prepareBooleanQuery("ASK {}").evaluate(); // flush commit metadata
-		
+
 		getManagedConnection().add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ACCEPT, validatableCommit,
 				CHANGETRACKER.VALIDATION);
 	}

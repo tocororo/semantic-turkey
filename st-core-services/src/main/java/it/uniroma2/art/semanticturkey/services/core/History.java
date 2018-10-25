@@ -39,6 +39,7 @@ import it.uniroma2.art.semanticturkey.services.core.history.SupportRepositoryUti
 import it.uniroma2.art.semanticturkey.services.tracker.STServiceTracker;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.vocabulary.STCHANGELOG;
 
 /**
  * This class provides services for interacting with the history of a project.
@@ -63,18 +64,23 @@ public class History extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public HistoryPaginationInfo getCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
-			@Optional String timeLowerBound, @Optional String timeUpperBound,
-			@Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
+			@Optional(defaultValue = "") IRI[] performerFilter,
+			@Optional(defaultValue = "") IRI[] validatorFilter, @Optional String timeLowerBound,
+			@Optional String timeUpperBound, @Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
 		IRI historyGraph = SupportRepositoryUtils.obtainHistoryGraph(getManagedConnection());
 
 		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound,
 				timeUpperBound);
 		String operationSPARQLFilter = SupportRepositoryUtils.computeOperationSPARQLFilter(operationFilter);
+		String performerSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(performerFilter,
+				"performerT");
+		String validatorSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(validatorFilter,
+				"validatorT");
 
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
 			String queryString =
-					// @formatter:off
+			// @formatter:off
 					" PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                 \n" +
 					" PREFIX prov: <http://www.w3.org/ns/prov#>                                    \n" +
 					" PREFIX dcterms: <http://purl.org/dc/terms/>                                  \n" +
@@ -86,20 +92,35 @@ public class History extends STServiceAdapter {
 					"     ?commit prov:startedAtTime ?startTimeT .                                 \n" +
 					"     ?commit prov:endedAtTime ?endTimeT .                                     \n" +
 					timeBoundsSPARQLFilter +
-					"     OPTIONAL {                                                               \n" +
-					"         ?commit prov:used ?operationT .                                      \n" +
-					"     }                                                                        \n" +
+					SupportRepositoryUtils.conditionalOptional(operationSPARQLFilter.isEmpty(),
+					"     ?commit prov:used ?operationT .                                          \n"
+					) +
 					operationSPARQLFilter +
-					" }                                                                            \n"
+					SupportRepositoryUtils.conditionalOptional(performerSPARQLFilter.isEmpty(),
+					"     ?commit prov:qualifiedAssociation [                                  \n" +
+					"         prov:agent ?performerT ;                                         \n" +
+					"         prov:hadRole <" + STCHANGELOG.PERFORMER + ">\n" +
+					"     ]                                                                    \n"
+					) +
+					performerSPARQLFilter +
+					SupportRepositoryUtils.conditionalOptional(validatorSPARQLFilter.isEmpty(),
+					"     ?commit prov:qualifiedAssociation [                                  \n" +
+					"         prov:agent ?validatorT ;                                         \n" +
+					"         prov:hadRole <" + STCHANGELOG.VALIDATOR + ">\n" +
+					"     ]                                                                    \n"
+					) +
+					validatorSPARQLFilter +
+					" }                                                                            \n" 
 					// @formatter:on
 			;
-
+			
 			TupleQuery tupleQuery = conn.prepareTupleQuery(queryString);
 			tupleQuery.setIncludeInferred(false);
 			BindingSet bindingSet = QueryResults.singleResult(tupleQuery.evaluate());
 			long commitCount = ((Literal) bindingSet.getValue("commitCount")).longValue();
 			long tipRevisionNumber = commitCount != 0
-					? ((Literal) bindingSet.getValue("tipRevisionNumber")).longValue() : -1;
+					? ((Literal) bindingSet.getValue("tipRevisionNumber")).longValue()
+					: -1;
 
 			return new HistoryPaginationInfo(tipRevisionNumber,
 					(commitCount / limit) + (commitCount % limit == 0 ? 0 : 1));
@@ -110,7 +131,9 @@ public class History extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public Collection<CommitInfo> getCommits(long tipRevisionNumber,
-			@Optional(defaultValue = "") IRI[] operationFilter, @Optional String timeLowerBound,
+			@Optional(defaultValue = "") IRI[] operationFilter,
+			@Optional(defaultValue = "") IRI[] performerFilter,
+			@Optional(defaultValue = "") IRI[] validatorFilter, @Optional String timeLowerBound,
 			@Optional String timeUpperBound,
 			@Optional(defaultValue = "Unordered") SortingDirection operationSorting,
 			@Optional(defaultValue = "Descending") SortingDirection timeSorting,
@@ -126,10 +149,15 @@ public class History extends STServiceAdapter {
 		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound,
 				timeUpperBound);
 
+		String performerSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(performerFilter,
+				"performerT");
+		String validatorSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(validatorFilter,
+				"validatorT");
+
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
 			String queryString =
-				// @formatter:off
+			// @formatter:off
 				" PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                 \n" +
 			    " PREFIX stcl: <http://semanticturkey.uniroma2.it/ns/st-changelog#>            \n" +
 				" PREFIX prov: <http://www.w3.org/ns/prov#>                                    \n" +
@@ -140,7 +168,8 @@ public class History extends STServiceAdapter {
 				"        (MAX(?endTimeT) as ?endTime)                                          \n" +
 				"        (MAX(?operationT) as ?operation)                                      \n" +
 				"        (GROUP_CONCAT(DISTINCT CONCAT(STR(?param), \"$\", REPLACE(REPLACE(STR(?paramValue), \"\\\\\\\\\", \"$0$0\"), \"\\\\$\", \"\\\\\\\\$0\")); separator=\"$\") as ?parameters)\n" + 
-				"        (MAX(?agentT) as ?agent)                                              \n" +
+				"        (MAX(?performerT) as ?agent)                                          \n" +
+				"        (MAX(?validatorT) as ?validator)                                      \n" +
 				" FROM " + RenderUtils.toSPARQL(historyGraph) + "\n" +
 				" {                                                                            \n" +
 				"     ?commit a cl:Commit .                                                    \n" +
@@ -149,23 +178,32 @@ public class History extends STServiceAdapter {
 				"     ?commit prov:startedAtTime ?startTimeT .                                 \n" +
 				"     ?commit prov:endedAtTime ?endTimeT .                                     \n" +
 				timeBoundsSPARQLFilter +
-				"     OPTIONAL {                                                               \n" +
-				"         ?commit prov:used ?operationT .                                      \n" +
-				"     }                                                                        \n" +
+				SupportRepositoryUtils.conditionalOptional(operationSPARQLFilter.isEmpty(),
+				"     ?commit prov:used ?operationT .                                          \n"
+				) +
 			    "     OPTIONAL {                                                               \n" +
 			    "         ?commit stcl:parameters ?params .                                    \n" +
 			    "         ?params ?param ?paramValue .                                         \n" +
 			    "         FILTER(STRSTARTS(STR(?param), STR(?operationT)))                     \n" +
 			    "     }                                                                        \n" +
 				operationSPARQLFilter +
-				"     OPTIONAL {                                                               \n" +
-				"         ?commit prov:qualifiedAssociation [                                  \n" +
-				"             prov:agent ?agentT ;                                             \n" +
-				"             prov:hadRole stcl:performer                                      \n" +
-				"         ]                                                                    \n" +
-				"     }                                                                        \n" +
+				SupportRepositoryUtils.conditionalOptional(performerSPARQLFilter.isEmpty(),
+				"     ?commit prov:qualifiedAssociation [                                  \n" +
+				"         prov:agent ?performerT ;                                         \n" +
+				"         prov:hadRole <" + STCHANGELOG.PERFORMER + ">\n" +
+				"     ]                                                                    \n"
+				) +
+				performerSPARQLFilter +
+				SupportRepositoryUtils.conditionalOptional(validatorSPARQLFilter.isEmpty(),
+				"     ?commit prov:qualifiedAssociation [                                  \n" +
+				"         prov:agent ?validatorT ;                                         \n" +
+				"         prov:hadRole <" + STCHANGELOG.VALIDATOR + ">\n" +
+				"     ]                                                                    \n"
+				) +
+				validatorSPARQLFilter +
 				" }                                                                            \n" +
 				" GROUP BY ?commit                                                             \n" +
+				" HAVING(BOUND(?commit))                                                       \n" +
 				orderBySPARQLFragment +
 				" OFFSET " + (page * limit) + "                                                \n" +
 				" LIMIT " + limit + "                                                          \n";
@@ -227,14 +265,14 @@ public class History extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
-	public CommitDelta getCommitDelta(IRI commit, @Optional(defaultValue="100") int limit) {
+	public CommitDelta getCommitDelta(IRI commit, @Optional(defaultValue = "100") int limit) {
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
-			
+
 			Function<IRI, TupleQuery> prepareQuery = deltaProp -> {
 				TupleQuery query = conn.prepareTupleQuery(
-						// @formatter:off
+				// @formatter:off
 						" prefix cl: <http://semanticturkey.uniroma2.it/ns/changelog#>              \n" +
 						" prefix prov: <http://www.w3.org/ns/prov#>                                 \n" +
 		                "                                                                           \n" +
@@ -252,28 +290,32 @@ public class History extends STServiceAdapter {
 						" }                                                                         \n" +
 						" ORDER BY ?s ?p ?o ?c                                                      \n"
 						// @formatter:on
-					);
+				);
 				query.setIncludeInferred(false);
 				return query;
 			};
-			
+
 			ValueFactory vf = SimpleValueFactory.getInstance();
 
 			TupleQuery additionsQuery = prepareQuery.apply(CHANGELOG.ADDED_STATEMENT);
-			List<Statement> addedStatements = QueryResults.stream(additionsQuery.evaluate()).map(bindingSet -> {
-				return vf.createStatement((Resource) bindingSet.getValue("s"), (IRI) bindingSet.getValue("p"),
-						bindingSet.getValue("o"), (Resource) bindingSet.getValue("c"));
-			}).collect(Collectors.toList());
-			
+			List<Statement> addedStatements = QueryResults.stream(additionsQuery.evaluate())
+					.map(bindingSet -> {
+						return vf.createStatement((Resource) bindingSet.getValue("s"),
+								(IRI) bindingSet.getValue("p"), bindingSet.getValue("o"),
+								(Resource) bindingSet.getValue("c"));
+					}).collect(Collectors.toList());
+
 			TupleQuery removalsQuery = prepareQuery.apply(CHANGELOG.REMOVED_STATEMENT);
-			List<Statement> removedStatements = QueryResults.stream(removalsQuery.evaluate()).map(bindingSet -> {
-				return vf.createStatement((Resource) bindingSet.getValue("s"), (IRI) bindingSet.getValue("p"),
-						bindingSet.getValue("o"), (Resource) bindingSet.getValue("c"));
-			}).collect(Collectors.toList());
+			List<Statement> removedStatements = QueryResults.stream(removalsQuery.evaluate())
+					.map(bindingSet -> {
+						return vf.createStatement((Resource) bindingSet.getValue("s"),
+								(IRI) bindingSet.getValue("p"), bindingSet.getValue("o"),
+								(Resource) bindingSet.getValue("c"));
+					}).collect(Collectors.toList());
 
 			int additionsTruncated;
 			int removalsTruncated;
-			
+
 			if (limit > 0) {
 				if (addedStatements.size() > limit) {
 					additionsTruncated = limit;
@@ -281,7 +323,7 @@ public class History extends STServiceAdapter {
 				} else {
 					additionsTruncated = 0;
 				}
-				
+
 				if (removedStatements.size() > limit) {
 					removalsTruncated = limit;
 					removedStatements = removedStatements.subList(0, limit);
@@ -292,7 +334,7 @@ public class History extends STServiceAdapter {
 				additionsTruncated = 0;
 				removalsTruncated = 0;
 			}
-			
+
 			CommitDelta commitDelta = new CommitDelta();
 			commitDelta.setAdditions(new TreeModel(addedStatements));
 			commitDelta.setRemovals(new TreeModel(removedStatements));

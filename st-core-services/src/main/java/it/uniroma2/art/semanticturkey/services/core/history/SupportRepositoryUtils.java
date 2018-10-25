@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.services.core.history;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -11,6 +10,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
@@ -33,7 +33,16 @@ import it.uniroma2.art.semanticturkey.services.tracker.STServiceTracker;
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class SupportRepositoryUtils {
+public abstract class SupportRepositoryUtils {
+
+	public static String conditionalOptional(boolean insertOptional, String innerPattern) {
+		if (insertOptional) {
+			return "OPTIONAL {\n" + innerPattern + "\n}\n";
+		} else {
+			return innerPattern;
+		}
+	}
+
 	public static String computeTimeBoundsSPARQLFilter(String timeLowerBound, String timeUpperBound)
 			throws IllegalArgumentException {
 		String timeLowerBoundSPARQLFilter;
@@ -107,6 +116,12 @@ public class SupportRepositoryUtils {
 						.collect(Collectors.joining(", ", "(", ")")) + ")\n"
 				: "";
 		return operationSPARQLFilter;
+	}
+
+	public static String computeInCollectionSPARQLFilter(Value[] values, String variableName) {
+		return values.length == 0 ? ""
+				: "FILTER(?" + variableName + " IN " + Arrays.stream(values).map(RenderUtils::toSPARQL)
+						.collect(Collectors.joining(", ", "(", ")")) + ")\n";
 	}
 
 	public static IRI obtainHistoryGraph(RepositoryConnection coreRepoConnection)
