@@ -2,6 +2,8 @@ version 5.0-SNAPSHOT
 date: dd/MM/yyyy
   * Updated e-mail configuration;
   * Added stackTrace info in error response and changed the serialization to JSON format;
+  * Add the possibility to filter the commits shown in the History and Validation tabs by performer and
+    validator (obviously, history only)
   * Fixed SKOS vocabulary not loaded, if SKOS is used only as model (and not as lexicalization model);
   * Updated to Apache Karaf 4.2.1
   * Updated to Eclipse RDF4J 2.4.0 (the change-tracker-sail is still compatible with RDF4J < 2.3.0, and it can
