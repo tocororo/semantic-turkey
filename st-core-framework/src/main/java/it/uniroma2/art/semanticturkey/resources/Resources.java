@@ -344,29 +344,45 @@ public class Resources {
 	private static void initializeSystemProperties() throws STInitializationException {
 		try {
 			//system settings
+			File propFile = STPropertiesManager.getSystemSettingsFile(STPropertiesManager.CORE_PLUGIN_ID);
+			if (!propFile.getParentFile().exists()) { //if path doesn't exist, first create it
+				propFile.getParentFile().mkdirs();
+			}
 			Utilities.copy(
 					Resources.class.getClassLoader().getResourceAsStream(
 							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/settings.props"),
-					STPropertiesManager.getSystemSettingsFile(STPropertiesManager.CORE_PLUGIN_ID)
+					propFile
 			);
 			//default project settings
+			propFile = STPropertiesManager.getProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID);
+			if (!propFile.getParentFile().exists()) { //if path doesn't exist, first create it
+				propFile.getParentFile().mkdirs();
+			}
 			Utilities.copy(
 					Resources.class.getClassLoader().getResourceAsStream(
 							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"),
-					STPropertiesManager.getProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
+					propFile
 			);
 			//pu_settings - system default
 			// * core plugin
+			propFile = STPropertiesManager.getPUSettingsSystemDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID);
+			if (!propFile.getParentFile().exists()) { //if path doesn't exist, first create it
+				propFile.getParentFile().mkdirs();
+			}
 			Utilities.copy(
 					Resources.class.getClassLoader().getResourceAsStream(
 							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/pu-settings-defaults.props"),
-					STPropertiesManager.getPUSettingsSystemDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
+					propFile
 			);
 			// * rendering engine
+			propFile = STPropertiesManager.getPUSettingsSystemDefaultsFile(RenderingEngine.class.getName());
+			if (!propFile.getParentFile().exists()) { //if path doesn't exist, first create it
+				propFile.getParentFile().mkdirs();
+			}
 			Utilities.copy(
 					Resources.class.getClassLoader().getResourceAsStream(
 							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine/pu-settings-defaults.props"),
-					STPropertiesManager.getPUSettingsSystemDefaultsFile(RenderingEngine.class.getName())
+					propFile
 			);
 		} catch (IOException e) {
 			throw new STInitializationException(e);
