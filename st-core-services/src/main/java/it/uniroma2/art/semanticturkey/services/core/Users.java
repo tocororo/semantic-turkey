@@ -244,20 +244,25 @@ public class Users extends STServiceAdapter {
 		if (languageProficiencies != null) {
 			user.setLanguageProficiencies(languageProficiencies);
 		}
-		//if this is the first registered user, it means that it is the first access, so set it as admin 
-		if (UsersManager.listUsers().isEmpty()) {
-			STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS, email);
-			user.setStatus(UserStatus.ACTIVE);
-		}
-		UsersManager.registerUser(user);
-		ProjectUserBindingsManager.createPUBindingsOfUser(user);
 		
-		try {
-			EmailSender.sendRegistrationMailToUser(user);
-			EmailSender.sendRegistrationMailToAdmin(user);
-		} catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {
-			logger.error(Utilities.printFullStackTrace(e));
+		if (UsersManager.listUsers().isEmpty()) {
+			//if this is the first registered user, it means that it is the first access, so activate it and set it as admin
+			user.setStatus(UserStatus.ACTIVE);
+			UsersManager.registerUser(user);
+			ProjectUserBindingsManager.createPUBindingsOfUser(user);
+			STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS, email);
+		} else {
+			//otherwise activate it and send the email notifications
+			UsersManager.registerUser(user);
+			ProjectUserBindingsManager.createPUBindingsOfUser(user);
+			try {
+				EmailSender.sendRegistrationMailToUser(user);
+				EmailSender.sendRegistrationMailToAdmin(user);
+			} catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {
+				logger.error(Utilities.printFullStackTrace(e));
+			}
 		}
+		
 	}
 	
 	/**
