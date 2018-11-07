@@ -19,6 +19,7 @@ public class VelocitySupportTools {
 
 	public static final String OPTIONAL_QUALIFIED_NAME = "it.uniroma2.art.semanticturkey.services.annotations.Optional";
 	public static final String JSONSERIALIZED_QUALIFIED_NAME = "it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized";
+	public static final String SKIPTERMVALIDATION_QUALIFIED_NAME = "it.uniroma2.art.semanticturkey.services.annotations.SkipTermValidation";
 	public static final String HTTPSERVLETRESPONSE_QUALIFIED_NAME = "javax.servlet.http.HttpServletResponse";
 	public static final String HTTPSERVLETREQUEST_QUALIFIED_NAME = "javax.servlet.http.HttpServletRequest";
 	public static final String DEFAULT_VALUE = "defaultValue";
@@ -74,6 +75,18 @@ public class VelocitySupportTools {
 		return false;
 	}
 	
+	public boolean isSkipTermValidationParameter(VariableElement element) {
+
+		for (AnnotationMirror am : element.getAnnotationMirrors()) {
+			if (((QualifiedNameable) am.getAnnotationType().asElement()).getQualifiedName().toString()
+					.equals(SKIPTERMVALIDATION_QUALIFIED_NAME)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+	
 	public boolean isJsonSerializedParameter(VariableElement element) {
 
 		for (AnnotationMirror am : element.getAnnotationMirrors()) {
@@ -85,6 +98,7 @@ public class VelocitySupportTools {
 
 		return false;
 	}
+
 
 	public boolean hasDefaultValue(VariableElement element) {
 

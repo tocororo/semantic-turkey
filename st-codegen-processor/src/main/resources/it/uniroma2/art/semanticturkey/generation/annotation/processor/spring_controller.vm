@@ -78,6 +78,9 @@ public class ${generatedClassSimpleName}
 #end
 #if ($tools.isJsonSerializedParameter($parameter))
 #set( $arguments = "${arguments} @it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized")
+#end
+#if ($tools.isSkipTermValidationParameter($parameter))
+#set( $arguments = "${arguments} @it.uniroma2.art.semanticturkey.services.annotations.SkipTermValidation")
 #end#*
 	Add the parameter name to the signature
 *###

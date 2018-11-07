@@ -28,6 +28,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.SkipTermValidation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.History.SortingDirection;
 import it.uniroma2.art.semanticturkey.services.core.history.CommitInfo;
@@ -230,7 +231,7 @@ public class Validation extends STServiceAdapter {
 	@Write
 	@OmitHistoryMetadata
 	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
-	public void accept(IRI validatableCommit) {
+	public void accept(@SkipTermValidation IRI validatableCommit) {
 		OperationMetadata operationMetadata = new OperationMetadata();
 		operationMetadata.setUserIRI(UsersManager.getLoggedUser().getIRI(), STCHANGELOG.VALIDATOR);
 		getManagedConnection().add(operationMetadata.toRDF(), CHANGETRACKER.COMMIT_METADATA);
@@ -244,7 +245,7 @@ public class Validation extends STServiceAdapter {
 	@Write
 	@OmitHistoryMetadata
 	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
-	public void reject(IRI validatableCommit) {
+	public void reject(@SkipTermValidation IRI validatableCommit) {
 		getManagedConnection().add(CHANGETRACKER.VALIDATION, CHANGETRACKER.REJECT, validatableCommit,
 				CHANGETRACKER.VALIDATION);
 	}

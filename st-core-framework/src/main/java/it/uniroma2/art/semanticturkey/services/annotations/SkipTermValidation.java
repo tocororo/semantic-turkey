@@ -8,14 +8,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that a service parameter is serialized in Json, and thus should be handled with
- * {@link it.uniroma2.art.semanticturkey.mvc.JacksonMethodArgumentResolver}.
+ * Indicates that a service parameter whose type is a kind of RDF4J Value should not be validated.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 @Documented
 @Retention(RUNTIME)
 @Target({ ElementType.PARAMETER })
-public @interface JsonSerialized {
-
+public @interface SkipTermValidation {
 }

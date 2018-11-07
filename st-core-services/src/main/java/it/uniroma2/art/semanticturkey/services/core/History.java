@@ -32,6 +32,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.SkipTermValidation;
 import it.uniroma2.art.semanticturkey.services.core.history.CommitDelta;
 import it.uniroma2.art.semanticturkey.services.core.history.CommitInfo;
 import it.uniroma2.art.semanticturkey.services.core.history.HistoryPaginationInfo;
@@ -265,7 +266,7 @@ public class History extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
-	public CommitDelta getCommitDelta(IRI commit, @Optional(defaultValue = "100") int limit) {
+	public CommitDelta getCommitDelta(@SkipTermValidation IRI commit, @Optional(defaultValue = "100") int limit) {
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
