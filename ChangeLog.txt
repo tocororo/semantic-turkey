@@ -5,6 +5,9 @@ date: dd/MM/yyyy
   * Add the possibility to filter the commits shown in the History and Validation tabs by performer and
     validator (obviously, history only)
   * Fixed SKOS vocabulary not loaded, if SKOS is used only as model (and not as lexicalization model);
+  * Added validation of RDF values (in particular, IRIs and literals) provided as arguments to the services
+  * Introduced the possibility to configure the RDF Serializing Exporter (e.g. to inline blank nodes when
+    serializing an ontology using Turtle)
   * Updated to Apache Karaf 4.2.1
   * Updated to Eclipse RDF4J 2.4.0 (the change-tracker-sail is still compatible with RDF4J < 2.3.0, and it can
     be also used with Ontotext GraphDB < 8.6; however, this compatibility may not be guaranteed in future 
