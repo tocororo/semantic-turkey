@@ -27,7 +27,7 @@ public interface SearchStrategy extends Extension {
 	public enum StatusFilter {
 		NOT_DEPRECATED, ONLY_DEPRECATED, UNDER_VALIDATION, UNDER_VALIDATION_FOR_DEPRECATION, ANYTHING
 	}
-	
+
 	/**
 	 * Performs initialization steps, such as the creation of indexes. It may be a no-op method, if no
 	 * specific initialization is required.
@@ -39,43 +39,38 @@ public interface SearchStrategy extends Extension {
 	 */
 	void update(RepositoryConnection connection) throws Exception;
 
-	String searchResource(STServiceContext stServiceContext,
-			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, boolean useNotes,
-			SearchMode searchMode, @Nullable List<IRI> schemes, @Nullable List<String> langs, 
-			boolean includeLocales, IRI lexModel, boolean searchInRDFSLabel, boolean searchInSKOSLabel, 
-			boolean searchInSKOSXLLabel, boolean searchInOntolex)
-			throws IllegalStateException, STPropertyAccessException;
+	String searchResource(STServiceContext stServiceContext, String searchString, String[] rolesArray,
+			boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode,
+			@Nullable List<IRI> schemes, @Nullable List<String> langs, boolean includeLocales, IRI lexModel,
+			boolean searchInRDFSLabel, boolean searchInSKOSLabel, boolean searchInSKOSXLLabel,
+			boolean searchInOntolex) throws IllegalStateException, STPropertyAccessException;
 
 	Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
-			@Nullable List<IRI> schemes, @Nullable List<String> langs, @Nullable IRI cls, boolean includeLocales)
-					throws IllegalStateException, 
-			STPropertyAccessException;
+			@Nullable List<IRI> schemes, @Nullable List<String> langs, @Nullable IRI cls,
+			boolean includeLocales) throws IllegalStateException, STPropertyAccessException;
 
 	Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
-			@Optional String[] rolesArray, SearchMode searchMode,
-			@Nullable List<IRI> schemes, @Nullable IRI cls) throws IllegalStateException, 
-			STPropertyAccessException;
-	
+			@Optional String[] rolesArray, SearchMode searchMode, @Nullable List<IRI> schemes,
+			@Nullable IRI cls) throws IllegalStateException, STPropertyAccessException;
+
 	String searchInstancesOfClass(STServiceContext stServiceContext, List<List<IRI>> clsListList,
-			String searchString, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode,
-			@Nullable List<String> langs, boolean includeLocales, boolean searchStringCanBeNull,
-			boolean searchInSubTypes,  IRI lexModel, boolean searchInRDFSLabel, boolean searchInSKOSLabel, 
-			boolean searchInSKOSXLLabel, boolean searchInOntolex, @Nullable List<List<IRI>> schemes,
-			StatusFilter statusFilter, @Nullable List<Pair<IRI, List<Value>>> outgoingLinks,
-			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch, 
-			@JsonSerialized List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy, 
-			String baseURI) 
-					throws IllegalStateException, 
-			STPropertyAccessException;
-	
-	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode, 
+			String searchString, boolean useLocalName, boolean useURI, boolean useNotes,
+			SearchMode searchMode, @Nullable List<String> langs, boolean includeLocales,
+			boolean searchStringCanBeNull, boolean searchInSubTypes, IRI lexModel, boolean searchInRDFSLabel,
+			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex,
+			@Nullable List<List<IRI>> schemes, StatusFilter statusFilter,
+			@Nullable List<Pair<IRI, List<Value>>> outgoingLinks,
+			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
+			@JsonSerialized List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy,
+			String baseURI) throws IllegalStateException, STPropertyAccessException;
+
+	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode,
 			String indexToUse, List<String> langs, boolean includeLocales, boolean forLocalName);
 
-	String searchLexicalEntry(STServiceContext stServiceContext,
-			String searchString, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode, 
-			List<IRI> lexicons, List<String> langs, boolean includeLocales, IRI iri, 
-			boolean searchInRDFSLabel, boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, 
-			boolean searchInOntolex) 
-					throws IllegalStateException, STPropertyAccessException;
+	String searchLexicalEntry(STServiceContext stServiceContext, String searchString, boolean useLocalName,
+			boolean useURI, boolean useNotes, SearchMode searchMode, List<IRI> lexicons, List<String> langs,
+			boolean includeLocales, IRI iri, boolean searchInRDFSLabel, boolean searchInSKOSLabel,
+			boolean searchInSKOSXLLabel, boolean searchInOntolex)
+			throws IllegalStateException, STPropertyAccessException;
 }

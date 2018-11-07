@@ -16,20 +16,20 @@ public class RDFSerializingExporterConfiguration implements Configuration {
 		return "RDF Serializing Exporter";
 	}
 
-	@STProperty(displayName = "Pretty print", description = "Tells whether pretty printing is preferred")
+	@STProperty(displayName = "pretty print", description = "Tells whether pretty printing is preferred")
 	public Boolean prettyPrint;
 
-	@STProperty(displayName = "Inline blank nodes", description = "Tells whether to use blank node property lists, collections, and anonymous nodes instead of blank node labels."
+	@STProperty(displayName = "inline blank nodes", description = "Tells whether to use blank node property lists, collections, and anonymous nodes instead of blank node labels."
 			+ "This settings requires that all triples are first loaded in memory, and should not be checked for large datasets")
 	public Boolean inlineBlankNodes;
 
 	@STProperty(displayName = "xsd:string to plain literal", description = "Tells whether the serializer should remove the xsd:string datatype from literals and represent them as RDF-1.0 Plain Literals")
 	public Boolean xsdStringToPlainLiteral;
 
-	@STProperty(displayName = "rdf:langString to language tagged literal", description = "Tells whether the serializer should omit the rdf:langString datatype from language literals when serialising them")
+	@STProperty(displayName = "rdf:langString to language tagged literal", description = "Tells whether the serializer should omit the rdf:langString datatype from language literals when serializing them")
 	public Boolean rdfLangStringToLangLiteral;
 
-	@STProperty(displayName = "Base directive", description = "Tells whether the serializer should include a base directive")
+	@STProperty(displayName = "base directive", description = "Tells whether the serializer should include a base directive")
 	public Boolean baseDirective;
 
 }
