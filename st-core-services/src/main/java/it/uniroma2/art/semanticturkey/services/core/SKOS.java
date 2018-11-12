@@ -264,12 +264,12 @@ public class SKOS extends STServiceAdapter {
 					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
 					" SELECT DISTINCT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
 					" WHERE {																			 \n" +
-					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
+						combinePathWithVarOrIri("?resource", (IRI)concept, broaderNarrowerPath, false)+"\n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
+					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					//"     ?resource skos:broader|^skos:narrower ?concept .                               \n" + OLD
 					//prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?resource", 
 					//		(IRI)concept, false, includeSubProperties) +
-					combinePathWithVarOrIri("?resource", (IRI)concept, broaderNarrowerPath, false)+"\n" +
 					"\n     ?subPropInScheme rdfs:subPropertyOf* skos:inScheme .                         \n" +
 					"     ?resource ?subPropInScheme ?scheme .                                           \n" +
 					"FILTER (";
@@ -323,8 +323,9 @@ public class SKOS extends STServiceAdapter {
 					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
 					" SELECT DISTINCT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
 					" WHERE {																			 \n" +
-					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
+						combinePathWithVarOrIri("?resource", (IRI)concept, broaderNarrowerPath, false)+		"\n" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
+					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
 					//"     ?resource skos:broader|^skos:narrower ?concept .                               \n" + OLD
 					
 					
@@ -332,7 +333,6 @@ public class SKOS extends STServiceAdapter {
 					//		"?concept", false, includeSubProperties) +
 					//preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp, "?resource", 
 					//		(IRI)concept, getManagedConnection(), false, includeSubProperties) +	 	    "\n" +
-					combinePathWithVarOrIri("?resource", (IRI)concept, broaderNarrowerPath, false)+		"\n" +
 					
 					"     OPTIONAL {                                                                     \n" +
 					//"         BIND( EXISTS {?aNarrowerConcept skos:broader|^skos:narrower ?resource . } as ?attr_more ) \n" +
