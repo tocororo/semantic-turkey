@@ -653,6 +653,8 @@ public class SKOS extends STServiceAdapter {
 		if (label != null) { //?conc skos:prefLabel ?label
 			xLabelIRI = createLabelUsingLexicalizationModel(newConceptIRI, label, modelAdditions, checkExistingAltLabel,
 					true, conceptSchemes);
+			VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(xLabelIRI,
+					RDFResourceRole.xLabel); // set created for versioning
 		}
 		for(IRI conceptScheme : conceptSchemes){
 			modelAdditions.add(newConceptIRI, org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, conceptScheme);//?conc skos:inScheme ?sc
