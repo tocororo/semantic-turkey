@@ -146,11 +146,12 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			level = sail.getDefaultIsolationLevel();
 		}
 
+		List<IsolationLevel> supportedIsolationLevels = sail.getSupportedIsolationLevels();
 		IsolationLevel compatibleLevel = IsolationLevels.getCompatibleIsolationLevel(level,
-				sail.getSupportedIsolationLevels());
+				supportedIsolationLevels);
 		if (compatibleLevel == null) {
-			throw new UnknownSailTransactionStateException(
-					"Isolation level " + level + " not compatible with this Sail");
+			throw new UnknownSailTransactionStateException("Isolation level " + level
+					+ " not compatible with this Sail. Supported levels are: " + supportedIsolationLevels);
 		}
 		super.begin(compatibleLevel);
 
@@ -612,8 +613,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
 
 		if (tupleExpr instanceof DescribeOperator) {
-			if (dataset != null
-					&& dataset.getDefaultGraphs().contains(CHANGETRACKER.SYSINFO)) {
+			if (dataset != null && dataset.getDefaultGraphs().contains(CHANGETRACKER.SYSINFO)) {
 				TupleExpr argTupleExpr = ((UnaryTupleOperator) tupleExpr).getArg();
 				Model generatedTriples = new LinkedHashModel();
 				QueryResults.stream(super.evaluate(argTupleExpr, dataset, bindings, includeInferred))
