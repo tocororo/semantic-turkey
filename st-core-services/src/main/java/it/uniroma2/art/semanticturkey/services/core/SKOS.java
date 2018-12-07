@@ -893,6 +893,73 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'C')")
+	public void addMultipleConceptsToScheme(
+			@Optional @LocallyDefined IRI rootConcept,
+			@LocallyDefined @SchemeAssignment IRI scheme,
+			@Optional IRI inSchemeProp,
+			@Optional(defaultValue="true") boolean includeSubProperties,
+			@Optional @LocallyDefinedResources List<IRI> broaderProps,
+			@Optional @LocallyDefinedResources List<IRI> narrowerProps,
+			@Optional @LocallyDefinedResources List<IRI> filterSchemes) {
+		RepositoryConnection repoConnection = getManagedConnection();
+		
+		List<IRI>broaderPropsToUse = null;
+		List<IRI>narrowerPropsToUse = null;
+		String broaderNarrowerPath = null;
+		
+		if(rootConcept!=null) {
+			//if the client passed a rootConcept, then 
+			//check if the client passed a broaderProp , otherwise, set it as skos:broader
+			broaderPropsToUse = getHierachicalProps(broaderProps, narrowerProps);
+			//narrowerProp could be null if the broaderProp  has no inverse
+			narrowerPropsToUse = getInverseOfHierachicalProp(broaderProps, narrowerProps);
+			
+			broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse, 
+					getManagedConnection(), includeSubProperties);
+		}
+		
+		String inSchemePropString = "skos:inScheme";
+		if(inSchemeProp!=null ) {
+			inSchemePropString = NTriplesUtil.toNTriplesString(inSchemeProp);
+		}
+		
+		String updateQuery =
+					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
+					"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+					"\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  " +
+					"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>  " +
+					"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
+                    "\nUPDATE {?concept  "+inSchemePropString+ " "+NTriplesUtil.toNTriplesString(scheme)+" . }" +
+					"\nWHERE{" +
+                    "\n?concept rdf:type ?conceptSubClass ." +
+					"\nconceptSubClass rdfs:subClassOf* skos:Concept";
+		if(rootConcept!=null) {
+			updateQuery += combinePathWithVarOrIri("?concept", rootConcept, broaderNarrowerPath, true);
+		}
+		if(filterSchemes!=null && filterSchemes.size()>0) {
+			updateQuery+="\n?subPropInScheme rdfs:subPropertyOf* skos:inScheme ." +
+					"\n?concept ?subPropInScheme ?scheme ." +
+					"FILTER (";
+			boolean first=true;
+			for(IRI filterScheme : filterSchemes){
+				if(!first){
+					updateQuery+= " || ";
+				}
+				first=false;
+				updateQuery+="?scheme="+NTriplesUtil.toNTriplesString(filterScheme);
+			}	
+			updateQuery += ")" ;
+		}
+		updateQuery +="\n}";
+		
+		Update update = repoConnection.prepareUpdate(updateQuery);
+		update.execute();
+	}
+	
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'C')")
 	public void addTopConcept(@Modified(role = RDFResourceRole.concept) IRI concept,
 			@LocallyDefined @SchemeAssignment IRI scheme) {
 		RepositoryConnection repoConnection = getManagedConnection();
