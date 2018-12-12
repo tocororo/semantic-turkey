@@ -496,11 +496,22 @@
 			class="it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderFactory" />
 	</osgi:service>
 
+	<!-- Publishes the connector to LOV -->
+
+	<osgi:service auto-export="interfaces">
+		<bean class="it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lov.LOVConnectorFactory" />
+	</osgi:service>
+
+	<!-- Publishes the connector to LOD Cloud -->
+
+	<osgi:service auto-export="interfaces">
+		<bean class="it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lodcloud.LODCloudConnectorFactory" />
+	</osgi:service>
+
 	<!-- Publishes the Importer -->
 
 	<osgi:service auto-export="interfaces">
 		<bean class="it.uniroma2.art.semanticturkey.config.importer.Importer" />
 	</osgi:service>
-
 
 </beans>
