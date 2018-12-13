@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -922,15 +924,49 @@ public class SKOS extends STServiceAdapter {
 		if(inSchemeProp!=null ) {
 			inSchemePropString = NTriplesUtil.toNTriplesString(inSchemeProp);
 		}
+
+		//this part is related to the modified date to be added (in case) to each selected concepts
+		boolean addModifiedDate = false;
+		RDFResourceRole role = RDFResourceRole.concept;
+		//part copied from VersionMetadataInterceptor to check whether the modification date should be added
+		for (RDFResourceRole updatableRole : stServiceContext.getProject().getUpdateForRoles()) {
+			if (RDFResourceRole.subsumes(updatableRole, role, true)) {
+				addModifiedDate = true;
+			}
+		}
+		Project project = stServiceContext.getProject();
+		String creationDateProp = project.getProperty(Project.CREATION_DATE_PROP);
+		String modificationDateProp = project.getProperty(Project.MODIFICATION_DATE_PROP);
+		if (creationDateProp == null && modificationDateProp == null) {
+			addModifiedDate = false;
+		}
+		ValueFactory vf = repoConnection.getValueFactory();
+		Literal currentTime = vf.createLiteral(new Date());
+		IRI modificationDatePropIRI = null;
+		if(addModifiedDate) {
+			modificationDatePropIRI = vf.createIRI(modificationDateProp);
+		}
 		
+		//prepare the SPARQL UPDATE
+		// @formatter:off
 		String updateQuery =
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
 					"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
 					"\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  " +
 					"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>  " +
-					"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " +
-                    "\nUPDATE {?concept  "+inSchemePropString+ " "+NTriplesUtil.toNTriplesString(scheme)+" . }" +
+					"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " ;
+		if(addModifiedDate) {
+			updateQuery +="\nDELETE {GRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph())+ "" +
+					"\n{?concept "+NTriplesUtil.toNTriplesString(modificationDatePropIRI)+" ?oldModDate .}}";
+		}
+		updateQuery +="\nINSERT {GRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph())+
+                    " \n{ ?concept  "+inSchemePropString+ " "+NTriplesUtil.toNTriplesString(scheme)+" . " ;
+		if(addModifiedDate) {
+			updateQuery+= "\n?concept "+NTriplesUtil.toNTriplesString(modificationDatePropIRI)+" "+NTriplesUtil.toNTriplesString(currentTime)+" .";
+		}
+		updateQuery+= "\n} }" +
 					"\nWHERE{" +
+                    "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph())+" {" +
                     "\n?concept rdf:type ?conceptSubClass ." +
 					"\nconceptSubClass rdfs:subClassOf* skos:Concept";
 		if(rootConcept!=null) {
@@ -950,7 +986,12 @@ public class SKOS extends STServiceAdapter {
 			}	
 			updateQuery += ")" ;
 		}
-		updateQuery +="\n}";
+		if(addModifiedDate) {
+			updateQuery+="\nOPTIONAL{ ?concept "+NTriplesUtil.toNTriplesString(modificationDatePropIRI)+" ?oldModDate .}";
+		}
+		updateQuery +="\n}"+
+				"\n}";
+		// @formatter:on
 		
 		Update update = repoConnection.prepareUpdate(updateQuery);
 		update.execute();
