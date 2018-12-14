@@ -968,7 +968,7 @@ public class SKOS extends STServiceAdapter {
 					"\nWHERE{" +
                     "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph())+" {" +
                     "\n?concept rdf:type ?conceptSubClass ." +
-					"\n?conceptSubClass rdfs:subClassOf* skos:Concept";
+					"\n?conceptSubClass rdfs:subClassOf* skos:Concept .";
 		if(rootConcept!=null) {
 			updateQuery += combinePathWithVarOrIri("?concept", rootConcept, broaderNarrowerPath, true);
 		}
