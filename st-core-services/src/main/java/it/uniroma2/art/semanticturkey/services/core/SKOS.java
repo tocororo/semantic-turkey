@@ -908,12 +908,69 @@ public class SKOS extends STServiceAdapter {
 			@Optional(defaultValue="true") boolean includeSubProperties,
 			@Optional @LocallyDefinedResources List<IRI> broaderProps,
 			@Optional @LocallyDefinedResources List<IRI> narrowerProps,
-			@Optional @LocallyDefinedResources List<IRI> filterSchemes) {
+			@Optional @LocallyDefinedResources List<IRI> filterSchemes,
+			@Optional(defaultValue="true") boolean setTopConcept) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		
 		List<IRI>broaderPropsToUse = null;
 		List<IRI>narrowerPropsToUse = null;
 		String broaderNarrowerPath = null;
+		
+		List<IRI>newTopConceptList = new ArrayList<>();
+		//if a rootConcept is passed and  setTopConcept is set to true, then that rootConcept will be 
+		// rootConcept for the desired scheme
+		if(rootConcept!=null) {
+			if(setTopConcept) {
+				newTopConceptList.add(rootConcept);
+			}
+		} else {
+			//since the topConcept is not passed, get all the concepts, which will be add to the desired 
+			// scheme and that do not have any broader concept
+			// @formatter:off
+			String query = " PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
+					"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+					"\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  " +
+					"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>  " +
+					"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> "  +
+					"\nSELECT ?concept " +
+					"\nWHERE{" +
+                    "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph())+" {" +
+                    "\n?concept rdf:type ?conceptSubClass ." +
+					"\n?conceptSubClass rdfs:subClassOf* skos:Concept .";
+			if(filterSchemes!=null && filterSchemes.size()>0) {
+				query+="\n?subPropInScheme rdfs:subPropertyOf* skos:inScheme ." +
+						"\n?concept ?subPropInScheme ?scheme ." +
+						"FILTER (";
+				boolean first=true;
+				for(IRI filterScheme : filterSchemes){
+					if(!first){
+						query+= " || ";
+					}
+					first=false;
+					query+="?scheme="+NTriplesUtil.toNTriplesString(filterScheme);
+				}	
+				query += ")" ;
+			}
+			query += "\nFILTER NOT EXISTS{ " +
+					combinePathWithVarOrIri("?concept", "?otherConcept", broaderNarrowerPath, true)+
+					 "}";
+			query +="\n}"+
+					"\n}";
+			// @formatter:on
+			
+			//execute the query
+			TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+			tupleQuery.setIncludeInferred(false);
+			TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+			while(tupleQueryResult.hasNext()) {
+				BindingSet bindingSet = tupleQueryResult.next();
+				Value newTopConcept = bindingSet.getValue("concept");
+				if(newTopConcept instanceof IRI) {
+					newTopConceptList.add((IRI) newTopConcept);
+				}
+			}
+		
+		}
 		
 		if(rootConcept!=null) {
 			//if the client passed a rootConcept, then 
@@ -1001,6 +1058,17 @@ public class SKOS extends STServiceAdapter {
 		
 		Update update = repoConnection.prepareUpdate(updateQuery);
 		update.execute();
+		
+		//now add all the selected topConcepts as topConcepts of the desired scheme
+		Model modelAdditions = new LinkedHashModel();
+		for(IRI newTopConept : newTopConceptList) {
+			modelAdditions.add(repoConnection.getValueFactory().createStatement(newTopConept, 
+					org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, scheme));
+		}
+		if(newTopConceptList.size()>0) {
+			repoConnection.add(modelAdditions, getWorkingGraph());
+		}
+		
 	}
 	
 	
