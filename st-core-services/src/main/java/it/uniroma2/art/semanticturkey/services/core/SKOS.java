@@ -917,6 +917,16 @@ public class SKOS extends STServiceAdapter {
 		String broaderNarrowerPath = null;
 		
 		List<IRI>newTopConceptList = new ArrayList<>();
+		
+		//check if the client passed a broaderProp , otherwise, set it as skos:broader
+		broaderPropsToUse = getHierachicalProps(broaderProps, narrowerProps);
+		//narrowerProp could be null if the broaderProp  has no inverse
+		narrowerPropsToUse = getInverseOfHierachicalProp(broaderProps, narrowerProps);
+		
+		broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse, 
+				getManagedConnection(), includeSubProperties);
+
+		
 		//if a rootConcept is passed and  setTopConcept is set to true, then that rootConcept will be 
 		// rootConcept for the desired scheme
 		if(rootConcept!=null) {
@@ -952,11 +962,12 @@ public class SKOS extends STServiceAdapter {
 				query += ")" ;
 			}
 			query += "\nFILTER NOT EXISTS{ " +
-					combinePathWithVarOrIri("?concept", "?otherConcept", broaderNarrowerPath, true)+
+					combinePathWithVarOrIri("?concept", "?otherConcept", broaderNarrowerPath, false)+
 					 "}";
 			query +="\n}"+
 					"\n}";
 			// @formatter:on
+			logger.debug("query: " + query);
 			
 			//execute the query
 			TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
@@ -972,16 +983,6 @@ public class SKOS extends STServiceAdapter {
 		
 		}
 		
-		if(rootConcept!=null) {
-			//if the client passed a rootConcept, then 
-			//check if the client passed a broaderProp , otherwise, set it as skos:broader
-			broaderPropsToUse = getHierachicalProps(broaderProps, narrowerProps);
-			//narrowerProp could be null if the broaderProp  has no inverse
-			narrowerPropsToUse = getInverseOfHierachicalProp(broaderProps, narrowerProps);
-			
-			broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse, 
-					getManagedConnection(), includeSubProperties);
-		}
 		
 		String inSchemePropString = "skos:inScheme";
 		if(inSchemeProp!=null ) {
@@ -1055,6 +1056,7 @@ public class SKOS extends STServiceAdapter {
 		updateQuery +="\n}"+
 				"\n}";
 		// @formatter:on
+		logger.debug("updateQuery: " + updateQuery);
 		
 		Update update = repoConnection.prepareUpdate(updateQuery);
 		update.execute();
