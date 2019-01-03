@@ -274,7 +274,13 @@ public class SPARQL extends STServiceAdapter {
 				List<String> row = new ArrayList<>();
 				BindingSet tuple = result.next();
 				for (String b : bindingNames) {
-					row.add(NTriplesUtil.toNTriplesString(tuple.getValue(b)));
+					Value value = tuple.getValue(b);
+					if (value != null) {
+						row.add(NTriplesUtil.toNTriplesString(value));
+					} else {
+						row.add(null);
+					}
+					
 				}
 				table.add(row);
 			}
