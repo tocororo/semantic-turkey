@@ -217,18 +217,20 @@ public class Refactor extends STServiceAdapter  {
     			"	AS ?newO) \n" +
     			"}";
 		// @formatter:on
-		if(!source.endsWith("#") || !source.endsWith("/")){
+		if(!source.endsWith("#") && !source.endsWith("/")){
 			//add / or # at the end of source
 			source+="#";
 		}
 		query = query.replace("%oldBaseURI%", source);
-		if(!target.endsWith("#") || !target.endsWith("/")){
+		if(!target.endsWith("#") && !target.endsWith("/")){
 			target+="#";
 			//TODO add / or # at the end of target
 		}
 		query = query.replace("%newBaseURI%", target);
 		query = query.replace("%oldWorkingGraph%", oldWorkingGraph); 
 		query = query.replace("%newWorkingGraph%", NTriplesUtil.toNTriplesString(getWorkingGraph())); 
+		
+		logger.debug(query);
 		
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(query);
