@@ -175,9 +175,56 @@ public class Refactor extends STServiceAdapter  {
 			getProject().setBaseURI(target);
 			//TODO update working graph
 		}
+		
+		//update the baseuri resource (which is the Ontology as well)
 		// @formatter:off
-		String query =
-				"DELETE {																					\n" +
+		String query = 
+				"DELETE {																 					\n" +
+				"	GRAPH ?oldGraph {																		\n" +
+				"		?oldS ?oldP ?oldO .																	\n" +
+				"	}																						\n" +
+				"}																							\n" +
+				"INSERT {																					\n" +
+				"	GRAPH ?newGraph {																		\n" +
+				"		?newS ?oldP ?newO .																	\n" +
+				"	}																						\n" +
+				"}																							\n" +
+				"WHERE {																					\n" +
+				"	BIND(%oldWorkingGraph% AS ?oldGraph)													\n" +
+				"	BIND(%newWorkingGraph% AS ?newGraph)													\n" +
+				"	GRAPH ?oldGraph {																		\n" +
+				"		?oldS ?oldP ?oldO .																	\n" +
+				//consider only those triples having having as subject or object the sourceBaseURI
+    			"       FILTER(STR(?oldS) = '"+source+"' || STR(?oldO) = '"+source+"' )						\n" +
+    			"	}																						\n" +
+    			//replace the subject or the object with the targetBaseURI, as requested
+				"BIND(																						\n "+
+				"	IF(STR(?oldS) = '"+source+"',															\n" +
+				"		URI('"+targetBaseURI.stringValue()+"' ), 				\n" +
+				"		?oldS) 																				\n "+
+				"	AS ?newS) \n" +
+				"BIND(																						\n "+
+				"	IF(STR(?oldO) = '"+source+"',															\n" +
+				"		URI('"+targetBaseURI.stringValue()+"' ), 				\n" +
+				"		?oldO) 																				\n "+
+				"	AS ?newO) \n" +
+    			"}";
+		// @formatter:on
+		query = query.replace("%newBaseURI%", target);
+		query = query.replace("%oldWorkingGraph%", oldWorkingGraph); 
+		query = query.replace("%newWorkingGraph%", NTriplesUtil.toNTriplesString(getWorkingGraph())); 
+		
+		logger.debug(query);
+		
+		RepositoryConnection conn = getManagedConnection();
+		Update update = conn.prepareUpdate(query);
+		update.execute();
+		
+		
+		//now update all other resoruces having the desired namespace
+		// @formatter:off
+		query =
+				"DELETE {																 					\n" +
 				"	GRAPH ?oldGraph {																		\n" +
 				"		?oldS ?oldP ?oldO .																	\n" +
 				"	}																						\n" +
@@ -193,6 +240,8 @@ public class Refactor extends STServiceAdapter  {
 				"	GRAPH ?oldGraph {																		\n" +
 				"		?oldS ?oldP ?oldO .																	\n" +
 				"	}																						\n" +
+				
+				
 				//get the base uri of ?oldS, ?oldP and oldO
 				"	BIND (REPLACE(STR(?oldS), '(^.*(#|/))([^#|^/]*)', '$1') AS ?oldBaseUriS)				\n" + 
     			"	BIND (REPLACE(STR(?oldP), '(^.*(#|/))([^#|^/]*)', '$1') AS ?oldBaseUriP)				\n" +
@@ -201,7 +250,7 @@ public class Refactor extends STServiceAdapter  {
     			//create the new triple, one resource at a time (if is has the oldBaseURI replace it with the
     			// new one, otherwise just copy the old value)
     			"BIND(																						\n "+
-    			"	IF(?oldBaseUriS = '%oldBaseURI%',														\n" +
+    			"	IF(STR(?oldS)!= '"+source+"' && ?oldBaseUriS = '%oldBaseURI%',							\n" +
     			"		URI(REPLACE(STR(?oldS), '(^.*(#|/))([^#|^/]*)', '%newBaseURI%$3') ), 				\n" +
     			"		?oldS) 																				\n "+
     			"	AS ?newS) \n" +
@@ -211,7 +260,7 @@ public class Refactor extends STServiceAdapter  {
     			"		?oldP) 																				\n "+
     			"	AS ?newP) \n" +
     			"BIND(																						\n "+
-    			"	IF(?oldBaseUriO = '%oldBaseURI%',														\n" +
+    			"	IF(STR(?oldO)!= '"+source+"' && ?oldBaseUriO = '%oldBaseURI%',							\n" +
     			"		URI(REPLACE(STR(?oldO), '(^.*(#|/))([^#|^/]*)', '%newBaseURI%$3') ), 				\n" +
     			"		?oldO) 																				\n "+
     			"	AS ?newO) \n" +
@@ -232,9 +281,9 @@ public class Refactor extends STServiceAdapter  {
 		
 		logger.debug(query);
 		
-		RepositoryConnection conn = getManagedConnection();
-		Update update = conn.prepareUpdate(query);
+		update = conn.prepareUpdate(query);
 		update.execute();
+		
 	}
 	
 	/**
