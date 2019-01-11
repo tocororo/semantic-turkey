@@ -495,6 +495,13 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderFactory" />
 	</osgi:service>
+	
+	<!-- Publishes the MetadataRepositoryConnector extension point -->
+	
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.MetadataRepositoryConnectorExtensionPoint" />
+	</osgi:service>
 
 	<!-- Publishes the connector to LOV -->
 
