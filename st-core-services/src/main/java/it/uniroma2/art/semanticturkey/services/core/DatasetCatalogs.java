@@ -6,10 +6,10 @@ import java.util.Map;
 
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.DatasetDescription;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.DatasetSearchResult;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.MetadataRepositoryConnector;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.SearchResultsPage;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetSearchResult;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchResultsPage;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -20,15 +20,15 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 
 /**
- * This class provides services for interacting with remote metadata repositories.
+ * This class provides services for interacting with dataset catalogs.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 @STService
-public class MetadataRepositories extends STServiceAdapter {
+public class DatasetCatalogs extends STServiceAdapter {
 
 	/**
-	 * Searched a dataset in the connected repository matching the given criteria
+	 * Searched a dataset in the connected catalog matching the given criteria
 	 * 
 	 * @param connectorConfigReference
 	 * @param query
@@ -47,14 +47,14 @@ public class MetadataRepositories extends STServiceAdapter {
 			@Optional(defaultValue = "{}") @JsonSerialized Map<String, List<String>> facets,
 			@Optional(defaultValue = "1") int page) throws WrongPropertiesException,
 			STPropertyAccessException, InvalidConfigurationException, IOException {
-		MetadataRepositoryConnector metadataRepositoryConnector = exptManager.instantiateExtension(
-				MetadataRepositoryConnector.class, new PluginSpecification(connectorId, null, null, null));
+		DatasetCatalogConnector metadataRepositoryConnector = exptManager.instantiateExtension(
+				DatasetCatalogConnector.class, new PluginSpecification(connectorId, null, null, null));
 
 		return metadataRepositoryConnector.searchDataset(query, facets, page);
 	}
 
 	/**
-	 * Returns the description of a given dataset provided by the connected repository
+	 * Returns the description of a given dataset provided by the connected catalog
 	 * 
 	 * @param connectorId
 	 * @param datasetId
@@ -70,8 +70,8 @@ public class MetadataRepositories extends STServiceAdapter {
 	public DatasetDescription describeDataset(String connectorId, String datasetId)
 			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
 			STPropertyAccessException, InvalidConfigurationException, IOException {
-		MetadataRepositoryConnector metadataRepositoryConnector = exptManager.instantiateExtension(
-				MetadataRepositoryConnector.class, new PluginSpecification(connectorId, null, null, null));
+		DatasetCatalogConnector metadataRepositoryConnector = exptManager.instantiateExtension(
+				DatasetCatalogConnector.class, new PluginSpecification(connectorId, null, null, null));
 		return metadataRepositoryConnector.describeDataset(datasetId);
 	}
 

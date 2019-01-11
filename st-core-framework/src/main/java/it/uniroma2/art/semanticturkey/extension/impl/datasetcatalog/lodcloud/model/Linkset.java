@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lodcloud.model;
+package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud.model;
 
 import javax.annotation.Nullable;
 

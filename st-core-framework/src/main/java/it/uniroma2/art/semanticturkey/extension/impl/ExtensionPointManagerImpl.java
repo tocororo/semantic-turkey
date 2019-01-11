@@ -35,10 +35,10 @@ import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackend;
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.MetadataRepositoryConnectorExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterExtensionPoint;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.MetadataRepositoryConnector;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.MetadataRepositoryConnectorExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformer;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformerExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
@@ -149,7 +149,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	
 	@Override
 	public MetadataRepositoryConnectorExtensionPoint getMetadataRepositoryConnector() {
-		return ((MetadataRepositoryConnectorExtensionPoint) getExtensionPoint(MetadataRepositoryConnector.class.getName()));
+		return ((MetadataRepositoryConnectorExtensionPoint) getExtensionPoint(DatasetCatalogConnector.class.getName()));
 	}
 
 	@Override

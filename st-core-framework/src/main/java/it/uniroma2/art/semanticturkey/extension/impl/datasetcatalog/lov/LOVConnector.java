@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lov;
+package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -27,25 +27,25 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.DatasetDescription;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.DatasetSearchResult;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.FacetAggregation;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.MetadataRepositoryConnector;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.SearchFacet;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.SearchFacetProcessor;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.SearchResultsPage;
-import it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lov.model.Aggregation;
-import it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lov.model.Version;
-import it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lov.model.VocabularyInfo;
-import it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lov.model.VocabularySearchResultPage;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetSearchResult;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.FacetAggregation;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacetProcessor;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchResultsPage;
+import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.model.Aggregation;
+import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.model.Version;
+import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.model.VocabularyInfo;
+import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.model.VocabularySearchResultPage;
 
 /**
- * An {@link MetadataRepositoryConnector} for <a href="https://lov.linkeddata.es/">LOV</a> (Linked Open
+ * An {@link DatasetCatalogConnector} for <a href="https://lov.linkeddata.es/">LOV</a> (Linked Open
  * Vocabularies)
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class LOVConnector implements MetadataRepositoryConnector {
+public class LOVConnector implements DatasetCatalogConnector {
 
 	private static final String LOV_V2_ENDPOINT = "https://lov.linkeddata.es/dataset/lov/api/v2/";
 	private static final String VOCABULARY_SEARCH_PATH = "vocabulary/search";
@@ -57,7 +57,7 @@ public class LOVConnector implements MetadataRepositoryConnector {
 	@SearchFacet(name = "lang", description = "filter by language", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
 	public SearchResultsPage<DatasetSearchResult> searchDataset(String query,
 			Map<String, List<String>> facets, int page) throws IOException {
-		List<Pair<String, String>> facetsQueryParams = MetadataRepositoryConnector.processFacets(this,
+		List<Pair<String, String>> facetsQueryParams = DatasetCatalogConnector.processFacets(this,
 				facets);
 
 		UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(LOV_V2_ENDPOINT)

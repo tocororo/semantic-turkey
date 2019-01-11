@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lodcloud;
+package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud;
 
 import java.io.IOException;
 import java.net.URI;
@@ -34,19 +34,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.DatasetDescription;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.DatasetSearchResult;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.MetadataRepositoryConnector;
-import it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.SearchResultsPage;
-import it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lodcloud.model.LODDatasetDescription;
-import it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lodcloud.model.Resource;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetSearchResult;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchResultsPage;
+import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud.model.LODDatasetDescription;
+import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud.model.Resource;
 
 /**
- * An {@link MetadataRepositoryConnector} for <a href="https://lod-cloud.net/">Linked Open Data Cloud</a>.
+ * An {@link DatasetCatalogConnector} for <a href="https://lod-cloud.net/">Linked Open Data Cloud</a>.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class LODCloudConnector implements MetadataRepositoryConnector {
+public class LODCloudConnector implements DatasetCatalogConnector {
 
 	private static final String LOD_CLOUD_ENDPOINT = "https://lod-cloud.net/";
 	private static final String DATASET_SEARCH_PATH = "datasets";
@@ -58,7 +58,7 @@ public class LODCloudConnector implements MetadataRepositoryConnector {
 
 	public SearchResultsPage<DatasetSearchResult> searchDataset(String query,
 			Map<String, List<String>> facets, int page) throws IOException {
-		List<Pair<String, String>> facetsQueryParams = MetadataRepositoryConnector.processFacets(this,
+		List<Pair<String, String>> facetsQueryParams = DatasetCatalogConnector.processFacets(this,
 				facets);
 
 		UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(LOD_CLOUD_ENDPOINT)

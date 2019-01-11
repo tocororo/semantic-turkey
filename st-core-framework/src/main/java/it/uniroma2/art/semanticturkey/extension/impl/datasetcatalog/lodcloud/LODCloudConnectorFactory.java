@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lodcloud;
+package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud;
 
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 

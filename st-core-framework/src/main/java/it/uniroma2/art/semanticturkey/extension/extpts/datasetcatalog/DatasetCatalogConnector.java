@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository;
+package it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -16,11 +16,11 @@ import org.springframework.core.annotation.AnnotationUtils;
 import it.uniroma2.art.semanticturkey.extension.Extension;
 
 /**
- * Extension point for the connection to (remote) metadata repositories.
+ * Extension point for the connection to datasets catalogs.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public interface MetadataRepositoryConnector extends Extension {
+public interface DatasetCatalogConnector extends Extension {
 
 	SearchResultsPage<DatasetSearchResult> searchDataset(String query, Map<String, List<String>> facets,
 			int page) throws IOException;
@@ -41,7 +41,7 @@ public interface MetadataRepositoryConnector extends Extension {
 		}
 	}
 
-	static List<Pair<String, String>> processFacets(MetadataRepositoryConnector connector,
+	static List<Pair<String, String>> processFacets(DatasetCatalogConnector connector,
 			Map<String, List<String>> facets) {
 		SearchFacet[] searchFacetList = connector.getDatasetSearchFacets();
 		Map<String, SearchFacet> name2facetDef = Arrays.stream(searchFacetList)

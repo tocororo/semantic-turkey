@@ -500,19 +500,19 @@
 	
 	<osgi:service auto-export="interfaces">
 		<bean
-			class="it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository.MetadataRepositoryConnectorExtensionPoint" />
+			class="it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.MetadataRepositoryConnectorExtensionPoint" />
 	</osgi:service>
 
 	<!-- Publishes the connector to LOV -->
 
 	<osgi:service auto-export="interfaces">
-		<bean class="it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lov.LOVConnectorFactory" />
+		<bean class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.LOVConnectorFactory" />
 	</osgi:service>
 
 	<!-- Publishes the connector to LOD Cloud -->
 
 	<osgi:service auto-export="interfaces">
-		<bean class="it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lodcloud.LODCloudConnectorFactory" />
+		<bean class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud.LODCloudConnectorFactory" />
 	</osgi:service>
 
 	<!-- Publishes the Importer -->

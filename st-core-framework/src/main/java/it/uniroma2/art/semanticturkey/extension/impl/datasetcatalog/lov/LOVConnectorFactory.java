@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lov;
+package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov;
 
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 

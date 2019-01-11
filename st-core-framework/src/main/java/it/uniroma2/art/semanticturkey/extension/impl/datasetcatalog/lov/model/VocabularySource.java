@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lov.model;
+package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.model;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.semanticturkey.extension.impl.metadatarepository.lov.model.VocabularySource.VocabularySearchResultDeserializer;
+import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.model.VocabularySource.VocabularySearchResultDeserializer;
 
 @JsonDeserialize(using = VocabularySearchResultDeserializer.class)
 public class VocabularySource {

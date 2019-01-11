@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository;
+package it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog;
 
 import java.util.Collection;
 import java.util.Map;

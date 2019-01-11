@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.extpts.metadatarepository;
+package it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog;
 
 import static java.lang.annotation.ElementType.METHOD;
 
