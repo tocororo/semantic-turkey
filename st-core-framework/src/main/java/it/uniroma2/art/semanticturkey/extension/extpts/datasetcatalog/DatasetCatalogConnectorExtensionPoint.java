@@ -3,7 +3,7 @@ package it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPoint;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 
-public class MetadataRepositoryConnectorExtensionPoint implements ExtensionPoint {
+public class DatasetCatalogConnectorExtensionPoint implements ExtensionPoint {
 
 	@Override
 	public Class<?> getInterface() {

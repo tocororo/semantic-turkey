@@ -2,22 +2,42 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URL;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
+import javax.swing.text.html.parser.Entity;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.filefilter.SuffixFileFilter;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.RepositoryInfo;
+import org.eclipse.rdf4j.repository.util.RDFLoader;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -43,6 +63,9 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
+import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
@@ -72,6 +95,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummary;
 import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
 import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary;
 import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary.RemoteRepositorySummary;
@@ -95,8 +120,8 @@ public class Projects extends STServiceAdapter {
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfigurerConfiguration\"}}") PluginSpecification supportRepoSailConfigurerSpecification,
 			@Optional String supportBackendType,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory\"}") PluginSpecification uriGeneratorSpecification,
-			@Optional PluginSpecification renderingEngineSpecification,
-			@Optional IRI creationDateProperty, @Optional IRI modificationDateProperty,
+			@Optional PluginSpecification renderingEngineSpecification, @Optional IRI creationDateProperty,
+			@Optional IRI modificationDateProperty,
 			@Optional(defaultValue = "resource") String[] updateForRoles) throws ProjectInconsistentException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
@@ -686,4 +711,107 @@ public class Projects extends STServiceAdapter {
 		});
 
 	}
+
+	/**
+	 * Preloads data contained provided in the request body.
+	 * 
+	 * @param preloadedData
+	 * @param preloadedDataFormat
+	 * @return
+	 * @throws IOException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public PreloadedDataSummary preloadDataFromFile(MultipartFile preloadedData,
+			RDFFormat preloadedDataFormat) throws IOException {
+		File preloadedDataFile = File.createTempFile("preloadedData", null);
+		preloadedData.transferTo(preloadedDataFile);
+
+		String baseURI = null;
+		IRI model = null;
+		IRI lexicalizationModel = null;
+
+		return preloadDataInternal(baseURI, model, lexicalizationModel, preloadedDataFile,
+				preloadedDataFormat);
+	}
+
+	/**
+	 * Preloads data from URL.
+	 * 
+	 * @param preloadedDatasetURL
+	 * @return
+	 * @throws IOException
+	 * @throws FileNotFoundException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public PreloadedDataSummary preloadDataFromURL(URL preloadedDataURL,
+			@Optional RDFFormat preloadedDataFormat) throws FileNotFoundException, IOException {
+		File preloadedDataFile;
+
+		HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
+		try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
+			HttpGet request = new HttpGet(preloadedDataURL.toExternalForm());
+			if (preloadedDataFormat != null) {
+				preloadedDataFormat.getMIMETypes().forEach(mime -> request.addHeader("Accept", mime));
+			}
+			try (CloseableHttpResponse httpResponse = httpClient.execute(request)) {
+				HttpEntity httpEntity = httpResponse.getEntity();
+				if (preloadedDataFormat == null) {
+					Header contentTypeHeader = httpEntity.getContentType();
+					if (contentTypeHeader != null) {
+						ContentType contentType = ContentType.parse(contentTypeHeader.getValue());
+						String mime = contentType.getMimeType();
+						preloadedDataFormat = Rio.getParserFormatForMIMEType(mime)
+								.orElseThrow(Rio.unsupportedFormat(mime));
+					}
+				}
+
+				preloadedDataFile = File.createTempFile("preloadedData", null);
+				try (OutputStream out = new FileOutputStream(preloadedDataFile)) {
+					IOUtils.copy(httpEntity.getContent(), out);
+				}
+			}
+		}
+
+		String baseURI = null;
+		IRI model = null;
+		IRI lexicalizationModel = null;
+
+		return preloadDataInternal(baseURI, model, lexicalizationModel, preloadedDataFile,
+				preloadedDataFormat);
+	}
+
+	/**
+	 * Preloads data from a catalog.
+	 * 
+	 * @param connectorId
+	 * @param datasetId
+	 * @return
+	 * @throws IOException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public PreloadedDataSummary preloadDataFromCatalog(String connectorId, String datasetId)
+			throws IOException {
+		DatasetCatalogConnector datasetCatalogConnector = (DatasetCatalogConnector) ((NonConfigurableExtensionFactory<?>) exptManager
+				.getExtension(connectorId)).createInstance();
+
+		DatasetDescription datasetDescrition = datasetCatalogConnector.describeDataset(datasetId);
+		URL dataDump = datasetDescrition.getDataDump();
+		if (dataDump == null) {
+			IRI ontologyIRI = datasetDescrition.getOntologyIRI();
+			if (ontologyIRI == null) {
+				throw new IOException("Missing data dump for preloaded dataset");
+			} else {
+				dataDump = new URL(ontologyIRI.toString());
+			}
+		}
+
+		return preloadDataFromURL(dataDump, null);
+	}
+
+	private PreloadedDataSummary preloadDataInternal(@Nullable String baseURI, @Nullable IRI model,
+			@Nullable IRI lexicalizationModel, File preloadedDataFile, RDFFormat preloadedDataFormat) {
+		return new PreloadedDataSummary(baseURI, model, lexicalizationModel, preloadedDataFile,
+				preloadedDataFormat);
+	}
+
 }

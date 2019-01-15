@@ -496,11 +496,11 @@
 			class="it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderFactory" />
 	</osgi:service>
 	
-	<!-- Publishes the MetadataRepositoryConnector extension point -->
+	<!-- Publishes the DatasetCatalogConnector extension point -->
 	
 	<osgi:service auto-export="interfaces">
 		<bean
-			class="it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.MetadataRepositoryConnectorExtensionPoint" />
+			class="it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnectorExtensionPoint" />
 	</osgi:service>
 
 	<!-- Publishes the connector to LOV -->
