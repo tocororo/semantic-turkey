@@ -61,6 +61,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipeline;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationStep;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
 /**
@@ -367,6 +368,16 @@ public class InputOutput extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf', 'D')")
 	public void clearData() throws RDF4JException {
 		getProject().getNewOntologyManager().clearData();
+	}
+	
+	/**
+	 * Gets {@link RDFFormat}s for which a parser is available
+	 * 
+	 * @return
+	 */
+	@STServiceOperation
+	public Collection<RDFFormat> getInputRDFFormats() {
+		return RDF4JUtilities.getInputFormats();
 	}
 
 };
