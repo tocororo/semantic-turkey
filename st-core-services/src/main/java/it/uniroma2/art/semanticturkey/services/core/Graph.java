@@ -42,14 +42,15 @@ public class Graph extends STServiceAdapter {
 		
 		RepositoryConnection conn = getManagedConnection();
 		String query = 
-				"SELECT DISTINCT ?p ?d ?r ?isDatatype WHERE { "
-				+ "	?propType " + NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + "* " + NTriplesUtil.toNTriplesString(RDF.PROPERTY)
-				+ " GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {"
-				+ "		?p a ?propType . " 
-				+ "		BIND(IF(EXISTS { ?p a " + NTriplesUtil.toNTriplesString(OWL.DATATYPEPROPERTY) + " }, true, false ) as ?isDatatype) "
-				+ "		OPTIONAL { ?p " + NTriplesUtil.toNTriplesString(RDFS.DOMAIN) + " ?d }"
-				+ "		OPTIONAL { ?p " + NTriplesUtil.toNTriplesString(RDFS.RANGE) + " ?r }"
-				+ "	}"
+				"SELECT DISTINCT ?p ?d ?r ?isDatatype WHERE {\n"
+				+ "	?propType " + NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + "* " + NTriplesUtil.toNTriplesString(RDF.PROPERTY) + "\n"
+				+ " GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {\n"
+				+ "		?p a ?propType .\n" 
+				+ "		FILTER (!isBlank(?p))\n"
+				+ "		BIND(IF(EXISTS { ?p a " + NTriplesUtil.toNTriplesString(OWL.DATATYPEPROPERTY) + " }, true, false ) as ?isDatatype)\n"
+				+ "		OPTIONAL { ?p " + NTriplesUtil.toNTriplesString(RDFS.DOMAIN) + " ?d }\n"
+				+ "		OPTIONAL { ?p " + NTriplesUtil.toNTriplesString(RDFS.RANGE) + " ?r }\n"
+				+ "	}\n"
 				+ "}";
 		logger.debug("query: " + query);
 		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
