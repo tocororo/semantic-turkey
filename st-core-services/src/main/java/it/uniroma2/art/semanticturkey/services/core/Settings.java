@@ -1,7 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.Collection;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -55,7 +55,8 @@ public class Settings extends STServiceAdapter {
 	@STServiceOperation
 	public it.uniroma2.art.semanticturkey.extension.settings.Settings getSettings(String componentID,
 			Scope scope) throws NoSuchSettingsManager, STPropertyAccessException {
-		return exptManager.getSettings(getProject(), UsersManager.getLoggedUser(), componentID, scope);
+		Project project = (scope == Scope.SYSTEM) ? null : getProject();
+		return exptManager.getSettings(project, UsersManager.getLoggedUser(), componentID, scope);
 	}
 
 	/**
@@ -74,7 +75,8 @@ public class Settings extends STServiceAdapter {
 	public void storeSettings(String componentID, Scope scope, ObjectNode settings)
 			throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
 			STPropertyUpdateException, WrongPropertiesException {
-		exptManager.storeSettings(componentID, getProject(), UsersManager.getLoggedUser(), scope, settings);
+		Project project = (scope == Scope.SYSTEM) ? null : getProject();
+		exptManager.storeSettings(componentID, project, UsersManager.getLoggedUser(), scope, settings);
 	}
 
 }
