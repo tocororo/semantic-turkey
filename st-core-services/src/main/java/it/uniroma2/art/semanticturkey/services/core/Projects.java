@@ -6,40 +6,61 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.StringWriter;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
-import javax.swing.text.html.parser.Entity;
 
-import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.RepositoryInfo;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.util.Connections;
 import org.eclipse.rdf4j.repository.util.RDFLoader;
+import org.eclipse.rdf4j.repository.util.Repositories;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParseException;
+import org.eclipse.rdf4j.rio.RDFParserRegistry;
 import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.helpers.StatementCollector;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -48,7 +69,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.io.Closer;
 
+import it.uniroma2.art.lime.model.repo.LIMERepositoryConnectionWrapper;
+import it.uniroma2.art.lime.model.repo.matchers.LIMEMatchers;
+import it.uniroma2.art.lime.profiler.LIMEProfiler;
+import it.uniroma2.art.lime.profiler.ProfilerException;
+import it.uniroma2.art.maple.orchestration.AssessmentException;
+import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 //import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerNotDetectedException;
 //import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerParameterMismatchException;
@@ -95,7 +123,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummary;
 import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
 import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary;
@@ -108,6 +135,9 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
 public class Projects extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(Projects.class);
+
+	@Autowired
+	private MediationFramework mediationFramework;
 
 	// TODO understand how to specify remote repository / different sail configurations
 	@STServiceOperation(method = RequestMethod.POST)
@@ -719,10 +749,15 @@ public class Projects extends STServiceAdapter {
 	 * @param preloadedDataFormat
 	 * @return
 	 * @throws IOException
+	 * @throws ProfilerException
+	 * @throws RepositoryException
+	 * @throws RDFParseException
+	 * @throws AssessmentException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public PreloadedDataSummary preloadDataFromFile(MultipartFile preloadedData,
-			RDFFormat preloadedDataFormat) throws IOException {
+			RDFFormat preloadedDataFormat) throws IOException, RDFParseException, RepositoryException,
+			ProfilerException, AssessmentException {
 		File preloadedDataFile = File.createTempFile("preloadedData", null);
 		preloadedData.transferTo(preloadedDataFile);
 
@@ -741,18 +776,26 @@ public class Projects extends STServiceAdapter {
 	 * @return
 	 * @throws IOException
 	 * @throws FileNotFoundException
+	 * @throws ProfilerException
+	 * @throws RepositoryException
+	 * @throws RDFParseException
+	 * @throws AssessmentException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public PreloadedDataSummary preloadDataFromURL(URL preloadedDataURL,
-			@Optional RDFFormat preloadedDataFormat) throws FileNotFoundException, IOException {
+			@Optional RDFFormat preloadedDataFormat) throws FileNotFoundException, IOException,
+			RDFParseException, RepositoryException, ProfilerException, AssessmentException {
 		File preloadedDataFile;
 
 		HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
 		try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
 			HttpGet request = new HttpGet(preloadedDataURL.toExternalForm());
-			if (preloadedDataFormat != null) {
-				preloadedDataFormat.getMIMETypes().forEach(mime -> request.addHeader("Accept", mime));
-			}
+			Set<RDFFormat> rdfFormats = preloadedDataFormat != null
+					? Collections.singleton(preloadedDataFormat)
+					: RDFParserRegistry.getInstance().getKeys();
+			List<String> acceptParams = RDFFormat.getAcceptParams(rdfFormats, false, null);
+			acceptParams.forEach(acceptParam -> request.addHeader("Accept", acceptParam));
+
 			try (CloseableHttpResponse httpResponse = httpClient.execute(request)) {
 				HttpEntity httpEntity = httpResponse.getEntity();
 				if (preloadedDataFormat == null) {
@@ -787,10 +830,15 @@ public class Projects extends STServiceAdapter {
 	 * @param datasetId
 	 * @return
 	 * @throws IOException
+	 * @throws ProfilerException
+	 * @throws RepositoryException
+	 * @throws RDFParseException
+	 * @throws AssessmentException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public PreloadedDataSummary preloadDataFromCatalog(String connectorId, String datasetId)
-			throws IOException {
+			throws IOException, RDFParseException, RepositoryException, ProfilerException,
+			AssessmentException {
 		DatasetCatalogConnector datasetCatalogConnector = (DatasetCatalogConnector) ((NonConfigurableExtensionFactory<?>) exptManager
 				.getExtension(connectorId)).createInstance();
 
@@ -809,9 +857,130 @@ public class Projects extends STServiceAdapter {
 	}
 
 	private PreloadedDataSummary preloadDataInternal(@Nullable String baseURI, @Nullable IRI model,
-			@Nullable IRI lexicalizationModel, File preloadedDataFile, RDFFormat preloadedDataFormat) {
+			@Nullable IRI lexicalizationModel, File preloadedDataFile, RDFFormat preloadedDataFormat)
+			throws RDFParseException, RepositoryException, IOException, ProfilerException,
+			AssessmentException {
+
+		if (!preloadedDataFile.exists()) {
+			throw new FileNotFoundException(preloadedDataFile.getPath() + ": not existing");
+		}
+
+		if (!preloadedDataFile.isFile()) {
+			throw new FileNotFoundException(preloadedDataFile.getPath() + ": not a normal file");
+		}
+
+		long dataSize = preloadedDataFile.length();
+
+		List<PreloadedDataSummary.PreloadWarning> preloadWarnings = new ArrayList<>();
+
+		if (baseURI == null || model == null || lexicalizationModel == null) {
+			long profilerDataSizeTreshold = 1 * FileUtils.ONE_MB;
+
+			if (dataSize > profilerDataSizeTreshold) { // preloaded data too big to profile
+				preloadWarnings = new ArrayList<>(1);
+				preloadWarnings
+						.add(new PreloadedDataSummary.ProfilerSizeTresholdExceeded(profilerDataSizeTreshold));
+			} else { // profile the preloaded data to obtain the necessary information
+				preloadWarnings = new ArrayList<>();
+
+				try (Closer closer = Closer.create()) {
+					// metadata repository
+					SailRepository metadataRepo = new SailRepository(new MemoryStore());
+					metadataRepo.initialize();
+					closer.register(metadataRepo::shutDown);
+
+					// data repository
+					SailRepository dataRepo = new SailRepository(new MemoryStore());
+					dataRepo.initialize();
+					closer.register(dataRepo::shutDown);
+
+					try (LIMERepositoryConnectionWrapper metadataConn = new LIMERepositoryConnectionWrapper(
+							metadataRepo, metadataRepo.getConnection());
+							RepositoryConnection dataConn = dataRepo.getConnection()) {
+						ValueFactory vf = dataConn.getValueFactory();
+
+						IRI metadataBaseURI = vf.createIRI(
+								"http://example.org/" + UUID.randomUUID().toString() + "/void.ttl");
+						IRI dataGraph = vf.createIRI("urn:uuid:" + UUID.randomUUID().toString());
+
+						// load preloaded data to the data repository
+						dataConn.add(preloadedDataFile, null, preloadedDataFormat, dataGraph);
+
+						// profile the preloaded data
+						LIMEProfiler profiler = new LIMEProfiler(metadataConn, metadataBaseURI, dataConn,
+								dataGraph);
+						profiler.profile();
+
+						// export the profile as a Model
+						Model profile = new LinkedHashModel();
+						StatementCollector collector = new StatementCollector(profile);
+						metadataConn.export(collector);
+
+						// Extract information from the profile
+						IRI mainDataset = metadataConn.getMainDataset(false).filter(IRI.class::isInstance)
+								.map(IRI.class::cast).orElse(null);
+
+						if (lexicalizationModel == null) {
+							lexicalizationModel = mediationFramework
+									.assessLexicalizationModel(mainDataset, profile).orElse(null);
+						}
+
+						logger.debug("main dataset = {}", mainDataset);
+						logger.debug("profile = {}", new Object() {
+							@Override
+							public String toString() {
+								StringWriter writer = new StringWriter();
+								Rio.write(profile, Rio.createWriter(RDFFormat.TURTLE, writer));
+								return writer.toString();
+							}
+						});
+
+						if (model == null) {
+							model = Models.objectIRI(QueryResults.asModel(
+									metadataConn.getStatements(mainDataset, DCTERMS.CONFORMS_TO, null)))
+									.orElse(null);
+						}
+
+						// Extract the baseURI as the ontology IRI
+						java.util.Optional<IRI> baseURIHolder = Iterations
+								.stream(dataConn.getStatements(null, RDF.TYPE, OWL.ONTOLOGY))
+								.filter(s -> s.getSubject() instanceof IRI).map(s -> (IRI) s.getSubject())
+								.findAny();
+
+						if (baseURIHolder.isPresent()) { // gets the base URI from the ontology object
+							baseURI = baseURIHolder.get().stringValue();
+						} else { // otherwise, determine the base URI from the data
+							TupleQuery nsQuery = dataConn.prepareTupleQuery(
+							// @formatter:off
+								"SELECT ?ns (COUNT(*) as ?count)  WHERE {\n" + 
+								"    GRAPH ?dataGraph {\n" + 
+								"    	?s ?p ?o .\n" + 
+								"    }\n" + 
+								"}\n" + 
+								"GROUP BY (REPLACE(STR(?s), \"^([^#]*(#|\\\\/))(.*)$\", \"$1\") as ?ns)\n" + 
+								"ORDER BY DESC(?count)\n" +
+								"LIMIT 1"
+								// @formatter:on
+							);
+							nsQuery.setBinding("dataGraph", dataGraph);
+							BindingSet bs = QueryResults.singleResult(nsQuery.evaluate());
+							if (bs != null) {
+								baseURI = bs.getValue("ns").stringValue(); // possible trailing # stripped
+																			// later
+							}
+
+						}
+
+						if (baseURI.endsWith("#")) {
+							baseURI = baseURI.substring(0, baseURI.length() - 1);
+						}
+					}
+				}
+			}
+		}
+
 		return new PreloadedDataSummary(baseURI, model, lexicalizationModel, preloadedDataFile,
-				preloadedDataFormat);
+				preloadedDataFormat, preloadWarnings);
 	}
 
 }
