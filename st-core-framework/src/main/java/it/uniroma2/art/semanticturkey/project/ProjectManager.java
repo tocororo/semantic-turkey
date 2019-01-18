@@ -57,12 +57,14 @@ import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryConfigUtil;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
+import org.eclipse.rdf4j.rio.RDFFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,6 +87,7 @@ import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurer;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
+import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
@@ -96,10 +99,12 @@ import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
+import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
 /**
  * <p>
@@ -905,9 +910,9 @@ public class ProjectManager {
 				}
 
 				/*
-				 *  if there aren't the folders for the project-user bindings of the current project, create them.
-				 *  this scenario could happen when the project is imported
-				 *  (by means the import function or the copy of a project folder in SemanticTurkeyData/projects)
+				 * if there aren't the folders for the project-user bindings of the current project, create
+				 * them. this scenario could happen when the project is imported (by means the import function
+				 * or the copy of a project folder in SemanticTurkeyData/projects)
 				 */
 				if (!ProjectUserBindingsManager.existsPUBindingsOfProject(project)) {
 					ProjectUserBindingsManager.createPUBindingsOfProject(project);
@@ -1350,12 +1355,14 @@ public class ProjectManager {
 			String supportRepoID, PluginSpecification supportRepoSailConfigurerSpecification,
 			String supportBackendType, PluginSpecification uriGeneratorSpecification,
 			PluginSpecification renderingEngineSpecification, IRI creationDateProperty,
-			IRI modificationDateProperty, String[] updateForRoles) throws InvalidProjectNameException,
-			ProjectInexistentException, ProjectAccessException, ForbiddenProjectAccessException,
-			DuplicatedResourceException, ProjectCreationException, ClassNotFoundException,
-			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
-			WrongPropertiesException, ProjectBindingException, RBACException, UnsupportedModelException,
-			UnsupportedLexicalizationModelException, ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException {
+			IRI modificationDateProperty, String[] updateForRoles, File preloadedDataFile,
+			RDFFormat preloadedDataFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
+			Set<IRI> failedImports) throws InvalidProjectNameException, ProjectInexistentException,
+			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
+			ProjectCreationException, ClassNotFoundException, UnsupportedPluginConfigurationException,
+			UnloadablePluginConfigurationException, WrongPropertiesException, ProjectBindingException,
+			RBACException, UnsupportedModelException, UnsupportedLexicalizationModelException,
+			ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException, IOException {
 
 		// Currently, only continuous editing projects
 		ProjectType projType = ProjectType.continousEditing;
@@ -1403,7 +1410,8 @@ public class ProjectManager {
 			}
 
 			if (repositoryAccess.isLocal()) { // Local repositories
-				RepositoryImplConfigurer coreRepoSailConfigurer = instantiateRepositoryImplConfigurer(coreRepoSailConfigurerSpecification);
+				RepositoryImplConfigurer coreRepoSailConfigurer = instantiateRepositoryImplConfigurer(
+						coreRepoSailConfigurerSpecification);
 				RepositoryImplConfig coreRepositoryImplConfig = coreRepoSailConfigurer
 						.buildRepositoryImplConfig(backendSailImplConfig -> {
 							if (supportRepositoryConfig == null)
@@ -1425,7 +1433,8 @@ public class ProjectManager {
 				coreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
 
 				if (supportRepositoryConfig != null) {
-					RepositoryImplConfigurer supportRepoSailConfigurer = instantiateRepositoryImplConfigurer(supportRepoSailConfigurerSpecification);
+					RepositoryImplConfigurer supportRepoSailConfigurer = instantiateRepositoryImplConfigurer(
+							supportRepoSailConfigurerSpecification);
 					RepositoryImplConfig supportRepositoryImplConfig = supportRepoSailConfigurer
 							.buildRepositoryImplConfig(null);
 					supportRepositoryConfig.setRepositoryImplConfig(supportRepositoryImplConfig);
@@ -1436,7 +1445,8 @@ public class ProjectManager {
 				if (remoteRepositoryAccess instanceof CreateRemote) {
 					RepositoryConfig newCoreRepositoryConfig = new RepositoryConfig(coreRepoID,
 							"Core repository for project " + projectName);
-					RepositoryImplConfigurer coreRepoSailConfigurer = instantiateRepositoryImplConfigurer(coreRepoSailConfigurerSpecification);
+					RepositoryImplConfigurer coreRepoSailConfigurer = instantiateRepositoryImplConfigurer(
+							coreRepoSailConfigurerSpecification);
 					RepositoryImplConfig coreRepositoryImplConfig = coreRepoSailConfigurer
 							.buildRepositoryImplConfig(backendSailImplConfig -> {
 								if (supportRepositoryConfig == null)
@@ -1463,7 +1473,8 @@ public class ProjectManager {
 					if (supportRepositoryConfig != null) {
 						newSupportRepositoryConfig = new RepositoryConfig(supportRepoID,
 								"Support repository for project " + projectName);
-						RepositoryImplConfigurer supportRepoSailConfigurer = instantiateRepositoryImplConfigurer(supportRepoSailConfigurerSpecification);
+						RepositoryImplConfigurer supportRepoSailConfigurer = instantiateRepositoryImplConfigurer(
+								supportRepoSailConfigurerSpecification);
 						RepositoryImplConfig supportRepositoryImplConfig = supportRepoSailConfigurer
 								.buildRepositoryImplConfig(null);
 						newSupportRepositoryConfig.setRepositoryImplConfig(supportRepositoryImplConfig);
@@ -1572,6 +1583,17 @@ public class ProjectManager {
 					creationDateProperty, modificationDateProperty, updateForRoles);
 
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
+
+			Repository repository = project.getNewOntologyManager().getRepository();
+			RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repository);
+			try {
+				ValidationUtilities.executeWithoutValidation(validationEnabled, conn, (_conn) -> project.getNewOntologyManager().loadOntologyData(conn, preloadedDataFile, baseURI,
+						preloadedDataFormat, SimpleValueFactory.getInstance().createIRI(baseURI),
+						transitiveImportAllowance, failedImports));
+			} finally {
+				RDF4JRepositoryUtils.releaseConnection(conn, repository);
+			}
+
 			return project;
 		} catch (Exception e) {
 			logger.debug("directory: " + projectDir + " deleted due to project creation fail");

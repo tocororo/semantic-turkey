@@ -12,7 +12,7 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.fasterxml.jackson.databind.util.StdConverter;
 
 public class PreloadedDataSummary {
 
@@ -75,17 +75,36 @@ public class PreloadedDataSummary {
 		return lexicalizationModel;
 	}
 
+	@JsonSerialize(converter = GetFileNameConverter.class)
 	public File getPreloadedDataFile() {
 		return preloadedDataFile;
 	}
 
-	@JsonSerialize(using = ToStringSerializer.class)
+	@JsonSerialize(converter = GetRDFFormatNameConverter.class)
 	public RDFFormat getPreloadedDataFormat() {
 		return preloadedDataFormat;
 	}
 
 	public List<PreloadWarning> getWarnings() {
 		return warnings;
+	}
+
+	private static class GetRDFFormatNameConverter extends StdConverter<RDFFormat, String> {
+
+		@Override
+		public String convert(RDFFormat value) {
+			return value.getName();
+		}
+
+	}
+	
+	private static class GetFileNameConverter extends StdConverter<File, String> {
+
+		@Override
+		public String convert(File value) {
+			return value.getName();
+		}
+		
 	}
 
 }

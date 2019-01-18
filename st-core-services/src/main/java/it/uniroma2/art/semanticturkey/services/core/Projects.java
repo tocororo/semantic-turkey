@@ -9,8 +9,10 @@ import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -49,9 +51,6 @@ import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.RepositoryInfo;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.repository.util.Connections;
-import org.eclipse.rdf4j.repository.util.RDFLoader;
-import org.eclipse.rdf4j.repository.util.Repositories;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFParserRegistry;
@@ -72,7 +71,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.Closer;
 
 import it.uniroma2.art.lime.model.repo.LIMERepositoryConnectionWrapper;
-import it.uniroma2.art.lime.model.repo.matchers.LIMEMatchers;
 import it.uniroma2.art.lime.profiler.LIMEProfiler;
 import it.uniroma2.art.lime.profiler.ProfilerException;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
@@ -94,6 +92,7 @@ import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
+import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
@@ -123,6 +122,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataStore;
 import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummary;
 import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
 import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary;
@@ -139,6 +139,9 @@ public class Projects extends STServiceAdapter {
 	@Autowired
 	private MediationFramework mediationFramework;
 
+	@Autowired
+	private PreloadedDataStore preloadedDataStore;
+
 	// TODO understand how to specify remote repository / different sail configurations
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'C')")
@@ -152,13 +155,24 @@ public class Projects extends STServiceAdapter {
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory\"}") PluginSpecification uriGeneratorSpecification,
 			@Optional PluginSpecification renderingEngineSpecification, @Optional IRI creationDateProperty,
 			@Optional IRI modificationDateProperty,
-			@Optional(defaultValue = "resource") String[] updateForRoles) throws ProjectInconsistentException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
-			ClassNotFoundException, WrongPropertiesException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, ProjectBindingException, RBACException,
-			UnsupportedModelException, UnsupportedLexicalizationModelException, InvalidConfigurationException,
-			STPropertyAccessException {
+			@Optional(defaultValue = "resource") String[] updateForRoles,
+			@Optional String preloadedDataFileName, @Optional RDFFormat preloadedDataFormat,
+			@Optional TransitiveImportMethodAllowance transitiveImportAllowance)
+			throws ProjectInconsistentException, InvalidProjectNameException, ProjectInexistentException,
+			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
+			ProjectCreationException, ClassNotFoundException, WrongPropertiesException,
+			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
+			ProjectBindingException, RBACException, UnsupportedModelException,
+			UnsupportedLexicalizationModelException, InvalidConfigurationException, STPropertyAccessException,
+			IOException {
+
+		List<Object> preloadRelatedArgs = Arrays.asList(preloadedDataFileName, preloadedDataFormat,
+				transitiveImportAllowance);
+		if (!preloadRelatedArgs.stream().allMatch(java.util.Objects::nonNull)
+				&& !preloadRelatedArgs.stream().noneMatch(java.util.Objects::nonNull)) {
+			throw new IllegalArgumentException(
+					"All preload-related arguments must be specified together, or none of them can be specified");
+		}
 
 		// If no rendering engine has been configured, guess the best one based on the model type
 		if (renderingEngineSpecification == null) {
@@ -170,11 +184,22 @@ public class Projects extends STServiceAdapter {
 		uriGeneratorSpecification.expandDefaults();
 		renderingEngineSpecification.expandDefaults();
 
-		ProjectManager.createProject(consumer, projectName, model, lexicalizationModel, baseURI.trim(),
-				historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
-				coreRepoSailConfigurerSpecification, coreBackendType, supportRepoID,
-				supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
-				renderingEngineSpecification, creationDateProperty, modificationDateProperty, updateForRoles);
+		Set<IRI> failedImports = new HashSet<>();
+
+		File preloadedDataFile = preloadedDataStore.startConsumingPreloadedData(preloadedDataFileName);
+		boolean deletePreloadedDataFile = false;
+		try {
+			ProjectManager.createProject(consumer, projectName, model, lexicalizationModel, baseURI.trim(),
+					historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
+					coreRepoSailConfigurerSpecification, coreBackendType, supportRepoID,
+					supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
+					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
+					updateForRoles, preloadedDataFile, preloadedDataFormat, transitiveImportAllowance,
+					failedImports);
+			deletePreloadedDataFile = true;
+		} finally {
+			preloadedDataStore.finishConsumingPreloadedData(preloadedDataFileName, deletePreloadedDataFile);
+		}
 	}
 
 	/**
@@ -758,8 +783,7 @@ public class Projects extends STServiceAdapter {
 	public PreloadedDataSummary preloadDataFromFile(MultipartFile preloadedData,
 			RDFFormat preloadedDataFormat) throws IOException, RDFParseException, RepositoryException,
 			ProfilerException, AssessmentException {
-		File preloadedDataFile = File.createTempFile("preloadedData", null);
-		preloadedData.transferTo(preloadedDataFile);
+		File preloadedDataFile = preloadedDataStore.preloadData(preloadedData::transferTo);
 
 		String baseURI = null;
 		IRI model = null;
@@ -808,10 +832,11 @@ public class Projects extends STServiceAdapter {
 					}
 				}
 
-				preloadedDataFile = File.createTempFile("preloadedData", null);
-				try (OutputStream out = new FileOutputStream(preloadedDataFile)) {
-					IOUtils.copy(httpEntity.getContent(), out);
-				}
+				preloadedDataFile = preloadedDataStore.preloadData(f -> {
+					try (OutputStream out = new FileOutputStream(f)) {
+						IOUtils.copy(httpEntity.getContent(), out);
+					}
+				});
 			}
 		}
 
