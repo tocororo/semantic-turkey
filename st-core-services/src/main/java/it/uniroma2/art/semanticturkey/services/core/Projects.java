@@ -186,7 +186,7 @@ public class Projects extends STServiceAdapter {
 
 		Set<IRI> failedImports = new HashSet<>();
 
-		File preloadedDataFile = preloadedDataStore.startConsumingPreloadedData(preloadedDataFileName);
+		File preloadedDataFile = preloadedDataFileName != null ? preloadedDataStore.startConsumingPreloadedData(preloadedDataFileName) : null;
 		boolean deletePreloadedDataFile = false;
 		try {
 			ProjectManager.createProject(consumer, projectName, model, lexicalizationModel, baseURI.trim(),
@@ -198,7 +198,9 @@ public class Projects extends STServiceAdapter {
 					failedImports);
 			deletePreloadedDataFile = true;
 		} finally {
-			preloadedDataStore.finishConsumingPreloadedData(preloadedDataFileName, deletePreloadedDataFile);
+			if (preloadedDataFileName != null) {
+				preloadedDataStore.finishConsumingPreloadedData(preloadedDataFileName, deletePreloadedDataFile);
+			}
 		}
 	}
 

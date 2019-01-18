@@ -1362,7 +1362,8 @@ public class ProjectManager {
 			ProjectCreationException, ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException, ProjectBindingException,
 			RBACException, UnsupportedModelException, UnsupportedLexicalizationModelException,
-			ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException, IOException {
+			ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException,
+			IOException {
 
 		// Currently, only continuous editing projects
 		ProjectType projType = ProjectType.continousEditing;
@@ -1584,14 +1585,18 @@ public class ProjectManager {
 
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 
-			Repository repository = project.getNewOntologyManager().getRepository();
-			RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repository);
-			try {
-				ValidationUtilities.executeWithoutValidation(validationEnabled, conn, (_conn) -> project.getNewOntologyManager().loadOntologyData(conn, preloadedDataFile, baseURI,
-						preloadedDataFormat, SimpleValueFactory.getInstance().createIRI(baseURI),
-						transitiveImportAllowance, failedImports));
-			} finally {
-				RDF4JRepositoryUtils.releaseConnection(conn, repository);
+			if (preloadedDataFile != null) {
+				Repository repository = project.getNewOntologyManager().getRepository();
+				RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repository);
+				try {
+					ValidationUtilities.executeWithoutValidation(validationEnabled, conn,
+							(_conn) -> project.getNewOntologyManager().loadOntologyData(conn,
+									preloadedDataFile, baseURI, preloadedDataFormat,
+									SimpleValueFactory.getInstance().createIRI(baseURI),
+									transitiveImportAllowance, failedImports));
+				} finally {
+					RDF4JRepositoryUtils.releaseConnection(conn, repository);
+				}
 			}
 
 			return project;
