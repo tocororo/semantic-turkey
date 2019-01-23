@@ -28,6 +28,8 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -47,6 +49,8 @@ import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud.mod
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class LODCloudConnector implements DatasetCatalogConnector {
+	
+	private static final Logger logger = LoggerFactory.getLogger(LODCloudConnector.class);
 
 	private static final String LOD_CLOUD_ENDPOINT = "https://lod-cloud.net/";
 	private static final String DATASET_SEARCH_PATH = "datasets";
@@ -65,8 +69,9 @@ public class LODCloudConnector implements DatasetCatalogConnector {
 				.path(DATASET_SEARCH_PATH);
 		uriBuilder.queryParam("search", query);
 		URI searchURL = uriBuilder.build().toUri();
-		System.out.println("Search URL = " + searchURL);
 
+		logger.debug("Search URL = {}", searchURL);
+		
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
 			try (CloseableHttpResponse response = httpClient.execute(new HttpGet(searchURL))) {
 				StatusLine statusLine = response.getStatusLine();
@@ -146,12 +151,12 @@ public class LODCloudConnector implements DatasetCatalogConnector {
 	public DatasetDescription describeDataset(String id) throws IOException {
 		UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(LOD_CLOUD_ENDPOINT)
 				.path(DATASET_JSON_PATH);
-		URI searchURL = uriBuilder.buildAndExpand(ImmutableMap.of("id", id)).toUri();
+		URI infoURL = uriBuilder.buildAndExpand(ImmutableMap.of("id", id)).toUri();
 
-		System.out.println("Info URL = " + searchURL);
+		logger.debug("Info URL = {}", infoURL);
 
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
-			try (CloseableHttpResponse response = httpClient.execute(new HttpGet(searchURL))) {
+			try (CloseableHttpResponse response = httpClient.execute(new HttpGet(infoURL))) {
 				StatusLine statusLine = response.getStatusLine();
 				if ((statusLine.getStatusCode() / 200) != 1) {
 					throw new IOException(

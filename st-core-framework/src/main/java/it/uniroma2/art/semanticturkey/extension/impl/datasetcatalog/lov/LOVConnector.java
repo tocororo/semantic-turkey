@@ -22,6 +22,8 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,6 +49,8 @@ import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.model.Vo
  */
 public class LOVConnector implements DatasetCatalogConnector {
 
+	private static final Logger logger = LoggerFactory.getLogger(LOVConnector.class);
+
 	private static final String LOV_V2_ENDPOINT = "https://lov.linkeddata.es/dataset/lov/api/v2/";
 	private static final String VOCABULARY_SEARCH_PATH = "vocabulary/search";
 	private static final String VOCABULARY_INFO_PATH = "vocabulary/info";
@@ -57,20 +61,18 @@ public class LOVConnector implements DatasetCatalogConnector {
 	@SearchFacet(name = "lang", description = "filter by language", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
 	public SearchResultsPage<DatasetSearchResult> searchDataset(String query,
 			Map<String, List<String>> facets, int page) throws IOException {
-		List<Pair<String, String>> facetsQueryParams = DatasetCatalogConnector.processFacets(this,
-				facets);
+		List<Pair<String, String>> facetsQueryParams = DatasetCatalogConnector.processFacets(this, facets);
 
 		UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(LOV_V2_ENDPOINT)
 				.path(VOCABULARY_SEARCH_PATH);
 		uriBuilder.queryParam("q", query);
 		uriBuilder.queryParam("page", page);
-		System.out.println("facet query params = " + facetsQueryParams);
 		if (facetsQueryParams != null && !facetsQueryParams.isEmpty()) {
 			facetsQueryParams.forEach(nv -> uriBuilder.queryParam(nv.getKey(), nv.getValue()));
 		}
 		URI searchURL = uriBuilder.build().toUri();
 
-		System.out.println("Search URL = " + searchURL);
+		logger.debug("Search URL = {}", searchURL);
 
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
 			try (CloseableHttpResponse response = httpClient.execute(new HttpGet(searchURL))) {
@@ -130,12 +132,12 @@ public class LOVConnector implements DatasetCatalogConnector {
 		UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(LOV_V2_ENDPOINT)
 				.path(VOCABULARY_INFO_PATH);
 		uriBuilder.queryParam("vocab", id);
-		URI searchURL = uriBuilder.build().toUri();
+		URI infoURL = uriBuilder.build().toUri();
 
-		System.out.println("Info URL = " + searchURL);
+		logger.debug("Info URL = {}", infoURL);
 
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
-			try (CloseableHttpResponse response = httpClient.execute(new HttpGet(searchURL))) {
+			try (CloseableHttpResponse response = httpClient.execute(new HttpGet(infoURL))) {
 				StatusLine statusLine = response.getStatusLine();
 				if ((statusLine.getStatusCode() / 200) != 1) {
 					throw new IOException(

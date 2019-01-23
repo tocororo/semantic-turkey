@@ -811,6 +811,9 @@ public class Projects extends STServiceAdapter {
 	public PreloadedDataSummary preloadDataFromURL(URL preloadedDataURL,
 			@Optional RDFFormat preloadedDataFormat) throws FileNotFoundException, IOException,
 			RDFParseException, RepositoryException, ProfilerException, AssessmentException {
+		
+		logger.debug("Preload data from URL = {} (format = {})", preloadedDataURL, preloadedDataFormat);
+		
 		File preloadedDataFile;
 
 		HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
