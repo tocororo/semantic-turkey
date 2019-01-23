@@ -161,7 +161,7 @@ public class LOVConnector implements DatasetCatalogConnector {
 
 				List<Version> vocabularyVersions = vocabularyInfo.getVersions();
 				if (!vocabularyVersions.isEmpty()) {
-					Version latestVersion = vocabularyVersions.get(vocabularyVersions.size() - 1);
+					Version latestVersion = vocabularyVersions.get(0); // most recent version first
 					List<String> languageIds = latestVersion.getLanguageIds();
 					facets.put("lang", languageIds);
 					dataDump = latestVersion.getFileURL();
