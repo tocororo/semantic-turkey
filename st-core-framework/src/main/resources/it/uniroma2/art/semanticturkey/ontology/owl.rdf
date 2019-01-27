@@ -13,7 +13,7 @@
      The real OWL 1 and OWL 2 namespace is:
           http://www.w3.org/2002/07/owl#
 
-	NOTE: this file was modified to remove the DOCTYPE
+     NOTE: this file was modified to remove the DOCTYPE
 -->
 <rdf:RDF
     xml:base ="http://www.w3.org/2002/07/owl"

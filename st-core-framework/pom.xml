@@ -246,6 +246,12 @@
 		</dependency>
 		<dependency>
 			<groupId>it.uniroma2.art.lime</groupId>
+			<artifactId>lime-model</artifactId>
+			<version>${lime-api.version}</version>
+			<type>test-jar</type>
+		</dependency>
+		<dependency>
+			<groupId>it.uniroma2.art.lime</groupId>
 			<artifactId>lime-profiler</artifactId>
 			<version>${lime-api.version}</version>
 		</dependency>
