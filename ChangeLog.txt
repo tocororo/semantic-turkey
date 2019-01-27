@@ -17,12 +17,14 @@ date: dd/MM/yyyy
   * Added validation of RDF values (in particular, IRIs and literals) provided as arguments to the services
   * Introduced the possibility to configure the RDF Serializing Exporter (e.g. to inline blank nodes when
     serializing an ontology using Turtle)
+  * Removed any DOCTYPE declaration in cached ontologies because of the issue eclipse/rdf4j#1202 (affecting
+    Ontotext GraphDB 8.8.0)
   * Updated to Apache Karaf 4.2.1
   * Updated to Eclipse RDF4J 2.4.0 (the change-tracker-sail is still compatible with RDF4J < 2.3.0, and it can
     be also used with Ontotext GraphDB < 8.6; however, this compatibility may not be guaranteed in future 
     Semantic Turkey releases)
   * Updated to CODA 1.6.1
-  * Updated to lime-api 0.3.1
+  * Updated to lime-api 0.3.2
   * Updated to Sheet2RDF 2.1.1
   * Updated to maple 0.0.2
   * Bugfixes
