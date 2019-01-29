@@ -2,7 +2,9 @@ version 5.0-SNAPSHOT
 date: dd/MM/yyyy
   * Added extension point for connecting to dataset catalogs, together with implementations targeting
   	Linked Open Vocabularies (https://lov.linkeddata.es/dataset/lov/) and the LOD Cloud (https://lod-cloud.net/)
-  * Added the possibility to preload data into a project being created
+  * Added the possibility to preload data into a project being created, including data retrieved through the 
+    dataset catalog connection
+  * Added functionality for owl:importing vocabularies retrieved through the dataset catalog connection
   * Updated e-mail configuration;
   * Added email notification when a user is enabled by the administrator
   * Added user status (online/offline) to the users list 
