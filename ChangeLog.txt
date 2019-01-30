@@ -1,3 +1,7 @@
+version 5.0.1-SNAPSHOT
+date: dd/MM/yyyy
+  *
+
 version 5.0
 date: 30/01/2019
   * Added extension point for connecting to dataset catalogs, together with implementations targeting
