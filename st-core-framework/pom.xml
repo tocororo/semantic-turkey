@@ -270,6 +270,12 @@
 			<artifactId>sshd-core</artifactId>
 			<version>${sshd.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>javax.annotation</groupId>
+			<artifactId>javax.annotation-api</artifactId>
+			<version>${javax.annotations-api.version}</version>
+		</dependency>
+
 
 		<dependency>
 			<groupId>org.hamcrest</groupId>
