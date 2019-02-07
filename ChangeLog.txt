@@ -1,6 +1,7 @@
 version 5.0.1-SNAPSHOT
 date: dd/MM/yyyy
   * Fix some compatibility issues with Java 11
+  * Fixed "authorization denied" when replacing an IRI value via Resources.updateTriple()
   * Update to lime-api 0.3.3
   * Update to maple 0.0.3
 

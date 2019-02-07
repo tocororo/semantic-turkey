@@ -198,10 +198,16 @@ public class STAuthorizationEvaluator {
 					langs.add(langString);
 				}
 			} else if (langValue instanceof ArrayList) {
-				langs = (ArrayList<String>) langValue;
+				ArrayList<String> langList = (ArrayList<String>) langValue;
+				for (String l : langList) {
+					if (!l.equals("null")) {
+						langs.add(l);
+					}
+				}
 			}
 			
 			if (!langs.isEmpty()) {
+				logger.debug("checking lang proficiencies on languages: " + langs);
 				Collection<String> assignedLangs = ProjectUserBindingsManager.getPUBinding(
 						loggedUser, targetForRBAC).getLanguages();
 				
