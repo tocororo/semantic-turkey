@@ -63,6 +63,9 @@
 
 		<bundle dependency="true">wrap:mvn:org.json/json/20090211</bundle>
 
+		<bundle dependency="true">mvn:org.apache.commons/commons-lang3/${commons-lang3.version}</bundle>
+		<bundle dependency="true">mvn:javax.annotation/javax.annotation-api/${javax.annotations-api.version}</bundle>
+
 		<!-- Console -->
 		<configfile finalname="/lib/st-console-${project.version}.jar"
 			override="false">
