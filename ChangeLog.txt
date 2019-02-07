@@ -1,6 +1,7 @@
 version 5.0.1-SNAPSHOT
 date: dd/MM/yyyy
   * Fix some compatibility issues with Java 11
+  * Fixed "authorization denied" when replacing an IRI value via Resources.updateTriple()
 
 version 5.0
 date: 30/01/2019
