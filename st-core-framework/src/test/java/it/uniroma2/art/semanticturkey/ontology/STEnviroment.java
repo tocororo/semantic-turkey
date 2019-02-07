@@ -33,7 +33,6 @@ import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.resources.MirroredOntologyFile;
 import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
-import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
 /**
  * A {@link TestRule} for setting up a fresh new Semantic Turkey Data directory.
@@ -122,6 +121,7 @@ public class STEnviroment implements TestRule {
 			conn.setNamespace(CHANGELOG.PREFIX, CHANGELOG.NAMESPACE);
 			conn.setNamespace(PROV.PREFIX, PROV.NAMESPACE);
 		});
+
 		ChangeTrackerConfig trackerConfig = new ChangeTrackerConfig(new MemoryStoreConfig());
 		trackerConfig.setSupportRepositoryID(supportRepoID);
 		trackerConfig.setMetadataNS(ModelUtilities.createDefaultNamespaceFromBaseURI(historyGraph));

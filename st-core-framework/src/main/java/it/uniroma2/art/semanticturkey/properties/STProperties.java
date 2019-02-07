@@ -14,6 +14,11 @@ import java.util.Enumeration;
 import java.util.Optional;
 import java.util.Properties;
 
+import org.apache.commons.lang3.reflect.TypeUtils;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
 
@@ -320,6 +325,13 @@ public interface STProperties {
 			value = Integer.parseInt((String) value);
 		else if (type == Double.class || type == double.class)
 			value = Double.parseDouble((String) value);
+		else if(TypeUtils.isAssignable(type, Value.class)) {
+			value = NTriplesUtil.parseValue((String)value, SimpleValueFactory.getInstance());
+			if (!((Class<?>)type).isInstance(value)) {
+				throw new IllegalArgumentException("The provided value \"" + value + "\" is not a serialization of an RDF4J " + ((Class<?>)type).getSimpleName());
+			}
+
+		}
 		return value;
 	}
 
