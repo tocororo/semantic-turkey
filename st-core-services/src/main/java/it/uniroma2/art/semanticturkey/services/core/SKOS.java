@@ -786,8 +786,8 @@ public class SKOS extends STServiceAdapter {
 				Value value = repositoryResult.next().getObject();
 				if(value instanceof Literal){
 					Literal oldLiteral = (Literal) value;
-					String oldLanguage = oldLiteral.getLanguage().get();
-					if(oldLanguage.equals(language)){
+					String oldLanguage = oldLiteral.getLanguage().orElse(null);
+					if(language.equals(oldLanguage)){
 						modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, 
 								org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL, oldLiteral));
 						modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, 
