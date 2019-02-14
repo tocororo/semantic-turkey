@@ -23,6 +23,7 @@ import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
@@ -271,6 +272,26 @@ public class Classes extends STServiceAdapter {
 		qb.setBinding("cls", cls);
 		return qb.runQuery();
 	}
+	
+	/**
+	 * Returns the number of instances of the given class.
+	 * Also {@link Classes#getClassesInfo(IRI[], boolean)} returns it, but it computes other info, so in case 
+	 * of a lot of instances it could be slow. 
+	 * @param cls
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, instances)', 'R')")
+	public Integer getNumberOfInstances(@LocallyDefined IRI cls) {
+		String query = " SELECT (count(distinct ?s) as ?count) WHERE { \n" + 
+			"?s a " + NTriplesUtil.toNTriplesString(cls) + " \n" + 
+			"}";
+		TupleQueryResult result = getManagedConnection().prepareTupleQuery(query).evaluate();
+		int instCount = ((Literal) result.next().getValue("count")).intValue();
+		return instCount;
+	}
+	
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
