@@ -62,9 +62,12 @@ public class RdfToZthesMapper {
 		TupleQuery tq = sourceConnection.prepareTupleQuery(query);
 		TupleQueryResult result = tq.evaluate();
 		
+		List<IRI> concepts = new ArrayList<>();
 		while (result.hasNext()) {
-			IRI concept = (IRI)result.next().getValue("concept");
-			
+			concepts.add((IRI)result.next().getValue("concept"));
+		}
+		
+		for (IRI concept : concepts) {
 			List<Term> preferredTerms = getPreferredTerms(concept);
 			
 			//identify pivot term, the only one which add hierarchical relations to
