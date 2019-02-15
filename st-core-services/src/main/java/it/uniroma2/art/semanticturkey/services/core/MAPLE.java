@@ -33,7 +33,7 @@ import it.uniroma2.art.lime.profiler.ProfilerException;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.maple.orchestration.ProfilingException;
-import it.uniroma2.art.maple.problem.MediationProblem;
+import it.uniroma2.art.maple.problem.MatchingProblem;
 import it.uniroma2.art.maple.problem.ResourceLexicalizationSet;
 import it.uniroma2.art.maple.problem.SingleResourceMatchingProblem;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
@@ -155,32 +155,18 @@ public class MAPLE extends STServiceAdapter {
 	 * Profiles a mediation problem between the current project and the provided resource position (i.e.
 	 * another local project or remote dataset).
 	 * 
-	 * @param resourcePosition
+	 * @param sourceDataset
+	 * @param targetDataset
 	 * @return
 	 * @throws ProfilingException
-	 * @throws ForbiddenProjectAccessException
-	 * @throws RDFParseException
-	 * @throws UnsupportedRDFormatException
-	 * @throws IllegalStateException
-	 * @throws IOException
-	 * @throws STPropertyAccessException
-	 * @throws NoSuchSettingsManager
-	 * @throws InvalidConfigurationException
 	 */
 	@STServiceOperation
-	public MediationProblem profileMediationProblem(ResourcePosition resourcePosition)
-			throws ProfilingException, ForbiddenProjectAccessException, RDFParseException,
-			UnsupportedRDFormatException, IllegalStateException, IOException, STPropertyAccessException,
-			NoSuchSettingsManager, InvalidConfigurationException {
+	public MatchingProblem profileMatchingProblem(IRI sourceDataset, IRI targetDataset)
+			throws ProfilingException {
 
-		Pair<IRI, Model> targetDatasetDescription = getDatasetDescriptionFromResourcePosition(
-				resourcePosition);
-
-		Pair<IRI, Model> sourceDatasetDescription = getProjectMetadata(getProject());
-
-		return mediationFramework.profileProblem(sourceDatasetDescription.getLeft(),
-				sourceDatasetDescription.getRight(), targetDatasetDescription.getLeft(),
-				targetDatasetDescription.getRight());
+		try (RepositoryConnection metadataConn = metadataRegistryBackend.getConnection()) {
+			return mediationFramework.profileProblem(metadataConn, sourceDataset, targetDataset);
+		}
 	}
 
 	/**
