@@ -152,8 +152,7 @@ public class MAPLE extends STServiceAdapter {
 	}
 
 	/**
-	 * Profiles a mediation problem between the current project and the provided resource position (i.e.
-	 * another local project or remote dataset).
+	 * Profiles a matching problem between two datasets described in the metadata registry.
 	 * 
 	 * @param sourceDataset
 	 * @param targetDataset
