@@ -161,6 +161,7 @@ public class STEnviroment implements TestRule {
 		setOntologiesMirrorRegistry.invoke(null, ontologiesMirrorFile);
 
 		ontologyManager = new OntologyManagerImpl(coreRepo, requiresValidation);
+		ontologyManager.initializeMappingsPersistence(new NSPrefixMappings(testSTDataDir, true));
 		ontologyManager.setBaseURI(baseURI);
 	}
 

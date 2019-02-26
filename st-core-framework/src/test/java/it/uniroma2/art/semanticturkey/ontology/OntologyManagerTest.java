@@ -7,8 +7,10 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
@@ -18,8 +20,14 @@ import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFHandler;
+import org.eclipse.rdf4j.rio.RDFParser;
+import org.eclipse.rdf4j.rio.Rio;
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
+
+import com.google.common.collect.HashBiMap;
 
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -31,6 +39,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import it.uniroma2.art.semanticturkey.ontology.ImportStatus.Values;
+import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerImpl;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
 /**
@@ -564,4 +573,192 @@ public class OntologyManagerTest {
 		}
 
 	}
+
+	/**
+	 * Tests that loading data can't introduce another (ambiguous) prefix for a namespace already bound to
+	 * another prefix.
+	 * 
+	 * @throws RDF4JException
+	 * @throws OntologyManagerException
+	 * @throws NSPrefixMappingUpdateException
+	 * @throws IOException
+	 */
+	@Test
+	public void testLoadNoPrefixAmbiguity()
+			throws RDF4JException, OntologyManagerException, NSPrefixMappingUpdateException, IOException {
+		OntologyManagerImpl ontMgr = stEnv.getOntologyManager();
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			ontMgr.setNSPrefixMapping("skos", "http://www.w3.org/2004/02/skos/core#");
+		}
+
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			conn.begin(IsolationLevels.SERIALIZABLE);
+			RDFHandler rdfHandler = ontMgr.getRDFHandlerForLoadData(conn, "http://example.org/",
+					conn.getValueFactory().createIRI("http://example.org/"),
+					TransitiveImportMethodAllowance.nowhere, new HashSet<>());
+			RDFParser rdfParser = Rio.createParser(RDFFormat.RDFXML);
+			rdfParser.setRDFHandler(rdfHandler);
+			rdfParser.parse(OntologyManager.class.getResourceAsStream("skosPrefixAdding.rdf"),
+					"http://example.org/");
+			conn.commit();
+		}
+
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			Map<String, String> nsPrefixMapping = ontMgr.getNSPrefixMappings(false);
+			try {
+				HashBiMap.create(nsPrefixMapping);
+			} catch (IllegalArgumentException e) {
+				fail(e.getMessage());
+			}
+			assertThat(nsPrefixMapping.get("skos"), is(equalTo("http://www.w3.org/2004/02/skos/core#")));
+		}
+	}
+
+	/**
+	 * Tests that loading data can't redefine a prefix already bound to some namespace.
+	 * 
+	 * @throws RDF4JException
+	 * @throws OntologyManagerException
+	 * @throws NSPrefixMappingUpdateException
+	 * @throws IOException
+	 */
+	@Test
+	public void testLoadNoPrefixOverride()
+			throws RDF4JException, OntologyManagerException, NSPrefixMappingUpdateException, IOException {
+		OntologyManagerImpl ontMgr = stEnv.getOntologyManager();
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			ontMgr.setNSPrefixMapping("owl", "http://example.org/");
+		}
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			conn.begin(IsolationLevels.SERIALIZABLE);
+			RDFHandler rdfHandler = ontMgr.getRDFHandlerForLoadData(conn, "http://example.org/",
+					conn.getValueFactory().createIRI("http://example.org/"),
+					TransitiveImportMethodAllowance.nowhere, new HashSet<>());
+			RDFParser rdfParser = Rio.createParser(RDFFormat.RDFXML);
+			rdfParser.setRDFHandler(rdfHandler);
+			rdfParser.parse(OntologyManager.class.getResourceAsStream("owl.rdf"), "http://example.org/");
+			conn.commit();
+		}
+
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			Map<String, String> nsPrefixMapping = ontMgr.getNSPrefixMappings(false);
+			assertThat(nsPrefixMapping.get("owl"), is(equalTo("http://example.org/")));
+		}
+	}
+
+	/**
+	 * Tests that ontology import can't introduce another (ambiguous) prefix for a namespace already bound to
+	 * another prefix.
+	 * 
+	 * @throws RDF4JException
+	 * @throws OntologyManagerException
+	 * @throws NSPrefixMappingUpdateException
+	 * @throws IOException
+	 */
+	@Test
+	public void testImportNoPrefixAmbiguity()
+			throws RDF4JException, OntologyManagerException, NSPrefixMappingUpdateException, IOException {
+		OntologyManagerImpl ontMgr = stEnv.getOntologyManager();
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			ontMgr.setNSPrefixMapping("skos", "http://www.w3.org/2004/02/skos/core#");
+		}
+
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			conn.begin(IsolationLevels.SERIALIZABLE);
+			Set<IRI> failedImports = new HashSet<>();
+			ontMgr.addOntologyImportFromWeb(conn, "http://example.org/", ImportModality.USER,
+					OntologyManager.class.getResource("skosPrefixAdding.rdf").toString(), RDFFormat.RDFXML,
+					TransitiveImportMethodAllowance.nowhere, failedImports);
+			conn.commit();
+			assertThat(failedImports, is(empty()));
+		}
+
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			Map<String, String> nsPrefixMapping = ontMgr.getNSPrefixMappings(false);
+			try {
+				HashBiMap.create(nsPrefixMapping);
+			} catch (IllegalArgumentException e) {
+				fail(e.getMessage());
+			}
+			assertThat(nsPrefixMapping.get("skos"), is(equalTo("http://www.w3.org/2004/02/skos/core#")));
+		}
+	}
+
+	/**
+	 * Tests that ontology import can't redefine a prefix already bound to some namespace.
+	 * 
+	 * @throws RDF4JException
+	 * @throws OntologyManagerException
+	 * @throws NSPrefixMappingUpdateException
+	 * @throws IOException
+	 */
+	@Test
+	public void testImportNoPrefixOverride()
+			throws RDF4JException, OntologyManagerException, NSPrefixMappingUpdateException, IOException {
+		OntologyManagerImpl ontMgr = stEnv.getOntologyManager();
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			ontMgr.setNSPrefixMapping("n1", "http://example.org/");
+		}
+
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			conn.begin(IsolationLevels.SERIALIZABLE);
+			Set<IRI> failedImports = new HashSet<>();
+			ontMgr.addOntologyImportFromWeb(conn, "http://example.org/", ImportModality.USER,
+					OntologyManager.class.getResource("skosPrefixAdding.rdf").toString(), RDFFormat.RDFXML,
+					TransitiveImportMethodAllowance.nowhere, failedImports);
+			conn.commit();
+			assertThat(failedImports, is(empty()));
+		}
+
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			Map<String, String> nsPrefixMapping = ontMgr.getNSPrefixMappings(false);
+			try {
+				HashBiMap.create(nsPrefixMapping);
+			} catch (IllegalArgumentException e) {
+				fail(e.getMessage());
+			}
+			assertThat(nsPrefixMapping.get("n1"), is(equalTo("http://example.org/")));
+		}
+	}
+
+	/**
+	 * Tests that loading data can't redefine a prefix already bound to some namespace. Differently from
+	 * {@link #testImportNoPrefixOverride()},here the potential source of override is the
+	 * {@code OntologyManagerImpl#guessMissingPrefixes(RepositoryConnection, Set<IRI>)}
+	 * 
+	 * @throws RDF4JException
+	 * @throws OntologyManagerException
+	 * @throws NSPrefixMappingUpdateException
+	 * @throws IOException
+	 */
+	@Test
+	public void testImportNoPrefixOverride2()
+			throws RDF4JException, OntologyManagerException, NSPrefixMappingUpdateException, IOException {
+		OntologyManagerImpl ontMgr = stEnv.getOntologyManager();
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			ontMgr.setNSPrefixMapping("owl", "http://example.org/");
+		}
+
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			conn.begin(IsolationLevels.SERIALIZABLE);
+			Set<IRI> failedImports = new HashSet<>();
+			ontMgr.addOntologyImportFromWeb(conn, "http://www.w3.org/2002/07/owl", ImportModality.USER,
+					OntologyManager.class.getResource("owl.rdf").toString(), RDFFormat.RDFXML,
+					TransitiveImportMethodAllowance.nowhere, failedImports);
+			conn.commit();
+			assertThat(failedImports, Matchers.contains(
+					SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2000/01/rdf-schema")));
+		}
+
+		try (RepositoryConnection conn = stEnv.getCoreRepo().getConnection()) {
+			Map<String, String> nsPrefixMapping = ontMgr.getNSPrefixMappings(false);
+			try {
+				HashBiMap.create(nsPrefixMapping);
+			} catch (IllegalArgumentException e) {
+				fail(e.getMessage());
+			}
+			assertThat(nsPrefixMapping.get("owl"), is(equalTo("http://example.org/")));
+		}
+	}
+
 }

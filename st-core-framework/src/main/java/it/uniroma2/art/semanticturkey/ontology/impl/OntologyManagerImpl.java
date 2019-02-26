@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.xerces.util.SynchronizedSymbolTable;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -71,6 +70,9 @@ import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.MapDifference.ValueDifference;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
@@ -811,9 +813,12 @@ public class OntologyManagerImpl implements OntologyManager {
 		logger.debug("checking namespace: " + ns + " for missing prefix");
 		if (QueryResults.stream(conn.getNamespaces()).noneMatch(nsObj -> nsObj.getName().equals(ns))) {
 			String guessedPrefix = ModelUtilities.guessPrefix(ns);
-			conn.setNamespace(guessedPrefix, ns);
-			logger.debug("namespace: " + ns
-					+ " was missing from mapping table, guessed and added new prefix: " + guessedPrefix);
+			if (conn.getNamespace(guessedPrefix) == null) { // avoid to override the declarion of the guessed
+															// prefix
+				conn.setNamespace(guessedPrefix, ns);
+				logger.debug("namespace: " + ns
+						+ " was missing from mapping table, guessed and added new prefix: " + guessedPrefix);
+			}
 		}
 	}
 
@@ -1375,16 +1380,28 @@ public class OntologyManagerImpl implements OntologyManager {
 		return new RDFInserter(conn) {
 
 			private Model capturedOntologyMetadata = new LinkedHashModel();
+			private Set<String> initialPrefixes = new HashSet<>();
+			private Set<String> initialNamespaces = new HashSet<>();
+			private Set<String> currentPrefixes = new HashSet<>();
+			private Set<String> currentNamespaces = new HashSet<>();
 
 			{
 				this.setPreserveBNodeIDs(false);
 				this.enforceContext(graph);
 			}
-			
+
 			@Override
 			public void startRDF() throws RDFHandlerException {
 				super.startRDF();
 				capturedOntologyMetadata.clear();
+				initialPrefixes.clear();
+				initialNamespaces.clear();
+				currentPrefixes.clear();
+				currentNamespaces.clear();
+				for (Map.Entry<String, String> entry : getNSPrefixMappings(false).entrySet()) {
+					initialPrefixes.add(entry.getKey());
+					initialNamespaces.add(entry.getValue());
+				}
 			}
 
 			@Override
@@ -1396,13 +1413,27 @@ public class OntologyManagerImpl implements OntologyManager {
 			}
 
 			@Override
+			public void handleNamespace(String prefix, String name) {
+				// do not handle prefix declarations that override existing declarations, or that introduce
+				// ambiguity. It was not possible to use OntologyManagerImpl::resotreNsPrefixMappings(..)
+				// because a subsequent read of the namespace mappings did not include the new prefixes
+				if (!initialPrefixes.contains(prefix) && !initialNamespaces.contains(name)
+						&& !currentPrefixes.contains(prefix) && !currentNamespaces.contains(name)) {
+					super.handleNamespace(prefix, name);
+					currentPrefixes.add(prefix);
+					currentNamespaces.add(name);
+				}
+			}
+
+			@Override
 			public void endRDF() throws RDFHandlerException, OntologyManagerException {
 				try {
 					super.endRDF();
-					
+
 					recoverImportsForOntology(conn, conn.getValueFactory().createIRI(baseURI),
 							ImportModality.USER, capturedOntologyMetadata, transitiveImportAllowance,
 							failedImports, new HashSet<>());
+
 				} catch (RDF4JException | MalformedURLException e) {
 					throw new RDFHandlerException(e);
 				}
@@ -1439,5 +1470,22 @@ public class OntologyManagerImpl implements OntologyManager {
 		// } catch (RDF4JException e) {
 		// throw new OntologyManagerException(e);
 		// }
+	}
+
+	private static void restoreNsPrefixMappings(RepositoryConnection conn,
+			Map<String, String> initialPrefixMappings, Map<String, String> newPrefixMappings)
+			throws RepositoryException {
+		MapDifference<String, String> diff = Maps.difference(newPrefixMappings, initialPrefixMappings);
+
+		for (Entry<String, String> newEntry : diff.entriesOnlyOnLeft().entrySet()) {
+			String ns = newEntry.getValue();
+			if (initialPrefixMappings.containsValue(ns)) {
+				conn.removeNamespace(newEntry.getKey());
+			}
+		}
+
+		for (Entry<String, ValueDifference<String>> changedEntry : diff.entriesDiffering().entrySet()) {
+			conn.setNamespace(changedEntry.getKey(), changedEntry.getValue().rightValue());
+		}
 	}
 }
