@@ -549,7 +549,6 @@ public class ResourceView extends STServiceAdapter {
 					" 	GROUP BY ?resource                                                            \n"
 				// @formatter:on
 					, predicatesValuesFrag, specialPredicatesValuesFrag));
-			qb.processRole();
 			Model propertyModel = new LinkedHashModel();
 			qb.runQuery(conn).stream().forEach(annotatedPredicate -> {
 				List<IRI> parents = Arrays
