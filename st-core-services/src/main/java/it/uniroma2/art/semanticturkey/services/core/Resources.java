@@ -27,6 +27,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -158,7 +159,7 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Collection<AnnotatedValue<Resource>> getResourcesInfo(IRI[] resources) {
+	public Collection<AnnotatedValue<Resource>> getResourcesInfo(@JsonSerialized IRI[] resources) {
 
 		QueryBuilder qb;
 		StringBuilder sb = new StringBuilder();
