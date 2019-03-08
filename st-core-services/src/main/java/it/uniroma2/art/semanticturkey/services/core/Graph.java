@@ -1,7 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import org.eclipse.rdf4j.model.vocabulary.OWL;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -38,21 +37,38 @@ public class Graph extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public JsonNode getGraphModel() {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		ArrayNode modelArrayNode = jsonFactory.arrayNode();
+
+		ArrayNode graphModelArrayNode = jsonFactory.arrayNode();
+		
+		/*
+		 * Property range-domain
+		 */
 		
 		RepositoryConnection conn = getManagedConnection();
 		String query = 
-				"SELECT DISTINCT ?p ?d ?r ?isDatatype WHERE {\n"
-				+ "	?propType " + NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + "* " + NTriplesUtil.toNTriplesString(RDF.PROPERTY) + "\n"
-				+ " GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {\n"
-				+ "		?p a ?propType .\n" 
-				+ "		FILTER (!isBlank(?p))\n"
-				+ "		BIND(IF(EXISTS { ?p a " + NTriplesUtil.toNTriplesString(OWL.DATATYPEPROPERTY) + " }, true, false ) as ?isDatatype)\n"
-				+ "		OPTIONAL { ?p " + NTriplesUtil.toNTriplesString(RDFS.DOMAIN) + " ?d }\n"
-				+ "		OPTIONAL { ?p " + NTriplesUtil.toNTriplesString(RDFS.RANGE) + " ?r }\n"
-				+ "	}\n"
-				+ "}";
+				// @formatter:off
+				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>								\n" +
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>									\n" +
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#>											\n" +                                      
+				"SELECT DISTINCT ?p ?d ?r ?isDatatype WHERE {											\n" +
+				"	?propType rdfs:subClassOf* rdf:Property												\n" +
+				"	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {					\n" +
+				"		?p a ?propType .																\n" +
+				"		FILTER (!isBlank(?p))															\n" +
+				"		BIND(IF(EXISTS { ?p a owl:DatatypeProperty }, true, false ) as ?isDatatype)		\n" +
+				"		OPTIONAL { 																		\n" +
+				"			?p rdfs:domain ?d .															\n" +
+				"			FILTER (!isBlank(?d))														\n" +
+				"		}																				\n" +
+				"		OPTIONAL {																		\n" +
+				"			?p rdfs:range ?r .															\n" +
+				"			FILTER (!isBlank(?r))														\n" +
+				"		}																				\n" +
+				"	}																					\n" +
+				"}";
+				// @formatter:on
 		logger.debug("query: " + query);
+		
 		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
 		TupleQueryResult results = tupleQuery.evaluate();
 		while (results.hasNext()) {
@@ -62,25 +78,72 @@ public class Graph extends STServiceAdapter {
 			Binding r = bs.getBinding("r");
 			boolean isDatatype = Boolean.parseBoolean(bs.getBinding("isDatatype").getValue().stringValue());
 			
-			ObjectNode rangeDomainNode = jsonFactory.objectNode();
-			rangeDomainNode.set("property", jsonFactory.textNode(prop));
+			String domain;
+			String range;
+			
 			if (d != null) {
-				rangeDomainNode.set("domain", jsonFactory.textNode(d.getValue().stringValue()));
+				domain = d.getValue().stringValue();
 			} else { //if there is no domain, set owl:Thing by default
-				rangeDomainNode.set("domain", jsonFactory.textNode(OWL.THING.stringValue()));
+				domain = OWL.THING.stringValue();
 			}
 			if (r != null) {
-				rangeDomainNode.set("range", jsonFactory.textNode(r.getValue().stringValue()));
+				range = r.getValue().stringValue();
 			} else { //if there is no range, set the default to rdfs:Literal for the DatatypeProperty, owl:Thing otherwise
 				if (isDatatype) {
-					rangeDomainNode.set("range", jsonFactory.textNode(RDFS.LITERAL.stringValue()));
+					range = RDFS.LITERAL.stringValue();
 				} else {
-					rangeDomainNode.set("range", jsonFactory.textNode(OWL.THING.stringValue()));
+					range = OWL.THING.stringValue();
 				}
 			}
-			modelArrayNode.add(rangeDomainNode);
+
+			ObjectNode graphModelNode = jsonFactory.objectNode();
+			graphModelNode.set("classAxiom", jsonFactory.booleanNode(false));
+			graphModelNode.set("link", jsonFactory.textNode(prop));
+			graphModelNode.set("source", jsonFactory.textNode(domain));
+			graphModelNode.set("target", jsonFactory.textNode(range));
+			graphModelArrayNode.add(graphModelNode);
 		}
-		return modelArrayNode;
+		
+		/*
+		 * class axioms
+		 */
+		
+		query = 
+				// @formatter:off
+				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>										\n" +
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>											\n" +
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#>													\n" +                                      
+				"SELECT DISTINCT ?s ?p ?o WHERE {																\n" +
+				"	?metaclass rdfs:subClassOf* rdfs:Class .													\n" +
+				"	 GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {							\n" +
+				"		?s a ?metaclass .																		\n" +
+				"		?o a ?metaclass .																		\n" +
+				"		?s ?p ?o .																				\n" +
+				"		FILTER (!isBlank(?s))																	\n" +
+				"		FILTER (!isBlank(?o))																	\n" +
+				"		FILTER (?p IN(rdfs:subClassOf,owl:complementOf,owl:disjointWith,owl:equivalentClass))	\n" +
+				"	}																							\n" +
+				"}";
+				// @formatter:on
+		logger.debug("query: " + query);
+		
+		tupleQuery = conn.prepareTupleQuery(query);
+		results = tupleQuery.evaluate();
+		while (results.hasNext()) {
+			BindingSet bs = results.next();
+			String subj = bs.getBinding("s").getValue().stringValue();
+			String prop = bs.getBinding("p").getValue().stringValue();
+			String obj = bs.getBinding("o").getValue().stringValue();
+			
+			ObjectNode graphModelNode = jsonFactory.objectNode();
+			graphModelNode.set("classAxiom", jsonFactory.booleanNode(true));
+			graphModelNode.set("source", jsonFactory.textNode(subj));
+			graphModelNode.set("link", jsonFactory.textNode(prop));
+			graphModelNode.set("target", jsonFactory.textNode(obj));
+			graphModelArrayNode.add(graphModelNode);
+		}
+		
+		return graphModelArrayNode;
 	}
 
 }
