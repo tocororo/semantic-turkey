@@ -222,19 +222,24 @@ public class ZthesToRdfMapper {
 		List<TermNote> notes = term.getTermNotes();
 		for (TermNote note : notes) {
 			Literal noteLiteral = vf.createLiteral(note.getNote());
-			if (note.getLabel().equalsIgnoreCase("changeNote")) {
-				model.add(concept, SKOS.CHANGE_NOTE, noteLiteral);
-			} else if (note.getLabel().equalsIgnoreCase("definition")) {
-				model.add(concept, SKOS.DEFINITION, noteLiteral);
-			} else if (note.getLabel().equalsIgnoreCase("editorialNote")) {
-				model.add(concept, SKOS.EDITORIAL_NOTE, noteLiteral);
-			} else if (note.getLabel().equalsIgnoreCase("example")) {
-				model.add(concept, SKOS.EXAMPLE, noteLiteral);
-			} else if (note.getLabel().equalsIgnoreCase("historyNote")) {
-				model.add(concept, SKOS.HISTORY_NOTE, noteLiteral);
-			} else if (note.getLabel().equalsIgnoreCase("scopeNote")) {
-				model.add(concept, SKOS.SCOPE_NOTE, noteLiteral);
-			} else { //default case
+			String noteLabel = note.getLabel();
+			if (noteLabel != null) {
+				if (note.getLabel().equalsIgnoreCase("changeNote")) {
+					model.add(concept, SKOS.CHANGE_NOTE, noteLiteral);
+				} else if (note.getLabel().equalsIgnoreCase("definition")) {
+					model.add(concept, SKOS.DEFINITION, noteLiteral);
+				} else if (note.getLabel().equalsIgnoreCase("editorialNote")) {
+					model.add(concept, SKOS.EDITORIAL_NOTE, noteLiteral);
+				} else if (note.getLabel().equalsIgnoreCase("example")) {
+					model.add(concept, SKOS.EXAMPLE, noteLiteral);
+				} else if (note.getLabel().equalsIgnoreCase("historyNote")) {
+					model.add(concept, SKOS.HISTORY_NOTE, noteLiteral);
+				} else if (note.getLabel().equalsIgnoreCase("scopeNote")) {
+					model.add(concept, SKOS.SCOPE_NOTE, noteLiteral);
+				} else { //default case: label unknown
+					model.add(concept, SKOS.NOTE, noteLiteral);
+				}
+			} else { //no label attr => still in the default case
 				model.add(concept, SKOS.NOTE, noteLiteral);
 			}
 		}
@@ -299,12 +304,14 @@ public class ZthesToRdfMapper {
 	
 	
 	private Literal createLiteral(TermEntity term) {
-		Literal literal = vf.createLiteral(term.getTermName(), getNormalizedTermLanguage(term));
+		Literal literal;
+		if (term.getTermLanguage() != null) {
+			String normalizedTermLang = new Locale(term.getTermLanguage()).getLanguage();
+			literal = vf.createLiteral(term.getTermName(), normalizedTermLang);
+		} else { //no termLanguage
+			literal = vf.createLiteral(term.getTermName());
+		}
 		return literal;
-	}
-	
-	private String getNormalizedTermLanguage(TermEntity entity) {
-		return new Locale(entity.getTermLanguage()).getLanguage();
 	}
 	
 }
