@@ -186,7 +186,7 @@ public class CustomFormGraph extends CustomForm {
 	 * @throws PRParserException
 	 */
 	public Map<String, String> getRelevantFormPlaceholders(CODACore codaCore) throws PRParserException {
-		Map<String, String> phPromptMap = new HashMap<String, String>(); // placeholderId-userPrompt
+		Map<String, String> phPromptMap = new LinkedHashMap<>(); // placeholderId-userPrompt
 		// crete the PEARL model
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);

@@ -219,7 +219,7 @@ public class CustomForms extends STServiceAdapter {
 		if (cfGraph != null) {
 			// retrieves, through a query, the values of those placeholders filled through a userPrompt in
 			// the CustomForm
-			Map<String, Value> promptValuesMap = new HashMap<String, Value>();
+			Map<String, Value> promptValuesMap = new LinkedHashMap<>();
 			String graphSection = cfGraph.getGraphSectionAsString(codaCore, true);
 			Map<String, String> phUserPromptMap = cfGraph.getRelevantFormPlaceholders(codaCore);
 			String bindings = "";
