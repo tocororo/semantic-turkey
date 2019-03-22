@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -55,15 +56,15 @@ public class Graph extends STServiceAdapter {
 				"	?propType rdfs:subClassOf* rdf:Property												\n" +
 				"	GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {					\n" +
 				"		?p a ?propType .																\n" +
-				"		FILTER (!isBlank(?p))															\n" +
+				"		FILTER (isIRI(?p))																\n" +
 				"		BIND(IF(EXISTS { ?p a owl:DatatypeProperty }, true, false ) as ?isDatatype)		\n" +
 				"		OPTIONAL { 																		\n" +
 				"			?p rdfs:domain ?d .															\n" +
-				"			FILTER (!isBlank(?d))														\n" +
+				"			FILTER (isIRI(?d))															\n" +
 				"		}																				\n" +
 				"		OPTIONAL {																		\n" +
 				"			?p rdfs:range ?r .															\n" +
-				"			FILTER (!isBlank(?r))														\n" +
+				"			FILTER (isIRI(?r))															\n" +
 				"		}																				\n" +
 				"	}																					\n" +
 				"}";
@@ -88,8 +89,8 @@ public class Graph extends STServiceAdapter {
 				"		?s a ?metaclass .																		\n" +
 				"		?o a ?metaclass .																		\n" +
 				"		?s ?p ?o .																				\n" +
-				"		FILTER (!isBlank(?s))																	\n" +
-				"		FILTER (!isBlank(?o))																	\n" +
+				"		FILTER (isIRI(?s))																		\n" +
+				"		FILTER (isIRI(?o))																		\n" +
 				"		FILTER (?p IN(rdfs:subClassOf,owl:complementOf,owl:disjointWith,owl:equivalentClass))	\n" +
 				"	}																							\n" +
 				"}";
@@ -138,17 +139,17 @@ public class Graph extends STServiceAdapter {
 				"			BIND(?res as ?d)															\n" +
 				" 			OPTIONAL {																	\n" + 
 				"				?p rdfs:range ?r .														\n" +
-				"				FILTER (!isBlank(?r))													\n" +
+				"				FILTER (isIRI(?r))														\n" +
 				"			}																			\n" +
 				"		} UNION {																		\n" +
 				"			?p rdfs:range ?res .														\n" +
 				"			BIND(?res as ?r)															\n" +
 				" 			OPTIONAL {																	\n" + 
 				"				?p rdfs:domain ?d .														\n" +
-				"				FILTER (!isBlank(?d))													\n" +
+				"				FILTER (isIRI(?d))														\n" +
 				"			}																			\n" +
 				"		}																				\n" +
-				"		FILTER (!isBlank(?p))															\n" +
+				"		FILTER (isIRI(?p))																\n" +
 				"	}																					\n" +
 				"}";
 				// @formatter:on
@@ -174,11 +175,11 @@ public class Graph extends STServiceAdapter {
 				"		?o a ?metaclass .																		\n" +
 				"		{																						\n" + 
 				"			?res ?p ?o .																		\n" +
-				"			FILTER (!isBlank(?o))																\n" +
+				"			FILTER (isIRI(?o))																	\n" +
 				"			BIND(?res as ?s)																	\n" + 
 				"		} UNION {																				\n" + 
 				"			?s ?p ?res .																		\n" +
-				"			FILTER (!isBlank(?s))																\n" +
+				"			FILTER (isIRI(?s))																	\n" +
 				"			BIND(?res as ?o)																	\n" + 
 				"		}																						\n" +
 				"		FILTER (?p IN(rdfs:subClassOf,owl:complementOf,owl:disjointWith,owl:equivalentClass))	\n" +
@@ -191,6 +192,133 @@ public class Graph extends STServiceAdapter {
 		tupleQuery.setBinding("res", resource);
 		evaluateClassAxiomQuery(tupleQuery, graphModelArrayNode);
 		
+		return graphModelArrayNode;
+	}
+	
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	public JsonNode expandSubResources(IRI resource, RDFResourceRole role) {
+		
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ArrayNode graphModelArrayNode = jsonFactory.arrayNode();
+		
+		if (role.isProperty() || role == RDFResourceRole.skosCollection || role == RDFResourceRole.cls || role == RDFResourceRole.concept) {
+		
+			RepositoryConnection conn = getManagedConnection();
+			String query = 
+					// @formatter:off
+					"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>								\n" +
+					"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>									\n" +
+					"PREFIX owl: <http://www.w3.org/2002/07/owl#>											\n" +
+					"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>									\n" +
+					"SELECT DISTINCT ?s ?p ?o WHERE {														\n";
+			if (role == RDFResourceRole.concept) {
+				query +=
+					"	?metaclass rdfs:subClassOf* skos:Concept .										\n" +
+					"	{ 																				\n" +
+					"		?p rdfs:subPropertyOf* skos:narrower .										\n" +
+					"		?o a ?metaclass .															\n" +
+					"		?res ?p ?o .																\n" +
+					"		BIND(?res as ?s)															\n" +
+					"	} UNION {																		\n" +
+					"		?p rdfs:subPropertyOf* skos:broader .										\n" +
+					"		?s a ?metaclass .															\n" +
+					"		?s ?p ?res .																\n" +
+					"		BIND(?res as ?o)															\n" +
+					"	}																				\n";
+			} else if (role == RDFResourceRole.cls) {
+				query +=
+					"	?p rdfs:subPropertyOf* rdfs:subClassOf .										\n" +
+					"	?s ?p ?res .																	\n" +
+					"	BIND(?res as ?o)																\n";
+			} else if (role.isProperty()) {
+				query +=
+					"	?p rdfs:subPropertyOf* rdfs:subPropertyOf .										\n" +
+					"	?s ?p ?res .																	\n" +
+					"	BIND(?res as ?o)																\n";
+			} else if (role == RDFResourceRole.skosCollection) {
+				//orderedCollection not included: the relation parent child is not direct
+				query +=
+					"	FILTER NOT EXISTS {?res skos:memberList [] }									\n" +
+					"	?res skos:member ?o .															\n" +
+					"	BIND(skos:member as ?p)															\n" +
+					"	BIND(?res as ?s)																\n";
+			}
+			query +=
+					"}";
+					// @formatter:on
+			logger.debug("query: " + query);
+			System.out.println("query: " + query);
+			
+			TupleQuery tupleQuery = conn.prepareTupleQuery(query);
+			tupleQuery.setBinding("res", resource);
+			evaluateSubjPredObjQuery(tupleQuery, graphModelArrayNode);
+		}
+		return graphModelArrayNode;
+	}
+	
+	
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	public JsonNode expandSuperResources(IRI resource, RDFResourceRole role) {
+		
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ArrayNode graphModelArrayNode = jsonFactory.arrayNode();
+		
+		if (role.isProperty() || role == RDFResourceRole.skosCollection|| role == RDFResourceRole.cls || role == RDFResourceRole.concept) {
+		
+			RepositoryConnection conn = getManagedConnection();
+			String query = 
+					// @formatter:off
+					"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>								\n" +
+					"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>									\n" +
+					"PREFIX owl: <http://www.w3.org/2002/07/owl#>											\n" +
+					"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>									\n" +
+					"SELECT DISTINCT ?s ?p ?o WHERE {														\n";
+			if (role == RDFResourceRole.concept) {
+				query +=
+					"	?metaclass rdfs:subClassOf* skos:Concept .										\n" +
+					"	{ 																				\n" +
+					"		?p rdfs:subPropertyOf* skos:narrower .										\n" +
+					"		?s a ?metaclass .															\n" +
+					"		?s ?p ?res .																\n" +
+					"		BIND(?res as ?o)															\n" +
+					"	} UNION {																		\n" +
+					"		?p rdfs:subPropertyOf* skos:broader .										\n" +
+					"		?o a ?metaclass .															\n" +
+					"		?res ?p ?o .																\n" +
+					"		BIND(?res as ?s)															\n" +
+					"	}																				\n";
+			} else if (role == RDFResourceRole.cls) {
+				query +=
+					"	?p rdfs:subPropertyOf* rdfs:subClassOf .										\n" +
+					"	?res ?p ?o .																	\n" +
+					"	BIND(?res as ?s)																\n";
+			} else if (role.isProperty()) {
+				query +=
+					"	?p rdfs:subPropertyOf* rdfs:subPropertyOf .										\n" +
+					"	?res ?p ?o .																	\n" +
+					"	BIND(?res as ?s)																\n";
+			} else if (role == RDFResourceRole.skosCollection) {
+				//orderedCollection not included: the relation parent child is not direct
+				query +=
+					"	FILTER NOT EXISTS {?s skos:memberList [] }										\n" +
+					"	?s skos:member ?res .															\n" +
+					"	BIND(skos:member as ?p)															\n" +
+					"	BIND(?res as ?o)																\n";
+			}
+			query +=
+					"}";
+					// @formatter:on
+			logger.debug("query: " + query);
+			System.out.println("query: " + query);
+			
+			TupleQuery tupleQuery = conn.prepareTupleQuery(query);
+			tupleQuery.setBinding("res", resource);
+			evaluateSubjPredObjQuery(tupleQuery, graphModelArrayNode);
+		}
 		return graphModelArrayNode;
 	}
 	
@@ -243,6 +371,23 @@ public class Graph extends STServiceAdapter {
 			
 			ObjectNode graphModelNode = jsonFactory.objectNode();
 			graphModelNode.set("classAxiom", jsonFactory.booleanNode(true));
+			graphModelNode.set("source", jsonFactory.textNode(subj));
+			graphModelNode.set("link", jsonFactory.textNode(prop));
+			graphModelNode.set("target", jsonFactory.textNode(obj));
+			graphModelArrayNode.add(graphModelNode);
+		}
+	}
+	
+	private void evaluateSubjPredObjQuery(TupleQuery tupleQuery, ArrayNode graphModelArrayNode) {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		TupleQueryResult results = tupleQuery.evaluate();
+		while (results.hasNext()) {
+			BindingSet bs = results.next();
+			String subj = bs.getBinding("s").getValue().stringValue();
+			String prop = bs.getBinding("p").getValue().stringValue();
+			String obj = bs.getBinding("o").getValue().stringValue();
+			
+			ObjectNode graphModelNode = jsonFactory.objectNode();
 			graphModelNode.set("source", jsonFactory.textNode(subj));
 			graphModelNode.set("link", jsonFactory.textNode(prop));
 			graphModelNode.set("target", jsonFactory.textNode(obj));
