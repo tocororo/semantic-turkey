@@ -201,7 +201,12 @@ public abstract class STPropertiesImpl implements STProperties {
 		for (String par : pars) {
 			String value;
 			try {
-				value = getPropertyValue(par).toString();
+				Object propValueObj = getPropertyValue(par);
+				if (propValueObj == null) {
+					value = null;
+				} else {
+					value = propValueObj.toString();
+				}
 			} catch (PropertyNotFoundException e) {
 				value = "propNotFound!";
 			}

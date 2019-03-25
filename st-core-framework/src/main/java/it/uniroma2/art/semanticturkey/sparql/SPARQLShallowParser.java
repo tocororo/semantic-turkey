@@ -7,7 +7,10 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 /**
- * A parser performing a shallow analysis of a SPARQL query to construct a modifiable representation.
+ * A parser performing a shallow analysis of a SPARQL query to construct a modifiable representation (see
+ * {@link TupleQueryShallowModel}).
+ * 
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class SPARQLShallowParser {
 	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\?([a-zA-Z_]+)");

@@ -101,7 +101,7 @@ public class Resources {
 		// accessed through proper OSGi APIs
 		karafEtcDirectory = new File(getExtensionPath(), _karafEtcDir);
 		semTurkeyPropertyFile = new File(karafEtcDirectory, "it.uniroma2.art.semanticturkey.cfg");
-		
+
 		try {
 			Config.initialize(semTurkeyPropertyFile);
 		} catch (FileNotFoundException e2) {
@@ -130,7 +130,7 @@ public class Resources {
 		projectUserBindingsDir = new File(stDataDirectory, _projectUserBindingsDirName);
 		projectGroupBindingsDir = new File(stDataDirectory, _projectGroupBindingsDirName);
 
-		if (!stDataDirectory.exists()) { //stData doens't exists => create from scratch
+		if (!stDataDirectory.exists()) { // stData doens't exists => create from scratch
 			try {
 				createDataDirectoryFromScratch(stDataDirectory);
 			} catch (IOException e) {
@@ -138,7 +138,7 @@ public class Resources {
 						"initial copy of Semantic Turkey resources failed during first install: "
 								+ e.getMessage());
 			}
-		} else { //stData exists => check if need to be updated
+		} else { // stData exists => check if need to be updated
 			try {
 				UpdateRoutines.startUpdatesCheckAndRepair();
 			} catch (IOException | STPropertyAccessException e) {
@@ -198,19 +198,23 @@ public class Resources {
 	public static File getProjectsDir() {
 		return projectsDir;
 	}
-	
+
 	public static File getSystemDir() {
 		return systemDir;
 	}
+
 	public static File getUsersDir() {
 		return usersDir;
 	}
+
 	public static File getGroupsDir() {
 		return groupsDir;
 	}
+
 	public static File getProjectUserBindingsDir() {
 		return projectUserBindingsDir;
 	}
+
 	public static File getProjectGroupBindingsDir() {
 		return projectGroupBindingsDir;
 	}
@@ -236,8 +240,8 @@ public class Resources {
 	}
 
 	/* new */
-	public static void createDataDirectoryFromScratch(File userDir) throws IOException,
-			STInitializationException {
+	public static void createDataDirectoryFromScratch(File userDir)
+			throws IOException, STInitializationException {
 		if (userDir.mkdirs()) {
 			String usrPath = userDir.getAbsolutePath();
 			if (!new File(usrPath, _ontTempDirLocalName).mkdirs()
@@ -248,12 +252,12 @@ public class Resources {
 					|| !new File(usrPath, _groupsDirName).mkdirs()
 					|| !new File(usrPath, _projectUserBindingsDirName).mkdirs()
 					|| !new File(usrPath, _projectGroupBindingsDirName).mkdirs()
-					|| !new File(usrPath,_ontMirrorFileName).createNewFile())
+					|| !new File(usrPath, _ontMirrorFileName).createNewFile())
 				throw new STInitializationException("Unable to locate/create the correct files/folders");
 			initializeCustomFormFileStructure();
 			initializeRoles();
 			initializeSystemProperties();
-						
+
 		} else {
 			throw new STInitializationException("Unable to create the main data folder");
 		}
@@ -262,21 +266,22 @@ public class Resources {
 	public static File getOSGiPath() {
 		return OSGiPath;
 	}
-	
+
 	/**
 	 * Initializes a folders structure in <code>STData/system/customForms</code>:
 	 * <ul>
-	 * 	<li>customFormConfig.xml</li>
-	 * 	<li>Forms/</li>
-	 * 	<ul>
-	 * 		<li>example.of.customform.xml</li>
-	 * 	</ul>
-	 * 	<li>FormCollections</li>
-	 * 	<ul>
-	 * 		<li>example.of.formcollection.xml</li>
-	 * 	</ul> 
-	 * </ul> 
-	 * @throws IOException 
+	 * <li>customFormConfig.xml</li>
+	 * <li>Forms/</li>
+	 * <ul>
+	 * <li>example.of.customform.xml</li>
+	 * </ul>
+	 * <li>FormCollections</li>
+	 * <ul>
+	 * <li>example.of.formcollection.xml</li>
+	 * </ul>
+	 * </ul>
+	 * 
+	 * @throws IOException
 	 */
 	private static void initializeCustomFormFileStructure() throws STInitializationException {
 		try {
@@ -287,106 +292,92 @@ public class Resources {
 			File formsFolder = CustomFormManager.getFormsFolder(null);
 			formsFolder.mkdir();
 			Utilities.copy(
-					Resources.class.getClassLoader().getResourceAsStream(
+					Resources.class.getResourceAsStream(
 							"/it/uniroma2/art/semanticturkey/customform/customFormConfig.xml"),
-					new File(customFormsFolder, "customFormConfig.xml")
-			);
-			Utilities.copy(
-					Resources.class.getClassLoader().getResourceAsStream(
-							"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.collection.note.xml"),
-					new File(formCollFolder, "it.uniroma2.art.semanticturkey.customform.collection.note.xml")
-			);
-			Utilities.copy(
-					Resources.class.getClassLoader().getResourceAsStream(
-							"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml"),
-					new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml")
-			);
-			Utilities.copy(
-					Resources.class.getClassLoader().getResourceAsStream(
-							"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml"),
-					new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml")
-			);
+					new File(customFormsFolder, "customFormConfig.xml"));
+			Utilities.copy(Resources.class.getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.collection.note.xml"),
+					new File(formCollFolder,
+							"it.uniroma2.art.semanticturkey.customform.collection.note.xml"));
+			Utilities.copy(Resources.class.getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml"),
+					new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml"));
+			Utilities.copy(Resources.class.getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml"),
+					new File(formsFolder,
+							"it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml"));
 		} catch (IOException e) {
 			throw new STInitializationException(e);
 		}
 	}
-	
+
 	private static void initializeRoles() throws STInitializationException {
 		try {
-			Role[] roles = {
-					RBACManager.DefaultRole.LEXICOGRAPHER, RBACManager.DefaultRole.LURKER, 
+			Role[] roles = { RBACManager.DefaultRole.LEXICOGRAPHER, RBACManager.DefaultRole.LURKER,
 					RBACManager.DefaultRole.MAPPER, RBACManager.DefaultRole.ONTOLOGIST,
 					RBACManager.DefaultRole.PROJECTMANAGER, RBACManager.DefaultRole.RDF_GEEK,
-					RBACManager.DefaultRole.THESAURUS_EDITOR, RBACManager.DefaultRole.VALIDATOR
-			};
+					RBACManager.DefaultRole.THESAURUS_EDITOR, RBACManager.DefaultRole.VALIDATOR };
 			File rolesDir = RBACManager.getRolesDir(null);
 			if (!rolesDir.exists()) {
 				rolesDir.mkdirs();
 			}
 			for (Role r : roles) {
-				Utilities.copy(Resources.class.getClassLoader()
-						.getResourceAsStream("/it/uniroma2/art/semanticturkey/rbac/roles/role_" + r.getName() + ".pl"),
-						new File(rolesDir, "role_" + r.getName() + ".pl")
-				);
+				Utilities.copy(
+						Resources.class.getResourceAsStream(
+								"/it/uniroma2/art/semanticturkey/rbac/roles/role_" + r.getName() + ".pl"),
+						new File(rolesDir, "role_" + r.getName() + ".pl"));
 			}
 		} catch (IOException e) {
 			throw new STInitializationException(e);
 		}
 	}
-	
+
 	/**
 	 * Initializes groups folder: simply creates an empty folder named "groups"
 	 */
 	public static void initializeGroups() {
 		groupsDir.mkdir();
 	}
-	
+
 	private static void initializeSystemProperties() throws STInitializationException {
 		try {
-			//system settings
+			// system settings
 			File propFile = STPropertiesManager.getSystemSettingsFile(STPropertiesManager.CORE_PLUGIN_ID);
-			if (!propFile.getParentFile().exists()) { //if path doesn't exist, first create it
+			if (!propFile.getParentFile().exists()) { // if path doesn't exist, first create it
 				propFile.getParentFile().mkdirs();
 			}
-			Utilities.copy(
-					Resources.class.getClassLoader().getResourceAsStream(
-							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/settings.props"),
-					propFile
-			);
-			//default project settings
+			Utilities.copy(Resources.class.getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/settings.props"),
+					propFile);
+			// default project settings
 			propFile = STPropertiesManager.getProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID);
-			if (!propFile.getParentFile().exists()) { //if path doesn't exist, first create it
+			if (!propFile.getParentFile().exists()) { // if path doesn't exist, first create it
 				propFile.getParentFile().mkdirs();
 			}
-			Utilities.copy(
-					Resources.class.getClassLoader().getResourceAsStream(
-							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"),
-					propFile
-			);
-			//pu_settings - system default
+			Utilities.copy(Resources.class.getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"),
+					propFile);
+			// pu_settings - system default
 			// * core plugin
-			propFile = STPropertiesManager.getPUSettingsSystemDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID);
-			if (!propFile.getParentFile().exists()) { //if path doesn't exist, first create it
+			propFile = STPropertiesManager
+					.getPUSettingsSystemDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID);
+			if (!propFile.getParentFile().exists()) { // if path doesn't exist, first create it
 				propFile.getParentFile().mkdirs();
 			}
-			Utilities.copy(
-					Resources.class.getClassLoader().getResourceAsStream(
-							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/pu-settings-defaults.props"),
-					propFile
-			);
+			Utilities.copy(Resources.class.getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/pu-settings-defaults.props"),
+					propFile);
 			// * rendering engine
 			propFile = STPropertiesManager.getPUSettingsSystemDefaultsFile(RenderingEngine.class.getName());
-			if (!propFile.getParentFile().exists()) { //if path doesn't exist, first create it
+			if (!propFile.getParentFile().exists()) { // if path doesn't exist, first create it
 				propFile.getParentFile().mkdirs();
 			}
-			Utilities.copy(
-					Resources.class.getClassLoader().getResourceAsStream(
-							"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine/pu-settings-defaults.props"),
-					propFile
-			);
+			Utilities.copy(Resources.class.getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine/pu-settings-defaults.props"),
+					propFile);
 		} catch (IOException e) {
 			throw new STInitializationException(e);
 		}
 	}
-	
+
 }

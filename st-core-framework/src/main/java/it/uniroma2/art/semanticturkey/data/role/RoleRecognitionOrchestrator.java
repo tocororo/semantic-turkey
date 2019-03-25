@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.data.role;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -45,8 +46,10 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 	@Override
 	public GraphPattern getGraphPattern(Project currentProject) {
 		return GraphPatternBuilder.create().prefix("rdf", RDF.NAMESPACE).prefix("rdfs", RDFS.NAMESPACE)
-				.prefix("owl", OWL.NAMESPACE).prefix("skos", SKOS.NAMESPACE).prefix("ontolex", ONTOLEX.NAMESPACE).prefix("lime", LIME.NAMESPACE)
-				.prefix("skosxl", SKOSXL.NAMESPACE).projection(ProjectionElementBuilder.variable("attr_role"))
+				.prefix("owl", OWL.NAMESPACE).prefix("skos", SKOS.NAMESPACE)
+				.prefix("ontolex", ONTOLEX.NAMESPACE).prefix("lime", LIME.NAMESPACE)
+				.prefix("skosxl", SKOSXL.NAMESPACE)
+				.projection(Collections.singletonList(ProjectionElementBuilder.variable("attr_role")))
 				.pattern(
 				// @formatter:off
 				"BIND(IF(EXISTS {?metaClass rdfs:subClassOf* lime:Lexicon . ?resource a ?metaClass .}, \"limeLexicon\", " +

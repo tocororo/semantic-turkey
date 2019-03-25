@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.support;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +31,8 @@ public class QNameQueryBuilderProcessor implements QueryBuilderProcessor {
 
 	@Override
 	public GraphPattern getGraphPattern(Project currentProject) {
-		return GraphPatternBuilder.create().projection(ProjectionElementBuilder.variable("dummy")).pattern("")
+		return GraphPatternBuilder.create()
+				.projection(Collections.singletonList(ProjectionElementBuilder.variable("dummy"))).pattern("")
 				.graphPattern();
 	}
 

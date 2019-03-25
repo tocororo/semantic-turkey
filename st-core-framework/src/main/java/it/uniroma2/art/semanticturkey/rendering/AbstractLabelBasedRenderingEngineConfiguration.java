@@ -14,4 +14,13 @@ public abstract class AbstractLabelBasedRenderingEngineConfiguration extends Abs
 			+ STPropertiesManager.PREF_LANGUAGES + "} to depend on ST Properties")
 	public String languages = "${" + STPropertiesManager.PREF_LANGUAGES + "}";
 
+	@STProperty(description = "The template for the redering of resources", displayName = "template")
+	public String template;
+
+	@STProperty(description = "Definition of the variables that can be used inside the template", displayName = "variables")
+	public String variables;
+
+	@STProperty(description = "Tells whether the rendering engine should ignore the fact that validation is enabled", displayName = "ignore validation")
+	public Boolean ignoreValidation;
+
 }

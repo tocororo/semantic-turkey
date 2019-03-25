@@ -28,11 +28,15 @@ import org.junit.runners.model.Statement;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
+import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
 import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerImpl;
 import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
-import it.uniroma2.art.semanticturkey.resources.Config;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.MirroredOntologyFile;
 import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
+import it.uniroma2.art.semanticturkey.resources.Resources;
 
 /**
  * A {@link TestRule} for setting up a fresh new Semantic Turkey Data directory.
@@ -42,8 +46,8 @@ import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
 public class STEnviroment implements TestRule {
 	public static final String DEFAULT_BASE_DIR_NAME = "target/test-base";
 	public static final String DEFAULT_STDATA_DIR_NAME = "test-stdata";
-	public static final String DEFAULT_STCONFIG_NAME = "stconfig.properties";
-
+	public static final String DEFAULT_ST_INSTALLATION_DIR_NAME = "test-installation";
+	public static final String DEFAULT_STCONFIG_PATH = "etc/it.uniroma2.art.semanticturkey.cfg";
 	public static final String DEFAULT_CORE_REPO_ID = "core";
 	public static final String DEFAULT_SUPPORT_REPO_ID = "support";
 
@@ -53,29 +57,37 @@ public class STEnviroment implements TestRule {
 
 	private File baseDir;
 	private String stDataDirName;
+	private String stInstallationDirName;
 	private String coreRepoID;
 	private String supportRepoID;
 
 	private String baseURI;
 	private String historyGraph;
 	private String validationGraph;
+	private boolean createProject;
 
 	private boolean requiresValidation;
 	private LocalRepositoryManager repositoryManager;
 	private Repository coreRepo;
 	private Repository supportRepo;
-	private String stConfigName;
+	private String stConfigPath;
 	private OntologyManagerImpl ontologyManager;
 
 	public STEnviroment() {
+		this(true);
+	}
+
+	public STEnviroment(boolean createProject) {
 		this.baseDir = new File(DEFAULT_BASE_DIR_NAME);
-		this.stConfigName = DEFAULT_STCONFIG_NAME;
+		this.stConfigPath = DEFAULT_STCONFIG_PATH;
 		this.stDataDirName = DEFAULT_STDATA_DIR_NAME;
+		this.stInstallationDirName = DEFAULT_ST_INSTALLATION_DIR_NAME;
 		this.coreRepoID = DEFAULT_CORE_REPO_ID;
 		this.supportRepoID = DEFAULT_SUPPORT_REPO_ID;
 		this.baseURI = DEFAULT_BASE_URI;
 		this.historyGraph = DEFAULT_HISTORY_GRAPH;
 		this.validationGraph = DEFAULT_VALIDATION_GRAPH;
+		this.createProject = createProject;
 	}
 
 	@Override
@@ -95,9 +107,9 @@ public class STEnviroment implements TestRule {
 
 	}
 
-	private void tearUp(Statement base, Description description)
-			throws FileNotFoundException, IOException, NoSuchMethodException, SecurityException,
-			IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	private void tearUp(Statement base, Description description) throws FileNotFoundException, IOException,
+			NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException,
+			InvocationTargetException, STInitializationException {
 
 		// Ensures that the base directory is a fresh new empty directory
 		if (baseDir.exists()) {
@@ -105,64 +117,63 @@ public class STEnviroment implements TestRule {
 		}
 		baseDir.mkdirs();
 
-		// Creates an empty STData directory
-		File testSTDataDir = new File(baseDir, stDataDirName);
-		testSTDataDir.mkdirs();
+		// Creates an empty ST Installation directory
+		File testSTInstallation = new File(baseDir, stInstallationDirName);
+		testSTInstallation.mkdirs();
 
-		// Sets up the repository manager
-		repositoryManager = new LocalRepositoryManager(testSTDataDir);
-		repositoryManager.initialize();
-
-		repositoryManager.addRepositoryConfig(
-				new RepositoryConfig(supportRepoID, new SailRepositoryConfig(new MemoryStoreConfig())));
-
-		supportRepo = repositoryManager.getRepository(supportRepoID);
-		Repositories.consume(supportRepo, conn -> {
-			conn.setNamespace(CHANGELOG.PREFIX, CHANGELOG.NAMESPACE);
-			conn.setNamespace(PROV.PREFIX, PROV.NAMESPACE);
-		});
-
-		ChangeTrackerConfig trackerConfig = new ChangeTrackerConfig(new MemoryStoreConfig());
-		trackerConfig.setSupportRepositoryID(supportRepoID);
-		trackerConfig.setMetadataNS(ModelUtilities.createDefaultNamespaceFromBaseURI(historyGraph));
-		// trackerConfig.setInteractiveNotifications(true);
-
-		requiresValidation = detectValidatonRequirement(base, description);
-
-		if (requiresValidation) {
-			trackerConfig.setValidationEnabled(true);
-			trackerConfig.setValidationGraph(SimpleValueFactory.getInstance().createIRI(validationGraph));
-		} else {
-			trackerConfig.setValidationEnabled(false);
-		}
-
-		trackerConfig.setHistoryGraph(SimpleValueFactory.getInstance().createIRI(historyGraph));
-
-		repositoryManager.addRepositoryConfig(
-				new RepositoryConfig(coreRepoID, new SailRepositoryConfig(trackerConfig)));
-		coreRepo = repositoryManager.getRepository(coreRepoID);
-
-		// Sets up the ontology mirror
-		File ontologiesMirrorLocation = new File(testSTDataDir, "ontologiesMirror");
-		ontologiesMirrorLocation.mkdirs();
-		File ontologiesMirrorFile = new File(testSTDataDir, "OntologiesMirror.properties");
-		ontologiesMirrorFile.createNewFile();
-		File testStConfig = new File(baseDir, stConfigName);
+		// Sets up ST configuration
+		File testStConfig = new File(testSTInstallation, stConfigPath);
+		testStConfig.getParentFile().mkdirs();
 		try (PrintWriter writer = new PrintWriter(new FileWriter(testStConfig))) {
-			writer.println("data.dir=" + testSTDataDir.getPath().replaceAll("\\\\", "/"));
-			writer.println(
-					"ontologiesMirrorLocation=" + ontologiesMirrorLocation.getPath().replaceAll("\\\\", "/"));
+			writer.println("data.dir=../SemanticTurkeyData");
+			writer.println("ontologiesMirrorLocation=default");
 		}
-		Config.initialize(testStConfig);
+		File stDataDir = new File(stInstallationDirName, "../SemanticTurkeyData");
 
-		Method setOntologiesMirrorRegistry = OntologiesMirror.class
-				.getDeclaredMethod("setOntologiesMirrorRegistry", File.class);
-		setOntologiesMirrorRegistry.setAccessible(true);
-		setOntologiesMirrorRegistry.invoke(null, ontologiesMirrorFile);
+		// Initializes user resources and create an empty STDataDirectory
+		Resources.initializeUserResources(testSTInstallation.getAbsolutePath().replace("\\", "/"));
 
-		ontologyManager = new OntologyManagerImpl(coreRepo, requiresValidation);
-		ontologyManager.initializeMappingsPersistence(new NSPrefixMappings(testSTDataDir, true));
-		ontologyManager.setBaseURI(baseURI);
+		if (createProject) {
+			File stProjectDir = new File(stDataDir, "projects/Test");
+			stProjectDir.mkdirs();
+
+			// Sets up the repository manager
+			repositoryManager = new LocalRepositoryManager(stProjectDir);
+			repositoryManager.initialize();
+
+			repositoryManager.addRepositoryConfig(
+					new RepositoryConfig(supportRepoID, new SailRepositoryConfig(new MemoryStoreConfig())));
+
+			supportRepo = repositoryManager.getRepository(supportRepoID);
+			Repositories.consume(supportRepo, conn -> {
+				conn.setNamespace(CHANGELOG.PREFIX, CHANGELOG.NAMESPACE);
+				conn.setNamespace(PROV.PREFIX, PROV.NAMESPACE);
+			});
+
+			ChangeTrackerConfig trackerConfig = new ChangeTrackerConfig(new MemoryStoreConfig());
+			trackerConfig.setSupportRepositoryID(supportRepoID);
+			trackerConfig.setMetadataNS(ModelUtilities.createDefaultNamespaceFromBaseURI(historyGraph));
+			// trackerConfig.setInteractiveNotifications(true);
+
+			requiresValidation = detectValidatonRequirement(base, description);
+
+			if (requiresValidation) {
+				trackerConfig.setValidationEnabled(true);
+				trackerConfig.setValidationGraph(SimpleValueFactory.getInstance().createIRI(validationGraph));
+			} else {
+				trackerConfig.setValidationEnabled(false);
+			}
+
+			trackerConfig.setHistoryGraph(SimpleValueFactory.getInstance().createIRI(historyGraph));
+
+			repositoryManager.addRepositoryConfig(
+					new RepositoryConfig(coreRepoID, new SailRepositoryConfig(trackerConfig)));
+			coreRepo = repositoryManager.getRepository(coreRepoID);
+
+			ontologyManager = new OntologyManagerImpl(coreRepo, requiresValidation);
+			ontologyManager.initializeMappingsPersistence(new NSPrefixMappings(stProjectDir, true));
+			ontologyManager.setBaseURI(baseURI);
+		}
 	}
 
 	private boolean detectValidatonRequirement(Statement base, Description description) {

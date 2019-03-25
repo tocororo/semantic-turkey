@@ -9,6 +9,10 @@ import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngi
  */
 public class SKOSXLRenderingEngine extends BaseRenderingEngine implements RenderingEngine {
 
+	public SKOSXLRenderingEngine(SKOSXLRenderingEngineFactory extensionFactory) {
+		super(extensionFactory);
+	}
+
 	@Override
 	protected void getGraphPatternInternal(StringBuilder gp) {
 		gp.append(

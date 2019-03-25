@@ -1601,6 +1601,7 @@ public class ProjectManager {
 
 			return project;
 		} catch (Exception e) {
+			e.printStackTrace();
 			logger.debug("directory: " + projectDir + " deleted due to project creation fail");
 
 			try {

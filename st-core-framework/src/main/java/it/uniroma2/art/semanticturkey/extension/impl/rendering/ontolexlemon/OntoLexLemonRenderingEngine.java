@@ -12,6 +12,10 @@ import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngi
  */
 public class OntoLexLemonRenderingEngine extends BaseRenderingEngine implements RenderingEngine {
 
+	public OntoLexLemonRenderingEngine(OntoLexLemonRenderingEngineFactory extensionFactory) {
+		super(extensionFactory);
+	}
+
 	@Override
 	protected void getGraphPatternInternal(StringBuilder gp) {
 		gp.append(

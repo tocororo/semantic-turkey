@@ -5,6 +5,12 @@ import static java.util.stream.Collectors.joining;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A modifiable representation of a SPARQL query, which supports the addition of {@link GraphPattern} objects.
+ * 
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ *
+ */
 public class TupleQueryShallowModel {
 
 	private final String query;
@@ -68,18 +74,20 @@ public class TupleQueryShallowModel {
 	}
 
 	public TupleQueryShallowModel appendGraphPattern(GraphPattern gp) {
-		ProjectionElement pe = gp.getProjectionElement();
+		List<ProjectionElement> projection = gp.getProjection();
 
-		if (!this.hasGroupBy() && pe.isAggregate()) {
+		if (!this.hasGroupBy() && projection.stream().anyMatch(ProjectionElement::isAggregate)) {
 			throw new IllegalArgumentException("Could not add an aggregate");
 		}
 
-		projectionElements.add(pe);
-		if (this.hasGroupBy() && !pe.isAggregate()) {
-			this.appendGroupBy(pe.getTargetVariable());
+		projectionElements.addAll(projection);
+		for (ProjectionElement pe : projection) {
+			if (this.hasGroupBy() && !pe.isAggregate()) {
+				this.appendGroupBy(pe.getTargetVariable());
+			}
 		}
-
 		graphPatterns.add(gp);
+
 		return this;
 	}
 

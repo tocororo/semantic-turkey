@@ -5,6 +5,7 @@ import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 
 import it.uniroma2.art.semanticturkey.changetracking.sail.ChangeTracker;
 
@@ -60,8 +61,18 @@ public abstract class VALIDATION {
 		return ctx instanceof IRI && ((IRI) ctx).stringValue().startsWith(STAGING_ADD_GRAPH.stringValue());
 	}
 
+	public static String isAddGraphSPARQL(String variable) {
+		return String.format("(isIRI(%1$s) && STRSTARTS(STR(%1$s), %2$s))", variable, RenderUtils
+				.toSPARQL(SimpleValueFactory.getInstance().createLiteral(STAGING_ADD_GRAPH.stringValue())));
+	}
+
 	public static boolean isRemoveGraph(Resource ctx) {
 		return ctx instanceof IRI && ((IRI) ctx).stringValue().startsWith(STAGING_REMOVE_GRAPH.stringValue());
+	}
+
+	public static String isRemoveGraphSPARQL(String variable) {
+		return String.format("(isIRI(%1$s) && STRSTARTS(STR(%1$s), %2$s))", variable, RenderUtils.toSPARQL(
+				SimpleValueFactory.getInstance().createLiteral(STAGING_REMOVE_GRAPH.stringValue())));
 	}
 
 	public static IRI unmangleAddGraph(IRI ctx) {

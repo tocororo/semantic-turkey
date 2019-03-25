@@ -3,10 +3,16 @@ package it.uniroma2.art.semanticturkey.sparql;
 import com.google.common.base.Function;
 import com.google.common.collect.BiMap;
 
+/**
+ * An element of the projection associated with a {@link GraphPattern}.
+ * 
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ *
+ */
 public class ProjectionElement {
 
 	public static enum Types {
-		GROUP_CONCAT, COPY, COUNT
+		GROUP_CONCAT, COPY, COUNT, MIN
 	}
 
 	private Types type;
@@ -22,7 +28,10 @@ public class ProjectionElement {
 	public String getSPARQLFragment() {
 		switch (type) {
 		case GROUP_CONCAT:
-			return "(GROUP_CONCAT(DISTINCT ?" + sourceVariable + "; separator=\",\") AS ?" + targetVariable + ")";
+			return "(GROUP_CONCAT(DISTINCT ?" + sourceVariable + "; separator=\",\") AS ?" + targetVariable
+					+ ")";
+		case MIN:
+			return "(MIN(?" + sourceVariable + ") AS ?" + targetVariable + ")";
 		case COUNT:
 			return "(COUNT(DISTINCT ?" + sourceVariable + ") AS ?" + targetVariable + ")";
 		case COPY:
@@ -41,19 +50,20 @@ public class ProjectionElement {
 		return targetVariable;
 	}
 
-	public ProjectionElement renamed(Function<String, String> renamingFunction, BiMap<String, String> projected2baseVariableMapping) {
-		String newSourceVariable = projected2baseVariableMapping.inverse().get(sourceVariable);
-		
+	public ProjectionElement renamed(Function<String, String> renamingFunction,
+			BiMap<String, String> projected2baseVariableMapping) {
+		String newSourceVariable = projected2baseVariableMapping.get(sourceVariable);
+
 		if (newSourceVariable == null) {
 			newSourceVariable = renamingFunction.apply(sourceVariable);
-			projected2baseVariableMapping.put(newSourceVariable, sourceVariable);
+			projected2baseVariableMapping.put(sourceVariable, newSourceVariable);
 		}
-		
-		String newTargetVariable = projected2baseVariableMapping.inverse().get(targetVariable);
-		
+
+		String newTargetVariable = projected2baseVariableMapping.get(targetVariable);
+
 		if (newTargetVariable == null) {
 			newTargetVariable = renamingFunction.apply(targetVariable);
-			projected2baseVariableMapping.put(newTargetVariable, targetVariable);
+			projected2baseVariableMapping.put(targetVariable, newTargetVariable);
 		}
 
 		return new ProjectionElement(type, newSourceVariable, newTargetVariable);

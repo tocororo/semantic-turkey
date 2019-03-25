@@ -259,7 +259,7 @@ public abstract class Project extends AbstractProject {
 	 * @throws ProjectCreationException
 	 * @throws UnsupportedModelException
 	 */
-	Project(String projectName, File projectDir) throws ProjectCreationException {
+	public Project(String projectName, File projectDir) throws ProjectCreationException {
 		super(projectName, projectDir);
 		logger.debug("initializing project: " + projectName);
 		infoSTPFile = new File(projectDir, INFOFILENAME);

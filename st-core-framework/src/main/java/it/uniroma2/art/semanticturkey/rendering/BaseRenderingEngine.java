@@ -3,14 +3,17 @@ package it.uniroma2.art.semanticturkey.rendering;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,19 +26,23 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.parser.sparql.SPARQLUtil;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
 
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.VariableDefinition;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.impls.Template;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngine;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine;
@@ -50,6 +57,7 @@ import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElement;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -57,43 +65,33 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
 public abstract class BaseRenderingEngine implements RenderingEngine {
 	private static final Logger logger = LoggerFactory.getLogger(BaseRenderingEngine.class);
 
-	private static class LabelComparator implements Comparator<Literal> {
-
-		public static final LabelComparator INSTANCE = new LabelComparator();
-
-		@Override
-		public int compare(Literal o1, Literal o2) {
-
-			int langCompare = compare(o1.getLanguage().orElse(null), o2.getLanguage().orElse(null));
-
-			if (langCompare == 0) {
-				return compare(o1.getLabel(), o2.getLabel());
-			} else {
-				return langCompare;
-			}
-		}
-
-		private static int compare(String s1, String s2) {
-			if (Objects.equal(s1, s2)) {
-				return 0;
-			} else {
-				if (s1 == null) {
-					return -1;
-				} else if (s2 == null) {
-					return 1;
-				} else {
-					return s1.compareTo(s2);
-				}
-			}
-		}
-
-	}
-
 	private static final Pattern rawLabelDestructuringPattern = Pattern
 			.compile("((?:\\\\@|\\\\,|[^@,])+)(?:@((?:\\\\@|\\\\,|[^@,])+))?");
 
+	private static final Pattern aggregationSplittingPattern = Pattern
+			.compile("(?<!\\\\)(\\\\\\\\)*(?<splitter>,)");
+
+	private static enum ValueStatus {
+		ADDED, REMOVED, COMMITTED;
+
+		public static ValueStatus parse(char charAt) {
+			if (charAt == 'a') {
+				return ADDED;
+			} else if (charAt == 'r') {
+				return REMOVED;
+			} else if (charAt == '-') {
+				return COMMITTED;
+			} else {
+				throw new IllegalArgumentException("Not a valid ValueStatus: " + charAt);
+			}
+		}
+	};
+
 	private AbstractLabelBasedRenderingEngineConfiguration config;
 	protected String languages;
+	private Optional<Template> template;
+	private Map<String, VariableDefinition> variableDefinitions;
+
 	protected boolean fallbackToTerm;
 
 	public BaseRenderingEngine(AbstractLabelBasedRenderingEngineConfiguration config) {
@@ -104,9 +102,33 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 			boolean fallbackToTerm) {
 		this.config = config;
 		this.languages = config.languages;
-
 		if (this.languages == null) {
 			this.languages = "*";
+		}
+
+		if (config.template == null) {
+			template = Optional.empty();
+		} else {
+			try {
+				this.template = Optional
+						.of(it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine
+								.parseTemplate(config.template));
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+
+		}
+
+		if (config.variables == null) {
+			this.variableDefinitions = Collections.emptyMap();
+		} else {
+			try {
+				this.variableDefinitions = STPropertiesManager.createObjectMapper()
+						.readerFor(new TypeReference<LinkedHashMap<String, VariableDefinition>>() {
+						}).readValue(config.variables);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		}
 		this.fallbackToTerm = fallbackToTerm;
 	}
@@ -165,9 +187,111 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		gp.append("BIND(REPLACE(lang(?labelInternal), \"(,)|(@)\", \"\\\\\\\\$0\") as ?labelLang)");
 		gp.append(
 				"BIND(IF(?labelLang != \"\", CONCAT(STR(?labelLexicalForm), \"@\", ?labelLang), ?labelLexicalForm) AS ?labelInternal2)       \n");
-		return GraphPatternBuilder.create().prefix("rdfs", RDFS.NAMESPACE)
-				.projection(ProjectionElementBuilder.groupConcat("labelInternal2", "label"))
+
+		List<ProjectionElement> projection = new ArrayList<>();
+		projection.add(ProjectionElementBuilder.groupConcat("labelInternal2", "label"));
+
+		boolean isValidationEnabled = !Boolean.TRUE.equals(config.ignoreValidation)
+				&& currentProject.isValidationEnabled();
+
+		if (!variableDefinitions.isEmpty()) {
+			StringBuilder gp2 = new StringBuilder();
+			gp2.append("{\n");
+			gp2.append(gp.toString());
+			gp2.append("}");
+
+			for (Entry<String, VariableDefinition> entry : variableDefinitions.entrySet()) {
+				gp2.append(" UNION {\n");
+				String variableName = entry.getKey();
+				String sparqlVarName = "v_" + variableName;
+				String sparqlSupportVarName = "sv_" + variableName;
+				String sparqlSupportVar = "?" + sparqlSupportVarName;
+
+				VariableDefinition variableDefinition = entry.getValue();
+
+				String subjectOfProp = "?" + getBindingVariable();
+
+				if (variableDefinition.getPropertyPath().isEmpty()) {
+					throw new IllegalStateException("Empty property path not allowed");
+				}
+
+				int count = 0;
+
+				String undefVariable = "?v_" + variableName + "_internal_undef";
+				for (IRI prop : variableDefinition.getPropertyPath()) {
+					count++;
+
+					String sparqlInternalVarName = "v_" + variableName + "_internal_" + count;
+					String sparqlInternalVar = "?" + sparqlInternalVarName;
+
+					String sparqlInternalGraphVarName = "v_" + variableName + "_internal_" + count + "_g";
+					String sparqlInternalGraphVar = "?" + sparqlInternalGraphVarName;
+
+					if (isValidationEnabled) {
+						gp2.append("GRAPH ").append(sparqlInternalGraphVar).append(" {\n");
+					}
+					gp2.append(subjectOfProp).append(" ");
+					RenderUtils.toSPARQL(prop, gp2);
+					gp2.append(" ");
+					gp2.append(sparqlInternalVar);
+					gp2.append(" .\n");
+					if (isValidationEnabled) {
+						gp2.append("}\n");
+						String sparqlInternalGraphStatusVar = sparqlInternalGraphVar + "_status";
+						gp2.append("BIND(IF(" + VALIDATION.isAddGraphSPARQL(sparqlInternalGraphVar)
+								+ ", \"a\", IF(" + VALIDATION.isRemoveGraphSPARQL(sparqlInternalGraphVar)
+								+ ", \"r\", " + undefVariable + ")) as " + sparqlInternalGraphStatusVar
+								+ ")\n");
+
+					}
+					subjectOfProp = sparqlInternalVar;
+				}
+
+				if (!acceptedLanguges.isEmpty()) {
+					gp2.append(String.format(" FILTER(LANG(%1$s) == \"\" || LANG(%1$s) IN (%2$s))",
+							subjectOfProp,
+							acceptedLanguges.stream().map(lang -> "\"" + SPARQLUtil.encodeString(lang) + "\"")
+									.collect(joining(", "))));
+				}
+
+				if (isValidationEnabled) {
+					String sparqlSerializedValueVar = subjectOfProp + "_sparql";
+
+					StringBuilder sparqlInternalGraphStatusVars = new StringBuilder();
+					for (int i = 1; i <= count; i++) {
+						sparqlInternalGraphStatusVars
+								.append("?v_" + variableName + "_internal_" + i + "_g_status").append(", ");
+					}
+					gp2.append("BIND(REPLACE(IF(isIRI(" + subjectOfProp + "), CONCAT(\"<\", STR("
+							+ subjectOfProp + "), \">\"), IF(isBlank(" + subjectOfProp
+							+ "), CONCAT(\"_:\", STR(" + subjectOfProp
+							+ ")), CONCAT(\"\\\"\", REPLACE(REPLACE(STR(" + subjectOfProp
+							+ "),\"(\\\"|\\\\\\\\)\",\"\\\\\\\\$1\"),\"\\\\\\\\n\", \"\\\\n\"), \"\\\"\", IF(LANG("
+							+ subjectOfProp + ") != \"\", CONCAT(\"@\", LANG(" + subjectOfProp
+							+ ")), CONCAT(\"^^<\", STR(datatype(" + subjectOfProp
+							+ ")), \">\"))))), \"(,|\\\\\\\\)\", \"\\\\\\\\$1\") as "
+							+ sparqlSerializedValueVar + ")\n");
+					gp2.append("BIND(CONCAT(COALESCE(" + sparqlInternalGraphStatusVars + "\"-\"), STR("
+							+ sparqlSerializedValueVar + ")) AS " + sparqlSupportVar + ")\n");
+				}
+
+				gp2.append("}");
+
+				if (isValidationEnabled) {
+					projection.add(ProjectionElementBuilder.groupConcat(sparqlSupportVarName, sparqlVarName));
+				} else {
+					projection.add(ProjectionElementBuilder
+							.min(subjectOfProp.substring(1) /* removes the leading ? */, sparqlVarName));
+				}
+			}
+			gp2.append("\n");
+
+			gp = gp2;
+		}
+
+		return GraphPatternBuilder.create().prefix("rdfs", RDFS.NAMESPACE).projection(projection)
 				.pattern(gp.toString()).graphPattern();
+
 	}
 
 	protected abstract void getGraphPatternInternal(StringBuilder gp);
@@ -184,6 +308,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 	@Override
 	public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
+
 		Repository rep = currentProject.getRepository();
 
 		HashMap<String, String> ns2prefix = new HashMap<>();
@@ -199,28 +324,22 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		Map<Value, Literal> renderings = new HashMap<>();
 		ValueFactory vf = SimpleValueFactory.getInstance();
 
-		// note: there amy be a race condition between this invocation and the generation of the graph pattern
+		// note: there might be a race condition between this invocation and the generation of the graph
+		// pattern
 		List<String> acceptedLanguges = computeLanguages(currentProject);
+		boolean isValidationEnabled = !Boolean.TRUE.equals(config.ignoreValidation)
+				&& currentProject.isValidationEnabled();
 
 		resultTable.forEach(bindingSet -> {
 			Resource resource = (Resource) bindingSet.getValue("resource");
 			Literal rawLabelLiteral = ((Literal) bindingSet.getValue("label"));
+
+			if (renderings.get(resource) != null)
+				return;
+
 			String show;
-			if (rawLabelLiteral == null || rawLabelLiteral.getLabel().isEmpty()) {
 
-				if (!fallbackToTerm)
-					return;
-
-				show = resource.toString();
-				if (resource instanceof IRI) {
-					IRI resourceIRI = (IRI) resource;
-					String resNs = resourceIRI.getNamespace();
-					String prefix = ns2prefix.get(resNs);
-					if (prefix != null) {
-						show = prefix + ":" + resourceIRI.getLocalName();
-					}
-				}
-			} else {
+			if (rawLabelLiteral != null && !rawLabelLiteral.getLabel().isEmpty()) {
 				Matcher matcher = rawLabelDestructuringPattern.matcher(rawLabelLiteral.getLabel());
 
 				// If no language has been specified (or *), then all labels are displayed in alphabetic order
@@ -271,10 +390,127 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 				}
 
 				show = sb.toString();
+			} else {
+				show = null;
 			}
 
-			renderings.put(resource, vf.createLiteral(show));
+			if (template.isPresent()) {
+				Map<String, Value> variableValues = new HashMap<>();
+
+				if (show != null && !show.isEmpty()) {
+					variableValues.put("show", vf.createLiteral(show));
+				}
+
+				for (String bindingName : bindingSet.getBindingNames()) {
+					if (bindingName.startsWith("v_")) {
+						Value value = bindingSet.getValue(bindingName);
+						if (value != null) {
+							if (isValidationEnabled) {
+								String stringValue = value.stringValue();
+								if (stringValue.isEmpty()) {
+									continue;
+								}
+								Matcher m = aggregationSplittingPattern.matcher(stringValue);
+								int index = 0;
+
+								Map<Value, ValueStatus> components = new HashMap<>(5);
+								while (m.find()) {
+									int splitter = m.start("splitter");
+									String componentString = stringValue.substring(index, splitter)
+											.replace("\\,", ",").replace("\\\\", "\\");
+									Value parsedValue = NTriplesUtil.parseValue(componentString.substring(1),
+											vf);
+									ValueStatus valueStatus = ValueStatus.parse(componentString.charAt(0));
+									ValueStatus currentValueStatus = components.get(parsedValue);
+									if (currentValueStatus == null
+											|| ValueStatus.COMMITTED.equals(currentValueStatus)) {
+										components.put(parsedValue, valueStatus);
+									}
+									index = splitter + 1;
+								}
+
+								if (index < stringValue.length()) {
+									String componentString = stringValue.substring(index).replace("\\,", ",")
+											.replace("\\\\", "\\");
+									ValueStatus valueStatus = ValueStatus.parse(componentString.charAt(0));
+									Value parsedValue = NTriplesUtil.parseValue(componentString.substring(1),
+											vf);
+									ValueStatus currentValueStatus = components.get(parsedValue);
+									if (currentValueStatus == null
+											|| ValueStatus.COMMITTED.equals(components.get(parsedValue))) {
+										components.put(parsedValue, valueStatus);
+									}
+								}
+
+								Value variableValue;
+								if (components.size() == 1) {
+									variableValue = components.keySet().iterator().next();
+								} else {
+									Value committedValue = null;
+									Value removedValue = null;
+									Value addedValue = null;
+
+									for (Map.Entry<Value, ValueStatus> entry : components.entrySet()) {
+										Value v = entry.getKey();
+										ValueStatus vs = entry.getValue();
+
+										if (vs == ValueStatus.COMMITTED) {
+											committedValue = v;
+										} else if (vs == ValueStatus.REMOVED) {
+											removedValue = v;
+										} else if (vs == ValueStatus.ADDED) {
+											addedValue = v;
+										}
+									}
+
+									if (committedValue != null) {
+										variableValue = committedValue;
+									} else if (addedValue != null) {
+										variableValue = addedValue;
+									} else {
+										variableValue = removedValue;
+									}
+								}
+
+								if (variableValue != null) {
+									variableValues.put(bindingName.substring(2), variableValue);
+								}
+							} else {
+								variableValues.put(bindingName.substring(2), value);
+							}
+						}
+					}
+				}
+				
+				String interpolatedShow = template.get().instantiate(variableValues);
+
+				if (interpolatedShow != null && !interpolatedShow.isEmpty()) {
+					show = interpolatedShow;
+				}
+			}
+
+			if (show != null) {
+				renderings.put(resource, vf.createLiteral(show));
+			} else if (fallbackToTerm) {
+				renderings.put(resource, null);
+			}
 		});
+
+		for (Entry<Value, Literal> renderingEntry : renderings.entrySet()) {
+			if (renderingEntry.getValue() == null) {
+				Resource resource = (Resource) renderingEntry.getKey();
+				String show = resource.toString();
+				if (resource instanceof IRI) {
+					IRI resourceIRI = (IRI) resource;
+					String resNs = resourceIRI.getNamespace();
+					String prefix = ns2prefix.get(resNs);
+					if (prefix != null) {
+						show = prefix + ":" + resourceIRI.getLocalName();
+					}
+				}
+				renderingEntry.setValue(vf.createLiteral(show));
+			}
+		}
 
 		return renderings;
 	}

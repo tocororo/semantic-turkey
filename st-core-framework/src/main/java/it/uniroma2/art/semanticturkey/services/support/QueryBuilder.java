@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +22,7 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.impl.IteratingTupleQueryResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.osgi.service.resolver.ResolutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +43,8 @@ import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 /**
  * A {@code QueryBuilder} supports the composition and evaluation of the SPARQL query underpinning an Semantic
  * Turkey service, by taking care of cross-cutting concerns such as rendering and role retrieval.
+ * 
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class QueryBuilder {
 	private static final Logger logger = LoggerFactory.getLogger(QueryBuilder.class);
@@ -88,7 +92,7 @@ public class QueryBuilder {
 	public void setResourceVariable(String variableName) throws QueryBuilderException {
 		if (!attachedProcessors.isEmpty()) {
 			throw new QueryBuilderException(
-					"Could not set the resource-holding variable after attaching some processor");
+					"Could not set the resource-holding variable after attaching any processor");
 		}
 		this.resourceVariable = variableName;
 	}
@@ -152,10 +156,11 @@ public class QueryBuilder {
 	 */
 	public void process(QueryBuilderProcessor processor, String bindingVariable, String outputVariable) {
 		if (attachedProcessors.contains(processor)) {
-			throw new QueryBuilderException("Processors already attached: " + processor);
+			throw new QueryBuilderException("Processor already attached: " + processor);
 		}
 
-		if (attachedProcessorsGraphPatternBinding.containsValue(outputVariable)) {
+		if (attachedProcessorsGraphPatternBinding.values().stream()
+				.anyMatch(el -> el.getOutputVariable().equals(outputVariable))) {
 			throw new QueryBuilderException("Variable " + outputVariable + " already bound to a processor");
 		}
 		this.attachedProcessors.add(processor);
@@ -238,7 +243,7 @@ public class QueryBuilder {
 		TupleQueryShallowModel enrichedQuery = queryBuildOutput.queryModel;
 
 		String enrichedQueryString = enrichedQuery.linearize();
-		Map<QueryBuilderProcessor, BiMap<String, String>> processorVariableBinding = queryBuildOutput.mangled2processorSpecificVariableMapping;
+		Map<QueryBuilderProcessor, BiMap<String, String>> processorVariableSubstitutionMappings = queryBuildOutput.variableSubstitutionMapping;
 
 		logger.debug(enrichedQueryString);
 
@@ -249,11 +254,9 @@ public class QueryBuilder {
 
 		logger.debug("query binding set = {}", bindingSet);
 
-		List<String> bindingNames;
 		List<BindingSet> bindings;
 
 		try (TupleQueryResult queryResults = query.evaluate()) {
-			bindingNames = queryResults.getBindingNames();
 			bindings = QueryResults.asList(queryResults).stream()
 					.filter(bs -> bs.getValue(resourceVariable) != null).collect(toList());
 		}
@@ -262,20 +265,21 @@ public class QueryBuilder {
 
 		List<String> initialQueryVariables = enrichedQuery.getInitialQueryVariables();
 
-		BiMap<String, String> projected2baseVarMapping = HashBiMap.create();
-		initialQueryVariables.forEach(varName -> projected2baseVarMapping.put(varName, varName));
+		BiMap<String, String> overallVariableSubstitutionMapping = HashBiMap.create();
+		initialQueryVariables.forEach(varName -> overallVariableSubstitutionMapping.put(varName, varName));
 
-		TupleQueryResult projectedOverallResults = projectResults(bindings, projected2baseVarMapping);
+		TupleQueryResult projectedOverallResults = projectResults(bindings,
+				overallVariableSubstitutionMapping);
 
 		Map<Value, Map<String, Literal>> additionalColumns = new HashMap<>();
 
-		for (Map.Entry<QueryBuilderProcessor, BiMap<String, String>> entry : processorVariableBinding
+		for (Map.Entry<QueryBuilderProcessor, BiMap<String, String>> entry : processorVariableSubstitutionMappings
 				.entrySet()) {
 			QueryBuilderProcessor proc = entry.getKey();
-			BiMap<String, String> projected2BaseVariableBinding = entry.getValue();
+			BiMap<String, String> variableSubstitutionMapping = entry.getValue();
 
 			List<BindingSet> projectedResults = QueryResults
-					.asList(projectResults(bindings, projected2BaseVariableBinding));
+					.asList(projectResults(bindings, variableSubstitutionMapping));
 
 			Map<Value, Literal> processorResults = proc.processBindings(serviceContext.getProject(),
 					projectedResults);
@@ -285,19 +289,16 @@ public class QueryBuilder {
 			if (processorResults != null) {
 
 				for (Map.Entry<Value, Literal> individualResult : processorResults.entrySet()) {
-					Map<String, Literal> row = additionalColumns.get(individualResult.getKey());
-					if (row == null) {
-						row = new HashMap<>();
-						additionalColumns.put(individualResult.getKey(), row);
-					}
-					row.put(graphPatternBinding.getProjectedOutputVariable(), individualResult.getValue());
+					Map<String, Literal> row = additionalColumns.computeIfAbsent(individualResult.getKey(),
+							k -> new HashMap<>());
+					row.put(graphPatternBinding.getOutputVariable(), individualResult.getValue());
 				}
 
 			} else {
 
-				String targetVariable = proc.getGraphPattern(serviceContext.getProject())
-						.getProjectionElement().getTargetVariable();
-				String outputVariable = graphPatternBinding.getProjectedOutputVariable();
+				String targetVariable = proc.getGraphPattern(serviceContext.getProject()).getProjection()
+						.get(0).getTargetVariable();
+				String outputVariable = graphPatternBinding.getOutputVariable();
 
 				for (BindingSet projectedResultsEntry : projectedResults) {
 					Value resource = projectedResultsEntry.getValue(proc.getBindingVariable());
@@ -307,11 +308,8 @@ public class QueryBuilder {
 					if (value == null)
 						continue; // Skip unbound variables
 
-					Map<String, Literal> row = additionalColumns.get(resource);
-					if (row == null) {
-						row = new HashMap<>();
-						additionalColumns.put(resource, row);
-					}
+					Map<String, Literal> row = additionalColumns.computeIfAbsent(resource,
+							k -> new HashMap<>());
 					row.put(outputVariable, value);
 
 				}
@@ -323,14 +321,22 @@ public class QueryBuilder {
 	}
 
 	private static TupleQueryResult projectResults(List<BindingSet> queryResults,
-			BiMap<String, String> projected2baseVarMapping) {
-		return QueryResults.distinctResults(new IteratingTupleQueryResult(
-				new ArrayList<String>(projected2baseVarMapping.values()),
-				queryResults.stream()
-						.map(bindingSet -> new ProjectedBindingSet(bindingSet, projected2baseVarMapping))
-						.collect(toList())));
+			BiMap<String, String> variableSubstituionMapping) {
+		return QueryResults
+				.distinctResults(
+						new IteratingTupleQueryResult(
+								new ArrayList<>(variableSubstituionMapping
+										.keySet()),
+								queryResults.stream().map(bindingSet -> new ProjectedBindingSet(bindingSet,
+										variableSubstituionMapping.inverse())).collect(toList())));
 	}
 
+	/**
+	 * Enriches the base resource query with the attached {@link QueryBuilderProcessor} objects.
+	 * 
+	 * @return
+	 * @throws QueryBuilderException
+	 */
 	private QueryBuildOutput computeEnrichedQuery() throws QueryBuilderException {
 
 		TupleQueryShallowModel queryShallowModel = SPARQLShallowParser.getInstance()
@@ -338,7 +344,7 @@ public class QueryBuilder {
 
 		QueryBuildOutput out = new QueryBuildOutput();
 		out.queryModel = queryShallowModel;
-		out.mangled2processorSpecificVariableMapping = new HashMap<QueryBuilderProcessor, BiMap<String, String>>();
+		out.variableSubstitutionMapping = new HashMap<QueryBuilderProcessor, BiMap<String, String>>();
 
 		int counter = 0;
 		for (QueryBuilderProcessor proc : attachedProcessors) {
@@ -348,14 +354,20 @@ public class QueryBuilder {
 			counter++;
 			final int tCounter = counter;
 
-			BiMap<String, String> inverseVariableMapping = HashBiMap.create();
-			inverseVariableMapping.put(graphPatternBinding.getProjectedBindingVariable(),
-					proc.getBindingVariable());
-			GraphPattern renamedGp = gp.renamed(varName -> "proc_" + tCounter + "_" + varName,
-					inverseVariableMapping);
+			BiMap<String, String> variableSubstitutionMapping = HashBiMap.create();
+			// binding variable in the graph pattern is rewritten to the specified binding variable in the
+			// base query
+			variableSubstitutionMapping.put(proc.getBindingVariable(),
+					graphPatternBinding.getBindingVariable());
 
-			inverseVariableMapping.values().removeIf(varName -> !varName.equals(proc.getBindingVariable())
-					&& !varName.equals(gp.getProjectionElement().getTargetVariable()));
+			// rename variables in the graph pattern
+			GraphPattern renamedGp = gp.renamed(varName -> "proc_" + tCounter + "_" + varName,
+					variableSubstitutionMapping);
+
+			// remove variables which are neither the binding variable nor the target of a projection element
+			variableSubstitutionMapping.keySet().removeIf(
+					variableName -> !variableName.equals(proc.getBindingVariable()) && !gp.getProjection()
+							.stream().anyMatch(p -> p.getTargetVariable().equals(variableName)));
 
 			try {
 				queryShallowModel.appendGraphPattern(renamedGp);
@@ -363,7 +375,7 @@ public class QueryBuilder {
 				throw new QueryBuilderException(e);
 			}
 
-			out.mangled2processorSpecificVariableMapping.put(proc, inverseVariableMapping);
+			out.variableSubstitutionMapping.put(proc, variableSubstitutionMapping);
 		}
 
 		return out;
@@ -381,19 +393,19 @@ public class QueryBuilder {
 }
 
 class GraphPatternBinding {
-	private String projectedBindingVariable;
-	private String projectedOutputVariable;
+	private String bindingVariable;
+	private String outputVariable;
 
-	public GraphPatternBinding(String projectedBindingVariable, String projectedOutputVariable) {
-		this.projectedBindingVariable = projectedBindingVariable;
-		this.projectedOutputVariable = projectedOutputVariable;
+	public GraphPatternBinding(String bindingVariable, String outputVariable) {
+		this.bindingVariable = bindingVariable;
+		this.outputVariable = outputVariable;
 	}
 
-	public String getProjectedBindingVariable() {
-		return projectedBindingVariable;
+	public String getBindingVariable() {
+		return bindingVariable;
 	}
 
-	public String getProjectedOutputVariable() {
-		return projectedOutputVariable;
+	public String getOutputVariable() {
+		return outputVariable;
 	}
 }
