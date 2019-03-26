@@ -114,7 +114,7 @@ public class History extends STServiceAdapter {
 					" }                                                                            \n" 
 					// @formatter:on
 			;
-			
+			logger.debug("query: " + queryString);
 			TupleQuery tupleQuery = conn.prepareTupleQuery(queryString);
 			tupleQuery.setIncludeInferred(false);
 			BindingSet bindingSet = QueryResults.singleResult(tupleQuery.evaluate());
@@ -210,8 +210,8 @@ public class History extends STServiceAdapter {
 				" LIMIT " + limit + "                                                          \n";
 				// @formatter:on
 			;
-
-			TupleQuery tupleQuery = conn.prepareTupleQuery(queryString.toString());
+			logger.debug("query: " + queryString);
+			TupleQuery tupleQuery = conn.prepareTupleQuery(queryString);
 			tupleQuery.setIncludeInferred(false);
 			tupleQuery.setBinding("tipRevisionNumber",
 					conn.getValueFactory().createLiteral(BigInteger.valueOf(tipRevisionNumber)));
