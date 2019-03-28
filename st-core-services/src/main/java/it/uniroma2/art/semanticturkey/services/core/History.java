@@ -86,32 +86,37 @@ public class History extends STServiceAdapter {
 					" PREFIX prov: <http://www.w3.org/ns/prov#>                                    \n" +
 					" PREFIX dcterms: <http://purl.org/dc/terms/>                                  \n" +
 					" SELECT (MAX(?revisionNumberT) as ?tipRevisionNumber) (COUNT(?commit) as ?commitCount) \n" +
-					" FROM " + RenderUtils.toSPARQL(historyGraph ) + "\n" +
-					" {                                                                            \n" +
+					//" FROM " + RenderUtils.toSPARQL(historyGraph ) + "\n" +
+					" WHERE {                                                                    \n" +
+					" GRAPH "+  RenderUtils.toSPARQL(historyGraph ) + "{ \n" +
 					"     ?commit a cl:Commit .                                                    \n" +
 					"     ?commit cl:revisionNumber ?revisionNumberT .                             \n" +
 					"     ?commit prov:startedAtTime ?startTimeT .                                 \n" +
 					"     ?commit prov:endedAtTime ?endTimeT .                                     \n" +
-					timeBoundsSPARQLFilter +
-					SupportRepositoryUtils.conditionalOptional(operationSPARQLFilter.isEmpty(),
+					timeBoundsSPARQLFilter;
+					/*SupportRepositoryUtils.conditionalOptional(operationSPARQLFilter.isEmpty(),
 					"     ?commit prov:used ?operationT .                                          \n"
-					) +
-					operationSPARQLFilter +
-					SupportRepositoryUtils.conditionalOptional(performerSPARQLFilter.isEmpty(),
-					"     ?commit prov:qualifiedAssociation [                                  \n" +
+					) +*/
+			if(!operationSPARQLFilter.isEmpty()) {
+					queryString+="     ?commit prov:used ?operationT .                         \n" +
+								operationSPARQLFilter;
+					
+					}
+			if(!performerSPARQLFilter.isEmpty()) {
+				queryString+= "     ?commit prov:qualifiedAssociation [                        \n" +
 					"         prov:agent ?performerT ;                                         \n" +
 					"         prov:hadRole <" + STCHANGELOG.PERFORMER + ">\n" +
-					"     ]                                                                    \n"
-					) +
-					performerSPARQLFilter +
-					SupportRepositoryUtils.conditionalOptional(validatorSPARQLFilter.isEmpty(),
-					"     ?commit prov:qualifiedAssociation [                                  \n" +
+					"     ]                                                                    \n" +
+					performerSPARQLFilter;
+			}
+			if(!validatorSPARQLFilter.isEmpty()) {
+				queryString+="     ?commit prov:qualifiedAssociation [                         \n" +
 					"         prov:agent ?validatorT ;                                         \n" +
 					"         prov:hadRole <" + STCHANGELOG.VALIDATOR + ">\n" +
-					"     ]                                                                    \n"
-					) +
-					validatorSPARQLFilter +
-					" }                                                                            \n" 
+					"     ]                                                                    \n" +
+					validatorSPARQLFilter ;
+					}
+			queryString+=" }\n}                                                                 \n" 
 					// @formatter:on
 			;
 			logger.debug("query: " + queryString);
@@ -171,8 +176,9 @@ public class History extends STServiceAdapter {
 				"        (GROUP_CONCAT(DISTINCT CONCAT(STR(?param), \"$\", REPLACE(REPLACE(STR(?paramValue), \"\\\\\\\\\", \"$0$0\"), \"\\\\$\", \"\\\\\\\\$0\")); separator=\"$\") as ?parameters)\n" + 
 				"        (MAX(?performerT) as ?agent)                                          \n" +
 				"        (MAX(?validatorT) as ?validator)                                      \n" +
-				" FROM " + RenderUtils.toSPARQL(historyGraph) + "\n" +
-				" {                                                                            \n" +
+				//" FROM " + RenderUtils.toSPARQL(historyGraph) + "\n" +
+				" WHERE {                                                                      \n" +
+				" GRAPH "+  RenderUtils.toSPARQL(historyGraph ) + "\n {" +
 				"     ?commit a cl:Commit .                                                    \n" +
 				"     ?commit cl:revisionNumber ?revisionNumberT .                             \n" +
 				"     FILTER(?revisionNumberT <= ?tipRevisionNumber)                           \n" +
@@ -202,7 +208,7 @@ public class History extends STServiceAdapter {
 				"     ]                                                                    \n"
 				) +
 				validatorSPARQLFilter +
-				" }                                                                            \n" +
+				" } \n}                                                                        \n" +
 				" GROUP BY ?commit                                                             \n" +
 				" HAVING(BOUND(?commit))                                                       \n" +
 				orderBySPARQLFragment +

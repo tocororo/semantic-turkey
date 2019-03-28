@@ -76,8 +76,9 @@ public class Validation extends STServiceAdapter {
 					" PREFIX prov: <http://www.w3.org/ns/prov#>                                    \n" +
 					" PREFIX dcterms: <http://purl.org/dc/terms/>                                  \n" +
 					" SELECT (MAX(?endTimeT) as ?tipTime) (COUNT(?commit) as ?commitCount)         \n" +
-					" FROM " + RenderUtils.toSPARQL(validationGraph ) + "\n" +
-					" {                                                                            \n" +
+					//" FROM " + RenderUtils.toSPARQL(validationGraph ) + "\n" +
+					" WHERE {                                                                      \n" +
+					" GRAPH "+  RenderUtils.toSPARQL(validationGraph ) + "\n {" +
 					"     ?commit a cl:Commit .                                                    \n" +
 					"     ?commit prov:startedAtTime ?startTimeT .                                 \n" +
 					"     ?commit prov:endedAtTime ?endTimeT .                                     \n" +
@@ -93,7 +94,7 @@ public class Validation extends STServiceAdapter {
 					"     ]                                                                    \n"
 					) +
 					performerSPARQLFilter +
-					" }                                                                            \n"
+					" } \n }                                                                      \n"
 					// @formatter:on
 			;
 
@@ -146,8 +147,9 @@ public class Validation extends STServiceAdapter {
 				"        (MAX(?operationT) as ?operation)                                      \n" +
 				"        (GROUP_CONCAT(DISTINCT CONCAT(STR(?param), \"$\", REPLACE(REPLACE(STR(?paramValue), \"\\\\\\\\\", \"$0$0\"), \"\\\\$\", \"\\\\\\\\$0\")); separator=\"$\") as ?parameters)\n" + 
 				"        (MAX(?performerT) as ?agent)                                          \n" +
-				" FROM " + RenderUtils.toSPARQL(validationGraph) + "\n" +
-				" {                                                                            \n" +
+				//" FROM " + RenderUtils.toSPARQL(validationGraph) + "\n" +
+				" WHERE {                                                                      \n" +
+				" GRAPH "+  RenderUtils.toSPARQL(validationGraph ) + "\n {" +
 				"     ?commit a cl:Commit .                                                    \n" +
 				"     ?commit prov:startedAtTime ?startTimeT .                                 \n" +
 				"     ?commit prov:endedAtTime ?endTimeT .                                     \n" +
@@ -168,7 +170,7 @@ public class Validation extends STServiceAdapter {
 				"     ]                                                                    \n"
 				) +
 				performerSPARQLFilter +
-				" }                                                                            \n" +
+				" } \n}                                                                        \n" +
 				" GROUP BY ?commit                                                             \n" +
 				" HAVING(BOUND(?commit))                                                       \n" +
 				orderBySPARQLFragment +
