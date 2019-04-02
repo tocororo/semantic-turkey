@@ -611,6 +611,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			
 		} else { // searchMode.equals(exact)
 			query="\n"+variable+" <"+indexToUse+"> '"+value+"' ." +
+					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '^"+value+"$', 'i')" + 
 					"\nBIND('exact' AS ?attr_matchMode)";
 		}
