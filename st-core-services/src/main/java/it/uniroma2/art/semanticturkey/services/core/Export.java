@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
@@ -269,7 +271,8 @@ public class Export extends STServiceAdapter {
 			reformattingExporter = exptManager.instantiateExtension(ReformattingExporter.class,
 					new PluginSpecification(
 							"it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporter",
-							null, null, null));
+							"it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterConfiguration",
+							null, JsonNodeFactory.instance.objectNode()));
 		} else {
 			reformattingExporter = null;
 		}

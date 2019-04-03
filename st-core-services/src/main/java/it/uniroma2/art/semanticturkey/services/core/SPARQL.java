@@ -280,7 +280,7 @@ public class SPARQL extends STServiceAdapter {
 					} else {
 						row.add(null);
 					}
-					
+
 				}
 				table.add(row);
 			}
@@ -350,8 +350,8 @@ public class SPARQL extends STServiceAdapter {
 	 * mechanism (see {@link Export}).
 	 * 
 	 * See {@link #evaluateQuery(String, QueryLanguage, boolean, Map, int, IRI[], IRI[])} and
-	 * {@link Export#export(HttpServletResponse, IRI[], TransformationPipeline, boolean, RDFFormat, boolean)} for
-	 * the meaning of the parameters.
+	 * {@link Export#export(HttpServletResponse, IRI[], TransformationPipeline, boolean, RDFFormat, boolean)}
+	 * for the meaning of the parameters.
 	 * 
 	 * The results of the query are stored in a randomly named graph, which would appear in the output if the
 	 * output format supports named graphs.
@@ -390,8 +390,8 @@ public class SPARQL extends STServiceAdapter {
 			@Optional(defaultValue = "{}") Map<String, Value> bindings,
 			@Optional(defaultValue = "0") int maxExecTime, @Optional(defaultValue = "") IRI[] defaultGraphs,
 			@Optional(defaultValue = "") IRI[] namedGraphs,
-			@Optional(defaultValue = "[]") TransformationPipeline filteringPipeline, @Optional String outputFormat,
-			@Optional PluginSpecification deployerSpec,
+			@Optional(defaultValue = "[]") TransformationPipeline filteringPipeline,
+			@Optional String outputFormat, @Optional PluginSpecification deployerSpec,
 			@Optional PluginSpecification reformattingExporterSpec)
 			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException,
@@ -424,7 +424,8 @@ public class SPARQL extends STServiceAdapter {
 						QueryResults.report(result, rdfInserter);
 
 						Export.exportHelper(exptManager, stServiceContext, oRes, sourceConnection, new IRI[0],
-								filteringPipeline, includeInferred, outputFormat, false, null, null);
+								filteringPipeline, includeInferred, outputFormat, false, deployerSpec,
+								reformattingExporterSpec);
 					}
 				} finally {
 					tempSourceRepository.shutDown();
