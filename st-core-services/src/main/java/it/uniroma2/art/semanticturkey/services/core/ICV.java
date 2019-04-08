@@ -115,6 +115,37 @@ public class ICV extends STServiceAdapter {
 		return qb.runQuery();
 	}
 	
+	//ST-1273
+	/**
+	 * Returns a list of concepts and search in all schemes 
+	 * @return a list of concepts and search in all schemes
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
+	public Collection<AnnotatedValue<Resource>> listDanglingConceptsForAllSchemes()  {
+		String q = "SELECT ?resource ?attr_dangScheme WHERE { \n"
+				//+ "BIND(" + NTriplesUtil.toNTriplesString(scheme) + " as ?scheme) \n"
+				+ "?resource a " + NTriplesUtil.toNTriplesString(SKOS.CONCEPT) + ". \n"
+				+ "?resource " + NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME) + " ?attr_dangScheme . \n"
+				+ "FILTER NOT EXISTS { \n"
+				+ "?resource " + NTriplesUtil.toNTriplesString(SKOS.TOP_CONCEPT_OF) 
+				+ "|^" + NTriplesUtil.toNTriplesString(SKOS.HAS_TOP_CONCEPT) + "  ?attr_dangScheme \n"
+				+ "} \n"
+				+ "FILTER NOT EXISTS { \n"
+				+ "?resource " + NTriplesUtil.toNTriplesString(SKOS.BROADER) 
+				+ "|^" + NTriplesUtil.toNTriplesString(SKOS.NARROWER) + "  ?broader . \n"
+				+ "?broader " + NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME) + " ?attr_dangScheme . \n"
+				+ "} \n } GROUP BY ?resource ?attr_dangScheme";
+		logger.debug("query [listDanglingConcepts]:\n" + q);
+		QueryBuilder qb = createQueryBuilder(q);
+		qb.processRole();
+		qb.processRendering();
+		qb.processQName();
+		return qb.runQuery();
+	}
+	
+	
 //	/**
 //	 * Detects cyclic hierarchical relations. Returns a list of records top, n1, n2 where 
 //	 * top is likely the cause of the cycle, n1 and n2 are vertex that belong to the cycle
