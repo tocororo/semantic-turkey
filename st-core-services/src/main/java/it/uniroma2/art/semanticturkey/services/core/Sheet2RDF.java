@@ -13,6 +13,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +23,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.uima.UIMAException;
 import org.apache.uima.jcas.JCas;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.query.MalformedQueryException;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.UnsupportedQueryLanguageException;
@@ -51,12 +51,12 @@ import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.interfaces.ParserPR;
 import it.uniroma2.art.coda.interfaces.annotations.converters.RDFCapabilityType;
-import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.parser.PearlParserAntlr4;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.coda.structures.SuggOntologyCoda;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -70,14 +70,15 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.sheet2rdf.S2RDFContext;
 import it.uniroma2.art.sheet2rdf.coda.CODAConverter;
 import it.uniroma2.art.sheet2rdf.coda.Sheet2RDFCODA;
+import it.uniroma2.art.sheet2rdf.core.MappingStruct;
 import it.uniroma2.art.sheet2rdf.core.Sheet2RDFCore;
-import it.uniroma2.art.sheet2rdf.header.Header;
-import it.uniroma2.art.sheet2rdf.header.HeadersStruct;
-import it.uniroma2.art.sheet2rdf.resolver.ConverterResolver;
+import it.uniroma2.art.sheet2rdf.header.NodeConversion;
+import it.uniroma2.art.sheet2rdf.header.SimpleGraphApplication;
+import it.uniroma2.art.sheet2rdf.header.SimpleHeader;
+import it.uniroma2.art.sheet2rdf.header.SubjectHeader;
 import it.uniroma2.art.sheet2rdf.sheet.SheetManager;
 import it.uniroma2.art.sheet2rdf.sheet.SheetManagerFactory;
 import it.uniroma2.art.sheet2rdf.utils.S2RDFUtils;
-import it.uniroma2.art.sheet2rdf.vocabulary.RDFTypesEnum;
 
 @STService
 public class Sheet2RDF extends STServiceAdapter {
@@ -111,7 +112,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		RepositoryConnection connection = getManagedConnection();
 		CODACore codaCore = getInitializedCodaCore(connection);
 		codaCore.initialize(connection);
-		Sheet2RDFCore s2rdfCore = new Sheet2RDFCore(serverSpreadsheetFile, connection, getProject().getModel());
+		Sheet2RDFCore s2rdfCore = new Sheet2RDFCore(serverSpreadsheetFile, connection);
 		S2RDFContext s2rdfCtx = new S2RDFContext(s2rdfCore, codaCore, serverSpreadsheetFile);
 		String token = stServiceContext.getSessionToken();
 		contextMap.put(token, s2rdfCtx);
@@ -126,15 +127,61 @@ public class Sheet2RDF extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public JsonNode getHeaders() throws DOMException {
-		ArrayNode headerJsonArray = JsonNodeFactory.instance.arrayNode();
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-		HeadersStruct headersStruct = ctx.getSheet2RDFCore().getHeadersStruct();
-		List<Header> headers = headersStruct.getHeaders();
-		for (Header h : headers){
-			headerJsonArray.add(getHeaderAsJson(h, headersStruct, getManagedConnection(), 
-					ctx.getSheet2RDFCore(), ctx.getCodaCore()));
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		RepositoryConnection connection = getManagedConnection();
+		
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode responseJson = jsonFactory.objectNode();
+		
+		//subject header
+		ObjectNode subjHeaderJson = jsonFactory.objectNode();
+		
+		SubjectHeader subjectHeader = mappingStruct.getSubjectHeader();
+		subjHeaderJson.set("id", jsonFactory.textNode(subjectHeader.getId()));
+		subjHeaderJson.set("pearlFeature", jsonFactory.textNode(mappingStruct.getFeatureStructName(subjectHeader)));
+		//TODO decide name of the two sections (nodes and graphs) of the header editor
+		subjHeaderJson.set("node", getNodeConversionsAsJson(subjectHeader.getNodeConversion(), connection, ctx.getSheet2RDFCore()));
+		subjHeaderJson.set("graph", getGraphApplicationAsJson(subjectHeader.getGraphApplication(), connection, ctx.getSheet2RDFCore()));
+		responseJson.set("subject", subjHeaderJson);
+		
+		//simple headers: headers of the sheet columns
+		ArrayNode headerJsonArray = jsonFactory.arrayNode();
+		List<SimpleHeader> headers = mappingStruct.getHeaders();
+		for (SimpleHeader h : headers){
+			headerJsonArray.add(getSimpleHeaderAsJson(h, mappingStruct, connection, ctx.getSheet2RDFCore()));
 		}
-		return headerJsonArray;
+		responseJson.set("headers", headerJsonArray);
+		
+		return responseJson;
+	}
+	
+	@STServiceOperation
+	@Read
+	public JsonNode getSubjectHeader() throws DOMException {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		RepositoryConnection connection = getManagedConnection();
+		
+		SubjectHeader subjectHeader = mappingStruct.getSubjectHeader();
+		
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode headerJson = jsonFactory.objectNode();
+		
+		headerJson.set("id", jsonFactory.textNode(subjectHeader.getId()));
+		headerJson.set("pearlFeature", jsonFactory.textNode(mappingStruct.getFeatureStructName(subjectHeader)));
+		
+		
+		//TODO decide name of the two sections (nodes and graphs) of the header editor
+		ArrayNode nodesArray = jsonFactory.arrayNode();
+		headerJson.set("nodes", nodesArray);
+		nodesArray.add(getNodeConversionsAsJson(subjectHeader.getNodeConversion(), connection, ctx.getSheet2RDFCore()));
+		
+		ArrayNode graphArray = jsonFactory.arrayNode();
+		headerJson.set("graph", graphArray);
+		graphArray.add(getGraphApplicationAsJson(subjectHeader.getGraphApplication(), connection, ctx.getSheet2RDFCore()));
+		
+		return headerJson;
 	}
 	
 	/**
@@ -148,199 +195,187 @@ public class Sheet2RDF extends STServiceAdapter {
 	@Read
 	public JsonNode getHeaderFromId(String headerId) {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-		HeadersStruct headersStruct = ctx.getSheet2RDFCore().getHeadersStruct();
-		Header h = headersStruct.getHeaderFromId(headerId);
-		return getHeaderAsJson(h, headersStruct, getManagedConnection(), ctx.getSheet2RDFCore(), ctx.getCodaCore());
-	}
-	
-	private JsonNode getHeaderAsJson(Header h, HeadersStruct headersStruct,
-			RepositoryConnection connection, Sheet2RDFCore s2rdfCore, CODACore codaCore) {
-		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		ObjectNode headerJson = jsonFactory.objectNode();
-		headerJson.set("id", jsonFactory.textNode(h.getId()));
-		headerJson.set("name", jsonFactory.textNode(h.getHeaderName()));
-		headerJson.set("isMultiple", jsonFactory.booleanNode(headersStruct.isHeaderMultiple(h.getHeaderName())));
-		
-		//check if h.getHeaderResource is a valid property or a class
-		IRI headerRes = h.getHeaderResource();
-		if (headerRes != null) {
-			AnnotatedValue<IRI> annotatedRes = new AnnotatedValue<IRI>(headerRes);
-			if (h.isClass()) {
-				annotatedRes.setAttribute("role", RDFResourceRole.cls.name());
-			} else {
-				annotatedRes.setAttribute("role", RDFResourceRole.property.name());
-			}
-			annotatedRes.setAttribute("show", S2RDFUtils.asQName(headerRes, s2rdfCore.getMergedPrefixMapping()));
-			headerJson.putPOJO("resource", annotatedRes);
-		} else {
-			headerJson.set("resource", null);
-		}
-		
-		ObjectNode rangeJson = jsonFactory.objectNode();
-		headerJson.set("range", rangeJson);
-		rangeJson.set("type", jsonFactory.textNode(h.getRangeType().name()));
-		if (h.getRangeClass() != null) {
-			AnnotatedValue<Resource> annotatedRes = new AnnotatedValue<Resource>(h.getRangeClass());
-			//compute role, qname, ecc?
-			rangeJson.putPOJO("resource", annotatedRes);
-		}
-		if (h.getRangeType().equals(RDFTypesEnum.plainLiteral) && h.getRangeLanguage() != null) {
-			rangeJson.put("lang", h.getRangeLanguage());
-		} else if (h.getRangeType().equals(RDFTypesEnum.typedLiteral) && h.getRangeDatatype() != null) {
-			AnnotatedValue<Resource> annotatedRes= new AnnotatedValue<Resource>(h.getRangeDatatype());
-			rangeJson.putPOJO("resource", annotatedRes);
-		}
-		
-		ObjectNode converterJson = jsonFactory.objectNode();
-		headerJson.set("converter", converterJson);
-		CODAConverter converter = h.getConverter();
-		if (converter != null) {
-			converterJson.set("uri", jsonFactory.textNode(converter.getContractUri()));
-			converterJson.set("type", jsonFactory.textNode(converter.getType().name()));
-			converterJson.set("xRole", jsonFactory.textNode(converter.getxRole()));
-			converterJson.set("memoize", jsonFactory.booleanNode(h.isMemoize()));
-		} else {
-			converterJson.set("uri", null);
-			converterJson.set("type", null);
-			converterJson.set("xRole", null);
-			converterJson.set("memoize", jsonFactory.booleanNode(h.isMemoize()));
-		}
-		
-		return headerJson;
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
+		return getSimpleHeaderAsJson(h, mappingStruct, getManagedConnection(), ctx.getSheet2RDFCore());
 	}
 	
 	/**
-	 * Updates information about the header with the given id. In particulars, update the associated
-	 * property, eventually the rangeType and the language (if available for the property).
-	 * If there are multiple headers with the same name, is possible to apply the changes to all of
-	 * them. 
-	 * @param headerId
-	 * @param property
-	 * @param rangeType
-	 * @param lang
-	 * @param applyToAll Tells if the changes must be applied to all the headers with the same name
-	 * @return
-	 * @throws PRParserException 
+	 * Creates and adds a new graph application to an header
+	 * @param headerId id of the header
+	 * @param property property of the graph application
+	 * @param nodeId node id of the graph application
+	 * @param type the optional rdf:type of the node
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@Read
-	public void updateHeader(String headerId, IRI headerResource, 
-			@Optional RDFTypesEnum rangeType,
-			@Optional IRI rangeClass,
-			@Optional RDFCapabilityType converterType,
-			@Optional String converterMention,
-			@Optional String converterXRole,
-			@Optional (defaultValue = "false") boolean memoize,
-			@Optional String lang,
-			@Optional IRI rangeDatatype, 
-			@Optional (defaultValue = "false") boolean applyToAll) throws PRParserException {
+	public void addGraphApplicationToHeader(String headerId, IRI property, String nodeId, @Optional IRI type) {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-		HeadersStruct headersStruct = ctx.getSheet2RDFCore().getHeadersStruct();
-		Header header = headersStruct.getHeaderFromId(headerId);
-		List<Header> headers = new ArrayList<>(); //headers to update
-		if (applyToAll){ //apply changes to all the headers with same name
-			headers = headersStruct.getHeadersFromName(header.getHeaderName());
-		} else {
-			headers.add(header);
-		}
-		RepositoryConnection connection = getManagedConnection();
-		ConverterResolver converterResolver = new ConverterResolver(connection);
-		/*
-		 * apply the change to the collected headers (In most of the case there is just one header,
-		 * there are multiple headers only if there are more with the same name and applyToAll was true)
-		 */
-		for (Header h : headers){ 
-			h.setHeaderResource(headerResource);
-			
-			//update isClass
-			h.setIsClass(S2RDFUtils.isClass(headerResource, connection));
-			
-			//update converter
-			CODAConverter converter = null;
-			if (converterMention != null && converterType != null) { //converter is provided by the client
-				//set converter contract description retrieving the ConverterContractDescription object from its uri
-				ConverterMention mention = ctx.getCodaCore().parseConverterMention(converterMention, ctx.getSheet2RDFCore().getMergedPrefixMapping());
-				String convUri = mention.getURI();
-				converter = new CODAConverter(converterType, convUri);
-				converter.setxRole(converterXRole);
-			} else { 
-				//resolve the converter with the default choice for the resource assigned to the header
-//				converter = converterResolver.getConverter(headerResource);
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
+		SimpleGraphApplication g = new SimpleGraphApplication();
+		g.setProperty(property);
+		g.setNodeId(nodeId);
+		g.setType(type);
+		h.addGraphApplication(g);
+	}
+	
+	/**
+	 * Updates an existing graph application of an header
+	 * @param headerId id of the header
+	 * @param graphId id of the existing graph application
+	 * @param property property of the graph application
+	 * @param nodeId node id of the graph application
+	 * @param type the optional rdf:type of the node
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void updateGraphApplication(String headerId, String graphId, IRI property, String nodeId, @Optional IRI type) {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
+		for (SimpleGraphApplication g: h.getGraphApplications()) {
+			if (g.getId().equals(graphId)) {
+				g.setProperty(property);
+				g.setNodeId(nodeId);
+				g.setType(type);
+				break;
 			}
-			h.setConverter(converter);
-			
-			h.setMemoize(memoize);
-			
-			if (rangeType != null) {
-				h.setRangeType(rangeType);
-			}
-			
-			//Set the optional fields, so that if not passed they will be set to null
-			h.setRangeLanguage(lang);
-			h.setRangeClass(rangeClass);
-			h.setRangeDatatype(rangeDatatype);
 		}
 	}
 	
-//	//TODO: soon it will be useful to pass a parameter to indicate whether is required the list 
-//	//of CODA converter for uri or literal type
-//	/**
-//	 * Returns the list of available CODA converters
-//	 * rangeType values: resource, plainLiteral, typedLiteral
-//	 * @return
-//	 */
-//	@STServiceOperation
-//	public JsonNode listConverters(@Optional String rangeType, @Optional IRI datatype) {
-//		
-//		JsonNodeFactory jf = JsonNodeFactory.instance;
-//		ArrayNode converterJsonArray = jf.arrayNode();
-//		
-//		//align range type with RDFCapability name
-//		if (rangeType != null && rangeType.equals("resource")) {
-//			rangeType = "uri";
-//		}
-//		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-//		Collection<ConverterContractDescription> codaConvList = ctx.getCodaCore().listConverterContracts();
-//		for (ConverterContractDescription convDescr : codaConvList) {
-//			RDFCapabilityType rdfCapability = convDescr.getRDFCapability();
-//			Set<IRI> datatypes = convDescr.getDatatypes();
-//			if (rangeType != null && datatype != null) {
-//				/* if datatype is provided, return converters only if the required range is typedLiteral
-//				 * since "reource" and "plainLiteral" range cannot have a datatype */
-//				if (rangeType.equals("typedLiteral") && (rdfCapability.equals(RDFCapabilityType.node) || 
-//						rdfCapability.equals(RDFCapabilityType.literal) ||
-//						(rdfCapability.equals(RDFCapabilityType.typedLiteral) && datatypes.contains(datatype)))) {
-//					converterJsonArray.add(getConverterAsJson(convDescr));
-//				}
-//			} else if (rangeType != null && datatype == null) {
-//				//return converter with the required range or which the RDFCapabillity includes the required one
-//				//(rdfCapability is node or is literal && required range is typed/plainLiteral)
-//				if (rdfCapability.name().equals(rangeType) || rdfCapability.equals(RDFCapabilityType.node) ||
-//						(rdfCapability.equals(RDFCapabilityType.literal) && (rangeType.contains("Literal")))) {
-//					converterJsonArray.add(getConverterAsJson(convDescr));
-//				}
-//			} else if (rangeType == null && datatype != null) {
-//				//return converters with RDFCapabililty node || literal || typedLiteral with the given datatype
-//				if (rdfCapability.equals(RDFCapabilityType.literal) || rdfCapability.equals(RDFCapabilityType.node)) {
-//					converterJsonArray.add(getConverterAsJson(convDescr));
-//				} else if (rdfCapability.equals(RDFCapabilityType.typedLiteral) && datatypes.contains(datatype)) {
-//					converterJsonArray.add(getConverterAsJson(convDescr));
-//				}
-//			} else if (rangeType == null && datatype == null) {//return all converters
-//				converterJsonArray.add(getConverterAsJson(convDescr));
-//			}
-//		}
-//		return converterJsonArray;
-//	}
-//
-//	private JsonNode getConverterAsJson(ConverterContractDescription convDescr) {
-//		JsonNodeFactory jf = JsonNodeFactory.instance;
-//		ObjectNode converterJson = jf.objectNode();
-//		converterJson.set("uri", jf.textNode(convDescr.getContractURI()));
-//		converterJson.set("name", jf.textNode(convDescr.getContractName()));
-//		converterJson.set("description", jf.textNode(convDescr.getContractDescription()));
-//		return converterJson;
-//	}
+	/**
+	 * Removes a graph application from an header
+	 * @param headerId id of the header
+	 * @param graphId id of the existing graph application
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void removeGraphApplicationFromHeader(String headerId, String graphId) {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
+		Iterator<SimpleGraphApplication> it = h.getGraphApplications().iterator();
+		while (it.hasNext()) {
+			if (it.next().getId().equals(graphId)) {
+				it.remove();
+			}
+		}
+	}
+	
+	/**
+	 * Returns true if the given node id is already in use. Check useful when creating/updating a node
+	 * @param nodeId
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	public Boolean isNodeIdAlreadyUsed(String nodeId) {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		if (nodeId.equals(mappingStruct.getSubjectHeader().getNodeConversion().getProducedNodeId())) {
+			return true;
+		}
+		for (SimpleHeader h: mappingStruct.getHeaders()) {
+			for (NodeConversion n: h.getNodeConversions()) {
+				if (n.getProducedNodeId().equals(nodeId)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * Creates and adds a node to a header. 
+	 * Note: This service does not perform any check on node ID collision. This check shoul be done separately
+	 * via {@link #isNodeIdAlreadyUsed(String)}
+	 * Note 2: The creation of a node doesn't imply that it is used in a graph application.
+	 * This needs to be done separately (with {@link #addGraphApplicationToHeader(String, IRI, String, IRI)} 
+	 * or {@link #updateGraphApplication(String, String, IRI, String, IRI)}  
+	 * 
+	 * @param headerId
+	 * @param nodeId
+	 * @param converterCapability
+	 * @param converterContract
+	 * @param converterDatatype
+	 * @param converterLanguage
+	 * @param converterParams
+	 * @param converterXRole
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void addNodeToHeader(String headerId, String nodeId, RDFCapabilityType converterCapability, 
+			String converterContract, @Optional IRI converterDatatype, @Optional String converterLanguage, 
+			@Optional Map<String, String> converterParams, @Optional String converterXRole, 
+			@Optional(defaultValue = "false") boolean memoize) {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
+		//create node and add it to the header
+		NodeConversion n = new NodeConversion();
+		n.setProducedNodeId(nodeId);
+		CODAConverter c = new CODAConverter(converterCapability, converterContract, converterXRole);
+		c.setDatatype(converterDatatype);
+		c.setLanguage(converterLanguage);
+		if (converterParams != null) {
+			c.setParams(converterParams);
+		}
+		n.setConverter(c);
+		n.setMemoize(memoize);
+		h.addNodeConversions(n);
+	}
+	
+	/**
+	 * Removes a node from an header. If the node is used/referenced by a graph application, updates
+	 * the graph application as well.
+	 * @param headerId id of the header
+	 * @param nodeId id of the existing node
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void removeNodeFromHeader(String headerId, String nodeId) {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
+		//remove the node
+		Iterator<NodeConversion> itNodes = h.getNodeConversions().iterator();
+		while (itNodes.hasNext()) {
+			if (itNodes.next().getProducedNodeId().equals(nodeId)) {
+				itNodes.remove();
+			}
+		}
+		//remove the node from the graphs that use it
+		for (SimpleGraphApplication g: h.getGraphApplications()) {
+			if (g.getNodeId().equals(nodeId)) {
+				g.setNodeId(null);
+			}
+		}
+	}
+	
+	/**
+	 * Update the subject header
+	 * @param headerId
+	 * @param type
+	 * @param converterContract
+	 * @param converterParams
+	 * @param converterXRole
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void updateSubjectHeader(String headerId, String converterContract, @Optional IRI type,
+			@Optional Map<String, String> converterParams, @Optional String converterXRole, 
+			@Optional(defaultValue = "false") boolean memoize) {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		SubjectHeader subjHeader = mappingStruct.getSubjectHeader();
+		subjHeader.setId(headerId);
+		//update the converter in the node conversion
+		NodeConversion n = subjHeader.getNodeConversion();
+		CODAConverter c = new CODAConverter(RDFCapabilityType.uri, converterContract, converterXRole);
+		if (converterParams != null) {
+			c.setParams(converterParams);
+		}
+		n.setConverter(c);
+		n.setMemoize(memoize);
+		//update the type in the graph application
+		subjHeader.getGraphApplication().setType(type);
+	}
+	
 	
 	/**
 	 * Returns a preview of the sheet containing the first <code>maxRows</code> rows
@@ -395,11 +430,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		File pearlFile = File.createTempFile("pearl", ".pr");
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		Sheet2RDFCore s2rdfCore = ctx.getSheet2RDFCore();
-		if (skosSchema != null) {
-			s2rdfCore.generatePearlFile(pearlFile, getManagedConnection(), skosSchema);
-		} else {
-			s2rdfCore.generatePearlFile(pearlFile, getManagedConnection());
-		}
+		s2rdfCore.generatePearlFile(pearlFile, getManagedConnection());
 		ctx.setPearlFile(pearlFile);
 		String pearl = S2RDFUtils.pearlFileToString(pearlFile);
 		return JsonNodeFactory.instance.textNode(pearl);
@@ -546,10 +577,11 @@ public class Sheet2RDF extends STServiceAdapter {
 	public void addTriples() {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		List<SuggOntologyCoda> suggTriples = ctx.getCachedSuggestedTriples();
+		RepositoryConnection connection = getManagedConnection();
 		for (SuggOntologyCoda sugg : suggTriples){
 			List<ARTTriple> triples = sugg.getAllInsertARTTriple();
 			for (ARTTriple t : triples){
-				getManagedConnection().add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+				connection.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
 			}
 		}
 	}
@@ -600,4 +632,81 @@ public class Sheet2RDF extends STServiceAdapter {
 		}
 	}
 
+	
+	private JsonNode getSimpleHeaderAsJson(SimpleHeader h, MappingStruct mappingStruct,
+			RepositoryConnection connection, Sheet2RDFCore s2rdfCore) {
+		
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode headerJson = jsonFactory.objectNode();
+		
+		headerJson.set("id", jsonFactory.textNode(h.getId()));
+		headerJson.set("name", jsonFactory.textNode(h.getHeaderName()));
+		headerJson.set("pearlFeature", jsonFactory.textNode(mappingStruct.getFeatureStructName(h)));
+		headerJson.set("isMultiple", jsonFactory.booleanNode(mappingStruct.isHeaderMultiple(h.getHeaderName())));
+		
+		//TODO decide name of the two sections (nodes and graphs) of the header editor
+		ArrayNode nodesArray = jsonFactory.arrayNode();
+		headerJson.set("nodes", nodesArray);
+		for (NodeConversion c: h.getNodeConversions()) {
+			nodesArray.add(getNodeConversionsAsJson(c, connection, s2rdfCore));
+			
+		}
+		
+		ArrayNode graphArray = jsonFactory.arrayNode();
+		headerJson.set("graph", graphArray);
+		for (SimpleGraphApplication ga: h.getGraphApplications()) {
+			graphArray.add(getGraphApplicationAsJson(ga, connection, s2rdfCore));
+		}
+		
+		return headerJson;
+	}
+	
+	private JsonNode getNodeConversionsAsJson(NodeConversion n, RepositoryConnection connection, Sheet2RDFCore s2rdfCore) {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		
+		ObjectNode nodeJson = jsonFactory.objectNode();
+		
+		nodeJson.set("nodeId", jsonFactory.textNode(n.getProducedNodeId()));
+		
+		CODAConverter converter = n.getConverter();
+		if (converter != null) {
+			nodeJson.set("converter", converter.getAsJsonObject());
+		}
+		
+		nodeJson.set("memoize", jsonFactory.booleanNode(n.isMemoize()));
+		
+		return nodeJson;
+	}
+	
+	private JsonNode getGraphApplicationAsJson(SimpleGraphApplication ga, RepositoryConnection connection, Sheet2RDFCore s2rdfCore) {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		
+		ObjectNode graphJson = jsonFactory.objectNode();
+		
+		graphJson.set("id", jsonFactory.textNode(ga.getId()));
+		
+		IRI prop = ga.getProperty();
+		if (prop != null) {
+			AnnotatedValue<IRI> annotatedRes = new AnnotatedValue<IRI>(prop);
+			annotatedRes.setAttribute("role", RoleRecognitionOrchestrator.computeRole(prop, connection).name());
+			annotatedRes.setAttribute("show", S2RDFUtils.asQName(prop, s2rdfCore.getMergedPrefixMapping()));
+			graphJson.putPOJO("property", annotatedRes);
+		} else {
+			graphJson.putPOJO("property", null);
+		}
+		
+		IRI type = ga.getType();
+		if (type != null) {
+			AnnotatedValue<IRI> annotatedRes = new AnnotatedValue<IRI>(type);
+			annotatedRes.setAttribute("role", RDFResourceRole.cls.name());
+			annotatedRes.setAttribute("show", S2RDFUtils.asQName(type, s2rdfCore.getMergedPrefixMapping()));
+			graphJson.putPOJO("type", annotatedRes);
+		} else {
+			graphJson.putPOJO("type", null);
+		}
+		
+		graphJson.set("nodeId", jsonFactory.textNode(ga.getNodeId()));
+		
+		return graphJson;
+	}
 }
