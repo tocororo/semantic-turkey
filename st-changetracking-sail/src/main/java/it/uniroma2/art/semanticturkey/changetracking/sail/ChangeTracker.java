@@ -92,6 +92,7 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 	protected final IRI validationGraph;
 	protected Repository supportRepo;
 	protected final Model graphManagement;
+	protected final boolean historyEnabled;
 	protected final boolean validationEnabled;
 	protected final Optional<Boolean> interactiveNotifications;
 	private Function<String, Repository> repositoryResolver;
@@ -116,13 +117,14 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 	}
 
 	public ChangeTracker(/* @Nullable */ String serverURL, String supportRepoId, String metadataNS,
-			IRI historyGraph, Set<IRI> includeGraph, Set<IRI> excludeGraph, boolean validationEnabled,
-			Optional<Boolean> interactiveNotifications, IRI validationGraph) {
+			IRI historyGraph, Set<IRI> includeGraph, Set<IRI> excludeGraph, boolean historyEnabled,
+			boolean validationEnabled, Optional<Boolean> interactiveNotifications, IRI validationGraph) {
 		this.serverURL = serverURL;
 		this.supportRepoId = supportRepoId;
 		this.metadataNS = metadataNS;
 		this.historyGraph = historyGraph;
 		this.graphManagement = new LinkedHashModel();
+		this.historyEnabled = historyEnabled;
 		this.validationEnabled = validationEnabled;
 		this.validationGraph = validationGraph;
 		this.interactiveNotifications = interactiveNotifications;

@@ -24,10 +24,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
+import org.springframework.validation.ValidationUtils;
 
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 
 /**
  * Abstract base class of tests for {@link ChangeTracker}.
@@ -67,12 +69,14 @@ public abstract class AbstractChangeTrackerTest {
 	}
 
 	protected boolean requiresValidation;
+	protected boolean requiresHistory;
 
 	@Rule
 	public TestWatcher testWatcher = new TestWatcher() {
 
 		protected void starting(org.junit.runner.Description description) {
 			requiresValidation = description.getAnnotation(RequiresValidation.class) != null;
+			requiresHistory = description.getAnnotation(DoesNotWantHistory.class) == null;
 		};
 	};
 
@@ -98,8 +102,8 @@ public abstract class AbstractChangeTrackerTest {
 		ChangeTrackerConfig trackerConfig = new ChangeTrackerConfig(new NativeStoreConfig());
 		trackerConfig.setSupportRepositoryID(HISTORY_REPO_ID);
 		trackerConfig.setMetadataNS(HISTORY_NS);
-//		trackerConfig.setInteractiveNotifications(true);
-		
+		// trackerConfig.setInteractiveNotifications(true);
+
 		if (requiresValidation) {
 			trackerConfig.setValidationEnabled(true);
 			trackerConfig.setValidationGraph(VALIDATION_GRAPH);
@@ -107,7 +111,12 @@ public abstract class AbstractChangeTrackerTest {
 			trackerConfig.setValidationEnabled(false);
 		}
 
-		trackerConfig.setHistoryGraph(HISTORY_GRAPH);
+		if (requiresHistory) {
+			trackerConfig.setHistoryEnabled(true);
+			trackerConfig.setHistoryGraph(HISTORY_GRAPH);
+		} else {
+			trackerConfig.setHistoryEnabled(false);
+		}
 
 		repositoryManager.addRepositoryConfig(
 				new RepositoryConfig("test-data", new SailRepositoryConfig(trackerConfig)));

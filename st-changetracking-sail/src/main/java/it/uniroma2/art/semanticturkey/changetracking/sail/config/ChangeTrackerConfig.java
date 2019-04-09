@@ -7,6 +7,7 @@ import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTr
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INCLUDE_GRAPH;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INTERACTIVE_NOTIFICATIONS;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.SERVER_URL;
+import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_ENABLED;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.VALIDATION_ENABLED;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.VALIDATION_GRAPH;
 
@@ -43,6 +44,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 	private Set<IRI> includeGraph;
 	private Set<IRI> excludeGraph;
 	private Boolean interactiveNotifications;
+	private boolean historyEnabled;
 	private boolean validationEnabled;
 	private IRI validationGraph;
 
@@ -60,6 +62,8 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		excludeGraph = Collections.singleton(SESAME.NIL);
 		interactiveNotifications = null;
 		validationGraph = null;
+		historyEnabled = true;
+		validationEnabled = false;
 	}
 
 	public String getSupportRepositoryID() {
@@ -110,8 +114,16 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		this.interactiveNotifications = interactiveNotifications;
 	}
 
+	public boolean isHistoryEnabled() {
+		return historyEnabled;
+	}
+
 	public boolean isValidationEnabled() {
 		return validationEnabled;
+	}
+
+	public void setHistoryEnabled(boolean historyEnabled) {
+		this.historyEnabled = historyEnabled;
 	}
 
 	public void setValidationEnabled(boolean validationEnabled) {
@@ -164,6 +176,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 			graph.add(implNode, EXCLUDE_GRAPH, g);
 		}
 
+		graph.add(implNode, HISTORY_ENABLED, vf.createLiteral(historyEnabled));
 		graph.add(implNode, VALIDATION_ENABLED, vf.createLiteral(validationEnabled));
 
 		if (interactiveNotifications != null) {
@@ -203,6 +216,9 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		Models.objectIRI(graph.filter(implNode, VALIDATION_GRAPH, null))
 				.map(v -> SESAME.NIL.equals(v) ? null : v).ifPresent(this::setValidationGraph);
 
+		historyEnabled = graph
+				.filter(implNode, HISTORY_ENABLED, SimpleValueFactory.getInstance().createLiteral(false))
+				.isEmpty() ? true : false;
 		validationEnabled = graph
 				.filter(implNode, VALIDATION_ENABLED, SimpleValueFactory.getInstance().createLiteral(true))
 				.isEmpty() ? false : true;
@@ -213,9 +229,9 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		interactiveNotifications = knownValuesForInteractiveModifications
 				.contains(SimpleValueFactory.getInstance().createLiteral(true))
 						? Boolean.TRUE
-						: (knownValuesForInteractiveModifications
-								.contains(SimpleValueFactory.getInstance().createLiteral(false))
-										? Boolean.FALSE : null);
+						: (knownValuesForInteractiveModifications.contains(
+								SimpleValueFactory.getInstance().createLiteral(false)) ? Boolean.FALSE
+										: null);
 	}
 
 	@Override
@@ -236,6 +252,10 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 
 		if (excludeGraph == null) {
 			throw new SailConfigException("Null exclude graph for " + getType() + " Sail.");
+		}
+
+		if (historyEnabled && historyGraph == null) {
+			throw new SailConfigException("History enabled but no history graph is specified");
 		}
 
 		if (validationEnabled && validationGraph == null) {

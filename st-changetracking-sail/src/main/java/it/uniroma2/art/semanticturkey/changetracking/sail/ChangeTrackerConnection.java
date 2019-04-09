@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -76,7 +77,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 	private static final Logger logger = LoggerFactory.getLogger(ChangeTrackerConnection.class);
 
-	private SailConnectionListener connectionListener;
+	private Optional<SailConnectionListener> connectionListener;
 	private final ChangeTracker sail;
 	private final StagingArea stagingArea;
 	private Model connectionLocalGraphManagement;
@@ -84,6 +85,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 	private final LoggingUpdateHandler validatableOpertionHandler;
 	private final UpdateHandler readonlyHandler;
 
+	private boolean historyEnabled;
 	private boolean validationEnabled;
 
 	private Literal startTime;
@@ -99,14 +101,15 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		readonlyHandler = new FlagUpdateHandler();
 		validatableOpertionHandler = new LoggingUpdateHandler();
 		validationEnabled = sail.validationEnabled;
-		if (connectionListener != null) {
-			removeConnectionListener(connectionListener);
+		connectionListener = Optional.empty();
+		
+		if (sail.historyEnabled) {
+			initializeListener();
 		}
-		initializeListener();
 	}
 
 	public void initializeListener() {
-		this.connectionListener = new SailConnectionListener() {
+		this.connectionListener = Optional.of(new SailConnectionListener() {
 
 			@Override
 			public void statementAdded(Statement st) {
@@ -122,8 +125,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 				}
 			}
 
-		};
-		addConnectionListener(connectionListener);
+		});
+		addConnectionListener(connectionListener.get());
 	}
 
 	@Override
@@ -131,7 +134,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		try {
 			super.close();
 		} finally {
-			removeConnectionListener(connectionListener);
+			connectionListener.ifPresent(this::removeConnectionListener);
 		}
 	}
 
@@ -293,7 +296,10 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			// read-only transaction.
 
 			// In a read-only connection, just execute the commit
-			if (readonlyHandler.isReadOnly()) {
+
+			// Similarly, if history is disabled, just do the commit
+			if (!sail.historyEnabled || readonlyHandler.isReadOnly()) {
+				stagingArea.clear();
 				super.commit();
 				return;
 			}
@@ -547,8 +553,6 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			dataset.addDefaultGraph(graph);
 			modifiedTriplesRemoveUpdate.setDataset(dataset);
 			modifiedTriplesRemoveUpdate.execute();
-
-			supportRepoConn.remove(commitIRI, null, null, graph);
 
 			GraphQuery commitDescribeQuery = supportRepoConn.prepareGraphQuery(
 					"describe " + RenderUtils.toSPARQL(commitIRI) + " from " + RenderUtils.toSPARQL(graph));

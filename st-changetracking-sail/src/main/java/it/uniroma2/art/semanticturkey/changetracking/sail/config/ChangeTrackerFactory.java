@@ -48,6 +48,7 @@ public class ChangeTrackerFactory implements SailFactory {
 		IRI metadataGraph = config2.getHistoryGraph();
 		Set<IRI> includeGraph = config2.getIncludeGraph();
 		Set<IRI> excludeGraph = config2.getExcludeGraph();
+		boolean historyEnabled = config2.isHistoryEnabled();
 		boolean validationEnabled = config2.isValidationEnabled();
 		Optional<Boolean> interactiveNotifications = config2.isInteractiveNotifications();
 		IRI validationGraph = config2.getValidationGraph();
@@ -68,9 +69,9 @@ public class ChangeTrackerFactory implements SailFactory {
 				}
 			}
 		}
-		
+
 		return new ChangeTracker(serverURL, metadataRepoId, metadataNS, metadataGraph, includeGraph,
-				excludeGraph, validationEnabled, interactiveNotifications, validationGraph);
-		}
+				excludeGraph, historyEnabled, validationEnabled, interactiveNotifications, validationGraph);
+	}
 
 }

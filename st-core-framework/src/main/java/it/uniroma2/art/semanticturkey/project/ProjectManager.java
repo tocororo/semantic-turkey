@@ -1421,9 +1421,12 @@ public class ProjectManager {
 							ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(
 									backendSailImplConfig);
 							changeTrackerSailConfig.setSupportRepositoryID("support");
-							changeTrackerSailConfig.setHistoryGraph(
-									SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
 							changeTrackerSailConfig.setMetadataNS(defaultNamespace + "metadata#");
+							changeTrackerSailConfig.setHistoryEnabled(historyEnabled);
+							if (historyEnabled) {
+								changeTrackerSailConfig.setHistoryGraph(SimpleValueFactory.getInstance()
+										.createIRI(defaultNamespace + "history"));
+							}
 							changeTrackerSailConfig.setValidationEnabled(validationEnabled);
 							if (validationEnabled) {
 								changeTrackerSailConfig.setValidationGraph(SimpleValueFactory.getInstance()
@@ -1456,9 +1459,12 @@ public class ProjectManager {
 								ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(
 										backendSailImplConfig);
 								changeTrackerSailConfig.setSupportRepositoryID(supportRepoID);
-								changeTrackerSailConfig.setHistoryGraph(SimpleValueFactory.getInstance()
-										.createIRI(defaultNamespace + "history"));
 								changeTrackerSailConfig.setMetadataNS(defaultNamespace + "metadata#");
+								changeTrackerSailConfig.setHistoryEnabled(historyEnabled);
+								if (historyEnabled) {
+									changeTrackerSailConfig.setHistoryGraph(SimpleValueFactory.getInstance()
+											.createIRI(defaultNamespace + "history"));
+								}
 								changeTrackerSailConfig.setValidationEnabled(validationEnabled);
 								if (validationEnabled) {
 									changeTrackerSailConfig.setValidationGraph(SimpleValueFactory
