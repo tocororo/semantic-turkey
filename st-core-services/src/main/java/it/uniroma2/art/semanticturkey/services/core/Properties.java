@@ -464,7 +464,7 @@ public class Properties extends STServiceAdapter {
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
                 "																		\n" +
 				" SELECT ?resource WHERE {												\n" +
-				"     ?res 	rdf:type	?type		 .									\n" +
+				"     ?res 	rdf:type/rdfs:subClassOf*	?type		 .					\n" +
 				
 				
 				"     {?resource 	rdfs:domain	?type		 .							\n" +
