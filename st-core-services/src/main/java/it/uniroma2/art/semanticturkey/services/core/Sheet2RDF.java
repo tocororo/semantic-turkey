@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -23,6 +24,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.uima.UIMAException;
 import org.apache.uima.jcas.JCas;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.MalformedQueryException;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.UnsupportedQueryLanguageException;
@@ -37,7 +40,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.DOMException;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -135,14 +142,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		ObjectNode responseJson = jsonFactory.objectNode();
 		
 		//subject header
-		ObjectNode subjHeaderJson = jsonFactory.objectNode();
-		
-		SubjectHeader subjectHeader = mappingStruct.getSubjectHeader();
-		subjHeaderJson.set("id", jsonFactory.textNode(subjectHeader.getId()));
-		subjHeaderJson.set("pearlFeature", jsonFactory.textNode(mappingStruct.getFeatureStructName(subjectHeader)));
-		//TODO decide name of the two sections (nodes and graphs) of the header editor
-		subjHeaderJson.set("node", getNodeConversionsAsJson(subjectHeader.getNodeConversion(), connection, ctx.getSheet2RDFCore()));
-		subjHeaderJson.set("graph", getGraphApplicationAsJson(subjectHeader.getGraphApplication(), connection, ctx.getSheet2RDFCore()));
+		JsonNode subjHeaderJson = getSubjectHeaderAsJson(mappingStruct.getSubjectHeader(), mappingStruct, connection, ctx.getSheet2RDFCore());
 		responseJson.set("subject", subjHeaderJson);
 		
 		//simple headers: headers of the sheet columns
@@ -154,34 +154,6 @@ public class Sheet2RDF extends STServiceAdapter {
 		responseJson.set("headers", headerJsonArray);
 		
 		return responseJson;
-	}
-	
-	@STServiceOperation
-	@Read
-	public JsonNode getSubjectHeader() throws DOMException {
-		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
-		RepositoryConnection connection = getManagedConnection();
-		
-		SubjectHeader subjectHeader = mappingStruct.getSubjectHeader();
-		
-		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		ObjectNode headerJson = jsonFactory.objectNode();
-		
-		headerJson.set("id", jsonFactory.textNode(subjectHeader.getId()));
-		headerJson.set("pearlFeature", jsonFactory.textNode(mappingStruct.getFeatureStructName(subjectHeader)));
-		
-		
-		//TODO decide name of the two sections (nodes and graphs) of the header editor
-		ArrayNode nodesArray = jsonFactory.arrayNode();
-		headerJson.set("nodes", nodesArray);
-		nodesArray.add(getNodeConversionsAsJson(subjectHeader.getNodeConversion(), connection, ctx.getSheet2RDFCore()));
-		
-		ArrayNode graphArray = jsonFactory.arrayNode();
-		headerJson.set("graph", graphArray);
-		graphArray.add(getGraphApplicationAsJson(subjectHeader.getGraphApplication(), connection, ctx.getSheet2RDFCore()));
-		
-		return headerJson;
 	}
 	
 	/**
@@ -302,20 +274,20 @@ public class Sheet2RDF extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void addNodeToHeader(String headerId, String nodeId, RDFCapabilityType converterCapability, 
-			String converterContract, @Optional IRI converterDatatype, @Optional String converterLanguage, 
-			@Optional Map<String, String> converterParams, @Optional String converterXRole, 
-			@Optional(defaultValue = "false") boolean memoize) {
+			String converterContract, @Optional IRI converterDatatype, @Optional String converterLanguage,
+			@Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
 		//create node and add it to the header
 		NodeConversion n = new NodeConversion();
 		n.setProducedNodeId(nodeId);
-		CODAConverter c = new CODAConverter(converterCapability, converterContract, converterXRole);
+		CODAConverter c = new CODAConverter(converterCapability, converterContract);
 		c.setDatatype(converterDatatype);
 		c.setLanguage(converterLanguage);
 		if (converterParams != null) {
-			c.setParams(converterParams);
+			Map<String, Object> resolvedConvParams = resolveConverterParamsMap(converterParams);
+			c.setParams(resolvedConvParams);
 		}
 		n.setConverter(c);
 		n.setMemoize(memoize);
@@ -358,17 +330,18 @@ public class Sheet2RDF extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void updateSubjectHeader(String headerId, String converterContract, @Optional IRI type,
-			@Optional Map<String, String> converterParams, @Optional String converterXRole, 
-			@Optional(defaultValue = "false") boolean memoize) {
+			@Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) 
+			throws JsonParseException, JsonMappingException, IOException {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SubjectHeader subjHeader = mappingStruct.getSubjectHeader();
 		subjHeader.setId(headerId);
 		//update the converter in the node conversion
 		NodeConversion n = subjHeader.getNodeConversion();
-		CODAConverter c = new CODAConverter(RDFCapabilityType.uri, converterContract, converterXRole);
+		CODAConverter c = new CODAConverter(RDFCapabilityType.uri, converterContract);
 		if (converterParams != null) {
-			c.setParams(converterParams);
+			Map<String, Object> resolvedConvParams = resolveConverterParamsMap(converterParams);
+			c.setParams(resolvedConvParams);
 		}
 		n.setConverter(c);
 		n.setMemoize(memoize);
@@ -632,6 +605,84 @@ public class Sheet2RDF extends STServiceAdapter {
 		}
 	}
 
+	/**
+	 * The converter parameters object should be a map key-value where the key are string and the values could be:
+	 * - String
+	 * - List<Object>: (e.g args of TurtleCollection converter)
+	 * 		actually it should be List<Value> but value can be represented by a rdf4j Value or by a nodeId (string).
+	 * - Map<String, Object> (e.g. args parameter of random converter)
+	 * 		actually it should be Map<String, Value> but value can be represented by a rdf4j Value or by a nodeId (string).
+	 * 
+	 * Unfortunately the Map<String, Object>, where Object could be a Map or a List, cannot be parsed, by a spring converter.
+	 * So as a workaround I get a Map<String, String> and here I manually parse the values.
+	 */
+	private Map<String, Object> resolveConverterParamsMap(Map<String, String> convParamsMap) {
+		Map<String, Object> resolvedConvParams = new HashMap<>();
+		ObjectMapper mapper = new ObjectMapper();
+		Iterator<Entry<String, String>> itEntries = convParamsMap.entrySet().iterator();
+		while (itEntries.hasNext()) {
+			Entry<String, String> entry = itEntries.next();
+			String value = entry.getValue();
+			if (value.startsWith("{")) { //value is a map => convert it
+				try {
+					Map<String, String>valueAsMap = mapper.readValue(value, new TypeReference<Map<String, String>>(){});
+					//resolve in turn the map value
+					Map<String, Object> nestedResolvedMap = resolveConverterParamsMap(valueAsMap);
+					resolvedConvParams.put(entry.getKey(), nestedResolvedMap);
+				} catch (IOException e) {
+					throw new IllegalArgumentException(e);
+				}
+			} else if (value.startsWith("[")) { //value is a list
+				try {
+					List<String>valueAsList = mapper.readValue(value, new TypeReference<List<String>>(){});
+					//resolve in turn the list value
+					List<Object> nestedResolvedList = new ArrayList<>();
+					for (String v: valueAsList) {
+						nestedResolvedList.add(parseStringOrValue(v));
+					}
+					resolvedConvParams.put(entry.getKey(), nestedResolvedList);
+				} catch (IOException e) {
+					throw new IllegalArgumentException(e);
+				}
+			} else { //simple string or rdf4j Ntriples serialization?
+				Object resolvedValue = parseStringOrValue(value);
+				resolvedConvParams.put(entry.getKey(), resolvedValue);					
+			}
+		}
+		return resolvedConvParams;
+	}
+	
+	/**
+	 * Try to parse a string as a rdf4j Value. If the parsing fails, returns it as a plain String.
+	 * @param s
+	 * @return
+	 */
+	private Object parseStringOrValue(String s) {
+		try {
+			Value rdf4jValue = NTriplesUtil.parseValue(s, SimpleValueFactory.getInstance());
+			return rdf4jValue;
+		} catch (IllegalArgumentException e) {
+			return s;
+		}
+	}
+	
+	private JsonNode getSubjectHeaderAsJson(SubjectHeader h, MappingStruct mappingStruct,
+			RepositoryConnection connection, Sheet2RDFCore s2rdfCore) {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode headerJson = jsonFactory.objectNode();
+		
+		headerJson.set("id", jsonFactory.textNode(h.getId()));
+		headerJson.set("pearlFeature", jsonFactory.textNode(mappingStruct.getFeatureStructName(h)));
+		
+		//subject header
+		headerJson.set("id", jsonFactory.textNode(h.getId()));
+		headerJson.set("pearlFeature", jsonFactory.textNode(mappingStruct.getFeatureStructName(h)));
+		//TODO decide name of the two sections (nodes and graphs) of the header editor
+		headerJson.set("node", getNodeConversionsAsJson(h.getNodeConversion(), connection, s2rdfCore));
+		headerJson.set("graph", getGraphApplicationAsJson(h.getGraphApplication(), connection, s2rdfCore));
+		
+		return headerJson;
+	}
 	
 	private JsonNode getSimpleHeaderAsJson(SimpleHeader h, MappingStruct mappingStruct,
 			RepositoryConnection connection, Sheet2RDFCore s2rdfCore) {
