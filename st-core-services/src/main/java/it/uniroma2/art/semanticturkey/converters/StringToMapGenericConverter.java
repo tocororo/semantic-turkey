@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.converters;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -15,8 +16,7 @@ import org.springframework.core.convert.converter.ConditionalGenericConverter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class StringToMapGenericConverter
-		implements ConditionalGenericConverter {
+public class StringToMapGenericConverter implements ConditionalGenericConverter {
 
 	@Autowired
 	private ApplicationContext applicationContext;
@@ -55,13 +55,17 @@ public class StringToMapGenericConverter
 			throw new IllegalArgumentException(e);
 		}
 
-		Map<?, ?> map = rawMap.entrySet().stream().collect(Collectors.toMap(
-				entry -> conversionService.convert(entry.getKey(), TypeDescriptor.valueOf(String.class),
-						targetType.getMapKeyTypeDescriptor()),
-				entry -> conversionService.convert(entry.getValue(),
-						TypeDescriptor.valueOf(
-								entry.getValue() != null ? entry.getValue().getClass() : Object.class),
-						targetType.getMapValueTypeDescriptor())));
+		Map<?, ?> map = rawMap.entrySet().stream()
+				.collect(Collectors.toMap(
+						entry -> conversionService.convert(entry.getKey(),
+								TypeDescriptor.valueOf(String.class), targetType.getMapKeyTypeDescriptor()),
+						entry -> conversionService.convert(entry.getValue(),
+								TypeDescriptor.valueOf(entry.getValue() != null ? entry.getValue().getClass()
+										: Object.class),
+								targetType.getMapValueTypeDescriptor()),
+						(v1, v2) -> {
+							throw new IllegalStateException();
+						}, LinkedHashMap::new));
 
 		return map;
 	}
