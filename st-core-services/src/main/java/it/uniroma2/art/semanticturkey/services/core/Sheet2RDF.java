@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -617,7 +618,7 @@ public class Sheet2RDF extends STServiceAdapter {
 	 * So as a workaround I get a Map<String, String> and here I manually parse the values.
 	 */
 	private Map<String, Object> resolveConverterParamsMap(Map<String, String> convParamsMap) {
-		Map<String, Object> resolvedConvParams = new HashMap<>();
+		Map<String, Object> resolvedConvParams = new LinkedHashMap<>();
 		ObjectMapper mapper = new ObjectMapper();
 		Iterator<Entry<String, String>> itEntries = convParamsMap.entrySet().iterator();
 		while (itEntries.hasNext()) {
