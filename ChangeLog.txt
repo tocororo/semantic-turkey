@@ -6,6 +6,7 @@ date: dd/MM/yyyy
     (e.g. to include a skos:notation)
   * Fixed exception about missing configuration when exporting the results of a SPARQL graph query after the
     application of some RDFTransformers
+  * Added server-side computation of the nature of the triples in the ResourceView
   * Fixed some compatibility issues with Java 11
   * Fixed "authorization denied" when replacing an IRI value via Resources.updateTriple()
   * Fixed the possibility to have more prefixed for the same namespace

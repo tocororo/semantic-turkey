@@ -245,6 +245,8 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 									addQName((AnnotatedValue<Resource>) annotatedMember, resource2attributes);
 								}
 								annotatedMember.setAttribute("graphs", computeGraphs(graphs1));
+								annotatedMember.setAttribute("tripleScope",
+										computeTripleScope(graphs1, workingGraph).toString());
 								annotatedMember.setAttribute("index", topContext.getIndex() + 1);
 								annotatedObjectWithMembers.getMembers()
 										.add((AnnotatedValue<Value>) annotatedMember);
@@ -284,6 +286,8 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 				annotatedObject.setAttribute("explicit", currentProject && graphs.contains(workingGraph));
 
 				annotatedObject.setAttribute("graphs", computeGraphs(graphs));
+				annotatedObject.setAttribute("tripleScope",
+						computeTripleScope(graphs, workingGraph).toString());
 
 				predicateValues.add(annotatedObject);
 

@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsListSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
 
@@ -12,10 +13,12 @@ public class PropertyFacetsSection implements ResourceViewSection {
 	public static class FacetStructure {
 		private final boolean value;
 		private final boolean explicit;
+		private final TripleScopes tripleScope;
 
-		public FacetStructure(boolean value, boolean explicit) {
+		public FacetStructure(boolean value, boolean explicit, TripleScopes tripleScope) {
 			this.value = value;
 			this.explicit = explicit;
+			this.tripleScope = tripleScope;
 		}
 
 		public boolean hold() {
@@ -24,6 +27,10 @@ public class PropertyFacetsSection implements ResourceViewSection {
 
 		public boolean isExplicit() {
 			return explicit;
+		}
+
+		public TripleScopes getTripleScope() {
+			return tripleScope;
 		}
 	}
 

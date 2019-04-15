@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview.consumers;
 
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toSet;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -8,6 +9,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -102,8 +105,8 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 
 			boolean value = propTypes2stmts.containsKey(facetClass);
 			List<Statement> relevantStmts = propTypes2stmts.get(facetClass);
-			boolean explicit = propertyExplicitness && (!value
-					|| relevantStmts.stream().map(Statement::getContext).anyMatch(workingGraph::equals));
+			Set<Resource> graphs = relevantStmts.stream().map(Statement::getContext).collect(toSet());
+			boolean explicit = propertyExplicitness && (!value || graphs.contains(workingGraph));
 
 			/*
 			 * A facet is reported if it is true, or (despite being fale) it can be applied to the given type
@@ -119,7 +122,8 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 					|| (propertyRole != RDFResourceRole.datatypeProperty
 							&& propertyRole != RDFResourceRole.annotationProperty
 							&& propertyRole != RDFResourceRole.ontologyProperty)) {
-				facets.put(facetName, new FacetStructure(value, explicit));
+				facets.put(facetName,
+						new FacetStructure(value, explicit, computeTripleScope(graphs, workingGraph)));
 			}
 
 		}

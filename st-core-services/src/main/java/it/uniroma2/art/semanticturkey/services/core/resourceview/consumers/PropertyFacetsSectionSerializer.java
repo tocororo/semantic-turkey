@@ -24,6 +24,7 @@ public class PropertyFacetsSectionSerializer extends JsonSerializer<PropertyFace
 			gen.writeObjectFieldStart(facetName);
 			gen.writeBooleanField("value", facetStructure.hold());
 			gen.writeBooleanField("explicit", facetStructure.isExplicit());
+			gen.writeStringField("tripleScope", facetStructure.getTripleScope().toString());
 			gen.writeEndObject();
 
 		}

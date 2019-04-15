@@ -148,9 +148,6 @@ import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 @STService
 public class ResourceView extends STServiceAdapter {
 
-	public static final IRI INFERENCE_GRAPH = SimpleValueFactory.getInstance()
-			.createIRI("http://semanticturkey/inference-graph");
-
 	private static final Logger logger = LoggerFactory.getLogger(ResourceView.class);
 
 	@Autowired
@@ -892,7 +889,7 @@ public class ResourceView extends STServiceAdapter {
 				if (retrievedStatements.contains(subject, predicate, object))
 					return;
 
-				retrievedStatements.add(subject, predicate, object, INFERENCE_GRAPH);
+				retrievedStatements.add(subject, predicate, object, NatureRecognitionOrchestrator.INFERENCE_GRAPH);
 			});
 
 			return retrievedStatements;

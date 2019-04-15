@@ -101,4 +101,15 @@ public abstract class VALIDATION {
 		return SimpleValueFactory.getInstance().createIRI(CLEAR_THROUGH_GRAPH.stringValue() + contextIRI);
 	}
 
+	public static boolean isRemoveGraphFor(Resource potentialStagingGraph, Resource graph) {
+		if (graph instanceof IRI) {
+			return potentialStagingGraph.stringValue().startsWith(STAGING_REMOVE_GRAPH.stringValue())
+					&& potentialStagingGraph.stringValue().regionMatches(
+							STAGING_REMOVE_GRAPH.stringValue().length(), graph.stringValue(), 0,
+							graph.stringValue().length());
+		} else {
+			return false;
+		}
+	}
+
 }

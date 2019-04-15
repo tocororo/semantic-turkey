@@ -6,6 +6,7 @@ import static java.util.stream.Collectors.toMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,10 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
+import com.google.common.collect.Sets;
+
+import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
+import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeDataOneOf;
@@ -66,6 +71,11 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 
 	public static String computeGraphs(Set<Resource> graphs) {
 		return graphs.stream().map(g -> g == null ? "MAINGRAPH" : g.toString()).collect(joining(","));
+	}
+
+	public static TripleScopes computeTripleScope(Set<Resource> graphs, Resource workingGraph) {
+		return NatureRecognitionOrchestrator
+				.computeTripleScopeFromGraphs(Sets.filter(graphs, Objects::nonNull), workingGraph);
 	}
 
 	public static String computeShow(Resource resource, Map<Resource, Map<String, Value>> resource2attributes,
@@ -115,7 +125,8 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 				Resource inverseProp = Models.getPropertyResource(statements, resource, OWL.INVERSEOF)
 						.orElse(null);
 
-				return "INVERSE " + computeShow(inverseProp, resource2attributes, statements, useRenderingEngine);
+				return "INVERSE "
+						+ computeShow(inverseProp, resource2attributes, statements, useRenderingEngine);
 			}
 		} else if (useRenderingEngine) {
 			Map<String, Value> resourceAttributes = resource2attributes.get(resource);
@@ -137,7 +148,8 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 	public static void addShowViaDedicatedOrGenericRendering(
 			AnnotatedValue<? extends Resource> annotatedResource,
 			Map<Resource, Map<String, Value>> resource2attributes,
-			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, IRI predicate, Model statements, boolean useRenderingEngine) {
+			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, IRI predicate, Model statements,
+			boolean useRenderingEngine) {
 		Resource resource = annotatedResource.getValue();
 
 		Map<String, Value> resourceAttributes = resource2attributes.get(resource);
@@ -191,7 +203,8 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 				}
 			}
 		}
-		annotatedResource.setAttribute("show", computeShow(resource, resource2attributes, statements, useRenderingEngine));
+		annotatedResource.setAttribute("show",
+				computeShow(resource, resource2attributes, statements, useRenderingEngine));
 	}
 
 	public static <T extends Resource> void addRole(AnnotatedValue<T> annotatedResource,
