@@ -175,6 +175,14 @@ public class Sheet2RDF extends STServiceAdapter {
 		return getSimpleHeaderAsJson(h, mappingStruct, getManagedConnection(), ctx.getSheet2RDFCore());
 	}
 	
+	@STServiceOperation(method = RequestMethod.POST)
+	public void ignoreHeader(String headerId, boolean ignore) {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
+		h.setIgnore(ignore);
+	}
+	
 	/**
 	 * Creates and adds a new graph application to an header
 	 * @param headerId id of the header
@@ -697,6 +705,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		headerJson.set("name", jsonFactory.textNode(h.getHeaderName()));
 		headerJson.set("pearlFeature", jsonFactory.textNode(mappingStruct.getFeatureStructName(h)));
 		headerJson.set("isMultiple", jsonFactory.booleanNode(mappingStruct.isHeaderMultiple(h.getHeaderName())));
+		headerJson.set("ignore", jsonFactory.booleanNode(h.isIgnore()));
 		
 		//TODO decide name of the two sections (nodes and graphs) of the header editor
 		ArrayNode nodesArray = jsonFactory.arrayNode();
