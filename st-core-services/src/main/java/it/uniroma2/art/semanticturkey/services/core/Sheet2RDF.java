@@ -86,6 +86,7 @@ import it.uniroma2.art.sheet2rdf.header.SimpleHeader;
 import it.uniroma2.art.sheet2rdf.header.SubjectHeader;
 import it.uniroma2.art.sheet2rdf.sheet.SheetManager;
 import it.uniroma2.art.sheet2rdf.sheet.SheetManagerFactory;
+import it.uniroma2.art.sheet2rdf.utils.FsNamingStrategy;
 import it.uniroma2.art.sheet2rdf.utils.S2RDFUtils;
 
 @STService
@@ -107,7 +108,8 @@ public class Sheet2RDF extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
-	public void uploadSpreadsheet(MultipartFile file) throws IOException, ProjectInconsistentException {
+	public void uploadSpreadsheet(MultipartFile file, @Optional(defaultValue = "columnNumericIndex") FsNamingStrategy fsNamingStrategy) 
+			throws IOException, ProjectInconsistentException {
 		String fileName = file.getOriginalFilename();
         //create a temp file (in karaf data/temp folder) to copy the received file 
 		File serverSpreadsheetFile = File.createTempFile("sheet", fileName.substring(fileName.lastIndexOf(".")));
@@ -120,7 +122,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		RepositoryConnection connection = getManagedConnection();
 		CODACore codaCore = getInitializedCodaCore(connection);
 		codaCore.initialize(connection);
-		Sheet2RDFCore s2rdfCore = new Sheet2RDFCore(serverSpreadsheetFile, connection);
+		Sheet2RDFCore s2rdfCore = new Sheet2RDFCore(serverSpreadsheetFile, connection, fsNamingStrategy);
 		S2RDFContext s2rdfCtx = new S2RDFContext(s2rdfCore, codaCore, serverSpreadsheetFile);
 		String token = stServiceContext.getSessionToken();
 		contextMap.put(token, s2rdfCtx);
@@ -400,7 +402,7 @@ public class Sheet2RDF extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	public JsonNode getPearl(@Optional IRI skosSchema) throws IOException {
+	public JsonNode getPearl() throws IOException {
 		File pearlFile = File.createTempFile("pearl", ".pr");
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		Sheet2RDFCore s2rdfCore = ctx.getSheet2RDFCore();
