@@ -112,4 +112,15 @@ public abstract class VALIDATION {
 		}
 	}
 
+	public static boolean isAddGraphFor(Resource potentialStagingGraph, Resource graph) {
+		if (graph instanceof IRI) {
+			return potentialStagingGraph.stringValue().startsWith(STAGING_ADD_GRAPH.stringValue())
+					&& potentialStagingGraph.stringValue().regionMatches(
+							STAGING_ADD_GRAPH.stringValue().length(), graph.stringValue(), 0,
+							graph.stringValue().length());
+		} else {
+			return false;
+		}
+	}
+
 }

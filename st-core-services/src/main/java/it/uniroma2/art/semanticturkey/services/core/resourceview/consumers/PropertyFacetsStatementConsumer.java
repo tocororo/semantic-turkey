@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -29,9 +30,11 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -78,9 +81,11 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 			Map<Resource, Map<String, Value>> resource2attributes,
 			Map<IRI, Map<Resource, Literal>> predicate2resourceCreShow, Model propertyModel) {
 
-		boolean currentProject = false;
+		boolean currentProject;
 		if (resourcePosition instanceof LocalResourcePosition) {
 			currentProject = ((LocalResourcePosition) resourcePosition).getProject().equals(project);
+		} else {
+			currentProject = false;
 		}
 
 		SetView<Resource> typingProps = Sets.union(
@@ -96,16 +101,30 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 		String propertyNature = resource2attributes.getOrDefault(resource, Collections.emptyMap())
 				.getOrDefault("nature", SimpleValueFactory.getInstance().createLiteral("")).stringValue();
 		RDFResourceRole propertyRole = STServiceAdapter.getRoleFromNature(propertyNature);
-		boolean propertyExplicitness = currentProject && STServiceAdapter.getGraphFromNature(propertyNature)
-				.filter(workingGraph::equals).isPresent();
+		Optional<IRI> graphFromSubjectNature = STServiceAdapter.getGraphFromNature(propertyNature);
+		boolean propertyExplicitness = currentProject
+				&& graphFromSubjectNature.filter(g ->
+					workingGraph.equals(g) || VALIDATION.isRemoveGraphFor(g, workingGraph) || VALIDATION.isAddGraphFor(g, workingGraph)).isPresent();
 
 		for (Pair<IRI, String> facetClassAndName : facetClassAndNameList) {
 			IRI facetClass = facetClassAndName.getLeft();
 			String facetName = facetClassAndName.getRight();
 
 			boolean value = propTypes2stmts.containsKey(facetClass);
-			List<Statement> relevantStmts = propTypes2stmts.get(facetClass);
+			List<Statement> relevantStmts = propTypes2stmts.getOrDefault(facetClass, Collections.emptyList());
 			Set<Resource> graphs = relevantStmts.stream().map(Statement::getContext).collect(toSet());
+
+			if (graphs.isEmpty()) {
+				Resource syntheticGraph = graphFromSubjectNature.map(Resource.class::cast).orElseGet(
+						() -> currentProject ? workingGraph : NatureRecognitionOrchestrator.INFERENCE_GRAPH);
+				if (VALIDATION.isAddGraph(syntheticGraph)) {
+					syntheticGraph = VALIDATION.unmangleAddGraph((IRI) syntheticGraph);
+				} else if (VALIDATION.isRemoveGraph(syntheticGraph)) {
+					syntheticGraph = VALIDATION.unmangleRemoveGraph((IRI) syntheticGraph);
+				}
+				graphs = Collections.singleton(syntheticGraph);
+			}
+
 			boolean explicit = propertyExplicitness && (!value || graphs.contains(workingGraph));
 
 			/*
