@@ -6,7 +6,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -33,8 +35,10 @@ import org.eclipse.rdf4j.model.impl.BooleanLiteral;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.util.RDFCollections;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
+import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
@@ -63,6 +67,7 @@ import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.changetracking.model.HistoryRepositories;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.BLACKLIST;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
@@ -90,6 +95,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 	private Literal startTime;
 
+	private IRI pendingBlacklisting;
 	private IRI pendingValidation;
 
 	public ChangeTrackerConnection(NotifyingSailConnection wrappedCon, ChangeTracker sail) {
@@ -102,7 +108,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		validatableOpertionHandler = new LoggingUpdateHandler();
 		validationEnabled = sail.validationEnabled;
 		connectionListener = Optional.empty();
-		
+
 		if (sail.historyEnabled) {
 			initializeListener();
 		}
@@ -163,6 +169,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		validatableOpertionHandler.clearHandler();
 		startTime = currentTimeAsLiteral();
 		pendingValidation = null;
+		pendingBlacklisting = null;
 		logger.debug("Transaction Begin / Isolation Level = {}", level);
 	}
 
@@ -473,7 +480,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			// the commit has been applied to the data repo
 		} finally {
 			if (pendingValidation != null) {
-				try (RepositoryConnection supporRepoConn = sail.supportRepo.getConnection()) {
+				try (RepositoryConnection supportRepoConn = sail.supportRepo.getConnection()) {
+					conditionalAddToBlacklist(supportRepoConn, pendingBlacklisting);
 					removeLastCommit(sail.validationGraph, pendingValidation, null, false, false);
 				}
 			}
@@ -1048,6 +1056,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 											VALIDATION.stagingAddGraph(s.getContext()));
 								});
+
+						pendingBlacklisting = (IRI) obj;
 					} else {
 						throw new SailException("Unrecognized operation: it should be either "
 								+ NTriplesUtil.toNTriplesString(CHANGETRACKER.ACCEPT) + " or "
@@ -1061,6 +1071,124 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			}
 		} finally {
 			validationEnabled = true;
+		}
+	}
+
+	private static final IRI PARAMETERS = SimpleValueFactory.getInstance()
+			.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#parameters");
+
+	private void conditionalAddToBlacklist(RepositoryConnection supportRepoConn, IRI commit) {
+		if (!sail.blacklistEnabled || commit == null) {
+			return;
+		}
+
+		IRI blacklistGraph = sail.blacklistGraph;
+
+		GraphQuery blacklistTemplateQuery = supportRepoConn.prepareGraphQuery(
+		//@formatter:off
+			"PREFIX blacklist: <http://semanticturkey.uniroma2.it/ns/blacklist#>                         \n" + 
+			"PREFIX stcl: <http://semanticturkey.uniroma2.it/ns/st-changelog#>                           \n" + 
+			"DESCRIBE ?x { ?commit stcl:parameters|blacklist:template ?x }                               \n"
+			//@formatter:on
+		);
+		blacklistTemplateQuery.setIncludeInferred(false);
+		blacklistTemplateQuery.setBinding("commit", commit);
+		Model blacklistTemplate = QueryResults.asModel(blacklistTemplateQuery.evaluate());
+
+		Optional<Resource> templateResOpt = Models.getPropertyResource(blacklistTemplate, commit,
+				BLACKLIST.TEMPLATE);
+		Optional<Resource> parametersResOpt = Models.getPropertyResource(blacklistTemplate, commit,
+				PARAMETERS);
+
+		if (!templateResOpt.isPresent() || !parametersResOpt.isPresent()) {
+			return;
+		}
+
+		Resource templateRes = templateResOpt.get();
+		Resource parametersRes = parametersResOpt.get();
+		ValueFactory vf = supportRepoConn.getValueFactory();
+
+		Resource blacklistItem = vf.createBNode();
+		Model blacklistItemDescription = new LinkedHashModel();
+
+		// processes templateType
+
+		blacklistTemplate.filter(templateRes, BLACKLIST.TEMPLATE_TYPE, null).forEach(stmt -> {
+			blacklistItemDescription.add(vf.createStatement(blacklistItem, RDF.TYPE, stmt.getObject()));
+		});
+
+		blacklistTemplate.filter(templateRes, BLACKLIST.CONSTANT_BINDING, null).stream()
+				.map(Statement::getObject).filter(Resource.class::isInstance).map(Resource.class::cast)
+				.forEach(head -> {
+					List<Value> values = RDFCollections.asValues(blacklistTemplate, head, new ArrayList<>(2));
+
+					if (values.size() == 2) {
+
+						Value predicate = values.get(0);
+						Value constant = values.get(1);
+
+						if (predicate instanceof IRI) {
+							blacklistItemDescription
+									.add(vf.createStatement(blacklistItem, (IRI) predicate, constant));
+						}
+					}
+				});
+
+		blacklistTemplate.filter(templateRes, BLACKLIST.PARAMETER_BINDING, null).stream()
+				.map(Statement::getObject).filter(Resource.class::isInstance).map(Resource.class::cast)
+				.forEach(head -> {
+					List<Value> values = RDFCollections.asValues(blacklistTemplate, head, new ArrayList<>(2));
+
+					if (values.size() == 2) {
+
+						Value predicate = values.get(0);
+						Value parameter = values.get(1);
+
+						if (predicate instanceof IRI && parameter instanceof IRI) {
+							Models.getProperty(blacklistTemplate, parametersRes, (IRI) parameter)
+									.ifPresent(rawValue -> {
+
+										if (rawValue instanceof Literal) {
+											Literal rawValueLiteral = (Literal) rawValue;
+
+											if (XMLSchema.STRING.equals(rawValueLiteral.getDatatype())) {
+
+												try {
+													Value processedValue = NTriplesUtil
+															.parseValue(rawValueLiteral.getLabel(), vf);
+													blacklistItemDescription.add(vf.createStatement(
+															blacklistItem, (IRI) predicate, processedValue));
+												} catch (IllegalArgumentException e) {
+													e.printStackTrace();
+												}
+											}
+
+										}
+
+									});
+						}
+					}
+				});
+
+		Set<Literal> labels = Models.getPropertyLiterals(blacklistItemDescription, blacklistItem,
+				BLACKLIST.LABEL);
+
+		for (Literal l : labels) {
+			if (RDF.LANGSTRING.equals(l.getDatatype())) {
+				Literal lowercased;
+				if (l.getLanguage().isPresent()) {
+					Locale locale = Locale.forLanguageTag(l.getLanguage().get());
+					lowercased = vf.createLiteral(l.getLabel().toLowerCase(locale), locale.toLanguageTag());
+				} else {
+					lowercased = vf.createLiteral(l.getLabel().toLowerCase(), "");
+				}
+				blacklistItemDescription.add(blacklistItem, BLACKLIST.LOWERCASED_LABEL, lowercased);
+			}
+		}
+
+		if (!blacklistItemDescription.isEmpty()
+				&& blacklistItemDescription.contains(blacklistItem, BLACKLIST.LOWERCASED_LABEL, null)) {
+			supportRepoConn.add(blacklistItemDescription, blacklistGraph);
 		}
 	}
 }

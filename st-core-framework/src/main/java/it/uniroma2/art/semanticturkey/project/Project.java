@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang.mutable.MutableBoolean;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.http.protocol.Protocol;
@@ -182,6 +183,7 @@ public abstract class Project extends AbstractProject {
 
 	public static final String HISTORY_ENABLED_PROP = "historyEnabled";
 	public static final String VALIDATION_ENABLED_PROP = "validationEnabled";
+	public static final String BLACKLISTING_ENABLED_PROP = "blacklistingEnabled";
 
 	public static final String CREATION_DATE_PROP = "creationDate";
 	public static final String MODIFICATION_DATE_PROP = "modificationDate";
@@ -222,6 +224,7 @@ public abstract class Project extends AbstractProject {
 		reservedProperties.add(PLUGINS_PROP);
 		reservedProperties.add(HISTORY_ENABLED_PROP);
 		reservedProperties.add(VALIDATION_ENABLED_PROP);
+		reservedProperties.add(BLACKLISTING_ENABLED_PROP);
 	}
 
 	private static final String SEPARATION_SYMBOL = ";";
@@ -729,6 +732,10 @@ public abstract class Project extends AbstractProject {
 
 	public boolean isValidationEnabled() {
 		return Boolean.valueOf(getProperty(VALIDATION_ENABLED_PROP));
+	}
+
+	public boolean isBlacklistingEnabled() {
+		return Boolean.valueOf(ObjectUtils.firstNonNull(getProperty(BLACKLISTING_ENABLED_PROP), "false"));
 	}
 
 	String getRequiredProperty(String propertyName) throws ProjectInconsistentException {

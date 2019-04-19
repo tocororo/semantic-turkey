@@ -58,7 +58,7 @@
 	<bean
 		class="it.uniroma2.art.semanticturkey.user.SchemesOwnershipPostProcessor">
 		<property name="proxyTargetClass" value="true"></property>
-		<property name="order" value="90" />
+		<property name="order" value="95" />
 	</bean>
 
 	<bean id="stServiceAspect" class="it.uniroma2.art.semanticturkey.tx.STServiceAspect">
@@ -87,9 +87,15 @@
 	</bean>
 
 	<bean
-		class="it.uniroma2.art.semanticturkey.search.SearchUpdatePostProcessor">
+		class="it.uniroma2.art.semanticturkey.services.aspects.RejectedTermsBlacklistingPostProcessor">
 		<property name="proxyTargetClass" value="true"></property>
 		<property name="order" value="252" />
+	</bean>
+
+	<bean
+		class="it.uniroma2.art.semanticturkey.search.SearchUpdatePostProcessor">
+		<property name="proxyTargetClass" value="true"></property>
+		<property name="order" value="253" />
 	</bean>
 
 

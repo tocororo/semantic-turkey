@@ -147,7 +147,8 @@ public class Projects extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'C')")
 	public void createProject(ProjectConsumer consumer, String projectName, IRI model,
 			IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
-			RepositoryAccess repositoryAccess, String coreRepoID,
+			@Optional(defaultValue = "false") boolean blacklistingEnabled, RepositoryAccess repositoryAccess,
+			String coreRepoID,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfigurerConfiguration\"}}") PluginSpecification coreRepoSailConfigurerSpecification,
 			@Optional String coreBackendType, String supportRepoID,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfigurerConfiguration\"}}") PluginSpecification supportRepoSailConfigurerSpecification,
@@ -186,11 +187,13 @@ public class Projects extends STServiceAdapter {
 
 		Set<IRI> failedImports = new HashSet<>();
 
-		File preloadedDataFile = preloadedDataFileName != null ? preloadedDataStore.startConsumingPreloadedData(preloadedDataFileName) : null;
+		File preloadedDataFile = preloadedDataFileName != null
+				? preloadedDataStore.startConsumingPreloadedData(preloadedDataFileName)
+				: null;
 		boolean deletePreloadedDataFile = false;
 		try {
 			ProjectManager.createProject(consumer, projectName, model, lexicalizationModel, baseURI.trim(),
-					historyEnabled, validationEnabled, repositoryAccess, coreRepoID,
+					historyEnabled, validationEnabled, blacklistingEnabled, repositoryAccess, coreRepoID,
 					coreRepoSailConfigurerSpecification, coreBackendType, supportRepoID,
 					supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
 					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
@@ -199,7 +202,8 @@ public class Projects extends STServiceAdapter {
 			deletePreloadedDataFile = true;
 		} finally {
 			if (preloadedDataFileName != null) {
-				preloadedDataStore.finishConsumingPreloadedData(preloadedDataFileName, deletePreloadedDataFile);
+				preloadedDataStore.finishConsumingPreloadedData(preloadedDataFileName,
+						deletePreloadedDataFile);
 			}
 		}
 	}
@@ -811,9 +815,9 @@ public class Projects extends STServiceAdapter {
 	public PreloadedDataSummary preloadDataFromURL(URL preloadedDataURL,
 			@Optional RDFFormat preloadedDataFormat) throws FileNotFoundException, IOException,
 			RDFParseException, RepositoryException, ProfilerException, AssessmentException {
-		
+
 		logger.debug("Preload data from URL = {} (format = {})", preloadedDataURL, preloadedDataFormat);
-		
+
 		File preloadedDataFile;
 
 		HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();

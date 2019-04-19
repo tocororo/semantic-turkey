@@ -146,6 +146,17 @@ public abstract class SupportRepositoryUtils {
 		return historyGraph;
 	}
 
+	public static IRI obtainBlacklistGraph(RepositoryConnection coreRepoConnection)
+			throws IllegalStateException, QueryEvaluationException, RepositoryException {
+		IRI blacklistGraph = Models
+				.objectIRI(
+						QueryResults.asModel(coreRepoConnection.getStatements(CHANGETRACKER.GRAPH_MANAGEMENT,
+								CHANGETRACKER.BLACKLIST_GRAPH, null, CHANGETRACKER.GRAPH_MANAGEMENT)))
+				.orElseThrow(() -> new IllegalStateException(
+						"Could not obtain the blacklist graph. Perhaps this project is without blacklist management"));
+		return blacklistGraph;
+	}
+
 	public static List<ParameterInfo> deserializeOperationParameters(String serializedParameters) {
 
 		if (serializedParameters.isEmpty())

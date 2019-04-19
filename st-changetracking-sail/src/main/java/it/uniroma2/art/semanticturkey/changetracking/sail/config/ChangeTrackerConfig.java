@@ -10,6 +10,8 @@ import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTr
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_ENABLED;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.VALIDATION_ENABLED;
 import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.VALIDATION_GRAPH;
+import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.BLACKLISTING_ENABLED;
+import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.BLACKLIST_GRAPH;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -47,6 +49,8 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 	private boolean historyEnabled;
 	private boolean validationEnabled;
 	private IRI validationGraph;
+	private boolean blacklistingEnabled;
+	private IRI blacklistGraph;
 
 	public ChangeTrackerConfig() {
 		this(null);
@@ -62,8 +66,11 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		excludeGraph = Collections.singleton(SESAME.NIL);
 		interactiveNotifications = null;
 		validationGraph = null;
+		blacklistGraph = null;
 		historyEnabled = true;
 		validationEnabled = false;
+		blacklistingEnabled = false;
+		blacklistGraph = null;
 	}
 
 	public String getSupportRepositoryID() {
@@ -138,6 +145,22 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		this.validationGraph = validationGraph;
 	}
 
+	public boolean isBlacklistingEnabled() {
+		return blacklistingEnabled;
+	}
+
+	public void setBlacklistingEnabled(boolean blacklistingEnabled) {
+		this.blacklistingEnabled = blacklistingEnabled;
+	}
+
+	public IRI getBlacklistGraph() {
+		return blacklistGraph;
+	}
+
+	public void setBlacklistGraph(IRI blacklistGraph) {
+		this.blacklistGraph = blacklistGraph;
+	}
+
 	@Override
 	public Resource export(Model graph) {
 		Resource implNode = super.export(graph);
@@ -168,6 +191,12 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 			graph.add(implNode, VALIDATION_GRAPH, SESAME.NIL);
 		}
 
+		if (blacklistGraph != null) {
+			graph.add(implNode, BLACKLIST_GRAPH, blacklistGraph);
+		} else {
+			graph.add(implNode, BLACKLIST_GRAPH, SESAME.NIL);
+		}
+
 		for (IRI g : includeGraph) {
 			graph.add(implNode, INCLUDE_GRAPH, g);
 		}
@@ -178,6 +207,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 
 		graph.add(implNode, HISTORY_ENABLED, vf.createLiteral(historyEnabled));
 		graph.add(implNode, VALIDATION_ENABLED, vf.createLiteral(validationEnabled));
+		graph.add(implNode, BLACKLISTING_ENABLED, vf.createLiteral(blacklistingEnabled));
 
 		if (interactiveNotifications != null) {
 			graph.add(implNode, INTERACTIVE_NOTIFICATIONS, vf.createLiteral(interactiveNotifications));
@@ -215,12 +245,17 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		excludeGraph = newExcludeGraph;
 		Models.objectIRI(graph.filter(implNode, VALIDATION_GRAPH, null))
 				.map(v -> SESAME.NIL.equals(v) ? null : v).ifPresent(this::setValidationGraph);
+		Models.objectIRI(graph.filter(implNode, BLACKLIST_GRAPH, null))
+				.map(v -> SESAME.NIL.equals(v) ? null : v).ifPresent(this::setBlacklistGraph);
 
 		historyEnabled = graph
 				.filter(implNode, HISTORY_ENABLED, SimpleValueFactory.getInstance().createLiteral(false))
 				.isEmpty() ? true : false;
 		validationEnabled = graph
 				.filter(implNode, VALIDATION_ENABLED, SimpleValueFactory.getInstance().createLiteral(true))
+				.isEmpty() ? false : true;
+		blacklistingEnabled = graph
+				.filter(implNode, BLACKLISTING_ENABLED, SimpleValueFactory.getInstance().createLiteral(true))
 				.isEmpty() ? false : true;
 
 		Set<Value> knownValuesForInteractiveModifications = graph
@@ -260,6 +295,14 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 
 		if (validationEnabled && validationGraph == null) {
 			throw new SailConfigException("Validation enabled but no validation graph is specified");
+		}
+
+		if (blacklistingEnabled && blacklistGraph == null) {
+			throw new SailConfigException("Blacklisting enabled but no blacklist graph is specified");
+		}
+
+		if (blacklistingEnabled && !validationEnabled) {
+			throw new SailConfigException("Blacklisting enabled but validation is disabled");
 		}
 	}
 

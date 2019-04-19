@@ -69,6 +69,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.SchemeAssignment;
 import it.uniroma2.art.semanticturkey.services.annotations.Selection;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation;
+import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation.Facets;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
@@ -630,6 +632,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', '{lang: ''' +@auth.langof(#label)+ '''}', 'C')")
+	@TermCreation(label="label", facet=Facets.NEW_CONCEPT)
 	public AnnotatedValue<IRI> createConcept(
 			@Optional @NotLocallyDefined IRI newConcept, @Optional @LanguageTaggedString Literal label,
 			@Optional @LocallyDefined @Selection Resource broaderConcept, @LocallyDefinedResources @SchemeAssignment List<IRI> conceptSchemes,
@@ -765,6 +768,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("set preferred label")
+	@TermCreation(label="literal", concept="concept", facet=Facets.PREF_LABEL)
 	public void setPrefLabel(@LocallyDefined @Modified IRI concept, @LanguageTaggedString Literal literal,
 			@Optional(defaultValue="true") boolean checkExistingAltLabel) 
 			throws AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException{
@@ -836,6 +840,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("add alternative label")
+	@TermCreation(label="literal", concept="concept", facet=Facets.ALT_LABEL)
 	public void addAltLabel(@LocallyDefined @Modified IRI concept,
 			@LanguageTaggedString Literal literal) throws AlreadyExistingLiteralFormForResourceException {
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -851,6 +856,7 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("add hidden label")
+	@TermCreation(label="literal", concept="concept", facet=Facets.HIDDEN_LABEL)
 	public void addHiddenLabel(@LocallyDefined @Modified IRI concept,
 			@LanguageTaggedString Literal literal) {
 		RepositoryConnection repoConnection = getManagedConnection();

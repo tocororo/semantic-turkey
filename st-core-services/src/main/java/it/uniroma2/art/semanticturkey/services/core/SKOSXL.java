@@ -42,6 +42,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation;
+import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation.Facets;
 import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
@@ -229,6 +231,7 @@ public class SKOSXL extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("add alternative label")
+	@TermCreation(label="literal", concept="concept", facet=Facets.ALT_LABEL)
 	public void addAltLabel(@LocallyDefined @Modified IRI concept, @LanguageTaggedString Literal literal,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2008/05/skos-xl#Label") IRI labelCls,
 			XLabelCreationMode mode) 
@@ -272,6 +275,7 @@ public class SKOSXL extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("add hidden label")
+	@TermCreation(label="literal", concept="concept", facet=Facets.HIDDEN_LABEL)
 	public void addHiddenLabel(@LocallyDefined @Modified IRI concept, @LanguageTaggedString Literal literal, 
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2008/05/skos-xl#Label") IRI labelCls,
 			XLabelCreationMode mode) throws URIGenerationException {
@@ -359,6 +363,7 @@ public class SKOSXL extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', lexicalization)', '{lang: ''' +@auth.langof(#literal)+ '''}', 'C')")
 	@DisplayName("set preferred label")
+	@TermCreation(label="literal", concept="concept", facet=Facets.PREF_LABEL)
 	public void setPrefLabel(@LocallyDefined @Modified IRI concept, @LanguageTaggedString Literal literal,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2008/05/skos-xl#Label") IRI labelCls,
 			XLabelCreationMode mode, @Optional(defaultValue="true") boolean checkExistingAltLabel) 

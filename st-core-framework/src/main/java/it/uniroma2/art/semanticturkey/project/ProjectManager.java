@@ -1350,7 +1350,7 @@ public class ProjectManager {
 
 	public static Project createProject(ProjectConsumer consumer, String projectName, IRI model,
 			IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
-			RepositoryAccess repositoryAccess, String coreRepoID,
+			boolean blacklistingEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
 			PluginSpecification coreRepoSailConfigurerSpecification, String coreBackendType,
 			String supportRepoID, PluginSpecification supportRepoSailConfigurerSpecification,
 			String supportBackendType, PluginSpecification uriGeneratorSpecification,
@@ -1364,6 +1364,11 @@ public class ProjectManager {
 			RBACException, UnsupportedModelException, UnsupportedLexicalizationModelException,
 			ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException,
 			IOException {
+
+		if (!validationEnabled && blacklistingEnabled) {
+			throw new IllegalArgumentException(
+					"Term rejection logging can't be enabled in a project without validation");
+		}
 
 		// Currently, only continuous editing projects
 		ProjectType projType = ProjectType.continousEditing;
@@ -1432,6 +1437,11 @@ public class ProjectManager {
 								changeTrackerSailConfig.setValidationGraph(SimpleValueFactory.getInstance()
 										.createIRI(defaultNamespace + "validation"));
 							}
+							changeTrackerSailConfig.setBlacklistingEnabled(blacklistingEnabled);
+							if (blacklistingEnabled) {
+								changeTrackerSailConfig.setBlacklistGraph(SimpleValueFactory.getInstance()
+										.createIRI(defaultNamespace + "blacklist"));
+							}
 							return changeTrackerSailConfig;
 						});
 				coreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
@@ -1470,6 +1480,12 @@ public class ProjectManager {
 									changeTrackerSailConfig.setValidationGraph(SimpleValueFactory
 											.getInstance().createIRI(defaultNamespace + "validation"));
 								}
+								changeTrackerSailConfig.setBlacklistingEnabled(blacklistingEnabled);
+								if (blacklistingEnabled) {
+									changeTrackerSailConfig.setBlacklistGraph(SimpleValueFactory.getInstance()
+											.createIRI(defaultNamespace + "blacklist"));
+								}
+
 
 								return changeTrackerSailConfig;
 							});
@@ -1584,10 +1600,11 @@ public class ProjectManager {
 			}
 
 			prepareProjectFiles(consumer, projectName, model, lexicalizationModel, projType, projectDir,
-					baseURI, defaultNamespace, historyEnabled, validationEnabled, repositoryAccess,
-					coreRepoID, coreRepositoryConfig, coreBackendType, supportRepoID, supportRepositoryConfig,
-					supportBackendType, uriGeneratorSpecification, renderingEngineSpecification,
-					creationDateProperty, modificationDateProperty, updateForRoles);
+					baseURI, defaultNamespace, historyEnabled, validationEnabled,
+					blacklistingEnabled, repositoryAccess, coreRepoID, coreRepositoryConfig,
+					coreBackendType, supportRepoID, supportRepositoryConfig, supportBackendType,
+					uriGeneratorSpecification, renderingEngineSpecification, creationDateProperty,
+					modificationDateProperty, updateForRoles);
 
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 
@@ -1698,11 +1715,11 @@ public class ProjectManager {
 	private static void prepareProjectFiles(ProjectConsumer consumer, String projectName, IRI model,
 			IRI lexicalizationModel, ProjectType type, File projectDir, String baseURI,
 			String defaultNamespace, boolean historyEnabled, boolean validationEnabled,
-			RepositoryAccess repositoryAccess, String coreRepoID, RepositoryConfig coreRepoConfig,
-			String coreBackendType, String supportRepoID, RepositoryConfig supportRepoConfig,
-			String supportBackendType, PluginSpecification uriGeneratorSpecification,
-			PluginSpecification renderingEngineSpecification, IRI creationDateProperty,
-			IRI modificationDateProperty, String[] updateForRoles)
+			boolean blacklistingEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
+			RepositoryConfig coreRepoConfig, String coreBackendType, String supportRepoID,
+			RepositoryConfig supportRepoConfig, String supportBackendType,
+			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
+			IRI creationDateProperty, IRI modificationDateProperty, String[] updateForRoles)
 			throws DuplicatedResourceException, ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
@@ -1718,6 +1735,8 @@ public class ProjectManager {
 			// out.write(Project.MODELCONFIG_ID + "=" + escape(modelConfigurationClass) + "\n");
 			out.write(Project.HISTORY_ENABLED_PROP + "=" + historyEnabled + "\n");
 			out.write(Project.VALIDATION_ENABLED_PROP + "=" + validationEnabled + "\n");
+			out.write(Project.BLACKLISTING_ENABLED_PROP + "=" + blacklistingEnabled
+					+ "\n");
 			out.write(Project.URI_GENERATOR_FACTORY_ID_PROP + "="
 					+ escape(uriGeneratorSpecification.getFactoryId()) + "\n");
 			out.write(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP + "="

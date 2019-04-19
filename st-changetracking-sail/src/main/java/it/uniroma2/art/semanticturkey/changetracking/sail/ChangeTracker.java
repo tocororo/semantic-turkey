@@ -90,10 +90,12 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 	protected final String metadataNS;
 	protected final IRI historyGraph;
 	protected final IRI validationGraph;
+	protected final IRI blacklistGraph;
 	protected Repository supportRepo;
 	protected final Model graphManagement;
 	protected final boolean historyEnabled;
 	protected final boolean validationEnabled;
+	protected final boolean blacklistEnabled;
 	protected final Optional<Boolean> interactiveNotifications;
 	private Function<String, Repository> repositoryResolver;
 
@@ -118,7 +120,9 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 
 	public ChangeTracker(/* @Nullable */ String serverURL, String supportRepoId, String metadataNS,
 			IRI historyGraph, Set<IRI> includeGraph, Set<IRI> excludeGraph, boolean historyEnabled,
-			boolean validationEnabled, Optional<Boolean> interactiveNotifications, IRI validationGraph) {
+			boolean validationEnabled, Optional<Boolean> interactiveNotifications,
+			/* @Nullable */ IRI validationGraph, boolean blacklistEnabled,
+			/* @Nullable */ IRI blacklistGraph) {
 		this.serverURL = serverURL;
 		this.supportRepoId = supportRepoId;
 		this.metadataNS = metadataNS;
@@ -127,6 +131,7 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 		this.historyEnabled = historyEnabled;
 		this.validationEnabled = validationEnabled;
 		this.validationGraph = validationGraph;
+		this.blacklistGraph = blacklistGraph;
 		this.interactiveNotifications = interactiveNotifications;
 
 		includeGraph.forEach(
@@ -140,6 +145,12 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 		if (validationGraph != null) {
 			graphManagement.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.VALIDATION_GRAPH,
 					validationGraph);
+		}
+
+		this.blacklistEnabled = blacklistEnabled;
+		if (blacklistGraph != null) {
+			graphManagement.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.BLACKLIST_GRAPH,
+					blacklistGraph);
 		}
 	}
 

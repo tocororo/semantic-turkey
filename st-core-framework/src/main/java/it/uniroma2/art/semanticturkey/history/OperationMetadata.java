@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.history;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -7,7 +8,6 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 
@@ -35,6 +35,23 @@ public class OperationMetadata {
 		return operationIRI;
 	}
 
+	public IRI getParameterIRI(int index) {
+		return getParameterIRI(index, parameterNames[index]);
+	}
+
+	public IRI getParameterIRI(String name) {
+		int index = ArrayUtils.indexOf(parameterNames, name);
+		if (index == -1) {
+			throw new IllegalArgumentException("Unknown parameter '" + name + "'");
+		}
+		return getParameterIRI(index, name);
+	}
+
+	private IRI getParameterIRI(int index, String name) {
+		return SimpleValueFactory.getInstance()
+				.createIRI(operationIRI.stringValue() + "/param-" + index + "-" + name);
+	}
+
 	public void setOperation(IRI operationIRI, String[] parameterNames, String[] parameterValues) {
 		this.operationIRI = operationIRI;
 		this.parameterNames = parameterNames;
@@ -49,13 +66,12 @@ public class OperationMetadata {
 			model.add(CHANGETRACKER.COMMIT_METADATA, PROV.USED, operationIRI);
 
 			BNode parametersResource = vf.createBNode();
-			
+
 			if (parameterNames != null) {
 				model.add(CHANGETRACKER.COMMIT_METADATA, STCHANGELOG.PARAMETERS, parametersResource);
 				model.add(parametersResource, RDF.TYPE, PROV.ENTITY);
 
 				for (int i = 0; i < parameterNames.length; i++) {
-					String pn = parameterNames[i];
 					String pv = parameterValues[i];
 
 					Value rdfPv;
@@ -65,8 +81,7 @@ public class OperationMetadata {
 					} else {
 						rdfPv = vf.createLiteral(pv);
 					}
-					model.add(parametersResource,
-							vf.createIRI(operationIRI.stringValue() + "/param-" + i + "-" + pn), rdfPv);
+					model.add(parametersResource, getParameterIRI(i), rdfPv);
 				}
 			}
 		}
