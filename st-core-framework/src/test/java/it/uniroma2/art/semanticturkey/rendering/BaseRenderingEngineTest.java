@@ -125,7 +125,7 @@ public class BaseRenderingEngineTest {
 				"{\"notation\" : {\"propertyPath\" : [\"<http://www.w3.org/2004/02/skos/core#notation>\"]}}");
 
 		Project project = ProjectManager.createProject(ProjectConsumer.SYSTEM, "Test", Project.SKOS_MODEL,
-				Project.SKOS_MODEL, "http://example.org/", false, false, new CreateLocal(), "core",
+				Project.SKOS_MODEL, "http://example.org/", false, false, false, new CreateLocal(), "core",
 				new PluginSpecification(PredefinedRepositoryImplConfigurer.class.getName(),
 						RDF4JPersistentInMemorySailConfigurerConfiguration.class.getName(), null,
 						JsonNodeFactory.instance.objectNode()),
@@ -278,7 +278,7 @@ public class BaseRenderingEngineTest {
 				"{\"notation\" : {\"propertyPath\" : [\"<http://www.w3.org/2004/02/skos/core#notation>\"]}}");
 
 		Project project = ProjectManager.createProject(ProjectConsumer.SYSTEM, "Test", Project.SKOS_MODEL,
-				Project.SKOS_MODEL, "http://example.org/", false, true, new CreateLocal(), "core",
+				Project.SKOS_MODEL, "http://example.org/", false, true, false, new CreateLocal(), "core",
 				new PluginSpecification(PredefinedRepositoryImplConfigurer.class.getName(),
 						RDF4JPersistentInMemorySailConfigurerConfiguration.class.getName(), null,
 						JsonNodeFactory.instance.objectNode()),
