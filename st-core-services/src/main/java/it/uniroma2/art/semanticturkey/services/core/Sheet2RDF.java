@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -75,11 +76,14 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.Metadata.PrefixMapping;
 import it.uniroma2.art.semanticturkey.services.core.sheet2rdf.S2RDFContext;
 import it.uniroma2.art.sheet2rdf.coda.CODAConverter;
 import it.uniroma2.art.sheet2rdf.coda.Sheet2RDFCODA;
 import it.uniroma2.art.sheet2rdf.core.MappingStruct;
 import it.uniroma2.art.sheet2rdf.core.Sheet2RDFCore;
+import it.uniroma2.art.sheet2rdf.header.AdvancedGraphApplication;
+import it.uniroma2.art.sheet2rdf.header.GraphApplication;
 import it.uniroma2.art.sheet2rdf.header.NodeConversion;
 import it.uniroma2.art.sheet2rdf.header.SimpleGraphApplication;
 import it.uniroma2.art.sheet2rdf.header.SimpleHeader;
@@ -191,7 +195,7 @@ public class Sheet2RDF extends STServiceAdapter {
 	 * @param type the optional rdf:type of the node
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void addGraphApplicationToHeader(String headerId, IRI property, String nodeId, @Optional IRI type) {
+	public void addSimpleGraphApplicationToHeader(String headerId, IRI property, String nodeId, @Optional IRI type) {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
@@ -199,6 +203,17 @@ public class Sheet2RDF extends STServiceAdapter {
 		g.setProperty(property);
 		g.setNodeId(nodeId);
 		g.setType(type);
+		h.addGraphApplication(g);
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	public void addAdvancedGraphApplicationToHeader(String headerId, String graphPattern, List<String> nodeIds) {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
+		AdvancedGraphApplication g = new AdvancedGraphApplication();
+		g.setPattern(graphPattern);
+		g.setNodeIds(nodeIds);
 		h.addGraphApplication(g);
 	}
 	
@@ -211,15 +226,38 @@ public class Sheet2RDF extends STServiceAdapter {
 	 * @param type the optional rdf:type of the node
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void updateGraphApplication(String headerId, String graphId, IRI property, String nodeId, @Optional IRI type) {
+	public void updateSimpleGraphApplication(String headerId, String graphId, IRI property, String nodeId, @Optional IRI type) {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
-		for (SimpleGraphApplication g: h.getGraphApplications()) {
-			if (g.getId().equals(graphId)) {
-				g.setProperty(property);
-				g.setNodeId(nodeId);
-				g.setType(type);
+		for (GraphApplication g: h.getGraphApplications()) {
+			if (g.getId().equals(graphId) && g instanceof SimpleGraphApplication) {
+				SimpleGraphApplication sga = (SimpleGraphApplication) g;
+				sga.setProperty(property);
+				sga.setNodeId(nodeId);
+				sga.setType(type);
+				break;
+			}
+		}
+	}
+	
+	/**
+	 * Updates an existing advanced graph application of an header
+	 * @param headerId id of the header
+	 * @param graphId id of the existing graph application
+	 * @param graphPattern updated graph pattern
+	 * @param nodeIds updated list of referenced node ids
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void updateAdvancedGraphApplication(String headerId, String graphId, String graphPattern, List<String> nodeIds) {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
+		for (GraphApplication g: h.getGraphApplications()) {
+			if (g.getId().equals(graphId) && g instanceof AdvancedGraphApplication) {
+				AdvancedGraphApplication aga = (AdvancedGraphApplication) g;
+				aga.setNodeIds(nodeIds);
+				aga.setPattern(graphPattern);
 				break;
 			}
 		}
@@ -235,7 +273,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
-		Iterator<SimpleGraphApplication> it = h.getGraphApplications().iterator();
+		Iterator<GraphApplication> it = h.getGraphApplications().iterator();
 		while (it.hasNext()) {
 			if (it.next().getId().equals(graphId)) {
 				it.remove();
@@ -323,11 +361,9 @@ public class Sheet2RDF extends STServiceAdapter {
 				itNodes.remove();
 			}
 		}
-		//remove the node from the graphs that use it
-		for (SimpleGraphApplication g: h.getGraphApplications()) {
-			if (g.getNodeId().equals(nodeId)) {
-				g.setNodeId(null);
-			}
+		//Remove the node from the graphApplications that use it.
+		for (GraphApplication g: h.getGraphApplications()) {
+			g.removeNode(nodeId);
 		}
 	}
 	
@@ -609,6 +645,19 @@ public class Sheet2RDF extends STServiceAdapter {
 	}
 	
 	@STServiceOperation
+	public Collection<PrefixMapping> getPrefixMappings() {
+		List<PrefixMapping> prefMappings = new ArrayList<>();
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		Map<String, String> s2rdfPrefixMappings = ctx.getSheet2RDFCore().getMergedPrefixMapping();
+		Iterator<Entry<String, String>> it = s2rdfPrefixMappings.entrySet().iterator();
+		while (it.hasNext()) {
+			Entry<String, String> entry = it.next();
+			prefMappings.add(new PrefixMapping(entry.getKey(), entry.getValue(), false));
+		}
+		return prefMappings;
+	}
+	
+	@STServiceOperation
 	public void closeSession() {
 		if (stServiceContext.hasContextParameter("token")) {
 			String token = stServiceContext.getSessionToken();
@@ -717,7 +766,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		
 		ArrayNode graphArray = jsonFactory.arrayNode();
 		headerJson.set("graph", graphArray);
-		for (SimpleGraphApplication ga: h.getGraphApplications()) {
+		for (GraphApplication ga: h.getGraphApplications()) {
 			graphArray.add(getGraphApplicationAsJson(ga, connection, s2rdfCore));
 		}
 		
@@ -741,34 +790,43 @@ public class Sheet2RDF extends STServiceAdapter {
 		return nodeJson;
 	}
 	
-	private JsonNode getGraphApplicationAsJson(SimpleGraphApplication ga, RepositoryConnection connection, Sheet2RDFCore s2rdfCore) {
+	private JsonNode getGraphApplicationAsJson(GraphApplication ga, RepositoryConnection connection, Sheet2RDFCore s2rdfCore) {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		
 		ObjectNode graphJson = jsonFactory.objectNode();
 		
 		graphJson.set("id", jsonFactory.textNode(ga.getId()));
 		
-		IRI prop = ga.getProperty();
-		if (prop != null) {
-			AnnotatedValue<IRI> annotatedRes = new AnnotatedValue<IRI>(prop);
-			annotatedRes.setAttribute("role", RoleRecognitionOrchestrator.computeRole(prop, connection).name());
-			annotatedRes.setAttribute("show", S2RDFUtils.asQName(prop, s2rdfCore.getMergedPrefixMapping()));
-			graphJson.putPOJO("property", annotatedRes);
-		} else {
-			graphJson.putPOJO("property", null);
+		if (ga instanceof SimpleGraphApplication) {
+			SimpleGraphApplication sga = (SimpleGraphApplication) ga;
+			IRI prop = sga.getProperty();
+			if (prop != null) {
+				AnnotatedValue<IRI> annotatedRes = new AnnotatedValue<IRI>(prop);
+				annotatedRes.setAttribute("role", RoleRecognitionOrchestrator.computeRole(prop, connection).name());
+				annotatedRes.setAttribute("show", S2RDFUtils.asQName(prop, s2rdfCore.getMergedPrefixMapping()));
+				graphJson.putPOJO("property", annotatedRes);
+			} else {
+				graphJson.putPOJO("property", null);
+			}
+			IRI type = sga.getType();
+			if (type != null) {
+				AnnotatedValue<IRI> annotatedRes = new AnnotatedValue<IRI>(type);
+				annotatedRes.setAttribute("role", RDFResourceRole.cls.name());
+				annotatedRes.setAttribute("show", S2RDFUtils.asQName(type, s2rdfCore.getMergedPrefixMapping()));
+				graphJson.putPOJO("type", annotatedRes);
+			} else {
+				graphJson.putPOJO("type", null);
+			}
+			graphJson.set("nodeId", jsonFactory.textNode(sga.getNodeId()));
+		} else if (ga instanceof AdvancedGraphApplication) {
+			AdvancedGraphApplication aga = (AdvancedGraphApplication) ga;
+			graphJson.set("pattern", jsonFactory.textNode(aga.getPattern()));
+			ArrayNode nodesJson = jsonFactory.arrayNode();
+			for (String id: aga.getNodeIds()) {
+				nodesJson.add(id);
+			}
+			graphJson.set("nodeIds", nodesJson);
 		}
-		
-		IRI type = ga.getType();
-		if (type != null) {
-			AnnotatedValue<IRI> annotatedRes = new AnnotatedValue<IRI>(type);
-			annotatedRes.setAttribute("role", RDFResourceRole.cls.name());
-			annotatedRes.setAttribute("show", S2RDFUtils.asQName(type, s2rdfCore.getMergedPrefixMapping()));
-			graphJson.putPOJO("type", annotatedRes);
-		} else {
-			graphJson.putPOJO("type", null);
-		}
-		
-		graphJson.set("nodeId", jsonFactory.textNode(ga.getNodeId()));
 		
 		return graphJson;
 	}
