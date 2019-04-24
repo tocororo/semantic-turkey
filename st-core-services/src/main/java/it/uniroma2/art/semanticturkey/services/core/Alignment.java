@@ -1012,7 +1012,9 @@ public class Alignment extends STServiceAdapter {
 		if (stServiceContext.hasContextParameter("token")) {
 			String token = stServiceContext.getSessionToken();
 			AlignmentModel align = modelsMap.get(token);
-			align.close();
+			if (align != null) {
+				align.close();
+			}
 			modelsMap.remove(token);
 		}
 	}

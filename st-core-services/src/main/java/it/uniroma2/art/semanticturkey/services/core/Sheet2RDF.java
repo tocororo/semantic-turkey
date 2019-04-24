@@ -207,13 +207,15 @@ public class Sheet2RDF extends STServiceAdapter {
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
-	public void addAdvancedGraphApplicationToHeader(String headerId, String graphPattern, List<String> nodeIds) {
+	public void addAdvancedGraphApplicationToHeader(String headerId, String graphPattern, List<String> nodeIds, 
+			Map<String, String> prefixMapping) {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
 		AdvancedGraphApplication g = new AdvancedGraphApplication();
 		g.setPattern(graphPattern);
 		g.setNodeIds(nodeIds);
+		g.setPrefixMapping(prefixMapping);
 		h.addGraphApplication(g);
 	}
 	
@@ -249,7 +251,8 @@ public class Sheet2RDF extends STServiceAdapter {
 	 * @param nodeIds updated list of referenced node ids
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void updateAdvancedGraphApplication(String headerId, String graphId, String graphPattern, List<String> nodeIds) {
+	public void updateAdvancedGraphApplication(String headerId, String graphId, String graphPattern, List<String> nodeIds,
+			Map<String, String> prefixMapping) {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
@@ -258,6 +261,7 @@ public class Sheet2RDF extends STServiceAdapter {
 				AdvancedGraphApplication aga = (AdvancedGraphApplication) g;
 				aga.setNodeIds(nodeIds);
 				aga.setPattern(graphPattern);
+				aga.setPrefixMapping(prefixMapping);
 				break;
 			}
 		}
@@ -291,12 +295,12 @@ public class Sheet2RDF extends STServiceAdapter {
 	public Boolean isNodeIdAlreadyUsed(String nodeId) {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
-		if (nodeId.equals(mappingStruct.getSubjectHeader().getNodeConversion().getProducedNodeId())) {
+		if (nodeId.equals(mappingStruct.getSubjectHeader().getNodeConversion().getNodeId())) {
 			return true;
 		}
 		for (SimpleHeader h: mappingStruct.getHeaders()) {
 			for (NodeConversion n: h.getNodeConversions()) {
-				if (n.getProducedNodeId().equals(nodeId)) {
+				if (n.getNodeId().equals(nodeId)) {
 					return true;
 				}
 			}
@@ -323,16 +327,16 @@ public class Sheet2RDF extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void addNodeToHeader(String headerId, String nodeId, RDFCapabilityType converterCapability, 
-			String converterContract, @Optional IRI converterDatatype, @Optional String converterLanguage,
+			String converterContract, @Optional String converterDatatypeUri, @Optional String converterLanguage,
 			@Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
 		//create node and add it to the header
 		NodeConversion n = new NodeConversion();
-		n.setProducedNodeId(nodeId);
+		n.setNodeId(nodeId);
 		CODAConverter c = new CODAConverter(converterCapability, converterContract);
-		c.setDatatype(converterDatatype);
+		c.setDatatypeUri(converterDatatypeUri);
 		c.setLanguage(converterLanguage);
 		if (converterParams != null) {
 			Map<String, Object> resolvedConvParams = resolveConverterParamsMap(converterParams);
@@ -357,7 +361,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		//remove the node
 		Iterator<NodeConversion> itNodes = h.getNodeConversions().iterator();
 		while (itNodes.hasNext()) {
-			if (itNodes.next().getProducedNodeId().equals(nodeId)) {
+			if (itNodes.next().getNodeId().equals(nodeId)) {
 				itNodes.remove();
 			}
 		}
@@ -775,14 +779,15 @@ public class Sheet2RDF extends STServiceAdapter {
 	
 	private JsonNode getNodeConversionsAsJson(NodeConversion n, RepositoryConnection connection, Sheet2RDFCore s2rdfCore) {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectMapper mapper = new ObjectMapper();
 		
 		ObjectNode nodeJson = jsonFactory.objectNode();
 		
-		nodeJson.set("nodeId", jsonFactory.textNode(n.getProducedNodeId()));
+		nodeJson.set("nodeId", jsonFactory.textNode(n.getNodeId()));
 		
 		CODAConverter converter = n.getConverter();
 		if (converter != null) {
-			nodeJson.set("converter", converter.getAsJsonObject());
+			nodeJson.set("converter", mapper.valueToTree(converter));
 		}
 		
 		nodeJson.set("memoize", jsonFactory.booleanNode(n.isMemoize()));
@@ -826,6 +831,7 @@ public class Sheet2RDF extends STServiceAdapter {
 				nodesJson.add(id);
 			}
 			graphJson.set("nodeIds", nodesJson);
+			graphJson.set("prefixMapping", new ObjectMapper().valueToTree(aga.getPrefixMapping()));
 		}
 		
 		return graphJson;

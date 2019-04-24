@@ -40,12 +40,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>it.uniroma2.art.sheet2rdf</groupId>
-			<artifactId>sheet2rdf-osgi-bundle</artifactId>
-			<version>${sheet2rdf.version}</version>
-		</dependency>
-
-		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-web</artifactId>
 			<version>${spring.version}</version>

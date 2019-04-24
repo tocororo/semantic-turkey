@@ -349,6 +349,12 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.config.sparql.SPARQLParameterizationStore" />
 	</osgi:service>
+	
+	<!-- Publishes the AdvancedGraphApplicationStore -->
+
+	<osgi:service auto-export="interfaces">
+		<bean class="it.uniroma2.art.semanticturkey.config.sheet2rdf.AdvancedGraphApplicationStore" />
+	</osgi:service>
 
 	<!-- Publishes the ProjectMetadataStore -->
 
@@ -363,7 +369,7 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.settings.search.CustomSearchStore" />
 	</osgi:service>
-
+	
 	<!-- Publishes the Exporter -->
 
 	<osgi:service auto-export="interfaces">
