@@ -42,6 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.DOMException;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -64,10 +65,7 @@ import it.uniroma2.art.coda.pearl.parser.PearlParserAntlr4;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.coda.structures.SuggOntologyCoda;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -143,20 +141,19 @@ public class Sheet2RDF extends STServiceAdapter {
 	public JsonNode getHeaders() throws DOMException {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
-		RepositoryConnection connection = getManagedConnection();
 		
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode responseJson = jsonFactory.objectNode();
 		
 		//subject header
-		JsonNode subjHeaderJson = getSubjectHeaderAsJson(mappingStruct.getSubjectHeader(), mappingStruct, connection, ctx.getSheet2RDFCore());
+		JsonNode subjHeaderJson = mappingStruct.getSubjectHeaderAsJson();
 		responseJson.set("subject", subjHeaderJson);
 		
 		//simple headers: headers of the sheet columns
 		ArrayNode headerJsonArray = jsonFactory.arrayNode();
 		List<SimpleHeader> headers = mappingStruct.getHeaders();
 		for (SimpleHeader h : headers){
-			headerJsonArray.add(getSimpleHeaderAsJson(h, mappingStruct, connection, ctx.getSheet2RDFCore()));
+			headerJsonArray.add(mappingStruct.getSimpleHeaderAsJson(h));
 		}
 		responseJson.set("headers", headerJsonArray);
 		
@@ -176,7 +173,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
-		return getSimpleHeaderAsJson(h, mappingStruct, getManagedConnection(), ctx.getSheet2RDFCore());
+		return mappingStruct.getSimpleHeaderAsJson(h);
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
@@ -661,6 +658,45 @@ public class Sheet2RDF extends STServiceAdapter {
 		return prefMappings;
 	}
 	
+	/**
+	 * Serializes a JSON file that represents the status of the conversion.
+	 * @param oRes
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonGenerationException 
+	 */
+	@STServiceOperation
+	public void exportStatus(HttpServletResponse oRes) throws JsonGenerationException, JsonMappingException, IOException {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct ms = ctx.getSheet2RDFCore().getMappingStruct();
+		File tempServerFile = File.createTempFile("sheet2rdf_status", ".json");
+		try {
+			ms.toJson(tempServerFile);
+			oRes.setHeader("Content-Disposition", "attachment; filename=alignment.rdf");
+			oRes.setContentType(RDFFormat.RDFXML.getDefaultMIMEType());
+			oRes.setContentLength((int) tempServerFile.length());
+			try (InputStream is = new FileInputStream(tempServerFile)) {
+				IOUtils.copy(is, oRes.getOutputStream());
+			}
+			oRes.flushBuffer();
+		} finally {
+			tempServerFile.delete();
+		}
+	}
+	
+	/**
+	 * Load a JSON file that represents the status of the conversion and restore the mapping struct 
+	 * @param statusFile
+	 * @throws IOException 
+	 * @throws  
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void importStatus(MultipartFile statusFile) throws IOException {
+		File inputServerFile = File.createTempFile("sheet2rdf_status", statusFile.getOriginalFilename());
+		statusFile.transferTo(inputServerFile);
+		//TODO analyze json structure and restore status
+	}
+	
 	@STServiceOperation
 	public void closeSession() {
 		if (stServiceContext.hasContextParameter("token")) {
@@ -730,110 +766,4 @@ public class Sheet2RDF extends STServiceAdapter {
 		}
 	}
 	
-	private JsonNode getSubjectHeaderAsJson(SubjectHeader h, MappingStruct mappingStruct,
-			RepositoryConnection connection, Sheet2RDFCore s2rdfCore) {
-		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		ObjectNode headerJson = jsonFactory.objectNode();
-		
-		headerJson.set("id", jsonFactory.textNode(h.getId()));
-		headerJson.set("pearlFeature", jsonFactory.textNode(mappingStruct.getFeatureStructName(h)));
-		
-		//subject header
-		headerJson.set("id", jsonFactory.textNode(h.getId()));
-		headerJson.set("pearlFeature", jsonFactory.textNode(mappingStruct.getFeatureStructName(h)));
-		//TODO decide name of the two sections (nodes and graphs) of the header editor
-		headerJson.set("node", getNodeConversionsAsJson(h.getNodeConversion(), connection, s2rdfCore));
-		headerJson.set("graph", getGraphApplicationAsJson(h.getGraphApplication(), connection, s2rdfCore));
-		
-		return headerJson;
-	}
-	
-	private JsonNode getSimpleHeaderAsJson(SimpleHeader h, MappingStruct mappingStruct,
-			RepositoryConnection connection, Sheet2RDFCore s2rdfCore) {
-		
-		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		ObjectNode headerJson = jsonFactory.objectNode();
-		
-		headerJson.set("id", jsonFactory.textNode(h.getId()));
-		headerJson.set("name", jsonFactory.textNode(h.getHeaderName()));
-		headerJson.set("pearlFeature", jsonFactory.textNode(mappingStruct.getFeatureStructName(h)));
-		headerJson.set("isMultiple", jsonFactory.booleanNode(mappingStruct.isHeaderMultiple(h.getHeaderName())));
-		headerJson.set("ignore", jsonFactory.booleanNode(h.isIgnore()));
-		
-		//TODO decide name of the two sections (nodes and graphs) of the header editor
-		ArrayNode nodesArray = jsonFactory.arrayNode();
-		headerJson.set("nodes", nodesArray);
-		for (NodeConversion c: h.getNodeConversions()) {
-			nodesArray.add(getNodeConversionsAsJson(c, connection, s2rdfCore));
-			
-		}
-		
-		ArrayNode graphArray = jsonFactory.arrayNode();
-		headerJson.set("graph", graphArray);
-		for (GraphApplication ga: h.getGraphApplications()) {
-			graphArray.add(getGraphApplicationAsJson(ga, connection, s2rdfCore));
-		}
-		
-		return headerJson;
-	}
-	
-	private JsonNode getNodeConversionsAsJson(NodeConversion n, RepositoryConnection connection, Sheet2RDFCore s2rdfCore) {
-		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		ObjectMapper mapper = new ObjectMapper();
-		
-		ObjectNode nodeJson = jsonFactory.objectNode();
-		
-		nodeJson.set("nodeId", jsonFactory.textNode(n.getNodeId()));
-		
-		CODAConverter converter = n.getConverter();
-		if (converter != null) {
-			nodeJson.set("converter", mapper.valueToTree(converter));
-		}
-		
-		nodeJson.set("memoize", jsonFactory.booleanNode(n.isMemoize()));
-		
-		return nodeJson;
-	}
-	
-	private JsonNode getGraphApplicationAsJson(GraphApplication ga, RepositoryConnection connection, Sheet2RDFCore s2rdfCore) {
-		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		
-		ObjectNode graphJson = jsonFactory.objectNode();
-		
-		graphJson.set("id", jsonFactory.textNode(ga.getId()));
-		
-		if (ga instanceof SimpleGraphApplication) {
-			SimpleGraphApplication sga = (SimpleGraphApplication) ga;
-			IRI prop = sga.getProperty();
-			if (prop != null) {
-				AnnotatedValue<IRI> annotatedRes = new AnnotatedValue<IRI>(prop);
-				annotatedRes.setAttribute("role", RoleRecognitionOrchestrator.computeRole(prop, connection).name());
-				annotatedRes.setAttribute("show", S2RDFUtils.asQName(prop, s2rdfCore.getMergedPrefixMapping()));
-				graphJson.putPOJO("property", annotatedRes);
-			} else {
-				graphJson.putPOJO("property", null);
-			}
-			IRI type = sga.getType();
-			if (type != null) {
-				AnnotatedValue<IRI> annotatedRes = new AnnotatedValue<IRI>(type);
-				annotatedRes.setAttribute("role", RDFResourceRole.cls.name());
-				annotatedRes.setAttribute("show", S2RDFUtils.asQName(type, s2rdfCore.getMergedPrefixMapping()));
-				graphJson.putPOJO("type", annotatedRes);
-			} else {
-				graphJson.putPOJO("type", null);
-			}
-			graphJson.set("nodeId", jsonFactory.textNode(sga.getNodeId()));
-		} else if (ga instanceof AdvancedGraphApplication) {
-			AdvancedGraphApplication aga = (AdvancedGraphApplication) ga;
-			graphJson.set("pattern", jsonFactory.textNode(aga.getPattern()));
-			ArrayNode nodesJson = jsonFactory.arrayNode();
-			for (String id: aga.getNodeIds()) {
-				nodesJson.add(id);
-			}
-			graphJson.set("nodeIds", nodesJson);
-			graphJson.set("prefixMapping", new ObjectMapper().valueToTree(aga.getPrefixMapping()));
-		}
-		
-		return graphJson;
-	}
 }
