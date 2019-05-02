@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -303,9 +304,6 @@ public class GlobalSearch extends STServiceAdapter {
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
 		try {
 
-			JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-			ObjectNode responseJson = jsonFactory.objectNode();
-
 			Builder builderBooleanGlobal = new BooleanQuery.Builder();
 			Map<String, String> nameValueSearchMap = new HashMap<String, String>();
 			
@@ -331,8 +329,6 @@ public class GlobalSearch extends STServiceAdapter {
 			}
 			nameValueSearchMap.put("lang", langString.trim());
 		}
-		
-		//TODO search in localName
 		
 		for(String name : nameValueSearchMap.keySet()) {
 			Query query = null;
@@ -387,28 +383,74 @@ public class GlobalSearch extends STServiceAdapter {
 		IndexSearcher searcher = createSearcher();
 		TopDocs hits = searcher.search(booleanQuery, maxResults);
 
-		//construct the response
-		ArrayNode jsonArray = jsonFactory.arrayNode();
-		for(ScoreDoc sd : hits.scoreDocs) {
-			Document doc = searcher.doc(sd.doc);
-			ObjectNode json = jsonFactory.objectNode();
-			json.set("resource", jsonFactory.textNode(doc.get("resource")));
-			json.set("resourceLocalName", jsonFactory.textNode(doc.get("resourceLocalName")));
-			json.set("resourceType", jsonFactory.textNode(doc.get("resourceType")));
-			json.set("lang", jsonFactory.textNode(doc.get("lang")));
-			json.set("repId", jsonFactory.textNode(doc.get("repId")));
-			json.set("labelType", jsonFactory.textNode(doc.get("labelType")));
-			json.set("label", jsonFactory.textNode(doc.get("label")));
-			
-			jsonArray.add(json);
-		}
-		responseJson.set("results", jsonArray);
-
+		//combine the answer from lucene
+		Map<String, List<ResourceWithLabel>> resToStructMap = combineResoruces(hits, searcher);
+		
+		//prepare the JSON response
+		ObjectNode responseJson = prepareResponse(resToStructMap);
+		
 		return responseJson;
 		} finally {
 			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
 		}
 	}
+	
+	
+	
+
+	private Map<String, List<ResourceWithLabel>> combineResoruces(TopDocs hits, IndexSearcher searcher) 
+			throws IOException {
+		Map<String, List<ResourceWithLabel>> resToStructMap = new HashMap<>();
+		for(ScoreDoc sd : hits.scoreDocs) {
+			Document doc = searcher.doc(sd.doc);
+			String resource = doc.get("resource");
+			if(!resToStructMap.containsKey(resource)) {
+				resToStructMap.put(resource,  new ArrayList<>());
+			}
+			String resourceLocalName = doc.get("resourceLocalName");
+			String resourceType = doc.get("resourceType");
+			String lang = doc.get("lang");
+			String repId = doc.get("repId");
+			String labelType = doc.get("labelType");
+			String label = doc.get("label");
+			ResourceWithLabel resourceWithLabel = new ResourceWithLabel(resource, resourceLocalName, 
+					resourceType, lang, label, labelType, repId);
+			resToStructMap.get(resource).add(resourceWithLabel);
+		}
+		return resToStructMap;
+	}
+	
+	private ObjectNode prepareResponse(Map<String, List<ResourceWithLabel>> resToStructMap) {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode responseJson = jsonFactory.objectNode();
+		ArrayNode jsonExternalArray = jsonFactory.arrayNode();
+		for(String resource : resToStructMap.keySet() ) {
+			List<ResourceWithLabel> resourceWithLabelList = resToStructMap.get(resource);
+			
+			ObjectNode jsonResource = jsonFactory.objectNode();
+			jsonResource.set("resource", jsonFactory.textNode(resource));
+			jsonExternalArray.add(jsonResource);
+			
+			ArrayNode jsonIntenalArray = jsonFactory.arrayNode();
+			for(ResourceWithLabel resourceWithLabel : resourceWithLabelList) {
+				ObjectNode json = jsonFactory.objectNode();
+				json.set("resource", jsonFactory.textNode(resourceWithLabel.getResource()));
+				json.set("resourceLocalName", jsonFactory.textNode(resourceWithLabel.getResourceLocalName()));
+				json.set("resourceType", jsonFactory.textNode(resourceWithLabel.getResourceType()));
+				json.set("lang", jsonFactory.textNode(resourceWithLabel.getLang()));
+				json.set("repId", jsonFactory.textNode(resourceWithLabel.getRepId()));
+				json.set("labelType", jsonFactory.textNode(resourceWithLabel.getLabelType()));
+				json.set("label", jsonFactory.textNode(resourceWithLabel.getLabel()));
+				
+				jsonIntenalArray.add(json);
+			}
+			jsonResource.set("details", jsonIntenalArray);
+			
+		}
+		responseJson.set("results", jsonExternalArray);
+		return responseJson;
+	}
+	
 	private IndexSearcher createSearcher() throws IOException {
 		Directory directory = FSDirectory.open(getLuceneDir().toPath());
 		IndexReader reader = DirectoryReader.open(directory);
