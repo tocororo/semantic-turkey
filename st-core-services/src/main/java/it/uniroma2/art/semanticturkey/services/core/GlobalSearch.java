@@ -404,18 +404,19 @@ public class GlobalSearch extends STServiceAdapter {
 		for(ScoreDoc sd : hits.scoreDocs) {
 			Document doc = searcher.doc(sd.doc);
 			String resource = doc.get("resource");
-			if(!resToStructMap.containsKey(resource)) {
-				resToStructMap.put(resource,  new ArrayList<>());
+			String repId = doc.get("repId");
+			String resouce_repId = resource+"_"+repId;
+			if(!resToStructMap.containsKey(resouce_repId)) {
+				resToStructMap.put(resouce_repId,  new ArrayList<>());
 			}
 			String resourceLocalName = doc.get("resourceLocalName");
 			String resourceType = doc.get("resourceType");
 			String lang = doc.get("lang");
-			String repId = doc.get("repId");
 			String labelType = doc.get("labelType");
 			String label = doc.get("label");
 			ResourceWithLabel resourceWithLabel = new ResourceWithLabel(resource, resourceLocalName, 
 					resourceType, lang, label, labelType, repId);
-			resToStructMap.get(resource).add(resourceWithLabel);
+			resToStructMap.get(resouce_repId).add(resourceWithLabel);
 		}
 		return resToStructMap;
 	}
@@ -424,21 +425,26 @@ public class GlobalSearch extends STServiceAdapter {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode responseJson = jsonFactory.objectNode();
 		ArrayNode jsonExternalArray = jsonFactory.arrayNode();
-		for(String resource : resToStructMap.keySet() ) {
-			List<ResourceWithLabel> resourceWithLabelList = resToStructMap.get(resource);
+		for(String resouce_repId : resToStructMap.keySet() ) {
+			List<ResourceWithLabel> resourceWithLabelList = resToStructMap.get(resouce_repId);
+			
+			ResourceWithLabel resourceWithLabelFirst = resourceWithLabelList.get(0);
 			
 			ObjectNode jsonResource = jsonFactory.objectNode();
-			jsonResource.set("resource", jsonFactory.textNode(resource));
+			jsonResource.set("resource", jsonFactory.textNode(resourceWithLabelFirst.getResource()));
+			jsonResource.set("resourceLocalName", jsonFactory.textNode(resourceWithLabelFirst.getResourceLocalName()));
+			jsonResource.set("resourceType", jsonFactory.textNode(resourceWithLabelFirst.getResourceType()));
+			jsonResource.set("repId", jsonFactory.textNode(resourceWithLabelFirst.getRepId()));
 			jsonExternalArray.add(jsonResource);
 			
 			ArrayNode jsonIntenalArray = jsonFactory.arrayNode();
 			for(ResourceWithLabel resourceWithLabel : resourceWithLabelList) {
 				ObjectNode json = jsonFactory.objectNode();
-				json.set("resource", jsonFactory.textNode(resourceWithLabel.getResource()));
-				json.set("resourceLocalName", jsonFactory.textNode(resourceWithLabel.getResourceLocalName()));
-				json.set("resourceType", jsonFactory.textNode(resourceWithLabel.getResourceType()));
+				//json.set("resource", jsonFactory.textNode(resourceWithLabel.getResource()));
+				//json.set("resourceLocalName", jsonFactory.textNode(resourceWithLabel.getResourceLocalName()));
+				//json.set("resourceType", jsonFactory.textNode(resourceWithLabel.getResourceType()));
 				json.set("lang", jsonFactory.textNode(resourceWithLabel.getLang()));
-				json.set("repId", jsonFactory.textNode(resourceWithLabel.getRepId()));
+				//json.set("repId", jsonFactory.textNode(resourceWithLabel.getRepId()));
 				json.set("labelType", jsonFactory.textNode(resourceWithLabel.getLabelType()));
 				json.set("label", jsonFactory.textNode(resourceWithLabel.getLabel()));
 				
