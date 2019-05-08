@@ -34,4 +34,5 @@ public interface STServiceContext {
 	String getVersion();
 	
 	boolean hasContextParameter(String parameter);
+	String getContextParameter(String string);
 }

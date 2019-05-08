@@ -149,6 +149,11 @@ public class BaseRenderingEngineTest {
 				}
 
 				@Override
+				public String getContextParameter(String string) {
+					return null;
+				}
+
+				@Override
 				public Resource getWGraph() {
 					return null;
 				}
@@ -344,6 +349,11 @@ public class BaseRenderingEngineTest {
 
 				@Override
 				public String getExtensionPathComponent() {
+					return null;
+				}
+
+				@Override
+				public String getContextParameter(String string) {
 					return null;
 				}
 			};

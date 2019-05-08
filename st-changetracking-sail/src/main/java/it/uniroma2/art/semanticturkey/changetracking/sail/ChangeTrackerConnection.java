@@ -296,33 +296,31 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			}
 		}
 
-		try {
-			// Some triple stores (e.g. GraphDB, at least version 8.0.4) notify triple additions/deletions
-			// only
-			// during the commit operation. Therefore, we can't be certain that an empty staging area means a
-			// read-only transaction.
+		// Some triple stores (e.g. GraphDB, at least version 8.0.4) notify triple additions/deletions
+		// only
+		// during the commit operation. Therefore, we can't be certain that an empty staging area means a
+		// read-only transaction.
 
-			// In a read-only connection, just execute the commit
+		// In a read-only connection, just execute the commit
 
-			// Similarly, if history is disabled, just do the commit
-			if (!sail.historyEnabled || readonlyHandler.isReadOnly()) {
-				stagingArea.clear();
-				super.commit();
-				return;
-			}
+		// Similarly, if history is disabled, just do the commit
+		if (!sail.historyEnabled || readonlyHandler.isReadOnly()) {
+			stagingArea.clear();
+			super.commit();
+		} else if (sail.interactiveNotifications.equals(ChangeTracker.OPTIONAL_TRUE)
+				&& stagingArea.isEmpty()) {
+			// If the underlying triple store sends interactive notifications, and the staging area is
+			// empty then we should commit and return
+			super.commit();
+		} else {
 
-			// If the underlying triple store sends interactive notifications, and the staging area is empty
-			// then we should commit and return
-			if (sail.interactiveNotifications.equals(ChangeTracker.OPTIONAL_TRUE) && stagingArea.isEmpty()) {
-				super.commit();
-				return;
-			}
-
-			// However, if some triples have been staged or the triple triple store does not send interactive
+			// However, if some triples have been staged or the triple triple store does not send
+			// interactive
 			// notifications, then we need to log the operations.
 
 			synchronized (sail) {
-				// Prepares data commit (in case of success, it is unlikely that a subsequent commit() fails)
+				// Prepares data commit (in case of success, it is unlikely that a subsequent commit()
+				// fails)
 				prepare();
 
 				// Commits the metadata
@@ -353,12 +351,10 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 										+ headList);
 					}
 
-					// If the tip of MASTER is defined, check that has status committed. Otherwise, it could
-					// be
-					// possible that the registered commit has not been effectively applied to the data
-					// repository. In this case, subsequent commits are denied, until the consistency between
-					// data
-					// and metadata is restored.
+					// If the tip of MASTER is defined, check that has status committed. Otherwise, it
+					// could be possible that the registered commit has not been effectively applied to
+					// the data repository. In this case, subsequent commits are denied, until the
+					// consistency between data and metadata is restored.
 
 					if (headList.size() == 1) {
 						previousTip = (Resource) headList.iterator().next().getObject();
@@ -424,8 +420,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					supporRepoConn.commit();
 				} catch (RepositoryException e) {
 					// It may be the case that metadata have been committed, but for some reason (e.g.
-					// disconnection from a remote metadata repo) the transaction status cannot be reported
-					// back
+					// disconnection from a remote metadata repo) the transaction status cannot be
+					// reported back
 					throw new SailException(e);
 				}
 
@@ -441,7 +437,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 				// Data has been committed. So, mark the MASTER commit as committed
 
 				// If triples were unknown when the commit was first logged, then add that information now
-				// (note that in the meantime the triple store should have sent the necessary notifications)
+				// (note that in the meantime the triple store should have sent the necessary
+				// notifications)
 
 				if (triplesUnknown && stagingArea.isEmpty()) {
 					removeLastCommit(sail.historyGraph, commitIRI, previousTip, triplesUnknown, true);
@@ -451,9 +448,9 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 						supportRepoConn.begin();
 
-						// If triples were unknown when the commit was first logged, then add that information
-						// now
-						// (note that in the meantime the triple store should have sent the necessary
+						// If triples were unknown when the commit was first logged, then add that
+						// information now (note that in the meantime the triple store should have sent
+						// the necessary
 						// notifications)
 
 						if (triplesUnknown) {
@@ -465,8 +462,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 						supportRepoConn.commit();
 					} catch (RepositoryException e) {
 						// We would end up with data committed and metadata missing that information.
-						// Since we don't known if data have been committed or not, it is safest to make fail
-						// subsequent commit attempts.
+						// Since we don't known if data have been committed or not, it is safest to make
+						// fail subsequent commit attempts.
 						throw new SailException(e);
 					}
 				}
@@ -474,16 +471,17 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 				stagingArea.clear();
 				readonlyHandler.clearHandler();
 				validatableOpertionHandler.clearHandler();
-			}
 
-			// Note that if the MASTER's tip is not marked as committed, we are unsure about whether or not
-			// the commit has been applied to the data repo
-		} finally {
-			if (pendingValidation != null) {
-				try (RepositoryConnection supportRepoConn = sail.supportRepo.getConnection()) {
-					conditionalAddToBlacklist(supportRepoConn, pendingBlacklisting);
-					removeLastCommit(sail.validationGraph, pendingValidation, null, false, false);
-				}
+				// Note that if the MASTER's tip is not marked as committed, we are unsure about whether or
+				// not
+				// the commit has been applied to the data repo
+			}
+		}
+
+		if (pendingValidation != null) {
+			try (RepositoryConnection supportRepoConn = sail.supportRepo.getConnection()) {
+				conditionalAddToBlacklist(supportRepoConn, pendingBlacklisting);
+				removeLastCommit(sail.validationGraph, pendingValidation, null, false, false);
 			}
 		}
 	}
@@ -1159,7 +1157,9 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 													blacklistItemDescription.add(vf.createStatement(
 															blacklistItem, (IRI) predicate, processedValue));
 												} catch (IllegalArgumentException e) {
-													e.printStackTrace();
+													logger.error(
+															"Skip parameter during the instantiation of a blacklist template",
+															e);
 												}
 											}
 
@@ -1188,7 +1188,10 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 		if (!blacklistItemDescription.isEmpty()
 				&& blacklistItemDescription.contains(blacklistItem, BLACKLIST.LOWERCASED_LABEL, null)) {
+
 			supportRepoConn.add(blacklistItemDescription, blacklistGraph);
+		} else {
+			logger.error("Skip wrong instantiation of a blacklist template: {}", blacklistItemDescription);
 		}
 	}
 }

@@ -68,8 +68,13 @@ public class SimpleSTServiceContext implements STServiceContext{
 
 	@Override
 	public boolean hasContextParameter(String parameter) {
-		// TODO Auto-generated method stub
 		return false;
+	}
+	
+	@Override
+	public String getContextParameter(String string) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

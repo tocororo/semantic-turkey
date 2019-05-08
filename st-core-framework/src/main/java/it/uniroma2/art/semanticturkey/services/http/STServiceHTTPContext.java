@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.http;
 import java.io.IOException;
 import java.util.Arrays;
 
+import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.rdf4j.model.Resource;
@@ -100,11 +101,11 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		String wgraphParameter = request.getParameter(HTTP_PARAM_WGRAPH);
 
 		if (wgraphParameter == null) {
-			wgraphParameter = "<"+getProject().getBaseURI()+">";
+			wgraphParameter = "<" + getProject().getBaseURI() + ">";
 		}
 
 		Resource wgraph = conversionService.convert(wgraphParameter, Resource.class);
-		
+
 		logger.trace("wgraph = " + wgraph);
 
 		return wgraph;
@@ -117,7 +118,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		Resource[] rgraphs;
 		if (rgraphsParameter == null) {
 			rgraphs = new Resource[0];
-		} else{
+		} else {
 			rgraphs = conversionService.convert(rgraphsParameter, Resource[].class);
 		}
 
@@ -202,14 +203,19 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		}
 		return token;
 	}
-	
+
 	@Override
 	public String getVersion() {
 		return request.getParameter(HTTP_PARAM_VERSION);
 	}
-	
+
 	@Override
 	public boolean hasContextParameter(String parameter) {
-		return request.getParameter("ctx_" + parameter) != null;
+		return getContextParameter(parameter) != null;
+	}
+
+	@Override
+	public @Nullable String getContextParameter(String parameter) {
+		return request.getParameter("ctx_" + parameter);
 	}
 }

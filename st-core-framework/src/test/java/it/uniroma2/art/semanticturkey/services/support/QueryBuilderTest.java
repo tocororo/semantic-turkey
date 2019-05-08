@@ -58,6 +58,11 @@ public class QueryBuilderTest {
 		public boolean hasContextParameter(String parameter) {
 			return false;
 		}
+		
+		@Override
+		public String getContextParameter(String string) {
+			return null;			
+		};
 
 		@Override
 		public Resource getWGraph() {

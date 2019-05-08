@@ -3,11 +3,13 @@ package it.uniroma2.art.semanticturkey.services.aspects;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -103,11 +105,15 @@ public class RejectedTermsBlacklistingInterceptor implements MethodInterceptor {
 
 			// 1. checks that the provided label is not blacklisted
 
-			try (RepositoryConnection supportRepoConnection = project.getRepositoryManager()
-					.getRepository(Project.SUPPORT_REPOSITORY).getConnection()) {
+			boolean isForced = StringUtils.equalsIgnoreCase("true",
+					stServiceContext.getContextParameter("force"));
 
-				logger.debug("Lookup the blacklist for " + lowercasedLabel);
-				BooleanQuery blacklistSearchQuery = supportRepoConnection.prepareBooleanQuery(
+			if (!isForced) {
+				try (RepositoryConnection supportRepoConnection = project.getRepositoryManager()
+						.getRepository(Project.SUPPORT_REPOSITORY).getConnection()) {
+
+					logger.debug("Lookup the blacklist for " + lowercasedLabel);
+					BooleanQuery blacklistSearchQuery = supportRepoConnection.prepareBooleanQuery(
 				//@formatter:off
 					"ASK {                                                              \n" +
 					"  GRAPH " + RenderUtils.toSPARQL(blacklistGraph) + " {             \n" +
@@ -116,15 +122,16 @@ public class RejectedTermsBlacklistingInterceptor implements MethodInterceptor {
 					"  }                                                                \n" +
 					"}"
 					//@formatter:on
-				);
-				blacklistSearchQuery.setIncludeInferred(false);
-				boolean isBlacklisted = blacklistSearchQuery.evaluate();
+					);
+					blacklistSearchQuery.setIncludeInferred(false);
+					boolean isBlacklisted = blacklistSearchQuery.evaluate();
 
-				logger.debug("Is blacklisted? {}", isBlacklisted);
+					logger.debug("Is blacklisted? {}", isBlacklisted);
 
-				if (isBlacklisted) {
-					throw new BlacklistForbiddendException(
-							"The term " + RenderUtils.toSPARQL(label) + "\' is blacklisted");
+					if (isBlacklisted) {
+						throw new BlacklistForbiddendException(
+								"The term " + RenderUtils.toSPARQL(label) + "\' is blacklisted");
+					}
 				}
 			}
 
