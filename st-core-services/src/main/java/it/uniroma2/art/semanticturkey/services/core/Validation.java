@@ -56,7 +56,7 @@ public class Validation extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(validation)', 'V')")
+	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
 	public ValidationPaginationInfo getStagedCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
 			@Optional(defaultValue = "") IRI[] performerFilter, @Optional String timeLowerBound,
 			@Optional String timeUpperBound, @Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
