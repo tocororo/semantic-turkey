@@ -515,6 +515,13 @@
 		<bean class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.LOVConnectorFactory" />
 	</osgi:service>
 
+	<!-- Publishes the connector to EU ODP -->
+
+	<osgi:service auto-export="interfaces">
+		<bean class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.euodp.EUODPConnectorFactory" />
+	</osgi:service>
+
+
 	<!-- Publishes the connector to LOD Cloud -->
 
 	<osgi:service auto-export="interfaces">
