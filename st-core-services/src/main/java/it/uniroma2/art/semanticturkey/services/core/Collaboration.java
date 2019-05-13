@@ -89,6 +89,13 @@ public class Collaboration extends STServiceAdapter {
 		Project project = getProject();
 		project.setProperty(PROJ_PROP_BACKEND, backendId);
 	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project, collaboration)', 'U')")
+	public void resetCollaborationOnProject() throws ProjectUpdateException, ReservedPropertyUpdateException {
+		Project project = getProject();
+		project.removeProperty(PROJ_PROP_BACKEND, null);
+	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void addPreferencesForCurrentUser(String backendId, ObjectNode currentUserPreferences)

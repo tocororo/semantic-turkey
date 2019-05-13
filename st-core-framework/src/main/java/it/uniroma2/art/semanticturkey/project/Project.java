@@ -773,7 +773,22 @@ public abstract class Project extends AbstractProject {
 			stp_properties.setProperty(propName, oldValue);
 			throw new ProjectUpdateException(e);
 		}
+	}
+	
+	public void removeProperty(String propName, String propValue)
+			throws ReservedPropertyUpdateException, ProjectUpdateException {
+		logger.debug("removing property: " + propName);
+		if (reservedProperties.contains(propName))
+			throw new ReservedPropertyUpdateException(propName);
 
+		String oldValue = stp_properties.getProperty(propName);
+		try {
+			stp_properties.remove(propName);
+			updateProjectProperties();
+		} catch (IOException e) {
+			stp_properties.setProperty(propName, oldValue);
+			throw new ProjectUpdateException(e);
+		}
 	}
 
 	public void setBaseURI(String baseURI) throws ProjectUpdateException {
