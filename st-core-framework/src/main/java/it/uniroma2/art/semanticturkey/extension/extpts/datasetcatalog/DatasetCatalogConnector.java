@@ -63,21 +63,32 @@ public interface DatasetCatalogConnector extends Extension {
 				continue;
 			}
 
-			if (facetValues.size() > 1) {
-				if (!facetDef.allowsMultipleValues()) {
-					throw new IllegalArgumentException("Multiple values not allowed for facet: " + facetName);
-				}
+			SearchFacetProcessor processor = facetDef.processedUsing();
+			Class<? extends Function<List<String>, String>> aggregatorFunctor = processor.aggregateUsing();
 
-				String delimiter = facetDef.processedUsing().joinUsingDelimiter();
-				if (delimiter.isEmpty()) {
-					throw new IllegalArgumentException("Unknown delimiter for facet: " + facetName);
+			if (aggregatorFunctor != SearchFacetProcessor.NullProcessor.class) {
+				try {
+					facetReducedValue = aggregatorFunctor.newInstance().apply(facetValues);
+				} catch (InstantiationException | IllegalAccessException e) {
+					throw new RuntimeException(e);
 				}
-
-				facetReducedValue = facetValues.stream().collect(Collectors.joining(delimiter));
 			} else {
-				facetReducedValue = facetValues.iterator().next();
-			}
+				if (facetValues.size() > 1) {
+					if (!facetDef.allowsMultipleValues()) {
+						throw new IllegalArgumentException(
+								"Multiple values not allowed for facet: " + facetName);
+					}
 
+					String delimiter = processor.joinUsingDelimiter();
+					if (delimiter.isEmpty()) {
+						throw new IllegalArgumentException("Unknown delimiter for facet: " + facetName);
+					}
+
+					facetReducedValue = facetValues.stream().collect(Collectors.joining(delimiter));
+				} else {
+					facetReducedValue = facetValues.iterator().next();
+				}
+			}
 			parameters.add(ImmutablePair.of(facetName, facetReducedValue));
 		}
 

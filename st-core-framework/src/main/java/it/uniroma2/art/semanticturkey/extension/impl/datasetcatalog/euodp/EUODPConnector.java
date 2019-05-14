@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.euodp;
 
+import static java.util.stream.Collectors.joining;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -10,6 +12,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -47,9 +50,9 @@ import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetSea
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.FacetAggregation;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacetProcessor;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchResultsPage;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SelectionMode;
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.euodp.model.DatasetSearchResultPage;
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.euodp.model.Error;
-import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.euodp.model.FacetItem;
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.euodp.model.ODPDatasetSearchResult;
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.euodp.model.SearchFacet;
 
@@ -89,22 +92,32 @@ public class EUODPConnector implements DatasetCatalogConnector {
 			.collect(Collectors.joining(", ", "(", ")"));
 
 	// facet names have been guessed by the parameters used in the links within the web portal
-	private static final String[] FACETS = new String[] { "vocab_theme", "groups", "organization",
-			"vocab_concepts_eurovoc", "tags", "res_format", "vocab_geographical_coverage", "vocab_language" };
+	private static final LinkedHashMap<String, String> FACETS = new LinkedHashMap<>();
 
-	private static final String FACET_FIELD_ARGUMENT = Arrays.stream(FACETS).map(s -> "\"" + s + "\"")
+	static {
+		FACETS.put("vocab_theme", "theme");
+		FACETS.put("groups", "group");
+		FACETS.put("organization", "publisher");
+		FACETS.put("vocab_concepts_eurovoc", "EuroVoc concept");
+		FACETS.put("tags", "keyword");
+		FACETS.put("res_format", "resource format");
+		FACETS.put("vocab_geographical_coverage", "geographical coverage");
+		FACETS.put("vocab_language", "language");
+	}
+
+	private static final String FACET_FIELD_ARGUMENT = FACETS.keySet().stream().map(s -> "\"" + s + "\"")
 			.collect(Collectors.joining(", ", "[", "]"));
 
 	private String uriPrefix;
 
-	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "vocab_theme", description = "filter by theme", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
-	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "groups", description = "filter by group", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
-	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "organization", description = "filter by publisher", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
-	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "vocab_concepts_eurovoc", description = "filter by EuroVoc concept", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
-	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "tags", description = "filter by keyword", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
-	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "res_format", description = "filter by resource format", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
-	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "vocab_geographical_coverage", description = "filter by geographical coverage", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
-	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "vocab_language", description = "filter by language", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
+	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "vocab_theme", description = "filter by theme", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(aggregateUsing = SolrFacetsAggregator.class))
+	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "groups", description = "filter by group", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(aggregateUsing = SolrFacetsAggregator.class))
+	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "organization", description = "filter by publisher", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(aggregateUsing = SolrFacetsAggregator.class))
+	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "vocab_concepts_eurovoc", description = "filter by EuroVoc concept", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(aggregateUsing = SolrFacetsAggregator.class))
+	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "tags", description = "filter by keyword", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(aggregateUsing = SolrFacetsAggregator.class))
+	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "res_format", description = "filter by resource format", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(aggregateUsing = SolrFacetsAggregator.class))
+	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "vocab_geographical_coverage", description = "filter by geographical coverage", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(aggregateUsing = SolrFacetsAggregator.class))
+	@it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet(name = "vocab_language", description = "filter by language", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(aggregateUsing = SolrFacetsAggregator.class))
 	public SearchResultsPage<DatasetSearchResult> searchDataset(String query,
 			Map<String, List<String>> facets, int page) throws IOException {
 		List<Pair<String, String>> facetsQueryParams = DatasetCatalogConnector.processFacets(this, facets);
@@ -115,11 +128,9 @@ public class EUODPConnector implements DatasetCatalogConnector {
 		uriBuilder.queryParam("start", page * DEFAULT_PAGE_SIZE);
 		uriBuilder.queryParam("rows", DEFAULT_PAGE_SIZE);
 		uriBuilder.queryParam("facet.field", FACET_FIELD_ARGUMENT);
-		uriBuilder.queryParam("fq", RDF_FILE_TYPE_FACET);
+		uriBuilder.queryParam("fq", RDF_FILE_TYPE_FACET + " "
+				+ facetsQueryParams.stream().map(p -> p.getKey() + ":" + p.getValue()).collect(joining(" ")));
 
-		if (facetsQueryParams != null && !facetsQueryParams.isEmpty()) {
-			facetsQueryParams.forEach(nv -> uriBuilder.queryParam(nv.getKey(), nv.getValue()));
-		}
 		URI searchURL = uriBuilder.build().toUri();
 
 		logger.debug("Search URL = {}", searchURL);
@@ -169,19 +180,42 @@ public class EUODPConnector implements DatasetCatalogConnector {
 							descriptions, datasetFacets));
 				}
 
-				LinkedHashMap<String, FacetAggregation> facet2Aggregation = new LinkedHashMap<>();
+				List<FacetAggregation> facetAggregations = new ArrayList<>();
 
 				Map<String, SearchFacet> aggregations = euodpSearchResultPage.getResult().getSearchFacets();
 				aggregations.forEach((facetName, facetObj) -> {
-					facet2Aggregation.put(facetName, new FacetAggregation(facetObj.getItems().stream()
-							.collect(Collectors.toMap(FacetItem::getName, FacetItem::getCount)), 0));
+					facetAggregations.add(new FacetAggregation(FACETS.getOrDefault(facetName, facetName),
+							facetObj.getTitle(), SelectionMode.multiple,
+							facetObj.getItems().stream()
+									.map(item -> new FacetAggregation.Bucket(item.getName(),
+											item.getDisplayName(), item.getCount()))
+									.collect(Collectors.toList()),
+							false));
 				});
 
 				return new SearchResultsPage<>(euodpSearchResultPage.getResult().getCount(),
-						DEFAULT_PAGE_SIZE, page, pageContent, facet2Aggregation);
+						DEFAULT_PAGE_SIZE, page, pageContent, facetAggregations);
 			}
 		}
 
+	}
+
+	public static class SolrFacetsAggregator implements Function<List<String>, String> {
+
+		@Override
+		public String apply(List<String> t) {
+			if (t.size() == 1) {
+				return quote(t.iterator().next());
+			} else if (t.size() > 1) {
+				return t.stream().map(SolrFacetsAggregator::quote).collect(joining(" OR ", "(", ")"));
+			} else {
+				throw new IllegalArgumentException("Empty list is not supported");
+			}
+		}
+
+		private static String quote(String value) {
+			return "\"" + value + "\"";
+		}
 	}
 
 	@Override
@@ -254,26 +288,31 @@ public class EUODPConnector implements DatasetCatalogConnector {
 	public static void main(String[] args) throws IOException {
 		EUODPConnector connector = new EUODPConnector();
 
-		System.out.println(Arrays.toString(connector.getDatasetSearchFacets()));
-
 		Map<String, List<String>> facets = new HashMap<>();
 		// facets.put("tag", Arrays.asList("Time", "IoT"));
-		facets.put("vocab_language", Arrays.asList("English"));
+		facets.put("res_format",
+				Arrays.asList("http://publications.europa.eu/resource/authority/file-type/HTML"));
+		facets.put("vocab_language",
+				Arrays.asList("http://publications.europa.eu/resource/authority/language/ENG"));
 		// facets.put("unknown", Arrays.asList("English"));
 
 		SearchResultsPage<DatasetSearchResult> results = connector.searchDataset("vocabulary", facets, 0);
 
-		System.out.println(results);
+//		System.out.println(results);
 
+		System.out.println("-----");
+
+		System.out.println("@@ facetAggregations" + results.getFacetAggregations());
 		System.out.println("----");
 
-		DatasetDescription datasetDescription = connector.describeDataset("place");
+//		DatasetDescription datasetDescription = connector.describeDataset("place");
+//
+//		System.out.println(datasetDescription);
+//
+//		DatasetDescription datasetDescription2 = connector.describeDataset("place");
+//
+//		System.out.println(datasetDescription2);
 
-		System.out.println(datasetDescription);
-
-		DatasetDescription datasetDescription2 = connector.describeDataset("place");
-
-		System.out.println(datasetDescription2);
 	}
 
 }

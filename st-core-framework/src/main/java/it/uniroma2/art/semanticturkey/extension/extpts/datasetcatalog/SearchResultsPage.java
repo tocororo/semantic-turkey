@@ -1,7 +1,7 @@
 package it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog;
 
 import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 
 import com.google.common.base.MoreObjects;
 
@@ -11,26 +11,26 @@ public class SearchResultsPage<T> {
 	private int page;
 	private boolean tail;
 	private Collection<T> content;
-	private Map<String, FacetAggregation> facetAggregation;
+	private List<FacetAggregation> facetAggregations;
 
 	private SearchResultsPage(int totalResults, int pageSize, int page, boolean tail, Collection<T> content,
-			Map<String, FacetAggregation> facetAggregation) {
+			List<FacetAggregation> facetAggregations) {
 		this.totalResults = totalResults;
 		this.pageSize = pageSize;
 		this.page = page;
 		this.tail = tail;
 		this.content = content;
-		this.facetAggregation = facetAggregation;
+		this.facetAggregations = facetAggregations;
 	}
 
 	public SearchResultsPage(int totalResults, int pageSize, int page, Collection<T> content,
-			Map<String, FacetAggregation> facetAggregation) {
-		this(totalResults, pageSize, page, pageSize * page >= totalResults, content, facetAggregation);
+			List<FacetAggregation> facetAggregations) {
+		this(totalResults, pageSize, page, pageSize * page >= totalResults, content, facetAggregations);
 	}
 
 	public SearchResultsPage(int pageSize, int page, boolean tail, Collection<T> content,
-			Map<String, FacetAggregation> facetAggregation) {
-		this(-1, pageSize, page, tail, content, facetAggregation);
+			List<FacetAggregation> facetAggregations) {
+		this(-1, pageSize, page, tail, content, facetAggregations);
 	}
 
 	public Collection<T> getContent() {
@@ -52,10 +52,14 @@ public class SearchResultsPage<T> {
 	public boolean isTail() {
 		return tail;
 	}
+	
+	public List<FacetAggregation> getFacetAggregations() {
+		return facetAggregations;
+	}
 
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this).add("totalResults", totalResults).add("tail", tail)
-				.add("content", content).add("facetAggregation", facetAggregation).toString();
+				.add("content", content).add("facetAggregations", facetAggregations).toString();
 	}
 }

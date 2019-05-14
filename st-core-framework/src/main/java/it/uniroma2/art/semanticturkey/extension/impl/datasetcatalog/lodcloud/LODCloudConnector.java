@@ -49,7 +49,7 @@ import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud.mod
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class LODCloudConnector implements DatasetCatalogConnector {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(LODCloudConnector.class);
 
 	private static final String LOD_CLOUD_ENDPOINT = "https://lod-cloud.net/";
@@ -62,8 +62,7 @@ public class LODCloudConnector implements DatasetCatalogConnector {
 
 	public SearchResultsPage<DatasetSearchResult> searchDataset(String query,
 			Map<String, List<String>> facets, int page) throws IOException {
-		List<Pair<String, String>> facetsQueryParams = DatasetCatalogConnector.processFacets(this,
-				facets);
+		List<Pair<String, String>> facetsQueryParams = DatasetCatalogConnector.processFacets(this, facets);
 
 		UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(LOD_CLOUD_ENDPOINT)
 				.path(DATASET_SEARCH_PATH);
@@ -71,7 +70,7 @@ public class LODCloudConnector implements DatasetCatalogConnector {
 		URI searchURL = uriBuilder.build().toUri();
 
 		logger.debug("Search URL = {}", searchURL);
-		
+
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
 			try (CloseableHttpResponse response = httpClient.execute(new HttpGet(searchURL))) {
 				StatusLine statusLine = response.getStatusLine();
@@ -141,7 +140,7 @@ public class LODCloudConnector implements DatasetCatalogConnector {
 							Collections.emptyList(), Collections.emptyMap()));
 				}
 				return new SearchResultsPage<>(results.size(), results.size(), 1, results,
-						Collections.emptyMap());
+						Collections.emptyList());
 			}
 		}
 

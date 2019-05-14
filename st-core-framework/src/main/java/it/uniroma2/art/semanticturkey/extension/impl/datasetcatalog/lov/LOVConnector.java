@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,6 +37,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.FacetAggre
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacetProcessor;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchResultsPage;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SelectionMode;
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.model.Aggregation;
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.model.Version;
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.model.VocabularyInfo;
@@ -104,27 +106,34 @@ public class LOVConnector implements DatasetCatalogConnector {
 					}
 				}).collect(Collectors.toList());
 
-				LinkedHashMap<String, FacetAggregation> facet2Aggregation = new LinkedHashMap<>();
+				List<FacetAggregation> facetAggregations = new ArrayList<>(2);
 
 				Map<String, Aggregation> aggregations = searchResultPage.getAggregations().getAggregations();
 				Aggregation langs = aggregations.get("langs");
 				if (langs != null) {
-					facet2Aggregation.put("lang",
-							new FacetAggregation(langs.getBuckets(), langs.getSumOtherDocCount()));
+					facetAggregations.add(convertLOVFacetAggregation("lang", "language", langs));
 				}
 
 				Aggregation tags = aggregations.get("tags");
 				if (tags != null) {
-					facet2Aggregation.put("tag",
-							new FacetAggregation(tags.getBuckets(), tags.getSumOtherDocCount()));
+					facetAggregations.add(convertLOVFacetAggregation("tag", "tag", tags));
 				}
 
 				return new SearchResultsPage<>(searchResultPage.getTotalResults(),
 						searchResultPage.getPageSize(), searchResultPage.getPage(), pageContent,
-						facet2Aggregation);
+						facetAggregations);
 			}
 		}
 
+	}
+
+	public FacetAggregation convertLOVFacetAggregation(String name, String displayName,
+			Aggregation aggregation) {
+		return new FacetAggregation("lang", "language", SelectionMode.multiple,
+				aggregation.getBuckets().entrySet().stream()
+						.map(entry -> new FacetAggregation.Bucket(entry.getKey(), null, entry.getValue()))
+						.collect(Collectors.toList()),
+				aggregation.getSumOtherDocCount() != 0);
 	}
 
 	@Override
