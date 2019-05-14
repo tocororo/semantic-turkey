@@ -184,8 +184,8 @@ public class EUODPConnector implements DatasetCatalogConnector {
 
 				Map<String, SearchFacet> aggregations = euodpSearchResultPage.getResult().getSearchFacets();
 				aggregations.forEach((facetName, facetObj) -> {
-					facetAggregations.add(new FacetAggregation(FACETS.getOrDefault(facetName, facetName),
-							facetObj.getTitle(), SelectionMode.multiple,
+					facetAggregations.add(new FacetAggregation(facetName,
+							FACETS.getOrDefault(facetName, facetName), SelectionMode.multiple,
 							facetObj.getItems().stream()
 									.map(item -> new FacetAggregation.Bucket(item.getName(),
 											item.getDisplayName(), item.getCount()))
