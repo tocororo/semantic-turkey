@@ -17,19 +17,18 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
@@ -46,10 +45,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -732,7 +731,13 @@ public class GlobalSearch extends STServiceAdapter {
 			jsonResource.set("resourceLocalName", jsonFactory.textNode(resourceWithLabelFirst.getResourceLocalName()));
 			jsonResource.set("resourceType", jsonFactory.textNode(resourceWithLabelFirst.getResourceType()));
 			jsonResource.set("role", jsonFactory.textNode(resourceWithLabelFirst.getRole()));
-			jsonResource.set("repId", jsonFactory.textNode(resourceWithLabelFirst.getRepId()));
+			
+			ObjectNode repoNode = jsonFactory.objectNode();
+			String repoId = resourceWithLabelFirst.getRepId();
+			repoNode.set("id", jsonFactory.textNode(repoId));
+			repoNode.set("open", jsonFactory.booleanNode(ProjectManager.isOpen(repoId)));
+			jsonResource.set("repository", repoNode);
+			
 			jsonExternalArray.add(jsonResource);
 			
 			ArrayNode jsonIntenalArray = jsonFactory.arrayNode();
