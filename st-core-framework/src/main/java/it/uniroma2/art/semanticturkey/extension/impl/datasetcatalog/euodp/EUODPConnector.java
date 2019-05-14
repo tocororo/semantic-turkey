@@ -194,7 +194,7 @@ public class EUODPConnector implements DatasetCatalogConnector {
 				});
 
 				return new SearchResultsPage<>(euodpSearchResultPage.getResult().getCount(),
-						DEFAULT_PAGE_SIZE, page, pageContent, facetAggregations);
+						DEFAULT_PAGE_SIZE, page + 1, pageContent, facetAggregations);
 			}
 		}
 
@@ -298,20 +298,20 @@ public class EUODPConnector implements DatasetCatalogConnector {
 
 		SearchResultsPage<DatasetSearchResult> results = connector.searchDataset("vocabulary", facets, 0);
 
-//		System.out.println(results);
+		// System.out.println(results);
 
 		System.out.println("-----");
 
 		System.out.println("@@ facetAggregations" + results.getFacetAggregations());
 		System.out.println("----");
 
-//		DatasetDescription datasetDescription = connector.describeDataset("place");
-//
-//		System.out.println(datasetDescription);
-//
-//		DatasetDescription datasetDescription2 = connector.describeDataset("place");
-//
-//		System.out.println(datasetDescription2);
+		// DatasetDescription datasetDescription = connector.describeDataset("place");
+		//
+		// System.out.println(datasetDescription);
+		//
+		// DatasetDescription datasetDescription2 = connector.describeDataset("place");
+		//
+		// System.out.println(datasetDescription2);
 
 	}
 
