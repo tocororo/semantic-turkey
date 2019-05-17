@@ -91,6 +91,9 @@ public class UpdateRoutines {
 			if (stDataVersionNumber.compareTo(new VersionNumber(5, 0, 0)) < 0) {
 				alignFrom4To5();
 			}
+			if (stDataVersionNumber.compareTo(new VersionNumber(6, 0, 0)) < 0) {
+				alignFrom5To6();
+			}
 			Config.setSTDataVersionNumber(stVersionNumber);
 		}
 
@@ -178,6 +181,11 @@ public class UpdateRoutines {
 		
 		logger.debug("Version 5.0.0 removed a property from the default project preferences");
 		updatePUSettingsSystemDefaults();
+	}
+	
+	private static void alignFrom5To6() {
+		logger.debug("Version 6.0.0 added a docs folder under system/");
+		Resources.getDocsDir().mkdirs();
 	}
 	
 	public static void repairProject(String projectName) throws IOException, InvalidProjectNameException,

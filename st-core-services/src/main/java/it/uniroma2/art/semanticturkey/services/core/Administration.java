@@ -45,6 +45,7 @@ import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACProcessor;
 import it.uniroma2.art.semanticturkey.rbac.TheoryNotFoundException;
+import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -534,6 +535,24 @@ public class Administration extends STServiceAdapter {
 	public void updateCapabilityForRole(String role, String oldCapability, String newCapability) throws RBACException {
 		RBACManager.removeCapability(getProject(), role, oldCapability);
 		RBACManager.addCapability(getProject(), role, newCapability);
+	}
+	
+	@STServiceOperation
+	public Boolean isPrivacyStatementAvailable() {
+		File psFile = new File(Resources.getDocsDir(), "privacy_statement.pdf");
+		return psFile.isFile();
+	}
+	
+	@STServiceOperation
+	public void downloadPrivacyStatement(HttpServletResponse oRes) throws IOException {
+		File psFile = new File(Resources.getDocsDir(), "privacy_statement.pdf");
+		oRes.setHeader("Content-Disposition", "attachment; " + psFile.getName());
+		oRes.setContentType("application/pdf");
+		oRes.setContentLength((int) psFile.length());
+		try (InputStream is = new FileInputStream(psFile)) {
+			IOUtils.copy(is, oRes.getOutputStream());
+		}
+		oRes.flushBuffer();
 	}
 	
 }

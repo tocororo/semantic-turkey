@@ -58,6 +58,7 @@ public class Resources {
 	private static final String _groupsDirName = "groups";
 	private static final String _projectUserBindingsDirName = "pu_bindings";
 	private static final String _projectGroupBindingsDirName = "pg_bindings";
+	private static final String _docsDirName = "docs";
 
 	/* new */
 	private static final String _karafEtcDir = "/etc";
@@ -84,6 +85,7 @@ public class Resources {
 	private static File projectGroupBindingsDir;
 	private static File usersDir;
 	private static File groupsDir;
+	private static File docsDir;
 
 	protected static Logger logger = LoggerFactory.getLogger(Resources.class);
 
@@ -129,6 +131,7 @@ public class Resources {
 		groupsDir = new File(stDataDirectory, _groupsDirName);
 		projectUserBindingsDir = new File(stDataDirectory, _projectUserBindingsDirName);
 		projectGroupBindingsDir = new File(stDataDirectory, _projectGroupBindingsDirName);
+		docsDir = new File(systemDir, _docsDirName);
 
 		if (!stDataDirectory.exists()) { // stData doens't exists => create from scratch
 			try {
@@ -218,6 +221,10 @@ public class Resources {
 	public static File getProjectGroupBindingsDir() {
 		return projectGroupBindingsDir;
 	}
+	
+	public static File getDocsDir() {
+		return docsDir;
+	}
 
 	/**
 	 * this method is used to get the path of a new temp file to be used for whatever reason (the file is
@@ -252,6 +259,7 @@ public class Resources {
 					|| !new File(usrPath, _groupsDirName).mkdirs()
 					|| !new File(usrPath, _projectUserBindingsDirName).mkdirs()
 					|| !new File(usrPath, _projectGroupBindingsDirName).mkdirs()
+					|| !new File(usrPath, _systemDirName + File.separator + _docsDirName).mkdirs()
 					|| !new File(usrPath, _ontMirrorFileName).createNewFile())
 				throw new STInitializationException("Unable to locate/create the correct files/folders");
 			initializeCustomFormFileStructure();
