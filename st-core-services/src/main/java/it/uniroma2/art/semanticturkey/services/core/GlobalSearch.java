@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -49,6 +51,7 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -83,6 +86,7 @@ public class GlobalSearch extends STServiceAdapter {
 	//@STServiceOperation
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
+	@Read
 	// TODO decide the @PreAuthorize
 	public void createIndex() throws Exception {
 		// classloader magic
@@ -195,7 +199,7 @@ public class GlobalSearch extends STServiceAdapter {
 							+ "\n}";
 					logger.debug("query = "+query);
 					TupleQuery tupleQuery = conn.prepareTupleQuery(query);
-					List<String> lexEntryInLexConceptList = new ArrayList<>();
+					Set<String> lexEntryInInConceptSet = new HashSet<>();
 					Map<String, List<String>> lexConceptToLexEntryMap = new HashMap<>();
 					try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
 						while (tupleQueryResult.hasNext()) {
@@ -208,16 +212,17 @@ public class GlobalSearch extends STServiceAdapter {
 							String predicate = bindingSet.getValue("predicate").stringValue();
 							String matchedValue = bindingSet.getValue("matchedValue").stringValue();
 							String lang = bindingSet.getValue("lang").stringValue();
-							String repId = getProject().getName();
+							String repId = getProject().getName(); 
 							String role = getRoleFromResType(resourceType, resTypeToRoleMap);
 							String type = "label";
 							
 							String resourceIRI_repId = resourceIRI+"_"+repId;
 							String lexEntryIRI_repId = lexEntryIRI+"_"+repId;
-							
-							if(!lexEntryInLexConceptList.contains(lexEntryIRI_repId)) {
-								lexEntryInLexConceptList.add(lexEntryIRI_repId);
+
+							if(!lexEntryInInConceptSet.contains(lexEntryIRI_repId)) {
+								lexEntryInInConceptSet.add(lexEntryIRI_repId);
 							}
+							
 							if(lexConceptToLexEntryMap.containsKey(resourceIRI_repId)) {
 								if(lexConceptToLexEntryMap.get(resourceIRI_repId).contains(lexEntryIRI_repId)) {
 									//the couple resourceIRI and lexEntryIRI has already been processed for this repId
@@ -228,6 +233,7 @@ public class GlobalSearch extends STServiceAdapter {
 								lexConceptToLexEntryMap.put(resourceIRI_repId, new ArrayList<>());
 							}
 							lexConceptToLexEntryMap.get(resourceIRI_repId).add(lexEntryIRI_repId);
+							
 							//now add to the index the current element 
 							writer.addDocument(addResourceWithLabel(
 									new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang, 
@@ -271,7 +277,7 @@ public class GlobalSearch extends STServiceAdapter {
 							
 							String resourceIRI_repId = resourceIRI+"_"+repId;
 							
-							if(lexEntryInLexConceptList.contains(resourceIRI_repId)) {
+							if(lexEntryInInConceptSet.contains(resourceIRI_repId)) {
 								//this LexicalEntry has already being process during the previously query, so just 
 								// skip it
 								continue;
@@ -323,6 +329,7 @@ public class GlobalSearch extends STServiceAdapter {
 							+ "\n}"
 							+ "\n}";
 					//@formatter:on
+					logger.debug("query = "+query);
 					
 					//add to the index the result of the query
 					addDirectlyToIndex(query, conn, writer, "note", resTypeToRoleMap);
@@ -336,7 +343,6 @@ public class GlobalSearch extends STServiceAdapter {
 
 	private void addDirectlyToIndex(String query, RepositoryConnection conn, IndexWriter writer, String type, 
 			Map<String, String> resTypeToRoleMap) throws IOException {
-		//System.out.println("query = "+query); // DEBUG
 		logger.debug("query = "+query);
 		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
 		try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
@@ -560,7 +566,6 @@ public class GlobalSearch extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	//@STServiceOperation
-	@Write
 	// TODO decide the @PreAuthorize
 	public void clearAllIndex() throws Exception {
 		// classloader magic
@@ -587,11 +592,11 @@ public class GlobalSearch extends STServiceAdapter {
 	 * @throws Exception
 	 */
 	@STServiceOperation
-	//@Read
 	// TODO decide the @PreAuthorize
 	public JsonNode search(String searchString, @Optional List<String> langs,
 			@Optional(defaultValue = "0") int maxResults, 
 			@Optional(defaultValue="false") boolean searchInLocalName) throws Exception {
+		
 		// classloader magic
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
@@ -668,7 +673,6 @@ public class GlobalSearch extends STServiceAdapter {
 		}
 		
 		BooleanQuery booleanQuery = builderBooleanGlobal.build();
-		//System.out.println("query = "+booleanQuery.toString()); // DEBUG
 		if(maxResults==0) {
 			maxResults = MAX_RESULTS;
 		}
