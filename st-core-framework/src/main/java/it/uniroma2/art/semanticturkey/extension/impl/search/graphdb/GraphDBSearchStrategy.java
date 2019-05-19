@@ -445,19 +445,6 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				includeLocales, false);
 		
 		
-		//construct the complex path from a resource to a LexicalEntry
-		String directResToLexicalEntry = NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
-				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
-				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY)+
-				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES);
-		String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
-				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_LEXICALIZED_SENSE_OF)+
-				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.REFERENCE)+
-				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_REFERENCE_OF)+")"+
-				"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
-				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
-		String allResToLexicalEntry = directResToLexicalEntry+"|"+doubleStepResToLexicalEntry;
-		
 		//check if the request want to search in the notes as well (plain or reified)
 		if(useNotes) {
 			query+="\n{" +
@@ -520,6 +507,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				"\n}";
 			if(includeResToLexicalEntry) {
 				//search in allResToLexicalEntry/(ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+				//construct the complex path from a resource to a LexicalEntry
+				String allResToLexicalEntry = getAllPathRestToLexicalEntry();
 				query+="\nUNION" +
 					"\n{" +
 					"\n?resource ("+allResToLexicalEntry+")/"+

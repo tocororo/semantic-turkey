@@ -405,19 +405,6 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		}
 		
 		
-		//construct the complex path from a resource to a LexicalEntry
-		String directResToLexicalEntry = NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
-				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
-				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY)+
-				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES);
-		String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
-				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_LEXICALIZED_SENSE_OF)+
-				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.REFERENCE)+
-				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_REFERENCE_OF)+")"+
-				"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
-				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
-		String allResToLexicalEntry = directResToLexicalEntry+"|"+doubleStepResToLexicalEntry;
-		
 		boolean unionNeeded = false;
 		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) || searchInRDFSLabel) {
 			//search in the rdfs:label
@@ -452,6 +439,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				"\n}";
 		}
 		if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL) || searchInOntolex) {
+			//construct the complex path from a resource to a LexicalEntry
+			String allResToLexicalEntry = getAllPathRestToLexicalEntry();
 			if(unionNeeded) {
 				query += "\nUNION";
 			}

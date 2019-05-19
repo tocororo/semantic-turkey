@@ -8,7 +8,9 @@ import javax.annotation.Nullable;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
+import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.extension.Extension;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.Pair;
@@ -73,4 +75,23 @@ public interface SearchStrategy extends Extension {
 			boolean includeLocales, IRI iri, boolean searchInRDFSLabel, boolean searchInSKOSLabel,
 			boolean searchInSKOSXLLabel, boolean searchInOntolex)
 			throws IllegalStateException, STPropertyAccessException;
+	
+	//common methods used by its implementations
+	public default String getAllPathRestToLexicalEntry() {
+		//construct the complex path from a resource to a LexicalEntry
+		// see https://www.w3.org/community/ontolex/wiki/Final_Model_Specification
+		String directResToLexicalEntry = 
+				"^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
+				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES) +
+				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY);
+		String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_LEXICALIZED_SENSE_OF)+
+				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.REFERENCE)+
+				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_REFERENCE_OF)+")"+
+				"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
+				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
+		String allResToLexicalEntry = directResToLexicalEntry+"|"+doubleStepResToLexicalEntry;
+		return allResToLexicalEntry;	
+	}
 }
