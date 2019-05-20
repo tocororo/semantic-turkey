@@ -53,6 +53,12 @@
 		<intercept-url
 			pattern="/it.uniroma2.art.semanticturkey/st-core-services/PreferencesSettings/getStartupSystemSettings"
 			access="permitAll" />
+		<intercept-url
+			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Administration/isPrivacyStatementAvailable"
+			access="permitAll" />
+		<intercept-url
+			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Administration/downloadPrivacyStatement"
+			access="permitAll" />
 		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/**"
 			access="isAuthenticated()" />
 

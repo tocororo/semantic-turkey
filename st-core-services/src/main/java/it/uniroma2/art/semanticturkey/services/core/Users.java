@@ -522,12 +522,31 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isLoggedUser(#email)")
 	public void changePassword(String email, String oldPassword, String newPassword) throws Exception {
 		STUser user = UsersManager.getUserByEmail(email);
+		if (user == null) {
+			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
+		}
 		BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 		if (passwordEncoder.matches(oldPassword, user.getPassword())) {
 			UsersManager.updateUserPassword(user, newPassword);
 		} else {
 			throw new DeniedOperationException("Old password is wrong");
 		}
+	}
+	
+	/**
+	 * Allows the admin to force the password
+	 * @param email
+	 * @param password
+	 * @throws Exception
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void forcePassword(String email, String password) throws Exception {
+		STUser user = UsersManager.getUserByEmail(email);
+		if (user == null) {
+			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
+		}
+		UsersManager.updateUserPassword(user, password);
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
