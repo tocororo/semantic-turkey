@@ -80,6 +80,7 @@ import it.uniroma2.art.sheet2rdf.coda.CODAConverter;
 import it.uniroma2.art.sheet2rdf.coda.Sheet2RDFCODA;
 import it.uniroma2.art.sheet2rdf.core.MappingStruct;
 import it.uniroma2.art.sheet2rdf.core.Sheet2RDFCore;
+import it.uniroma2.art.sheet2rdf.exception.InvalidWizardStatusException;
 import it.uniroma2.art.sheet2rdf.header.AdvancedGraphApplication;
 import it.uniroma2.art.sheet2rdf.header.GraphApplication;
 import it.uniroma2.art.sheet2rdf.header.NodeConversion;
@@ -685,16 +686,19 @@ public class Sheet2RDF extends STServiceAdapter {
 	}
 	
 	/**
+	 * @throws InvalidWizardStatusException 
 	 * Load a JSON file that represents the status of the conversion and restore the mapping struct 
 	 * @param statusFile
 	 * @throws IOException 
 	 * @throws  
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void importStatus(MultipartFile statusFile) throws IOException {
+	public void importStatus(MultipartFile statusFile) throws IOException, InvalidWizardStatusException {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct ms = ctx.getSheet2RDFCore().getMappingStruct();
 		File inputServerFile = File.createTempFile("sheet2rdf_status", statusFile.getOriginalFilename());
 		statusFile.transferTo(inputServerFile);
-		//TODO analyze json structure and restore status
+		ms.fromJson(inputServerFile);
 	}
 	
 	@STServiceOperation
