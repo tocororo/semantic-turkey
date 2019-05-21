@@ -13,15 +13,17 @@ public class JiraBackendPUSettings implements Settings {
 	
 	@Override
 	public String getHTMLWarning() {
-		return "The credentials are stored wihtout encryption on the server. " + 
-				"Be aware that the system administration could be able to see them.";
+		return "The credentials are stored without encryption on the server. " + 
+				"Be aware that the system administration could be able to see them. "+
+				"To generate the token, please refer to this "+
+				"<a target='_blank' href='https://id.atlassian.com/manage/api-tokens'>page</a>";
 	}
 
 	@STProperty(description = "Username", displayName = "Username")
 	@Required
 	public String username;
 
-	@STProperty(description = "Password", displayName = "Password")
+	@STProperty(description = "Token", displayName = "Token")
 	@Required
 	public String password;
 

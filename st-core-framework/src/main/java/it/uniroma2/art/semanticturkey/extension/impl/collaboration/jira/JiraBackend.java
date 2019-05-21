@@ -5,8 +5,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.CookieManager;
-import java.net.HttpCookie;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -15,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+import org.apache.commons.codec.binary.Base64;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
@@ -43,7 +42,7 @@ public class JiraBackend implements CollaborationBackend {
 	private Project stProject;
 	
 	private static final String USER_AGENT = "Fake client"; 
-	private final String COOKIES_HEADER = "Set-Cookie";
+	//private final String COOKIES_HEADER = "Set-Cookie";
 	private final String projectTypeKey = "software";
 	private final String projectTemplateKey = "com.pyxis.greenhopper.jira:basic-software-development-template";
 	
@@ -73,10 +72,6 @@ public class JiraBackend implements CollaborationBackend {
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
-		//first of all, do the login
-		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
-				projectSettings.serverURL);
-		
 		//now check that there a JIRA project having such id and key
 		boolean found = false;
 		String prjId = projectSettings.jiraPrjId;
@@ -93,12 +88,8 @@ public class JiraBackend implements CollaborationBackend {
 		// add request header
 		httpcon.setRequestProperty("User-Agent", USER_AGENT);
 		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-
-		// Add the cookie
-		if (cookieManager.getCookieStore().getCookies().size() > 0) {
-			httpcon.setRequestProperty("Cookie",
-					cookieManager.getCookieStore().getCookies().get(0).toString());
-		}
+		httpcon.setRequestProperty("Authorization", "Basic " + 
+				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
 
 
 		executeAndCheckError(httpcon);
@@ -152,10 +143,6 @@ public class JiraBackend implements CollaborationBackend {
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
-		//do the login
-		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
-				projectSettings.serverURL);
-		
 		//if String issueId is null, then get all the possible issueId for the desired project and select one 
 		//according to a specific list
 		String issueTypeId = "";
@@ -164,7 +151,7 @@ public class JiraBackend implements CollaborationBackend {
 		} else {
 			issueTypeId = issueId;
 		}*/
-		issueTypeId = getIssueIdToCreate(cookieManager);
+		issueTypeId = getIssueIdToCreate(projectPreferences.username, projectPreferences.password);
 		
 		//now create the issue
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"issue";
@@ -177,6 +164,8 @@ public class JiraBackend implements CollaborationBackend {
 		// add request header
 		httpcon.setRequestProperty("User-Agent", USER_AGENT);
 		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+		httpcon.setRequestProperty("Authorization", "Basic " + 
+				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
 
 		String summary = escapeString(issueCreationForm.get("summary").textValue());
 		// @formatter:off
@@ -199,11 +188,11 @@ public class JiraBackend implements CollaborationBackend {
 				//+"\n\"name\":\""+projectPreferences.username+"\""
 				//+"\n},";
 		//assign to the one who created it
-		postJsonData +=
+		/*postJsonData +=
 				//assignee
 				"\n\"assignee\": {"
 				+"\n\"name\":\""+projectPreferences.username+"\""
-				+"\n},";
+				+"\n},";*/
 		/*if(assignee!=null && assignee.length()!=0) {
 			postJsonData +=
 				//assignee
@@ -227,11 +216,6 @@ public class JiraBackend implements CollaborationBackend {
 				+ "\n}"
 				+ "\n}"; 
 		// @formatter:on
-		// Add the cookie
-		if (cookieManager.getCookieStore().getCookies().size() > 0) {
-			httpcon.setRequestProperty("Cookie",
-					cookieManager.getCookieStore().getCookies().get(0).toString());
-		}
 		
 		// Send post request
 		httpcon.setDoOutput(true);
@@ -285,10 +269,6 @@ public class JiraBackend implements CollaborationBackend {
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 
-		//do the login
-		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
-				projectSettings.serverURL);
-		
 		//now create the project
 		String urlString = projectSettings.serverURL+"/rest/api/2/" + "project";
 
@@ -300,6 +280,8 @@ public class JiraBackend implements CollaborationBackend {
 		// add request header
 		httpcon.setRequestProperty("User-Agent", USER_AGENT);
 		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+		httpcon.setRequestProperty("Authorization", "Basic " + 
+				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
 		
 		JsonNode keyNode = projectJson.get("key");
 		if (keyNode == null || keyNode instanceof NullNode) {
@@ -321,12 +303,6 @@ public class JiraBackend implements CollaborationBackend {
 				"\n\"description\": \"Example Project description\"," +
 				"\n\"projectTemplateKey\":\""+projectTemplateKey+"\"" +
 				"\n}";
-
-		// Add the cookie
-		if (cookieManager.getCookieStore().getCookies().size() > 0) {
-			httpcon.setRequestProperty("Cookie",
-					cookieManager.getCookieStore().getCookies().get(0).toString());
-		}
 
 		// Send post request
 		httpcon.setDoOutput(true);
@@ -367,10 +343,6 @@ public class JiraBackend implements CollaborationBackend {
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 
-		//first of all, do the login
-		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
-				projectSettings.serverURL);
-		
 		// now upda the labels of the desied issue with the IRI of the input Resorce
 		String url = projectSettings.serverURL+"/rest/api/2/"+ "issue/"+issueKey;
 
@@ -383,6 +355,8 @@ public class JiraBackend implements CollaborationBackend {
 		// add request header
 		httpconUpdate.setRequestProperty("User-Agent", USER_AGENT);
 		httpconUpdate.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+		httpconUpdate.setRequestProperty("Authorization", "Basic " + 
+				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
 
 		String postJsonData = "{"
 				+"\n\"update\":{"
@@ -393,12 +367,6 @@ public class JiraBackend implements CollaborationBackend {
 				+ "\n}"	
 				+ "\n}"; 
 		
-		// Add the cookie
-		if (cookieManager.getCookieStore().getCookies().size() > 0) {
-			httpconUpdate.setRequestProperty("Cookie",
-					cookieManager.getCookieStore().getCookies().get(0).toString());
-		}
-
 		// Send post request
 		httpconUpdate.setDoOutput(true);
 		DataOutputStream wrUpdate = new DataOutputStream(httpconUpdate.getOutputStream());
@@ -420,12 +388,7 @@ public class JiraBackend implements CollaborationBackend {
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
-		//do the login
-		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
-				projectSettings.serverURL);
-		
 		//now ask jira for all the issue asosciated to the desired Resource
-		
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"search";
 
 		URL url = new URL(urlString);
@@ -437,6 +400,8 @@ public class JiraBackend implements CollaborationBackend {
 		// add request header
 		httpcon.setRequestProperty("User-Agent", USER_AGENT);
 		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+		httpcon.setRequestProperty("Authorization", "Basic " + 
+				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
 
 		String jqlString = "labels = \\\""+resource.stringValue()+"\\\" AND project ="
 				+ "\\\""+projectSettings.jiraPrjId+"\\\"";
@@ -452,11 +417,6 @@ public class JiraBackend implements CollaborationBackend {
 				+"\n]"*/
 				+ "\n}"; 
 		
-		// Add the cookie
-		if (cookieManager.getCookieStore().getCookies().size() > 0) {
-			httpcon.setRequestProperty("Cookie",
-					cookieManager.getCookieStore().getCookies().get(0).toString());
-		}
 
 		// Send post request
 		httpcon.setDoOutput(true);
@@ -510,12 +470,7 @@ public class JiraBackend implements CollaborationBackend {
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
-		//first of all, do the login
-		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
-				projectSettings.serverURL);
-		
-		//now ask jira for all the issue asosciated to the desired Resource
-		
+		//now ask jira for all the issue associated to the desired Resource
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"search";
 
 		URL url = new URL(urlString);
@@ -527,6 +482,8 @@ public class JiraBackend implements CollaborationBackend {
 		// add request header
 		httpcon.setRequestProperty("User-Agent", USER_AGENT);
 		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+		httpcon.setRequestProperty("Authorization", "Basic " + 
+				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
 
 		String jqlString = "project =\\\""+projectSettings.jiraPrjId+"\\\"";
 		
@@ -541,12 +498,6 @@ public class JiraBackend implements CollaborationBackend {
 				+"\n]"*/
 				+ "\n}"; 
 		
-		// Add the cookie
-		if (cookieManager.getCookieStore().getCookies().size() > 0) {
-			httpcon.setRequestProperty("Cookie",
-					cookieManager.getCookieStore().getCookies().get(0).toString());
-		}
-
 		// Send post request
 		httpcon.setDoOutput(true);
 		DataOutputStream wr = new DataOutputStream(httpcon.getOutputStream());
@@ -628,10 +579,6 @@ public class JiraBackend implements CollaborationBackend {
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
-		//first of all, do the login
-		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
-				projectSettings.serverURL);
-		
 		//now ask JIRA for all the issue associated to the desired Resource
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"user/assignable/search?";
 
@@ -646,13 +593,9 @@ public class JiraBackend implements CollaborationBackend {
 		// add request header
 		httpcon.setRequestProperty("User-Agent", USER_AGENT);
 		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+		httpcon.setRequestProperty("Authorization", "Basic " + 
+				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
 		
-		// Add the cookie
-		if (cookieManager.getCookieStore().getCookies().size() > 0) {
-			httpcon.setRequestProperty("Cookie",
-					cookieManager.getCookieStore().getCookies().get(0).toString());
-		}
-
 		executeAndCheckError(httpcon);
 
 		// Reading response from input Stream
@@ -694,12 +637,7 @@ public class JiraBackend implements CollaborationBackend {
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
-		//first of all, do the login
-		CookieManager cookieManager = login(projectPreferences.username, projectPreferences.password, 
-				projectSettings.serverURL);
-		
 		//now ask jira for all the project
-		
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"project";
 
 		URL url = new URL(urlString);
@@ -711,12 +649,8 @@ public class JiraBackend implements CollaborationBackend {
 		// add request header
 		httpcon.setRequestProperty("User-Agent", USER_AGENT);
 		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-
-		// Add the cookie
-		if (cookieManager.getCookieStore().getCookies().size() > 0) {
-			httpcon.setRequestProperty("Cookie",
-					cookieManager.getCookieStore().getCookies().get(0).toString());
-		}
+		httpcon.setRequestProperty("Authorization", "Basic " + 
+				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
 
 
 		executeAndCheckError(httpcon);
@@ -773,7 +707,14 @@ public class JiraBackend implements CollaborationBackend {
 
 	
 	/*** PRVATE METHODS ***/
-	private CookieManager login(String username, String password, String urlString) throws IOException, 
+	private String generateEncodeBase64String(String username, String password) {
+		String userAndPass = username+":"+password;
+		String encodedUserAndPass = Base64.encodeBase64String(userAndPass.getBytes());
+		return encodedUserAndPass;
+	}
+	
+	
+	/*private CookieManager login(String username, String password, String urlString) throws IOException, 
 			CollaborationBackendException{
 
 		String url = urlString+"/rest/auth/1/session";
@@ -815,8 +756,7 @@ public class JiraBackend implements CollaborationBackend {
 		in.close();
 
 		return msCookieManager;
-		
-	}
+	}*/
 	
 	private void executeAndCheckError(HttpURLConnection httpcon) throws IOException, CollaborationBackendException {
 		int respCode = httpcon.getResponseCode();
@@ -910,7 +850,7 @@ public class JiraBackend implements CollaborationBackend {
 		return userRedux;
 	}
 	
-	private String getIssueIdToCreate(CookieManager cookieManager) 
+	private String getIssueIdToCreate(String username, String password) 
 			throws STPropertyAccessException, IOException, CollaborationBackendException {
 		String issueId = "";
 		
@@ -926,12 +866,8 @@ public class JiraBackend implements CollaborationBackend {
 
 		// add request header
 		httpcon.setRequestProperty("User-Agent", USER_AGENT);
-
-		// Add the cookie
-		if (cookieManager.getCookieStore().getCookies().size() > 0) {
-			httpcon.setRequestProperty("Cookie",
-					cookieManager.getCookieStore().getCookies().get(0).toString());
-		}
+		httpcon.setRequestProperty("Authorization", "Basic " + 
+				generateEncodeBase64String(username, password));
 
 		executeAndCheckError(httpcon);
 		
