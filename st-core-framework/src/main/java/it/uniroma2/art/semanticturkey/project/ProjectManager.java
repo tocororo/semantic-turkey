@@ -98,6 +98,7 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
+import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
@@ -154,6 +155,7 @@ public class ProjectManager {
 	private static OpenProjectsHolder openProjects = new OpenProjectsHolder();
 
 	private static volatile ExtensionPointManager exptManager;
+	private static volatile MetadataRegistryBackend metadataRegistryBackend;
 
 	private static Set<Project> projectsLockedForAccess = ConcurrentHashMap.newKeySet();
 
@@ -161,6 +163,10 @@ public class ProjectManager {
 		ProjectManager.exptManager = exptManager;
 	}
 
+	public static void setMetadataRegistryBackend(MetadataRegistryBackend metadataRegistryBackend) {
+		ProjectManager.metadataRegistryBackend = metadataRegistryBackend;
+	}
+	
 	/**
 	 * lists the projects available (stored in the projects directory of Semantic Turkey). If
 	 * <code>consumer</code> is not null, filters the list by reporting only the projects which contain
@@ -921,7 +927,8 @@ public class ProjectManager {
 					ProjectGroupBindingsManager.createPGBindingsOfProject(project);
 				}
 				RBACManager.loadRBACProcessor(project);
-
+				metadataRegistryBackend.registerProject(project);
+				
 				return project;
 			} else {
 				throw new ForbiddenProjectAccessException(accessResponse.getMsg());
@@ -983,6 +990,8 @@ public class ProjectManager {
 		project.deactivate();
 		CustomFormManager.getInstance().unregisterCustomFormModelOfProject(project);
 		RBACManager.unloadRBACProcessor(project);
+		metadataRegistryBackend.unregisterProject(project);
+
 		openProjects.removeProject(project);
 	}
 

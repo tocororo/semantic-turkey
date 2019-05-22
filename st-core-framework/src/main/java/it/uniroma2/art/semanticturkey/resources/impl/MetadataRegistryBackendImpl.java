@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -80,6 +81,7 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.MapBindingSet;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -92,20 +94,30 @@ import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterFactory;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesChecker;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.resources.CatalogRecord;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
@@ -118,6 +130,10 @@ import it.uniroma2.art.semanticturkey.resources.MetadataRegistryIntializationExc
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryStateException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryWritingException;
 import it.uniroma2.art.semanticturkey.resources.NoSuchDatasetMetadataException;
+import it.uniroma2.art.semanticturkey.resources.Scope;
+import it.uniroma2.art.semanticturkey.settings.metadata.ProjectMetadataStore;
+import it.uniroma2.art.semanticturkey.settings.metadata.StoredProjectMetadata;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 
@@ -140,16 +156,18 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	private File catalogFile;
 	private SailRepository metadataRegistry;
 	private MediationFramework mediationFramework;
+	private ExtensionPointManager exptManager;
 
 	/**
 	 * Constructs a {@link MetadataRegistryBackendImpl} whose base is {@link Config#getDataDir()}.
 	 * 
 	 * @param mediationFramework
+	 * @param exptManager
 	 * @throws MetadataRegistryCreationException
 	 */
-	public MetadataRegistryBackendImpl(MediationFramework mediationFramework)
-			throws MetadataRegistryCreationException {
-		this(Config.getDataDir(), mediationFramework);
+	public MetadataRegistryBackendImpl(MediationFramework mediationFramework,
+			ExtensionPointManager exptManager) throws MetadataRegistryCreationException {
+		this(Config.getDataDir(), mediationFramework, exptManager);
 	}
 
 	/**
@@ -158,10 +176,12 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	 * 
 	 * @param baseDir
 	 * @param mediationFramework
+	 * @param exptManager
+	 *            TODO
 	 * @throws MetadataRegistryCreationException
 	 */
-	public MetadataRegistryBackendImpl(File baseDir, MediationFramework mediationFramework)
-			throws MetadataRegistryCreationException {
+	public MetadataRegistryBackendImpl(File baseDir, MediationFramework mediationFramework,
+			ExtensionPointManager exptManager) throws MetadataRegistryCreationException {
 		try {
 			this.registryDirectory = new File(baseDir, METADATA_REGISTRY_DIRECTORY);
 			this.catalogFile = new File(registryDirectory, METADATA_REGISTRY_FILE);
@@ -173,6 +193,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			}
 
 			this.mediationFramework = mediationFramework;
+			this.exptManager = exptManager;
 		} catch (FactoryConfigurationError e) {
 			throw new MetadataRegistryCreationException(e);
 		}
@@ -206,6 +227,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				}
 			}
 		}
+
+		ProjectManager.setMetadataRegistryBackend(this);
 	}
 
 	/**
@@ -213,6 +236,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	 */
 	@PreDestroy
 	public void destroy() {
+		ProjectManager.setMetadataRegistryBackend(null);
+
 		if (metadataRegistry != null) {
 			metadataRegistry.shutDown();
 		}
@@ -227,7 +252,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					StandardCharsets.UTF_8)) {
 				RDFWriter rdfWriter = rdfWriterFactory.getWriter(writer);
 				rdfWriter.set(BasicWriterSettings.PRETTY_PRINT, true);
-				conn.export(rdfWriter);
+				conn.export(rdfWriter, (Resource) null);
 			}
 		} catch (IOException e) {
 			throw new MetadataRegistryWritingException(e);
@@ -684,7 +709,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		try (RepositoryConnection conn = getConnection()) {
 			checkLocallyDefined(conn, dataset);
 			Update update = conn.prepareUpdate(
-				// @formatter:off
+			// @formatter:off
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
 				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
 				" PREFIX void: <http://rdfs.org/ns/void#>                                         \n" +
@@ -714,14 +739,14 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 		saveToFile();
 	}
-	
+
 	@Override
 	public synchronized void setTitle(IRI dataset, String title)
 			throws IllegalArgumentException, MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
 			checkLocallyDefined(conn, dataset);
 			Update update = conn.prepareUpdate(
-				// @formatter:off
+			// @formatter:off
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
 				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
 				" PREFIX void: <http://rdfs.org/ns/void#>                                         \n" +
@@ -1030,8 +1055,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			// @formatter:on
 
 			TupleQuery datasetQuery = conn.prepareTupleQuery(tupleQuerySb.toString());
-			return QueryResults.stream(datasetQuery.evaluate())
-					.map(this::bindingset2datasetmetadata).collect(toList());
+			return QueryResults.stream(datasetQuery.evaluate()).map(this::bindingset2datasetmetadata)
+					.collect(toList());
 		}
 	}
 
@@ -1183,6 +1208,31 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 
 		return null;
+	}
+
+	@Override
+	public IRI findDatasetForProject(Project project) {
+		try (RepositoryConnection conn = getConnection()) {
+			ValueFactory vf = conn.getValueFactory();
+
+			IRI projectCtx = computeProjectContext(project, vf);
+
+			TupleQuery query = conn.prepareTupleQuery(
+			//@formatter:off
+				"PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" +
+				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
+				"SELECT ?dataset WHERE {\n" +
+				"  GRAPH " + RenderUtils.toSPARQL(projectCtx) + " {\n" +
+				"    ?catalog dcat:record [ foaf:primaryTopic ?dataset ] . \n" +
+				"    FILTER(isIRI(?dataset))\n" +
+				"  }\n" +
+				"}\n" +
+				"LIMIT 1\n"
+				//@formatter:on
+			);
+			return QueryResults.stream(query.evaluate()).map(bs -> (IRI) bs.getValue("dataset")).findAny()
+					.orElse(null);
+		}
 	}
 
 	protected DatasetMetadata bindingset2datasetmetadata(BindingSet bs) {
@@ -1571,4 +1621,105 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 	}
 
+	@Override
+	public synchronized void registerProject(Project project) {
+		try {
+			System.out.println("### registering project: " + project);
+
+			StoredProjectMetadata settings = (StoredProjectMetadata) exptManager.getSettings(project,
+					UsersManager.getLoggedUser(), ProjectMetadataStore.class.getName(), Scope.PROJECT);
+
+			if (!STPropertiesChecker.getModelConfigurationChecker(settings).isValid()) {
+				System.out.println("### settings are not valid");
+				settings = null;
+			}
+
+			try (RepositoryConnection metadataConn = getConnection()) {
+				ValueFactory vf = metadataConn.getValueFactory();
+
+				IRI projectCtx = computeProjectContext(project, vf);
+
+				System.out.println("### project context is " + projectCtx);
+				System.out.println("### clear old metadata");
+
+				metadataConn.clear(projectCtx);
+
+				if (settings != null) {
+
+					IRI dataset = settings.datasetDescription.getFirst();
+					Model datasetDescription = Rio.parse(
+							new StringReader(settings.datasetDescription.getSecond()), "", RDFFormat.TURTLE);
+
+					Update update = metadataConn.prepareUpdate(
+					// @formatter:off
+						" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                  \n" +
+						" PREFIX dcterms: <http://purl.org/dc/terms/>                                \n" +
+						" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                  \n" +
+						" PREFIX void: <http://rdfs.org/ns/void#>                                    \n" +
+						" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                \n" +
+						"                                                                            \n" +
+						" INSERT {                                                                   \n" +
+						"   ?catalog a dcat:Catalog ;                                                \n" +
+						"     dcat:dataset ?dataset ;                                                \n" +
+						"     dcat:record ?record .                                                  \n" +
+						" 	                                                                         \n" +
+						"   ?record a dcat:CatalogRecord ;                                           \n" +
+						"     dcterms:issued ?now ;                                                  \n" +
+						"     foaf:primaryTopic ?dataset .                                           \n" +
+						" }                                                                          \n" +
+						" WHERE {                                                                    \n" +
+						"   OPTIONAL {                                                               \n" +
+						"     ?catalogT a dcat:Catalog .                                             \n" +
+						"   }                                                                        \n" +
+						"   BIND(IF(BOUND(?catalogT), ?catalogT, ?catalogExt) as ?catalog)           \n" +
+						"   BIND(NOW() AS ?now)                                                      \n" +
+						" }                                                                          \n"
+						// @formatter:on
+					);
+
+					update.setBinding("dataset", dataset);
+
+					IRI record = vf.createIRI(DEFAULTNS, UUID.randomUUID().toString());
+					update.setBinding("record", record);
+
+					update.setBinding("catalogExt", vf.createIRI(DEFAULTNS + UUID.randomUUID().toString()));
+					SimpleDataset sparqlDataset = new SimpleDataset();
+					sparqlDataset.setDefaultInsertGraph(projectCtx);
+					update.setDataset(sparqlDataset);
+					update.execute();
+					System.out.println("### execute update");
+
+					metadataConn.add(datasetDescription, projectCtx);
+					metadataConn.export(Rio.createWriter(RDFFormat.TRIG, System.out));
+				}
+			}
+		} catch (IllegalStateException | STPropertyAccessException | NoSuchSettingsManager | RDFParseException
+				| UnsupportedRDFormatException | IOException e) {
+			logger.error("unable to register project '" + project.getName() + "'", e);
+		}
+
+		// there is no need to invoke saveFile() since we don't want to persist the metadata about projects
+		// inside the metadata registry
+
+	}
+
+	public static IRI computeProjectContext(Project project, ValueFactory vf) {
+		return vf.createIRI(UriComponentsBuilder.fromHttpUrl(DEFAULTNS + "{project}")
+				.buildAndExpand(ImmutableMap.of("project", project.getName())).toUriString());
+	}
+
+	@Override
+	public synchronized void unregisterProject(Project project) {
+
+		try (RepositoryConnection metadataConn = metadataRegistry.getConnection()) {
+			ValueFactory vf = metadataConn.getValueFactory();
+
+			IRI projectCtx = computeProjectContext(project, vf);
+			metadataConn.clear(projectCtx);
+		}
+
+		// there is no need to invoke saveFile() since we don't want to persist the metadata about projects
+		// inside the metadata registry
+
+	}
 }

@@ -68,7 +68,7 @@ public class MetadataRegistryBackendTest {
 		FileUtils.cleanDirectory(baseDir);
 
 		metadataRegistryBackend = new MetadataRegistryBackendImpl(baseDir,
-				mediationFrameworkRule.getObject());
+				mediationFrameworkRule.getObject(), null);
 		metadataRegistryBackend.initialize(); // invoke @PostConstruct
 
 		vf = SimpleValueFactory.getInstance();

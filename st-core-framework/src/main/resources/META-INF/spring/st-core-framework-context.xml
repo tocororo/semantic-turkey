@@ -107,6 +107,7 @@
 	<bean id="metadataRegistry"
 		class="it.uniroma2.art.semanticturkey.resources.impl.MetadataRegistryBackendImpl">
 		<constructor-arg ref="mediationFramework" />
+		<constructor-arg ref="extensionPointManager" />
 	</bean>
 
 	<osgi:service

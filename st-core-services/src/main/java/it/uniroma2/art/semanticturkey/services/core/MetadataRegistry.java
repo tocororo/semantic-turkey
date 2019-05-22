@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
@@ -16,6 +19,7 @@ import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.UnknownResourcePosition;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.CatalogRecord;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.LexicalizationSetMetadata;
@@ -334,4 +338,22 @@ public class MetadataRegistry extends STServiceAdapter {
 		return new AnnotatedValue<>(catalogRecord);
 	}
 
+	/**
+	 * Returns the datasets associated with the given projects, if any.
+	 * 
+	 * @param projects
+	 * @return
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+	public Map<String, AnnotatedValue<IRI>> findDatasetForProjects(List<Project> projects) {
+		Map<String, AnnotatedValue<IRI>> rv = new HashMap<>(projects.size());
+		for (Project proj : projects) {
+			IRI dataset = metadataRegistryBackend.findDatasetForProject(proj);
+			if (dataset != null) {
+				rv.put(proj.getName(), new AnnotatedValue<>(dataset));
+			}
+		}
+		return rv;
+	}
 }

@@ -10,6 +10,8 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.VOID;
@@ -17,6 +19,8 @@ import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -48,6 +52,7 @@ import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
+import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesChecker;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -95,6 +100,7 @@ public class MAPLE extends STServiceAdapter {
 		metadataRepository.initialize();
 		try {
 			try (SailRepositoryConnection metadataConnection = metadataRepository.getConnection()) {
+				ValueFactory vf = metadataConnection.getValueFactory();
 				IRI metadataBaseURI = metadataConnection.getValueFactory()
 						.createIRI("http://example.org/" + UUID.randomUUID().toString() + "/void.ttl");
 
@@ -113,6 +119,20 @@ public class MAPLE extends STServiceAdapter {
 								metadataConnection.getStatements(metadataBaseURI, FOAF.PRIMARY_TOPIC, null)))
 						.orElseThrow(() -> new ProfilerException(
 								"Could not identigy the main dataset inside the metadata"));
+
+				Project project = getProject();
+
+				metadataConnection.add(datasetIRI, VOID.URI_SPACE,
+						vf.createLiteral(project.getDefaultNamespace()));
+
+				RepositoryImplConfig coreRepoImplConfig = STLocalRepositoryManager
+						.getUnfoldedRepositoryImplConfig(
+								project.getRepositoryManager().getRepositoryConfig(Project.CORE_REPOSITORY));
+				if (coreRepoImplConfig instanceof HTTPRepositoryConfig) {
+					IRI sparqlEndpoint = SimpleValueFactory.getInstance()
+							.createIRI(((HTTPRepositoryConfig) coreRepoImplConfig).getURL());
+					metadataConnection.add(datasetIRI, VOID.SPARQL_ENDPOINT, sparqlEndpoint);
+				}
 
 				StringWriter stringWriter = new StringWriter();
 				RDFWriter rdfWriter = Rio.createWriter(RDFFormat.TURTLE, stringWriter);

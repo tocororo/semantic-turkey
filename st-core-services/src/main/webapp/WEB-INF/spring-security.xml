@@ -103,6 +103,8 @@
 					class="it.uniroma2.art.semanticturkey.converters.StringToACLLockLevelConverter" />
 				<beans:bean id="StringToProjectConsumerConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToProjectConsumerConverter" />
+				<beans:bean id="StringToProjectConverter"
+					class="it.uniroma2.art.semanticturkey.converters.StringToProjectConverter" />
 
 				<beans:bean id="StringToResourcePositionConverter"
 					class="it.uniroma2.art.semanticturkey.converters.StringToResourcePositionConverter">

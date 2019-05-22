@@ -1,11 +1,14 @@
 package it.uniroma2.art.semanticturkey.rendering;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Properties;
 
+import org.apache.sshd.client.session.forward.DynamicPortForwardingTracker;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -19,6 +22,9 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.aop.framework.AopProxyUtils;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.aop.target.EmptyTargetSource;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextImpl;
@@ -66,10 +72,12 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
+import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STRequest;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.servlet.Proxy;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
@@ -107,6 +115,16 @@ public class BaseRenderingEngineTest {
 		PluginManager.setTestPluginFactoryImpls(Arrays.asList(new NativeTemplateBasedURIGeneratorFactory(),
 				new SKOSRenderingEngineFactory()));
 
+		ProjectManager.setMetadataRegistryBackend((MetadataRegistryBackend) java.lang.reflect.Proxy
+				.newProxyInstance(this.getClass().getClassLoader(),
+						new Class<?>[] { MetadataRegistryBackend.class }, new InvocationHandler() {
+
+							@Override
+							public Object invoke(Object proxy, Method method, Object[] args)
+									throws Throwable {
+								return null;
+							}
+						}));
 		ProjectManager.setExtensionPointManager(new ExtensionPointManagerImpl() {
 			@Override
 			public ExtensionFactory<?> getExtension(String componentID) throws NoSuchExtensionException {
@@ -265,6 +283,16 @@ public class BaseRenderingEngineTest {
 		PluginManager.setTestPluginFactoryImpls(Arrays.asList(new NativeTemplateBasedURIGeneratorFactory(),
 				new SKOSRenderingEngineFactory()));
 
+		ProjectManager.setMetadataRegistryBackend((MetadataRegistryBackend) java.lang.reflect.Proxy
+				.newProxyInstance(this.getClass().getClassLoader(),
+						new Class<?>[] { MetadataRegistryBackend.class }, new InvocationHandler() {
+
+							@Override
+							public Object invoke(Object proxy, Method method, Object[] args)
+									throws Throwable {
+								return null;
+							}
+						}));
 		ProjectManager.setExtensionPointManager(new ExtensionPointManagerImpl() {
 			@Override
 			public ExtensionFactory<?> getExtension(String componentID) throws NoSuchExtensionException {

@@ -13,6 +13,8 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import it.uniroma2.art.maple.orchestration.AssessmentException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.settings.metadata.StoredProjectMetadata;
 
 /**
  * A registry collecting metadata about RDF Datasets.
@@ -202,6 +204,15 @@ public interface MetadataRegistryBackend {
 	DatasetMetadata findDatasetForResource(IRI iriResource);
 
 	/**
+	 * Returns metadata about the given project. If no dataset is found, then the method returns
+	 * <code>null</code>.
+	 * 
+	 * @param project
+	 * @return
+	 */
+	IRI findDatasetForProject(Project project);
+
+	/**
 	 * Discover the metadata for a dataset given an IRI.
 	 * 
 	 * @param iri
@@ -223,5 +234,20 @@ public interface MetadataRegistryBackend {
 	RepositoryConnection getConnection();
 
 	Model extractProfile(IRI dataset);
+
+	/**
+	 * Registers the metadata associated with a project (see {@link StoredProjectMetadata}). If the project
+	 * has been already registered, the metadata are replaced.
+	 * 
+	 * @param project
+	 */
+	void registerProject(Project project);
+
+	/**
+	 * Removes the metadata associated with a project
+	 * 
+	 * @param project
+	 */
+	void unregisterProject(Project project);
 
 }
