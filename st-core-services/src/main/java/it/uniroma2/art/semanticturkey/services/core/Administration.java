@@ -538,12 +538,6 @@ public class Administration extends STServiceAdapter {
 	}
 	
 	@STServiceOperation
-	public Boolean isPrivacyStatementAvailable() {
-		File psFile = new File(Resources.getDocsDir(), "privacy_statement.pdf");
-		return psFile.isFile();
-	}
-	
-	@STServiceOperation
 	public void downloadPrivacyStatement(HttpServletResponse oRes) throws IOException {
 		File psFile = new File(Resources.getDocsDir(), "privacy_statement.pdf");
 		oRes.setHeader("Content-Disposition", "attachment; " + psFile.getName());

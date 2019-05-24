@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -24,6 +25,7 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -355,6 +357,10 @@ public class PreferencesSettings extends STServiceAdapter {
 		String showFlagValue = STPropertiesManager.getPUSettingSystemDefault(STPropertiesManager.PREF_SHOW_FLAGS);
 		boolean showFlagBool = "true".equals(showFlagValue);
 		respNode.set(STPropertiesManager.PREF_SHOW_FLAGS, jsonFactory.booleanNode(showFlagBool));
+		
+		File psFile = new File(Resources.getDocsDir(), "privacy_statement.pdf");
+		boolean privacyStatementAvailable = psFile.isFile();
+		respNode.set("privacy_statement_available", jsonFactory.booleanNode(privacyStatementAvailable));
 		
 		return respNode;
 	}
