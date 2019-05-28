@@ -2,7 +2,9 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -12,6 +14,16 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -31,6 +43,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -53,6 +66,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.genoma.DatasetInfo;
+import it.uniroma2.art.semanticturkey.services.core.genoma.GENOMAException;
 import it.uniroma2.art.semanticturkey.services.core.genoma.Task;
 import it.uniroma2.art.semanticturkey.services.core.genoma.backend.MatchingStatus;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
@@ -275,21 +289,41 @@ public class GENOMA extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public String createTask(@JsonSerialized MatchingProblem matchingProblem) {
+	public String createTask(@JsonSerialized MatchingProblem matchingProblem) throws IOException, GENOMAException {
 		ObjectMapper objMapper = new ObjectMapper();
 		String matchingProblemJson;
 		try {
-			System.out.println("@@@" + matchingProblem.toString());
-			if (0 != 0) {
-				matchingProblemJson = objMapper.writeValueAsString(matchingProblem);
-				System.out.println(matchingProblemJson);
-			}
+			matchingProblemJson = objMapper.writeValueAsString(matchingProblem);
 		} catch (JsonProcessingException e) {
 			throw new IllegalArgumentException(e); // this should never happern
 		}
 
+		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+			HttpPost request = new HttpPost(GENOMA_ENDPOINT + "runMatch");
+			request.setEntity(new StringEntity(matchingProblemJson, ContentType.APPLICATION_JSON));
+			try (CloseableHttpResponse httpReponse = httpClient.execute(request)) {
+				StatusLine statusLine = httpReponse.getStatusLine();
+				if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
+					throw new IOException(statusLine.getStatusCode() + ":" + statusLine.getReasonPhrase());
+				}
 
-		return "task-id";
+				HttpEntity entity = httpReponse.getEntity();
+				String responseString = IOUtils.toString(entity.getContent(),
+						java.util.Optional.ofNullable(ContentType.get(entity).getCharset())
+								.orElse(StandardCharsets.UTF_8).name());
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode responseObject = mapper.readTree(new StringReader(responseString));
+				JsonNode errorNode = responseObject.get("error");
+				
+				if (errorNode != null) {
+					throw new GENOMAException(errorNode.textValue());
+				}
+				
+				return responseObject.get("id").textValue();
+			}
+
+		}
+
 	}
 
 	/*
