@@ -391,7 +391,7 @@ public class Search extends STServiceAdapter {
 
 		
 		
-		//if at least one scheme is passed, the gat all top concept of such scheme(s) and then later uses 
+		//if at least one scheme is passed, then get all top concept of such scheme(s) and then later uses 
 		// this information to remove path not going to a topConcept+
 		List<String> topConceptList = new ArrayList<>();
 		if(schemesIRI!=null && schemesIRI.size()>0) {
@@ -777,7 +777,7 @@ public class Search extends STServiceAdapter {
 		
 		//if the input schemesIRI is not null and contains at least one scheme, remove all path not
 		// starting with a topConcept (check if the list of topConcepts contains at least one element)
-		if(topConceptList.size()>0) {
+		if(topConceptList.size()>0 && pathList.size()>0) {
 			Iterator<List<String>> iter = pathList.iterator();
 			if(!topConceptList.contains(iter.next().get(0))){
 				//the current path does not start with a topConcept, so remove it
