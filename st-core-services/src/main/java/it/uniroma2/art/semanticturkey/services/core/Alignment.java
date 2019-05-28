@@ -82,38 +82,33 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 
 @STService
 public class Alignment extends STServiceAdapter {
-	
+
 	protected static Logger logger = LoggerFactory.getLogger(Alignment.class);
-	
-	//@Autowired
-	//private MetadataRegistryBackend metadataRegistryBackend;
-	
-	//@Autowired
-	//private MediationFramework mediationFramework;
-	
+
+	// @Autowired
+	// private MetadataRegistryBackend metadataRegistryBackend;
+
+	// @Autowired
+	// private MediationFramework mediationFramework;
+
 	@Autowired
 	protected ExtensionPointManager exptManager;
-	
+
 	@Autowired
 	private STServiceContext stServiceContext;
-	
-	private static List<IRI> skosMappingRelations = Arrays.asList(
-			SKOS.MAPPING_RELATION, SKOS.EXACT_MATCH, SKOS.BROAD_MATCH,
-			SKOS.NARROW_MATCH, SKOS.CLOSE_MATCH, SKOS.RELATED_MATCH
-	);
-	
-	private static List<IRI> owlMappingRelations = Arrays.asList(
-		OWL.SAMEAS, OWL.DIFFERENTFROM, OWL.EQUIVALENTCLASS, OWL.DISJOINTWITH, RDFS.SUBCLASSOF
-	);
-	
-	private static List<IRI> propertiesMappingRelations = Arrays.asList(
-		OWL.EQUIVALENTPROPERTY, OWL2Fragment.PROPERTY_DISJOINT_WITH, RDFS.SUBPROPERTYOF
-	);
-	
-	//map that contain <id, context> pairs to handle multiple sessions
+
+	private static List<IRI> skosMappingRelations = Arrays.asList(SKOS.MAPPING_RELATION, SKOS.EXACT_MATCH,
+			SKOS.BROAD_MATCH, SKOS.NARROW_MATCH, SKOS.CLOSE_MATCH, SKOS.RELATED_MATCH);
+
+	private static List<IRI> owlMappingRelations = Arrays.asList(OWL.SAMEAS, OWL.DIFFERENTFROM,
+			OWL.EQUIVALENTCLASS, OWL.DISJOINTWITH, RDFS.SUBCLASSOF);
+
+	private static List<IRI> propertiesMappingRelations = Arrays.asList(OWL.EQUIVALENTPROPERTY,
+			OWL2Fragment.PROPERTY_DISJOINT_WITH, RDFS.SUBPROPERTYOF);
+
+	// map that contain <id, context> pairs to handle multiple sessions
 	private Map<String, AlignmentModel> modelsMap = new HashMap<>();
-	
-	
+
 	//@formatter:off
 	//SERVICES FOR ALIGMENT FOR THE SEARCH
 	/**
@@ -169,37 +164,43 @@ public class Alignment extends STServiceAdapter {
 	}
 	*/
 	//@formatter:on
-	
-	
-	//new service 
-	
+
+	// new service
+
 	// SERVICES FOR ALIGNMENT IN RESOURCE VIEW
 	/**
-	 * Returns a list of Resoruces which are "similar" to the one in input. This service should be used to 
-	 * obtain a list of possible candidate for an alignment between a local resource and resources in a remote 
-	 * dataset   
-	 * @param intputRes the input resources from which to obtain the lexicalizations used in the search in 
-	 * the remote dataset
-	 * @param resourcePosition the remote dataset or a local project
-	 * @param rolesArray the roles to which the returned resources should belong to
-	 * @param langs the optional list of languages that will be used for the search (if no language is passed, 
-	 * then MAPLE is used to obtain the common languages between the current project and the remote dataset)
-	 * @param searchModeList the optional list of searchMode that will be used in the search (is no value is 
-	 * passed, then 'contains' and 'fuzzy' are used)
-	 * @param targetLexModel the optional Lexical Model of the target dataset
+	 * Returns a list of Resoruces which are "similar" to the one in input. This service should be used to
+	 * obtain a list of possible candidate for an alignment between a local resource and resources in a remote
+	 * dataset
+	 * 
+	 * @param intputRes
+	 *            the input resources from which to obtain the lexicalizations used in the search in the
+	 *            remote dataset
+	 * @param resourcePosition
+	 *            the remote dataset or a local project
+	 * @param rolesArray
+	 *            the roles to which the returned resources should belong to
+	 * @param langs
+	 *            the optional list of languages that will be used for the search (if no language is passed,
+	 *            then MAPLE is used to obtain the common languages between the current project and the remote
+	 *            dataset)
+	 * @param searchModeList
+	 *            the optional list of searchMode that will be used in the search (is no value is passed, then
+	 *            'contains' and 'fuzzy' are used)
+	 * @param targetLexModel
+	 *            the optional Lexical Model of the target dataset
 	 * @return the list of remote resources obtained from the search
-	 * @throws MetadataRegistryStateException 
-	 * @throws NoSuchDatasetMetadataException 
-	 * @throws STPropertyAccessException 
-	 * @throws IllegalStateException 
+	 * @throws MetadataRegistryStateException
+	 * @throws NoSuchDatasetMetadataException
+	 * @throws STPropertyAccessException
+	 * @throws IllegalStateException
 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	public Collection<AnnotatedValue<Resource>> searchResources(IRI inputRes, ResourcePosition resourcePosition, 
-			String[] rolesArray,  
-			@Optional List<SearchMode> searchModeList,
-			Map<String, IRI> langToLexModel) throws NoSuchDatasetMetadataException, 
+	public Collection<AnnotatedValue<Resource>> searchResources(IRI inputRes,
+			ResourcePosition resourcePosition, String[] rolesArray, @Optional List<SearchMode> searchModeList,
+			Map<String, IRI> langToLexModel) throws NoSuchDatasetMetadataException,
 			MetadataRegistryStateException, IllegalStateException, STPropertyAccessException {
 		logger.debug("starting Alignment.serachResources");
 		//@formatter:off
@@ -350,129 +351,129 @@ public class Alignment extends STServiceAdapter {
 		return orderResultsFromSearch(annValueList);
 		//@formatter:on
 	}
-	
-	
-	public Collection<AnnotatedValue<Resource>> searchResourcesForRemote(List<Literal> labelsList, 
+
+	public Collection<AnnotatedValue<Resource>> searchResourcesForRemote(List<Literal> labelsList,
 			RepositoryConnection remoteConn, String[] rolesArray, List<SearchMode> searchModeList,
-			Map<String, IRI> langToLexModel) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
-		
-		//check that the optional targetLexModel has one of the right value
-		if(langToLexModel==null || langToLexModel.size()==0){
-			throw new IllegalArgumentException("targetLexModel is mandatory is not a "
-					+ "valid Lexicalization Model  ");
-		} 
-		
-		//check that all passed targetLexModel hve one of the right value
-		for(IRI targetLexModel : langToLexModel.values()) {
-			if(!targetLexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) &&
-					!targetLexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) &&
-					!targetLexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) &&
-					!targetLexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
-				throw new IllegalArgumentException("targetLexModel "+targetLexModel.stringValue()+" is not a "
-						+ "valid Lexicalization Model  ");
+			Map<String, IRI> langToLexModel)
+			throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
+
+		// check that the optional targetLexModel has one of the right value
+		if (langToLexModel == null || langToLexModel.size() == 0) {
+			throw new IllegalArgumentException(
+					"targetLexModel is mandatory is not a " + "valid Lexicalization Model  ");
+		}
+
+		// check that all passed targetLexModel hve one of the right value
+		for (IRI targetLexModel : langToLexModel.values()) {
+			if (!targetLexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)
+					&& !targetLexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)
+					&& !targetLexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)
+					&& !targetLexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+				throw new IllegalArgumentException("targetLexModel " + targetLexModel.stringValue()
+						+ " is not a " + "valid Lexicalization Model  ");
 			}
 		}
-		
-		//consult metadataRegistryBackend to get the LexicalModel to see in what to search (to set inWhatToSearch)
+
+		// consult metadataRegistryBackend to get the LexicalModel to see in what to search (to set
+		// inWhatToSearch)
 		AdvancedSearch advancedSearch = new AdvancedSearch();
-		
-		//if not searchModeList is passed, then assume they are contains and fuzzy (since those two contains 
+
+		// if not searchModeList is passed, then assume they are contains and fuzzy (since those two contains
 		// all the others)
-		if(searchModeList == null || searchModeList.size()==0) {
+		if (searchModeList == null || searchModeList.size() == 0) {
 			throw new IllegalArgumentException("At least one searchMode should be passed");
 		}
 
-		//the structures containing the results, which will be later ordered and returned
-		//Map<String, Integer> resToCountMap = new HashMap<>();
+		// the structures containing the results, which will be later ordered and returned
+		// Map<String, Integer> resToCountMap = new HashMap<>();
 		Map<String, AnnotatedValue<Resource>> resToAnnValueMap = new HashMap<>();
-		//int maxCount = 0;
-		
-		//iterate over the labelsList, get the associated language and then get the lexModel from langToLexModel for 
+		// int maxCount = 0;
+
+		// iterate over the labelsList, get the associated language and then get the lexModel from
+		// langToLexModel for
 		// such language and execute one query per language-LexModel
-		for(Literal label :labelsList) {
-			if(!label.getLanguage().isPresent()) {
-				//the is no language in this Literal
+		for (Literal label : labelsList) {
+			if (!label.getLanguage().isPresent()) {
+				// the is no language in this Literal
 				continue;
 			}
 			String lang = label.getLanguage().get();
 			IRI targetLexModel = langToLexModel.get(lang);
-			
+
 			InWhatToSearch inWhatToSearch = advancedSearch.new InWhatToSearch();
 			WhatToShow whatToShow = advancedSearch.new WhatToShow();
-			//according to the Lexicalization model of the target dataset, set the corresponding values in 
+			// according to the Lexicalization model of the target dataset, set the corresponding values in
 			// inWhatToSearch and whatToShow
-			if(targetLexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
+			if (targetLexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
 				inWhatToSearch.setSearchInRDFLabel(true);
 				whatToShow.setShowRDFLabel(true);
-			} else if(targetLexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
+			} else if (targetLexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
 				inWhatToSearch.setSearchInSkosLabel(true);
 				whatToShow.setShowSKOSLabel(true);
-			} else if(targetLexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
+			} else if (targetLexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
 				inWhatToSearch.setSearchInSkosxlLabel(true);
 				whatToShow.setShowSKOSXLLabel(true);
-			} else if(targetLexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+			} else if (targetLexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
 				inWhatToSearch.setSearchInDCTitle(true);
 				inWhatToSearch.setSearchInWrittenRep(true);
 				whatToShow.setShowDCTitle(true);
 				whatToShow.setShowWrittenRep(true);
 			}
-			//add the language regarding the show
-			for(String langToShow : langToLexModel.keySet() ) {
+			// add the language regarding the show
+			for (String langToShow : langToLexModel.keySet()) {
 				whatToShow.addLang(langToShow);
 			}
-			
-			
-			//do one search per label
-			List<AnnotatedValue<Resource>> currentAnnValuList = advancedSearch.searchResources(label, 
+
+			// do one search per label
+			List<AnnotatedValue<Resource>> currentAnnValuList = advancedSearch.searchResources(label,
 					rolesArray, searchModeList, remoteConn, targetLexModel, inWhatToSearch, whatToShow);
-			
-			//analyze the return list and find a way to rank the results
+
+			// analyze the return list and find a way to rank the results
 			// maybe order them according to how may times a resource is returned
-			for(AnnotatedValue<Resource> annValue : currentAnnValuList) {
+			for (AnnotatedValue<Resource> annValue : currentAnnValuList) {
 				String stringValue = annValue.getStringValue();
-				if(resToAnnValueMap.containsKey(stringValue)) {
-					//there is already an AnnotatedValue for the retrieve resource, so add the new matching 
+				if (resToAnnValueMap.containsKey(stringValue)) {
+					// there is already an AnnotatedValue for the retrieve resource, so add the new matching
 					// language
-					String matchedLang = resToAnnValueMap.get(stringValue).getAttributes()
-							.get("matchedLang").stringValue()+","+lang;
+					String matchedLang = resToAnnValueMap.get(stringValue).getAttributes().get("matchedLang")
+							.stringValue() + "," + lang;
 					resToAnnValueMap.get(stringValue).setAttribute("matchedLang", matchedLang);
 				} else {
-					//it is the first AnnotatedValue returned for the retrieve Resource
+					// it is the first AnnotatedValue returned for the retrieve Resource
 					annValue.setAttribute("matchedLang", lang);
 					resToAnnValueMap.put(stringValue, annValue);
 				}
 			}
 		}
- 		//all labels have been analyze, so return the Annotated Value
+		// all labels have been analyze, so return the Annotated Value
 		return resToAnnValueMap.values();
 	}
-	
-	public Collection<AnnotatedValue<Resource>> orderResultsFromSearch(Collection<AnnotatedValue<Resource>> 
-			annList){
+
+	public Collection<AnnotatedValue<Resource>> orderResultsFromSearch(
+			Collection<AnnotatedValue<Resource>> annList) {
 		List<AnnotatedValue<Resource>> orderedAnnValueList = new ArrayList<>();
-		
+
 		List<AnnotatedValue<Resource>> restAnnValueList = new ArrayList<>();
-		
-		//order the result by placing first the one obtained from an exact match
-		for(AnnotatedValue<Resource> annValue : annList) {
+
+		// order the result by placing first the one obtained from an exact match
+		for (AnnotatedValue<Resource> annValue : annList) {
 			String matchType = annValue.getAttributes().get("matchMode").stringValue();
-			if(matchType.contains("exact")) {
+			if (matchType.contains("exact")) {
 				orderedAnnValueList.add(annValue);
 			} else {
 				restAnnValueList.add(annValue);
 			}
 		}
-		
-		//add to the ordered list the other elements
+
+		// add to the ordered list the other elements
 		orderedAnnValueList.addAll(restAnnValueList);
-		
+
 		return orderedAnnValueList;
 	}
-	
-	
-	
+
 	/**
 	 * Adds the given alignment triple only if predicate is a valid alignment property
+	 * 
 	 * @param sourceResource
 	 * @param predicate
 	 * @param targetResource
@@ -485,22 +486,24 @@ public class Alignment extends STServiceAdapter {
 		RepositoryConnection repoConn = getManagedConnection();
 		repoConn.add(sourceResource, predicate, targetResource, getWorkingGraph());
 	}
-	
+
 	/**
-	 * Returns the available alignment properties depending on the type resource to align (property,
-	 * or concept, or class,...).
+	 * Returns the available alignment properties depending on the type resource to align (property, or
+	 * concept, or class,...).
 	 * 
-	 * @param resource resource to align
-	 * @param allMappingProps if false returns just the mapping properties available for the current
-	 * model type; if true returns all the mapping properties independently from the model type
+	 * @param resource
+	 *            resource to align
+	 * @param allMappingProps
+	 *            if false returns just the mapping properties available for the current model type; if true
+	 *            returns all the mapping properties independently from the model type
 	 * @return
-	 * @throws ProjectInconsistentException 
+	 * @throws ProjectInconsistentException
 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	public Collection<AnnotatedValue<IRI>> getMappingProperties(IRI resource, @Optional (defaultValue = "false") boolean allMappingProps) 
-			throws ProjectInconsistentException {
+	public Collection<AnnotatedValue<IRI>> getMappingProperties(IRI resource,
+			@Optional(defaultValue = "false") boolean allMappingProps) throws ProjectInconsistentException {
 		List<IRI> props = getAvailableMappingProperties(resource, allMappingProps, getManagedConnection());
 		Collection<AnnotatedValue<IRI>> propColl = new ArrayList<>();
 		for (IRI p : props) {
@@ -510,58 +513,71 @@ public class Alignment extends STServiceAdapter {
 		}
 		return propColl;
 	}
-	
+
 	// SERVICES FOR ALIGNMENT VALIDATION
-	
+
 	/**
-	 * Loads an alignment file (that is compliant with AlignmentAPI format) and if one of the 
-	 * two aligned ontologies has the same baseURI of the current model, then return a response
-	 * with its content.
+	 * Loads an alignment file (that is compliant with AlignmentAPI format) and if one of the two aligned
+	 * ontologies has the same baseURI of the current model, then return a response with its content.
+	 * 
 	 * @param inputFile
 	 * @return
-	 * @throws AlignmentInitializationException 
-	 * @throws IOException 
+	 * @throws AlignmentInitializationException
+	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	public JsonNode loadAlignment(MultipartFile inputFile) throws AlignmentInitializationException, IOException {
-		
-		//create a temp file (in karaf data/temp folder) to copy the received file 
+	public JsonNode loadAlignment(MultipartFile inputFile)
+			throws AlignmentInitializationException, IOException {
+
+		// create a temp file (in karaf data/temp folder) to copy the received file
 		File inputServerFile = File.createTempFile("alignment", inputFile.getOriginalFilename());
 		inputFile.transferTo(inputServerFile);
-		
-		//creating model for loading alignment
+
+		// creating model for loading alignment
 		MemoryStore memStore = new MemoryStore();
 		memStore.setPersist(false);
 		Repository repository = new SailRepository(memStore);
 		repository.initialize();
 		AlignmentModel alignModel = new AlignmentModel();
 		alignModel.add(inputServerFile);
-		
+
+		return loadAlignmentHelper(alignModel);
+	}
+	
+	/**
+	 * This method is responsible for the finalization of alignment load operations, irrespectively of the
+	 * source of the alignment (e.g. file, GENOMA task, etc...)
+	 * 
+	 * @param alignModel
+	 * @return
+	 * @throws AlignmentInitializationException
+	 */
+	public JsonNode loadAlignmentHelper(AlignmentModel alignModel) throws AlignmentInitializationException {
 		String token = stServiceContext.getSessionToken();
 		modelsMap.put(token, alignModel);
-		
-		//check that one of the two aligned ontologies matches the current project ontology
+
+		// check that one of the two aligned ontologies matches the current project ontology
 		String projectBaseURI = getProject().getNewOntologyManager().getBaseURI();
-		
+
 		String onto1BaseURI = alignModel.getOnto1();
 		String onto2BaseURI = alignModel.getOnto2();
-		
-		//removes final / or # from baseURIs in order to avoid failing of the following check
-		//(one of the aligned ontologies must refers to the current open project)
+
+		// removes final / or # from baseURIs in order to avoid failing of the following check
+		// (one of the aligned ontologies must refers to the current open project)
 		if (projectBaseURI.endsWith("/") || projectBaseURI.endsWith("#")) {
-			projectBaseURI = projectBaseURI.substring(0, projectBaseURI.length()-1);
+			projectBaseURI = projectBaseURI.substring(0, projectBaseURI.length() - 1);
 		}
 		if (onto1BaseURI.endsWith("/") || onto1BaseURI.endsWith("#")) {
-			onto1BaseURI = onto1BaseURI.substring(0, onto1BaseURI.length()-1);
+			onto1BaseURI = onto1BaseURI.substring(0, onto1BaseURI.length() - 1);
 		}
 		if (onto2BaseURI.endsWith("/") || onto2BaseURI.endsWith("#")) {
-			onto2BaseURI = onto2BaseURI.substring(0, onto2BaseURI.length()-1);
+			onto2BaseURI = onto2BaseURI.substring(0, onto2BaseURI.length() - 1);
 		}
-		
-		if (!projectBaseURI.equals(onto1BaseURI)){
-			if (projectBaseURI.equals(onto2BaseURI)){
+
+		if (!projectBaseURI.equals(onto1BaseURI)) {
+			if (projectBaseURI.equals(onto2BaseURI)) {
 				if (alignModel.hasCustomRelation()) {
 					throw new AlignmentInitializationException("The alignment file is reversed "
 							+ "(the source ontology in the alignment file is your target ontology in your project) "
@@ -572,44 +588,49 @@ public class Alignment extends STServiceAdapter {
 				}
 				alignModel.reverse();
 			} else {
-				throw new AlignmentInitializationException("Failed to open and validate the given alignment file. "
-						+ "None of the two aligned ontologies matches the current project ontology");
+				throw new AlignmentInitializationException(
+						"Failed to open and validate the given alignment file. "
+								+ "None of the two aligned ontologies matches the current project ontology");
 			}
 		}
-		
+
 		alignModel.preProcess();
-		
+
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode alignmentNode = jsonFactory.objectNode();
 		alignmentNode.set("onto1", jsonFactory.textNode(alignModel.getOnto1()));
 		alignmentNode.set("onto2", jsonFactory.textNode(alignModel.getOnto2()));
-		
+
 		ArrayNode unknownRelationsArrayNode = jsonFactory.arrayNode();
 		List<String> unknownRel = alignModel.getUnknownRelations();
-		for (String rel: unknownRel) {
+		for (String rel : unknownRel) {
 			unknownRelationsArrayNode.add(jsonFactory.textNode(rel));
 		}
 		alignmentNode.set("unknownRelations", unknownRelationsArrayNode);
 		return alignmentNode;
 	}
-	
+
 	/**
-	 * Returns the cells of the alignment file. Handles the scalability returning a portion of cells
-	 * if <code>pageIdx</code> and <code>range</code> are provided as parameters 
-	 * @param pageIdx index of the page in case 
-	 * @param range alignment per page to show. If 0, returns all the alignments.
+	 * Returns the cells of the alignment file. Handles the scalability returning a portion of cells if
+	 * <code>pageIdx</code> and <code>range</code> are provided as parameters
+	 * 
+	 * @param pageIdx
+	 *            index of the page in case
+	 * @param range
+	 *            alignment per page to show. If 0, returns all the alignments.
 	 * @return
 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	public JsonNode listCells(@Optional (defaultValue = "0") int pageIdx, @Optional (defaultValue = "0") int range) {
+	public JsonNode listCells(@Optional(defaultValue = "0") int pageIdx,
+			@Optional(defaultValue = "0") int range) {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode mapNode = jsonFactory.objectNode();
 		ArrayNode cellArrayNode = jsonFactory.arrayNode();
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
 		List<Cell> cells = alignModel.listCells();
-		//if range = 0 => return all cells
+		// if range = 0 => return all cells
 		if (range == 0) {
 			mapNode.set("page", jsonFactory.numberNode(1));
 			mapNode.set("totPage", jsonFactory.numberNode(1));
@@ -620,8 +641,8 @@ public class Alignment extends STServiceAdapter {
 			int size = cells.size();
 			int begin = pageIdx * range;
 			int end = begin + range;
-			
-			//if index of first cell > size of cell list (index out of bound) => return empty list of cells
+
+			// if index of first cell > size of cell list (index out of bound) => return empty list of cells
 			if (begin > size) {
 				mapNode.set("page", jsonFactory.numberNode(1));
 				mapNode.set("totPage", jsonFactory.numberNode(1));
@@ -635,7 +656,7 @@ public class Alignment extends STServiceAdapter {
 				if (end > size) {
 					end = size;
 				}
-				for (int i=begin; i<end; i++){
+				for (int i = begin; i < end; i++) {
 					cellArrayNode.add(createCellJsonNode(cells.get(i)));
 				}
 			}
@@ -643,9 +664,10 @@ public class Alignment extends STServiceAdapter {
 		mapNode.set("cells", cellArrayNode);
 		return mapNode;
 	}
-	
+
 	/**
 	 * Accepts the alignment updating the alignment model
+	 * 
 	 * @param entity1
 	 * @param entity2
 	 * @param relation
@@ -657,11 +679,12 @@ public class Alignment extends STServiceAdapter {
 	public JsonNode acceptAlignment(IRI entity1, IRI entity2, String relation, @Optional IRI forcedProperty,
 			@Optional(defaultValue = "false") boolean setAsDefault) {
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
-		alignModel.acceptAlignment(entity1, entity2, relation, forcedProperty, setAsDefault, getManagedConnection());
+		alignModel.acceptAlignment(entity1, entity2, relation, forcedProperty, setAsDefault,
+				getManagedConnection());
 		Cell c = alignModel.getCell(entity1, entity2);
 		return createCellJsonNode(c);
 	}
-	
+
 	/**
 	 * Accepts all the alignment updating the alignment model
 	 * 
@@ -681,10 +704,10 @@ public class Alignment extends STServiceAdapter {
 		}
 		return cellsArrayNode;
 	}
-	
+
 	/**
-	 * Accepts all the alignment with measure above the given threshold updating the alignment model.
-	 * The response contains the description of all the cells affected by the accept
+	 * Accepts all the alignment with measure above the given threshold updating the alignment model. The
+	 * response contains the description of all the cells affected by the accept
 	 * 
 	 * @param threshold
 	 * @return
@@ -709,10 +732,10 @@ public class Alignment extends STServiceAdapter {
 		}
 		return cellsArrayNode;
 	}
-	
+
 	/**
 	 * Rejects the alignment
-	 *  
+	 * 
 	 * @param entity1
 	 * @param entity2
 	 * @param relation
@@ -727,7 +750,7 @@ public class Alignment extends STServiceAdapter {
 		Cell c = alignModel.getCell(entity1, entity2);
 		return createCellJsonNode(c);
 	}
-	
+
 	/**
 	 * Rejects all the alignments
 	 * 
@@ -747,7 +770,7 @@ public class Alignment extends STServiceAdapter {
 		}
 		return cellsArrayNode;
 	}
-	
+
 	/**
 	 * Rejects all the alignments under the given threshold
 	 * 
@@ -773,9 +796,10 @@ public class Alignment extends STServiceAdapter {
 		}
 		return cellsArrayNode;
 	}
-	
+
 	/**
 	 * Change the relation of an alignment
+	 * 
 	 * @param entity1
 	 * @param entity2
 	 * @param relation
@@ -789,9 +813,10 @@ public class Alignment extends STServiceAdapter {
 		Cell updatedCell = alignModel.getCell(entity1, entity2);
 		return createCellJsonNode(updatedCell);
 	}
-	
+
 	/**
 	 * Change the mapping property of an alignment
+	 * 
 	 * @param entity1
 	 * @param entity2
 	 * @param mappingProperty
@@ -806,26 +831,28 @@ public class Alignment extends STServiceAdapter {
 		Cell updatedCell = alignModel.getCell(entity1, entity2);
 		return createCellJsonNode(updatedCell);
 	}
-	
+
 	/**
-	 * Adds the accepted alignment cell to the ontology model and delete the rejected ones (if 
-	 * previously added to the ontology)
-	 * @param deleteRejected tells if remove the triples related to rejected alignments
+	 * Adds the accepted alignment cell to the ontology model and delete the rejected ones (if previously
+	 * added to the ontology)
+	 * 
+	 * @param deleteRejected
+	 *            tells if remove the triples related to rejected alignments
 	 * @return
 	 */
 	@STServiceOperation
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'CUD')")
-	public JsonNode applyValidation(@Optional (defaultValue = "false") boolean deleteRejected) {
+	public JsonNode applyValidation(@Optional(defaultValue = "false") boolean deleteRejected) {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode reportArrayNode = jsonFactory.arrayNode();
-		
+
 		RepositoryConnection repoConn = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
-		
+
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
-		
+
 		List<Cell> acceptedCells = alignModel.listCellsByStatus(Status.accepted);
 		for (Cell cell : acceptedCells) {
 			modelAdditions.add(cell.getEntity1(), cell.getMappingProperty(), cell.getEntity2());
@@ -836,16 +863,17 @@ public class Alignment extends STServiceAdapter {
 			cellNode.set("action", jsonFactory.textNode("Added"));
 			reportArrayNode.add(cellNode);
 		}
-		
+
 		if (deleteRejected) {
 			List<Cell> rejectedCells = alignModel.listCellsByStatus(Status.rejected);
 			for (Cell cell : rejectedCells) {
 				try {
 					IRI entity1 = cell.getEntity1();
 					IRI entity2 = cell.getEntity2();
-					List<IRI> props = alignModel.suggestPropertiesForRelation(entity1, cell.getRelation(), false, repoConn);
+					List<IRI> props = alignModel.suggestPropertiesForRelation(entity1, cell.getRelation(),
+							false, repoConn);
 					for (IRI p : props) {
-						if (repoConn.hasStatement(entity1, p, entity2, true, getWorkingGraph())){
+						if (repoConn.hasStatement(entity1, p, entity2, true, getWorkingGraph())) {
 							modelRemovals.add(entity1, p, entity2);
 							ObjectNode cellNode = jsonFactory.objectNode();
 							cellNode.set("entity1", jsonFactory.textNode(cell.getEntity1().stringValue()));
@@ -855,18 +883,20 @@ public class Alignment extends STServiceAdapter {
 							reportArrayNode.add(cellNode);
 						}
 					}
-				} catch (InvalidAlignmentRelationException e) {} //in case of invalid relation, simply do nothing
+				} catch (InvalidAlignmentRelationException e) {
+				} // in case of invalid relation, simply do nothing
 			}
 		}
-		
+
 		repoConn.add(modelAdditions, getWorkingGraph());
 		repoConn.remove(modelRemovals, getWorkingGraph());
-		
+
 		return reportArrayNode;
 	}
-	
+
 	/**
 	 * Save the alignment with the performed changes and export as rdf file
+	 * 
 	 * @param oRes
 	 * @throws IOException
 	 */
@@ -888,14 +918,15 @@ public class Alignment extends STServiceAdapter {
 			tempServerFile.delete();
 		}
 	}
-	
+
 	/**
 	 * Return a list of mapping properties suggested for the given entity and the alignment relation
+	 * 
 	 * @param entity
 	 * @param relation
 	 * @return
 	 * @throws InvalidAlignmentRelationException
-	 * @throws ProjectInconsistentException 
+	 * @throws ProjectInconsistentException
 	 */
 	@STServiceOperation
 	@Read
@@ -905,13 +936,16 @@ public class Alignment extends STServiceAdapter {
 		AlignmentModel alignmentModel = modelsMap.get(stServiceContext.getSessionToken());
 		List<IRI> props;
 		try {
-			props = alignmentModel.suggestPropertiesForRelation(entity, relation, false, getManagedConnection());
-		} catch (InvalidAlignmentRelationException e) { 
-			/* If it is not possible to find properties to suggest, (probably because the relation is not known)
-			 * returns all the mapping properties. */
+			props = alignmentModel.suggestPropertiesForRelation(entity, relation, false,
+					getManagedConnection());
+		} catch (InvalidAlignmentRelationException e) {
+			/*
+			 * If it is not possible to find properties to suggest, (probably because the relation is not
+			 * known) returns all the mapping properties.
+			 */
 			props = getAvailableMappingProperties(entity, false, getManagedConnection());
 		}
-			
+
 		Collection<AnnotatedValue<IRI>> propColl = new ArrayList<>();
 		for (IRI p : props) {
 			AnnotatedValue<IRI> annValue = new AnnotatedValue<>(p);
@@ -920,18 +954,20 @@ public class Alignment extends STServiceAdapter {
 		}
 		return propColl;
 	}
-	
+
 	/**
 	 * Returns a list of mapping properties
-	 * @param resource 
-	 * @param allMappingProps if true, returns all the known mapping properties, if false filters out the properties
-	 * 	not compatible with the resource and the project type
+	 * 
+	 * @param resource
+	 * @param allMappingProps
+	 *            if true, returns all the known mapping properties, if false filters out the properties not
+	 *            compatible with the resource and the project type
 	 * @param repoConn
 	 * @return
 	 * @throws ProjectInconsistentException
 	 */
-	private List<IRI> getAvailableMappingProperties(IRI resource, boolean allMappingProps, RepositoryConnection repoConn)
-			throws ProjectInconsistentException {
+	private List<IRI> getAvailableMappingProperties(IRI resource, boolean allMappingProps,
+			RepositoryConnection repoConn) throws ProjectInconsistentException {
 		List<IRI> mappingProps = new ArrayList<>();
 		if (allMappingProps) {
 			for (IRI prop : propertiesMappingRelations) {
@@ -944,17 +980,18 @@ public class Alignment extends STServiceAdapter {
 				mappingProps.add(prop);
 			}
 		} else {
-			boolean isProperty = RDFResourceRole.isProperty(RoleRecognitionOrchestrator.computeRole(resource, repoConn)); 
-			if (isProperty) { //is Property?
+			boolean isProperty = RDFResourceRole
+					.isProperty(RoleRecognitionOrchestrator.computeRole(resource, repoConn));
+			if (isProperty) { // is Property?
 				for (IRI prop : propertiesMappingRelations) {
 					mappingProps.add(prop);
 				}
 			} else {
-				if (getProject().getModel().equals(Project.SKOS_MODEL)) { //SKOS or SKOSXL
+				if (getProject().getModel().equals(Project.SKOS_MODEL)) { // SKOS or SKOSXL
 					for (IRI prop : skosMappingRelations) {
 						mappingProps.add(prop);
 					}
-				} else { //OWL
+				} else { // OWL
 					for (IRI prop : owlMappingRelations) {
 						mappingProps.add(prop);
 					}
@@ -963,9 +1000,11 @@ public class Alignment extends STServiceAdapter {
 		}
 		return mappingProps;
 	}
-	
+
 	/**
-	 * Returns the qname of a property if a known namespace is found in its URI, the URI of the same property otherwise.
+	 * Returns the qname of a property if a known namespace is found in its URI, the URI of the same property
+	 * otherwise.
+	 * 
 	 * @param property
 	 * @return
 	 */
@@ -979,7 +1018,7 @@ public class Alignment extends STServiceAdapter {
 		}
 		return property.stringValue();
 	}
-	
+
 	private JsonNode createCellJsonNode(Cell c) {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode cellNode = jsonFactory.objectNode();
@@ -1001,9 +1040,10 @@ public class Alignment extends STServiceAdapter {
 		}
 		return cellNode;
 	}
-	
+
 	/**
 	 * Remove the saved alignment from the session
+	 * 
 	 * @return
 	 */
 	@STServiceOperation

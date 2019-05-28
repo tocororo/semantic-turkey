@@ -47,6 +47,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
@@ -111,6 +112,9 @@ import com.google.common.collect.Multimap;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
@@ -1235,6 +1239,36 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 	}
 
+	@Override
+	public Project findProjectForDataset(IRI dataset) {
+		try (RepositoryConnection conn = getConnection()) {
+			TupleQuery query = conn.prepareTupleQuery(
+			//@formatter:off
+				"PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" +
+				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
+				"SELECT ?graph WHERE {\n" +
+				"  GRAPH ?graph {\n" +
+				"    ?catalog dcat:record [ foaf:primaryTopic ?dataset ] . \n" +
+				"  }\n" +
+				"}\n" +
+				"LIMIT 1\n"
+				//@formatter:on
+			);
+			query.setBinding("dataset", dataset);
+			
+			return QueryResults.stream(query.evaluate()).map(bs -> (IRI) bs.getValue("graph"))
+					.filter(IRI.class::isInstance).flatMap(ctx -> {
+						try {
+							return Stream.of(ProjectManager.getProject(((IRI) ctx).getLocalName(), true));
+						} catch (ProjectAccessException | InvalidProjectNameException
+								| ProjectInexistentException e) {
+							return Stream.empty();
+						}
+					}).findAny().orElse(null);
+		}
+
+	}
+
 	protected DatasetMetadata bindingset2datasetmetadata(BindingSet bs) {
 		IRI dataset = (IRI) bs.getValue("dataset");
 
@@ -1624,13 +1658,10 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	@Override
 	public synchronized void registerProject(Project project) {
 		try {
-			System.out.println("### registering project: " + project);
-
 			StoredProjectMetadata settings = (StoredProjectMetadata) exptManager.getSettings(project,
 					UsersManager.getLoggedUser(), ProjectMetadataStore.class.getName(), Scope.PROJECT);
 
 			if (!STPropertiesChecker.getModelConfigurationChecker(settings).isValid()) {
-				System.out.println("### settings are not valid");
 				settings = null;
 			}
 
@@ -1638,9 +1669,6 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				ValueFactory vf = metadataConn.getValueFactory();
 
 				IRI projectCtx = computeProjectContext(project, vf);
-
-				System.out.println("### project context is " + projectCtx);
-				System.out.println("### clear old metadata");
 
 				metadataConn.clear(projectCtx);
 
@@ -1687,7 +1715,6 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					sparqlDataset.setDefaultInsertGraph(projectCtx);
 					update.setDataset(sparqlDataset);
 					update.execute();
-					System.out.println("### execute update");
 
 					metadataConn.add(datasetDescription, projectCtx);
 					metadataConn.export(Rio.createWriter(RDFFormat.TRIG, System.out));

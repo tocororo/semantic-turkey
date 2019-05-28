@@ -146,6 +146,9 @@ public class MAPLE extends STServiceAdapter {
 						stringWriter.toString().replace("\r\n", "\n").replace("\t", "  "));
 				settingsManager.storeSettings(getProject(), UsersManager.getLoggedUser(), Scope.PROJECT,
 						settings);
+
+				// updates the metadata stored in the metadata registry
+				metadataRegistryBackend.registerProject(project);
 			}
 		} finally {
 			metadataRepository.shutDown();
@@ -185,6 +188,26 @@ public class MAPLE extends STServiceAdapter {
 
 		try (RepositoryConnection metadataConn = metadataRegistryBackend.getConnection()) {
 			return mediationFramework.profileProblem(metadataConn, sourceDataset, targetDataset);
+		}
+	}
+
+	/**
+	 * Profiles a matching problem between two datasets associated with local projects.
+	 * 
+	 * @param sourceDataset
+	 * @param targetDataset
+	 * @return
+	 * @throws ProfilingException
+	 */
+	@STServiceOperation
+	public MatchingProblem profileMatchingProblemBetweenProjects(Project leftDataset, Project rightDataset)
+			throws ProfilingException {
+
+		IRI leftDatasetIRI = metadataRegistryBackend.findDatasetForProject(leftDataset);
+		IRI rightDatasetIRI = metadataRegistryBackend.findDatasetForProject(rightDataset);
+		
+		try (RepositoryConnection metadataConn = metadataRegistryBackend.getConnection()) {
+			return mediationFramework.profileProblem(metadataConn, leftDatasetIRI, rightDatasetIRI);
 		}
 	}
 

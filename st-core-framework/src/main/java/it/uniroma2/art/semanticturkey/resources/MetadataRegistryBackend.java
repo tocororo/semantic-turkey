@@ -213,6 +213,15 @@ public interface MetadataRegistryBackend {
 	IRI findDatasetForProject(Project project);
 
 	/**
+	 * Returns the project associated with the given dataset. If no project is found, then the method returns
+	 * <code>null</code>.
+	 * 
+	 * @param ontology1
+	 * @return
+	 */
+	Project findProjectForDataset(IRI dataset);
+
+	/**
 	 * Discover the metadata for a dataset given an IRI.
 	 * 
 	 * @param iri
