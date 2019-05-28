@@ -393,8 +393,8 @@ public class SKOSXL extends STServiceAdapter {
 		tupleQuery.setIncludeInferred(false);
 		tupleQuery.setBinding("concept", concept);
 		try(TupleQueryResult tupleQueryResult = tupleQuery.evaluate()){
-			if(tupleQueryResult.hasNext()){
-				//if there is already a prefLabel, change it to altLabel
+			while(tupleQueryResult.hasNext()){
+				//if there is already a prefLabel, change it to altLabel (do for all prefLabels)
 				Resource oldPrefLabel = (Resource) tupleQueryResult.next().getValue("oldPrefLabel");
 				modelRemovals.add(repoConnection.getValueFactory().createStatement(concept, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL, oldPrefLabel));
 				modelAdditions.add(repoConnection.getValueFactory().createStatement(concept, org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL, oldPrefLabel));
