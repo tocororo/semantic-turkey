@@ -222,24 +222,26 @@ public class CustomForms extends STServiceAdapter {
 			Map<String, Value> promptValuesMap = new LinkedHashMap<>();
 			String graphSection = cfGraph.getGraphSectionAsString(codaCore, true);
 			Map<String, String> phUserPromptMap = cfGraph.getRelevantFormPlaceholders(codaCore);
-			String bindings = "";
-			for (String ph : phUserPromptMap.keySet()) {
-				bindings += "?" + ph + " ";
-			}
-			String query = "SELECT " + bindings + " WHERE { " + graphSection + " }";
-			logger.debug("query " + query);
-			TupleQuery tq = repoConnection.prepareTupleQuery(query);
-			tq.setIncludeInferred(includeInferred);
-			tq.setBinding(cfGraph.getEntryPointPlaceholder(codaCore).substring(1), resource);
-			try (TupleQueryResult result = tq.evaluate()) {
-				// iterate over the results and create a map <userPrompt, value>
-				while (result.hasNext()) {
-					BindingSet bindingSet = result.next();
-					for (Entry<String, String> phUserPrompt : phUserPromptMap.entrySet()) {
-						String phId = phUserPrompt.getKey();
-						String userPrompt = phUserPrompt.getValue();
-						if (bindingSet.hasBinding(phId)) {
-							promptValuesMap.put(userPrompt, bindingSet.getValue(phId));
+			if (!phUserPromptMap.isEmpty()) {
+				String bindings = "";
+				for (String ph : phUserPromptMap.keySet()) {
+					bindings += "?" + ph + " ";
+				}
+				String query = "SELECT " + bindings + " WHERE { " + graphSection + " }";
+				logger.debug("query " + query);
+				TupleQuery tq = repoConnection.prepareTupleQuery(query);
+				tq.setIncludeInferred(includeInferred);
+				tq.setBinding(cfGraph.getEntryPointPlaceholder(codaCore).substring(1), resource);
+				try (TupleQueryResult result = tq.evaluate()) {
+					// iterate over the results and create a map <userPrompt, value>
+					while (result.hasNext()) {
+						BindingSet bindingSet = result.next();
+						for (Entry<String, String> phUserPrompt : phUserPromptMap.entrySet()) {
+							String phId = phUserPrompt.getKey();
+							String userPrompt = phUserPrompt.getValue();
+							if (bindingSet.hasBinding(phId)) {
+								promptValuesMap.put(userPrompt, bindingSet.getValue(phId));
+							}
 						}
 					}
 				}
