@@ -476,12 +476,14 @@ public abstract class Project extends AbstractProject {
 
 				loadingCoreVocabularies();
 
-				// always guarantee that there is an owl:Ontology named after the base URI
-				IRI baseURIasIRI = conn.getValueFactory().createIRI(baseURI);
+				ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (connection) -> {
+					// always guarantee that there is an owl:Ontology named after the base URI
+					IRI baseURIasIRI = conn.getValueFactory().createIRI(baseURI);
 
-				if (!conn.hasStatement(baseURIasIRI, RDF.TYPE, OWL.ONTOLOGY, false, baseURIasIRI)) {
-					conn.add(baseURIasIRI, RDF.TYPE, OWL.ONTOLOGY, baseURIasIRI);
-				}
+					if (!conn.hasStatement(baseURIasIRI, RDF.TYPE, OWL.ONTOLOGY, false, baseURIasIRI)) {
+						conn.add(baseURIasIRI, RDF.TYPE, OWL.ONTOLOGY, baseURIasIRI);
+					}
+				});
 
 				logger.debug("defaultnamespace set to: " + defaultNamespace);
 			}
