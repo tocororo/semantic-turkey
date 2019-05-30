@@ -1717,7 +1717,6 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					update.execute();
 
 					metadataConn.add(datasetDescription, projectCtx);
-					metadataConn.export(Rio.createWriter(RDFFormat.TRIG, System.out));
 				}
 			}
 		} catch (IllegalStateException | STPropertyAccessException | NoSuchSettingsManager | RDFParseException
