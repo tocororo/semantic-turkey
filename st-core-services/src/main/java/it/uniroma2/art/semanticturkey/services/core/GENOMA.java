@@ -246,8 +246,6 @@ public class GENOMA extends STServiceAdapter {
 			// Furthermore, Genoma represents them as strings, while the Alignment validation represents them
 			// as IRIs
 
-			conn.export(Rio.createWriter(RDFFormat.TURTLE, System.out));
-
 			Resource alignmentResource = Models
 					.subject(QueryResults.asModel(conn.getStatements(null, RDF.TYPE, Alignment.ALIGNMENT)))
 					.orElseThrow(() -> new RuntimeException("Unable to find the alignment resource"));
