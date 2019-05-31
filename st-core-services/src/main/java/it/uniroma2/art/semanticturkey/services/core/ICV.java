@@ -991,7 +991,7 @@ public class ICV extends STServiceAdapter {
 		
 		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
 			query += "?resource ("+NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)+"|"+
-						NTriplesUtil.toNTriplesString(SKOS.ALT_LABEL)+") ?attr_xlabel .\n"
+						NTriplesUtil.toNTriplesString(SKOSXL.ALT_LABEL)+") ?attr_xlabel .\n"
 					+ "?attr_xlabel "+NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM)+" ?attr_label .\n";
 		} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) ){
 			query += "?resource ("+NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL)+"|"+
