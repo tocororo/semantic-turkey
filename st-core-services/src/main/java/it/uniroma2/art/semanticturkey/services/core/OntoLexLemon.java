@@ -85,6 +85,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexiconRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
@@ -973,7 +974,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		);
 		qb.setBinding("entry", lexicalEntry);
 		qb.processQName();
-		qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
+		qb.process(LexiconRenderer.INSTANCE, "resource", "attr_show");
 		return qb.runQuery();
 	}
 
