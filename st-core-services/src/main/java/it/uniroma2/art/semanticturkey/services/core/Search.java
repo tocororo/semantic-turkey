@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -68,6 +69,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
@@ -263,10 +265,31 @@ public class Search extends STServiceAdapter {
 		QueryBuilder qb;
 		qb = new QueryBuilder(stServiceContext, query);
 		qb.processRendering();
-		//qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
-		return qb.runQuery();
+		qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_lexicalEntryRendering");
+		qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_formRendering");
+		
+		Collection<AnnotatedValue<Resource>> annotatedValues = qb.runQuery();
+		Iterator<AnnotatedValue<Resource>> it = annotatedValues.iterator();
+		while (it.hasNext()) {
+			fixShowAttribute(it.next());
+		}
+		return annotatedValues;
 	}
 	//@formatter:on
+	
+	private void fixShowAttribute(AnnotatedValue<Resource> annotatedResource) {
+		Map<String, Value> attrs = annotatedResource.getAttributes();
+		Literal lexicalEntryRendering = (Literal) attrs.remove("lexicalEntryRendering");
+		Literal formRendering = (Literal) attrs.remove("formRendering");
+
+		if (lexicalEntryRendering != null) {
+			attrs.put("show", lexicalEntryRendering);
+		} else {
+			if (formRendering != null) {
+				attrs.put("show", formRendering);
+			}
+		}
+	}
 
 	@STServiceOperation
 	@Read
