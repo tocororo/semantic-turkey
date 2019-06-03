@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.joining;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
@@ -135,18 +136,7 @@ public class Resources extends STServiceAdapter {
 		qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_lexicalEntryRendering");
 
 		AnnotatedValue<Resource> annotatedResource = qb.runQuery().iterator().next();
-
-		Map<String, Value> attrs = annotatedResource.getAttributes();
-		Literal lexicalEntryRendering = (Literal) attrs.remove("lexicalEntryRendering");
-		Literal formRendering = (Literal) attrs.remove("formRendering");
-
-		if (lexicalEntryRendering != null) {
-			attrs.put("show", lexicalEntryRendering);
-		} else {
-			if (formRendering != null) {
-				attrs.put("show", formRendering);
-			}
-		}
+		fixShowAttribute(annotatedResource);
 		return annotatedResource;
 	}
 
@@ -182,7 +172,35 @@ public class Resources extends STServiceAdapter {
 		qb = createQueryBuilder(sb.toString());
 		qb.processRendering();
 		qb.processQName();
-		return qb.runQuery();
+		qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_lexicalEntryRendering");
+		qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_formRendering");
+		
+		Collection<AnnotatedValue<Resource>> annotatedValues = qb.runQuery();
+		Iterator<AnnotatedValue<Resource>> it = annotatedValues.iterator();
+		while (it.hasNext()) {
+			fixShowAttribute(it.next());
+		}
+		return annotatedValues;
+	}
+	
+	/**
+	 * Rendering of the lexical entry and ontolex form are computed by two dedicated query builders
+	 * (not by processRendering()).
+	 * This method replaces the show attribute for these kind of resources with the proper rendering
+	 * @param annotatedResource
+	 */
+	private void fixShowAttribute(AnnotatedValue<Resource> annotatedResource) {
+		Map<String, Value> attrs = annotatedResource.getAttributes();
+		Literal lexicalEntryRendering = (Literal) attrs.remove("lexicalEntryRendering");
+		Literal formRendering = (Literal) attrs.remove("formRendering");
+
+		if (lexicalEntryRendering != null) {
+			attrs.put("show", lexicalEntryRendering);
+		} else {
+			if (formRendering != null) {
+				attrs.put("show", formRendering);
+			}
+		}
 	}
 
 	/**
