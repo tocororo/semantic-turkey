@@ -370,6 +370,18 @@ public class Sheet2RDF extends STServiceAdapter {
 	}
 	
 	/**
+	 * Given the header with the headerId, replicate its configuration for all the other headers with the same name
+	 * @param headerId
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void replicateMultipleHeader(String headerId) {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		SimpleHeader sourceHeader = mappingStruct.getHeaderFromId(headerId);
+		mappingStruct.replicateMultipleHeader(sourceHeader);
+	}
+	
+	/**
 	 * Update the subject header
 	 * @param headerId
 	 * @param type
@@ -397,7 +409,6 @@ public class Sheet2RDF extends STServiceAdapter {
 		//update the type in the graph application
 		subjHeader.getGraphApplication().setType(type);
 	}
-	
 	
 	/**
 	 * Returns a preview of the sheet containing the first <code>maxRows</code> rows
