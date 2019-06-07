@@ -58,7 +58,9 @@ import it.uniroma2.art.coda.exception.DependencyException;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
+import it.uniroma2.art.coda.exception.parserexception.NodeNotDefinedException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
+import it.uniroma2.art.coda.exception.parserexception.PrefixNotDefinedException;
 import it.uniroma2.art.coda.interfaces.ParserPR;
 import it.uniroma2.art.coda.interfaces.annotations.converters.RDFCapabilityType;
 import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
@@ -519,9 +521,15 @@ public class Sheet2RDF extends STServiceAdapter {
 		try {
 			prModel = pearlParser.parsePearlDocument(pearlStream);
 			pearlValid = true;
+		} catch (PrefixNotDefinedException e) {
+			pearlValid = false;
+			details = "Prefix " +  e.getPrefixName() + " is used but not defined";
+		} catch (NodeNotDefinedException e) {
+			pearlValid = false;
+			details = "Node " +  e.getPlcName() + " is used but not defined";
 		} catch (PRParserException e) {
 			pearlValid = false;
-			details = e.getErrorAsString();
+			details = "Syntactic error in the graph pattern";
 		}
 		respNode.set("valid", jf.booleanNode(pearlValid));
 		respNode.set("details", jf.textNode(details));
