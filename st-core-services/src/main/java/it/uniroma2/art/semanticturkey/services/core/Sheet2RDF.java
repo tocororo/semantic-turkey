@@ -507,7 +507,7 @@ public class Sheet2RDF extends STServiceAdapter {
 	 * It validated the PEARL rule and returns the used prefixes in the graph section
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public JsonNode validateGraphPatter(String pearlCode) {
+	public JsonNode validateGraphPattern(String pearlCode) {
 		InputStream pearlStream = new ByteArrayInputStream(pearlCode.getBytes(StandardCharsets.UTF_8));
 		//PearlParser pearlParser = new PearlParser("", "");
 		ParserPR pearlParser = new PearlParserAntlr4("", "");
