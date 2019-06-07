@@ -14,11 +14,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -63,7 +65,13 @@ import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.exception.parserexception.PrefixNotDefinedException;
 import it.uniroma2.art.coda.interfaces.ParserPR;
 import it.uniroma2.art.coda.interfaces.annotations.converters.RDFCapabilityType;
+import it.uniroma2.art.coda.pearl.model.GraphElement;
+import it.uniroma2.art.coda.pearl.model.GraphStruct;
+import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
+import it.uniroma2.art.coda.pearl.model.ProjectionRule;
 import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemPlaceholder;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
 import it.uniroma2.art.coda.pearl.parser.PearlParserAntlr4;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
@@ -542,9 +550,53 @@ public class Sheet2RDF extends STServiceAdapter {
 				usedPrefixJsonArray.add(usedPrefix);
 			}
 		}
+		//get all placeholder from all the ProjectionRule and add their name in the json array of the response
+		Set<String> nodeNameSet = new HashSet<String>();
+		ArrayNode usedNodesJsonArray = jf.arrayNode();
+		respNode.set("usedNodes", usedNodesJsonArray);
+		for(String prId : prModel.getProjRule().keySet()) {
+			ProjectionRule pr = prModel.getProjRuleFromId(prId);
+			for(GraphElement graphElement : pr.getInsertGraphList()) {
+				getPlchNameFromGraphElement(graphElement, nodeNameSet);
+			}
+			for(GraphElement graphElement : pr.getDeleteGraphList()) {
+				getPlchNameFromGraphElement(graphElement, nodeNameSet);
+			}
+		}
+		for(String plchName : nodeNameSet) {
+			usedNodesJsonArray.add(plchName);
+		}
 		return respNode;
 	}
 	
+	private void getPlchNameFromGraphElement(GraphElement graphElement, Set<String> nodeNameSet) {
+		if(graphElement.isGraphStruct()) {
+			getUsedNodesFromGraphStruct((GraphStruct)graphElement, nodeNameSet);
+		} else {
+			//it is an optional struct
+			getUsedNodesFromOptional((OptionalGraphStruct)graphElement, nodeNameSet);
+		}
+	}
+
+	private void getUsedNodesFromGraphStruct(GraphStruct graphElement, Set<String> nodeNameSet) {
+		getPlchName(graphElement.getSubject(), nodeNameSet);
+		getPlchName(graphElement.getPredicate(), nodeNameSet);
+		getPlchName(graphElement.getObject(), nodeNameSet);
+	}
+
+	private void getPlchName(GraphSingleElement gse, Set<String> nodeNameSet) {
+		if(gse instanceof GraphSingleElemPlaceholder) {
+			String plchName = ((GraphSingleElemPlaceholder)gse).getName();
+			nodeNameSet.add(plchName);
+		}
+	}
+
+	private void getUsedNodesFromOptional(OptionalGraphStruct optionalGraphElement, Set<String> nodeNameSet) {
+		for(GraphElement graphElement : optionalGraphElement.getOptionalTriples()) {
+			getPlchNameFromGraphElement(graphElement, nodeNameSet);
+		}
+	}
+
 	/**
 	 * Uploads a pearl file into a server directory and returns the code
 	 * @param name
