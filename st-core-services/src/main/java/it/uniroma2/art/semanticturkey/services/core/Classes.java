@@ -112,9 +112,10 @@ public class Classes extends STServiceAdapter {
 					"     FILTER(?resource != owl:Thing)                                          \n" +
 					"     FILTER NOT EXISTS {                                                     \n" +
 					"     	?resource rdfs:subClassOf ?superClass2 .                              \n" +
+					"		FILTER(?resource != ?superClass2)										  \n" +	
 					"       FILTER(isIRI(?superClass2) && ?superClass2 != owl:Thing)              \n" +
-					"         ?superClass2 a ?metaClass2 .                                        \n" +
-					"         ?metaClass2 rdfs:subClassOf* rdfs:Class .                           \n" +
+					"       ?superClass2 a ?metaClass2 .                                          \n" +
+					"       ?metaClass2 rdfs:subClassOf* rdfs:Class .                             \n" +
 					"     }                                                                       \n" +
 					//adding the nature in the query (will be replaced by the appropriate processor), 
 					//remember to change the SELECT as well
@@ -149,6 +150,7 @@ public class Classes extends STServiceAdapter {
 					" 		FILTER(?resource != rdfs:Resource)                                        \n" +
 					" 		FILTER NOT EXISTS {                                                       \n" +
 					" 			?resource rdfs:subClassOf ?superClass2 .                              \n" +
+					"			FILTER(?resource != ?superClass2)									  \n" +	
 					" 			FILTER(isIRI(?superClass2) && ?superClass2 != rdfs:Resource)          \n" +
 					" 			?superClass2 a ?metaClass2 .                                          \n" +
 					" 			?metaClass2 rdfs:subClassOf* rdfs:Class .                             \n" +
