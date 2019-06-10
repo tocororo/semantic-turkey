@@ -554,13 +554,15 @@ public class Sheet2RDF extends STServiceAdapter {
 		Set<String> nodeNameSet = new HashSet<String>();
 		ArrayNode usedNodesJsonArray = jf.arrayNode();
 		respNode.set("usedNodes", usedNodesJsonArray);
-		for(String prId : prModel.getProjRule().keySet()) {
-			ProjectionRule pr = prModel.getProjRuleFromId(prId);
-			for(GraphElement graphElement : pr.getInsertGraphList()) {
-				getPlchNameFromGraphElement(graphElement, nodeNameSet);
-			}
-			for(GraphElement graphElement : pr.getDeleteGraphList()) {
-				getPlchNameFromGraphElement(graphElement, nodeNameSet);
+		if(prModel != null) {
+			for(String prId : prModel.getProjRule().keySet()) {
+				ProjectionRule pr = prModel.getProjRuleFromId(prId);
+				for(GraphElement graphElement : pr.getInsertGraphList()) {
+					getPlchNameFromGraphElement(graphElement, nodeNameSet);
+				}
+				for(GraphElement graphElement : pr.getDeleteGraphList()) {
+					getPlchNameFromGraphElement(graphElement, nodeNameSet);
+				}
 			}
 		}
 		for(String plchName : nodeNameSet) {
