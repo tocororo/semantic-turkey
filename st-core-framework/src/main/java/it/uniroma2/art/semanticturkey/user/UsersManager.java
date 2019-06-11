@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.user;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -197,49 +196,6 @@ public class UsersManager {
 	 */
 	public static STUser updateUserPhone(STUser user, String newValue) throws UserException {
 		user.setPhone(newValue);
-		createOrUpdateUserDetailsFolder(user);
-		return user;
-	}
-
-	/**
-	 * Updates the last name of the given user and returns it updated
-	 * 
-	 * @param user
-	 * @param newValue
-	 * @return
-	 * @throws IOException
-	 * @throws ParseException
-	 */
-	public static STUser updateUserBirthday(STUser user, String newValue) throws UserException, ParseException {
-		user.setBirthday(newValue);
-		createOrUpdateUserDetailsFolder(user);
-		return user;
-	}
-
-	/**
-	 * Updates the gender of the given user and returns it updated
-	 * 
-	 * @param user
-	 * @param newValue
-	 * @return
-	 * @throws IOException
-	 */
-	public static STUser updateUserGender(STUser user, String newValue) throws UserException {
-		user.setGender(newValue);
-		createOrUpdateUserDetailsFolder(user);
-		return user;
-	}
-
-	/**
-	 * Updates the country of the given user and returns it updated
-	 * 
-	 * @param user
-	 * @param newValue
-	 * @return
-	 * @throws IOException
-	 */
-	public static STUser updateUserCountry(STUser user, String newValue) throws UserException {
-		user.setCountry(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
 	}

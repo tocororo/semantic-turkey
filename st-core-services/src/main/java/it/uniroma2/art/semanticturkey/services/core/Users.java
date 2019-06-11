@@ -190,9 +190,6 @@ public class Users extends STServiceAdapter {
 	 * @param password password not encoded, it is encoded here
 	 * @param givenName
 	 * @param familyName
-	 * @param birthday
-	 * @param gender
-	 * @param country
 	 * @param address
 	 * @param affiliation
 	 * @param url
@@ -207,24 +204,14 @@ public class Users extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void registerUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
-			@Optional String birthday, @Optional String gender, @Optional String country, @Optional String address,
-			@Optional String affiliation, @Optional String url, @Optional String avatarUrl, @Optional String phone, 
-			@Optional Collection<String> languageProficiencies)
+			@Optional String address, @Optional String affiliation, @Optional String url, @Optional String avatarUrl,
+			@Optional String phone, @Optional Collection<String> languageProficiencies)
 					throws ProjectAccessException, UserException, ParseException, ProjectBindingException, STPropertyUpdateException {
 		STUser user;
 		if (iri != null) {
 			user = new STUser(iri, email, password, givenName, familyName);
 		} else {
 			user = new STUser(email, password, givenName, familyName);
-		}
-		if (birthday != null) {
-			user.setBirthday(birthday);
-		}
-		if (gender != null) {
-			user.setGender(gender);
-		}
-		if (country != null) {
-			user.setCountry(country);
 		}
 		if (address != null) {
 			user.setAddress(address);
@@ -335,55 +322,6 @@ public class Users extends STServiceAdapter {
 	public ObjectNode updateUserPhone(String email, @Optional String phone) throws UserException {
 		STUser user = UsersManager.getUserByEmail(email);
 		user = UsersManager.updateUserPhone(user, phone);
-		updateUserInSecurityContext(user);
-		return user.getAsJsonObject();
-	}
-	
-	/**
-	 * Update birthday of the given user.
-	 * @param email
-	 * @param birthday
-	 * @return
-	 * @throws IOException 
-	 * @throws ParseException 
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
-	public ObjectNode updateUserBirthday(String email, String birthday) throws UserException, ParseException {
-		STUser user = UsersManager.getUserByEmail(email);
-		user = UsersManager.updateUserBirthday(user, birthday);
-		updateUserInSecurityContext(user);
-		return user.getAsJsonObject();
-	}
-	
-	/**
-	 * Update gender of the given user.
-	 * @param email
-	 * @param gender
-	 * @return
-	 * @throws IOException 
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
-	public ObjectNode updateUserGender(String email, @Optional String gender) throws UserException {
-		STUser user = UsersManager.getUserByEmail(email);
-		user = UsersManager.updateUserGender(user, gender);
-		updateUserInSecurityContext(user);
-		return user.getAsJsonObject();
-	}
-	
-	/**
-	 * Update country of the given user.
-	 * @param email
-	 * @param country
-	 * @return
-	 * @throws IOException 
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
-	public ObjectNode updateUserCountry(String email, String country) throws UserException {
-		STUser user = UsersManager.getUserByEmail(email);
-		user = UsersManager.updateUserCountry(user, country);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}

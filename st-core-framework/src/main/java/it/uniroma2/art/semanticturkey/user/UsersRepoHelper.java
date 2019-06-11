@@ -55,10 +55,7 @@ public class UsersRepoHelper {
 	private String BINDING_URL = "url";
 	private String BINDING_AVATAR_URL = "avatarUrl";
 	private String BINDING_PHONE = "phone";
-	private String BINDING_BIRTHDAY = "birthday";
-	private String BINDING_GENDER = "gender";
 	private String BINDING_AFFILIATION = "affiliation";
-	private String BINDING_COUNTRY = "country";
 	private String BINDING_ADDRESS = "address";
 	private String BINDING_REGISTRATION_DATE = "registrationDate";
 	private String BINDING_STATUS = "status";
@@ -100,17 +97,8 @@ public class UsersRepoHelper {
 		if (user.getPhone() != null) {
 			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.PHONE) + " '" + user.getPhone() + "' .";
 		}
-		if (user.getBirthday() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.BIRTHDAY) + " '" + dateFormat.format(user.getBirthday()) + "' .";
-		}
-		if (user.getGender() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.GENDER) + " '" + user.getGender() + "' .";
-		}
 		if (user.getAffiliation() != null) {
 			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(ORG.MEMBER_OF) + " '" + user.getAffiliation() + "' .";
-		}
-		if (user.getCountry() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.COUNTRY) + " '" + user.getCountry() + "' .";
 		}
 		if (user.getAddress() != null) {
 			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.ADDRESS) + " '" + user.getAddress() + "' .";
@@ -148,10 +136,7 @@ public class UsersRepoHelper {
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.URL) + " ?" + BINDING_URL + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.AVATAR_URL) + " ?" + BINDING_AVATAR_URL + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.PHONE) + " ?" + BINDING_PHONE + " . }"
-				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.BIRTHDAY) + " ?" + BINDING_BIRTHDAY + " . }"
-				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.GENDER) + " ?" + BINDING_GENDER + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(ORG.MEMBER_OF) + " ?" + BINDING_AFFILIATION + " . }"
-				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.COUNTRY) + " ?" + BINDING_COUNTRY + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.ADDRESS) + " ?" + BINDING_ADDRESS + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROFICIENCIES) 
 					+ " ?" + BINDING_LANGUAGE_PROFICIENCIES + " . }"
@@ -236,22 +221,8 @@ public class UsersRepoHelper {
 			if (tuple.getBinding(BINDING_PHONE) != null) {
 				user.setPhone(tuple.getValue(BINDING_PHONE).stringValue());
 			}
-			if (tuple.getBinding(BINDING_BIRTHDAY) != null) {
-				try {
-					Date d = dateFormat.parse(tuple.getValue(BINDING_BIRTHDAY).stringValue());
-					user.setBirthday(d);
-				} catch (ParseException e) {
-					e.printStackTrace();
-				}
-			}
-			if (tuple.getBinding(BINDING_GENDER) != null) {
-				user.setGender(tuple.getValue(BINDING_GENDER).stringValue());
-			}
 			if (tuple.getBinding(BINDING_AFFILIATION) != null) {
 				user.setAffiliation(tuple.getValue(BINDING_AFFILIATION).stringValue());
-			}
-			if (tuple.getBinding(BINDING_COUNTRY) != null) {
-				user.setCountry(tuple.getValue(BINDING_COUNTRY).stringValue());
 			}
 			if (tuple.getBinding(BINDING_ADDRESS) != null) {
 				user.setAddress(tuple.getValue(BINDING_ADDRESS).stringValue());

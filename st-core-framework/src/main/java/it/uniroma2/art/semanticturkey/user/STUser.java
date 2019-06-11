@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.user;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,10 +34,7 @@ public class STUser implements UserDetails {
 	private String url;
 	private String avatarUrl;
 	private String phone;
-	private Date birthday;
-	private String gender;
 	private String affiliation;
-	private String country;
 	private String address;
 	private Date registrationDate;
 	private UserStatus status;
@@ -164,40 +160,12 @@ public class STUser implements UserDetails {
 		this.phone = phone;
 	}
 	
-	public Date getBirthday() {
-		return birthday;
-	}
-	
-	public void setBirthday(Date birthday) {
-		this.birthday = birthday;
-	}
-	
-	public void setBirthday(String birthday) throws ParseException {
-		this.birthday = new SimpleDateFormat(USER_DATE_FORMAT).parse(birthday);
-	}
-	
-	public String getGender() {
-		return gender;
-	}
-	
-	public void setGender(String gender) {
-		this.gender = gender;
-	}
-	
 	public String getAffiliation() {
 		return affiliation;
 	}
 	
 	public void setAffiliation(String affiliation) {
 		this.affiliation = affiliation;
-	}
-	
-	public String getCountry() {
-		return country;
-	}
-	
-	public void setCountry(String country) {
-		this.country = country;
 	}
 	
 	public String getAddress() {
@@ -251,13 +219,6 @@ public class STUser implements UserDetails {
 		userJson.set("iri", jsonFactory.textNode(iri.stringValue()));
 		userJson.set("givenName", jsonFactory.textNode(givenName));
 		userJson.set("familyName", jsonFactory.textNode(familyName));
-		if (birthday != null) {
-			userJson.set("birthday", jsonFactory.textNode(new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(birthday)));
-		} else {
-			userJson.set("birthday", null); //empty field
-		}
-		userJson.set("gender", jsonFactory.textNode(gender));
-		userJson.set("country", jsonFactory.textNode(country));
 		userJson.set("address", jsonFactory.textNode(address));
 		//skip test registrationDate != null because registrationDate is automatically set during registration
 		userJson.set("registrationDate", jsonFactory.textNode(new SimpleDateFormat(STUser.USER_DATE_FORMAT).format(registrationDate)));
@@ -287,14 +248,7 @@ public class STUser implements UserDetails {
 		s += "\nUrl: " + this.url;
 		s += "\navatarUrl: " + this.avatarUrl;
 		s += "\nPhone: " + this.phone;
-		if (this.birthday != null) {
-			s += "\nBirthday: " + dateFormat.format(this.birthday);
-		} else {
-			s += "\nBirthday: " + this.birthday;
-		}
-		s += "\nGender: " + this.gender;
 		s += "\nAffiliation: " + this.affiliation;
-		s += "\nCountry: " + this.country;
 		s += "\nAddress: " + this.address;
 		s += "\nRegistraion date: " + dateFormat.format(this.registrationDate);
 		s += "\nStatus: " + this.status;
