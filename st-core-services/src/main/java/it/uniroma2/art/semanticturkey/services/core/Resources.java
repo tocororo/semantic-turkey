@@ -60,7 +60,8 @@ public class Resources extends STServiceAdapter {
 				+ "		GRAPH ?g {							\n"
 				+ "			?subject ?property ?value .		\n"
 				+ "		}									\n"
-				+ "}										\n" + "INSERT  {							\n"
+				+ "}										\n"
+				+ "INSERT  {							\n"
 				+ "		GRAPH ?g {							\n"
 				+ "			?subject ?property ?newValue .	\n"
 				+ "		}									\n"
@@ -81,6 +82,66 @@ public class Resources extends STServiceAdapter {
 		update.execute();
 	}
 
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, values)', '{lang: [''' +@auth.langof(#value)+ ''', ''' +@auth.langof(#newValue)+ ''']}', 'U')")
+	//TODO @Modified on the subject?
+	public void updatePredicateObject(IRI property, Value value, Value newValue) {
+		RepositoryConnection repoConnection = getManagedConnection();
+		String query = 
+				"DELETE  {									\n"
+				+ "		GRAPH ?g {							\n"
+				+ "			?subject ?property ?value .		\n"
+				+ "		}									\n"
+				+ "}										\n"
+				+ "INSERT  {								\n"
+				+ "		GRAPH ?g {							\n"
+				+ "			?subject ?property ?newValue .	\n"
+				+ "		}									\n"
+				+ "}										\n"
+				+ "WHERE{									\n"
+				+ "		BIND(?g_input AS ?g )				\n"
+				+ "		BIND(?property_input AS ?property )	\n"
+				+ "		BIND(?value_input AS ?value )		\n"
+				+ "		BIND(?newValue_input AS ?newValue )	\n"
+				+ "		?subject ?property ?value .			\n"
+				+ "}";
+
+		Update update = repoConnection.prepareUpdate(query);
+		update.setBinding("g_input", getWorkingGraph());
+		update.setBinding("property_input", property);
+		update.setBinding("value_input", value);
+		update.setBinding("newValue_input", newValue);
+		update.execute();
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, values)', '{lang: ''' +@auth.langof(#value)+ '''}', 'D')")
+	//TODO @Modified on the subject?
+	public void removePredicateObject(IRI property, Value value) {
+		RepositoryConnection repoConnection = getManagedConnection();
+		String query = 
+				"DELETE  {									\n"
+				+ "		GRAPH ?g {							\n"
+				+ "			?subject ?property ?value .		\n"
+				+ "		}									\n"
+				+ "}										\n"
+				+ "WHERE{									\n"
+				+ "		BIND(?g_input AS ?g )				\n"
+				+ "		BIND(?property_input AS ?property )	\n"
+				+ "		BIND(?value_input AS ?value )		\n"
+				+ "		?subject ?property ?value .			\n"
+				+ "}";
+
+		Update update = repoConnection.prepareUpdate(query);
+		update.setBinding("g_input", getWorkingGraph());
+		update.setBinding("property_input", property);
+		update.setBinding("value_input", value);
+		update.execute();
+	}
+	
+	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', '{lang: ''' +@auth.langof(#value)+ '''}', 'D')")
