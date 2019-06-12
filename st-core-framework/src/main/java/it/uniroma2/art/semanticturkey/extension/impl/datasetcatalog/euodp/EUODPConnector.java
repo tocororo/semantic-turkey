@@ -84,17 +84,21 @@ public class EUODPConnector implements DatasetCatalogConnector {
 			"http://publications.europa.eu/resource/authority/file-type/RDF_XML",
 			"http://publications.europa.eu/resource/authority/file-type/JSON_LD" };
 
-	private static final String RDF_FILE_TYPE_FACET = "res_format:" + Arrays.stream(RDF_FILE_TYPES)
-			.map(s -> "\"" + s + "\"").collect(Collectors.joining(" OR ", "(", ")"));
-
-	private static final String RDF_FILE_SPARQL_COLLECTION = Arrays.stream(RDF_FILE_TYPES)
-			.map(s -> RenderUtils.toSPARQL(SimpleValueFactory.getInstance().createIRI(s)))
-			.collect(Collectors.joining(", ", "(", ")"));
+	private static final String RDF_FILE_TYPE_FACET;
+	private static final String RDF_FILE_SPARQL_COLLECTION;
 
 	// facet names have been guessed by the parameters used in the links within the web portal
 	private static final LinkedHashMap<String, String> FACETS = new LinkedHashMap<>();
 
+	private static final String FACET_FIELD_ARGUMENT;
+
 	static {
+		RDF_FILE_TYPE_FACET = "res_format:" + Arrays.stream(RDF_FILE_TYPES).map(s -> "\"" + s + "\"")
+				.collect(Collectors.joining(" OR ", "(", ")"));
+		RDF_FILE_SPARQL_COLLECTION = Arrays.stream(RDF_FILE_TYPES)
+				.map(s -> RenderUtils.toSPARQL(SimpleValueFactory.getInstance().createIRI(s)))
+				.collect(Collectors.joining(", ", "(", ")"));
+		
 		FACETS.put("vocab_theme", "theme");
 		FACETS.put("groups", "group");
 		FACETS.put("organization", "publisher");
@@ -103,10 +107,11 @@ public class EUODPConnector implements DatasetCatalogConnector {
 		FACETS.put("res_format", "resource format");
 		FACETS.put("vocab_geographical_coverage", "geographical coverage");
 		FACETS.put("vocab_language", "language");
+		
+		FACET_FIELD_ARGUMENT = FACETS.keySet().stream().map(s -> "\"" + s + "\"")
+				.collect(Collectors.joining(", ", "[", "]"));
 	}
 
-	private static final String FACET_FIELD_ARGUMENT = FACETS.keySet().stream().map(s -> "\"" + s + "\"")
-			.collect(Collectors.joining(", ", "[", "]"));
 
 	private String uriPrefix;
 
