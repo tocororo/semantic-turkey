@@ -183,9 +183,12 @@ public class UpdateRoutines {
 		updatePUSettingsSystemDefaults();
 	}
 	
-	private static void alignFrom5To6() {
+	private static void alignFrom5To6() throws IOException, STPropertyAccessException {
 		logger.debug("Version 6.0.0 added a docs folder under system/");
 		Resources.getDocsDir().mkdirs();
+		
+		logger.debug("Version 6.0.0 changed a property from the default project preferences");
+		updatePUSettingsSystemDefaults();
 	}
 	
 	public static void repairProject(String projectName) throws IOException, InvalidProjectNameException,
