@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.joining;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -11,10 +12,12 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +29,7 @@ import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
@@ -85,60 +89,117 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, values)', '{lang: [''' +@auth.langof(#value)+ ''', ''' +@auth.langof(#newValue)+ ''']}', 'U')")
-	//TODO @Modified on the subject?
 	public void updatePredicateObject(IRI property, Value value, Value newValue) {
 		RepositoryConnection repoConnection = getManagedConnection();
+		
+		String ntGraph = NTriplesUtil.toNTriplesString(getWorkingGraph());
+		String ntProperty = NTriplesUtil.toNTriplesString(property);
+		String ntValue = NTriplesUtil.toNTriplesString(value);
+		String ntNewValue = NTriplesUtil.toNTriplesString(newValue);
+		
+		//this part is related to the modified date to be added to each modified subject
+		String ntModified = null;
+		String ntCurrentTime = null;
+		boolean addModifiedDate = (getProject().getProperty(Project.MODIFICATION_DATE_PROP) != null);
+		if (addModifiedDate) {
+			ntModified = getNTriplesModifiedProperty(repoConnection);
+			ntCurrentTime = getNTriplesCurrentDate(repoConnection);
+		}
+		
 		String query = 
-				"DELETE  {									\n"
-				+ "		GRAPH ?g {							\n"
-				+ "			?subject ?property ?value .		\n"
-				+ "		}									\n"
-				+ "}										\n"
-				+ "INSERT  {								\n"
-				+ "		GRAPH ?g {							\n"
-				+ "			?subject ?property ?newValue .	\n"
-				+ "		}									\n"
-				+ "}										\n"
-				+ "WHERE{									\n"
-				+ "		BIND(?g_input AS ?g )				\n"
-				+ "		BIND(?property_input AS ?property )	\n"
-				+ "		BIND(?value_input AS ?value )		\n"
-				+ "		BIND(?newValue_input AS ?newValue )	\n"
-				+ "		?subject ?property ?value .			\n"
-				+ "}";
+				"DELETE { 														\n" +
+				"	GRAPH " + ntGraph + " { 									\n" +
+				"		?subject " + ntProperty + " " + ntValue + " .			\n";
+		if (addModifiedDate) {
+			query += "	?subject " + ntModified + " ?oldModDate . 				\n";
+		}
+		query += "	} 															\n" +
+				"} 																\n" +
+				"INSERT  { 														\n" +
+				"	GRAPH " + ntGraph + " { 									\n" +
+				"		?subject " + ntProperty + " " + ntNewValue + " . 		\n";
+		if (addModifiedDate) {
+			query += "	?subject " + ntModified + " " + ntCurrentTime + " . 	\n";
+		}
+		query += "	}															\n" +
+				"}																\n" +
+				"WHERE { 														\n" +
+				"	GRAPH " + ntGraph + " { 									\n" +
+				"		?subject " + ntProperty + " " + ntValue + " . 			\n";
+		if (addModifiedDate) {
+			query += "	OPTIONAL { 												\n" +
+				"			?subject " + ntModified + " ?oldModDate . 			\n" +
+				"		} 														\n";
+		}
+		query += "	} 															\n" +
+				"}";
 
 		Update update = repoConnection.prepareUpdate(query);
-		update.setBinding("g_input", getWorkingGraph());
-		update.setBinding("property_input", property);
-		update.setBinding("value_input", value);
-		update.setBinding("newValue_input", newValue);
 		update.execute();
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, values)', '{lang: ''' +@auth.langof(#value)+ '''}', 'D')")
-	//TODO @Modified on the subject?
 	public void removePredicateObject(IRI property, Value value) {
 		RepositoryConnection repoConnection = getManagedConnection();
+		
+		String ntGraph = NTriplesUtil.toNTriplesString(getWorkingGraph());
+		String ntProperty = NTriplesUtil.toNTriplesString(property);
+		String ntValue = NTriplesUtil.toNTriplesString(value);
+		
+		//this part is related to the modified date to be added to each modified subject
+		String ntModified = null;
+		String ntCurrentTime = null;
+		boolean addModifiedDate = (getProject().getProperty(Project.MODIFICATION_DATE_PROP) != null);
+		if (addModifiedDate) {
+			ntModified = getNTriplesModifiedProperty(repoConnection);
+			ntCurrentTime = getNTriplesCurrentDate(repoConnection);
+		}
+		
 		String query = 
-				"DELETE  {									\n"
-				+ "		GRAPH ?g {							\n"
-				+ "			?subject ?property ?value .		\n"
-				+ "		}									\n"
-				+ "}										\n"
-				+ "WHERE{									\n"
-				+ "		BIND(?g_input AS ?g )				\n"
-				+ "		BIND(?property_input AS ?property )	\n"
-				+ "		BIND(?value_input AS ?value )		\n"
-				+ "		?subject ?property ?value .			\n"
-				+ "}";
+				"DELETE  {														\n" +
+				"		GRAPH " + ntGraph + " {									\n" +
+				"			?subject " + ntProperty + " " + ntValue + " .		\n";
+		if (addModifiedDate) {
+			query += "		?subject " + ntModified + " ?oldModDate .			\n";
+		}
+		query +=
+				"		}														\n" +
+				"}																\n";
+		if (addModifiedDate) {
+			query +=
+				"INSERT  {														\n" +
+				"		GRAPH " + ntGraph + " {									\n" +
+				"			?subject " + ntModified + " " + ntCurrentTime + " .	\n" +
+				"		}														\n" +
+				"}																\n";
+		}
+		query +=
+				"WHERE{															\n" +
+				"		GRAPH " + ntGraph + " {									\n" +
+				"			?subject " + ntProperty + " " + ntValue + " .	 	\n";
+		if (addModifiedDate) {
+			query +=
+				"			OPTIONAL { 											\n" +
+				"				?subject " + ntModified + " ?oldModDate . 		\n" +
+				"			}													\n";
+		}
+		query +=
+				"		}														\n" +
+				"}";
 
 		Update update = repoConnection.prepareUpdate(query);
-		update.setBinding("g_input", getWorkingGraph());
-		update.setBinding("property_input", property);
-		update.setBinding("value_input", value);
 		update.execute();
+	}
+	
+	private String getNTriplesModifiedProperty(RepositoryConnection repoConnection) {
+		ValueFactory vf = repoConnection.getValueFactory();
+		return NTriplesUtil.toNTriplesString(vf.createIRI(getProject().getProperty(Project.MODIFICATION_DATE_PROP)));
+	}
+	private String getNTriplesCurrentDate(RepositoryConnection repoConnection) {
+		ValueFactory vf = repoConnection.getValueFactory();
+		return NTriplesUtil.toNTriplesString(vf.createLiteral(new Date()));
 	}
 	
 	
