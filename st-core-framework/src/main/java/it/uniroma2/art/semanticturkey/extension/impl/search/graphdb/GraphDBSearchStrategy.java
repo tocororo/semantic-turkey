@@ -564,21 +564,21 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		if(searchMode == SearchMode.startsWith){
-			query="\n"+variable+" <"+indexToUse+"> '"+value+"*' ."+
+			query="\n"+variable+" <"+indexToUse+"> '"+normalizeStringForLuceneIndex(value)+"*' ."+
 					// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the 
 					//single word, so filter them afterward
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '^"+value+"', 'i')" +
 					"\nBIND('startsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.endsWith){
-			query="\n"+variable+" <"+indexToUse+"> '*"+value+"' ."+
+			query="\n"+variable+" <"+indexToUse+"> '*"+normalizeStringForLuceneIndex(value)+"' ."+
 					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the 
 					//single word, so filter them afterward
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '"+value+"$', 'i')" +
 					"\nBIND('endsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.contains){
-			query="\n"+variable+" <"+indexToUse+"> '*"+value+"*' ."+
+			query="\n"+variable+" <"+indexToUse+"> '*"+normalizeStringForLuceneIndex(value)+"*' ."+
 					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the 
 					//single word, so filter them afterward
 					queryPart+
@@ -588,7 +588,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		} else if(searchMode == SearchMode.fuzzy){
 			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements 
 			//having just letter different form the input one
-			List<String> wordForIndex = ServiceForSearches.wordsForFuzzySearch(value, "*");
+			List<String> wordForIndex = ServiceForSearches.wordsForFuzzySearch(
+					normalizeStringForLuceneIndex(value), "*");
 			String wordForIndexAsString = ServiceForSearches.listToStringForQuery(wordForIndex, "", "");
 			query+="\n"+variable+" <"+indexToUse+"> \""+wordForIndexAsString+"\" .";
 			
@@ -599,7 +600,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\nBIND('fuzzy' AS ?attr_matchMode)";
 			
 		} else { // searchMode.equals(exact)
-			query="\n"+variable+" <"+indexToUse+"> '"+value+"' ." +
+			query="\n"+variable+" <"+indexToUse+"> '"+normalizeStringForLuceneIndex(value)+"' ." +
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '^"+value+"$', 'i')" + 
 					"\nBIND('exact' AS ?attr_matchMode)";
@@ -624,6 +625,13 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		return query;
+	}
+	
+	private String normalizeStringForLuceneIndex(String inputString) {
+		//replace all hyphens, -, with a whitespace since Lucene in GraphDB have problem with hyphens due to
+		// the tokenization process when creating the indexes
+		String outputString = inputString.replaceAll("-", " ");
+		return outputString;
 	}
 	
 	private String searchModePrepareQueryNoIndexes(String variable, String value, SearchMode searchMode){
