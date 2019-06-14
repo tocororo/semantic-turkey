@@ -126,7 +126,7 @@ public class Validation extends STServiceAdapter {
 
 		String performerSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(performerFilter,
 				"performerT");
-		
+
 		String orderBySPARQLFragment = SupportRepositoryUtils.computeOrderBySPARQLFragment(operationSorting,
 				timeSorting, false);
 
@@ -141,12 +141,14 @@ public class Validation extends STServiceAdapter {
 			    " PREFIX stcl: <http://semanticturkey.uniroma2.it/ns/st-changelog#>            \n" +
 				" PREFIX prov: <http://www.w3.org/ns/prov#>                                    \n" +
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                  \n" +
+				" PREFIX blacklist: <http://semanticturkey.uniroma2.it/ns/blacklist#>          \n" +
 				" SELECT ?commit                                                               \n" +
 				"        (MAX(?startTimeT) as ?startTime)                                      \n" +
 				"        (MAX(?endTimeT) as ?endTime)                                          \n" +
 				"        (MAX(?operationT) as ?operation)                                      \n" +
 				"        (GROUP_CONCAT(DISTINCT CONCAT(STR(?param), \"$\", REPLACE(REPLACE(STR(?paramValue), \"\\\\\\\\\", \"$0$0\"), \"\\\\$\", \"\\\\\\\\$0\")); separator=\"$\") as ?parameters)\n" + 
 				"        (MAX(?performerT) as ?agent)                                          \n" +
+				"        (MAX(?commentAllowedT) as ?commentAllowed)                            \n" +
 				//" FROM " + RenderUtils.toSPARQL(validationGraph) + "\n" +
 				" WHERE {                                                                      \n" +
 				" GRAPH "+  RenderUtils.toSPARQL(validationGraph ) + "\n {" +
@@ -170,6 +172,7 @@ public class Validation extends STServiceAdapter {
 				"     ]                                                                    \n"
 				) +
 				performerSPARQLFilter +
+				"     BIND(EXISTS{?commit blacklist:template [] } AS ?commentAllowedT)         \n" +
 				" } \n}                                                                        \n" +
 				" GROUP BY ?commit                                                             \n" +
 				" HAVING(BOUND(?commit))                                                       \n" +
@@ -223,6 +226,9 @@ public class Validation extends STServiceAdapter {
 							Literals.getCalendarValue((Literal) bindingSet.getValue("endTime"), null)
 									.toGregorianCalendar());
 				}
+
+				commitInfo.setCommentEnabled(
+						Literals.getBooleanValue(bindingSet.getValue("commentAllowed"), false));
 
 				return commitInfo;
 			}).collect(Collectors.toList());

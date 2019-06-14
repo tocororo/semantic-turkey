@@ -2,11 +2,14 @@ package it.uniroma2.art.semanticturkey.services.core.history;
 
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Optional;
 
 import org.eclipse.rdf4j.model.IRI;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonFormat.Shape;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -25,8 +28,10 @@ public class CommitInfo {
 	private GregorianCalendar endTime;
 	private List<ParameterInfo> operationParameters;
 
-	
-	
+	// Optional field. Usually, it is present (with either true or false value) only when listing commits
+	// pending for validation
+	private Optional<Boolean> commentEnabled = Optional.empty();
+
 	public AnnotatedValue<IRI> getUser() {
 		return user;
 	}
@@ -51,7 +56,7 @@ public class CommitInfo {
 		return operationParameters;
 	}
 
-	@JsonSerialize(converter=IRI2StringConverter.class)
+	@JsonSerialize(converter = IRI2StringConverter.class)
 	public IRI getCommit() {
 		return commit;
 	}
@@ -64,18 +69,31 @@ public class CommitInfo {
 		this.startTime = startTime;
 	}
 
-	@JsonFormat(shape=Shape.STRING, pattern="yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+	@JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
 	public GregorianCalendar getStartTime() {
 		return startTime;
 	}
-	
+
 	public void setEndTime(GregorianCalendar endTime) {
 		this.endTime = endTime;
 	}
 
-	@JsonFormat(shape=Shape.STRING, pattern="yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+	@JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
 	public GregorianCalendar getEndTime() {
 		return endTime;
+	}
+
+	@JsonInclude(Include.NON_ABSENT)
+	public Optional<Boolean> getCommentEnabled() {
+		return commentEnabled;
+	}
+
+	public void setCommentEnabled(boolean commentEnabled) {
+		this.commentEnabled = Optional.of(commentEnabled);
+	}
+
+	public void setCommentEnabled(Optional<Boolean> commentEnabled) {
+		this.commentEnabled = commentEnabled;
 	}
 
 }
