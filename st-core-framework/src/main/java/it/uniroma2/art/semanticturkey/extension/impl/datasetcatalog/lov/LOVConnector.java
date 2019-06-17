@@ -129,7 +129,7 @@ public class LOVConnector implements DatasetCatalogConnector {
 
 	public FacetAggregation convertLOVFacetAggregation(String name, String displayName,
 			Aggregation aggregation) {
-		return new FacetAggregation("lang", "language", SelectionMode.multiple,
+		return new FacetAggregation(name, displayName, SelectionMode.multiple,
 				aggregation.getBuckets().entrySet().stream()
 						.map(entry -> new FacetAggregation.Bucket(entry.getKey(), null, entry.getValue()))
 						.collect(Collectors.toList()),
