@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -586,6 +587,14 @@ public class ServiceForSearches {
 			textForQuery+="("+startSymbol+wordsList.get(i)+endSymbol+")";
 		}
 		return textForQuery;
+	}
+	
+	public static String escapeStringForRegexInSPARQL(String input) {
+		String output;
+		output = Pattern.quote(input);
+		output = output.replace("\\", "\\\\");
+		
+		return output;
 	}
 	
 	/*public Collection<AnnotatedValue<Resource>> executeGenericSearchQuery(String query, Resource[] namedGraphs,

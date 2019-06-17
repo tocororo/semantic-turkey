@@ -544,6 +544,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			String indexToUse, List<String> langs, boolean includeLocales, boolean forLocalName){
 		String query ="";
 		
+		String valueForRegex = ServiceForSearches.escapeStringForRegexInSPARQL(value);
+		String valueForIndex = normalizeStringForLuceneIndex(value);
+		
 		if(indexToUse==null || indexToUse.length()==0) {
 			//if no lucene index is specified, then assume it is the Index_Literal
 			indexToUse = LUCENEINDEXLITERAL;
@@ -564,45 +567,44 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		if(searchMode == SearchMode.startsWith){
-			query="\n"+variable+" <"+indexToUse+"> '"+normalizeStringForLuceneIndex(value)+"*' ."+
+			query="\n"+variable+" <"+indexToUse+"> '"+valueForIndex+"*' ."+
 					// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the 
 					//single word, so filter them afterward
 					queryPart+
-					"\nFILTER regex(str("+varToUse+"), '^"+value+"', 'i')" +
+					"\nFILTER regex(str("+varToUse+"), '^"+valueForRegex+"', 'i')" +
 					"\nBIND('startsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.endsWith){
-			query="\n"+variable+" <"+indexToUse+"> '*"+normalizeStringForLuceneIndex(value)+"' ."+
+			query="\n"+variable+" <"+indexToUse+"> '*"+valueForIndex+"' ."+
 					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the 
 					//single word, so filter them afterward
 					queryPart+
-					"\nFILTER regex(str("+varToUse+"), '"+value+"$', 'i')" +
+					"\nFILTER regex(str("+varToUse+"), '"+valueForRegex+"$', 'i')" +
 					"\nBIND('endsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.contains){
-			query="\n"+variable+" <"+indexToUse+"> '*"+normalizeStringForLuceneIndex(value)+"*' ."+
+			query="\n"+variable+" <"+indexToUse+"> '*"+valueForIndex+"*' ."+
 					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the 
 					//single word, so filter them afterward
 					queryPart+
-					"\nFILTER regex(str("+varToUse+"), '"+value+"', 'i')" + 
+					"\nFILTER regex(str("+varToUse+"), '"+valueForRegex+"', 'i')" + 
 					"\nBIND('contains' AS ?attr_matchMode)";
 			
 		} else if(searchMode == SearchMode.fuzzy){
 			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements 
 			//having just letter different form the input one
-			List<String> wordForIndex = ServiceForSearches.wordsForFuzzySearch(
-					normalizeStringForLuceneIndex(value), "*");
+			List<String> wordForIndex = ServiceForSearches.wordsForFuzzySearch(valueForIndex, "*");
 			String wordForIndexAsString = ServiceForSearches.listToStringForQuery(wordForIndex, "", "");
 			query+="\n"+variable+" <"+indexToUse+"> \""+wordForIndexAsString+"\" .";
 			
-			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".");
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(valueForRegex, ".");
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += queryPart+
 					"\nFILTER regex(str("+varToUse+"), \""+wordForNoIndexAsString+"\", 'i')" +
 					"\nBIND('fuzzy' AS ?attr_matchMode)";
 			
 		} else { // searchMode.equals(exact)
-			query="\n"+variable+" <"+indexToUse+"> '"+normalizeStringForLuceneIndex(value)+"' ." +
+			query="\n"+variable+" <"+indexToUse+"> '"+valueForIndex+"' ." +
 					queryPart+
-					"\nFILTER regex(str("+varToUse+"), '^"+value+"$', 'i')" + 
+					"\nFILTER regex(str("+varToUse+"), '^"+valueForRegex+"$', 'i')" + 
 					"\nBIND('exact' AS ?attr_matchMode)";
 		}
 		
@@ -628,10 +630,17 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	}
 	
 	private String normalizeStringForLuceneIndex(String inputString) {
+		String outputString = inputString;
+		
 		//replace all hyphens, -, with a whitespace since Lucene in GraphDB have problem with hyphens due to
 		// the tokenization process when creating the indexes
-		String outputString = inputString.replaceAll("-", " ");
-		return outputString;
+		outputString = outputString.replace("-", " ");
+		//replace all parenthesis, ( and ), with a whitespace since Lucene in GraphDB have problem with 
+		// parenthesis due to the tokenization process when creating the indexes
+		outputString = outputString.replace("(", " ");
+		outputString = outputString.replace(")", " ");
+		
+		return outputString.trim();
 	}
 	
 	private String searchModePrepareQueryNoIndexes(String variable, String value, SearchMode searchMode){

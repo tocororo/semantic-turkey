@@ -320,23 +320,25 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode,
 			String indexToUse, List <String> langs, boolean includeLocales, boolean forLocalName) {
 		String query = "";
+		
+		String valueForRegex = ServiceForSearches.escapeStringForRegexInSPARQL(value);
 
 		if (searchMode == SearchMode.startsWith) {
-			query = "\nFILTER regex(str(" + variable + "), '^" + value + "', 'i')" +
+			query = "\nFILTER regex(str(" + variable + "), '^" + valueForRegex + "', 'i')" +
 					"\nBIND('startsWith' AS ?attr_matchMode)";
 		} else if (searchMode == SearchMode.endsWith) {
-			query = "\nFILTER regex(str(" + variable + "), '" + value + "$', 'i')" +
+			query = "\nFILTER regex(str(" + variable + "), '" + valueForRegex + "$', 'i')" +
 					"\nBIND('endsWith' AS ?attr_matchMode)";
 		} else if (searchMode == SearchMode.contains) {
-			query = "\nFILTER regex(str(" + variable + "), '" + value + "', 'i')" +
+			query = "\nFILTER regex(str(" + variable + "), '" + valueForRegex + "', 'i')" +
 					"\nBIND('contains' AS ?attr_matchMode)";
 		} else if (searchMode == SearchMode.fuzzy) {
-			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".");
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(valueForRegex, ".");
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')" +
 					"\nBIND('fuzzy' AS ?attr_matchMode)";
 		} else { // searchMode.equals(exact)
-			query = "\nFILTER regex(str(" + variable + "), '^" + value + "$', 'i')" +
+			query = "\nFILTER regex(str(" + variable + "), '^" + valueForRegex + "$', 'i')" +
 					"\nBIND('exact' AS ?attr_matchMode)";
 		}
 		
