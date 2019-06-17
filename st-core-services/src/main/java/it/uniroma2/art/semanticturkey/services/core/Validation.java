@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.util.Literals;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.history.OperationMetadata;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -242,19 +244,23 @@ public class Validation extends STServiceAdapter {
 	public void accept(@SkipTermValidation IRI validatableCommit) {
 		OperationMetadata operationMetadata = new OperationMetadata();
 		operationMetadata.setUserIRI(UsersManager.getLoggedUser().getIRI(), STCHANGELOG.VALIDATOR);
-		getManagedConnection().add(operationMetadata.toRDF(), CHANGETRACKER.COMMIT_METADATA);
-		getManagedConnection().prepareBooleanQuery("ASK {}").evaluate(); // flush commit metadata
+		RepositoryConnection conn = getManagedConnection();
+		conn.add(operationMetadata.toRDF(), CHANGETRACKER.COMMIT_METADATA);
+		conn.prepareBooleanQuery("ASK {}").evaluate(); // flush commit metadata
 
-		getManagedConnection().add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ACCEPT, validatableCommit,
-				CHANGETRACKER.VALIDATION);
+		conn.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ACCEPT, validatableCommit, CHANGETRACKER.VALIDATION);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@OmitHistoryMetadata
 	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
-	public void reject(@SkipTermValidation IRI validatableCommit) {
-		getManagedConnection().add(CHANGETRACKER.VALIDATION, CHANGETRACKER.REJECT, validatableCommit,
-				CHANGETRACKER.VALIDATION);
+	public void reject(@SkipTermValidation IRI validatableCommit, @Optional String comment) {
+		RepositoryConnection conn = getManagedConnection();
+		conn.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.REJECT, validatableCommit, CHANGETRACKER.VALIDATION);
+		if (comment != null) {
+			conn.add(CHANGETRACKER.VALIDATION, RDFS.COMMENT, conn.getValueFactory().createLiteral(comment),
+					CHANGETRACKER.VALIDATION);
+		}
 	}
 }

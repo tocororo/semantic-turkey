@@ -37,6 +37,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.RDFCollections;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.Binding;
@@ -97,6 +98,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 	private IRI pendingBlacklisting;
 	private IRI pendingValidation;
+
+	private Literal pendingComment;
 
 	public ChangeTrackerConnection(NotifyingSailConnection wrappedCon, ChangeTracker sail) {
 		super(wrappedCon);
@@ -480,7 +483,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 		if (pendingValidation != null) {
 			try (RepositoryConnection supportRepoConn = sail.supportRepo.getConnection()) {
-				conditionalAddToBlacklist(supportRepoConn, pendingBlacklisting);
+				conditionalAddToBlacklist(supportRepoConn, pendingBlacklisting, pendingComment);
 				removeLastCommit(sail.validationGraph, pendingValidation, null, false, false);
 			}
 		}
@@ -1019,52 +1022,61 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		try {
 			validationEnabled = false;
 			synchronized (sail) {
-				try (RepositoryConnection supportRepoConn = sail.supportRepo.getConnection()) {
-					supportRepoConn.begin();
-
-					if (CHANGETRACKER.ACCEPT.equals(pred)) {
-						QueryResults.stream(HistoryRepositories.getRemovedStaments(supportRepoConn, (IRI) obj,
-								sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
-									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
-											s.getContext());
-									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
-											VALIDATION.stagingRemoveGraph(s.getContext()));
-								});
-						QueryResults.stream(HistoryRepositories.getAddedStaments(supportRepoConn, (IRI) obj,
-								sail.validationGraph)).forEach(s -> {
-									addStatement(s.getSubject(), s.getPredicate(), s.getObject(),
-											s.getContext());
-									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
-											VALIDATION.stagingAddGraph(s.getContext()));
-								});
-
-						Model validatedUserMetadataModel = HistoryRepositories.getCommitUserMetadata(
-								supportRepoConn, (IRI) obj, sail.validationGraph, true);
-
-						stagingArea.getCommitMetadataModel().addAll(validatedUserMetadataModel);
-
-					} else if (CHANGETRACKER.REJECT.equals(pred)) {
-						QueryResults.stream(HistoryRepositories.getRemovedStaments(supportRepoConn, (IRI) obj,
-								sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
-									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
-											VALIDATION.stagingRemoveGraph(s.getContext()));
-								});
-						QueryResults.stream(HistoryRepositories.getAddedStaments(supportRepoConn, (IRI) obj,
-								sail.validationGraph)).forEach(s -> {
-									removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
-											VALIDATION.stagingAddGraph(s.getContext()));
-								});
-
-						pendingBlacklisting = (IRI) obj;
-					} else {
-						throw new SailException("Unrecognized operation: it should be either "
-								+ NTriplesUtil.toNTriplesString(CHANGETRACKER.ACCEPT) + " or "
-								+ NTriplesUtil.toNTriplesString(CHANGETRACKER.REJECT));
+				if (RDFS.COMMENT.equals(pred)) {
+					if (!(obj instanceof Literal)) {
+						throw new SailException(
+								"The comment on a commit should be a literal. Instead it was: "
+										+ NTriplesUtil.toNTriplesString(obj));
 					}
+					pendingComment = (Literal) obj;
+				} else {
+					try (RepositoryConnection supportRepoConn = sail.supportRepo.getConnection()) {
+						supportRepoConn.begin();
 
-					pendingValidation = (IRI) obj;
+						if (CHANGETRACKER.ACCEPT.equals(pred)) {
+							QueryResults.stream(HistoryRepositories.getRemovedStaments(supportRepoConn,
+									(IRI) obj, sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
+										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
+												s.getContext());
+										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
+												VALIDATION.stagingRemoveGraph(s.getContext()));
+									});
+							QueryResults.stream(HistoryRepositories.getAddedStaments(supportRepoConn,
+									(IRI) obj, sail.validationGraph)).forEach(s -> {
+										addStatement(s.getSubject(), s.getPredicate(), s.getObject(),
+												s.getContext());
+										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
+												VALIDATION.stagingAddGraph(s.getContext()));
+									});
 
-					supportRepoConn.commit();
+							Model validatedUserMetadataModel = HistoryRepositories.getCommitUserMetadata(
+									supportRepoConn, (IRI) obj, sail.validationGraph, true);
+
+							stagingArea.getCommitMetadataModel().addAll(validatedUserMetadataModel);
+
+						} else if (CHANGETRACKER.REJECT.equals(pred)) {
+							QueryResults.stream(HistoryRepositories.getRemovedStaments(supportRepoConn,
+									(IRI) obj, sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
+										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
+												VALIDATION.stagingRemoveGraph(s.getContext()));
+									});
+							QueryResults.stream(HistoryRepositories.getAddedStaments(supportRepoConn,
+									(IRI) obj, sail.validationGraph)).forEach(s -> {
+										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
+												VALIDATION.stagingAddGraph(s.getContext()));
+									});
+
+							pendingBlacklisting = (IRI) obj;
+						} else {
+							throw new SailException("Unrecognized operation: it should be either "
+									+ NTriplesUtil.toNTriplesString(CHANGETRACKER.ACCEPT) + " or "
+									+ NTriplesUtil.toNTriplesString(CHANGETRACKER.REJECT));
+						}
+
+						pendingValidation = (IRI) obj;
+
+						supportRepoConn.commit();
+					}
 				}
 			}
 		} finally {
@@ -1075,7 +1087,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 	private static final IRI PARAMETERS = SimpleValueFactory.getInstance()
 			.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#parameters");
 
-	private void conditionalAddToBlacklist(RepositoryConnection supportRepoConn, IRI commit) {
+	private void conditionalAddToBlacklist(RepositoryConnection supportRepoConn, /* @Nullable */ IRI commit,
+			/* @Nullable */ Literal pendingComment) {
 		if (!sail.blacklistEnabled || commit == null) {
 			return;
 		}
@@ -1188,6 +1201,10 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 		if (!blacklistItemDescription.isEmpty()
 				&& blacklistItemDescription.contains(blacklistItem, BLACKLIST.LOWERCASED_LABEL, null)) {
+
+			if (pendingComment != null) {
+				blacklistItemDescription.add(blacklistItem, RDFS.COMMENT, pendingComment);
+			}
 
 			supportRepoConn.add(blacklistItemDescription, blacklistGraph);
 		} else {

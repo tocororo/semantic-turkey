@@ -12,7 +12,6 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.util.Repositories;
-import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.locationtech.jts.util.AssertionFailedException;
 
@@ -25,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 
-import it.uniroma2.art.semanticturkey.changetracking.model.HistoryRepositories;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;

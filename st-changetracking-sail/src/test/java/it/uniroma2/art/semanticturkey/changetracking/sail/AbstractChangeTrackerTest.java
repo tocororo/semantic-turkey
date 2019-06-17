@@ -1,6 +1,8 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail;
 
 import java.io.File;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 
 import org.eclipse.rdf4j.common.io.FileUtil;
 import org.eclipse.rdf4j.model.IRI;
@@ -24,12 +26,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
-import org.springframework.validation.ValidationUtils;
+import org.springframework.core.annotation.AnnotationUtils;
 
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
+import junit.framework.AssertionFailedError;
 
 /**
  * Abstract base class of tests for {@link ChangeTracker}.
@@ -44,6 +46,8 @@ public abstract class AbstractChangeTrackerTest {
 			.createIRI("http://example.org/history");
 	protected static final IRI VALIDATION_GRAPH = SimpleValueFactory.getInstance()
 			.createIRI("http://example.org/validation");
+	protected static final IRI BLACKLIST_GRAPH = SimpleValueFactory.getInstance()
+			.createIRI("http://example.org/blacklist");
 
 	protected LocalRepositoryManager repositoryManager;
 
@@ -69,14 +73,40 @@ public abstract class AbstractChangeTrackerTest {
 	}
 
 	protected boolean requiresValidation;
+	protected boolean requiresBlacklisting;
 	protected boolean requiresHistory;
 
 	@Rule
 	public TestWatcher testWatcher = new TestWatcher() {
 
 		protected void starting(org.junit.runner.Description description) {
-			requiresValidation = description.getAnnotation(RequiresValidation.class) != null;
-			requiresHistory = description.getAnnotation(DoesNotWantHistory.class) == null;
+			// it seems that using JUnitParamsRunner it is no longer possible to obtain annotations from the
+			// description parameter
+			String methodName = description.getMethodName();
+			// strip the parameters from executions of parameterized tests
+			int parIndex = methodName.indexOf("(");
+			if (parIndex != -1) {
+				methodName = methodName.substring(0, parIndex);
+			}
+
+			String methodNameCopyForLambda = methodName;
+			Method testMethod = Arrays.stream(description.getTestClass().getMethods())
+					.filter(m -> m.getName().equals(methodNameCopyForLambda)).findAny()
+					.orElseThrow(() -> new AssertionFailedError("Unable to find the test method: "
+							+ description.getMethodName() + " in test class: " + description.getTestClass()));
+
+			RequiresValidation validationAnnot = AnnotationUtils.findAnnotation(testMethod,
+					RequiresValidation.class);
+
+			if (validationAnnot != null) {
+				requiresValidation = true;
+				requiresBlacklisting = validationAnnot.blacklisting();
+			}
+
+			DoesNotWantHistory omitHistoryAnnot = AnnotationUtils.findAnnotation(testMethod,
+					DoesNotWantHistory.class);
+
+			requiresHistory = (omitHistoryAnnot == null);
 		};
 	};
 
@@ -107,6 +137,10 @@ public abstract class AbstractChangeTrackerTest {
 		if (requiresValidation) {
 			trackerConfig.setValidationEnabled(true);
 			trackerConfig.setValidationGraph(VALIDATION_GRAPH);
+			if (requiresBlacklisting) {
+				trackerConfig.setBlacklistingEnabled(true);
+				trackerConfig.setBlacklistGraph(BLACKLIST_GRAPH);
+			}
 		} else {
 			trackerConfig.setValidationEnabled(false);
 		}

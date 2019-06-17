@@ -17,4 +17,6 @@ import java.lang.annotation.Target;
 @Documented
 public @interface RequiresValidation {
 
+	boolean blacklisting() default false;
+
 }
