@@ -1,9 +1,14 @@
 package it.uniroma2.art.semanticturkey.services.aspects;
 
+import static java.util.stream.Collectors.joining;
+
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -13,15 +18,19 @@ import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.RDFCollections;
+import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,24 +121,32 @@ public class RejectedTermsBlacklistingInterceptor implements MethodInterceptor {
 						.getRepository(Project.SUPPORT_REPOSITORY).getConnection()) {
 
 					logger.debug("Lookup the blacklist for " + lowercasedLabel);
-					BooleanQuery blacklistSearchQuery = supportRepoConnection.prepareBooleanQuery(
-				//@formatter:off
-					"ASK {                                                              \n" +
+					TupleQuery blacklistSearchQuery = supportRepoConnection.prepareTupleQuery(
+					//@formatter:off
+					"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>               \n" +
+					"SELECT ?blacklistedTerm ?comment {                                 \n" +
 					"  GRAPH " + RenderUtils.toSPARQL(blacklistGraph) + " {             \n" +
 					"    ?blacklistedTerm a <" + BLACKLIST.BLACKLISTED_TERM + "> ;      \n" +
 					"      <" + BLACKLIST.LOWERCASED_LABEL + "> " + RenderUtils.toSPARQL(lowercasedLabel) + " . \n" +
+					"    OPTIONAL {                                                     \n" +
+					"      ?blacklistedTerm rdfs:comment ?comment .                     \n" +
+					"    }                                                              \n" +
 					"  }                                                                \n" +
 					"}"
 					//@formatter:on
 					);
 					blacklistSearchQuery.setIncludeInferred(false);
-					boolean isBlacklisted = blacklistSearchQuery.evaluate();
+					List<BindingSet> blacklistItems = QueryResults.asList(blacklistSearchQuery.evaluate());
 
+					boolean isBlacklisted = !blacklistItems.isEmpty();
 					logger.debug("Is blacklisted? {}", isBlacklisted);
 
 					if (isBlacklisted) {
+						String comment = blacklistItems.stream().map(bs -> bs.getValue("comment"))
+								.filter(c -> c != null).map(Value::stringValue).collect(joining("; "));
 						throw new BlacklistForbiddendException(
-								"The term " + RenderUtils.toSPARQL(label) + "\' is blacklisted");
+								"The term " + NTriplesUtil.toNTriplesString(label) + " is blacklisted"
+										+ (comment.isEmpty() ? "" : ": " + comment));
 					}
 				}
 			}
