@@ -356,6 +356,32 @@ public class Sheet2RDF extends STServiceAdapter {
 		h.addNodeConversions(n);
 	}
 	
+	@STServiceOperation(method = RequestMethod.POST)
+	public void updateNodeInHeader(String headerId, String nodeId, RDFCapabilityType converterCapability, 
+			String converterContract, @Optional String converterDatatypeUri, @Optional String converterLanguage,
+			@Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) {
+		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
+		
+		List<NodeConversion> nodes = h.getNodeConversions();
+		for (NodeConversion node: nodes) {
+			if (node.getNodeId().equals(nodeId)) {
+				//update the node
+				CODAConverter c = new CODAConverter(converterCapability, converterContract);
+				c.setDatatypeUri(converterDatatypeUri);
+				c.setLanguage(converterLanguage);
+				if (converterParams != null) {
+					Map<String, Object> resolvedConvParams = resolveConverterParamsMap(converterParams);
+					c.setParams(resolvedConvParams);
+				}
+				node.setConverter(c);
+				node.setMemoize(memoize);
+				break;
+			}
+		}
+	}
+	
 	/**
 	 * Removes a node from an header. If the node is used/referenced by a graph application, updates
 	 * the graph application as well.
