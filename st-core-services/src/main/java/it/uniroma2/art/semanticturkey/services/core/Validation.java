@@ -227,7 +227,7 @@ public class Validation extends STServiceAdapter {
 									.toGregorianCalendar());
 				}
 
-				commitInfo.setCommentEnabled(
+				commitInfo.setCommentAllowed(
 						Literals.getBooleanValue(bindingSet.getValue("commentAllowed"), false));
 
 				return commitInfo;

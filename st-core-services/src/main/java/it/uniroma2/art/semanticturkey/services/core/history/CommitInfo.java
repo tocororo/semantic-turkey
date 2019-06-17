@@ -30,7 +30,7 @@ public class CommitInfo {
 
 	// Optional field. Usually, it is present (with either true or false value) only when listing commits
 	// pending for validation
-	private Optional<Boolean> commentEnabled = Optional.empty();
+	private Optional<Boolean> commentAllowed = Optional.empty();
 
 	public AnnotatedValue<IRI> getUser() {
 		return user;
@@ -84,16 +84,16 @@ public class CommitInfo {
 	}
 
 	@JsonInclude(Include.NON_ABSENT)
-	public Optional<Boolean> getCommentEnabled() {
-		return commentEnabled;
+	public Optional<Boolean> getCommentAllowed() {
+		return commentAllowed;
 	}
 
-	public void setCommentEnabled(boolean commentEnabled) {
-		this.commentEnabled = Optional.of(commentEnabled);
+	public void setCommentAllowed(boolean commentAllowed) {
+		this.commentAllowed = Optional.of(commentAllowed);
 	}
 
-	public void setCommentEnabled(Optional<Boolean> commentEnabled) {
-		this.commentEnabled = commentEnabled;
+	public void setCommentAllowed(Optional<Boolean> commentAllowed) {
+		this.commentAllowed = commentAllowed;
 	}
 
 }
