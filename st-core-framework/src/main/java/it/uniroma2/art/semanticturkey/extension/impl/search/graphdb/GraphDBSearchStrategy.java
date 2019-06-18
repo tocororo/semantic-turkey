@@ -631,7 +631,12 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	private String normalizeStringForLuceneIndex(String inputString) {
 		String outputString = inputString;
+
+		return outputString.replaceAll("\\p{Punct}", " ").trim();
 		
+		
+		//OLD
+		/*
 		//replace all hyphens, -, with a whitespace since Lucene in GraphDB have problem with hyphens due to
 		// the tokenization process when creating the indexes
 		outputString = outputString.replace("-", " ");
@@ -639,8 +644,11 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		// parenthesis due to the tokenization process when creating the indexes
 		outputString = outputString.replace("(", " ");
 		outputString = outputString.replace(")", " ");
+		//replace all question marks and exclamation marks with a white space
+		outputString = outputString.replace("?", " ");
+		outputString = outputString.replace("!", " ");
 		
-		return outputString.trim();
+		return outputString.trim();*/
 	}
 	
 	private String searchModePrepareQueryNoIndexes(String variable, String value, SearchMode searchMode){
