@@ -76,7 +76,12 @@ import it.uniroma2.art.coda.pearl.parser.PearlParserAntlr4;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.coda.structures.SuggOntologyCoda;
+import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -87,6 +92,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.Metadata.PrefixMapping;
 import it.uniroma2.art.semanticturkey.services.core.sheet2rdf.S2RDFContext;
+import it.uniroma2.art.sheet2rdf.cfg.GraphApplicationConfigurationLoader;
 import it.uniroma2.art.sheet2rdf.coda.CODAConverter;
 import it.uniroma2.art.sheet2rdf.coda.Sheet2RDFCODA;
 import it.uniroma2.art.sheet2rdf.core.MappingStruct;
@@ -833,6 +839,39 @@ public class Sheet2RDF extends STServiceAdapter {
 		statusFile.transferTo(inputServerFile);
 		ms.fromJson(inputServerFile);
 	}
+
+	
+	/**
+	 * Returns the default configurations references stored directly in the Sheet2RDF classpath
+	 * @return
+	 */
+	@STServiceOperation
+	public Collection<Reference> getDefaultAdvancedGraphApplicationConfigurations() {
+		ArrayList<Reference> references = new ArrayList<Reference>();
+		List<String> confList = GraphApplicationConfigurationLoader.getAvailableConfigurations();
+		for (String c: confList) {
+			references.add(new Reference(null, null, c));
+		}
+		return references;
+	}
+	
+	/**
+	 * Returns the serialization of the configuration identified through the given identifier.
+	 * @param identifier
+	 * @return
+	 * @throws STPropertyAccessException
+	 * @throws IOException 
+	 */
+	@STServiceOperation
+	public Configuration getConfiguration(String identifier) throws STPropertyAccessException, IOException {
+		String fileName = identifier + ".cfg";
+		File configFile = GraphApplicationConfigurationLoader.getConfigurationFile(fileName);
+		if (configFile == null) {
+			throw new FileNotFoundException(fileName + " configuration file does not exist");
+		}
+		return STPropertiesManager.loadSTPropertiesFromYAMLFiles(StoredAdvancedGraphApplicationConfiguration.class, true, configFile);
+	}
+	
 	
 	@STServiceOperation
 	public void closeSession() {
