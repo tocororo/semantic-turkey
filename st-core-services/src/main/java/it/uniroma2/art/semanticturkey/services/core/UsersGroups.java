@@ -170,7 +170,6 @@ public class UsersGroups extends STServiceAdapter {
 		//delete the group from every project-user binding that contains it
 		for (ProjectUserBinding pub : ProjectUserBindingsManager.listPUBindings()) {
 			UsersGroup puGroup = pub.getGroup();
-			if (puGroup != null) System.out.println("gr " + puGroup.getIRI());
 			if (puGroup != null && puGroup.getIRI().equals(groupIri)) {
 				ProjectUserBindingsManager.removeGroupFromPUBinding(pub.getUser(), pub.getProject());
 			}

@@ -249,7 +249,6 @@ public class Graph extends STServiceAdapter {
 					"}";
 					// @formatter:on
 			logger.debug("query: " + query);
-			System.out.println("query: " + query);
 			
 			TupleQuery tupleQuery = conn.prepareTupleQuery(query);
 			tupleQuery.setBinding("res", resource);
@@ -313,7 +312,6 @@ public class Graph extends STServiceAdapter {
 					"}";
 					// @formatter:on
 			logger.debug("query: " + query);
-			System.out.println("query: " + query);
 			
 			TupleQuery tupleQuery = conn.prepareTupleQuery(query);
 			tupleQuery.setBinding("res", resource);
