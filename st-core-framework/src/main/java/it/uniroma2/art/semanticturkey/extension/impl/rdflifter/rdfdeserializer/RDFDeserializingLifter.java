@@ -2,10 +2,11 @@ package it.uniroma2.art.semanticturkey.extension.impl.rdflifter.rdfdeserializer;
 
 import java.io.IOException;
 
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.repository.util.RDFLoader;
+import org.eclipse.rdf4j.rio.ParserConfig;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFHandler;
-import org.eclipse.rdf4j.rio.RDFParser;
-import org.eclipse.rdf4j.rio.Rio;
 
 import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LifterContext;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LiftingException;
@@ -26,9 +27,8 @@ public class RDFDeserializingLifter implements RDFLifter {
 
 		RDFFormat rdfFormat = RDF4JUtilities.getRDFFormat(format);
 
-		RDFParser parser = Rio.createParser(rdfFormat);
-		parser.setRDFHandler(targetRDFHandler);
-		parser.parse(sourceFormattedResource.getInputStream(), "");
+		RDFLoader rdfLoader = new RDFLoader(new ParserConfig(), SimpleValueFactory.getInstance());
+		rdfLoader.load(sourceFormattedResource.getInputStream(), "", rdfFormat, targetRDFHandler);
 	}
 
 }

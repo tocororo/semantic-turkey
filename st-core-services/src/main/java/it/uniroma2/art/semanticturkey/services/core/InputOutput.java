@@ -357,19 +357,14 @@ public class InputOutput extends STServiceAdapter {
 	/**
 	 * Clear the repository associated with the current project
 	 * 
-	 * @param inputFile
-	 * @param baseURI
-	 * @param rdfFormat
-	 * @throws FileNotFoundException
-	 * @throws IOException
-	 * @throws UnsupportedRDFFormatException
+	 * @throws RDF4JException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rdf', 'D')")
 	public void clearData() throws RDF4JException {
 		getProject().getNewOntologyManager().clearData();
 	}
-	
+
 	/**
 	 * Gets {@link RDFFormat}s for which a parser is available
 	 * 

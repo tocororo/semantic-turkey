@@ -828,6 +828,9 @@ public class Projects extends STServiceAdapter {
 					: RDFParserRegistry.getInstance().getKeys();
 			List<String> acceptParams = RDFFormat.getAcceptParams(rdfFormats, false, null);
 			acceptParams.forEach(acceptParam -> request.addHeader("Accept", acceptParam));
+			request.addHeader("Accept", "application/zip;q=0.5");
+			request.addHeader("Accept", "application/gzip;q=0.5");
+			request.addHeader("Accept", "*/*;q=0.1");
 
 			try (CloseableHttpResponse httpResponse = httpClient.execute(request)) {
 				HttpEntity httpEntity = httpResponse.getEntity();
@@ -836,8 +839,17 @@ public class Projects extends STServiceAdapter {
 					if (contentTypeHeader != null) {
 						ContentType contentType = ContentType.parse(contentTypeHeader.getValue());
 						String mime = contentType.getMimeType();
-						preloadedDataFormat = Rio.getParserFormatForMIMEType(mime)
-								.orElseThrow(Rio.unsupportedFormat(mime));
+						// only process non-archive mime types
+						if (!Arrays.asList("application/zip", "application/gzip").contains(mime)) {
+							preloadedDataFormat = Rio.getParserFormatForMIMEType(mime)
+									.orElseThrow(Rio.unsupportedFormat(mime));
+						}
+					}
+
+					if (preloadedDataFormat == null) { // not provided, nor obtained through MIME type
+						// this should also handle filenames decorated by archive formats e.g. .nt.gz
+						preloadedDataFormat = Rio.getParserFormatForFileName(preloadedDataURL.getPath())
+								.orElse(null);
 					}
 				}
 

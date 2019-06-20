@@ -96,6 +96,7 @@ import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.utilities.IterationSpy;
 import it.uniroma2.art.semanticturkey.utilities.OptionalUtils;
+import it.uniroma2.art.semanticturkey.utilities.RDFLoaderParser;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities.ThrowingProcedure;
@@ -543,7 +544,8 @@ public class OntologyManagerImpl implements OntologyManager {
 	protected IterationSpy<Statement, QueryEvaluationException> createImportsSpyingIteration(String baseURI,
 			InputStream in, RDFParser parser, Model caputeredImports) {
 		BackgroundGraphResult concurrentIter = new BackgroundGraphResult(parser, in, null, baseURI);
-		new Thread(concurrentIter).start();
+		Thread t = new Thread(concurrentIter);
+		t.start();
 		return new IterationSpy<>(concurrentIter, ONTOLOGY_METADATA_SPY_PREDICATE,
 				stmt -> caputeredImports.add(stmt));
 	}
@@ -1361,10 +1363,11 @@ public class OntologyManagerImpl implements OntologyManager {
 					.orElseThrow(() -> new OntologyManagerException(
 							"Could not match a parser for file name: " + inputFile.getName()));
 		}
-		RDFParser parser = RDFParserRegistry.getInstance().get(format).map(RDFParserFactory::getParser)
-				.orElseThrow(() -> new OntologyManagerException("Unspported RDF Data Format"));
+		RDFParser parser = new RDFLoaderParser(format);
+
 		Model capturedOntologyMetadata = new LinkedHashModel();
 		InputStream in = new FileInputStream(inputFile);
+
 		IterationSpy<Statement, QueryEvaluationException> spyConcurrentIter = createImportsSpyingIteration(
 				baseURI, in, parser, capturedOntologyMetadata);
 
