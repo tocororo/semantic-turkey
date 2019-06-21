@@ -6,12 +6,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -24,17 +23,18 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.DCAT;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.slf4j.Logger;
@@ -43,10 +43,12 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetSearchResult;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDescription;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.FacetAggregation;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacetProcessor;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchResultsPage;
@@ -74,7 +76,7 @@ public class EUODPConnector implements DatasetCatalogConnector {
 	private static final int DEFAULT_PAGE_SIZE = 20;
 
 	// See: http://publications.europa.eu/resource/authority/file-type
-	private static final String[] RDF_FILE_TYPES = {
+	private static final Set<String> RDF_FILE_TYPES = Sets.newHashSet(
 			"http://publications.europa.eu/resource/authority/file-type/RDF",
 			"http://publications.europa.eu/resource/authority/file-type/RDFA",
 			"http://publications.europa.eu/resource/authority/file-type/RDF_N_QUADS",
@@ -82,10 +84,14 @@ public class EUODPConnector implements DatasetCatalogConnector {
 			"http://publications.europa.eu/resource/authority/file-type/RDF_TRIG",
 			"http://publications.europa.eu/resource/authority/file-type/RDF_TURTLE",
 			"http://publications.europa.eu/resource/authority/file-type/RDF_XML",
-			"http://publications.europa.eu/resource/authority/file-type/JSON_LD" };
+			"http://publications.europa.eu/resource/authority/file-type/JSON_LD");
+
+	private static final IRI SPARQLQ_FILE_TYPE = SimpleValueFactory.getInstance()
+			.createIRI("http://publications.europa.eu/resource/authority/file-type/SPARQLQ");
+	private static final IRI DOWNLOADABLE_FILE_DISTRIBUTION_TYPE = SimpleValueFactory.getInstance().createIRI(
+			"http://publications.europa.eu/resource/authority/distribution-type/DOWNLOADABLE_FILE");
 
 	private static final String RDF_FILE_TYPE_FACET;
-	private static final String RDF_FILE_SPARQL_COLLECTION;
 
 	// facet names have been guessed by the parameters used in the links within the web portal
 	private static final LinkedHashMap<String, String> FACETS = new LinkedHashMap<>();
@@ -93,12 +99,9 @@ public class EUODPConnector implements DatasetCatalogConnector {
 	private static final String FACET_FIELD_ARGUMENT;
 
 	static {
-		RDF_FILE_TYPE_FACET = "res_format:" + Arrays.stream(RDF_FILE_TYPES).map(s -> "\"" + s + "\"")
+		RDF_FILE_TYPE_FACET = "res_format:" + RDF_FILE_TYPES.stream().map(s -> "\"" + s + "\"")
 				.collect(Collectors.joining(" OR ", "(", ")"));
-		RDF_FILE_SPARQL_COLLECTION = Arrays.stream(RDF_FILE_TYPES)
-				.map(s -> RenderUtils.toSPARQL(SimpleValueFactory.getInstance().createIRI(s)))
-				.collect(Collectors.joining(", ", "(", ")"));
-		
+
 		FACETS.put("vocab_theme", "theme");
 		FACETS.put("groups", "group");
 		FACETS.put("organization", "publisher");
@@ -107,11 +110,10 @@ public class EUODPConnector implements DatasetCatalogConnector {
 		FACETS.put("res_format", "resource format");
 		FACETS.put("vocab_geographical_coverage", "geographical coverage");
 		FACETS.put("vocab_language", "language");
-		
+
 		FACET_FIELD_ARGUMENT = FACETS.keySet().stream().map(s -> "\"" + s + "\"")
 				.collect(Collectors.joining(", ", "[", "]"));
 	}
-
 
 	private String uriPrefix;
 
@@ -237,54 +239,62 @@ public class EUODPConnector implements DatasetCatalogConnector {
 			List<Literal> titles = new ArrayList<>();
 			List<Literal> descriptions = new ArrayList<>();
 			Map<String, List<String>> facets = Collections.emptyMap();
-			URL dataDump = null;
+			List<DownloadDescription> dataDumps = new ArrayList<>();
 			URL sparqlEndpoint = null;
 			IRI model = null;
 			IRI lexicalizationModel = null;
 
+			// we need to skip "relative IRIs (e.g. multilingual-assets). The inclusion of a FILTER testing
+			// whether object IRIs contain a colon (:) causes the server blocking the query for security
+			// reasons. Consequently, I've encoded the test as an arithmetic expression.
 			TupleQuery showQuery = conn.prepareTupleQuery(
 			//@formatter:off
-				"PREFIX dct: <http://purl.org/dc/terms/>                                              \n" +
-				"PREFIX dcat: <http://www.w3.org/ns/dcat#>                                            \n" +
-				"SELECT ?datasetPage ?title ?description ?dataDump ?sparqlEndpoint WHERE {            \n" +
-				"  ?dataset a dcat:Dataset .                                                          \n" +
-				"  {                                                                                  \n" +
-				"    ?dataset dct:title ?title .                                                      \n" +
-				"  } UNION {                                                                          \n" +
-				"    ?dataset dct:title ?description .                                                \n" +
-				"  } UNION {                                                                          \n" +
-				"    ?dataset dcat:distribution ?distribution .                                       \n" +
-				"    ?distribution dct:format ?distributionFormat .                                   \n" +
-				"    FILTER(?distributionFormat IN " + RDF_FILE_SPARQL_COLLECTION+ ")                 \n" +
-				"    ?distribution dct:type <http://publications.europa.eu/resource/authority/distribution-type/DOWNLOADABLE_FILE> . \n" +
-				"    ?distribution dcat:accessURL ?dataDump .                                         \n" +
-				"  } UNION {                                                                          \n" +
-				"    ?dataset dcat:distribution ?distribution .                                       \n" +
-				"    ?distribution dct:format <http://publications.europa.eu/resource/authority/file-type/SPARQLQ>  . \n" +
-				"    ?distribution dcat:accessURL ?sparqlEndpoint .                                   \n" +
-				"  }                                                                                  \n" +
-		        "}                                                                                    \n"
+			    "prefix dcat: <http://www.w3.org/ns/dcat#>         \n" +
+				"select ?s ?p ?o {                                 \n" + 
+				"  ?dataset dcat:distribution? ?s .                \n" + 
+				"  ?s ?p ?o .                                      \n" +
+				"  BIND(isIRI(?o) as ?i)                           \n" +
+				"  FILTER(-10 * (1 - ?i) + CONTAINS(STR(?o), \":\") != 0)          \n" +
+				"}                                                 \n"
 				//@formatter:on
 			);
-			showQuery.setBinding("dataset", vf.createIRI("http://data.europa.eu/88u/dataset/", id));
-			try (TupleQueryResult result = showQuery.evaluate()) {
-				while (result.hasNext()) {
-					BindingSet bs = result.next();
 
-					if (bs.hasBinding("title")) {
-						titles.add((Literal) bs.getValue("title"));
-					} else if (bs.hasBinding("description")) {
-						descriptions.add((Literal) bs.getValue("description"));
-					} else if (bs.hasBinding("dataDump")) {
-						dataDump = new URL(bs.getValue("dataDump").stringValue());
-					} else if (bs.hasBinding("sparqlEndpoint")) {
-						dataDump = new URL(bs.getValue("sparqlEndpoint").stringValue());
+			IRI dataset = vf.createIRI("http://data.europa.eu/88u/dataset/", id);
+			showQuery.setBinding("dataset", dataset);
+			Model triples = QueryResults.stream(showQuery.evaluate())
+					.map(bs -> SimpleValueFactory.getInstance().createStatement((Resource) bs.getValue("s"),
+							(IRI) bs.getValue("p"), bs.getValue("o")))
+					.collect(() -> new LinkedHashModel(), Model::add, Model::addAll);
+
+			titles.addAll(Models.getPropertyLiterals(triples, dataset, DCTERMS.TITLE));
+			descriptions.addAll(Models.getPropertyLiterals(triples, dataset, DCTERMS.DESCRIPTION));
+			for (Resource distribution : Models
+					.objectResources(triples.filter(dataset, DCAT.HAS_DISTRIBUTION, null))) {
+				if (triples.contains(distribution, RDF.TYPE, SPARQLQ_FILE_TYPE)) {
+					String sparqlEndpointT = Models.getProperty(triples, distribution, DCAT.ACCESS_URL)
+							.map(Value::stringValue).orElse(null);
+					if (sparqlEndpointT != null) {
+						sparqlEndpoint = new URL(sparqlEndpointT);
+					}
+				} else if (triples.contains(distribution, DCTERMS.TYPE,
+						DOWNLOADABLE_FILE_DISTRIBUTION_TYPE)) {
+					if (Models.getProperty(triples, distribution, DCTERMS.FORMAT)
+							.map(f -> RDF_FILE_TYPES.contains(f.stringValue())).orElse(Boolean.FALSE)) {
+						URL accessURL = new URL(Models.getProperty(triples, distribution, DCAT.ACCESS_URL)
+								.get().stringValue());
+						List<Literal> distrTitles = new ArrayList<>(
+								Models.getPropertyLiterals(triples, distribution, DCTERMS.TITLE));
+						List<Literal> distrDescriptions = new ArrayList<>(
+								Models.getPropertyLiterals(triples, distribution, DCTERMS.DESCRIPTION));
+
+						dataDumps.add(
+								new DownloadDescription(accessURL, distrTitles, distrDescriptions, null));
 					}
 				}
 			}
 
-			return new DatasetDescription(id, ontologyIRI, datasetPage, titles, descriptions, facets,
-					uriPrefix, dataDump, sparqlEndpoint, model, lexicalizationModel);
+			return new DatasetDescription(id, ontologyIRI, datasetPage, titles, descriptions, facets, null,
+					dataDumps, sparqlEndpoint, model, lexicalizationModel);
 		} finally {
 			rep.shutDown();
 		}
@@ -293,24 +303,26 @@ public class EUODPConnector implements DatasetCatalogConnector {
 	public static void main(String[] args) throws IOException {
 		EUODPConnector connector = new EUODPConnector();
 
-		Map<String, List<String>> facets = new HashMap<>();
-		// facets.put("tag", Arrays.asList("Time", "IoT"));
-		facets.put("res_format",
-				Arrays.asList("http://publications.europa.eu/resource/authority/file-type/HTML"));
-		facets.put("vocab_language",
-				Arrays.asList("http://publications.europa.eu/resource/authority/language/ENG"));
-		// facets.put("unknown", Arrays.asList("English"));
+		// Map<String, List<String>> facets = new HashMap<>();
+		// // facets.put("tag", Arrays.asList("Time", "IoT"));
+		// facets.put("res_format",
+		// Arrays.asList("http://publications.europa.eu/resource/authority/file-type/HTML"));
+		// facets.put("vocab_language",
+		// Arrays.asList("http://publications.europa.eu/resource/authority/language/ENG"));
+		// // facets.put("unknown", Arrays.asList("English"));
+		//
+		// SearchResultsPage<DatasetSearchResult> results = connector.searchDataset("vocabulary", facets, 0);
+		//
+		// // System.out.println(results);
+		//
+		// System.out.println("-----");
+		//
+		// System.out.println("@@ facetAggregations" + results.getFacetAggregations());
+		// System.out.println("----");
+		//
+		DatasetDescription datasetDescription = connector.describeDataset("place");
 
-		SearchResultsPage<DatasetSearchResult> results = connector.searchDataset("vocabulary", facets, 0);
-
-		// System.out.println(results);
-
-		System.out.println("-----");
-
-		System.out.println("@@ facetAggregations" + results.getFacetAggregations());
-		System.out.println("----");
-
-		// DatasetDescription datasetDescription = connector.describeDataset("place");
+		System.out.println("@@ dataset description = " + datasetDescription);
 		//
 		// System.out.println(datasetDescription);
 		//

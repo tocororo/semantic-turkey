@@ -66,4 +66,11 @@ public class Resource {
 		this.title = title;
 	}
 
+	public String getMediaType() {
+		return mediaType;
+	}
+	
+	public List<URL> getMirror() {
+		return mirror;
+	}
 }

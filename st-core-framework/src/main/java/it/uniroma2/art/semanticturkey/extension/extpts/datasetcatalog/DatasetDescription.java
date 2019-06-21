@@ -17,14 +17,14 @@ public class DatasetDescription {
 	private List<Literal> descriptions;
 	private Map<String, List<String>> facets;
 	private String uriPrefix;
-	private URL dataDump;
+	private List<DownloadDescription> dataDumps;
 	private URL sparqlEndpoint;
 	private IRI model;
 	private IRI lexicalizationModel;
 
 	public DatasetDescription(String id, IRI ontologyIRI, URL datasetPage, List<Literal> titles,
-			List<Literal> descriptions, Map<String, List<String>> facets, String uriPrefix, URL dataDump,
-			URL sparqlEndpoint, IRI model, IRI lexicalizationModel) {
+			List<Literal> descriptions, Map<String, List<String>> facets, String uriPrefix,
+			List<DownloadDescription> dataDumps, URL sparqlEndpoint, IRI model, IRI lexicalizationModel) {
 		this.id = id;
 		this.ontologyIRI = ontologyIRI;
 		this.datasetPage = datasetPage;
@@ -32,7 +32,7 @@ public class DatasetDescription {
 		this.descriptions = descriptions;
 		this.facets = facets;
 		this.uriPrefix = uriPrefix;
-		this.dataDump = dataDump;
+		this.dataDumps = dataDumps;
 		this.sparqlEndpoint = sparqlEndpoint;
 		this.model = model;
 		this.lexicalizationModel = lexicalizationModel;
@@ -66,8 +66,8 @@ public class DatasetDescription {
 		return uriPrefix;
 	}
 
-	public URL getDataDump() {
-		return dataDump;
+	public List<DownloadDescription> getDataDumps() {
+		return dataDumps;
 	}
 
 	public URL getSparqlEndpoint() {
@@ -86,7 +86,7 @@ public class DatasetDescription {
 	public String toString() {
 		return MoreObjects.toStringHelper(this).add("id", id).add("ontologyIRI", ontologyIRI)
 				.add("datasetPage", datasetPage).add("titles", titles).add("descriptions", descriptions)
-				.add("facets", facets).add("uriPrefix", uriPrefix).add("dataDump", dataDump)
+				.add("facets", facets).add("uriPrefix", uriPrefix).add("dataDumps", dataDumps)
 				.add("sparqlEndpoint", sparqlEndpoint).add("model", model)
 				.add("lexicalizationModel", lexicalizationModel).toString();
 	}

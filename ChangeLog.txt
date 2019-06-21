@@ -1,5 +1,6 @@
 version 6.0-SNAPSHOT
 date: dd/MM/yyyy
+  * Enabled multiple dataDumps in dataset catalogs
   * Added support archives containing RDF data to preloading and loadData
   * Integrated a matching system, specifically GENOMA
   * Added a connector for the Euopean Union Open Data Portal (ODP) (https://data.europa.eu/euodp/)

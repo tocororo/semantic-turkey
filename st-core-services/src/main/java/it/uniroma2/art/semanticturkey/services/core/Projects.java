@@ -92,6 +92,7 @@ import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDescription;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
@@ -889,7 +890,8 @@ public class Projects extends STServiceAdapter {
 				.getExtension(connectorId)).createInstance();
 
 		DatasetDescription datasetDescrition = datasetCatalogConnector.describeDataset(datasetId);
-		URL dataDump = datasetDescrition.getDataDump();
+		URL dataDump = datasetDescrition.getDataDumps().stream().map(DownloadDescription::getAccessURL)
+				.findAny().orElse(null);
 		if (dataDump == null) {
 			IRI ontologyIRI = datasetDescrition.getOntologyIRI();
 			if (ontologyIRI == null) {

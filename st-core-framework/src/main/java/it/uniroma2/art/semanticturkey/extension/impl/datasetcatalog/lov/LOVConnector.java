@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetSearchResult;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDescription;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.FacetAggregation;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacet;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacetProcessor;
@@ -183,8 +184,10 @@ public class LOVConnector implements DatasetCatalogConnector {
 				facets.put("tag", vocabularyInfo.getTags());
 
 				DatasetDescription datasetDescription = new DatasetDescription(id, ontologyIRI, datasetPage,
-						titles, descriptions, facets, uriPrefix, dataDump, sparqlEndpoint, model,
-						lexicalizationModel);
+						titles, descriptions, facets, uriPrefix,
+						Collections.singletonList(new DownloadDescription(dataDump, Collections.emptyList(),
+								Collections.emptyList(), "text/n3")),
+						sparqlEndpoint, model, lexicalizationModel);
 
 				return datasetDescription;
 			}

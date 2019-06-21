@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -14,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
@@ -39,6 +42,7 @@ import com.google.common.collect.ImmutableMap;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetSearchResult;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDescription;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchResultsPage;
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud.model.LODDatasetDescription;
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud.model.Resource;
@@ -62,6 +66,7 @@ public class LODCloudConnector implements DatasetCatalogConnector {
 
 	public SearchResultsPage<DatasetSearchResult> searchDataset(String query,
 			Map<String, List<String>> facets, int page) throws IOException {
+		@SuppressWarnings("unused")
 		List<Pair<String, String>> facetsQueryParams = DatasetCatalogConnector.processFacets(this, facets);
 
 		UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(LOD_CLOUD_ENDPOINT)
@@ -180,9 +185,17 @@ public class LODCloudConnector implements DatasetCatalogConnector {
 				facets.put("keyword", lodDatasetDescription.getKeywords());
 
 				String uriPrefix = lodDatasetDescription.getNamespace();
-				URL dataDump = lodDatasetDescription.getFullDownload().stream()
-						.filter(r -> Objects.equals(r.getStatus(), "OK")).map(Resource::getDownloadURL)
-						.findAny().orElse(null);
+				List<DownloadDescription> dataDumps = lodDatasetDescription.getFullDownload().stream()
+						.filter(r -> Objects.equals(r.getStatus(), "OK")).map(r -> {
+							return new DownloadDescription(r.getDownloadURL(),
+									Optional.ofNullable(r.getTitle())
+											.map(l -> Collections.singletonList(vf.createLiteral(l, "en")))
+											.orElse(Collections.emptyList()),
+									Optional.ofNullable(r.getDescription())
+											.map(l -> Collections.singletonList(vf.createLiteral(l, "en")))
+											.orElse(Collections.emptyList()),
+									r.getMediaType());
+						}).collect(toList());
 				URL sparqlEndpoint = lodDatasetDescription.getSparql().stream()
 						.filter(r -> Objects.equals(r.getStatus(), "OK")).map(Resource::getAccessURL)
 						.findAny().orElse(null);
@@ -190,7 +203,7 @@ public class LODCloudConnector implements DatasetCatalogConnector {
 				IRI lexicalizationModel = null;
 
 				DatasetDescription datasetDescription = new DatasetDescription(id, ontologyIRI, datasetPage,
-						titles, descriptions, facets, uriPrefix, dataDump, sparqlEndpoint, model,
+						titles, descriptions, facets, uriPrefix, dataDumps, sparqlEndpoint, model,
 						lexicalizationModel);
 
 				return datasetDescription;
