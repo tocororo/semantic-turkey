@@ -17,7 +17,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -31,8 +30,6 @@ import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.Rio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +40,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -219,28 +215,8 @@ public class GENOMA extends STServiceAdapter {
 			connField.setAccessible(true);
 
 			RepositoryConnection conn = (RepositoryConnection) connField.get(alignModel);
-
-			// fixes namespace space issue
 			ValueFactory vf = conn.getValueFactory();
-			QueryResults.stream(conn.getStatements(null, null, null)).forEach(st -> {
-				if (st.getPredicate().stringValue()
-						.startsWith("http://knowledgeweb.semanticweb.org/heterogeneity/alignment")) {
-					conn.add(st.getSubject(), vf.createIRI(
-							"http://knowledgeweb.semanticweb.org/heterogeneity/alignment#",
-							st.getPredicate().stringValue().substring(
-									"http://knowledgeweb.semanticweb.org/heterogeneity/alignment".length())),
-							st.getObject());
-					conn.remove(st);
-				} else if (st.getObject() instanceof IRI && st.getObject().stringValue()
-						.startsWith("http://knowledgeweb.semanticweb.org/heterogeneity/alignment")) {
-					conn.add(st.getSubject(), st.getPredicate(), vf.createIRI(
-							"http://knowledgeweb.semanticweb.org/heterogeneity/alignment#",
-							st.getObject().stringValue().substring(
-									"http://knowledgeweb.semanticweb.org/heterogeneity/alignment".length())));
-					conn.remove(st);
-				}
-			});
-
+			
 			// fixes onto1 and onto2
 			// two problems: Genoma uses the dataset IRI, while the alignment validation uses the base URI.
 			// Furthermore, Genoma represents them as strings, while the Alignment validation represents them
