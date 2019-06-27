@@ -1,5 +1,5 @@
 version 6.0-SNAPSHOT
-date: dd/MM/yyyy
+date: dd/06/2019
   * Enabled multiple dataDumps in dataset catalogs
   * Added support archives containing RDF data to preloading and loadData
   * Integrated a matching system, specifically GENOMA
@@ -10,6 +10,8 @@ date: dd/MM/yyyy
   * Removed the redundant indication of the role of predicates in the Resource View
   * Added the possibility to specify a template for enriching the output of predefined rendering engines
     (e.g. to include a skos:notation)
+  * Added support for Global Search.
+  * Added the support for Graph View in VocBench.
   * Fixed exception about missing configuration when exporting the results of a SPARQL graph query after the
     application of some RDFTransformers
   * Added server-side computation of the nature of the triples in the ResourceView
@@ -19,10 +21,13 @@ date: dd/MM/yyyy
   * Fixed NullPointerException in the service MAPLE/profileSingleResourceMatchProblem (by updating MAPLE)
   * Fixed inability to disable history (in the ChangeTracker sail)
   * Fixed partial deletion of a commit from the validation graph after its validation
+  * Fixed a bug that freezes ST when serializing big datasets in Zthes
+  * Fixed the wrong 'qname' and 'rendering' computed in some search services.
   * Preserved entry order in StringToMapGenericConverter
   * Updated to lime-api 0.3.3
   * Updated to maple 0.0.3
   * Updated to CODA 1.6.2
+  * Updated to Sheet2RDF 3.0
 
 version 5.0
 date: 30/01/2019
