@@ -1,17 +1,16 @@
-version 6.0-SNAPSHOT
-date: dd/06/2019
+version 6.0
+date: 27/06/2019
   * Enabled multiple dataDumps in dataset catalogs
-  * Added support archives containing RDF data to preloading and loadData
-  * Integrated a matching system, specifically GENOMA
-  * Added a connector for the Euopean Union Open Data Portal (ODP) (https://data.europa.eu/euodp/)
-  * Added the creation of Lucene indexes for the resource in the projects and the relative search functionalities
-  * Added the support for blacklisting guided by the validation machinery
-  * Extended the service MAPLE to generated a report on the problem of matching two given datasets
+  * Added support for archives containing RDF data to preloading and loadData
+  * Integrated support for onnecting to a matching system, specifically GENOMA (the connnection protocol is meant to be generall, though)
+  * Added a Dataset Catalog connector for the Euopean Union Open Data Portal (ODP) (https://data.europa.eu/euodp/)
+  * Added services for creating Lucene indexes for the resources in the projects and for searching over these indexes (Global Search)
+  * Added support for blacklisting, integrated with the validation machinery
+  * Extended the MAPLE service to generate reports on alignment scenarios, supporting decisions and strategies for alignment
   * Removed the redundant indication of the role of predicates in the Resource View
   * Added the possibility to specify a template for enriching the output of predefined rendering engines
     (e.g. to include a skos:notation)
-  * Added support for Global Search.
-  * Added the support for Graph View in VocBench.
+  * Added support for Graph View in VocBench.
   * Fixed exception about missing configuration when exporting the results of a SPARQL graph query after the
     application of some RDFTransformers
   * Added server-side computation of the nature of the triples in the ResourceView
