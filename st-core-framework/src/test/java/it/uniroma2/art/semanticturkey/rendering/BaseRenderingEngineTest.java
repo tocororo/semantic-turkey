@@ -45,6 +45,8 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
@@ -104,7 +106,7 @@ public class BaseRenderingEngineTest {
 			UnloadablePluginConfigurationException, WrongPropertiesException, ProjectBindingException,
 			RBACException, UnsupportedModelException, UnsupportedLexicalizationModelException,
 			ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException,
-			IOException {
+			IOException, ReservedPropertyUpdateException, ProjectUpdateException {
 
 		// initializes custom forms
 		(new CustomFormManager()).init();
@@ -154,7 +156,7 @@ public class BaseRenderingEngineTest {
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
 						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
 						JsonNodeFactory.instance.objectNode()),
-				null, null, new String[] { "resource" }, null, null, null, null);
+				null, null, new String[] { "resource" }, null, null, null, null, null, null);
 		try {
 			Repository repo = new SailRepository(new MemoryStore());
 			repo.initialize();
@@ -272,7 +274,7 @@ public class BaseRenderingEngineTest {
 			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
 			WrongPropertiesException, ProjectBindingException, RBACException, UnsupportedModelException,
 			UnsupportedLexicalizationModelException, ProjectInconsistentException,
-			InvalidConfigurationException, STPropertyAccessException, IOException {
+			InvalidConfigurationException, STPropertyAccessException, IOException, ReservedPropertyUpdateException, ProjectUpdateException {
 
 		// initializes custom forms
 		(new CustomFormManager()).init();
@@ -326,7 +328,7 @@ public class BaseRenderingEngineTest {
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
 						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
 						JsonNodeFactory.instance.objectNode()),
-				null, null, new String[] { "resource" }, null, null, null, null);
+				null, null, new String[] { "resource" }, null, null, null, null, null, null);
 		try {
 			STServiceContext stServiceContext = new STServiceContext() {
 

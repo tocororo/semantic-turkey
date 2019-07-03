@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -24,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -119,6 +121,7 @@ import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -159,14 +162,14 @@ public class Projects extends STServiceAdapter {
 			@Optional IRI modificationDateProperty,
 			@Optional(defaultValue = "resource") String[] updateForRoles,
 			@Optional String preloadedDataFileName, @Optional RDFFormat preloadedDataFormat,
-			@Optional TransitiveImportMethodAllowance transitiveImportAllowance)
-			throws ProjectInconsistentException, InvalidProjectNameException, ProjectInexistentException,
-			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
-			ProjectCreationException, ClassNotFoundException, WrongPropertiesException,
-			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
-			ProjectBindingException, RBACException, UnsupportedModelException,
-			UnsupportedLexicalizationModelException, InvalidConfigurationException, STPropertyAccessException,
-			IOException {
+			@Optional TransitiveImportMethodAllowance transitiveImportAllowance, @Optional String leftDataset,
+			@Optional String rightDataset) throws ProjectInconsistentException, InvalidProjectNameException,
+			ProjectInexistentException, ProjectAccessException, ForbiddenProjectAccessException,
+			DuplicatedResourceException, ProjectCreationException, ClassNotFoundException,
+			WrongPropertiesException, UnsupportedPluginConfigurationException,
+			UnloadablePluginConfigurationException, ProjectBindingException, RBACException,
+			UnsupportedModelException, UnsupportedLexicalizationModelException, InvalidConfigurationException,
+			STPropertyAccessException, IOException, ReservedPropertyUpdateException, ProjectUpdateException {
 
 		List<Object> preloadRelatedArgs = Arrays.asList(preloadedDataFileName, preloadedDataFormat,
 				transitiveImportAllowance);
@@ -199,7 +202,7 @@ public class Projects extends STServiceAdapter {
 					supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
 					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
 					updateForRoles, preloadedDataFile, preloadedDataFormat, transitiveImportAllowance,
-					failedImports);
+					failedImports, leftDataset, rightDataset);
 			deletePreloadedDataFile = true;
 		} finally {
 			if (preloadedDataFileName != null) {

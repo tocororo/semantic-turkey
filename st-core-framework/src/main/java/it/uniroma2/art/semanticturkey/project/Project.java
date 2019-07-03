@@ -139,6 +139,9 @@ public abstract class Project extends AbstractProject {
 	public static final IRI ONTOLEXLEMON_MODEL = SimpleValueFactory.getInstance()
 			.createIRI(ONTOLEXLEMON_MODEL_STRING);
 
+	public static final String EDOAL_MODEL_STRING = "http://ns.inria.org/edoal/1.0/";
+	public static final IRI EDOAL_MODEL = SimpleValueFactory.getInstance().createIRI(EDOAL_MODEL_STRING);
+
 	public static final String RDFS_LEXICALIZATION_MODEL_STRING = "http://www.w3.org/2000/01/rdf-schema";
 	public static final IRI RDFS_LEXICALIZATION_MODEL = SimpleValueFactory.getInstance()
 			.createIRI(RDFS_LEXICALIZATION_MODEL_STRING);
@@ -320,8 +323,8 @@ public abstract class Project extends AbstractProject {
 	}
 
 	public static void checkModel(IRI model) throws UnsupportedModelException {
-		if (!Arrays.asList(RDFS_MODEL, SKOS_MODEL, OWL_MODEL, SKOS_LEXICALIZATION_MODEL,
-				ONTOLEXLEMON_LEXICALIZATION_MODEL).contains(model)) {
+		if (!Arrays.asList(RDFS_MODEL, SKOS_MODEL, OWL_MODEL, ONTOLEXLEMON_MODEL, EDOAL_MODEL)
+				.contains(model)) {
 			throw new UnsupportedModelException(model.stringValue() + " is not a valid model");
 		}
 	}
@@ -776,7 +779,7 @@ public abstract class Project extends AbstractProject {
 			throw new ProjectUpdateException(e);
 		}
 	}
-	
+
 	public void removeProperty(String propName, String propValue)
 			throws ReservedPropertyUpdateException, ProjectUpdateException {
 		logger.debug("removing property: " + propName);
@@ -982,6 +985,8 @@ public abstract class Project extends AbstractProject {
 	private static final String AUXILIARY_METADATA_GRAPH_SUFFIX = "/meta";
 	public static final String CORE_REPOSITORY = "core";
 	public static final String SUPPORT_REPOSITORY = "support";
+	public static final String LEFT_DATASET_PROP = "leftDataset";
+	public static final String RIGHT_DATASET_PROP = "leftDataset";
 
 	public Resource getMetadataGraph(String extensionPathComponent) {
 		return SimpleValueFactory.getInstance().createIRI(AUXILIARY_METADATA_GRAPH_NAME_BASE

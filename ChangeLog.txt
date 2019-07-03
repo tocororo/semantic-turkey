@@ -1,9 +1,13 @@
+version 6.1
+date: dd/mm/yyy
+  * New EDOAL model type
+
 version 6.0
 date: 27/06/2019
   * Enabled multiple dataDumps in dataset catalogs
   * Added support for archives containing RDF data to preloading and loadData
-  * Integrated support for onnecting to a matching system, specifically GENOMA (the connnection protocol is meant to be generall, though)
-  * Added a Dataset Catalog connector for the Euopean Union Open Data Portal (ODP) (https://data.europa.eu/euodp/)
+  * Integrated support for connecting to a matching system, specifically GENOMA (the connection protocol is meant to be general, though)
+  * Added a Dataset Catalog connector for the European Union Open Data Portal (ODP) (https://data.europa.eu/euodp/)
   * Added services for creating Lucene indexes for the resources in the projects and for searching over these indexes (Global Search)
   * Added support for blacklisting, integrated with the validation machinery
   * Extended the MAPLE service to generate reports on alignment scenarios, supporting decisions and strategies for alignment

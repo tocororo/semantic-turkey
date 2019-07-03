@@ -81,6 +81,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
@@ -166,7 +167,7 @@ public class ProjectManager {
 	public static void setMetadataRegistryBackend(MetadataRegistryBackend metadataRegistryBackend) {
 		ProjectManager.metadataRegistryBackend = metadataRegistryBackend;
 	}
-	
+
 	/**
 	 * lists the projects available (stored in the projects directory of Semantic Turkey). If
 	 * <code>consumer</code> is not null, filters the list by reporting only the projects which contain
@@ -928,7 +929,7 @@ public class ProjectManager {
 				}
 				RBACManager.loadRBACProcessor(project);
 				metadataRegistryBackend.registerProject(project);
-				
+
 				return project;
 			} else {
 				throw new ForbiddenProjectAccessException(accessResponse.getMsg());
@@ -1366,13 +1367,14 @@ public class ProjectManager {
 			PluginSpecification renderingEngineSpecification, IRI creationDateProperty,
 			IRI modificationDateProperty, String[] updateForRoles, File preloadedDataFile,
 			RDFFormat preloadedDataFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
-			Set<IRI> failedImports) throws InvalidProjectNameException, ProjectInexistentException,
-			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
-			ProjectCreationException, ClassNotFoundException, UnsupportedPluginConfigurationException,
+			Set<IRI> failedImports, String leftDataset, String rightDataset)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
+			ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException, ProjectBindingException,
 			RBACException, UnsupportedModelException, UnsupportedLexicalizationModelException,
 			ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException,
-			IOException {
+			IOException, ReservedPropertyUpdateException, ProjectUpdateException {
 
 		if (!validationEnabled && blacklistingEnabled) {
 			throw new IllegalArgumentException(
@@ -1495,7 +1497,6 @@ public class ProjectManager {
 											.createIRI(defaultNamespace + "blacklist"));
 								}
 
-
 								return changeTrackerSailConfig;
 							});
 					newCoreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
@@ -1609,11 +1610,30 @@ public class ProjectManager {
 			}
 
 			prepareProjectFiles(consumer, projectName, model, lexicalizationModel, projType, projectDir,
-					baseURI, defaultNamespace, historyEnabled, validationEnabled,
-					blacklistingEnabled, repositoryAccess, coreRepoID, coreRepositoryConfig,
-					coreBackendType, supportRepoID, supportRepositoryConfig, supportBackendType,
-					uriGeneratorSpecification, renderingEngineSpecification, creationDateProperty,
-					modificationDateProperty, updateForRoles);
+					baseURI, defaultNamespace, historyEnabled, validationEnabled, blacklistingEnabled,
+					repositoryAccess, coreRepoID, coreRepositoryConfig, coreBackendType, supportRepoID,
+					supportRepositoryConfig, supportBackendType, uriGeneratorSpecification,
+					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
+					updateForRoles, leftDataset, rightDataset);
+
+			// make sure that both the left and right dataset of an EDOAL project grants read access to it
+			if (Project.EDOAL_MODEL.equals(model)) {
+				if (leftDataset == null) {
+					throw new IllegalArgumentException(
+							"The left dataset of an EDOAL project must be non null");
+				}
+
+				if (rightDataset == null) {
+					throw new IllegalArgumentException(
+							"The righ dataset of an EDOAL project must be non null");
+				}
+				Project projectBeingCreated = ProjectManager.getProjectDescription(projectName);
+				Project leftDatasetProject = ProjectManager.getProjectDescription(leftDataset);
+				Project rightDatasetProject = ProjectManager.getProjectDescription(rightDataset);
+
+				leftDatasetProject.getACL().grantAccess(projectBeingCreated, AccessLevel.R);
+				rightDatasetProject.getACL().grantAccess(projectBeingCreated, AccessLevel.R);
+			}
 
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 
@@ -1728,7 +1748,8 @@ public class ProjectManager {
 			RepositoryConfig coreRepoConfig, String coreBackendType, String supportRepoID,
 			RepositoryConfig supportRepoConfig, String supportBackendType,
 			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
-			IRI creationDateProperty, IRI modificationDateProperty, String[] updateForRoles)
+			IRI creationDateProperty, IRI modificationDateProperty, String[] updateForRoles,
+			String leftDataset, String rightDataset)
 			throws DuplicatedResourceException, ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
@@ -1744,8 +1765,7 @@ public class ProjectManager {
 			// out.write(Project.MODELCONFIG_ID + "=" + escape(modelConfigurationClass) + "\n");
 			out.write(Project.HISTORY_ENABLED_PROP + "=" + historyEnabled + "\n");
 			out.write(Project.VALIDATION_ENABLED_PROP + "=" + validationEnabled + "\n");
-			out.write(Project.BLACKLISTING_ENABLED_PROP + "=" + blacklistingEnabled
-					+ "\n");
+			out.write(Project.BLACKLISTING_ENABLED_PROP + "=" + blacklistingEnabled + "\n");
 			out.write(Project.URI_GENERATOR_FACTORY_ID_PROP + "="
 					+ escape(uriGeneratorSpecification.getFactoryId()) + "\n");
 			out.write(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP + "="
@@ -1778,6 +1798,16 @@ public class ProjectManager {
 
 			out.write(Project.UPDATE_FOR_ROLES_PROP + "="
 					+ escape(Arrays.stream(updateForRoles).collect(Collectors.joining(","))) + "\n");
+
+			if (leftDataset != null) {
+				out.write(Project.LEFT_DATASET_PROP + "="
+						+ escape(leftDataset) + "\n");
+			}
+			
+			if (rightDataset != null) {
+				out.write(Project.RIGHT_DATASET_PROP + "="
+						+ escape(rightDataset) + "\n");
+			}
 
 			out.close();
 
