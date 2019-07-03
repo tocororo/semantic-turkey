@@ -986,7 +986,7 @@ public abstract class Project extends AbstractProject {
 	public static final String CORE_REPOSITORY = "core";
 	public static final String SUPPORT_REPOSITORY = "support";
 	public static final String LEFT_DATASET_PROP = "leftDataset";
-	public static final String RIGHT_DATASET_PROP = "leftDataset";
+	public static final String RIGHT_DATASET_PROP = "rightDataset";
 
 	public Resource getMetadataGraph(String extensionPathComponent) {
 		return SimpleValueFactory.getInstance().createIRI(AUXILIARY_METADATA_GRAPH_NAME_BASE

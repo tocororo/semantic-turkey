@@ -1,22 +1,42 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import static java.util.stream.Collectors.toList;
+
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.MalformedQueryException;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.UpdateExecutionException;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -25,7 +45,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.OtherPropertiesStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 
@@ -38,25 +57,50 @@ import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 public class EDOAL extends STServiceAdapter {
 
 	public static class Correspondence {
+		private Resource identity;
 		private Collection<AnnotatedValue<Value>> leftEntity;
 		private Collection<AnnotatedValue<Value>> rightEntity;
 		private Collection<AnnotatedValue<Value>> relation;
 		private Collection<AnnotatedValue<Value>> measure;
 
+		public Resource getIdentity() {
+			return identity;
+		}
+
+		public void setIdentity(Resource identity) {
+			this.identity = identity;
+		}
+
 		public Collection<AnnotatedValue<Value>> getLeftEntity() {
 			return leftEntity;
+		}
+
+		public void setLeftEntity(Collection<AnnotatedValue<Value>> leftEntity) {
+			this.leftEntity = leftEntity;
 		}
 
 		public Collection<AnnotatedValue<Value>> getRightEntity() {
 			return rightEntity;
 		}
 
+		public void setRightEntity(Collection<AnnotatedValue<Value>> rightEntity) {
+			this.rightEntity = rightEntity;
+		}
+
 		public Collection<AnnotatedValue<Value>> getRelation() {
 			return relation;
 		}
 
+		public void setRelation(Collection<AnnotatedValue<Value>> relation) {
+			this.relation = relation;
+		}
+
 		public Collection<AnnotatedValue<Value>> getMeasure() {
 			return measure;
+		}
+
+		public void setMeasure(Collection<AnnotatedValue<Value>> measure) {
+			this.measure = measure;
 		}
 	}
 
@@ -246,8 +290,117 @@ public class EDOAL extends STServiceAdapter {
 	@Read
 	@STServiceOperation
 	public Collection<Correspondence> getCorrespondences(Resource alignment,
-			@Optional(defaultValue = "0") int offset, @Optional(defaultValue = "10") int limit) {
-		return Collections.emptyList();
+			@Optional(defaultValue = "0") int page, @Optional(defaultValue = "10") int pageSize)
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		Project thisProject = getProject();
+		Project leftDataset = ProjectManager.getProject(thisProject.getProperty(Project.LEFT_DATASET_PROP),
+				false);
+		Project rightDataset = ProjectManager.getProject(thisProject.getProperty(Project.RIGHT_DATASET_PROP),
+				false);
+
+		RepositoryConfig coreRepositoryConfig = thisProject.getRepositoryManager()
+				.getRepositoryConfig(Project.CORE_REPOSITORY);
+		RepositoryImplConfig repoImpl = STLocalRepositoryManager
+				.getUnfoldedRepositoryImplConfig(coreRepositoryConfig);
+		if (!(repoImpl instanceof HTTPRepositoryConfig)) {
+			throw new IllegalStateException(String.format(
+					"The project '%s' is not backed by a remote triple store", thisProject.getName()));
+		}
+
+		IRI thisRepoEndpoint = SimpleValueFactory.getInstance()
+				.createIRI(((HTTPRepositoryConfig) repoImpl).getURL());
+
+		String queryString =
+			//@formatter:off
+			"prefix align: <http://knowledgeweb.semanticweb.org/heterogeneity/alignment#>\n" + 
+			"select ?x\n" + 
+			"       (GROUP_CONCAT(CONCAT(STR(?g1),\"|=|\",STR(?entity1));separator=\"|_|\") as ?entity1B)\n" + 
+			"       (GROUP_CONCAT(CONCAT(STR(?g2),\"|=|\",STR(?entity2));separator=\"|_|\") as ?entity2B)\n" + 
+			"       (GROUP_CONCAT(CONCAT(STR(?g3),\"|=|\",STR(?relation));separator=\"|_|\") as ?relationB)\n" + 
+			"       (GROUP_CONCAT(CONCAT(STR(?g4),\"|=|\",STR(?measure));separator=\"|_|\") as ?measureB)\n" + 
+			"       (MIN(LCASE(?indexT)) as ?index) \n" + 
+			"{\n" + 
+			"    service " + NTriplesUtil.toNTriplesString(thisRepoEndpoint) + " {\n" + 
+			"        ?x a align:Cell .\n" + 
+			"        graph ?g1 {\n" + 
+			"           ?x align:entity1 ?entity1 .\n" + 
+			"        }\n" + 
+			"        graph ?g2 {\n" + 
+			"           ?x align:entity2 ?entity2 .\n" + 
+			"        }\n" + 
+			"        graph ?g3 {\n" + 
+			"           ?x align:relation ?relation .\n" + 
+			"        }\n" + 
+			"        graph ?g4 {\n" + 
+			"           ?x align:measure ?measure .\n" + 
+			"        }\n" + 
+			"    }\n" + 
+			"    optional {\n" + 
+			computeIndexingGraphPattern(leftDataset) +
+			"    }\n" + 
+			"    BIND(COALESCE(?valueIndex, ?entity1) as ?indexT)\n" + 
+			"}\n" + 
+			"group by ?x\n" + 
+			"order by ASC(LCASE(?index)) ?x\n" +
+			"offset " + (page * pageSize) + "\n"+
+			"limit " + pageSize + "\n"
+			//@formatter:on
+		;
+
+		try (RepositoryConnection leftDatasetConn = leftDataset.getRepository().getConnection()) {
+			TupleQuery query = leftDatasetConn.prepareTupleQuery(queryString);
+			return QueryResults.stream(query.evaluate()).map(bs -> {
+				Correspondence corr = new Correspondence();
+				corr.setIdentity((Resource) bs.getValue("x"));
+				corr.setLeftEntity(processStringiedObjectList(bs.getValue("entity1B").stringValue(), null));
+				corr.setRightEntity(processStringiedObjectList(bs.getValue("entity2B").stringValue(), null));
+				corr.setRelation(
+						processStringiedObjectList(bs.getValue("relationB").stringValue(), XMLSchema.STRING));
+				corr.setMeasure(
+						processStringiedObjectList(bs.getValue("measureB").stringValue(), XMLSchema.FLOAT));
+				return corr;
+			}).collect(toList());
+		}
+	}
+
+	private String computeIndexingGraphPattern(Project keyProject) {
+		return
+		//@formatter:off
+			"?entity1 <http://www.w3.org/2008/05/skos-xl#prefLabel> [\n" + 
+		    "  <http://www.w3.org/2008/05/skos-xl#literalForm> ?valueIndex \n" + 
+			"]\n" + 
+			" FILTER(lang(?valueIndex) = \"en\")\n";
+			//@formatter:on
+	}
+
+	private Collection<AnnotatedValue<Value>> processStringiedObjectList(String input, IRI datatype) {
+		Collection<AnnotatedValue<Value>> rv = new ArrayList<>();
+		Multimap<String, String> object2graphs = HashMultimap.create();
+		for (String graphObjectPair : (input.split("\\|_\\|"))) {
+			String[] splits = graphObjectPair.split("\\|=\\|");
+			if (splits.length != 2)
+				continue;
+
+			String graph = splits[0];
+			String object = splits[1];
+
+			object2graphs.put(object, graph);
+		}
+
+		for (String object : object2graphs.keys()) {
+			Value value;
+			if (datatype == null) {
+				value = SimpleValueFactory.getInstance().createIRI(object);
+			} else {
+				value = SimpleValueFactory.getInstance().createLiteral(object, datatype);
+			}
+
+			Map<String, Value> attributes = new HashMap<>();
+			AnnotatedValue<Value> annotValue = new AnnotatedValue<>(value, attributes);
+			rv.add(annotValue);
+
+		}
+		return rv;
 	}
 
 }
