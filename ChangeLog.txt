@@ -1,6 +1,7 @@
 version 6.1
 date: dd/mm/yyy
   * New EDOAL model type
+  * when adding a topConcept, that concept is add to that scheme as well with skos:inScheme
 
 version 6.0
 date: 27/06/2019

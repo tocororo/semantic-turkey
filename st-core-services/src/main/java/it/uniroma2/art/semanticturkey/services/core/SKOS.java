@@ -1090,6 +1090,9 @@ public class SKOS extends STServiceAdapter {
 
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, scheme));
+		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
+				org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, scheme));
+		
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
 	}	
