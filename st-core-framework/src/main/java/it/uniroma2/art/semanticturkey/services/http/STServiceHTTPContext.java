@@ -74,11 +74,8 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		Project project;
 
 		if (projectParameter == null) {
-			if (Config.isSingleProjectMode())
-				project = ProjectManager.getCurrentProject();
-			else
-				throw new InvalidContextException(
-						"either this context is meant to have no project information, or it has not been passed through the request");
+			throw new InvalidContextException(
+					"either this context is meant to have no project information, or it has not been passed through the request");
 		} else {
 			project = ProjectManager.getProject(projectParameter);
 		}

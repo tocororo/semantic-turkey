@@ -24,7 +24,7 @@ public class STAuthenticationFailureHandler extends SimpleUrlAuthenticationFailu
 	@Override
 	public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException exception) throws IOException, ServletException {
-		response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+		response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 		ServletOutputStream out = response.getOutputStream();
 		if (exception.getClass().isAssignableFrom(DisabledException.class)) {
 			out.print("Authentication failed. User not yet enabled, please contact the system administrator");

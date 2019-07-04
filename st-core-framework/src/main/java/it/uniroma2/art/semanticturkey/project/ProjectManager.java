@@ -1300,64 +1300,6 @@ public class ProjectManager {
 
 	}
 
-	/*
-	 * SINGLE PROJECT METHODS, WRAPPING THE ABOVE METHODS
-	 */
-
-	private static Project _currentProject;
-
-	private static void setCurrentProject(Project proj) {
-		_currentProject = proj;
-	}
-
-	/**
-	 * gets the currently loaded project
-	 * 
-	 * @return
-	 */
-	public static Project getCurrentProject() {
-		return _currentProject;
-	}
-
-	/**
-	 * as for {@link #accessProject(ProjectConsumer, String, AccessLevel, LockLevel)} with
-	 * <ul>
-	 * <li>{@link ProjectConsumer} set to {@link ProjectConsumer#SYSTEM}</li>
-	 * <li>{@link AccessLevel} = {@link AccessLevel#RW}</li>
-	 * <li>{@link LockLevel} = {@link LockLevel#NO}</li>
-	 * </ul>
-	 * and sets the project identified by <code>projectName</code> as <code>currentProject</code>
-	 * 
-	 * @param projectName
-	 * @return
-	 * @throws ProjectAccessException
-	 * @throws ProjectInexistentException
-	 * @throws ForbiddenProjectAccessException
-	 * @throws InvalidProjectNameException
-	 * @throws RBACException
-	 * @throws ProjectBindingException
-	 */
-	public static Project openProject(String projectName)
-			throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException,
-			ForbiddenProjectAccessException, ProjectBindingException, RBACException {
-		Project project;
-		project = accessProject(ProjectConsumer.SYSTEM, projectName, AccessLevel.RW, LockLevel.NO);
-		setCurrentProject(project);
-		return project;
-
-	}
-
-	public static void closeCurrentProject() {
-		// logger.debug("closing current project: " + _currentProject.getName());
-		disconnectFromProject(ProjectConsumer.SYSTEM, getCurrentProject().getName());
-		_currentProject = null;
-	}
-
-	public static void exportCurrentProject(File semTurkeyProjectFile)
-			throws IOException, ProjectAccessException {
-		exportProject(_currentProject.getName(), semTurkeyProjectFile);
-	}
-
 	public static Project createProject(ProjectConsumer consumer, String projectName, IRI model,
 			IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
 			boolean blacklistingEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
