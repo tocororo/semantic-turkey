@@ -7,6 +7,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -108,6 +110,21 @@ public class EDOAL extends STServiceAdapter {
 
 	@Autowired
 	private CustomFormManager cfManager;
+
+	/**
+	 * Returns information about the aligned projects
+	 * 
+	 * @return
+	 */
+	@STServiceOperation
+	public Pair<String, String> getAlignedProjects() {
+		Project thisProject = getProject();
+
+		String leftDataset = thisProject.getProperty(Project.LEFT_DATASET_PROP);
+		String rightDataset = thisProject.getProperty(Project.RIGHT_DATASET_PROP);
+
+		return ImmutablePair.of(leftDataset, rightDataset);
+	}
 
 	/**
 	 * Returns the align:Alignment resources defined in the current project
@@ -311,7 +328,7 @@ public class EDOAL extends STServiceAdapter {
 				.createIRI(((HTTPRepositoryConfig) repoImpl).getURL());
 
 		String queryString =
-			//@formatter:off
+		//@formatter:off
 			"prefix align: <http://knowledgeweb.semanticweb.org/heterogeneity/alignment#>\n" + 
 			"select ?x\n" + 
 			"       (GROUP_CONCAT(CONCAT(STR(?g1),\"|=|\",STR(?entity1));separator=\"|_|\") as ?entity1B)\n" + 

@@ -14,7 +14,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -25,7 +24,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -121,7 +119,6 @@ import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -240,49 +237,98 @@ public class Projects extends STServiceAdapter {
 		Collection<AbstractProject> projects = ProjectManager.listProjects(consumer);
 
 		for (AbstractProject absProj : projects) {
-			String name = absProj.getName();
-			String baseURI = null;
-			String defaultNamespace = null;
-			String model = null;
-			String lexicalizationModel = null;
-			boolean historyEnabled = false;
-			boolean validationEnabled = false;
-			boolean open = false;
-			AccessResponse access = null;
-			RepositoryLocation repoLocation = new RepositoryLocation(null);
-			ProjectStatus status = new ProjectStatus(Status.ok);
-
-			if (absProj instanceof Project) {
-				Project proj = (Project) absProj;
-
-				baseURI = proj.getBaseURI();
-				defaultNamespace = proj.getDefaultNamespace();
-				model = proj.getModel().stringValue();
-				lexicalizationModel = proj.getLexicalizationModel().stringValue();
-				historyEnabled = proj.isHistoryEnabled();
-				validationEnabled = proj.isValidationEnabled();
-				open = ProjectManager.isOpen(proj);
-				access = ProjectManager.checkAccessibility(consumer, proj, requestedAccessLevel,
-						requestedLockLevel);
-				repoLocation = proj.getDefaultRepositoryLocation();
-
-				if (onlyOpen && !open) {
-					continue;
-				}
-				if (userDependent && !ProjectUserBindingsManager
-						.hasUserAccessToProject(UsersManager.getLoggedUser(), proj)) {
-					continue;
-				}
-			} else { // absProj instanceof CorruptedProject
-				CorruptedProject proj = (CorruptedProject) absProj;
-				status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
+			ProjectInfo projInfo = getProjectInfoHelper(consumer, requestedAccessLevel, requestedLockLevel,
+					userDependent, onlyOpen, absProj);
+			if (projInfo != null) {
+				listProjInfo.add(projInfo);
 			}
-			ProjectInfo projInfo = new ProjectInfo(name, open, baseURI, defaultNamespace, model,
-					lexicalizationModel, historyEnabled, validationEnabled, access, repoLocation, status);
-			listProjInfo.add(projInfo);
 		}
 
 		return listProjInfo;
+	}
+
+	/**
+	 * Returns information
+	 * 
+	 * @param consumer
+	 * @param requestedAccessLevel
+	 * @param requestedLockLevel
+	 * @param projectName
+	 * @return
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectAccessException
+	 */
+	@STServiceOperation
+	public ProjectInfo getProjectInfo(@Optional ProjectConsumer consumer,
+			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
+			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel, String projectName)
+			throws IllegalStateException, ProjectAccessException, InvalidProjectNameException,
+			ProjectInexistentException {
+		Project proj = ProjectManager.getProject(projectName, true);
+
+		return getProjectInfoHelper(consumer, requestedAccessLevel, requestedLockLevel, false, false, proj);
+	}
+
+	/**
+	 * Returns metadata about a project. If either <code>userDependent</code> or <code>onlyOpen</code> is
+	 * <code>true</code>, then this operation might return <code>null</code>.
+	 * 
+	 * @param consumer
+	 * @param requestedAccessLevel
+	 * @param requestedLockLevel
+	 * @param userDependent
+	 *            if true, returns only the projects accessible by the logged user (the user has a role
+	 *            assigned in it)
+	 * @param onlyOpen
+	 *            if true, return only the open projects
+	 * @param absProj
+	 * @return
+	 * @throws ProjectAccessException
+	 */
+	public static ProjectInfo getProjectInfoHelper(ProjectConsumer consumer,
+			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel,
+			boolean userDependent, boolean onlyOpen, AbstractProject absProj) {
+		String name = absProj.getName();
+		String baseURI = null;
+		String defaultNamespace = null;
+		String model = null;
+		String lexicalizationModel = null;
+		boolean historyEnabled = false;
+		boolean validationEnabled = false;
+		boolean open = false;
+		AccessResponse access = null;
+		RepositoryLocation repoLocation = new RepositoryLocation(null);
+		ProjectStatus status = new ProjectStatus(Status.ok);
+
+		if (absProj instanceof Project) {
+			Project proj = (Project) absProj;
+
+			baseURI = proj.getBaseURI();
+			defaultNamespace = proj.getDefaultNamespace();
+			model = proj.getModel().stringValue();
+			lexicalizationModel = proj.getLexicalizationModel().stringValue();
+			historyEnabled = proj.isHistoryEnabled();
+			validationEnabled = proj.isValidationEnabled();
+			open = ProjectManager.isOpen(proj);
+			access = ProjectManager.checkAccessibility(consumer, proj, requestedAccessLevel,
+					requestedLockLevel);
+			repoLocation = proj.getDefaultRepositoryLocation();
+
+			if (onlyOpen && !open) {
+				return null;
+			}
+			if (userDependent && !ProjectUserBindingsManager
+					.hasUserAccessToProject(UsersManager.getLoggedUser(), proj)) {
+				return null;
+			}
+		} else { // absProj instanceof CorruptedProject
+			CorruptedProject proj = (CorruptedProject) absProj;
+			status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
+		}
+		ProjectInfo projInfo = new ProjectInfo(name, open, baseURI, defaultNamespace, model,
+				lexicalizationModel, historyEnabled, validationEnabled, access, repoLocation, status);
+		return projInfo;
 	}
 
 	/**
