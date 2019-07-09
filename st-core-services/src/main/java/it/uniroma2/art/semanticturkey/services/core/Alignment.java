@@ -10,19 +10,29 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Triple;
+import org.apache.http.auth.NTUserPrincipal;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.queryrender.QueryRenderer;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
@@ -30,17 +40,20 @@ import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.locationtech.jts.geom.util.GeometryMapper.MapOp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.annotation.JsonFormat.Value;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.maple.impl.misc.SparqlUtilities;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel.Status;
@@ -75,6 +88,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.sparql.SPARQLUtilities;
+import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
@@ -108,6 +123,8 @@ public class Alignment extends STServiceAdapter {
 
 	// map that contain <id, context> pairs to handle multiple sessions
 	private Map<String, AlignmentModel> modelsMap = new HashMap<>();
+
+	public static final long DEFAULT_ALINGNMENT_PAGE_SIZE = 50;
 
 	//@formatter:off
 	//SERVICES FOR ALIGMENT FOR THE SEARCH
@@ -472,6 +489,111 @@ public class Alignment extends STServiceAdapter {
 	}
 
 	/**
+	 * Returns the number of available mappings
+	 * 
+	 * @param targetUriPrefix
+	 * @param mappingProperties
+	 * @param expressInPages
+	 *            whether the count should be an absolute number or expressed as the number of pages
+	 * @param pageSize
+	 *            if less or equal to zero, then everything goes into one page
+	 * 
+	 * @return
+	 * @throws ProjectInconsistentException
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
+	public Long getMappingCount(String targetUriPrefix,
+			@Optional(defaultValue = "") List<IRI> mappingProperties,
+			@Optional(defaultValue = "false") boolean expressInPages,
+			@Optional(defaultValue = "" + DEFAULT_ALINGNMENT_PAGE_SIZE) long pageSize) {
+		if (mappingProperties.isEmpty()) {
+			mappingProperties = new ArrayList<>();
+			mappingProperties.addAll(skosMappingRelations);
+			mappingProperties.addAll(owlMappingRelations);
+			mappingProperties.addAll(propertiesMappingRelations);
+		}
+
+		TupleQuery query = getManagedConnection().prepareTupleQuery(
+		//@formatter:off
+			"SELECT (COUNT(*) as ?count) {\n" + 
+			"  ?s ?p ?o .\n" + 
+			"  FILTER(STRSTARTS(STR(?o), ?targetUriPrefix))\n" + 
+			"  FILTER(STRSTARTS(STR(?s), ?sourceUriPrefix))\n" + 
+			"}\n" + 
+			"values(?p){" + mappingProperties.stream().map(p -> "(" + RenderUtils.toSPARQL(p) + ")").collect(Collectors.joining())+"}\n" 
+			//@formatter:on
+		);
+
+		query.setIncludeInferred(false);
+		query.setBinding("sourceUriPrefix",
+				SimpleValueFactory.getInstance().createLiteral(getProject().getDefaultNamespace()));
+		query.setBinding("targetUriPrefix", SimpleValueFactory.getInstance().createLiteral(targetUriPrefix));
+
+		long count = Literals
+				.getLongValue(QueryResults.asList(query.evaluate()).iterator().next().getValue("count"), 0);
+		if (expressInPages) {
+			if (pageSize < 0) {
+				return count != 0 ? 1l : 0l;
+			} else {
+				// ceil division
+				return (count + pageSize - 1) / pageSize;
+			}
+		} else {
+			return count;
+		}
+	}
+
+	/**
+	 * Returns the available mappings
+	 * 
+	 * @param targetUriPrefix
+	 * @param page
+	 * @param pageSize
+	 * @param mappingProperties
+	 * 
+	 * @return
+	 * @throws ProjectInconsistentException
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
+	public Collection<Triple<IRI, IRI, IRI>> getMappings(String targetUriPrefix,
+			@Optional(defaultValue = "0") int page,
+			@Optional(defaultValue = "" + DEFAULT_ALINGNMENT_PAGE_SIZE) int pageSize,
+			@Optional(defaultValue = "") List<IRI> mappingProperties) {
+
+		if (mappingProperties.isEmpty()) {
+			mappingProperties = new ArrayList<>();
+			mappingProperties.addAll(skosMappingRelations);
+			mappingProperties.addAll(owlMappingRelations);
+			mappingProperties.addAll(propertiesMappingRelations);
+		}
+
+		TupleQuery query = getManagedConnection().prepareTupleQuery(
+		//@formatter:off
+			"SELECT ?s ?p ?o {\n" + 
+			"  ?s ?p ?o .\n" + 
+			"  FILTER(STRSTARTS(STR(?o), ?targetUriPrefix))\n" + 
+			"  FILTER(STRSTARTS(STR(?s), ?sourceUriPrefix))\n" + 
+			"}\n" + 
+			"offset " + (page * pageSize) + "\n" + 
+			(pageSize <= 0 ? "" : "limit " + pageSize + "\n") +
+			"values(?p){" + mappingProperties.stream().map(p -> "(" + RenderUtils.toSPARQL(p) + ")").collect(Collectors.joining())+"}\n" 
+			//@formatter:on
+		);
+
+		query.setIncludeInferred(false);
+		query.setBinding("sourceUriPrefix",
+				SimpleValueFactory.getInstance().createLiteral(getProject().getDefaultNamespace()));
+		query.setBinding("targetUriPrefix", SimpleValueFactory.getInstance().createLiteral(targetUriPrefix));
+
+		return QueryResults.stream(query.evaluate()).map(bs -> ImmutableTriple.of((IRI) bs.getValue("s"),
+				(IRI) bs.getValue("p"), (IRI) bs.getValue("o"))).collect(Collectors.toList());
+	}
+
+	/**
 	 * Adds the given alignment triple only if predicate is a valid alignment property
 	 * 
 	 * @param sourceResource
@@ -545,7 +667,7 @@ public class Alignment extends STServiceAdapter {
 
 		return loadAlignmentHelper(alignModel);
 	}
-	
+
 	/**
 	 * This method is responsible for the finalization of alignment load operations, irrespectively of the
 	 * source of the alignment (e.g. file, GENOMA task, etc...)

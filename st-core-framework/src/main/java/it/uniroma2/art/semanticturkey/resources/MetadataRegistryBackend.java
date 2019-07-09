@@ -187,12 +187,22 @@ public interface MetadataRegistryBackend {
 			throws NoSuchDatasetMetadataException, MetadataRegistryStateException;
 
 	/**
-	 * Returns the lexicalization sets associated with the given dataset
+	 * Returns the lexicalization sets associated with the given dataset.
 	 * 
 	 * @param dataset
 	 * @return
 	 */
 	Collection<LexicalizationSetMetadata> getEmbeddedLexicalizationSets(IRI dataset);
+
+	/**
+	 * Returns the linksets associated with the given dataset
+	 * 
+	 * @param dataset
+	 * @param treshold
+	 * @param coalesce
+	 * @return
+	 */
+	Collection<LinksetMetadata> getEmbeddedLinksets(IRI dataset, long treshold, boolean coalesce);
 
 	/**
 	 * Returns metadata about the dataset identified by the given URI. If no dataset is found, then the method

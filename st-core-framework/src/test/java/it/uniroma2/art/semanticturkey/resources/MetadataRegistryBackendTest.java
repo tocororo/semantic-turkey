@@ -12,6 +12,7 @@ import org.apache.sling.testing.mock.osgi.junit.OsgiContext;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
@@ -67,8 +68,8 @@ public class MetadataRegistryBackendTest {
 		baseDir.mkdirs();
 		FileUtils.cleanDirectory(baseDir);
 
-		metadataRegistryBackend = new MetadataRegistryBackendImpl(baseDir,
-				mediationFrameworkRule.getObject(), null);
+		metadataRegistryBackend = new MetadataRegistryBackendImpl(baseDir, mediationFrameworkRule.getObject(),
+				null);
 		metadataRegistryBackend.initialize(); // invoke @PostConstruct
 
 		vf = SimpleValueFactory.getInstance();
@@ -214,8 +215,8 @@ public class MetadataRegistryBackendTest {
 						.orElseThrow(() -> new AssertionError("Empty optional")),
 				equalTo(METADATAREGISTRY.STANDARD_DEREFERENCIATION));
 		assertThat(
-				agrovocDataset.getSparqlEndpointMetadata().orElseThrow(() -> new AssertionError("Empty optional"))
-						.getEndpoint(),
+				agrovocDataset.getSparqlEndpointMetadata()
+						.orElseThrow(() -> new AssertionError("Empty optional")).getEndpoint(),
 				equalTo(SimpleValueFactory.getInstance()
 						.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql")));
 	}
@@ -311,6 +312,71 @@ public class MetadataRegistryBackendTest {
 			conn.export(
 					RDFWriterRegistry.getInstance().get(RDFFormat.TURTLE).orElse(null).getWriter(System.out));
 		}
+
+	}
+
+	@Test
+	public void testEmbeddedLinksets() throws IllegalArgumentException, MetadataRegistryWritingException {
+
+		/*
+		 * @formatter:off
+		 * 
+		 * In this test case:
+		 * - AGROVOC contains linksets to EuroVoc, using a purpose minted IRI for the dataset as void:objectsTarget
+		 * - EuroVoc is registered in the metadata registry with its own IRI
+		 * 
+		 * The goals are:
+		 * - have the target of the linksets being unified to the dataset in the metadata registry.
+		 * - merge the two datasets to the same dataset (summing the triples count)
+		 * 
+		 * @formatter:on
+		 */
+		ValueFactory vf = SimpleValueFactory.getInstance();
+		IRI agrovocDataset = vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc");
+		metadataRegistryBackend.addDataset(agrovocDataset, "http://aims.fao.org/aos/agrovoc/",
+				"Agrovoc Dataset", true, vf.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"));
+
+		IRI eurovocDataset = vf.createIRI("http://eurovoc.europa.eu/void.ttl#EuroVoc");
+		metadataRegistryBackend.addDataset(eurovocDataset, "http://eurovoc.europa.eu/", "EuroVoc Dataset",
+				true, null);
+
+		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
+			Update update = conn.prepareUpdate(
+			//@formatter:off
+				"PREFIX void: <http://rdfs.org/ns/void#>\n" +
+				"INSERT DATA {\n" +
+				"  <http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc>\n" +
+				"    void:subset <http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc-EuroVocLinkset1> ;\n" +
+				"    void:subset <http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc-EuroVocLinkset2> ;\n" +
+				"  .\n" +
+				"  <http://aims.fao.org/aos/agrovoc/void.ttl#EuroVoc>\n" +
+				"    a void:Dataset ;\n" +
+				"    void:uriSpace \"http://eurovoc.europa.eu/\";\n" +
+				"  .\n" +
+
+				"  <http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc-EuroVocLinkset1>" +
+				"    a void:Linkset;\n" + 
+				"    void:linkPredicate <http://www.w3.org/2004/02/skos/core#exactMatch>;\n" + 
+				"    void:objectsTarget <http://aims.fao.org/aos/agrovoc/void.ttl#EuroVoc>;\n" + 
+				"    void:subjectsTarget <http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc>;\n" + 
+				"    void:triples 1000;\n" +
+				"  .\n" +
+				"  <http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc-EuroVocLinkset2>" +
+				"    a void:Linkset;\n" + 
+				"    void:linkPredicate <http://www.w3.org/2004/02/skos/core#closeMatch>;\n" + 
+				"    void:objectsTarget <http://aims.fao.org/aos/agrovoc/void.ttl#EuroVoc>;\n" + 
+				"    void:subjectsTarget <http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc>;\n" + 
+				"    void:triples 500;\n" +
+				"  .\n" +
+				"}\n"
+				//@formatter:on
+			);
+			update.execute();
+		}
+
+		Collection<LinksetMetadata> linksetsMetadata = metadataRegistryBackend
+				.getEmbeddedLinksets(agrovocDataset, 0, true);
+		linksetsMetadata.forEach(System.out::println);
 
 	}
 

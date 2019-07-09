@@ -23,6 +23,7 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.resources.CatalogRecord;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.LexicalizationSetMetadata;
+import it.uniroma2.art.semanticturkey.resources.LinksetMetadata;
 import it.uniroma2.art.semanticturkey.resources.MetadataDiscoveryException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryStateException;
@@ -282,6 +283,23 @@ public class MetadataRegistry extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
 	public Collection<LexicalizationSetMetadata> getEmbeddedLexicalizationSets(IRI dataset) {
 		return metadataRegistryBackend.getEmbeddedLexicalizationSets(dataset);
+	}
+
+	/**
+	 * Returns metadata about the linksets sets embedded in a given dataset
+	 * 
+	 * @param dataset
+	 * @param treshold
+	 *            minimum number of links (before linkset coalescing)
+	 * @param coalesce
+	 *            whether or not merge linksets for the same pair of datasets
+	 * @return
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+	public Collection<LinksetMetadata> getEmbeddedLinksets(IRI dataset,
+			@Optional(defaultValue = "0") long treshold, @Optional(defaultValue = "false") boolean coalesce) {
+		return metadataRegistryBackend.getEmbeddedLinksets(dataset, treshold, coalesce);
 	}
 
 	/**

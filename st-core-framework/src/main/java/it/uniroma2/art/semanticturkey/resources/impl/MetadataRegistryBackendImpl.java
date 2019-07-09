@@ -29,24 +29,31 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
@@ -54,6 +61,8 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.xml.stream.FactoryConfigurationError;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -127,6 +136,8 @@ import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.resources.DatasetMetadata.SPARQLEndpointMedatadata;
 import it.uniroma2.art.semanticturkey.resources.LexicalizationSetMetadata;
+import it.uniroma2.art.semanticturkey.resources.LinksetMetadata;
+import it.uniroma2.art.semanticturkey.resources.LinksetMetadata.Target;
 import it.uniroma2.art.semanticturkey.resources.MetadataDiscoveryException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryCreationException;
@@ -997,6 +1008,148 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				.orElseThrow(() -> new NoSuchDatasetMetadataException(bindings));
 	}
 
+	@Override
+	public Collection<LinksetMetadata> getEmbeddedLinksets(IRI dataset, long treshold, boolean coalesce) {
+		try (RepositoryConnection conn = getConnection()) {
+			TupleQuery query = conn.prepareTupleQuery(
+			//@formatter:off
+				"PREFIX void: <http://rdfs.org/ns/void#>\n" + 
+				"PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" + 
+				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" + 
+				"PREFIX dct: <http://purl.org/dc/terms/>\n" +
+				"SELECT ?linkset ?targetDataset ?targetDatasetUriSpace ?targetDatasetTitle ?g ?registeredTargetDataset ?registeredTargetDatasetTitle ?linkCount ?linkPredicate {\n" + 
+				"  ?sourceDataset void:subset ?linkset .\n" + 
+				"  ?linkset a void:Linkset ;\n" + 
+				"    void:subjectsTarget ?sourceDataset ;\n" + 
+				"    void:objectsTarget ?targetDataset\n" + 
+				"    .\n" + 
+				"  OPTIONAL {\n" +
+				"    ?linkset void:triples ?linkCount .\n" +
+				"  }\n" +
+				"  OPTIONAL {\n" +
+				"    ?linkset void:linkPredicate ?linkPredicate .\n" +
+				"  }\n" +
+				"  OPTIONAL { ?targetDataset void:uriSpace ?targetDatasetUriSpace . }\n" +
+				"  OPTIONAL {\n" + 
+				"    ?record a dcat:CatalogRecord ;\n" + 
+				"      foaf:primaryTopic ?registeredTargetDataset .\n" + 
+				"    ?registeredTargetDataset void:uriSpace ?targetDatasetUriSpace ;\n" + 
+				"    OPTIONAL { GRAPH ?g { ?record a dcat:CatalogRecord . }}\n" + 
+				"  }  \n" + 
+				"  OPTIONAL { ?registeredTargetDataset dct:title ?registeredTargetDatasetTitle . }\n" +
+				"  OPTIONAL { ?targetDataset dct:title ?targetDatasetTitle . }\n" +
+				"}"
+				//@formatter:on
+			);
+			query.setBinding("sourceDataset", dataset);
+			List<BindingSet> queryResults = QueryResults.asList(query.evaluate());
+
+			Map<Value, List<BindingSet>> bindingSetsForLinkset = queryResults.stream()
+					.collect(Collectors.groupingBy(bs -> bs.getValue("linkset")));
+
+			List<LinksetMetadata> rv = new ArrayList<>(bindingSetsForLinkset.keySet().size());
+
+			for (Map.Entry<Value, List<BindingSet>> entry : bindingSetsForLinkset.entrySet()) {
+				List<BindingSet> bindingSets = entry.getValue();
+				IRI sourceDataset = dataset;
+				IRI targetDataset = bindingSets.stream().map(bs -> (IRI) bs.getValue("targetDataset"))
+						.findAny().get();
+				Optional<String> targetDatasetUriSpace = bindingSets.stream()
+						.map(bs -> bs.getValue("targetDatasetUriSpace").stringValue())
+						.filter(Objects::nonNull).findAny();
+
+				Optional<Integer> linkCount = bindingSets.stream()
+						.map(bs -> Literals.getIntValue(bs.getValue("linkCount"), 0)).filter(Objects::nonNull)
+						.findAny();
+				Optional<IRI> linkPredicate = bindingSets.stream()
+						.map(bs -> (IRI) bs.getValue("linkPredicate")).filter(Objects::nonNull).findAny();
+
+				List<Literal> targetDatasetTitles = bindingSets.stream()
+						.map(bs -> (Literal) bs.getValue("targetDatasetTitle")).filter(Objects::nonNull)
+						.distinct().collect(toList());
+
+				LinksetMetadata.Target targetDatasetDescription = new LinksetMetadata.Target();
+				targetDatasetDescription.setDataset(targetDataset);
+				targetDatasetDescription.setUriSpace(targetDatasetUriSpace);
+				targetDatasetDescription.setTitles(targetDatasetTitles);
+
+				Map<IRI, List<BindingSet>> registeredDatasetsBindingSets = bindingSets.stream()
+						.filter(bs -> bs.hasBinding("registeredTargetDataset"))
+						.collect(Collectors.groupingBy(bs -> (IRI) bs.getValue("registeredTargetDataset")));
+
+				List<Target> registeredTargets = registeredDatasetsBindingSets.entrySet().stream()
+						.map(entry2 -> {
+							List<BindingSet> bss = entry2.getValue();
+							List<Literal> titles = bss.stream()
+									.map(bs -> (Literal) bs.getValue("registeredTargetDatasetTitle"))
+									.filter(Objects::nonNull).distinct().collect(toList());
+							Optional<IRI> graph = bss.stream().map(bs -> (IRI) bs.getValue("g"))
+									.filter(Objects::nonNull).findAny();
+							Target target = new Target();
+							target.setDataset(entry2.getKey());
+							target.setUriSpace(targetDatasetUriSpace);
+							target.setTitles(titles);
+							graph.flatMap(MetadataRegistryBackendImpl::computeProjectFromContext)
+									.ifPresent(target::setProjectName);
+							return target;
+						}).collect(toList());
+
+				// if the declared target is exactly one of the registered datasets, then leave only that in
+				// the list
+				Optional<Target> matchingRegistedTarget = registeredTargets.stream()
+						.filter(t -> Objects.equals(t.getDataset(), targetDataset)).findAny();
+				if (matchingRegistedTarget.isPresent()) {
+					registeredTargets = Collections.singletonList(matchingRegistedTarget.get());
+				}
+
+				LinksetMetadata linksetMetadata = new LinksetMetadata();
+				linksetMetadata.setSourceDataset(sourceDataset);
+				linksetMetadata.setTargetDataset(targetDatasetDescription);
+				linksetMetadata.setRegisteredTargets(registeredTargets);
+				linksetMetadata.setLinkCount(linkCount);
+				linksetMetadata.setLinkPredicate(linkPredicate);
+
+				if (linkCount.orElse(0) > treshold) {
+					rv.add(linksetMetadata);
+				}
+			}
+
+			// optional linkset coalescing
+			if (coalesce) {
+				Map<Pair<IRI, IRI>, List<LinksetMetadata>> groupedLinksets = rv.stream()
+						.collect(Collectors.groupingBy(ls -> ImmutablePair.of(ls.getSourceDataset(),
+								ls.getTargetDataset().getDataset())));
+
+				rv = new ArrayList<>(groupedLinksets.keySet().size());
+
+				for (Entry<Pair<IRI, IRI>, List<LinksetMetadata>> entry : groupedLinksets.entrySet()) {
+					List<LinksetMetadata> linksetsDecriptions = entry.getValue();
+
+					LinksetMetadata pivotLinksetDescription = linksetsDecriptions.get(0);
+
+					// clear link predicate if the linksets do not agree
+					if (linksetsDecriptions.stream().map(LinksetMetadata::getLinkPredicate).distinct()
+							.count() != 1) {
+						pivotLinksetDescription.setLinkPredicate(Optional.empty());
+					}
+
+					// sum the link counts, unless any of them is not specified
+					if (linksetsDecriptions.stream().map(LinksetMetadata::getLinkCount)
+							.allMatch(Optional::isPresent)) {
+						pivotLinksetDescription.setLinkCount(Optional.of(linksetsDecriptions.stream()
+								.map(LinksetMetadata::getLinkCount).mapToInt(Optional::get).sum()));
+
+					} else {
+						pivotLinksetDescription.setLinkCount(Optional.empty());
+					}
+
+					rv.add(pivotLinksetDescription);
+				}
+			}
+			return rv;
+		}
+	}
+
 	public List<DatasetMetadata> listDatasetMetadata(BindingSet bindingSet, int limit) {
 		BiFunction<String, String, String> wrapWithOptional = (var,
 				pattern) -> bindingSet.hasBinding(var) ? pattern : "OPTIONAL {\n" + pattern + "\n}\n";
@@ -1255,7 +1408,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				//@formatter:on
 			);
 			query.setBinding("dataset", dataset);
-			
+
 			return QueryResults.stream(query.evaluate()).map(bs -> (IRI) bs.getValue("graph"))
 					.filter(IRI.class::isInstance).flatMap(ctx -> {
 						try {
@@ -1732,6 +1885,18 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	public static IRI computeProjectContext(Project project, ValueFactory vf) {
 		return vf.createIRI(UriComponentsBuilder.fromHttpUrl(DEFAULTNS + "{project}")
 				.buildAndExpand(ImmutableMap.of("project", project.getName())).toUriString());
+	}
+
+	public static Optional<String> computeProjectFromContext(IRI ctx) {
+		try {
+			if (DEFAULTNS.equals(ctx.getNamespace())) {
+				return Optional.of(URLDecoder.decode(ctx.getLocalName(), StandardCharsets.UTF_8.name()));
+			} else {
+				return Optional.empty();
+			}
+		} catch (UnsupportedEncodingException e) {
+			throw new RuntimeException("It shouldn't have happend with UTF-8", e);
+		}
 	}
 
 	@Override
