@@ -1558,25 +1558,6 @@ public class ProjectManager {
 					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
 					updateForRoles, leftDataset, rightDataset);
 
-			// make sure that both the left and right dataset of an EDOAL project grants read access to it
-			if (Project.EDOAL_MODEL.equals(model)) {
-				if (leftDataset == null) {
-					throw new IllegalArgumentException(
-							"The left dataset of an EDOAL project must be non null");
-				}
-
-				if (rightDataset == null) {
-					throw new IllegalArgumentException(
-							"The righ dataset of an EDOAL project must be non null");
-				}
-				Project projectBeingCreated = ProjectManager.getProjectDescription(projectName);
-				Project leftDatasetProject = ProjectManager.getProjectDescription(leftDataset);
-				Project rightDatasetProject = ProjectManager.getProjectDescription(rightDataset);
-
-				leftDatasetProject.getACL().grantAccess(projectBeingCreated, AccessLevel.R);
-				rightDatasetProject.getACL().grantAccess(projectBeingCreated, AccessLevel.R);
-			}
-
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 
 			if (preloadedDataFile != null) {
@@ -1591,6 +1572,25 @@ public class ProjectManager {
 				} finally {
 					RDF4JRepositoryUtils.releaseConnection(conn, repository);
 				}
+			}
+			
+			// make sure that both the left and right dataset of an EDOAL project grants read access to it
+			if (Project.EDOAL_MODEL.equals(model)) {
+				if (leftDataset == null) {
+					throw new IllegalArgumentException(
+							"The left dataset of an EDOAL project must be non null");
+				}
+
+				if (rightDataset == null) {
+					throw new IllegalArgumentException(
+							"The righ dataset of an EDOAL project must be non null");
+				}
+				Project projectBeingCreated = ProjectManager.getProjectDescription(projectName);
+				Project leftDatasetProject = ProjectManager.getProject(leftDataset, true);
+				Project rightDatasetProject = ProjectManager.getProject(rightDataset, true);
+
+				leftDatasetProject.getACL().grantAccess(projectBeingCreated, AccessLevel.R);
+				rightDatasetProject.getACL().grantAccess(projectBeingCreated, AccessLevel.R);
 			}
 
 			return project;
