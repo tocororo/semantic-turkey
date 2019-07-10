@@ -304,6 +304,18 @@ public class EDOAL extends STServiceAdapter {
 		update.execute();
 	}
 
+	/**
+	 * Returns the correspondences in an alignment
+	 * 
+	 * @param alignment
+	 * @param page
+	 * @param pageSize
+	 *            if less than or equal to zero, then all correspondences go into one page
+	 * @return
+	 * @throws ProjectAccessException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 */
 	@Read
 	@STServiceOperation
 	public Collection<Correspondence> getCorrespondences(Resource alignment,
@@ -358,9 +370,10 @@ public class EDOAL extends STServiceAdapter {
 			"    BIND(COALESCE(?valueIndex, ?entity1) as ?indexT)\n" + 
 			"}\n" + 
 			"group by ?x\n" + 
+			"having BOUND(?x)\n" +
 			"order by ASC(LCASE(?index)) ?x\n" +
 			"offset " + (page * pageSize) + "\n"+
-			"limit " + pageSize + "\n"
+			(pageSize <= 0 ? "" : "limit " + pageSize + "\n")
 			//@formatter:on
 		;
 
