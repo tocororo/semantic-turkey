@@ -1061,14 +1061,14 @@ public class Projects extends STServiceAdapter {
 							);
 							nsQuery.setBinding("dataGraph", dataGraph);
 							BindingSet bs = QueryResults.singleResult(nsQuery.evaluate());
-							if (bs != null) {
+							if (bs != null && bs.hasBinding("ns")) {
 								baseURI = bs.getValue("ns").stringValue(); // possible trailing # stripped
 																			// later
 							}
 
 						}
 
-						if (baseURI.endsWith("#")) {
+						if (baseURI != null && baseURI.endsWith("#")) {
 							baseURI = baseURI.substring(0, baseURI.length() - 1);
 						}
 					}
