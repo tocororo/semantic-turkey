@@ -30,7 +30,7 @@ public class LexiconRenderer extends BaseRenderingEngine {
 	public static final LexiconRenderer INSTANCE_WITHOUT_FALLBACK = new LexiconRenderer(false);
 
 	@Override
-	protected void getGraphPatternInternal(StringBuilder gp) {
+	public void getGraphPatternInternal(StringBuilder gp) {
 		gp.append("?resource <http://purl.org/dc/terms/title> ?labelInternal .\n");
 	}
 

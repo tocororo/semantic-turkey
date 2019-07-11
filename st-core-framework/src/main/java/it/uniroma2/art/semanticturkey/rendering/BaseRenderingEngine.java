@@ -294,7 +294,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 	}
 
-	protected abstract void getGraphPatternInternal(StringBuilder gp);
+	public abstract void getGraphPatternInternal(StringBuilder gp);
 
 	@Override
 	public boolean introducesDuplicates() {

@@ -31,7 +31,7 @@ public class LexicalEntryRenderer extends BaseRenderingEngine {
 	public static final LexicalEntryRenderer INSTANCE_WITHOUT_FALLBACK = new LexicalEntryRenderer(false);
 
 	@Override
-	protected void getGraphPatternInternal(StringBuilder gp) {
+	public void getGraphPatternInternal(StringBuilder gp) {
 		gp.append(
 				"?resource <http://www.w3.org/ns/lemon/ontolex#canonicalForm> [<http://www.w3.org/ns/lemon/ontolex#writtenRep> ?labelInternal ] .\n");
 	}

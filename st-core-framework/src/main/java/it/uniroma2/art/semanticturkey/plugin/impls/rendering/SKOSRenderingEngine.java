@@ -15,7 +15,7 @@ public class SKOSRenderingEngine extends BaseRenderingEngine implements Renderin
 	}
 
 	@Override
-	protected void getGraphPatternInternal(StringBuilder gp) {
+	public void getGraphPatternInternal(StringBuilder gp) {
 		gp.append("\n?resource <http://www.w3.org/2004/02/skos/core#prefLabel> ?labelInternal .\n");
 	}
 

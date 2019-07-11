@@ -18,7 +18,7 @@ public class OntoLexLemonRenderingEngine extends BaseRenderingEngine implements 
 	}
 
 	@Override
-	protected void getGraphPatternInternal(StringBuilder gp) {
+	public void getGraphPatternInternal(StringBuilder gp) {
 		gp.append(
 			//@formatter:off
 			"\n{"+

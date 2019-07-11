@@ -31,7 +31,7 @@ public class FormRenderer extends BaseRenderingEngine {
 	public static final FormRenderer INSTANCE_WITHOUT_FALLBACK = new FormRenderer(false);
 
 	@Override
-	protected void getGraphPatternInternal(StringBuilder gp) {
+	public void getGraphPatternInternal(StringBuilder gp) {
 		gp.append("?resource <http://www.w3.org/ns/lemon/ontolex#writtenRep> ?labelInternal .\n");
 	}
 

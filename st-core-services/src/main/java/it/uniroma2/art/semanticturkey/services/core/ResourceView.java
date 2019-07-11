@@ -1151,7 +1151,7 @@ class DecompComponentRenderer extends BaseRenderingEngine {
 			false);
 
 	@Override
-	protected void getGraphPatternInternal(StringBuilder gp) {
+	public void getGraphPatternInternal(StringBuilder gp) {
 		gp.append(
 		// @formatter:off
 			"?resource <http://www.w3.org/ns/lemon/decomp#correspondsTo> [ \n" +

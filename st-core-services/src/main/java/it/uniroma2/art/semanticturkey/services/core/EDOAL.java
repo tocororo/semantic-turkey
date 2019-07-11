@@ -6,6 +6,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -19,6 +23,7 @@ import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.UpdateExecutionException;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
@@ -33,12 +38,15 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
+import it.uniroma2.art.semanticturkey.rendering.BaseRenderingEngine;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -47,7 +55,10 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsumer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.sparql.SPARQLShallowParser;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 
 /**
@@ -107,6 +118,8 @@ public class EDOAL extends STServiceAdapter {
 	}
 
 	private static Logger logger = LoggerFactory.getLogger(EDOAL.class);
+
+	private static Pattern variablePattern = Pattern.compile("(?:\\?|\\$)([a-zA-Z\\d]+)\\b");
 
 	@Autowired
 	private CustomFormManager cfManager;
@@ -327,16 +340,16 @@ public class EDOAL extends STServiceAdapter {
 		Project rightDataset = ProjectManager.getProject(thisProject.getProperty(Project.RIGHT_DATASET_PROP),
 				false);
 
-		RepositoryConfig coreRepositoryConfig = thisProject.getRepositoryManager()
+		RepositoryConfig coreRepositoryConfig = leftDataset.getRepositoryManager()
 				.getRepositoryConfig(Project.CORE_REPOSITORY);
 		RepositoryImplConfig repoImpl = STLocalRepositoryManager
 				.getUnfoldedRepositoryImplConfig(coreRepositoryConfig);
 		if (!(repoImpl instanceof HTTPRepositoryConfig)) {
 			throw new IllegalStateException(String.format(
-					"The project '%s' is not backed by a remote triple store", thisProject.getName()));
+					"The project '%s' is not backed by a remote triple store", leftDataset.getName()));
 		}
 
-		IRI thisRepoEndpoint = SimpleValueFactory.getInstance()
+		IRI leftRepoEndpoint = SimpleValueFactory.getInstance()
 				.createIRI(((HTTPRepositoryConfig) repoImpl).getURL());
 
 		String queryString =
@@ -347,60 +360,88 @@ public class EDOAL extends STServiceAdapter {
 			"       (GROUP_CONCAT(CONCAT(STR(?g2),\"|=|\",STR(?entity2));separator=\"|_|\") as ?entity2B)\n" + 
 			"       (GROUP_CONCAT(CONCAT(STR(?g3),\"|=|\",STR(?relation));separator=\"|_|\") as ?relationB)\n" + 
 			"       (GROUP_CONCAT(CONCAT(STR(?g4),\"|=|\",STR(?measure));separator=\"|_|\") as ?measureB)\n" + 
-			"       (MIN(LCASE(?indexT)) as ?index) \n" + 
+			"       (MIN(LCASE(?valueIndex)) as ?index) \n" + 
 			"{\n" + 
-			"    service " + NTriplesUtil.toNTriplesString(thisRepoEndpoint) + " {\n" + 
-			"        ?x a align:Cell .\n" + 
-			"        graph ?g1 {\n" + 
-			"           ?x align:entity1 ?entity1 .\n" + 
-			"        }\n" + 
-			"        graph ?g2 {\n" + 
-			"           ?x align:entity2 ?entity2 .\n" + 
-			"        }\n" + 
-			"        graph ?g3 {\n" + 
-			"           ?x align:relation ?relation .\n" + 
-			"        }\n" + 
-			"        graph ?g4 {\n" + 
-			"           ?x align:measure ?measure .\n" + 
-			"        }\n" + 
+			"    ?x a align:Cell .\n" + 
+			"    graph ?g1 {\n" + 
+			"       ?x align:entity1 ?entity1 .\n" + 
 			"    }\n" + 
-			"    optional {\n" + 
+			"    graph ?g2 {\n" + 
+			"       ?x align:entity2 ?entity2 .\n" + 
+			"    }\n" + 
+			"    graph ?g3 {\n" + 
+			"       ?x align:relation ?relation .\n" + 
+			"    }\n" + 
+			"    graph ?g4 {\n" + 
+			"       ?x align:measure ?measure .\n" + 
+			"    }\n" + 
+			"    ?al align:map ?x.\n" +
+			"    FILTER(sameTerm(?al, ?alignment))\n" +
+			"    service " + NTriplesUtil.toNTriplesString(leftRepoEndpoint) + " {\n" + 
+			"      optional {\n" + 
 			computeIndexingGraphPattern(leftDataset) +
+			"      }\n" + 
 			"    }\n" + 
-			"    BIND(COALESCE(?valueIndex, ?entity1) as ?indexT)\n" + 
 			"}\n" + 
 			"group by ?x\n" + 
 			"having BOUND(?x)\n" +
-			"order by ASC(LCASE(?index)) ?x\n" +
+			"order by ASC(?index) ?x\n" +
 			"offset " + (page * pageSize) + "\n"+
 			(pageSize <= 0 ? "" : "limit " + pageSize + "\n")
 			//@formatter:on
 		;
 
-		try (RepositoryConnection leftDatasetConn = leftDataset.getRepository().getConnection()) {
-			TupleQuery query = leftDatasetConn.prepareTupleQuery(queryString);
-			return QueryResults.stream(query.evaluate()).map(bs -> {
-				Correspondence corr = new Correspondence();
-				corr.setIdentity((Resource) bs.getValue("x"));
-				corr.setLeftEntity(processStringiedObjectList(bs.getValue("entity1B").stringValue(), null));
-				corr.setRightEntity(processStringiedObjectList(bs.getValue("entity2B").stringValue(), null));
-				corr.setRelation(
-						processStringiedObjectList(bs.getValue("relationB").stringValue(), XMLSchema.STRING));
-				corr.setMeasure(
-						processStringiedObjectList(bs.getValue("measureB").stringValue(), XMLSchema.FLOAT));
-				return corr;
-			}).collect(toList());
-		}
+		TupleQuery query = getManagedConnection().prepareTupleQuery(queryString);
+		query.setBinding("alignment", alignment);
+		return QueryResults.stream(query.evaluate()).map(bs -> {
+			Correspondence corr = new Correspondence();
+			corr.setIdentity((Resource) bs.getValue("x"));
+			corr.setLeftEntity(processStringiedObjectList(bs.getValue("entity1B").stringValue(), null));
+			corr.setRightEntity(processStringiedObjectList(bs.getValue("entity2B").stringValue(), null));
+			corr.setRelation(
+					processStringiedObjectList(bs.getValue("relationB").stringValue(), XMLSchema.STRING));
+			corr.setMeasure(
+					processStringiedObjectList(bs.getValue("measureB").stringValue(), XMLSchema.FLOAT));
+			return corr;
+		}).collect(toList());
 	}
 
 	private String computeIndexingGraphPattern(Project keyProject) {
-		return
-		//@formatter:off
-			"?entity1 <http://www.w3.org/2008/05/skos-xl#prefLabel> [\n" + 
-		    "  <http://www.w3.org/2008/05/skos-xl#literalForm> ?valueIndex \n" + 
-			"]\n" + 
-			" FILTER(lang(?valueIndex) = \"en\")\n";
-			//@formatter:on
+		RenderingEngine renderingEngine = keyProject.getRenderingEngine();
+		if (renderingEngine instanceof BaseRenderingEngine) {
+			// a BaseRenderingEngine can provide a label pattern using variables ?resource and ?labelInternal
+			StringBuilder sb = new StringBuilder();
+			((BaseRenderingEngine) renderingEngine).getGraphPatternInternal(sb);
+			Matcher m = variablePattern.matcher(sb.toString());
+			StringBuffer renamedPattern = new StringBuffer();
+			while (m.find()) {
+				String varName = m.group(1);
+
+				String renamedVar;
+
+				switch (varName) {
+				case "resource":
+					renamedVar = "entity1";
+					break;
+				case "labelInternal":
+					renamedVar = "valueIndex";
+					break;
+				default:
+					renamedVar = "proc_0_" + varName;
+				}
+				m.appendReplacement(renamedPattern, "?" + renamedVar);
+			}
+
+			m.appendTail(renamedPattern);
+
+			renamedPattern.append("\nFILTER(lang(?valueIndex) = \"it\")\n");
+
+			return renamedPattern.toString();
+		} else {
+			logger.warn("Unsupported rendering engine {} on the key project: {}",
+					renderingEngine.getClass().getName(), keyProject.getName());
+			return "";
+		}
 	}
 
 	private Collection<AnnotatedValue<Value>> processStringiedObjectList(String input, IRI datatype) {
@@ -425,7 +466,16 @@ public class EDOAL extends STServiceAdapter {
 				value = SimpleValueFactory.getInstance().createLiteral(object, datatype);
 			}
 
+			Set<Resource> graphs = object2graphs.get(object).stream()
+					.map(s -> NTriplesUtil.parseResource(s, SimpleValueFactory.getInstance()))
+					.collect(Collectors.toSet());
+
+			TripleScopes tripleScope = AbstractStatementConsumer.computeTripleScope(graphs,
+					getWorkingGraph());
+
 			Map<String, Value> attributes = new HashMap<>();
+			attributes.put("tripleScope",
+					SimpleValueFactory.getInstance().createLiteral(tripleScope.toString()));
 			AnnotatedValue<Value> annotValue = new AnnotatedValue<>(value, attributes);
 			rv.add(annotValue);
 
