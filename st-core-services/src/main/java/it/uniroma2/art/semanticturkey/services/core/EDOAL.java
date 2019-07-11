@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -153,7 +154,7 @@ public class EDOAL extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public void createAlignment()
+	public BNode createAlignment()
 			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
 		Project thisProject = getProject();
 		Project leftDataset = ProjectManager.getProject(thisProject.getProperty(Project.LEFT_DATASET_PROP),
@@ -166,9 +167,9 @@ public class EDOAL extends STServiceAdapter {
 		//@formatter:off
 			"PREFIX align: <http://knowledgeweb.semanticweb.org/heterogeneity/alignment#>\n" +
 			"INSERT {\n" +
-			"  [] a align:Alignment ;\n" +
-			"     align:onto1 ?onto1 ;\n" +
-			"     align:onto2 ?onto2 ;\n" +
+			"  ?alignment a align:Alignment ;\n" +
+			"    align:onto1 ?onto1 ;\n" +
+			"    align:onto2 ?onto2 ;\n" +
 			"  .\n" +
 			"}\n" +
 			"WHERE {\n" +
@@ -182,8 +183,12 @@ public class EDOAL extends STServiceAdapter {
 		update.setDataset(dataset);
 		update.setBinding("onto1", vf.createIRI(leftDataset.getBaseURI()));
 		update.setBinding("onto2", vf.createIRI(rightDataset.getBaseURI()));
+		BNode alignmentNode = vf.createBNode();
+		update.setBinding("alignment", alignmentNode);
 
 		update.execute();
+		
+		return alignmentNode;
 	}
 
 	/**
