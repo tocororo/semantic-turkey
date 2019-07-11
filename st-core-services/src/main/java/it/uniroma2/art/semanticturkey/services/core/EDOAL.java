@@ -467,7 +467,7 @@ public class EDOAL extends STServiceAdapter {
 			}
 
 			Set<Resource> graphs = object2graphs.get(object).stream()
-					.map(s -> NTriplesUtil.parseResource(s, SimpleValueFactory.getInstance()))
+					.map(s -> SimpleValueFactory.getInstance().createIRI(s))
 					.collect(Collectors.toSet());
 
 			TripleScopes tripleScope = AbstractStatementConsumer.computeTripleScope(graphs,
