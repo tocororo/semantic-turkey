@@ -16,6 +16,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.MalformedQueryException;
@@ -23,8 +24,8 @@ import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.UpdateExecutionException;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
@@ -58,9 +59,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsumer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
-import it.uniroma2.art.semanticturkey.sparql.SPARQLShallowParser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 
@@ -140,6 +139,51 @@ public class EDOAL extends STServiceAdapter {
 		String rightDataset = thisProject.getProperty(Project.RIGHT_DATASET_PROP);
 
 		return ImmutablePair.of(leftDataset, rightDataset);
+	}
+
+	/**
+	 * Returns the align:Alignment resources defined in the current project
+	 * 
+	 * @param superClass
+	 * @param numInst
+	 * @return
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectAccessException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	public void createAlignment()
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		Project thisProject = getProject();
+		Project leftDataset = ProjectManager.getProject(thisProject.getProperty(Project.LEFT_DATASET_PROP),
+				false);
+		Project rightDataset = ProjectManager.getProject(thisProject.getProperty(Project.RIGHT_DATASET_PROP),
+				false);
+
+		ValueFactory vf = getManagedConnection().getValueFactory();
+		Update update = getManagedConnection().prepareUpdate(
+		//@formatter:off
+			"PREFIX align: <http://knowledgeweb.semanticweb.org/heterogeneity/alignment#>\n" +
+			"INSERT {\n" +
+			"  [] a align:Alignment ;\n" +
+			"     align:onto1 ?onto1 ;\n" +
+			"     align:onto2 ?onto2 ;\n" +
+			"  .\n" +
+			"}\n" +
+			"WHERE {\n" +
+			"}\n"
+			//@formatter:on
+		);
+
+		SimpleDataset dataset = new SimpleDataset();
+		dataset.setDefaultInsertGraph((IRI) getWorkingGraph());
+
+		update.setDataset(dataset);
+		update.setBinding("onto1", vf.createIRI(leftDataset.getBaseURI()));
+		update.setBinding("onto2", vf.createIRI(rightDataset.getBaseURI()));
+
+		update.execute();
 	}
 
 	/**
