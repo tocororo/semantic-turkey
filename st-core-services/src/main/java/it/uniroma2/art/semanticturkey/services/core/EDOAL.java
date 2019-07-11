@@ -46,6 +46,8 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.rendering.BaseRenderingEngine;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -59,6 +61,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStateme
 import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsumer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.sparql.SPARQLShallowParser;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 
 /**
@@ -328,12 +331,14 @@ public class EDOAL extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
+	 * @throws IndexingLanguageNotFound
 	 */
 	@Read
 	@STServiceOperation
 	public Collection<Correspondence> getCorrespondences(Resource alignment,
 			@Optional(defaultValue = "0") int page, @Optional(defaultValue = "10") int pageSize)
-			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException,
+			IndexingLanguageNotFound {
 		Project thisProject = getProject();
 		Project leftDataset = ProjectManager.getProject(thisProject.getProperty(Project.LEFT_DATASET_PROP),
 				false);
@@ -406,7 +411,7 @@ public class EDOAL extends STServiceAdapter {
 		}).collect(toList());
 	}
 
-	private String computeIndexingGraphPattern(Project keyProject) {
+	private String computeIndexingGraphPattern(Project keyProject) throws IndexingLanguageNotFound {
 		RenderingEngine renderingEngine = keyProject.getRenderingEngine();
 		if (renderingEngine instanceof BaseRenderingEngine) {
 			// a BaseRenderingEngine can provide a label pattern using variables ?resource and ?labelInternal
@@ -434,7 +439,29 @@ public class EDOAL extends STServiceAdapter {
 
 			m.appendTail(renamedPattern);
 
-			renamedPattern.append("\nFILTER(lang(?valueIndex) = \"it\")\n");
+			String userLanguages;
+
+			try {
+				userLanguages = STPropertiesManager.getPUSetting(STPropertiesManager.PREF_LANGUAGES,
+						keyProject, UsersManager.getLoggedUser(), RenderingEngine.class.getName());
+			} catch (IllegalStateException | STPropertyAccessException e) {
+				throw new IndexingLanguageNotFound(
+						"Unable to find user languages for project \"" + keyProject + "\"", e);
+			}
+
+			if (userLanguages == null || userLanguages.isEmpty()) {
+				throw new IndexingLanguageNotFound("Empty user languages for project \"" + keyProject + "\"");
+			}
+
+			if (userLanguages.equals("*")) {
+				throw new IndexingLanguageNotFound(
+						"No specific user language configured for the project \"" + keyProject + "\"");
+			}
+
+			String indexingLanguage = userLanguages.split(",")[0];
+
+			renamedPattern.append(
+					"\nFILTER(lang(?valueIndex) = \"" + RenderUtils.escape(indexingLanguage) + "\")\n");
 
 			return renamedPattern.toString();
 		} else {
@@ -467,8 +494,7 @@ public class EDOAL extends STServiceAdapter {
 			}
 
 			Set<Resource> graphs = object2graphs.get(object).stream()
-					.map(s -> SimpleValueFactory.getInstance().createIRI(s))
-					.collect(Collectors.toSet());
+					.map(s -> SimpleValueFactory.getInstance().createIRI(s)).collect(Collectors.toSet());
 
 			TripleScopes tripleScope = AbstractStatementConsumer.computeTripleScope(graphs,
 					getWorkingGraph());
