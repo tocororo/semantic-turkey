@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.properties.yaml;
 
 import java.io.IOException;
 
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
@@ -24,7 +25,15 @@ public class RDF4JValueSerializer extends StdSerializer<Value> {
 
 	@Override
 	public void serialize(Value value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-		gen.writeString(NTriplesUtil.toNTriplesString(value));
+		/**
+		 * The method NTriplesUtil.toNTriplesString(..) applied to a blank node, transforms the blank node id
+		 * in a destructive manner (i.e. not undone by the deserializer). Therefore, we merely return _:id
+		 */
+		if (value instanceof BNode) {
+			gen.writeString("_:" + ((BNode) value).getID());
+		} else {
+			gen.writeString(NTriplesUtil.toNTriplesString(value));
+		}
 	}
 
 }
