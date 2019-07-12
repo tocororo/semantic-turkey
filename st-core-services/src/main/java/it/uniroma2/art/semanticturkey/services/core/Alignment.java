@@ -642,9 +642,9 @@ public class Alignment extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	public JsonNode loadAlignment(MultipartFile inputFile)
+	public JsonNode loadAlignment(MultipartFile inputFile, @Optional Project leftProject, @Optional Project rightProject)
 			throws AlignmentInitializationException, IOException {
-
+		
 		// create a temp file (in karaf data/temp folder) to copy the received file
 		File inputServerFile = File.createTempFile("alignment", inputFile.getOriginalFilename());
 		inputFile.transferTo(inputServerFile);
@@ -657,9 +657,13 @@ public class Alignment extends STServiceAdapter {
 		AlignmentModel alignModel = new AlignmentModel();
 		alignModel.add(inputServerFile);
 
-		return loadAlignmentHelper(alignModel);
+		return loadAlignmentHelper(alignModel, leftProject, rightProject);
 	}
-
+	
+	public JsonNode loadAlignmentHelper(AlignmentModel alignModel) throws AlignmentInitializationException {
+		return this.loadAlignmentHelper(alignModel, null, null);
+	}
+	
 	/**
 	 * This method is responsible for the finalization of alignment load operations, irrespectively of the
 	 * source of the alignment (e.g. file, GENOMA task, etc...)
@@ -668,46 +672,12 @@ public class Alignment extends STServiceAdapter {
 	 * @return
 	 * @throws AlignmentInitializationException
 	 */
-	public JsonNode loadAlignmentHelper(AlignmentModel alignModel) throws AlignmentInitializationException {
+	public JsonNode loadAlignmentHelper(AlignmentModel alignModel, Project leftProject, Project rightProject) throws AlignmentInitializationException {
 		String token = stServiceContext.getSessionToken();
 		modelsMap.put(token, alignModel);
 
-		// check that one of the two aligned ontologies matches the current project ontology
-		String projectBaseURI = getProject().getNewOntologyManager().getBaseURI();
-
-		String onto1BaseURI = alignModel.getOnto1();
-		String onto2BaseURI = alignModel.getOnto2();
-
-		// removes final / or # from baseURIs in order to avoid failing of the following check
-		// (one of the aligned ontologies must refers to the current open project)
-		if (projectBaseURI.endsWith("/") || projectBaseURI.endsWith("#")) {
-			projectBaseURI = projectBaseURI.substring(0, projectBaseURI.length() - 1);
-		}
-		if (onto1BaseURI.endsWith("/") || onto1BaseURI.endsWith("#")) {
-			onto1BaseURI = onto1BaseURI.substring(0, onto1BaseURI.length() - 1);
-		}
-		if (onto2BaseURI.endsWith("/") || onto2BaseURI.endsWith("#")) {
-			onto2BaseURI = onto2BaseURI.substring(0, onto2BaseURI.length() - 1);
-		}
-
-		if (!projectBaseURI.equals(onto1BaseURI)) {
-			if (projectBaseURI.equals(onto2BaseURI)) {
-				if (alignModel.hasCustomRelation()) {
-					throw new AlignmentInitializationException("The alignment file is reversed "
-							+ "(the source ontology in the alignment file is your target ontology in your project) "
-							+ "and it contains custom relations. It is possible to work with inverted alignment files "
-							+ "only when they do not contain custom relations. Please invert the order of ontologies "
-							+ "in the alignment file and adjust the custom relations by replacing them with their "
-							+ "inverse in the custom alignment model that is being adopted.");
-				}
-				alignModel.reverse();
-			} else {
-				throw new AlignmentInitializationException(
-						"Failed to open and validate the given alignment file. "
-								+ "None of the two aligned ontologies matches the current project ontology");
-			}
-		}
-
+		performProjectsCheck(alignModel, leftProject, rightProject);
+		
 		alignModel.preProcess();
 
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
@@ -723,7 +693,61 @@ public class Alignment extends STServiceAdapter {
 		alignmentNode.set("unknownRelations", unknownRelationsArrayNode);
 		return alignmentNode;
 	}
-
+	
+	private void performProjectsCheck(AlignmentModel alignModel, Project leftProject, Project rightProject) throws AlignmentInitializationException {
+		String onto1BaseURI = alignModel.getOnto1();
+		String onto2BaseURI = alignModel.getOnto2();
+		
+		if (leftProject == null) { //left project not provided => not an EDOAL project => get the current project
+			leftProject = getProject();
+		}
+		
+		// removes final / or # from baseURIs in order to avoid failing of the check on the baseURIs match
+		String leftProjectBaseURI = leftProject.getNewOntologyManager().getBaseURI();
+		if (leftProjectBaseURI.endsWith("/") || leftProjectBaseURI.endsWith("#")) {
+			leftProjectBaseURI = leftProjectBaseURI.substring(0, leftProjectBaseURI.length() - 1);
+		}
+		if (onto1BaseURI.endsWith("/") || onto1BaseURI.endsWith("#")) {
+			onto1BaseURI = onto1BaseURI.substring(0, onto1BaseURI.length() - 1);
+		}
+		if (onto2BaseURI.endsWith("/") || onto2BaseURI.endsWith("#")) {
+			onto2BaseURI = onto2BaseURI.substring(0, onto2BaseURI.length() - 1);
+		}
+		
+		if (rightProject != null) {
+			//EDOAL => both the aligned ontologies (1 and 2) must refer to the two datasets of the EDOAL project
+			String rightProjectBaseURI = rightProject.getNewOntologyManager().getBaseURI();
+			if (rightProjectBaseURI.endsWith("/") || rightProjectBaseURI.endsWith("#")) {
+				rightProjectBaseURI = rightProjectBaseURI.substring(0, rightProjectBaseURI.length() - 1);
+			}
+			
+			if (!leftProjectBaseURI.equals(onto1BaseURI) || !rightProjectBaseURI.equals(onto2BaseURI)) {
+				throw new AlignmentInitializationException(
+						"Failed to open and validate the given alignment file. "
+								+ "One or both the two aligned ontologies don't match the datasets of the EDOAL project");
+			}
+		} else { //not EDOAL => one of the two ontologies must refer to the current project
+			if (!leftProjectBaseURI.equals(onto1BaseURI)) {
+				if (leftProjectBaseURI.equals(onto2BaseURI)) {
+					if (alignModel.hasCustomRelation()) {
+						throw new AlignmentInitializationException("The alignment file is reversed "
+								+ "(the source ontology in the alignment file is your target ontology in your project) "
+								+ "and it contains custom relations. It is possible to work with inverted alignment files "
+								+ "only when they do not contain custom relations. Please invert the order of ontologies "
+								+ "in the alignment file and adjust the custom relations by replacing them with their "
+								+ "inverse in the custom alignment model that is being adopted.");
+					}
+					alignModel.reverse();
+				} else {
+					throw new AlignmentInitializationException(
+							"Failed to open and validate the given alignment file. "
+									+ "None of the two aligned ontologies matches the current project ontology");
+				}
+			}
+		}
+	}
+	
+	
 	/**
 	 * Returns the cells of the alignment file. Handles the scalability returning a portion of cells if
 	 * <code>pageIdx</code> and <code>range</code> are provided as parameters
