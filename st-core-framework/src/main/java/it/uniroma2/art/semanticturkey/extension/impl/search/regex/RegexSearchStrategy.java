@@ -333,7 +333,9 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			query = "\nFILTER regex(str(" + variable + "), '" + valueForRegex + "', 'i')" +
 					"\nBIND('contains' AS ?attr_matchMode)";
 		} else if (searchMode == SearchMode.fuzzy) {
-			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(valueForRegex, ".");
+			//in this case case, you cannot use directly valueForRegex, since the service
+			// will generate a list of values, so use value and let wordsForFuzzySearch clean it
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", true);
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')" +
 					"\nBIND('fuzzy' AS ?attr_matchMode)";

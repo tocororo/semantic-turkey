@@ -564,14 +564,22 @@ public class ServiceForSearches {
 		return query;
 	}
 	
-	public static List<String> wordsForFuzzySearch(String text, String replaceChar){
+	public static List<String> wordsForFuzzySearch(String text, String replaceChar, boolean escapeIt){
 		List<String> wordsList = new ArrayList<>();
-		wordsList.add(replaceChar+text);
+		wordsList.add(replaceChar+escapeOrNot(text, escapeIt));
 		for(int i=0; i<text.length(); ++i) {
-			wordsList.add(text.substring(0, i)+replaceChar+text.substring(i+1));
+			wordsList.add(escapeOrNot(text.substring(0, i), escapeIt)+replaceChar+
+					escapeOrNot(text.substring(i+1), escapeIt));
 		}
-		wordsList.add(text+replaceChar);
+		wordsList.add(escapeOrNot(text, escapeIt)+replaceChar);
 		return wordsList;
+	}
+	
+	private static String escapeOrNot(String text, boolean escapeIt) {
+		if(escapeIt) {
+			return ServiceForSearches.escapeStringForRegexInSPARQL(text);
+		}
+		return text;
 	}
 	
 	public static String listToStringForQuery(List<String> wordsList, String startSymbol, String endSymbol) {

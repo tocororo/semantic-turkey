@@ -589,13 +589,16 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\nBIND('contains' AS ?attr_matchMode)";
 			
 		} else if(searchMode == SearchMode.fuzzy){
+			
 			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements 
 			//having just letter different form the input one
-			List<String> wordForIndex = ServiceForSearches.wordsForFuzzySearch(valueForIndex, "*");
+			List<String> wordForIndex = ServiceForSearches.wordsForFuzzySearch(valueForIndex, "*", false);
 			String wordForIndexAsString = ServiceForSearches.listToStringForQuery(wordForIndex, "", "");
 			query+="\n"+variable+" <"+indexToUse+"> \""+wordForIndexAsString+"\" .";
 			
-			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(valueForRegex, ".");
+			//in this case case, you cannot use directly valueForRegex, since the service
+			// will generate a list of values, so use value and let wordsForFuzzySearch clean it
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", true);
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += queryPart+
 					"\nFILTER regex(str("+varToUse+"), \""+wordForNoIndexAsString+"\", 'i')" +
@@ -661,7 +664,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		} else if(searchMode == SearchMode.contains){
 			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')";
 		} else if(searchMode == SearchMode.fuzzy){
-			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".");
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", false);
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')";
 		} else { // searchMode.equals(exact)
