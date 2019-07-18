@@ -23,10 +23,13 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.Dataset;
@@ -276,11 +279,11 @@ public class SPARQL extends STServiceAdapter {
 				for (String b : bindingNames) {
 					Value value = tuple.getValue(b);
 					if (value != null) {
-						row.add(NTriplesUtil.toNTriplesString(value));
+						//row.add(NTriplesUtil.toNTriplesString(value));
+						row.add(toNTriplesString(value));
 					} else {
 						row.add(null);
 					}
-
 				}
 				table.add(row);
 			}
@@ -290,13 +293,39 @@ public class SPARQL extends STServiceAdapter {
 			while (result.hasNext()) {
 				List<String> row = new ArrayList<>();
 				Statement stmt = result.next();
-				row.add(NTriplesUtil.toNTriplesString(stmt.getSubject()));
-				row.add(NTriplesUtil.toNTriplesString(stmt.getPredicate()));
-				row.add(NTriplesUtil.toNTriplesString(stmt.getObject()));
+				//row.add(NTriplesUtil.toNTriplesString(stmt.getSubject()));
+				row.add(toNTriplesString(stmt.getSubject()));
+				//row.add(NTriplesUtil.toNTriplesString(stmt.getPredicate()));
+				row.add(toNTriplesString(stmt.getPredicate()));
+				//row.add(NTriplesUtil.toNTriplesString(stmt.getObject()));
+				row.add(toNTriplesString(stmt.getObject()));
 				table.add(row);
 			}
 		}
 		dumpSpreadsheet(oRes, table, format);
+	}
+	
+	private String toNTriplesString(Value value) {
+		String valueString = "";
+		if(value instanceof IRI) {
+			//"<" + NTriplesUtil.escapeString(value.toString()) + ">";
+			valueString = NTriplesUtil.toNTriplesString(value);
+		} else if(value instanceof BNode) {
+			valueString = NTriplesUtil.toNTriplesString(value);
+		} 
+		else if (value instanceof Literal) {
+			Literal literal = (Literal) value;
+			//valueString = "\""+ NTriplesUtil.escapeString(literal.getLabel()) + "\"";
+			valueString = "\""+ literal.getLabel() + "\"";
+			if(Literals.isLanguageLiteral(literal)) {
+				valueString += "@"+literal.getLanguage().get();
+			} else {
+				valueString += "^^"+toNTriplesString(literal.getDatatype());
+			}
+		} else {
+			throw new IllegalArgumentException("Unknown value type: " + value.getClass());
+		}
+		return valueString;
 	}
 
 	private void dumpSpreadsheet(HttpServletResponse oRes, List<List<String>> table, String format)
