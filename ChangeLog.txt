@@ -2,7 +2,9 @@ version 6.1
 date: dd/mm/yyy
   * New EDOAL model type
   * when adding a topConcept, that concept is add to that scheme as well with skos:inScheme
-
+  * fix NullPointerException in OntologyManager triggered by an attempt to fetch RDF data from an URL that does
+    not return a Content-Type
+  
 version 6.0
 date: 27/06/2019
   * Enabled multiple dataDumps in dataset catalogs

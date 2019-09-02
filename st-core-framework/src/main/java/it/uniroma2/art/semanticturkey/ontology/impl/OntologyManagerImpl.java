@@ -522,13 +522,17 @@ public class OntologyManagerImpl implements OntologyManager {
 
 		if (rdfFormat == null) {
 			// Try to determine the data's MIME type
-			String mimeType = con.getContentType();
-			int semiColonIdx = mimeType.indexOf(';');
-			if (semiColonIdx >= 0) {
-				mimeType = mimeType.substring(0, semiColonIdx).trim();
+			@Nullable String mimeType = con.getContentType();
+			if (mimeType != null) {
+				int semiColonIdx = mimeType.indexOf(';');
+				if (semiColonIdx >= 0) {
+					mimeType = mimeType.substring(0, semiColonIdx).trim();
+				}
 			}
+			
+			System.out.println("path is=" + url.getPath() + "  // rdformat=" + Rio.getParserFormatForFileName(url.getPath()));
 			rdfFormat = OptionalUtils
-					.firstPresent(Rio.getParserFormatForMIMEType(mimeType),
+					.firstPresent(Optional.ofNullable(mimeType).flatMap(Rio::getParserFormatForMIMEType),
 							Rio.getParserFormatForFileName(url.getPath()))
 					.orElseThrow(Rio.unsupportedFormat(mimeType));
 		}
