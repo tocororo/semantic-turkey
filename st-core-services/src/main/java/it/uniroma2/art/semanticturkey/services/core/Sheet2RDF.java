@@ -223,7 +223,7 @@ public class Sheet2RDF extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	public void addAdvancedGraphApplicationToHeader(String headerId, String graphPattern, List<String> nodeIds, 
-			Map<String, String> prefixMapping) {
+			Map<String, String> prefixMapping, @Optional IRI defaultPredicate) {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
@@ -231,6 +231,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		g.setPattern(graphPattern);
 		g.setNodeIds(nodeIds);
 		g.setPrefixMapping(prefixMapping);
+		g.setDefaultPredicate(defaultPredicate);
 		h.addGraphApplication(g);
 	}
 	
@@ -831,13 +832,14 @@ public class Sheet2RDF extends STServiceAdapter {
 	 * @throws IOException 
 	 * @throws  
 	 */
+	@Read
 	@STServiceOperation(method = RequestMethod.POST)
 	public void importStatus(MultipartFile statusFile) throws IOException, InvalidWizardStatusException {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct ms = ctx.getSheet2RDFCore().getMappingStruct();
 		File inputServerFile = File.createTempFile("sheet2rdf_status", statusFile.getOriginalFilename());
 		statusFile.transferTo(inputServerFile);
-		ms.fromJson(inputServerFile);
+		ms.fromJson(inputServerFile, getManagedConnection());
 	}
 
 	

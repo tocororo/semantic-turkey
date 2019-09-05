@@ -3,6 +3,8 @@ package it.uniroma2.art.semanticturkey.config.sheet2rdf;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.rdf4j.model.IRI;
+
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
@@ -17,7 +19,7 @@ public class StoredAdvancedGraphApplicationConfiguration implements Configuratio
 	
 	@STProperty(description = "", displayName = "")
 	@Required
-	public String graphPattern;
+	public String pattern;
 	
 	@STProperty(description = "", displayName = "")
 	@Required
@@ -25,5 +27,8 @@ public class StoredAdvancedGraphApplicationConfiguration implements Configuratio
 	
 	@STProperty(description = "", displayName = "")
 	public Map<String, String> prefixMapping;
+	
+	@STProperty(description = "", displayName = "")
+	public IRI defaultPredicate;
 
 }
