@@ -33,7 +33,8 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 /**
- * A {@link CollaborationBackend} for the <a href="https://jira.atlassian.com/">Atlassian Jira</a>
+ * Use <a href="https://jira.atlassian.com/">Atlassian Jira</a> as a collaboration backend.
+ * 
  * @author Andrea Turbati &lt;turbati@info.uniroma2.it&gt;
  *
  */
