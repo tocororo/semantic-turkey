@@ -16,7 +16,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 import it.uniroma2.art.semanticturkey.extension.Extension;
 
 /**
- * Extension point for the connection to datasets catalogs.
+ * This extension point allows for connecting Semantic Turkey to (usually remote) dataset catalogs.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
