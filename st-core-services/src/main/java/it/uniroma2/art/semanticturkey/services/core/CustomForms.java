@@ -133,16 +133,19 @@ public class CustomForms extends STServiceAdapter {
 				logger.debug("query " + query);
 				TupleQuery tq = repoConnection.prepareTupleQuery(query);
 				tq.setIncludeInferred(false);
-				tq.setBinding(cfGraph.getEntryPointPlaceholder(codaCore).substring(1), resource);
-				try (TupleQueryResult result = tq.evaluate()) {
-					// iterate over the results and create a map <userPrompt, value>
-					while (result.hasNext()) {
-						BindingSet bindingSet = result.next();
-						for (Entry<String, String> phUserPrompt : phUserPromptMap.entrySet()) {
-							String phId = phUserPrompt.getKey();
-							String userPrompt = phUserPrompt.getValue();
-							if (bindingSet.hasBinding(phId)) {
-								promptValuesMap.put(userPrompt, bindingSet.getValue(phId));
+				String entryPointPlaceholder = cfGraph.getEntryPointPlaceholder(codaCore);
+				if (entryPointPlaceholder != null) { //execute the query with the entry point bound only if the entry point is found
+					tq.setBinding(entryPointPlaceholder.substring(1), resource);
+					try (TupleQueryResult result = tq.evaluate()) {
+						// iterate over the results and create a map <userPrompt, value>
+						while (result.hasNext()) {
+							BindingSet bindingSet = result.next();
+							for (Entry<String, String> phUserPrompt : phUserPromptMap.entrySet()) {
+								String phId = phUserPrompt.getKey();
+								String userPrompt = phUserPrompt.getValue();
+								if (bindingSet.hasBinding(phId)) {
+									promptValuesMap.put(userPrompt, bindingSet.getValue(phId));
+								}
 							}
 						}
 					}

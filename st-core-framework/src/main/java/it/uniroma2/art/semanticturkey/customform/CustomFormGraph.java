@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -229,7 +228,8 @@ public class CustomFormGraph extends CustomForm {
 	}
 
 	/**
-	 * Returns the placeholder of the entry point of the graph section
+	 * Returns the placeholder of the entry point of the graph section (subject node of the first non-optional graph element).
+	 * Returns null if there is no GraphStruct (not optional)
 	 * 
 	 * @param codaCore
 	 * @return
@@ -238,7 +238,7 @@ public class CustomFormGraph extends CustomForm {
 	 */
 	public String getEntryPointPlaceholder(CODACore codaCore)
 			throws PRParserException, RDFModelNotSetException {
-		String entryPoint = "";
+		String entryPoint = null;
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
@@ -247,7 +247,10 @@ public class CustomFormGraph extends CustomForm {
 			ProjectionRule projRule = prRulesIt.next();
 			Iterator<GraphElement> graphListIt = projRule.getInsertGraphList().iterator();
 			if (graphListIt.hasNext()) {
-				entryPoint = graphListIt.next().asGraphStruct().getSubject().getValueAsString();
+				GraphElement ge = graphListIt.next();
+				if (ge.isGraphStruct()) {
+					entryPoint = ge.asGraphStruct().getSubject().getValueAsString();	
+				}
 			}
 		}
 		return entryPoint;
