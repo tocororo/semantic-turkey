@@ -142,9 +142,6 @@ public class Refactor extends STServiceAdapter  {
 	
 	/**
 	 * 
-	 * TODO this doesn't work at the moment, 
-	 * it doesn't update correctly the working graph and the baseURI in the project object
-	 * 
 	 * Replace the <code>sourceBaseURI</code> with the <code>targetBaseURI</code>.
 	 * If <code>sourceBaseURI</code> is not provided, replace the default baseURI.
 	 * @param sourceBaseURI
@@ -221,7 +218,7 @@ public class Refactor extends STServiceAdapter  {
 		update.execute();
 		
 		
-		//now update all other resoruces having the desired namespace
+		//now update all other resources having the desired namespace
 		// @formatter:off
 		query =
 				"DELETE {																 					\n" +

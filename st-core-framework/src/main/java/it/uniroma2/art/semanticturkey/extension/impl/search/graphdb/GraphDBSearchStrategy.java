@@ -635,7 +635,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	private String normalizeStringForLuceneIndex(String inputString) {
 		String outputString = inputString;
 
-		return outputString.replaceAll("\\p{Punct}", " ").trim();
+		//replace all punctuation character except fro the underscore <code>_<code> 
+		//replace the ' and the - with a whitespace
+		return outputString.replaceAll("\\p{Punct}&&[^_]", " ").replace("\'", " ").replace("-", " ").trim();
 		
 		
 		//OLD

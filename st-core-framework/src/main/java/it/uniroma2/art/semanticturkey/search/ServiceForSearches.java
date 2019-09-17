@@ -601,6 +601,7 @@ public class ServiceForSearches {
 		String output;
 		output = Pattern.quote(input);
 		output = output.replace("\\", "\\\\");
+		output = output.replace("\'", "\\'");
 		
 		return output;
 	}
