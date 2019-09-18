@@ -24,6 +24,8 @@
 package it.uniroma2.art.semanticturkey;
 
 import java.io.File;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
 import java.net.URISyntaxException;
 
 import org.mortbay.http.HttpServer;
@@ -95,10 +97,31 @@ public class SemanticTurkey implements BundleActivator {
 
 		logger.debug("userDataPath: " + extensionDir.getAbsolutePath());
 
+		
+		//Inizialize the part related to the proxy (usefull only if the proxy's parameters are passed to the JVM)
+		initializeProxyAuthenticatorHTTP();
+		
 		// createWebServer();
 		// PluginManager.loadOntManagersImpl();
 		// // SemanticTurkey.class.getResource("log4j.properties").toString();
 		return null;
+	}
+	
+	private static void initializeProxyAuthenticatorHTTP() {
+	    final String proxyUser = System.getProperty("http.proxyUser");
+	    final String proxyPassword = System.getProperty("http.proxyPassword");
+
+	    if (proxyUser != null && proxyPassword != null) {
+	        Authenticator.setDefault(
+	          new Authenticator() {
+	            public PasswordAuthentication getPasswordAuthentication() {
+	              return new PasswordAuthentication(
+	                proxyUser, proxyPassword.toCharArray()
+	              );
+	            }
+	          }
+	        );
+	    }
 	}
 
 	// public static void main(String[] args) {
