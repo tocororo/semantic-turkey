@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.reflect.Field;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
@@ -18,7 +19,9 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -216,7 +219,7 @@ public class GENOMA extends STServiceAdapter {
 
 			RepositoryConnection conn = (RepositoryConnection) connField.get(alignModel);
 			ValueFactory vf = conn.getValueFactory();
-			
+
 			// fixes onto1 and onto2
 			// two problems: Genoma uses the dataset IRI, while the alignment validation uses the base URI.
 			// Furthermore, Genoma represents them as strings, while the Alignment validation represents them
@@ -263,7 +266,8 @@ public class GENOMA extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public String createTask(@JsonSerialized MatchingProblem matchingProblem) throws IOException, GENOMAException {
+	public String createTask(@JsonSerialized MatchingProblem matchingProblem)
+			throws IOException, GENOMAException {
 		ObjectMapper objMapper = new ObjectMapper();
 		String matchingProblemJson;
 		try {
@@ -277,7 +281,7 @@ public class GENOMA extends STServiceAdapter {
 			request.setEntity(new StringEntity(matchingProblemJson, ContentType.APPLICATION_JSON));
 			try (CloseableHttpResponse httpReponse = httpClient.execute(request)) {
 				StatusLine statusLine = httpReponse.getStatusLine();
-				if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
+				if ((statusLine.getStatusCode() / HttpStatus.SC_OK) != 1) {
 					throw new IOException(statusLine.getStatusCode() + ":" + statusLine.getReasonPhrase());
 				}
 
@@ -288,11 +292,11 @@ public class GENOMA extends STServiceAdapter {
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode responseObject = mapper.readTree(new StringReader(responseString));
 				JsonNode errorNode = responseObject.get("error");
-				
+
 				if (errorNode != null) {
 					throw new GENOMAException(errorNode.textValue());
 				}
-				
+
 				return responseObject.get("id").textValue();
 			}
 
@@ -300,13 +304,34 @@ public class GENOMA extends STServiceAdapter {
 
 	}
 
-	/*
-	 * public void killTask(String id) {
-	 * 
-	 * }
-	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void deleteTask(String id) throws IOException, GENOMAException {
+		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+			HttpDelete request;
+			try {
+				request = new HttpDelete(
+						new URIBuilder(GENOMA_ENDPOINT).setPath("delete").addParameter("id", id).build());
+			} catch (URISyntaxException e) {
+				throw new RuntimeException(e); // should not happen
+			}
+			try (CloseableHttpResponse httpReponse = httpClient.execute(request)) {
+				StatusLine statusLine = httpReponse.getStatusLine();
+				if ((statusLine.getStatusCode() / HttpStatus.SC_OK) != 1) {
+					throw new IOException(statusLine.getStatusCode() + ":" + statusLine.getReasonPhrase());
+				}
 
-	public void deleteTask(String id) {
+				HttpEntity entity = httpReponse.getEntity();
+				String responseString = IOUtils.toString(entity.getContent(),
+						java.util.Optional.ofNullable(ContentType.get(entity).getCharset())
+								.orElse(StandardCharsets.UTF_8).name());
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode responseObject = mapper.readTree(new StringReader(responseString));
+				JsonNode errorNode = responseObject.get("error");
 
+				if (errorNode != null) {
+					throw new GENOMAException(errorNode.textValue());
+				}
+			}
+		}
 	}
 }
