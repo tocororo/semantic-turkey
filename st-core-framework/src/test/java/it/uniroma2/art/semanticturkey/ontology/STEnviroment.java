@@ -31,9 +31,6 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
 import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
 import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerImpl;
 import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.MirroredOntologyFile;
 import it.uniroma2.art.semanticturkey.resources.OntologiesMirror;
 import it.uniroma2.art.semanticturkey.resources.Resources;
@@ -45,7 +42,6 @@ import it.uniroma2.art.semanticturkey.resources.Resources;
  */
 public class STEnviroment implements TestRule {
 	public static final String DEFAULT_BASE_DIR_NAME = "target/test-base";
-	public static final String DEFAULT_STDATA_DIR_NAME = "test-stdata";
 	public static final String DEFAULT_ST_INSTALLATION_DIR_NAME = "test-installation";
 	public static final String DEFAULT_STCONFIG_PATH = "etc/it.uniroma2.art.semanticturkey.cfg";
 	public static final String DEFAULT_CORE_REPO_ID = "core";
@@ -56,7 +52,6 @@ public class STEnviroment implements TestRule {
 	public static final String DEFAULT_VALIDATION_GRAPH = "http://example.org/validation";
 
 	private File baseDir;
-	private String stDataDirName;
 	private String stInstallationDirName;
 	private String coreRepoID;
 	private String supportRepoID;
@@ -80,7 +75,6 @@ public class STEnviroment implements TestRule {
 	public STEnviroment(boolean createProject) {
 		this.baseDir = new File(DEFAULT_BASE_DIR_NAME);
 		this.stConfigPath = DEFAULT_STCONFIG_PATH;
-		this.stDataDirName = DEFAULT_STDATA_DIR_NAME;
 		this.stInstallationDirName = DEFAULT_ST_INSTALLATION_DIR_NAME;
 		this.coreRepoID = DEFAULT_CORE_REPO_ID;
 		this.supportRepoID = DEFAULT_SUPPORT_REPO_ID;
@@ -128,7 +122,7 @@ public class STEnviroment implements TestRule {
 			writer.println("data.dir=../SemanticTurkeyData");
 			writer.println("ontologiesMirrorLocation=default");
 		}
-		File stDataDir = new File(stInstallationDirName, "../SemanticTurkeyData");
+		File stDataDir = new File(testSTInstallation, "../SemanticTurkeyData");
 
 		// Initializes user resources and create an empty STDataDirectory
 		Resources.initializeUserResources(testSTInstallation.getAbsolutePath().replace("\\", "/"));
