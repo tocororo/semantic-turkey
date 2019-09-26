@@ -87,6 +87,7 @@ import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurer;
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
@@ -101,6 +102,7 @@ import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
@@ -1564,16 +1566,26 @@ public class ProjectManager {
 				Repository repository = project.getNewOntologyManager().getRepository();
 				RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repository);
 				try {
-					ValidationUtilities.executeWithoutValidation(validationEnabled, conn,
-							(_conn) -> project.getNewOntologyManager().loadOntologyData(conn,
-									preloadedDataFile, baseURI, preloadedDataFormat,
-									SimpleValueFactory.getInstance().createIRI(baseURI),
-									transitiveImportAllowance, failedImports));
+					SearchStrategy searchStrategy = SearchStrategyUtils.instantiateSearchStrategy(exptManager,
+							STRepositoryInfoUtils.getSearchStrategy(
+									project.getRepositoryManager().getSTRepositoryInfo("core")));
+
+					ValidationUtilities.executeWithoutValidation(validationEnabled, conn, (_conn) -> {
+						project.getNewOntologyManager().loadOntologyData(conn, preloadedDataFile, baseURI,
+								preloadedDataFormat, SimpleValueFactory.getInstance().createIRI(baseURI),
+								transitiveImportAllowance, failedImports);
+						try {
+							searchStrategy.update(conn);
+						} catch (Exception e) {
+							throw new RuntimeException("Unable to update search index with preoloaded data",
+									e);
+						}
+					});
 				} finally {
 					RDF4JRepositoryUtils.releaseConnection(conn, repository);
 				}
 			}
-			
+
 			// make sure that both the left and right dataset of an EDOAL project grants read access to it
 			if (Project.EDOAL_MODEL.equals(model)) {
 				if (leftDataset == null) {
@@ -1742,13 +1754,11 @@ public class ProjectManager {
 					+ escape(Arrays.stream(updateForRoles).collect(Collectors.joining(","))) + "\n");
 
 			if (leftDataset != null) {
-				out.write(Project.LEFT_DATASET_PROP + "="
-						+ escape(leftDataset) + "\n");
+				out.write(Project.LEFT_DATASET_PROP + "=" + escape(leftDataset) + "\n");
 			}
-			
+
 			if (rightDataset != null) {
-				out.write(Project.RIGHT_DATASET_PROP + "="
-						+ escape(rightDataset) + "\n");
+				out.write(Project.RIGHT_DATASET_PROP + "=" + escape(rightDataset) + "\n");
 			}
 
 			out.close();
