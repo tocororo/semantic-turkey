@@ -90,8 +90,6 @@ public class ProjectGroupBindingsRepoHelper {
 	
 	/**
 	 * Returns the bindings
-	 * @param userEmail
-	 * @param projectName
 	 * @return
 	 */
 	public Collection<ProjectGroupBinding> listPGBindings() {

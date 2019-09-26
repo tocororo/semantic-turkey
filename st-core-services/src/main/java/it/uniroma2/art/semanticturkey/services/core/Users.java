@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
@@ -32,9 +34,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import alice.tuprolog.MalformedGoalException;
-import alice.tuprolog.NoMoreSolutionException;
-import alice.tuprolog.NoSolutionException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -58,6 +57,7 @@ import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserException;
+import it.uniroma2.art.semanticturkey.user.UserFormCustomField;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.EmailSender;
@@ -127,13 +127,10 @@ public class Users extends STServiceAdapter {
 	/**
 	 * Returns the capabilities of the current logged user in according the roles he has in the current project
 	 * @return
-	 * @throws NoMoreSolutionException 
-	 * @throws NoSolutionException 
-	 * @throws MalformedGoalException 
-	 * @throws RBACException 
+	 * @throws RBACException
 	 */
 	@STServiceOperation
-	public JsonNode listUserCapabilities() throws MalformedGoalException, NoSolutionException, NoMoreSolutionException, RBACException {
+	public JsonNode listUserCapabilities() throws RBACException {
 		ArrayNode capabilitiesJsonArray = JsonNodeFactory.instance.arrayNode();
 		Project project = getProject();
 		STUser user = UsersManager.getLoggedUser();
@@ -197,16 +194,15 @@ public class Users extends STServiceAdapter {
 	 * @return
 	 * @throws MessagingException 
 	 * @throws ProjectAccessException 
-	 * @throws UserCreationException 
-	 * @throws ParseException 
+	 * @throws ParseException
 	 * @throws ProjectBindingException 
 	 * @throws STPropertyUpdateException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void registerUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
 			@Optional String address, @Optional String affiliation, @Optional String url, @Optional String avatarUrl,
-			@Optional String phone, @Optional Collection<String> languageProficiencies)
-					throws ProjectAccessException, UserException, ParseException, ProjectBindingException, STPropertyUpdateException {
+			@Optional String phone, @Optional Collection<String> languageProficiencies, @Optional Map<IRI, String> customProperties)
+					throws ProjectAccessException, UserException, ProjectBindingException, STPropertyUpdateException {
 		STUser user;
 		if (iri != null) {
 			user = new STUser(iri, email, password, givenName, familyName);
@@ -230,6 +226,11 @@ public class Users extends STServiceAdapter {
 		}
 		if (languageProficiencies != null) {
 			user.setLanguageProficiencies(languageProficiencies);
+		}
+		if (customProperties != null) {
+			for (Entry<IRI, String> entry : customProperties.entrySet()) {
+				user.setCustomProperty(entry.getKey(), entry.getValue());
+			}
 		}
 		
 		if (UsersManager.listUsers().isEmpty()) {
@@ -309,13 +310,13 @@ public class Users extends STServiceAdapter {
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
-	
+
 	/**
-	 * Update first name of the given user.
-	 * @param email
-	 * @param phone
+	 * Update the phone of the given user.
+	 * @param email email of the user
+	 * @param phone phone number
 	 * @return
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
@@ -328,8 +329,8 @@ public class Users extends STServiceAdapter {
 	
 	/**
 	 * Update address of the given user.
-	 * @param email
-	 * @param address
+	 * @param email email of the user
+	 * @param address address
 	 * @return
 	 * @throws IOException 
 	 */
@@ -347,7 +348,7 @@ public class Users extends STServiceAdapter {
 	 * @param email
 	 * @param affiliation
 	 * @return
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
@@ -363,7 +364,7 @@ public class Users extends STServiceAdapter {
 	 * @param email
 	 * @param url
 	 * @return
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
@@ -410,12 +411,11 @@ public class Users extends STServiceAdapter {
 	/**
 	 * Enables or disables the given user
 	 * @param email
-	 * @param enable
+	 * @param enabled
 	 * @return
 	 * @throws IOException 
 	 * @throws ProjectBindingException 
 	 */
-	//TODO move to Administration?
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'C')")
 	public ObjectNode enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled)
@@ -442,7 +442,6 @@ public class Users extends STServiceAdapter {
 	 * @param email
 	 * @throws Exception 
 	 */
-	//TODO move to Administration?
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'D')")
 	public void deleteUser(@RequestParam("email") String email) throws Exception {
@@ -536,6 +535,81 @@ public class Users extends STServiceAdapter {
 		}
 	}
 	
+	/*
+	 * Custom user form field management
+	 */
+
+	/**
+	 * Returns the optional and the custom fields of the user form
+	 * @return
+	 */
+	@STServiceOperation
+	public JsonNode getUserFormFields() {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+
+		ObjectNode respJson = jsonFactory.objectNode();
+
+		//optional fields
+		ArrayNode optionalFieldsJson = jsonFactory.arrayNode();
+		for (Entry<IRI, Boolean> f: UsersManager.getUserForm().getOptionalFields().entrySet()) {
+			ObjectNode fieldJson = jsonFactory.objectNode();
+			fieldJson.set("iri", jsonFactory.textNode(f.getKey().stringValue()));
+			fieldJson.set("visible", jsonFactory.booleanNode(f.getValue()));
+			optionalFieldsJson.add(fieldJson);
+		}
+		respJson.set("optionalFields", optionalFieldsJson);
+
+		//custom fields
+		ArrayNode customFieldsJson = jsonFactory.arrayNode();
+		for (UserFormCustomField field: UsersManager.getUserForm().getOrderedCustomFields()) {
+			ObjectNode fieldJson = jsonFactory.objectNode();
+			fieldJson.set("iri", jsonFactory.textNode(field.getIri().stringValue()));
+			fieldJson.set("label", jsonFactory.textNode(field.getLabel()));
+//			fieldJson.set("position", jsonFactory.numberNode(field.getPosition()));
+			customFieldsJson.add(fieldJson);
+		}
+		respJson.set("customFields", customFieldsJson);
+		return respJson;
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void updateUserFormOptionalFieldVisibility(IRI field, boolean visibility) throws UserException {
+		UsersManager.setUserFormOptionalFieldVisibility(field, visibility);
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void addUserFormCustomField(String field) throws UserException {
+		UsersManager.addUserFormCustomField(field);
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void renameUserFormCustomField(IRI fieldIri, String newLabel) throws UserException {
+		UsersManager.renameUserFormCustomField(fieldIri, newLabel);
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void swapUserFormCustomFields(IRI field1, IRI field2) throws UserException {
+		UsersManager.swapUserFormCustomField(field1, field2);
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void removeUserFormCustomField(IRI field) throws UserException {
+		UsersManager.removeUserFormCustomField(field);
+	}
+	
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
+	public ObjectNode updateUserCustomField(String email, IRI property, @Optional String value) throws UserException {
+		STUser user = UsersManager.getUserByEmail(email);
+		user = UsersManager.updateUserCustomProperty(user, property, value);
+		updateUserInSecurityContext(user);
+		return user.getAsJsonObject();
+	}
 	
 	/**
 	 * Updates the user stored in the security context whenever there is a change to the current logged user

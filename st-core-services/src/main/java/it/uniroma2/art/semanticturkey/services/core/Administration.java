@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.io.Files;
 
 import alice.tuprolog.InvalidTheoryException;
 import alice.tuprolog.MalformedGoalException;
@@ -45,6 +46,8 @@ import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACProcessor;
 import it.uniroma2.art.semanticturkey.rbac.TheoryNotFoundException;
+import it.uniroma2.art.semanticturkey.resources.Config;
+import it.uniroma2.art.semanticturkey.resources.ConfigurationUpdateException;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -105,6 +108,23 @@ public class Administration extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	public void updateAdministrator(String adminEmailAddress) throws STPropertyUpdateException {
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS, adminEmailAddress);
+	}
+	
+	@STServiceOperation()
+	@PreAuthorize("@auth.isAdmin()")
+	public void setDataDir(String path) throws ConfigurationUpdateException, IOException {
+		File file = new File(path);	
+		File oldDir = Resources.getSemTurkeyDataDir();
+		Config.setDataDirProp(path);
+		Resources.initSemTurkeyDataDir(); //update the data dir (and sub-dir) reference in memory
+		File newDir = Resources.getSemTurkeyDataDir();
+		Files.move(oldDir, newDir);
+	}
+	
+	@STServiceOperation()
+	@PreAuthorize("@auth.isAdmin()")
+	public String getDataDir() throws ConfigurationUpdateException {
+		return Config.getDataDir().getPath();
 	}
 	
 	/**
@@ -419,7 +439,7 @@ public class Administration extends STServiceAdapter {
 		}
 		File roleFile = RBACManager.getRoleFile(project, roleName);
 		if (!roleFile.exists()) { //in case the role file was not found at project level)
-			roleFile = RBACManager.getRoleFile(null, roleName); //TODO seems not to work
+			roleFile = RBACManager.getRoleFile(null, roleName);
 		}
 		File tempServerFile = File.createTempFile("roleExport", ".pl");
 		try {

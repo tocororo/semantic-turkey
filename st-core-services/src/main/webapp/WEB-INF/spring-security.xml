@@ -42,6 +42,9 @@
 			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/getUser"
 			access="permitAll" />
 		<intercept-url
+			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/getUserFormFields"
+			access="permitAll" />
+		<intercept-url
 			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/registerUser"
 			access="permitAll" />
 		<intercept-url

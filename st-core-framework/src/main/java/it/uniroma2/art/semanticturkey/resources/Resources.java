@@ -65,7 +65,6 @@ public class Resources {
 
 	private static File extensionPath;
 
-	// private static File sourceUserDirectory;
 	private static File stDataDirectory;
 
 	/* new */
@@ -115,23 +114,7 @@ public class Resources {
 		}
 
 		/* new */
-		File dataDir = Config.getDataDir();
-		if (dataDir.isAbsolute())
-			stDataDirectory = dataDir;
-		else
-			stDataDirectory = new File(getExtensionPath(), dataDir.getPath());
-		logger.debug("st data directory: " + getSemTurkeyDataDir());
-
-		ontTempDir = new File(stDataDirectory, _ontTempDirLocalName);
-		ontMirrorDirDefaultLocation = new File(stDataDirectory, _ontMirrorDirDefaultLocationLocalName);
-		ontologiesMirrorFile = new File(stDataDirectory, _ontMirrorFileName);
-		projectsDir = new File(stDataDirectory, _projectsDirName);
-		systemDir = new File(stDataDirectory, _systemDirName);
-		usersDir = new File(stDataDirectory, _usersDirName);
-		groupsDir = new File(stDataDirectory, _groupsDirName);
-		projectUserBindingsDir = new File(stDataDirectory, _projectUserBindingsDirName);
-		projectGroupBindingsDir = new File(stDataDirectory, _projectGroupBindingsDirName);
-		docsDir = new File(systemDir, _docsDirName);
+		initSemTurkeyDataDir();
 
 		if (!stDataDirectory.exists()) { // stData doens't exists => create from scratch
 			try {
@@ -155,7 +138,32 @@ public class Resources {
 			e.printStackTrace();
 		}
 	}
-
+	
+	/**
+	 * Initializes the SemanticTurkeyData directory according the dataDir property set in 
+	 * it.uniroma2.art.semanticturkey.cfg
+	 * Then initializes also all the subfolders in the ST data dir
+	 */
+	public static void initSemTurkeyDataDir() {
+		File dataDir = Config.getDataDir();
+		if (dataDir.isAbsolute())
+			stDataDirectory = dataDir;
+		else
+			stDataDirectory = new File(getExtensionPath(), dataDir.getPath());
+		logger.debug("st data directory: " + getSemTurkeyDataDir());
+		
+		ontTempDir = new File(stDataDirectory, _ontTempDirLocalName);
+		ontMirrorDirDefaultLocation = new File(stDataDirectory, _ontMirrorDirDefaultLocationLocalName);
+		ontologiesMirrorFile = new File(stDataDirectory, _ontMirrorFileName);
+		projectsDir = new File(stDataDirectory, _projectsDirName);
+		systemDir = new File(stDataDirectory, _systemDirName);
+		usersDir = new File(stDataDirectory, _usersDirName);
+		groupsDir = new File(stDataDirectory, _groupsDirName);
+		projectUserBindingsDir = new File(stDataDirectory, _projectUserBindingsDirName);
+		projectGroupBindingsDir = new File(stDataDirectory, _projectGroupBindingsDirName);
+		docsDir = new File(systemDir, _docsDirName);
+	}
+	
 	public static File getSemTurkeyDataDir() {
 		return stDataDirectory;
 	}

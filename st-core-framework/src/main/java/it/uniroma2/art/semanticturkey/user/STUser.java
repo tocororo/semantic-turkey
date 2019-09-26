@@ -7,6 +7,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -39,19 +41,12 @@ public class STUser implements UserDetails {
 	private Date registrationDate;
 	private UserStatus status;
 	private Collection<String> languageProficiencies;
+	private Map<IRI, String> customProps;
 	
 	public static String USER_DATE_FORMAT = "yyyy-MM-dd";
 	
 	public STUser(String email, String password, String givenName, String familyName) {
-		IRI iri = SimpleValueFactory.getInstance().createIRI(UserVocabulary.USERSBASEURI, email);
-		this.iri = iri;
-		this.email = email;
-		this.password = password;
-		this.givenName = givenName;
-		this.familyName = familyName;
-		this.authorities = new ArrayList<GrantedAuthority>();
-		this.status = UserStatus.NEW;
-		this.languageProficiencies = new ArrayList<String>();
+		this(SimpleValueFactory.getInstance().createIRI(UserVocabulary.USERSBASEURI, email), email, password, givenName, familyName);
 	}
 	
 	public STUser(IRI iri, String email, String password, String givenName, String familyName) {
@@ -63,6 +58,7 @@ public class STUser implements UserDetails {
 		this.authorities = new ArrayList<GrantedAuthority>();
 		this.status = UserStatus.NEW;
 		this.languageProficiencies = new ArrayList<String>();
+		this.customProps = new HashMap<IRI, String>();
 	}
 	
 	public IRI getIRI() {
@@ -203,6 +199,22 @@ public class STUser implements UserDetails {
 	public void setLanguageProficiencies(Collection<String> languageProficiencies) {
 		this.languageProficiencies = languageProficiencies;
 	}
+	
+	public Map<IRI, String> getCustomProperties() {
+		return customProps;
+	}
+	
+	public void setCustomProperty(IRI prop, String value) {
+		if (value == null) {
+			customProps.remove(prop);
+		} else {
+			customProps.put(prop, value);
+		}
+	}
+	
+	public void removeCustomProperty(IRI prop) {
+		customProps.remove(prop);
+	}
 
 	public boolean isAdmin() {
 		try {
@@ -234,6 +246,18 @@ public class STUser implements UserDetails {
 			langsArrayNode.add(l);
 		}
 		userJson.set("languageProficiencies", langsArrayNode);
+		
+		ArrayNode customPropsArrayNode = jsonFactory.arrayNode();
+		for (IRI prop: UserForm.customFieldsProperties) {
+			UserFormCustomField field = UsersManager.getUserForm().getCustomField(prop);
+			if (field != null) {
+				ObjectNode customPropNode = jsonFactory.objectNode();
+				customPropNode.set("iri", jsonFactory.textNode(field.getIri().stringValue()));
+				customPropNode.set("value", jsonFactory.textNode(customProps.get(prop)));
+				customPropsArrayNode.add(customPropNode);
+			}
+		}
+		userJson.set("customProperties", customPropsArrayNode);
 		
 		return userJson;
 	}

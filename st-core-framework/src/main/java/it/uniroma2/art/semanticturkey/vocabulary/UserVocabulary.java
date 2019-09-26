@@ -50,6 +50,12 @@ public class UserVocabulary {
 	public static final IRI PROJECT_PROP;
 	public static final IRI OWNED_SCHEME_PROP;
 	public static final IRI GROUP_LIMITATIONS_PROP;
+
+	public static final IRI VISIBLE_PROP; //tells if an optional field is visible or not
+	public static final IRI USER_CUSTOM_PROP_1;
+	public static final IRI USER_CUSTOM_PROP_2;
+	public static final IRI USER_CUSTOM_PROP_3;
+	public static final IRI USER_CUSTOM_PROP_4;
     
 	static {
 		ValueFactory fact = SimpleValueFactory.getInstance();
@@ -78,6 +84,12 @@ public class UserVocabulary {
     	PROJECT_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "project");
     	OWNED_SCHEME_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "owned_scheme");
     	GROUP_LIMITATIONS_PROP = fact.createIRI(UserVocabulary.PUVOC_NS, "subjectToGroupLimitations");
+
+		VISIBLE_PROP = fact.createIRI(UserVocabulary.NAMESPACE, "enabled");
+    	USER_CUSTOM_PROP_1 = fact.createIRI(UserVocabulary.NAMESPACE, "user_custom_property_1");
+    	USER_CUSTOM_PROP_2 = fact.createIRI(UserVocabulary.NAMESPACE, "user_custom_property_2");
+    	USER_CUSTOM_PROP_3 = fact.createIRI(UserVocabulary.NAMESPACE, "user_custom_property_3");
+    	USER_CUSTOM_PROP_4 = fact.createIRI(UserVocabulary.NAMESPACE, "user_custom_property_4");
 	}
 
 }

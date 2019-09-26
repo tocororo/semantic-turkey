@@ -6,8 +6,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
@@ -19,15 +21,18 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 
 public class UsersManager {
-	
+
 	private static final String USERS_DETAILS_FILE_NAME = "details.ttl";
+	private static final String USER_FORM_FIELDS_FILE_NAME = "fields.ttl";
 
 	private static Collection<STUser> userList = new ArrayList<>();
+
+	private static UserForm userForm;
 
 	/**
 	 * Loads all the users into the repository Protected since the load should be done just once by
 	 * AccessControlManager during its initialization
-	 * 
+	 *
 	 * @throws RDFParseException
 	 * @throws RepositoryException
 	 * @throws IOException
@@ -39,12 +44,17 @@ public class UsersManager {
 			userRepoHelper.loadUserDetails(f);
 		}
 		userList = userRepoHelper.listUsers();
+
+		//load also the custom fields of the user form
+		userRepoHelper.loadUserFormFields(getUserFormFieldsFile());
+		userForm = userRepoHelper.initUserForm();
+
 		userRepoHelper.shutDownRepository();
 	}
 
 	/**
 	 * Registers a user
-	 * 
+	 *
 	 * @param user
 	 * @throws UserException
 	 * @throws IOException
@@ -64,13 +74,13 @@ public class UsersManager {
 
 	/**
 	 * Returns a list of all the registered users
-	 * 
+	 *
 	 * @return
 	 */
 	public static Collection<STUser> listUsers() {
 		return userList;
 	}
-	
+
 	/**
 	 * Returns the admin
 	 * @return
@@ -86,7 +96,7 @@ public class UsersManager {
 
 	/**
 	 * Returns the user with the given email. Null if there is no user with the given email.
-	 * 
+	 *
 	 * @param email
 	 * @return
 	 */
@@ -99,10 +109,10 @@ public class UsersManager {
 		}
 		return user;
 	}
-	
+
 	/**
 	 * Returns the user with the given IRI. Null if there is no user with the given IRI.
-	 * 
+	 *
 	 * @param iri
 	 * @return
 	 */
@@ -118,8 +128,8 @@ public class UsersManager {
 
 	/**
 	 * Delete the user with the given email
-	 * 
-	 * @param email
+	 *
+	 * @param user
 	 * @throws IOException
 	 */
 	public static void deleteUser(STUser user) throws IOException {
@@ -129,12 +139,12 @@ public class UsersManager {
 		// delete the bindings
 		ProjectUserBindingsManager.deletePUBindingsOfUser(user);
 	}
-	
+
 	/**
 	 * Updates the password of the given user and returns it updated
-	 * 
+	 *
 	 * @param user
-	 * @param newValue
+	 * @param newPassword
 	 * @return
 	 * @throws IOException
 	 */
@@ -146,7 +156,7 @@ public class UsersManager {
 
 	/**
 	 * Updates the first name of the given user and returns it updated
-	 * 
+	 *
 	 * @param user
 	 * @param newValue
 	 * @return
@@ -160,7 +170,7 @@ public class UsersManager {
 
 	/**
 	 * Updates the last name of the given user and returns it updated
-	 * 
+	 *
 	 * @param user
 	 * @param newValue
 	 * @return
@@ -171,10 +181,10 @@ public class UsersManager {
 		createOrUpdateUserDetailsFolder(user);
 		return user;
 	}
-	
+
 	/**
 	 * Updates the email of the given user and returns it updated
-	 * 
+	 *
 	 * @param user
 	 * @param newValue
 	 * @return
@@ -188,7 +198,7 @@ public class UsersManager {
 
 	/**
 	 * Updates the phone number of the given user and returns it updated
-	 * 
+	 *
 	 * @param user
 	 * @param newValue
 	 * @return
@@ -202,7 +212,7 @@ public class UsersManager {
 
 	/**
 	 * Updates the address of the given user and returns it updated
-	 * 
+	 *
 	 * @param user
 	 * @param newValue
 	 * @return
@@ -216,7 +226,7 @@ public class UsersManager {
 
 	/**
 	 * Updates the affiliation of the given user and returns it updated
-	 * 
+	 *
 	 * @param user
 	 * @param newValue
 	 * @return
@@ -230,7 +240,7 @@ public class UsersManager {
 
 	/**
 	 * Updates the url of the given user and returns it updated
-	 * 
+	 *
 	 * @param user
 	 * @param newValue
 	 * @return
@@ -241,10 +251,10 @@ public class UsersManager {
 		createOrUpdateUserDetailsFolder(user);
 		return user;
 	}
-	
+
 	/**
 	 * Updates the url of the given user and returns it updated
-	 * 
+	 *
 	 * @param user
 	 * @param newValue
 	 * @return
@@ -255,10 +265,10 @@ public class UsersManager {
 		createOrUpdateUserDetailsFolder(user);
 		return user;
 	}
-	
+
 	/**
 	 * Updates the language proficiencies of the given user and returns it updated
-	 * 
+	 *
 	 * @param user
 	 * @param newValue
 	 * @return
@@ -272,9 +282,9 @@ public class UsersManager {
 
 	/**
 	 * Updates the status of the given user and returns it update
-	 * 
+	 *
 	 * @param user
-	 * @param newStatus
+	 * @param newValue
 	 * @return
 	 * @throws IOException
 	 */
@@ -287,7 +297,7 @@ public class UsersManager {
 	/**
 	 * Creates a folder for the given user and serializes the details about the user in a file. If the folder
 	 * is already created, simply update the info in the user details file.
-	 * 
+	 *
 	 * @param user
 	 * @throws IOException
 	 */
@@ -296,7 +306,7 @@ public class UsersManager {
 			// creates a temporary not persistent repository
 			UsersRepoHelper tempUserRepoHelper = new UsersRepoHelper();
 			tempUserRepoHelper.insertUser(user);
-			tempUserRepoHelper.saveUserDetailsFile(getUserDetailsFile(user));
+			tempUserRepoHelper.serializeRepoContent(getUserDetailsFile(user));
 			tempUserRepoHelper.shutDownRepository();
 		} catch (IOException e) {
 			throw new UserException(e);
@@ -307,7 +317,7 @@ public class UsersManager {
 	 * This method should never return <code>null</code>, since if the user is not logged, the services are
 	 * intercepted by the security filter. However, if for whatever reason no user is logged in, an
 	 * <code>IllegalStateException</code> is thrown.
-	 * 
+	 *
 	 * @return
 	 */
 	public static STUser getLoggedUser() throws IllegalStateException {
@@ -319,22 +329,22 @@ public class UsersManager {
 
 		throw new IllegalStateException("No user is logged in");
 	}
-	
+
 	/**
 	 * Returns the user folder under <STData>/users/ for the given user
-	 * @param userEmail
+	 * @param user
 	 * @return
 	 */
 	public static File getUserFolder(STUser user) {
 		return new File(Resources.getUsersDir() + File.separator + STUser.encodeUserIri(user.getIRI()));
 	}
-	
+
 	/**
 	 * Returns all the user folders under <STData>/users/
 	 * @return
 	 */
 	public static Collection<File> getAllUserFolders() {
-		Collection<File> userFolders = new ArrayList<>(); 
+		Collection<File> userFolders = new ArrayList<>();
 		File usersFolder = Resources.getUsersDir();
 		//get all subfolder of "users" folder (one subfolder for each user)		
 		String[] userDirectories = usersFolder.list(new FilenameFilter() {
@@ -342,15 +352,15 @@ public class UsersManager {
 				return new File(current, name).isDirectory();
 			}
 		});
-		for (int i = 0; i < userDirectories.length; i++) {
-			userFolders.add(new File(usersFolder + File.separator + userDirectories[i]));
+		for (String userDirectory : userDirectories) {
+			userFolders.add(new File(usersFolder + File.separator + userDirectory));
 		}
 		return userFolders;
 	}
-	
+
 	/**
 	 * Returns the user details file for the given user
-	 * @param userEmail
+	 * @param user
 	 * @return
 	 */
 	private static File getUserDetailsFile(STUser user) {
@@ -360,18 +370,112 @@ public class UsersManager {
 		}
 		return new File(userFolder + File.separator + USERS_DETAILS_FILE_NAME);
 	}
-	
+
 	/**
 	 * Returns the user details files for all the users
 	 * @return
 	 */
 	private static Collection<File> getAllUserDetailsFiles() {
-		Collection<File> userDetailsFolders = new ArrayList<>(); 
+		Collection<File> userDetailsFolders = new ArrayList<>();
 		Collection<File> userFolders = getAllUserFolders();
 		for (File f : userFolders) {
 			userDetailsFolders.add(new File(f + File.separator + USERS_DETAILS_FILE_NAME));
 		}
 		return userDetailsFolders;
 	}
-	
+
+	/*
+	 * User Form fields methods
+	 */
+
+	public static UserForm getUserForm() {
+		return userForm;
+	}
+
+	public static void setUserFormOptionalFieldVisibility(IRI fieldIri, boolean visibility) throws UserException {
+		userForm.setOptionalFieldVisibility(fieldIri, visibility);
+		updateUserFormFieldsFile();
+	}
+
+	public static void addUserFormCustomField(String field) throws UserException {
+		IRI p = userForm.getFirstAvailableProperty();
+		if (p == null) { //this should never happen, the UI should prevent to add new fields when there are no more fields available 
+			throw new InvalidOperationException("Cannot add a field, the form is already filled");
+		}
+		userForm.addField(new UserFormCustomField(p, userForm.getOrderedCustomFields().size(), field));
+		updateUserFormFieldsFile();
+	}
+	public static void renameUserFormCustomField(IRI fieldIri, String newLabel) throws UserException {
+		UserFormCustomField field = userForm.getCustomField(fieldIri);
+		field.setLabel(newLabel);
+		updateUserFormFieldsFile();
+	}
+	public static void removeUserFormCustomField(IRI field) throws UserException {
+		userForm.removeCustomField(field);
+		removeCustomPropertyFromUsers(field);
+		updateUserFormFieldsFile();
+	}
+	public static void swapUserFormCustomField(IRI field1, IRI field2) throws UserException {
+		UserFormCustomField f1 = userForm.getCustomField(field1);
+		int pos1 = f1.getPosition();
+		UserFormCustomField f2 = userForm.getCustomField(field2);
+		int pos2 = f2.getPosition();
+		f1.setPosition(pos2);
+		f2.setPosition(pos1);
+		updateUserFormFieldsFile();
+	}
+
+	/**
+	 * Updates the value of a custom property of the given user and returns it updated
+	 *
+	 * @param user
+	 * @param property
+	 * @param value
+	 * @return
+	 * @throws IOException
+	 */
+	public static STUser updateUserCustomProperty(STUser user, IRI property, String value) throws UserException {
+		user.setCustomProperty(property, value);
+		createOrUpdateUserDetailsFolder(user);
+		return user;
+	}
+
+	/**
+	 * To invoke when a custom property is deleted from the form definition
+	 * @param field
+	 * @throws UserException
+	 */
+	private static void removeCustomPropertyFromUsers(IRI field) throws UserException {
+		for (STUser u: userList) {
+			u.removeCustomProperty(field);
+			createOrUpdateUserDetailsFolder(u);
+		}
+	}
+
+
+	private static void updateUserFormFieldsFile() throws UserException {
+		try {
+			// creates a temporary not persistent repository
+			UsersRepoHelper tempUserRepoHelper = new UsersRepoHelper();
+			for (UserFormCustomField f : userForm.getCustomFields()) {
+				tempUserRepoHelper.insertUserFormCustomField(f);
+			}
+			for (Entry<IRI, Boolean> f: userForm.getOptionalFields().entrySet()) {
+				tempUserRepoHelper.insertUserFormOptionalField(f.getKey(), f.getValue());
+			}
+			tempUserRepoHelper.serializeRepoContent(getUserFormFieldsFile());
+			tempUserRepoHelper.shutDownRepository();
+		} catch (IOException e) {
+			throw new UserException(e);
+		}
+	}
+
+	private static File getUserFormFieldsFile() throws IOException {
+		File f = new File(Resources.getUsersDir() + File.separator + USER_FORM_FIELDS_FILE_NAME);
+		if (!f.exists()) {
+			f.createNewFile();
+		}
+		return f;
+	}
+
 }

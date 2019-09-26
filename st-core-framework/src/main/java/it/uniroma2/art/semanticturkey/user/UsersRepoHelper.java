@@ -1,28 +1,18 @@
 package it.uniroma2.art.semanticturkey.user;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-
+import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.ORG;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -37,7 +27,18 @@ import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Map.Entry;
 
 public class UsersRepoHelper {
 	
@@ -60,7 +61,8 @@ public class UsersRepoHelper {
 	private String BINDING_REGISTRATION_DATE = "registrationDate";
 	private String BINDING_STATUS = "status";
 	private String BINDING_LANGUAGE_PROFICIENCIES = "languageProficiencies";
-	
+	private String BINDING_CUSTOM_PROP_PREFIX = "customProp";
+
 	public UsersRepoHelper() {
 		MemoryStore memStore = new MemoryStore();
 		memStore.setPersist(false);
@@ -107,6 +109,9 @@ public class UsersRepoHelper {
 			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROFICIENCIES) + 
 					" '" + lang + "' .";
 		}
+		for (Entry<IRI, String> entry : user.getCustomProperties().entrySet()) {
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(entry.getKey()) + " '" + entry.getValue() + "' .";
+		}
 		query += " }";
 		
 		query = query.replace("?" + BINDING_IRI, NTriplesUtil.toNTriplesString(user.getIRI()));
@@ -121,8 +126,6 @@ public class UsersRepoHelper {
 	
 	/**
 	 * Returns a list of all the users into the repository
-	 * @return
-	 * @throws ParseException
 	 */
 	public Collection<STUser> listUsers() {
 		String query = "SELECT * WHERE {"
@@ -139,8 +142,12 @@ public class UsersRepoHelper {
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(ORG.MEMBER_OF) + " ?" + BINDING_AFFILIATION + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.ADDRESS) + " ?" + BINDING_ADDRESS + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROFICIENCIES) 
-					+ " ?" + BINDING_LANGUAGE_PROFICIENCIES + " . }"
-				+ "}";
+					+ " ?" + BINDING_LANGUAGE_PROFICIENCIES + " . }";
+		for (int i = 0; i < UserForm.customFieldsProperties.size(); i++) {
+			IRI prop = UserForm.customFieldsProperties.get(i);
+			query += " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(prop) + " ?" + BINDING_CUSTOM_PROP_PREFIX + i + " . }";
+		}
+		query += " }";
 		
 		//execute query
 		logger.debug(query);
@@ -154,32 +161,6 @@ public class UsersRepoHelper {
 			if (result != null) {
 				result.close();
 			}
-		}
-	}
-	
-	/**
-	 * Serialize the content of the repository in the given file
-	 * @param file
-	 * @throws IOException
-	 */
-	public void saveUserDetailsFile(File file) throws IOException {
-		RepositoryConnection conn = repository.getConnection();
-		
-		try {
-			RepositoryResult<Statement> stats = conn.getStatements(null, null, null, false);
-			Model model = Iterations.addAll(stats, new LinkedHashModel());
-			try (FileOutputStream out = new FileOutputStream(file)) {
-				RDFWriter writer = Rio.createWriter(RDFFormat.TURTLE, out);
-				writer.startRDF();
-				for (Statement st : model) {
-					writer.handleStatement(st);
-				}
-				writer.endRDF();
-			}
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} finally {
-			conn.close();
 		}
 	}
 	
@@ -245,9 +226,143 @@ public class UsersRepoHelper {
 				user.addLanguageProficiency(lang);
 			}
 			
+			for (int i = 0; i < UserForm.customFieldsProperties.size(); i++) {
+				String bindingName = BINDING_CUSTOM_PROP_PREFIX + i;
+				if (tuple.getBinding(bindingName) != null) {
+					String customPropValue = tuple.getValue(bindingName).stringValue();
+					user.setCustomProperty(UserForm.customFieldsProperties.get(i), customPropValue);
+				}
+			}
+			
 			list.add(user);
 		}
 		return list;
+	}
+	
+	
+	/*
+	 * User form fields handlers
+	 */
+	
+	public void loadUserFormFields(File userFormFieldsFile) throws RDFParseException, RepositoryException, IOException {
+		RepositoryConnection conn = repository.getConnection();
+		conn.add(userFormFieldsFile, UserVocabulary.BASEURI, RDFFormat.TURTLE);
+		conn.close();
+	}
+
+	public UserForm initUserForm() {
+		UserForm form = new UserForm();
+
+		/**
+		 * Optional fields
+		 */
+		String query = "SELECT * WHERE { " +
+				" VALUES ?prop { ";
+		for (IRI p : UserForm.optionalFieldsProperties) {
+			query += NTriplesUtil.toNTriplesString(p) + " ";
+		}
+		query += " } " + //close VALUES
+				"?prop " + NTriplesUtil.toNTriplesString(UserVocabulary.VISIBLE_PROP) + " ?visible . " +
+				" } ";
+		logger.debug(query);
+		try (
+				RepositoryConnection conn = repository.getConnection();
+				TupleQueryResult result = conn.prepareTupleQuery(query).evaluate();
+		) {
+			while (result.hasNext()) {
+				BindingSet bs = result.next();
+				Binding bsProp = bs.getBinding("prop");
+				if (bsProp != null) {
+					boolean visible = ((Literal) bs.getValue("visible")).booleanValue();
+					form.setOptionalFieldVisibility((IRI)bsProp.getValue(), visible);
+				}
+			}
+		}
+
+
+		/**
+		 * Custom fields
+		 */
+		query = "SELECT * WHERE { " +
+			" VALUES ?prop { ";
+		for (IRI p : UserForm.customFieldsProperties) {
+			query += NTriplesUtil.toNTriplesString(p) + " ";
+		}
+		query += " } " + //close VALUES
+				"?prop " + NTriplesUtil.toNTriplesString(RDFS.LABEL) + " ?label . " +
+				"?prop " + NTriplesUtil.toNTriplesString(RDF.VALUE) + " ?position . " +
+				" } ";
+		logger.debug(query);
+		try (
+				RepositoryConnection conn = repository.getConnection();
+			 	TupleQueryResult result = conn.prepareTupleQuery(query).evaluate();
+		) {
+			while (result.hasNext()) {
+				BindingSet bs = result.next();
+				Binding bsProp = bs.getBinding("prop");
+				if (bsProp != null) {
+					String fieldLabel = bs.getValue("label").stringValue();
+					int fieldPosition = ((Literal)bs.getValue("position")).intValue();
+					UserFormCustomField field = new UserFormCustomField((IRI)bsProp.getValue(), fieldPosition, fieldLabel);
+					form.addField(field);
+				}
+			}
+		}
+		return form;
+	}
+
+	public void insertUserFormOptionalField(IRI field, boolean visibility) {
+		String query = "INSERT DATA { " +
+				NTriplesUtil.toNTriplesString(field) + " " +
+				NTriplesUtil.toNTriplesString(UserVocabulary.VISIBLE_PROP) + " " +
+				NTriplesUtil.toNTriplesString(SimpleValueFactory.getInstance().createLiteral(visibility)) + " . " +
+				"}";
+		//execute query
+		logger.debug(query);
+		try (RepositoryConnection conn = repository.getConnection()) {
+			Update update = conn.prepareUpdate(query);
+			update.execute();
+		}
+	}
+
+	public void insertUserFormCustomField(UserFormCustomField field) {
+		String query = "INSERT DATA { " +
+			NTriplesUtil.toNTriplesString(field.getIri()) + " " + NTriplesUtil.toNTriplesString(RDFS.LABEL) + " '" + field.getLabel() + "' . " +
+			NTriplesUtil.toNTriplesString(field.getIri()) + " " + NTriplesUtil.toNTriplesString(RDF.VALUE) + " " + field.getPosition() + " . " +
+			"}";
+		//execute query
+		logger.debug(query);
+		try (RepositoryConnection conn = repository.getConnection()) {
+			Update update = conn.prepareUpdate(query);
+			update.execute();
+		}
+	}
+	
+	
+	/*
+	 * Repository utils
+	 */
+	
+	/**
+	 * Serialize the content of the repository in the given file
+	 * @param file destination file for the serialization
+	 * @throws IOException
+	 */
+	public void serializeRepoContent(File file) throws IOException {
+		try (RepositoryConnection conn = repository.getConnection()) {
+			RepositoryResult<Statement> stats = conn.getStatements(null, null, null, false);
+			Model model = Iterations.addAll(stats, new LinkedHashModel());
+			try (FileOutputStream out = new FileOutputStream(file)) {
+				RDFWriter writer = Rio.createWriter(RDFFormat.TURTLE, out);
+				writer.startRDF();
+				for (Statement st : model) {
+					writer.handleStatement(st);
+				}
+				writer.endRDF();
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void shutDownRepository() {
