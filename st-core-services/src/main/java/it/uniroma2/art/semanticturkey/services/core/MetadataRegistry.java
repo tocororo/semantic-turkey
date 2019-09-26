@@ -16,7 +16,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
-import it.uniroma2.art.semanticturkey.data.access.UnknownResourcePosition;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -344,11 +343,11 @@ public class MetadataRegistry extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
 	public AnnotatedValue<IRI> discoverDataset(IRI iri)
 			throws ProjectAccessException, DeniedOperationException, MetadataDiscoveryException {
-		ResourcePosition rp = resourceLocator.locateResource(getProject(), getRepository(), iri);
+		DatasetMetadata datasetMeta = metadataRegistryBackend.findDatasetForResource(iri);
 
-		if (!(rp instanceof UnknownResourcePosition)) {
-			throw new DeniedOperationException("A position for the provided IRI " + RenderUtils.toSPARQL(iri)
-					+ " is already known: " + rp.getPosition());
+		if (datasetMeta != null) {
+			throw new DeniedOperationException("A dataset for the provided IRI " + RenderUtils.toSPARQL(iri)
+					+ " is already in the metadata registry: " + datasetMeta.getIdentity());
 		}
 
 		IRI catalogRecord = metadataRegistryBackend.discoverDataset(iri);
