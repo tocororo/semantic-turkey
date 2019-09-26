@@ -71,16 +71,16 @@ import it.uniroma2.art.semanticturkey.services.core.genoma.backend.MatchingStatu
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 
 /**
- * This class provides services for interacting with GENOMA.
+ * This class provides services for interacting with remote alignment services.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 @STService
-public class GENOMA extends STServiceAdapter {
+public class RemoteAlignmentServices extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(GENOMA.class);
+	private static Logger logger = LoggerFactory.getLogger(RemoteAlignmentServices.class);
 
-	public static final String GENOMA_ENDPOINT = "http://localhost:8282/";
+	public static final String ALIGNMENTSERVICES_ENDPOINT = "http://localhost:8282/";
 
 	@Autowired
 	private MetadataRegistryBackend metadataRegistryBackend;
@@ -88,7 +88,7 @@ public class GENOMA extends STServiceAdapter {
 	private it.uniroma2.art.semanticturkey.services.core.Alignment alignmentService;
 	private RestTemplate restTemplate;
 
-	public GENOMA() {
+	public RemoteAlignmentServices() {
 		restTemplate = new RestTemplate();
 	}
 
@@ -127,7 +127,7 @@ public class GENOMA extends STServiceAdapter {
 		}
 
 		ResponseEntity<List<MatchingStatus>> response = restTemplate.exchange(
-				GENOMA_ENDPOINT + "getMatchingList", HttpMethod.GET, null,
+				ALIGNMENTSERVICES_ENDPOINT + "getMatchingList", HttpMethod.GET, null,
 				new ParameterizedTypeReference<List<MatchingStatus>>() {
 				});
 
@@ -189,8 +189,8 @@ public class GENOMA extends STServiceAdapter {
 			return null;
 
 		};
-		restTemplate.execute(GENOMA_ENDPOINT + "downloadFile/{taskId}.rdf?fileType=alignment", HttpMethod.GET,
-				requestCallback, responseExtractor, ImmutableMap.of("taskId", taskId));
+		restTemplate.execute(ALIGNMENTSERVICES_ENDPOINT + "downloadFile/{taskId}.rdf?fileType=alignment",
+				HttpMethod.GET, requestCallback, responseExtractor, ImmutableMap.of("taskId", taskId));
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -205,8 +205,8 @@ public class GENOMA extends STServiceAdapter {
 			FileUtils.copyInputStreamToFile(response.getBody(), inputServerFile);
 			return null;
 		};
-		restTemplate.execute(GENOMA_ENDPOINT + "downloadFile/{taskId}.rdf?fileType=alignment", HttpMethod.GET,
-				requestCallback, responseExtractor, ImmutableMap.of("taskId", taskId));
+		restTemplate.execute(ALIGNMENTSERVICES_ENDPOINT + "downloadFile/{taskId}.rdf?fileType=alignment",
+				HttpMethod.GET, requestCallback, responseExtractor, ImmutableMap.of("taskId", taskId));
 
 		// creating model for loading alignment
 		AlignmentModel alignModel = new AlignmentModel();
@@ -277,7 +277,7 @@ public class GENOMA extends STServiceAdapter {
 		}
 
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
-			HttpPost request = new HttpPost(GENOMA_ENDPOINT + "runMatch");
+			HttpPost request = new HttpPost(ALIGNMENTSERVICES_ENDPOINT + "runMatch");
 			request.setEntity(new StringEntity(matchingProblemJson, ContentType.APPLICATION_JSON));
 			try (CloseableHttpResponse httpReponse = httpClient.execute(request)) {
 				StatusLine statusLine = httpReponse.getStatusLine();
@@ -309,8 +309,8 @@ public class GENOMA extends STServiceAdapter {
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
 			HttpDelete request;
 			try {
-				request = new HttpDelete(
-						new URIBuilder(GENOMA_ENDPOINT).setPath("delete").addParameter("id", id).build());
+				request = new HttpDelete(new URIBuilder(ALIGNMENTSERVICES_ENDPOINT).setPath("delete")
+						.addParameter("id", id).build());
 			} catch (URISyntaxException e) {
 				throw new RuntimeException(e); // should not happen
 			}
