@@ -114,6 +114,7 @@ import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
 import it.uniroma2.art.semanticturkey.project.RepositoryLocation;
 import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
@@ -834,11 +835,12 @@ public class Projects extends STServiceAdapter {
 	 * @throws RepositoryException
 	 * @throws RDFParseException
 	 * @throws AssessmentException
+	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public PreloadedDataSummary preloadDataFromFile(MultipartFile preloadedData,
 			RDFFormat preloadedDataFormat) throws IOException, RDFParseException, RepositoryException,
-			ProfilerException, AssessmentException {
+			ProfilerException, AssessmentException, STPropertyAccessException {
 		File preloadedDataFile = preloadedDataStore.preloadData(preloadedData::transferTo);
 
 		String baseURI = null;
@@ -860,11 +862,13 @@ public class Projects extends STServiceAdapter {
 	 * @throws RepositoryException
 	 * @throws RDFParseException
 	 * @throws AssessmentException
+	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public PreloadedDataSummary preloadDataFromURL(URL preloadedDataURL,
-			@Optional RDFFormat preloadedDataFormat) throws FileNotFoundException, IOException,
-			RDFParseException, RepositoryException, ProfilerException, AssessmentException {
+			@Optional RDFFormat preloadedDataFormat)
+			throws FileNotFoundException, IOException, RDFParseException, RepositoryException,
+			ProfilerException, AssessmentException, STPropertyAccessException {
 
 		logger.debug("Preload data from URL = {} (format = {})", preloadedDataURL, preloadedDataFormat);
 
@@ -930,11 +934,12 @@ public class Projects extends STServiceAdapter {
 	 * @throws RepositoryException
 	 * @throws RDFParseException
 	 * @throws AssessmentException
+	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public PreloadedDataSummary preloadDataFromCatalog(String connectorId, String datasetId)
 			throws IOException, RDFParseException, RepositoryException, ProfilerException,
-			AssessmentException {
+			AssessmentException, STPropertyAccessException {
 		DatasetCatalogConnector datasetCatalogConnector = (DatasetCatalogConnector) ((NonConfigurableExtensionFactory<?>) exptManager
 				.getExtension(connectorId)).createInstance();
 
@@ -956,7 +961,7 @@ public class Projects extends STServiceAdapter {
 	private PreloadedDataSummary preloadDataInternal(@Nullable String baseURI, @Nullable IRI model,
 			@Nullable IRI lexicalizationModel, File preloadedDataFile, RDFFormat preloadedDataFormat)
 			throws RDFParseException, RepositoryException, IOException, ProfilerException,
-			AssessmentException {
+			AssessmentException, STPropertyAccessException {
 
 		if (!preloadedDataFile.exists()) {
 			throw new FileNotFoundException(preloadedDataFile.getPath() + ": not existing");
@@ -971,8 +976,14 @@ public class Projects extends STServiceAdapter {
 		List<PreloadedDataSummary.PreloadWarning> preloadWarnings = new ArrayList<>();
 
 		if (baseURI == null || model == null || lexicalizationModel == null) {
-			long profilerDataSizeTreshold = 1 * FileUtils.ONE_MB;
-
+			String profilerDataSizeTresholdString = STPropertiesManager
+					.getSystemSetting(STPropertiesManager.PRELOAD_PROFILER_TRESHOLD_BYTES);
+			long profilerDataSizeTreshold;
+			if (profilerDataSizeTresholdString != null) {
+				profilerDataSizeTreshold = Long.parseLong(profilerDataSizeTresholdString);
+			} else {
+				profilerDataSizeTreshold = 1 * FileUtils.ONE_MB;
+			}
 			if (dataSize > profilerDataSizeTreshold) { // preloaded data too big to profile
 				preloadWarnings = new ArrayList<>(1);
 				preloadWarnings

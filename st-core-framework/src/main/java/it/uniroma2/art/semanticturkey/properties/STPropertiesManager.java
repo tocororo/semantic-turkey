@@ -10,6 +10,7 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
+import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -64,17 +65,19 @@ public class STPropertiesManager {
 	public static final String PREF_ACTIVE_SCHEMES = "active_schemes";
 	public static final String PREF_PROJ_THEME = "project_theme";
 
+	public static final String PRELOAD_PROFILER_TRESHOLD_BYTES = "preload.profiler.treshold_bytes";
+
 	public static final String SETTING_ADMIN_ADDRESS = "mail.admin.address";
-	
+
 	public static final String SETTING_MAIL_SMTP_AUTH = "mail.smtp.auth";
-	public static final String SETTING_MAIL_SMTP_HOST= "mail.smtp.host";
+	public static final String SETTING_MAIL_SMTP_HOST = "mail.smtp.host";
 	public static final String SETTING_MAIL_SMTP_PORT = "mail.smtp.port";
 	public static final String SETTING_MAIL_SMTP_SSL_ENABLE = "mail.smtp.ssl.enable";
 	public static final String SETTING_MAIL_SMTP_STARTTLS_ENABLE = "mail.smtp.starttls.enable";
 	public static final String SETTING_MAIL_FROM_ADDRESS = "mail.from.address";
 	public static final String SETTING_MAIL_FROM_PASSWORD = "mail.from.password";
 	public static final String SETTING_MAIL_FROM_ALIAS = "mail.from.alias";
-	
+
 	public static final String SETTING_PROJ_LANGUAGES = "languages";
 	public static final String SETTING_EXP_FEATURES_ENABLED = "experimental_features_enabled";
 
@@ -107,8 +110,8 @@ public class STPropertiesManager {
 	}
 
 	/**
-	 * Returns the value of a pu_setting about the given project-user-plugin. 
-	 * See {@link #getPUSetting(String, Project, STUser)} for details about the lookup procedure.
+	 * Returns the value of a pu_setting about the given project-user-plugin. See
+	 * {@link #getPUSetting(String, Project, STUser)} for details about the lookup procedure.
 	 * 
 	 * @param pluginID
 	 * @param project
@@ -125,7 +128,7 @@ public class STPropertiesManager {
 		String value;
 		value = loadProperties(getPUSettingsFile(project, user, pluginID)).getProperty(propName);
 		if (value == null) {
-			//check if the user belongs to a group in the given project
+			// check if the user belongs to a group in the given project
 			UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
 			if (group != null) {
 				value = getPGSetting(propName, project, group, pluginID);
@@ -244,14 +247,13 @@ public class STPropertiesManager {
 		}
 		setPUSettings(settings, project, user, pluginID, false);
 	}
-	
+
 	/*
 	 * Getter/Setter <STData>/pg_binding/<projectname>/<group>/plugins/<plugin>/settings.props
 	 */
-	
+
 	/**
-	 * Returns the value of a pg_setting for the given project-group pair
-	 * Returns null if no value is defined
+	 * Returns the value of a pg_setting for the given project-group pair Returns null if no value is defined
 	 * 
 	 * @param project
 	 * @param user
@@ -263,11 +265,10 @@ public class STPropertiesManager {
 			throws STPropertyAccessException {
 		return getPGSetting(propName, project, group, CORE_PLUGIN_ID);
 	}
-	
 
 	/**
-	 * Returns the value of a pg_setting about the given project-group-plugin. 
-	 * Returns null if no value is defined
+	 * Returns the value of a pg_setting about the given project-group-plugin. Returns null if no value is
+	 * defined
 	 * 
 	 * @param pluginID
 	 * @param project
@@ -284,7 +285,7 @@ public class STPropertiesManager {
 		String value;
 		value = loadProperties(getPGSettingsFile(project, group, pluginID)).getProperty(propName);
 		return value;
-		
+
 	}
 
 	/**
@@ -335,8 +336,8 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @param allowIncompletePropValueSet
 	 */
-	public static void setPGSettings(STProperties preferences, Project project, UsersGroup group, String pluginID,
-			boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
+	public static void setPGSettings(STProperties preferences, Project project, UsersGroup group,
+			String pluginID, boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
 		try {
 			if (!allowIncompletePropValueSet) {
 				STPropertiesChecker preferencesChecker = STPropertiesChecker
@@ -363,14 +364,13 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setPGSettings(STProperties settings, Project project, UsersGroup group, String pluginID)
-			throws STPropertyUpdateException {
+	public static void setPGSettings(STProperties settings, Project project, UsersGroup group,
+			String pluginID) throws STPropertyUpdateException {
 		if (pluginID == null) {
 			pluginID = CORE_PLUGIN_ID;
 		}
 		setPGSettings(settings, project, group, pluginID, false);
 	}
-	
 
 	/*
 	 * Getter/Setter <STData>/projects/<projectname>/plugins/<plugin>/pu-settings-defaults.props
@@ -663,7 +663,7 @@ public class STPropertiesManager {
 
 	public static void storeSTPropertiesInYAML(STProperties properties, File propertiesFile,
 			boolean storeObjType) throws JsonGenerationException, JsonMappingException, IOException {
-		if (!propertiesFile.getParentFile().exists()) { //if path doesn't exist, first create it
+		if (!propertiesFile.getParentFile().exists()) { // if path doesn't exist, first create it
 			propertiesFile.getParentFile().mkdirs();
 		}
 		ObjectMapper mapper = createObjectMapper();
@@ -727,7 +727,7 @@ public class STPropertiesManager {
 				}
 				effectveValueType = specificClass;
 			}
-			
+
 			STProperties properties = (STProperties) effectveValueType.newInstance();
 
 			for (String prop : properties.getProperties()) {
@@ -1135,18 +1135,21 @@ public class STPropertiesManager {
 	 * @throws STPropertyAccessException
 	 */
 	private static File getUserSettingsDefaultsFile(String pluginID) {
-		return new File(getSystemPropertyFolder(pluginID) + File.separator + USER_SETTINGS_DEFAULTS_FILE_NAME);
+		return new File(
+				getSystemPropertyFolder(pluginID) + File.separator + USER_SETTINGS_DEFAULTS_FILE_NAME);
 	}
 
 	/**
-	 * Returns the Properties file <STData>/system/plugins/<plugin>/pu-settings-defaults.props 
+	 * Returns the Properties file <STData>/system/plugins/<plugin>/pu-settings-defaults.props
+	 * 
 	 * @param pluginID
 	 * 
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
 	public static File getPUSettingsSystemDefaultsFile(String pluginID) {
-		return new File(getSystemPropertyFolder(pluginID) + File.separator + PU_SETTINGS_SYSTEM_DEFAULTS_FILE_NAME);
+		return new File(
+				getSystemPropertyFolder(pluginID) + File.separator + PU_SETTINGS_SYSTEM_DEFAULTS_FILE_NAME);
 	}
 
 	/**
@@ -1157,7 +1160,8 @@ public class STPropertiesManager {
 	 * @throws STPropertyAccessException
 	 */
 	public static File getProjectSettingsDefaultsFile(String pluginID) {
-		return new File(getSystemPropertyFolder(pluginID) + File.separator + PROJECT_SETTINGS_DEFAULTS_FILE_NAME);
+		return new File(
+				getSystemPropertyFolder(pluginID) + File.separator + PROJECT_SETTINGS_DEFAULTS_FILE_NAME);
 	}
 
 	/**
@@ -1180,7 +1184,8 @@ public class STPropertiesManager {
 	 * @throws STPropertyAccessException
 	 */
 	private static File getPUSettingsProjectDefaultsFile(Project project, String pluginID) {
-		return new File(getProjectPropertyFolder(project, pluginID) + File.separator + PU_SETTINGS_PROJECT_DEFAULTS_FILE_NAME);
+		return new File(getProjectPropertyFolder(project, pluginID) + File.separator
+				+ PU_SETTINGS_PROJECT_DEFAULTS_FILE_NAME);
 	}
 
 	/**
@@ -1192,7 +1197,8 @@ public class STPropertiesManager {
 	 * @throws STPropertyAccessException
 	 */
 	private static File getProjectSettingsFile(Project project, String pluginID) {
-		return new File(getProjectPropertyFolder(project, pluginID) + File.separator + PROJECT_SETTINGS_FILE_NAME);
+		return new File(
+				getProjectPropertyFolder(project, pluginID) + File.separator + PROJECT_SETTINGS_FILE_NAME);
 	}
 
 	/**
@@ -1204,7 +1210,8 @@ public class STPropertiesManager {
 	 * @throws STPropertyAccessException
 	 */
 	private static File getPUSettingsUserDefaultsFile(STUser user, String pluginID) {
-		return new File(getUserPropertyFolder(user, pluginID) + File.separator + PU_SETTINGS_USER_DEFAULTS_FILE_NAME);
+		return new File(
+				getUserPropertyFolder(user, pluginID) + File.separator + PU_SETTINGS_USER_DEFAULTS_FILE_NAME);
 	}
 
 	/**
@@ -1229,7 +1236,8 @@ public class STPropertiesManager {
 	 * @throws STPropertyAccessException
 	 */
 	private static File getPUSettingsFile(Project project, STUser user, String pluginID) {
-		return new File(getPUBindingPropertyFolder(project, user, pluginID) + File.separator + PU_SETTINGS_FILE_NAME);
+		return new File(
+				getPUBindingPropertyFolder(project, user, pluginID) + File.separator + PU_SETTINGS_FILE_NAME);
 	}
 
 	/**
@@ -1242,14 +1250,13 @@ public class STPropertiesManager {
 	 * @throws STPropertyAccessException
 	 */
 	private static File getPGSettingsFile(Project project, UsersGroup group, String pluginID) {
-		return new File(getPGBindingPropertyFolder(project, group, pluginID) + File.separator + PG_SETTINGS_FILE_NAME);
+		return new File(getPGBindingPropertyFolder(project, group, pluginID) + File.separator
+				+ PG_SETTINGS_FILE_NAME);
 	}
-	
+
 	/*
-	 * Methods to retrieve the following folders: 
-	 * <STData>/system/plugins/<plugin>/
-	 * <STData>/projects/<projectname>/plugins/<plugin>/ 
-	 * <STData>/users/<username>/plugins/<plugin>/
+	 * Methods to retrieve the following folders: <STData>/system/plugins/<plugin>/
+	 * <STData>/projects/<projectname>/plugins/<plugin>/ <STData>/users/<username>/plugins/<plugin>/
 	 * <STData>/pu_binding/<projectname>/<username>/plugins/<plugin>/
 	 * <STData>/pg_binding/<projectname>/<group>/plugins/<plugin>/
 	 */
@@ -1307,7 +1314,7 @@ public class STPropertiesManager {
 				+ File.separator + pluginID);
 		return prefFolder;
 	}
-	
+
 	/**
 	 * Returns the folder <STData>/pu_bindings/<projectName>/<group>/plugins/<plugin>/
 	 * 
@@ -1342,7 +1349,7 @@ public class STPropertiesManager {
 			throws STPropertyUpdateException {
 		FileOutputStream os = null;
 		try {
-			if (!propFile.getParentFile().exists()) { //if path doesn't exist, first create it
+			if (!propFile.getParentFile().exists()) { // if path doesn't exist, first create it
 				propFile.getParentFile().mkdirs();
 			}
 			os = new FileOutputStream(propFile);
@@ -1362,7 +1369,8 @@ public class STPropertiesManager {
 	}
 
 	private static Properties loadProperties(File propertiesFile) throws STPropertyAccessException {
-		if (!propertiesFile.exists()) { //properties file doesn't exist (properties never edited) => returns an empty Properties
+		if (!propertiesFile.exists()) { // properties file doesn't exist (properties never edited) => returns
+										// an empty Properties
 			return new Properties();
 		}
 		FileInputStream fis = null;
