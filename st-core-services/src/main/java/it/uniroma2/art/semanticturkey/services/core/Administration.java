@@ -93,6 +93,8 @@ public class Administration extends STServiceAdapter {
 		configNode.set("mailSmtpStarttlsEnable", jsonFactory.textNode(
 				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_STARTTLS_ENABLE)));
 		configNode.set("stDataDir", jsonFactory.textNode(Config.getDataDir().getPath()));
+		configNode.set("preloadProfilerTreshold", jsonFactory.textNode(
+				STPropertiesManager.getSystemSetting(STPropertiesManager.PRELOAD_PROFILER_TRESHOLD_BYTES)));
 		return configNode;
 	}
 	
@@ -127,7 +129,7 @@ public class Administration extends STServiceAdapter {
 		UsersManager.removeAdmin(user);
 	}
 	
-	@STServiceOperation()
+	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void setDataDir(String path) throws ConfigurationUpdateException, IOException {
 		File file = new File(path);	
@@ -136,6 +138,16 @@ public class Administration extends STServiceAdapter {
 		Resources.initSemTurkeyDataDir(); //update the data dir (and sub-dir) reference in memory
 		File newDir = Resources.getSemTurkeyDataDir();
 		Files.move(oldDir, newDir);
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void setPreloadProfilerThreshold(@Optional(defaultValue = "0") long threshold) throws STPropertyUpdateException {
+		String thresholdString = null;
+		if (threshold > 0) {
+			thresholdString = threshold+"";
+		}
+		STPropertiesManager.setSystemSetting(STPropertiesManager.PRELOAD_PROFILER_TRESHOLD_BYTES, thresholdString);
 	}
 	
 	/**
