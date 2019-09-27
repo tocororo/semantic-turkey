@@ -1,23 +1,5 @@
 package it.uniroma2.art.semanticturkey.properties;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
-import java.util.Properties;
-
-import org.apache.commons.io.FileUtils;
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,7 +9,6 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JBNodeDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JIRIDeserializer;
@@ -39,6 +20,21 @@ import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersGroup;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.util.Properties;
 
 public class STPropertiesManager {
 
@@ -150,10 +146,10 @@ public class STPropertiesManager {
 	 * Returns the pu_settings about a plugin. See {@link #getPUSetting(String, Project, STUser, String)} for
 	 * details about the lookup procedure.
 	 * 
-	 * @param projectPreferences
+	 * @param valueType
 	 * @param project
 	 * @param user
-	 * @param pluginId
+	 * @param pluginID
 	 * @throws STPropertyAccessException
 	 */
 	public static <T extends STProperties> T getPUSettings(Class<T> valueType, Project project, STUser user,
@@ -254,10 +250,10 @@ public class STPropertiesManager {
 
 	/**
 	 * Returns the value of a pg_setting for the given project-group pair Returns null if no value is defined
-	 * 
-	 * @param project
-	 * @param user
+	 *
 	 * @param propName
+	 * @param project
+	 * @param group
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
@@ -662,7 +658,7 @@ public class STPropertiesManager {
 	}
 
 	public static void storeSTPropertiesInYAML(STProperties properties, File propertiesFile,
-			boolean storeObjType) throws JsonGenerationException, JsonMappingException, IOException {
+			boolean storeObjType) throws IOException {
 		if (!propertiesFile.getParentFile().exists()) { // if path doesn't exist, first create it
 			propertiesFile.getParentFile().mkdirs();
 		}
@@ -874,9 +870,9 @@ public class STPropertiesManager {
 	 * <li>the default value hard-wired in the provided {@link STProperties} object</li>
 	 * </ul>
 	 * 
-	 * @param projectSettings
+	 * @param valueType
 	 * @param project
-	 * @param pluginId
+	 * @param pluginID
 	 * @throws STPropertyAccessException
 	 */
 	public static <T extends STProperties> T getProjectSettings(Class<T> valueType, Project project,
@@ -1268,9 +1264,7 @@ public class STPropertiesManager {
 	 * @return
 	 */
 	public static File getSystemPropertyFolder(String pluginID) {
-		File prefFolder = new File(
-				Resources.getSystemDir() + File.separator + "plugins" + File.separator + pluginID);
-		return prefFolder;
+		return new File(Resources.getSystemDir() + File.separator + "plugins" + File.separator + pluginID);
 	}
 
 	/**
@@ -1281,9 +1275,8 @@ public class STPropertiesManager {
 	 * @return
 	 */
 	public static File getProjectPropertyFolder(Project project, String pluginID) {
-		File prefFolder = new File(Resources.getProjectsDir() + File.separator + project.getName()
+		return new File(Resources.getProjectsDir() + File.separator + project.getName()
 				+ File.separator + "plugins" + File.separator + pluginID);
-		return prefFolder;
 	}
 
 	/**
@@ -1294,10 +1287,9 @@ public class STPropertiesManager {
 	 * @return
 	 */
 	public static File getUserPropertyFolder(STUser user, String pluginID) {
-		File prefFolder = new File(
+		return new File(
 				Resources.getUsersDir() + File.separator + STUser.encodeUserIri(user.getIRI())
 						+ File.separator + "plugins" + File.separator + pluginID);
-		return prefFolder;
 	}
 
 	/**
@@ -1309,10 +1301,9 @@ public class STPropertiesManager {
 	 * @return
 	 */
 	public static File getPUBindingPropertyFolder(Project project, STUser user, String pluginID) {
-		File prefFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + project.getName()
+		return new File(Resources.getProjectUserBindingsDir() + File.separator + project.getName()
 				+ File.separator + STUser.encodeUserIri(user.getIRI()) + File.separator + "plugins"
 				+ File.separator + pluginID);
-		return prefFolder;
 	}
 
 	/**
@@ -1324,10 +1315,9 @@ public class STPropertiesManager {
 	 * @return
 	 */
 	public static File getPGBindingPropertyFolder(Project project, UsersGroup group, String pluginID) {
-		File prefFolder = new File(Resources.getProjectGroupBindingsDir() + File.separator + project.getName()
+		return new File(Resources.getProjectGroupBindingsDir() + File.separator + project.getName()
 				+ File.separator + UsersGroup.encodeGroupIri(group.getIRI()) + File.separator + "plugins"
 				+ File.separator + pluginID);
-		return prefFolder;
 	}
 
 	/**

@@ -217,11 +217,7 @@ public class STUser implements UserDetails {
 	}
 
 	public boolean isAdmin() {
-		try {
-			return email.equals(STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS));
-		} catch (STPropertyAccessException e) {
-			return false;
-		}
+		return UsersManager.getAdminEmailList().contains(this.email);
 	}
 	
 	public ObjectNode getAsJsonObject() {

@@ -4,10 +4,20 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import org.apache.commons.io.FileUtils;
 import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
 import org.eclipse.rdf4j.model.IRI;
@@ -26,6 +36,7 @@ public class UsersManager {
 	private static final String USER_FORM_FIELDS_FILE_NAME = "fields.ttl";
 
 	private static Collection<STUser> userList = new ArrayList<>();
+	private static Set<String> adminSet = new HashSet<>();
 
 	private static UserForm userForm;
 
@@ -37,7 +48,7 @@ public class UsersManager {
 	 * @throws RepositoryException
 	 * @throws IOException
 	 */
-	public static void loadUsers() throws RDFParseException, RepositoryException, IOException {
+	public static void loadUsers() throws RDFParseException, RepositoryException, IOException, STPropertyAccessException {
 		UsersRepoHelper userRepoHelper = new UsersRepoHelper();
 		Collection<File> userDetailsFolders = getAllUserDetailsFiles();
 		for (File f : userDetailsFolders) {
@@ -50,6 +61,16 @@ public class UsersManager {
 		userForm = userRepoHelper.initUserForm();
 
 		userRepoHelper.shutDownRepository();
+
+		initAdminList();
+	}
+
+	private static void initAdminList() throws STPropertyAccessException, IOException {
+		String adminEmailsSetting = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS);
+		//adminEmails could be a plain string for a single address (ST < 6.1.0) or a json serialized list => handle both cases
+		adminSet = adminEmailsSetting.startsWith("[") ?
+				new ObjectMapper().readValue(adminEmailsSetting, new TypeReference<Set<String>>(){}) :
+				new HashSet<>(Arrays.asList(adminEmailsSetting));
 	}
 
 	/**
@@ -82,16 +103,48 @@ public class UsersManager {
 	}
 
 	/**
+	 * Returns the list of the administrators' email
+	 * @return
+	 */
+	public static Collection<String> getAdminEmailList() {
+		return adminSet;
+	}
+
+	/**
 	 * Returns the admin
 	 * @return
 	 */
-	public static STUser getAdminUser() {
+	public static List<STUser> getAdminUsers() {
+		List<STUser> admins = new ArrayList<>();
 		for (STUser user : userList) {
 			if (user.isAdmin()) {
-				return user;
+				admins.add(user);
 			}
 		}
-		return null;
+		return admins;
+	}
+
+	public static void addAdmin(STUser user) throws STPropertyUpdateException, JsonProcessingException {
+		if (!user.getStatus().equals(UserStatus.ACTIVE)) {
+			throw new IllegalStateException("Cannot grant administrator authority to a non-active user");
+		}
+		adminSet.add(user.getEmail());
+		updateAdminSetting();
+	}
+
+	public static void removeAdmin(STUser user) throws STPropertyUpdateException, JsonProcessingException {
+		if (adminSet.size() == 1 && adminSet.contains(user.getEmail())) {
+			throw new IllegalStateException("Cannot remove the sole administrator");
+		} else {
+			adminSet.remove(user.getEmail());
+			updateAdminSetting();
+		}
+	}
+
+	private static void updateAdminSetting() throws JsonProcessingException, STPropertyUpdateException {
+		ObjectMapper mapper = new ObjectMapper();
+		String adminsJson = mapper.writeValueAsString(adminSet);
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS, adminsJson);
 	}
 
 	/**

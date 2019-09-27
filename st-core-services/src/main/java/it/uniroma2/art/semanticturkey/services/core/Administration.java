@@ -1,35 +1,17 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import javax.mail.MessagingException;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.json.JSONException;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.multipart.MultipartFile;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.io.Files;
-
 import alice.tuprolog.InvalidTheoryException;
 import alice.tuprolog.MalformedGoalException;
 import alice.tuprolog.NoMoreSolutionException;
 import alice.tuprolog.NoSolutionException;
 import alice.tuprolog.Term;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.io.Files;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
@@ -62,6 +44,23 @@ import it.uniroma2.art.semanticturkey.user.RoleCreationException;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.EmailSender;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.json.JSONException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.mail.MessagingException;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 @STService
 @Controller
@@ -70,16 +69,13 @@ public class Administration extends STServiceAdapter {
 	/**
 	 * Gets the administration config: a map with key value of configuration parameters
 	 * @return
-	 * @throws JSONException
-	 * @throws STPropertyAccessException 
+	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAdmin()")
-	public JsonNode getAdministrationConfig() throws JSONException, STPropertyAccessException {
+	public JsonNode getAdministrationConfig() throws STPropertyAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode configNode = jsonFactory.objectNode();
-		configNode.set("adminAddress", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS)));
 		configNode.set("mailFromAddress", jsonFactory.textNode(
 				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ADDRESS)));
 		configNode.set("mailFromPassword", jsonFactory.textNode(
@@ -96,18 +92,39 @@ public class Administration extends STServiceAdapter {
 				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_SSL_ENABLE)));
 		configNode.set("mailSmtpStarttlsEnable", jsonFactory.textNode(
 				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_STARTTLS_ENABLE)));
+		configNode.set("stDataDir", jsonFactory.textNode(Config.getDataDir().getPath()));
 		return configNode;
 	}
 	
 	/**
 	 * 
-	 * @param emailAdminAddress
+	 * @param email
 	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void updateAdministrator(String adminEmailAddress) throws STPropertyUpdateException {
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS, adminEmailAddress);
+	public void setAdministrator(String email) throws STPropertyUpdateException, JsonProcessingException {
+		STUser user = UsersManager.getUserByEmail(email);
+		if (user == null) {
+			throw new IllegalArgumentException("No user registered with the e-mail address " + email);
+		}
+		UsersManager.addAdmin(user);
+	}
+
+	/**
+	 *
+	 * @param email
+	 * @throws STPropertyUpdateException
+	 * @throws JsonProcessingException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void removeAdministrator(String email) throws STPropertyUpdateException, JsonProcessingException {
+		STUser user = UsersManager.getUserByEmail(email);
+		if (user == null) {
+			throw new IllegalArgumentException("No user registered with the e-mail address " + email);
+		}
+		UsersManager.removeAdmin(user);
 	}
 	
 	@STServiceOperation()
@@ -119,12 +136,6 @@ public class Administration extends STServiceAdapter {
 		Resources.initSemTurkeyDataDir(); //update the data dir (and sub-dir) reference in memory
 		File newDir = Resources.getSemTurkeyDataDir();
 		Files.move(oldDir, newDir);
-	}
-	
-	@STServiceOperation()
-	@PreAuthorize("@auth.isAdmin()")
-	public String getDataDir() throws ConfigurationUpdateException {
-		return Config.getDataDir().getPath();
 	}
 	
 	/**
@@ -328,15 +339,14 @@ public class Administration extends STServiceAdapter {
 	/**
 	 * 
 	 * @return
-	 * @throws JSONException
-	 * @throws RBACException 
+	 * @throws RBACException
 	 * @throws ProjectAccessException 
 	 * @throws ProjectInexistentException 
 	 * @throws InvalidProjectNameException 
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'R')")
-	public JsonNode listRoles(@Optional String projectName) throws JSONException, RBACException, InvalidProjectNameException,
+	public JsonNode listRoles(@Optional String projectName) throws RBACException, InvalidProjectNameException,
 		ProjectInexistentException, ProjectAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode rolesArrayNode = jsonFactory.arrayNode();
@@ -421,7 +431,7 @@ public class Administration extends STServiceAdapter {
 	/**
 	 * Exports the {@link CustomForm} with the given id
 	 * @param oRes
-	 * @param id
+	 * @param roleName
 	 * @throws RBACException 
 	 * @throws CustomFormException
 	 * @throws IOException
@@ -460,14 +470,13 @@ public class Administration extends STServiceAdapter {
 	 * Imports a new role in the current project
 	 * @param newRoleName name of the new role that will be created
 	 * @throws IOException 
-	 * @throws CustomFormException 
-	 * @throws RBACException 
+	 * @throws RBACException
 	 * @throws RoleCreationException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'C')")
 	public void importRole(MultipartFile inputFile, String newRoleName) 
-			throws IOException, CustomFormException, RBACException, RoleCreationException {
+			throws IOException, RBACException, RoleCreationException {
 		if (RBACManager.getRBACProcessor(getProject(), newRoleName) != null) {
 			throw new RBACException("Cannot import role '" + newRoleName + "'."
 					+ " A role with that name already exists in project '" + getProject().getName() + "'");

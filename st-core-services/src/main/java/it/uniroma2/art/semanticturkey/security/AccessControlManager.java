@@ -1,30 +1,26 @@
 package it.uniroma2.art.semanticturkey.security;
 
-import java.io.IOException;
-
-import javax.annotation.PostConstruct;
-
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.rbac.RBACException;
+import it.uniroma2.art.semanticturkey.rbac.RBACManager;
+import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.UsersGroupsManager;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.springframework.stereotype.Component;
 
-import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.rbac.RBACException;
-import it.uniroma2.art.semanticturkey.rbac.RBACManager;
-import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
-import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
-import it.uniroma2.art.semanticturkey.user.RoleCreationException;
-import it.uniroma2.art.semanticturkey.user.UserException;
-import it.uniroma2.art.semanticturkey.user.UsersGroupsManager;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
+import javax.annotation.PostConstruct;
+import java.io.IOException;
 
 @Component
 public class AccessControlManager {
 	
 	@PostConstruct
-	public void init() throws UserException, RDFParseException, RepositoryException,
-		IOException, ProjectAccessException, RoleCreationException, ProjectBindingException, RBACException {
+	public void init() throws RDFParseException, RepositoryException,
+			IOException, ProjectAccessException, RBACException, STPropertyAccessException {
 		
 		//init users manager so it loads users and roles from ST data
 		UsersManager.loadUsers();

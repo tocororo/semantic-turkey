@@ -15,6 +15,7 @@ import java.util.Map.Entry;
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,10 +161,9 @@ public class Users extends STServiceAdapter {
 		
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode userArrayNode = jsonFactory.arrayNode();
-		
-		Collection<STUser> boundUsers = new ArrayList<STUser>();
-		//admin is always bound to a project even if he has no role in it
-		boundUsers.add(UsersManager.getAdminUser()); 
+
+		//admins are always bound to a project even if he has no role in it
+		Collection<STUser> boundUsers = new ArrayList<>(UsersManager.getAdminUsers());
 		//add user only if has a role in project
 		for (ProjectUserBinding pub : puBindings) {
 			if (!pub.getRoles().isEmpty() || !pub.getLanguages().isEmpty() || pub.getGroup() != null) {
@@ -202,7 +202,7 @@ public class Users extends STServiceAdapter {
 	public void registerUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
 			@Optional String address, @Optional String affiliation, @Optional String url, @Optional String avatarUrl,
 			@Optional String phone, @Optional Collection<String> languageProficiencies, @Optional Map<IRI, String> customProperties)
-					throws ProjectAccessException, UserException, ProjectBindingException, STPropertyUpdateException {
+			throws ProjectAccessException, UserException, ProjectBindingException, STPropertyUpdateException, JsonProcessingException {
 		STUser user;
 		if (iri != null) {
 			user = new STUser(iri, email, password, givenName, familyName);
@@ -238,7 +238,7 @@ public class Users extends STServiceAdapter {
 			user.setStatus(UserStatus.ACTIVE);
 			UsersManager.registerUser(user);
 			ProjectUserBindingsManager.createPUBindingsOfUser(user);
-			STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS, email);
+			UsersManager.addAdmin(user);
 		} else {
 			//otherwise activate it and send the email notifications
 			UsersManager.registerUser(user);
