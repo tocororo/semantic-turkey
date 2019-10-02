@@ -10,6 +10,8 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.io.FileUtils;
 
 /**
@@ -23,12 +25,15 @@ public class ClosableFormattedResource implements Closeable {
 	private String defaultFileExtension;
 	private String mimeType;
 	private Charset charset;
+	private @Nullable String originalFilename;
 
-	public ClosableFormattedResource(File backingFile, String defaultFileExtension, String mimeType, Charset charset) {
+	public ClosableFormattedResource(File backingFile, String defaultFileExtension, String mimeType,
+			Charset charset, String originalFilename) {
 		this.backingFile = backingFile;
 		this.defaultFileExtension = defaultFileExtension;
 		this.mimeType = mimeType;
 		this.charset = charset;
+		this.originalFilename = originalFilename;
 	}
 
 	public String getDefaultFileExtension() {
@@ -38,9 +43,13 @@ public class ClosableFormattedResource implements Closeable {
 	public String getMIMEType() {
 		return mimeType;
 	}
-	
+
 	public Charset getCharset() {
 		return charset;
+	}
+
+	public String getOriginalFilename() {
+		return originalFilename;
 	}
 
 	public void writeTo(OutputStream outputStream) throws IOException {
@@ -59,12 +68,14 @@ public class ClosableFormattedResource implements Closeable {
 	}
 
 	public static ClosableFormattedResource build(Consumer<OutputStream> outputStreamConsumer,
-			String mimeType, String defaultFileExtension, Charset charset) throws IOException {
+			String mimeType, String defaultFileExtension, Charset charset, String originalFilename)
+			throws IOException {
 		File backingFile = File.createTempFile("reformattingexporter", null);
 		try (OutputStream os = new FileOutputStream(backingFile)) {
 			outputStreamConsumer.accept(os);
 		}
-		return new ClosableFormattedResource(backingFile, defaultFileExtension, mimeType, charset);
+		return new ClosableFormattedResource(backingFile, defaultFileExtension, mimeType, charset,
+				originalFilename);
 	}
 
 }

@@ -43,7 +43,7 @@ public abstract class AbstractHTTPLoader<T extends Target> implements Loader {
 			throw new IOException(e);
 		}
 
-		HttpClientContext context;
+		HttpClientContext context = HttpClientContext.create();
 
 		@Nullable
 		Pair<String, String> usernameAndPassword = getUsernameAndPassword();
@@ -58,13 +58,10 @@ public abstract class AbstractHTTPLoader<T extends Target> implements Loader {
 			AuthCache authCache = new BasicAuthCache();
 			authCache.put(targetHost, new BasicScheme());
 
-			context = HttpClientContext.create();
 			context.setCredentialsProvider(credsProvider);
 			context.setAuthCache(authCache);
-		} else {
-			context = null;
 		}
-
+		
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
 			HttpGet request = new HttpGet(address);
 
@@ -86,6 +83,8 @@ public abstract class AbstractHTTPLoader<T extends Target> implements Loader {
 				request.addHeader(aHeader.getKey(), aHeader.getValue());
 			}
 
+			processRequest(request);
+
 			try (CloseableHttpResponse httpResponse = httpClient.execute(request, context)) {
 				StatusLine statusLine = httpResponse.getStatusLine();
 				if ((statusLine.getStatusCode() / 200) != 1) {
@@ -93,7 +92,7 @@ public abstract class AbstractHTTPLoader<T extends Target> implements Loader {
 							"HTTP Error: " + statusLine.getStatusCode() + ":" + statusLine.getReasonPhrase());
 				}
 
-				processResponse(httpResponse, target);
+				processResponse(request, context, httpResponse, target);
 			}
 		}
 
@@ -111,6 +110,11 @@ public abstract class AbstractHTTPLoader<T extends Target> implements Loader {
 		return null;
 	}
 
-	protected abstract void processResponse(HttpResponse httpResponse, T target) throws IOException;
+	protected void processRequest(HttpGet request) {
+
+	}
+
+	protected abstract void processResponse(HttpGet httpRequest, HttpClientContext context,
+			HttpResponse httpResponse, T target) throws IOException;
 
 }

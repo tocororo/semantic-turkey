@@ -91,7 +91,7 @@ public class RDFSerializingExporter implements ReformattingExporter {
 
 			rdfWriter.setWriterConfig(createRDF4JConfig());
 			sourceRepositoryConnection.export(rdfWriter, graphs);
-		}, rdfFormat.getDefaultMIMEType(), rdfFormat.getDefaultFileExtension(), rdfFormat.getCharset());
+		}, rdfFormat.getDefaultMIMEType(), rdfFormat.getDefaultFileExtension(), rdfFormat.getCharset(), null);
 	}
 
 }

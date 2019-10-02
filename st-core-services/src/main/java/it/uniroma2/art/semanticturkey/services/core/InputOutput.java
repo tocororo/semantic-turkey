@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.awt.PageAttributes.OriginType;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -292,7 +293,8 @@ public class InputOutput extends STServiceAdapter {
 				closer.register(inputServerFile::delete);
 				inputFile.transferTo(inputServerFile);
 
-				formattedResource = new ClosableFormattedResource(inputServerFile, null, null, null);
+				formattedResource = new ClosableFormattedResource(inputServerFile, null, null, null,
+						inputFile.getOriginalFilename());
 			}
 
 			closer.register(formattedResource);
@@ -304,34 +306,54 @@ public class InputOutput extends STServiceAdapter {
 			if (rdfLifter != null) {
 				if (parsedDataFormat != null) {
 					String expectedMIMEType = parsedDataFormat.getDefaultMimeType();
-					@Nullable
 					String actualMIMEType = formattedResource.getMIMEType();
 
 					if (actualMIMEType != null && !Objects.equals(actualMIMEType, expectedMIMEType)) {
 						throw new IOException("Actual MIME type '" + actualMIMEType
 								+ "' does not match the expected one '" + expectedMIMEType + "'");
 					}
+				} else {
+					ExtensionFactory<?> rdfLifterExt = exptManager.getExtension(rdfLifterSpec.getFactoryId());
+					if (rdfLifterExt instanceof FormatCapabilityProvider) {
+						FormatCapabilityProvider fcp = (FormatCapabilityProvider) rdfLifterExt;
+						@Nullable
+						String actualMIMEType = formattedResource.getMIMEType();
 
-					formattedResource.getMIMEType();
+						if (actualMIMEType != null) {
+							parsedDataFormat = fcp.getFormatForMIME(actualMIMEType).orElse(null);
+						}
+
+						if (parsedDataFormat != null) { // still null after MIME check
+							parsedDataFormat = fcp
+									.getFormatForFilename(formattedResource.getOriginalFilename())
+									.orElse(null);
+						}
+
+						logger.debug("Supplied format was null. Result of the discovery: actual MIME type: " + actualMIMEType + " / original filename: "
+								+ formattedResource.getOriginalFilename() + " / parsed data format: "
+								+ (parsedDataFormat != null ? parsedDataFormat.getName() : null));
+					}
 				}
 
-				rdfLifter.lift(formattedResource, format, workingRepoInserter, new LifterContext() {
+				rdfLifter.lift(formattedResource,
+						parsedDataFormat != null ? parsedDataFormat.getName() : null, workingRepoInserter,
+						new LifterContext() {
 
-					@Override
-					public IRI getLexicalizationModel() {
-						return getProject().getLexicalizationModel();
-					}
+							@Override
+							public IRI getLexicalizationModel() {
+								return getProject().getLexicalizationModel();
+							}
 
-					@Override
-					public IRI generateIRI(String xRole, Map<String, Value> valueMapping)
-							throws URIGenerationException {
-						return InputOutput.this.generateIRI(xRole, valueMapping);
-					}
-				});
+							@Override
+							public IRI generateIRI(String xRole, Map<String, Value> valueMapping)
+									throws URIGenerationException {
+								return InputOutput.this.generateIRI(xRole, valueMapping);
+							}
+						});
 			}
 
 			// At this point, data have been loaded to an RDF repository (either destination or temporary, the
-			// latter if tehre is a transformation pipeline)
+			// latter if there is a transformation pipeline)
 
 			// Applies a TransformationPipeline
 

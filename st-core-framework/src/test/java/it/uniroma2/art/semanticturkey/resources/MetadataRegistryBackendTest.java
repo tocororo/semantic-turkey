@@ -89,7 +89,7 @@ public class MetadataRegistryBackendTest {
 		IRI agrovocCatalogRecordIRI = metadataRegistryBackend.addDataset(
 				vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"),
 				"http://aims.fao.org/aos/agrovoc/", "Agrovoc", true,
-				vf.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"));
+				vf.createIRI("http://agrovoc.uniroma2.it/sparql"));
 
 		// Tests that the dataset is available via the catalog record
 
@@ -218,7 +218,7 @@ public class MetadataRegistryBackendTest {
 				agrovocDataset.getSparqlEndpointMetadata()
 						.orElseThrow(() -> new AssertionError("Empty optional")).getEndpoint(),
 				equalTo(SimpleValueFactory.getInstance()
-						.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql")));
+						.createIRI("http://agrovoc.uniroma2.it/sparql")));
 	}
 
 	private void assertAgrovocLexicalizationSets(
@@ -304,7 +304,7 @@ public class MetadataRegistryBackendTest {
 			throws IllegalArgumentException, MetadataRegistryWritingException, AssessmentException {
 		IRI agrovocDataset = vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc");
 		metadataRegistryBackend.addDataset(agrovocDataset, "http://aims.fao.org/aos/agrovoc/", "Agrovoc",
-				true, vf.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"));
+				true, vf.createIRI("http://agrovoc.uniroma2.it/sparql"));
 
 		metadataRegistryBackend.discoverLexicalizationSets(agrovocDataset);
 
@@ -334,7 +334,7 @@ public class MetadataRegistryBackendTest {
 		ValueFactory vf = SimpleValueFactory.getInstance();
 		IRI agrovocDataset = vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc");
 		metadataRegistryBackend.addDataset(agrovocDataset, "http://aims.fao.org/aos/agrovoc/",
-				"Agrovoc Dataset", true, vf.createIRI("http://agrovoc.uniroma2.it:3030/agrovoc/sparql"));
+				"Agrovoc Dataset", true, vf.createIRI("http://agrovoc.uniroma2.it/sparql"));
 
 		IRI eurovocDataset = vf.createIRI("http://eurovoc.europa.eu/void.ttl#EuroVoc");
 		metadataRegistryBackend.addDataset(eurovocDataset, "http://eurovoc.europa.eu/", "EuroVoc Dataset",

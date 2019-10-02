@@ -10,6 +10,7 @@ import java.util.AbstractMap.SimpleImmutableEntry;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
@@ -68,8 +69,12 @@ public class SFTPLoader implements StreamTargetingLoader {
 					try (FileOutputStream os = new FileOutputStream(backingFile)) {
 						IOUtils.copy(is, os);
 					}
+
+					@Nullable
+					String originalFilename = FilenameUtils.getName(conf.sourcePath);
+
 					target.setTargetFormattedResource(
-							new ClosableFormattedResource(backingFile, null, null, null));
+							new ClosableFormattedResource(backingFile, null, null, null, originalFilename));
 				}
 			}
 		}

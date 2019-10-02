@@ -6,15 +6,21 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.ContentType;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -80,10 +86,20 @@ public class HTTPLoader extends AbstractHTTPLoader<FormattedResourceTarget> impl
 	}
 
 	@Override
-	protected void processResponse(HttpResponse httpResponse, FormattedResourceTarget target)
-			throws IOException {
+	protected void processResponse(HttpGet httpRequest, HttpClientContext httpClientContext,
+			HttpResponse httpResponse, FormattedResourceTarget target) throws IOException {
 		HttpEntity responseEntity = httpResponse.getEntity();
 		if (responseEntity != null) {
+			URI loadedURI = httpRequest.getURI();
+			@Nullable
+			List<URI> redirectLocations = httpClientContext.getRedirectLocations();
+			if (redirectLocations != null) {
+				loadedURI = redirectLocations.get(redirectLocations.size() - 1);
+			}
+
+			@Nullable
+			String originalFilename = FilenameUtils.getName(loadedURI.getPath());
+
 			ContentType contentType = Optional.ofNullable(responseEntity.getContentType())
 					.map(Header::getValue).map(ContentType::parse).orElse(null);
 			String mimeType;
@@ -99,7 +115,7 @@ public class HTTPLoader extends AbstractHTTPLoader<FormattedResourceTarget> impl
 
 			File backingFile = File.createTempFile("loadRDF", null);
 			target.setTargetFormattedResource(
-					new ClosableFormattedResource(backingFile, null, mimeType, charset));
+					new ClosableFormattedResource(backingFile, null, mimeType, charset, originalFilename));
 			try (InputStream is = responseEntity.getContent()) {
 				FileUtils.copyInputStreamToFile(is, backingFile);
 			}

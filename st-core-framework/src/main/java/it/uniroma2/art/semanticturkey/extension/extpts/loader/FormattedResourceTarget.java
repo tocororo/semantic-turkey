@@ -15,19 +15,19 @@ public class FormattedResourceTarget extends Target {
 	private @Nullable ClosableFormattedResource targetClosableFormattedResource;
 
 	public FormattedResourceTarget() {
-		this.targetClosableFormattedResource = null;
+		this(null);
 	}
-	
+
 	public FormattedResourceTarget(ClosableFormattedResource targetFormattedResource) {
 		this.targetClosableFormattedResource = targetFormattedResource;
 	}
 
-	public void setTargetFormattedResource(
-			ClosableFormattedResource targetClosableFormattedResource) {
+	public void setTargetFormattedResource(ClosableFormattedResource targetClosableFormattedResource) {
 		this.targetClosableFormattedResource = targetClosableFormattedResource;
 	}
-	
+
 	public ClosableFormattedResource getTargetFormattedResource() {
 		return targetClosableFormattedResource;
 	}
+
 }

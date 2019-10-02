@@ -24,6 +24,9 @@ public class RDFDeserializingLifter implements RDFLifter {
 	@Override
 	public void lift(ClosableFormattedResource sourceFormattedResource, String format,
 			RDFHandler targetRDFHandler, LifterContext lifterContext) throws LiftingException, IOException {
+		if (format == null) {
+			throw new LiftingException("RDF format was not specified");
+		}
 
 		RDFFormat rdfFormat = RDF4JUtilities.getRDFFormat(format);
 

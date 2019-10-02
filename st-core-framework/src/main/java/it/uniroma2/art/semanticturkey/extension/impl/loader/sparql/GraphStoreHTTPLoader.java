@@ -14,6 +14,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.ContentType;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
@@ -86,7 +88,8 @@ public class GraphStoreHTTPLoader extends AbstractHTTPLoader<RepositoryTarget>
 	}
 
 	@Override
-	protected void processResponse(HttpResponse httpResponse, RepositoryTarget target) throws IOException {
+	protected void processResponse(HttpGet request, HttpClientContext httpClientContext,
+			HttpResponse httpResponse, RepositoryTarget target) throws IOException {
 		HttpEntity responseEntity = httpResponse.getEntity();
 		if (responseEntity != null) {
 			ContentType contentType = Optional.ofNullable(responseEntity.getContentType())
