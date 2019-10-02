@@ -6,6 +6,6 @@ public class ContributionStore implements SystemScopedConfigurableComponent<Stor
 
 	@Override
 	public String getId() {
-		return StoredContributionConfiguration.class.getName();
+		return ContributionStore.class.getName();
 	}
 }

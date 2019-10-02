@@ -371,6 +371,13 @@
 			class="it.uniroma2.art.semanticturkey.settings.search.CustomSearchStore" />
 	</osgi:service>
 	
+	<!-- Publishes the ContributionStore -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.config.contribution.ContributionStore" />
+	</osgi:service>
+	
 	<!-- Publishes the Exporter -->
 
 	<osgi:service auto-export="interfaces">
