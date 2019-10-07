@@ -9,18 +9,18 @@ public abstract class StoredContributionConfiguration implements Configuration {
 
 	@STProperty(description = "Name of the contributor", displayName = "Name")
 	@Required
-	public String name;
+	public String contributorName;
 
 	@STProperty(description = "Last name of the contributor", displayName = "Last name")
 	@Required
-	public String lastName;
+	public String contributorLastName;
 
 	@STProperty(description = "Email of the contributor", displayName = "Email")
 	@Required
-	public String email;
+	public String contributorEmail;
 
 	@STProperty(description = "Organization of the contributor", displayName = "Organization")
-	public String organization;
+	public String contributorOrganization;
 
 	@STProperty(description = "BaseURI of the resource", displayName = "BaseURI")
 	@Required

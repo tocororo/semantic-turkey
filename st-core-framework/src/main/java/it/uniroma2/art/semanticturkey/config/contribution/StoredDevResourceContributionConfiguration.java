@@ -4,7 +4,7 @@ import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
 
-public class StoredConversionContributionConfiguration extends StoredContributionConfiguration {
+public class StoredDevResourceContributionConfiguration extends StoredContributionConfiguration {
 
 	@Override
 	public String getShortName() {
@@ -12,7 +12,6 @@ public class StoredConversionContributionConfiguration extends StoredContributio
 	}
 
 	@STProperty(description = "Input format of the resource to convert", displayName = "Format")
-	@Required
 	public String format;
 
 	@STProperty(description = "Name of the resource", displayName = "Name")
@@ -20,16 +19,11 @@ public class StoredConversionContributionConfiguration extends StoredContributio
 	public String resourceName;
 
 	@STProperty(description = "Homepage URL of the resource", displayName = "Homepage")
-	@Required
-	public IRI homepage;
+	public String homepage;
 
 	@STProperty(description = "Description of the resource", displayName = "Description")
 	@Required
 	public String description;
-
-	@STProperty(description = "Tells if the contributor is the owner of the resource", displayName = "Is owner")
-	@Required
-	public boolean isOwner;
 
 	@STProperty(description = "Semantic model of the resource", displayName = "Semantic model")
 	@Required
