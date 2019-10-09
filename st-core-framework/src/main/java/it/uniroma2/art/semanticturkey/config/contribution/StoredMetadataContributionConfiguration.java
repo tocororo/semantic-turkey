@@ -4,6 +4,8 @@ import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
 
+import java.util.Set;
+
 public class StoredMetadataContributionConfiguration extends StoredContributionConfiguration {
 
 	@Override
@@ -11,28 +13,34 @@ public class StoredMetadataContributionConfiguration extends StoredContributionC
 		return "Stored Metadata Contribution";
 	}
 
-	//TODO other fields resulting the discovering of the baseURI
+	@STProperty(description = "Name of the resource", displayName = "Name")
+	@Required
+	public String resourceName; //equivalent of title in it.uniroma2.art.semanticturkey.resources.DatasetMetadata
 
 	@STProperty(description = "Name of the resource", displayName = "Name")
 	@Required
-	public String resourceName;
+	public IRI identity;
 
-	@STProperty(description = "URI space... (?)", displayName = "URI space")
+	@STProperty(description = "URI space", displayName = "URI space")
 	public String uriSpace;
 
 	/**
 	 * YES => http://semanticturkey.uniroma2.it/ns/mdreg#standardDereferenciation
+	 * NO => http://semanticturkey.uniroma2.it/ns/mdreg#noDereferenciation
 	 */
-	@STProperty(description = "", displayName = "Dereferenciation system")
+	@STProperty(description = "Dereferenciation system", displayName = "Dereferenciation system")
 	public IRI dereferenciationSystem;
 
-	@STProperty(description = "SPARQL endpoint", displayName = "SPARQL endpoint")
+	@STProperty(description = "SPARQL endpoint URL", displayName = "SPARQL endpoint")
 	public IRI sparqlEndpoint;
+
+	@STProperty(description = "SPARQL endpoint limitations", displayName = "SPARQL endpoint limitations")
+	public Set<IRI> sparqlLimitations;
 
 	/**
 	 * ?????
 	 */
-//	@STProperty(description = "", displayName = "")
+//	@STProperty(description = "Version Info", displayName = "Version Info")
 //	public String versionInfo;
 
 }
