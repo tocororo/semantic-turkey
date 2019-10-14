@@ -519,7 +519,7 @@ public class Users extends STServiceAdapter {
 		String storedToken = (String) request.getSession().getAttribute("reset_password_token");
 		if (!(email + token).equals(storedToken)) {
 			throw new Exception("Cannot reset password for email " + email + 
-					". The time limit for resetting the password may be expired, please retry.");
+					". The time limit for resetting the password might be expired, please retry.");
 		}
 		
 		//Reset the password and send it to the user via e-mail

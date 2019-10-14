@@ -79,6 +79,8 @@ public class STPropertiesManager {
 
 	public static final String SETTINGS_TYPE_PROPERTY = "@type";
 
+	public static final String SETTING_VB_CONFIG_FOR_PMKI = "pmki.vb_connection_config";
+
 	/*
 	 * Getter/Setter <STData>/pu_binding/<projectname>/<username>/plugins/<plugin>/settings.props
 	 */

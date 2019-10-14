@@ -109,7 +109,7 @@ public class EmailSender {
 		sendMail(mailTo, "VocBench e-mail configuration check", text);
 	}
 	
-	private static void sendMail(String toEmail, String subject, String text) 
+	public static void sendMail(String toEmail, String subject, String text)
 			throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
 		String mailFromAddress = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ADDRESS);
 		String mailFromPassword = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_PASSWORD);

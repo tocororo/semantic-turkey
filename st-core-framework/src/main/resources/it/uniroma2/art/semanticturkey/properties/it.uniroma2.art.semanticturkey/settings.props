@@ -1,4 +1,4 @@
-mail.admin.address=admin@vocbench.com
+mail.admin.address=[]
 mail.from.address=xxxx@gmail.com
 mail.from.password=xxxx
 mail.from.alias=VocBench Admin
