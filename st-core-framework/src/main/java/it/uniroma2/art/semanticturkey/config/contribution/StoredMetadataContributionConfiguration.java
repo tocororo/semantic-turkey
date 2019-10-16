@@ -35,12 +35,6 @@ public class StoredMetadataContributionConfiguration extends StoredContributionC
 	public IRI sparqlEndpoint;
 
 	@STProperty(description = "SPARQL endpoint limitations", displayName = "SPARQL endpoint limitations")
-	public Set<IRI> sparqlLimitations;
-
-	/**
-	 * ?????
-	 */
-//	@STProperty(description = "Version Info", displayName = "Version Info")
-//	public String versionInfo;
+	public Set<IRI> sparqlLimitations; //at the moment the only limitation is the aggregation yes/no
 
 }

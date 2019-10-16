@@ -201,7 +201,8 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	public void registerUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
 			@Optional String address, @Optional String affiliation, @Optional String url, @Optional String avatarUrl,
-			@Optional String phone, @Optional Collection<String> languageProficiencies, @Optional Map<IRI, String> customProperties)
+			@Optional String phone, @Optional Collection<String> languageProficiencies, @Optional Map<IRI, String> customProperties,
+			@Optional (defaultValue = "true") boolean sendNotification)
 			throws ProjectAccessException, UserException, ProjectBindingException, STPropertyUpdateException, JsonProcessingException {
 		STUser user;
 		if (iri != null) {
@@ -243,11 +244,13 @@ public class Users extends STServiceAdapter {
 			//otherwise activate it and send the email notifications
 			UsersManager.registerUser(user);
 			ProjectUserBindingsManager.createPUBindingsOfUser(user);
-			try {
-				EmailSender.sendRegistrationMailToUser(user);
-				EmailSender.sendRegistrationMailToAdmin(user);
-			} catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {
-				logger.error(Utilities.printFullStackTrace(e));
+			if (sendNotification) {
+				try {
+					EmailSender.sendRegistrationMailToUser(user);
+					EmailSender.sendRegistrationMailToAdmin(user);
+				} catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {
+					logger.error(Utilities.printFullStackTrace(e));
+				}
 			}
 		}
 		
@@ -418,13 +421,13 @@ public class Users extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'C')")
-	public ObjectNode enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled)
+	public ObjectNode enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled, @Optional (defaultValue = "true") boolean sendNotification)
 			throws UserException, ProjectBindingException {
 		if (UsersManager.getLoggedUser().getEmail().equals(email)) {
 			throw new ProjectBindingException("Cannot disable current logged user");
 		}
 		STUser user = UsersManager.getUserByEmail(email);
-		if (enabled) {
+		if (enabled && sendNotification) {
 			user = UsersManager.updateUserStatus(user, UserStatus.ACTIVE);
 			try {
 				EmailSender.sendEnabledMailToUser(user);
@@ -503,10 +506,11 @@ public class Users extends STServiceAdapter {
 			EmailSender.sendForgotPasswordMail(user, resetLink);
 		} catch (UnsupportedEncodingException | MessagingException e) {
 			logger.error(Utilities.printFullStackTrace(e));
-			String emailAdminAddress = STPropertiesManager.getSystemSetting(
-					STPropertiesManager.SETTING_ADMIN_ADDRESS);
+			Collection<String> adminEmails = UsersManager.getAdminEmailList();
+			String adminEmailsMsg = (adminEmails.size() == 1) ? adminEmails.iterator().next() :
+					" one of the following address: " + String.join(", ", adminEmails);
 			throw new Exception("Failed to send an e-mail for resetting the password. Please contact the "
-					+ "system administration at " + emailAdminAddress);
+					+ "system administration at " + adminEmailsMsg);
 		}
 	}
 	

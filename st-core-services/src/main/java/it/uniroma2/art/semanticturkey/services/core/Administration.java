@@ -257,7 +257,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws ProjectInexistentException 
 	 * @throws InvalidProjectNameException 
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'C')")
 	public void addRolesToUser(String projectName, String email, String[] roles) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
@@ -288,7 +288,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws ProjectInexistentException 
 	 * @throws InvalidProjectNameException 
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'D')")
 	public void removeUserFromProject(String projectName, String email) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
@@ -309,7 +309,7 @@ public class Administration extends STServiceAdapter {
 	/**
 	 * @throws ProjectBindingException 
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'D')")
 	public void removeRoleFromUser(String projectName, String email, String role) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
@@ -413,7 +413,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws RoleCreationException
 	 * @throws IOException
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'C')")
 	public void createRole(String roleName) throws RoleCreationException {
 		RBACManager.createRole(getProject(), roleName);
@@ -425,7 +425,7 @@ public class Administration extends STServiceAdapter {
 	 * @return
 	 * @throws ProjectBindingException
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'D')")
 	public void deleteRole(String roleName) throws ProjectBindingException {
 		Project project = null;
@@ -522,7 +522,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws RBACException
 	 * @throws RoleCreationException 
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'CR')")
 	public void cloneRole(String sourceRoleName, String targetRoleName) throws RoleCreationException, RBACException {
 		Project project = getProject();
@@ -558,7 +558,7 @@ public class Administration extends STServiceAdapter {
 	 * @return
 	 * @throws RBACException 
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rbac(role, capability)', 'D')")
 	public void removeCapabilityFromRole(String role, String capability) throws RBACException {
 		RBACManager.removeCapability(getProject(), role, capability);

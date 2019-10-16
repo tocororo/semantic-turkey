@@ -1,11 +1,10 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.config.contribution.ContributionStore;
+import it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConfiguration;
 import it.uniroma2.art.semanticturkey.config.contribution.StoredDevResourceContributionConfiguration;
 import it.uniroma2.art.semanticturkey.config.contribution.StoredMetadataContributionConfiguration;
 import it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration;
@@ -22,21 +21,27 @@ import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelE
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LiftingException;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.pmki.PendingContributions;
+import it.uniroma2.art.semanticturkey.pmki.PmkiConstants;
+import it.uniroma2.art.semanticturkey.pmki.PmkiConstants.PmkiRole;
+import it.uniroma2.art.semanticturkey.pmki.PmkiEmailSender;
+import it.uniroma2.art.semanticturkey.pmki.RemoteVBConnector;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
+import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryWritingException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
@@ -45,29 +50,18 @@ import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipeline;
+import it.uniroma2.art.semanticturkey.services.core.export.TransformationStep;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
-import it.uniroma2.art.semanticturkey.user.Role.RoleLevel;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
-import it.uniroma2.art.semanticturkey.utilities.EmailSender;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
+import org.apache.commons.lang.RandomStringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.util.Models;
@@ -79,22 +73,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.mail.MessagingException;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.URISyntaxException;
 import java.security.SecureRandom;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.TimeZone;
 
 @STService
 public class PMKI extends STServiceAdapter {
@@ -105,9 +97,10 @@ public class PMKI extends STServiceAdapter {
 	private ExtensionPointManager exptManager;
 	@Autowired
 	private MetadataRegistryBackend metadataRegistryBackend;
+	@Autowired
+	private InputOutput inputOutputService;
 
-	private static final String PMKI_VISITOR_EMAIL = "pmki@pmki.eu";
-	private static final String PMKI_VISITOR_PWD = "pmki";
+
 
 	/* ADMINISTRATION */
 
@@ -127,7 +120,7 @@ public class PMKI extends STServiceAdapter {
 					new File(rolesDir, "role_" + r.getName() + ".pl")
 			);
 		}
-		STUser visitor = new STUser(PMKI_VISITOR_EMAIL, PMKI_VISITOR_PWD, "Visitor", "PMKI");
+		STUser visitor = new STUser(PmkiConstants.PMKI_VISITOR_EMAIL, PmkiConstants.PMKI_VISITOR_PWD, "Visitor", "PMKI");
 		UsersManager.registerUser(visitor);
 		UsersManager.updateUserStatus(visitor, UserStatus.ACTIVE);
 	}
@@ -135,53 +128,12 @@ public class PMKI extends STServiceAdapter {
 	@STServiceOperation
 	@PreAuthorize("@auth.isAdmin()")
 	public void testVocbenchConfiguration() throws IOException, STPropertyAccessException {
-		String vbConfValue = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_VB_CONFIG_FOR_PMKI);
-
-		ObjectMapper mapper = new ObjectMapper();
-		JsonNode confJson = mapper.readTree(vbConfValue);
-		String stHost = confJson.get("stHost").textValue();
-		String adminEmail = confJson.get("adminEmail").textValue();
-		String adminPwd = confJson.get("adminPassword").textValue();
-
-		String loginUrl = stHost;
-		if (!stHost.endsWith("/")) {
-			loginUrl += "/";
-		}
-		loginUrl += "semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/Auth/login";
-
-		HttpClient httpClient = HttpClients.createDefault();
-		HttpPost httpPost = new HttpPost(loginUrl);
-		//Request parameters and other properties
-		List<NameValuePair> params = new ArrayList<NameValuePair>(2);
-		params.add(new BasicNameValuePair("email", adminEmail));
-		params.add(new BasicNameValuePair("password", adminPwd));
-		httpPost.addHeader(HttpHeaders.ACCEPT, "application/json");
-		httpPost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
-		//Execute and get the response.
-		HttpResponse response = httpClient.execute(httpPost);
-		HttpEntity entity = response.getEntity();
-		if (entity != null) {
-			String responseAsString = EntityUtils.toString(entity);
-			Header contentType = entity.getContentType();
-			int statusCode = response.getStatusLine().getStatusCode();
-			if (statusCode == HttpStatus.SC_UNAUTHORIZED) {
-				if (responseAsString.isEmpty()) { //probably sub-path is wrong (ST responds but there is nothing under that path) => empty response
-					throw new IllegalArgumentException("Invalid SemanticTurkey host URL");
-				} else { //wrong credentials
-					throw new IllegalArgumentException(responseAsString);
-				}
-			} else if (statusCode == HttpStatus.SC_OK) {
-				if (contentType.getValue().equals("application/json")) {
-					JsonNode respJson = mapper.readTree(responseAsString);
-					boolean isAdmin = respJson.findValue("admin").asBoolean();
-					if (!isAdmin) {
-						throw new IllegalArgumentException(
-								"Configuration is correct, but the provided credentials don't belong to an administrator user");
-					}
-				}
-			} else { //other => wrong ST host (this should never happen, if the host is wrong a RuntimeException is thrown by httpClient.execute())
-				throw new IllegalArgumentException("Invalid SemanticTurkey host URL");
-			}
+		RemoteVBConnector vbConnector = new RemoteVBConnector();
+		ObjectNode respJson = vbConnector.login();
+		boolean isAdmin = respJson.findValue("admin").asBoolean();
+		if (!isAdmin) {
+			throw new IllegalArgumentException(
+					"Configuration is correct, but the provided credentials don't belong to an administrator user");
 		}
 	}
 
@@ -206,11 +158,10 @@ public class PMKI extends STServiceAdapter {
 	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	//TODO auth with capability of the pmki-public user (just rdf(r)?)
 	public void submitContribution(ObjectNode configuration) throws NoSuchConfigurationManager, IOException,
-			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException {
+			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException, MessagingException {
 		exptManager.storeConfiguration(ContributionStore.class.getName(), new Reference(null, null, String.valueOf(System.currentTimeMillis())), configuration);
-		//TODO send an email to the administrator?
+		PmkiEmailSender.sendContributionSubmittedMail();
 	}
 
 	/**
@@ -220,9 +171,13 @@ public class PMKI extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void deleteContribution(String relativeReference)
-			throws NoSuchConfigurationManager, ConfigurationNotFoundException {
-		exptManager.deleteConfiguraton(ContributionStore.class.getName(), parseReference(relativeReference));
+	public void rejectContribution(String relativeReference)
+			throws NoSuchConfigurationManager, ConfigurationNotFoundException, WrongPropertiesException, IOException, STPropertyAccessException, MessagingException {
+		Reference reference = parseReference(relativeReference);
+		exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
+		StoredContributionConfiguration config = (StoredContributionConfiguration) exptManager.getConfiguration(
+				ContributionStore.class.getName(), reference);
+		PmkiEmailSender.sendRejectedContributionMail(reference, config);
 	}
 
 	/**
@@ -231,19 +186,17 @@ public class PMKI extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void approveStableContribution(String projectName, IRI model, IRI lexicalizationModel, String baseURI,
-			  RepositoryAccess repositoryAccess, PluginSpecification coreRepoSailConfigurerSpecification,
-			  String configurationReference, String pmkiHostAddress)
+			RepositoryAccess repositoryAccess, PluginSpecification coreRepoSailConfigurerSpecification,
+			String configurationReference, String pmkiHostAddress)
 			throws IOException, RBACException, WrongPropertiesException, ProjectBindingException,
 			ProjectInconsistentException, ClassNotFoundException, ForbiddenProjectAccessException,
 			UnsupportedModelException, UnsupportedPluginConfigurationException, ProjectUpdateException,
 			InvalidConfigurationException, InvalidProjectNameException, ProjectAccessException,
 			UnloadablePluginConfigurationException, UnsupportedLexicalizationModelException, ProjectInexistentException,
-			ProjectCreationException, ReservedPropertyUpdateException, DuplicatedResourceException, STPropertyAccessException, ConfigurationNotFoundException, NoSuchConfigurationManager, MessagingException, ProjectDeletionException {
-
+			ProjectCreationException, ReservedPropertyUpdateException, DuplicatedResourceException, STPropertyAccessException,
+			ConfigurationNotFoundException, NoSuchConfigurationManager, MessagingException, ProjectDeletionException, STPropertyUpdateException {
 		try {
-
 			/* create project for hosting the stable resource */
-
 			ProjectConsumer consumer = ProjectConsumer.SYSTEM;
 
 			boolean historyEnabled = false;
@@ -286,41 +239,25 @@ public class PMKI extends STServiceAdapter {
 
 			Reference reference = parseReference(configurationReference);
 
-			StoredStableResourceContributionConfiguration config =
+			StoredStableResourceContributionConfiguration contribution =
 					(StoredStableResourceContributionConfiguration) exptManager.getConfiguration(
 							ContributionStore.class.getName(), reference);
 
 			//TODO write also metadata get from the contribution
 
-			/* send email notification to the contributor */
+			/* Set the project status to "pristine" (by assigning the pristine role to the visitor) */
 
-			String emailTo = config.contributorEmail;
-			String emailContent = "Dear " + config.contributorName + " " + config.contributorLastName + ",\n" +
-					"your request to contribute to PMKI with the resource '" + config.resourceName + "' has been approved"; //TODO continue
-			System.out.println("EmailTo: " + emailTo);
-			System.out.println("Email content: " + emailContent);
-
-			STUser visitor = UsersManager.getUserByEmail(PMKI_VISITOR_EMAIL);
+			STUser visitor = UsersManager.getUserByEmail(PmkiConstants.PMKI_VISITOR_EMAIL);
 			ProjectUserBindingsManager.addRoleToPUBinding(visitor, newProject, PmkiRole.PRISTINE);
 
-			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-			String formattedDate = sdf.format(new Date(Long.parseLong(reference.getIdentifier())));
+			/* send email notification to the contributor */
 			//generate a random token
-			SecureRandom random = new SecureRandom();
-			String token = new BigInteger(130, random).toString(32); //TODO store the pair projectName-token somewhere
-			String loadPageLink = pmkiHostAddress + "/#/load/" + token;
+			String token = new BigInteger(130, new SecureRandom()).toString(32);
+			//add the pair token-project to the pending contribution
+			new PendingContributions().addPendingContribution(token, projectName);
 
-			String mailContent = "Dear " + config.contributorName + " " + config.contributorLastName + ",\n" +
-					"Your contribution request submitted at " + formattedDate + " has been accepted. " +
-					"You can now upload the RDF resource at the following link " + loadPageLink;
-			EmailSender.sendMail(config.contributorEmail, "Contribution approved", mailContent);
-
-			/*
-			 * TODO (IN A DEDICATED SERVICE) once the resource is uploaded,
-			 *  remove the "pmki-pristine" role to the visitor and give him the "pmki-staging"
-			 *  remove the stored pair project-token
-			 */
+			String loadPageLink = pmkiHostAddress + "#/load/" + token;
+			PmkiEmailSender.sendAcceptedStableResourceContributionMail(reference, contribution, projectName, loadPageLink);
 
 			//In order to support the testing, the deletion of the configuration is temporarily skipped TODO restore
 			//exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
@@ -332,39 +269,77 @@ public class PMKI extends STServiceAdapter {
 		}
 	}
 
+	@STServiceOperation(method = RequestMethod.POST)
+	public void loadStableContributionData(String token, String projectName, MultipartFile file, String format)
+			throws STPropertyAccessException, IOException, InvalidConfigurationException, WrongPropertiesException,
+			LiftingException, ProjectBindingException, STPropertyUpdateException {
+		Project project = ProjectManager.getProject(projectName);
+		if (project == null) {
+			throw new IllegalArgumentException("Invalid project name '" + projectName + "'. It is not an open project or it does not exist");
+		}
+
+		PendingContributions pendingContributions = new PendingContributions();
+		String contribProjName = pendingContributions.getPendingContributionProject(token);
+
+		if (contribProjName == null) { //wrong token
+			throw new IllegalArgumentException("The contribution you're trying to complete does not exist. It might be expired");
+		} else if (!projectName.equals(contribProjName)) { //token ok, wrong project name
+			throw new IllegalArgumentException("The provided project name does not correspond to the contribution you're trying to complete");
+		} else { //token+projectName are ok
+			//Load data exploiting the InputOutput service class
+			TransformationPipeline pipeline = new TransformationPipeline(new TransformationStep[0]);
+			inputOutputService.loadRDF(file, project.getBaseURI(), format, TransitiveImportMethodAllowance.web, null, null, pipeline, false);
+
+			//Update the status of the project from pristine to staging
+			STUser visitor = UsersManager.getUserByEmail(PmkiConstants.PMKI_VISITOR_EMAIL);
+			ProjectUserBindingsManager.removeAllRoleFromPUBinding(visitor, project);
+			ProjectUserBindingsManager.addRoleToPUBinding(visitor, project, PmkiRole.STAGING);
+
+			//remove the stored pending contribution
+			pendingContributions.removePendingContribution(token);
+		}
+	}
+
 	/**
 	 * Approves a development-resource contribution request
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void approveDevelopmentContribution(String projectName, IRI model, IRI lexicalizationModel, String baseURI,
-											   RepositoryAccess repositoryAccess, PluginSpecification coreRepoSailConfigurerSpecification, String configurationReference)
-			throws IOException, WrongPropertiesException, STPropertyAccessException, ConfigurationNotFoundException, NoSuchConfigurationManager {
-
-		/*
-		 * TODO
-		 * 	- with http requests to the SemanticTurkey for staging project:
-		 * 		- do the login as admin
-		 * 		- create project
-		 * 		- create a user (email the one of the user and random password), activate it and assign a role (which one???) to the project
-		 * 	- send email to the user with...
-		 * 		According PMKI-108
-		 * 		"an email is sent to the contributor with the token and the upload page (which includes the conversion options).
-		 * 		Once the upload is done, the page provides the URL of Vocbench and the access credentials for it."
-		 * 		I don't agree with this, I think it is better to simply send the credentials and
-		 * 		let the user upload/convert the resource directly in VB
-		 */
+			PluginSpecification coreRepoSailConfigurerSpecification, String configurationReference, String pmkiHostAddress)
+			throws IOException, WrongPropertiesException, STPropertyAccessException, ConfigurationNotFoundException, NoSuchConfigurationManager, URISyntaxException {
 
 		Reference reference = parseReference(configurationReference);
-
-		StoredDevResourceContributionConfiguration config =
+		StoredDevResourceContributionConfiguration contribution =
 				(StoredDevResourceContributionConfiguration) exptManager.getConfiguration(
 						ContributionStore.class.getName(), reference);
-		String emailTo = config.contributorEmail;
-		String emailContent = "Dear " + config.contributorName + " " + config.contributorLastName + ",\n" +
-				"your request to contribute to PMKI with the resource '" + config.resourceName + "' has been approved"; //TODO continue
-		System.out.println("EmailTo: " + emailTo);
-		System.out.println("Email content: " + emailContent);
+
+		/*
+		* with http requests to the SemanticTurkey for staging project:
+		* - login as admin
+		* - create project
+		* - create a user (email the one of the user and a random password)
+		* - activate the user
+		* - assign a role to the user in the project
+		*/
+		RemoteVBConnector vbConnector = new RemoteVBConnector();
+		vbConnector.login();
+		vbConnector.createProject(projectName, baseURI, model, lexicalizationModel, coreRepoSailConfigurerSpecification);
+		String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~`!@#$%^&*()-_=+[{]}\\|;:\'\",<.>/?";
+		String tempUserPwd = RandomStringUtils.random(15, characters);
+		//TODO check if user already registered
+		vbConnector.registerUser(contribution.contributorEmail, tempUserPwd, contribution.contributorName, contribution.contributorLastName, contribution.contributorOrganization);
+		vbConnector.enableUser(contribution.contributorEmail);
+		vbConnector.addRolesToUser(projectName, contribution.contributorEmail, Collections.singletonList(DefaultRole.ONTOLOGIST)); //TODO is ok ontologist?
+
+		/* send email notification to the contributor */
+//		//generate a random token
+//		String token = new BigInteger(130, new SecureRandom()).toString(32);
+//		//add the pair token-project to the pending contribution
+//		new PendingContributions().addPendingContribution(token, projectName);
+//
+//		String loadPageLink = pmkiHostAddress + "#/load/" + token;
+//		PmkiEmailSender.sendAcceptedDevResourceContributionMail(reference, contribution, projectName, loadPageLink, null, tempUserPwd);
 
 		//In order to support the testing, the deletion of the configuration is temporarily skipped
 		//exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
@@ -397,20 +372,15 @@ public class PMKI extends STServiceAdapter {
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
 			Model model = QueryResults.asModel(conn.getStatements(record, FOAF.PRIMARY_TOPIC, null));
 			IRI datasetIRI = Models.objectIRI(model).orElse(null);
-			//TODO ask Manuel: sparqlLimitations is a Set, but the setter accept an IRI, why?
-//			metadataRegistryBackend.setSPARQLEndpointLimitation(datasetIRI, config.sparqlLimitations);
+			if (!config.sparqlLimitations.isEmpty()) { //if it's not empty, set just the first since at the moment we have just a limitation (aggregation)
+				metadataRegistryBackend.setSPARQLEndpointLimitation(datasetIRI, config.sparqlLimitations.iterator().next());
+			}
+
 		}
 
-		//In order to support the testing, the deletion of the configuration is temporarily skipped
+		//In order to support the testing, the deletion of the configuration is temporarily skipped TODO restore
 		//exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
 
-	}
-
-
-	private static final class PmkiRole {
-		public static final Role PUBLIC = new Role("pmki_public", RoleLevel.system);
-		public static final Role PRISTINE = new Role("pmki_pristine", RoleLevel.system);
-		public static final Role STAGING = new Role("pmki_staging", RoleLevel.system);
 	}
 
 }

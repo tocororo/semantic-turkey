@@ -676,8 +676,7 @@ public class STPropertiesManager {
 
 			ObjectNode obj = objectMapper.createObjectNode();
 
-			for (int i = 0; i < propFiles.length; i++) {
-				File propFile = propFiles[i];
+			for (File propFile : propFiles) {
 				if (!propFile.exists())
 					continue;
 

@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.utilities;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Collection;
 import java.util.Properties;
 
 import javax.mail.Message;
@@ -14,29 +15,29 @@ import javax.mail.internet.MimeMessage;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 public class EmailSender {
 	
 	/**
 	 * Sends an email to the registered user
-	 * @param toEmail
-	 * @param givenName
-	 * @param familyName
+	 * @param user
 	 * @throws MessagingException
 	 * @throws UnsupportedEncodingException
 	 * @throws STPropertyAccessException 
 	 */
 	public static void sendRegistrationMailToUser(STUser user) 
 			throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
-		String emailAdminAddress = STPropertiesManager.getSystemSetting(
-				STPropertiesManager.SETTING_ADMIN_ADDRESS);
+		Collection<String> adminEmails = UsersManager.getAdminEmailList();
+		String adminEmailsMsg = (adminEmails.size() == 1) ? adminEmails.iterator().next() :
+				" one of the following address: " + String.join(", ", adminEmails);
 		String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
 				+ "\nthank you for registering as a user of VocBench 3."
 				+ " Your request has been received. Please wait for the administrator to approve it."
 				+ " After approval, you can log into VocBench with the e-mail " + user.getEmail() + " and your chosen password."
 				+ "\nThanks for your interest."
 				+ "\nIf you want to unregister, please send an email with your e-mail address and the subject:"
-				+ " 'VocBench - Unregister' to " + emailAdminAddress + "."
+				+ " 'VocBench - Unregister' to " + adminEmailsMsg + "."
 				+ "\nRegards,\nThe VocBench Team.";
 		sendMail(user.getEmail(), "VocBench registration", text);
 	}
@@ -65,15 +66,15 @@ public class EmailSender {
 	 */
 	public static void sendRegistrationMailToAdmin(STUser user)
 			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
-		String emailAdminAddress = STPropertiesManager.getSystemSetting(
-				STPropertiesManager.SETTING_ADMIN_ADDRESS);
-		String text = "Dear VocBench administrator,"
-				+ "\nthere is a new user registration request for VocBench."
-				+ "\nGiven Name: " + user.getGivenName()
-				+ "\nFamily Name: " + user.getFamilyName()
-				+ "\nE-mail: " + user.getEmail()
-				+ "\nPlease activate the account.\nRegards,\nThe VocBench Team.";
-		sendMail(emailAdminAddress, "VocBench registration", text);
+		for (String adminEmail: UsersManager.getAdminEmailList()) {
+			String text = "Dear VocBench administrator,"
+					+ "\nthere is a new user registration request for VocBench."
+					+ "\nGiven Name: " + user.getGivenName()
+					+ "\nFamily Name: " + user.getFamilyName()
+					+ "\nE-mail: " + user.getEmail()
+					+ "\nPlease activate the account.\nRegards,\nThe VocBench Team.";
+			sendMail(adminEmail, "VocBench registration", text);
+		}
 	}
 	
 	public static void sendForgotPasswordMail(STUser user, String forgotPasswordLink)
@@ -114,28 +115,28 @@ public class EmailSender {
 		String mailFromAddress = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ADDRESS);
 		String mailFromPassword = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_PASSWORD);
 		String mailFromAlias = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ALIAS);
-		
+
 		String mailSmtpHost = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_HOST);
 		String mailSmtpPort = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_PORT);
 		boolean mailSmtpAuth = Boolean.parseBoolean(STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_AUTH));
 		boolean mailSmtpSsl = Boolean.parseBoolean(STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_SSL_ENABLE));
 		boolean mailSmtpTls = Boolean.parseBoolean(STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_STARTTLS_ENABLE));
-		
+
 		if (mailFromAddress == null || mailSmtpHost == null || mailSmtpPort == null) {
 			throw new MessagingException("Wrong mail configuration, impossible to send a confirmation e-mail");
 		}
-		
+
 		Properties props = new Properties();
 		props.put("mail.smtp.host", mailSmtpHost);
 		props.put("mail.smtp.port", mailSmtpPort);
 		props.put("mail.smtp.auth", mailSmtpAuth+"");
-		
+
 		if (mailSmtpSsl) {
 			props.put("mail.smtp.ssl.enable", "true");
 		} else if (mailSmtpTls) {
 			props.put("mail.smtp.starttls.enable", "true");
 		}
-		
+
 		Session session;
 		if (mailSmtpAuth) {
 			session = Session.getInstance(props, new javax.mail.Authenticator() {
@@ -146,7 +147,7 @@ public class EmailSender {
 		} else {
 			session = Session.getInstance(props);
 		}
-		
+
 		Message message = new MimeMessage(session);
 		message.setFrom(new InternetAddress(mailFromAddress, mailFromAlias));
 		message.setSubject(subject);
