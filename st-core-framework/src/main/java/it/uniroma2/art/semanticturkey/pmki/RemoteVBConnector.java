@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class RemoteVBConnector {
 
@@ -41,6 +42,7 @@ public class RemoteVBConnector {
 	private String stHost;
 	private String adminEmail;
 	private String adminPwd;
+	private String vbUrl;
 
 	public RemoteVBConnector() throws IOException, STPropertyAccessException {
 		mapper = new ObjectMapper();
@@ -58,9 +60,14 @@ public class RemoteVBConnector {
 		}
 		adminEmail = confJson.get("adminEmail").textValue();
 		adminPwd = confJson.get("adminPassword").textValue();
+		vbUrl = confJson.get("vbUrl").textValue();
 	}
 
-	public ObjectNode login() throws IOException {
+	public String getVocbenchUrl() {
+		return this.vbUrl;
+	}
+
+	public ObjectNode loginAdmin() throws IOException {
 		String requestUrl = stHost + "semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/Auth/login";
 		HttpPost httpPost = new HttpPost(requestUrl);
 		//Request parameters and other properties
@@ -159,7 +166,8 @@ public class RemoteVBConnector {
 		List<NameValuePair> params = new ArrayList<>();
 		params.add(new BasicNameValuePair("projectName", projectName));
 		params.add(new BasicNameValuePair("email", email));
-		params.add(new BasicNameValuePair("roles", mapper.writeValueAsString(roles)));
+		List<String> rolesName = roles.stream().map(Role::getName).collect(Collectors.toList());
+		params.add(new BasicNameValuePair("roles", String.join(",", rolesName)));
 
 		httpPost.addHeader(HttpHeaders.ACCEPT, "application/json");
 		httpPost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));

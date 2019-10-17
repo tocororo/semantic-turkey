@@ -78,6 +78,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.mail.MessagingException;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
 import java.security.SecureRandom;
@@ -106,8 +107,10 @@ public class PMKI extends STServiceAdapter {
 
 	/**
 	 * Initializes all that stuff needed in PMKI.
-	 * - The roles: pmki-public, pmki-pristine, pmki-staging
-	 * - The visitor user
+	 * 	 * - The roles: pmki-public, pmki-pristine, pmki-staging
+	 * 	 * - The visitor user
+	 * @throws IOException
+	 * @throws UserException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
@@ -125,16 +128,34 @@ public class PMKI extends STServiceAdapter {
 		UsersManager.updateUserStatus(visitor, UserStatus.ACTIVE);
 	}
 
+	/**
+	 *
+	 * @throws IOException
+	 * @throws STPropertyAccessException
+	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAdmin()")
 	public void testVocbenchConfiguration() throws IOException, STPropertyAccessException {
 		RemoteVBConnector vbConnector = new RemoteVBConnector();
-		ObjectNode respJson = vbConnector.login();
+		ObjectNode respJson = vbConnector.loginAdmin();
 		boolean isAdmin = respJson.findValue("admin").asBoolean();
 		if (!isAdmin) {
 			throw new IllegalArgumentException(
 					"Configuration is correct, but the provided credentials don't belong to an administrator user");
 		}
+	}
+
+	/**
+	 *
+	 * @param mailTo
+	 * @throws UnsupportedEncodingException
+	 * @throws MessagingException
+	 * @throws STPropertyAccessException
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAdmin()")
+	public void testEmailConfig(String mailTo) throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
+		PmkiEmailSender.sendTestMailConfiguration(mailTo);
 	}
 
 	/* CONTRIBUTION MANAGEMENT */
@@ -182,6 +203,39 @@ public class PMKI extends STServiceAdapter {
 
 	/**
 	 * Approves a stable-resource contribution request
+	 * @param projectName
+	 * @param model
+	 * @param lexicalizationModel
+	 * @param baseURI
+	 * @param repositoryAccess
+	 * @param coreRepoSailConfigurerSpecification
+	 * @param configurationReference
+	 * @param pmkiHostAddress
+	 * @throws IOException
+	 * @throws RBACException
+	 * @throws WrongPropertiesException
+	 * @throws ProjectBindingException
+	 * @throws ProjectInconsistentException
+	 * @throws ClassNotFoundException
+	 * @throws ForbiddenProjectAccessException
+	 * @throws UnsupportedModelException
+	 * @throws UnsupportedPluginConfigurationException
+	 * @throws ProjectUpdateException
+	 * @throws InvalidConfigurationException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectAccessException
+	 * @throws UnloadablePluginConfigurationException
+	 * @throws UnsupportedLexicalizationModelException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectCreationException
+	 * @throws ReservedPropertyUpdateException
+	 * @throws DuplicatedResourceException
+	 * @throws STPropertyAccessException
+	 * @throws ConfigurationNotFoundException
+	 * @throws NoSuchConfigurationManager
+	 * @throws MessagingException
+	 * @throws ProjectDeletionException
+	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
@@ -256,8 +310,7 @@ public class PMKI extends STServiceAdapter {
 			//add the pair token-project to the pending contribution
 			new PendingContributions().addPendingContribution(token, projectName);
 
-			String loadPageLink = pmkiHostAddress + "#/load/" + token;
-			PmkiEmailSender.sendAcceptedStableResourceContributionMail(reference, contribution, projectName, loadPageLink);
+			PmkiEmailSender.sendAcceptedStableResourceContributionMail(reference, contribution, projectName, pmkiHostAddress, token);
 
 			//In order to support the testing, the deletion of the configuration is temporarily skipped TODO restore
 			//exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
@@ -269,45 +322,29 @@ public class PMKI extends STServiceAdapter {
 		}
 	}
 
-	@STServiceOperation(method = RequestMethod.POST)
-	public void loadStableContributionData(String token, String projectName, MultipartFile file, String format)
-			throws STPropertyAccessException, IOException, InvalidConfigurationException, WrongPropertiesException,
-			LiftingException, ProjectBindingException, STPropertyUpdateException {
-		Project project = ProjectManager.getProject(projectName);
-		if (project == null) {
-			throw new IllegalArgumentException("Invalid project name '" + projectName + "'. It is not an open project or it does not exist");
-		}
-
-		PendingContributions pendingContributions = new PendingContributions();
-		String contribProjName = pendingContributions.getPendingContributionProject(token);
-
-		if (contribProjName == null) { //wrong token
-			throw new IllegalArgumentException("The contribution you're trying to complete does not exist. It might be expired");
-		} else if (!projectName.equals(contribProjName)) { //token ok, wrong project name
-			throw new IllegalArgumentException("The provided project name does not correspond to the contribution you're trying to complete");
-		} else { //token+projectName are ok
-			//Load data exploiting the InputOutput service class
-			TransformationPipeline pipeline = new TransformationPipeline(new TransformationStep[0]);
-			inputOutputService.loadRDF(file, project.getBaseURI(), format, TransitiveImportMethodAllowance.web, null, null, pipeline, false);
-
-			//Update the status of the project from pristine to staging
-			STUser visitor = UsersManager.getUserByEmail(PmkiConstants.PMKI_VISITOR_EMAIL);
-			ProjectUserBindingsManager.removeAllRoleFromPUBinding(visitor, project);
-			ProjectUserBindingsManager.addRoleToPUBinding(visitor, project, PmkiRole.STAGING);
-
-			//remove the stored pending contribution
-			pendingContributions.removePendingContribution(token);
-		}
-	}
-
 	/**
 	 * Approves a development-resource contribution request
+	 * @param projectName
+	 * @param model
+	 * @param lexicalizationModel
+	 * @param baseURI
+	 * @param coreRepoSailConfigurerSpecification
+	 * @param configurationReference
+	 * @param pmkiHostAddress
+	 * @throws IOException
+	 * @throws WrongPropertiesException
+	 * @throws STPropertyAccessException
+	 * @throws ConfigurationNotFoundException
+	 * @throws NoSuchConfigurationManager
+	 * @throws URISyntaxException
+	 * @throws STPropertyUpdateException
+	 * @throws MessagingException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void approveDevelopmentContribution(String projectName, IRI model, IRI lexicalizationModel, String baseURI,
 			PluginSpecification coreRepoSailConfigurerSpecification, String configurationReference, String pmkiHostAddress)
-			throws IOException, WrongPropertiesException, STPropertyAccessException, ConfigurationNotFoundException, NoSuchConfigurationManager, URISyntaxException {
+			throws IOException, WrongPropertiesException, STPropertyAccessException, ConfigurationNotFoundException, NoSuchConfigurationManager, URISyntaxException, STPropertyUpdateException, MessagingException {
 
 		Reference reference = parseReference(configurationReference);
 		StoredDevResourceContributionConfiguration contribution =
@@ -315,33 +352,38 @@ public class PMKI extends STServiceAdapter {
 						ContributionStore.class.getName(), reference);
 
 		/*
-		* with http requests to the SemanticTurkey for staging project:
-		* - login as admin
-		* - create project
-		* - create a user (email the one of the user and a random password)
-		* - activate the user
-		* - assign a role to the user in the project
-		*/
+		 * with http requests to the SemanticTurkey for staging project:
+		 * - login as admin
+		 * - create project
+		 * - create a user (email the one of the user and a random password)
+		 * - activate the user
+		 * - assign a role to the user in the project
+		 */
 		RemoteVBConnector vbConnector = new RemoteVBConnector();
-		vbConnector.login();
+		vbConnector.loginAdmin();
 		vbConnector.createProject(projectName, baseURI, model, lexicalizationModel, coreRepoSailConfigurerSpecification);
-		String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~`!@#$%^&*()-_=+[{]}\\|;:\'\",<.>/?";
-		String tempUserPwd = RandomStringUtils.random(15, characters);
-		//TODO check if user already registered
-		vbConnector.registerUser(contribution.contributorEmail, tempUserPwd, contribution.contributorName, contribution.contributorLastName, contribution.contributorOrganization);
-		vbConnector.enableUser(contribution.contributorEmail);
-		vbConnector.addRolesToUser(projectName, contribution.contributorEmail, Collections.singletonList(DefaultRole.ONTOLOGIST)); //TODO is ok ontologist?
+
+		String userPassword = null;
+		try { //surrounded in a try catch since the user email could be already used => user already registered
+			String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~`!@#$%^&*()-_=+[{]}\\|;:\'\",<.>/?";
+			String tempUserPwd = RandomStringUtils.random(15, characters);
+			vbConnector.registerUser(contribution.contributorEmail, tempUserPwd, contribution.contributorName, contribution.contributorLastName, contribution.contributorOrganization);
+			vbConnector.enableUser(contribution.contributorEmail);
+			userPassword = tempUserPwd;
+		} catch (IOException e) {
+			//user already registered
+		} finally {
+			vbConnector.addRolesToUser(projectName, contribution.contributorEmail, Collections.singletonList(DefaultRole.RDF_GEEK)); //rdfGeek needed for Sheet2RDF
+		}
 
 		/* send email notification to the contributor */
-//		//generate a random token
-//		String token = new BigInteger(130, new SecureRandom()).toString(32);
-//		//add the pair token-project to the pending contribution
-//		new PendingContributions().addPendingContribution(token, projectName);
-//
-//		String loadPageLink = pmkiHostAddress + "#/load/" + token;
-//		PmkiEmailSender.sendAcceptedDevResourceContributionMail(reference, contribution, projectName, loadPageLink, null, tempUserPwd);
+		//generate a random token
+		String token = new BigInteger(130, new SecureRandom()).toString(32);
+		//add the pair token-project to the pending contribution
+		new PendingContributions().addPendingContribution(token, projectName);
+		PmkiEmailSender.sendAcceptedDevResourceContributionMail(reference, contribution, projectName, pmkiHostAddress, token, vbConnector.getVocbenchUrl(), userPassword);
 
-		//In order to support the testing, the deletion of the configuration is temporarily skipped
+		//In order to support the testing, the deletion of the configuration is temporarily skipped TODO restore
 		//exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
 
 
@@ -349,6 +391,13 @@ public class PMKI extends STServiceAdapter {
 
 	/**
 	 * Approves a metadata contribution request
+	 * @param configurationReference
+	 * @throws MetadataRegistryWritingException
+	 * @throws NoSuchConfigurationManager
+	 * @throws WrongPropertiesException
+	 * @throws ConfigurationNotFoundException
+	 * @throws STPropertyAccessException
+	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
@@ -380,7 +429,51 @@ public class PMKI extends STServiceAdapter {
 
 		//In order to support the testing, the deletion of the configuration is temporarily skipped TODO restore
 		//exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
+	}
 
+	/**
+	 *
+	 * @param token
+	 * @param projectName
+	 * @param file
+	 * @param format
+	 * @throws STPropertyAccessException
+	 * @throws IOException
+	 * @throws InvalidConfigurationException
+	 * @throws WrongPropertiesException
+	 * @throws LiftingException
+	 * @throws ProjectBindingException
+	 * @throws STPropertyUpdateException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void loadStableContributionData(String token, String projectName, MultipartFile file, String format)
+			throws STPropertyAccessException, IOException, InvalidConfigurationException, WrongPropertiesException,
+			LiftingException, ProjectBindingException, STPropertyUpdateException {
+		Project project = ProjectManager.getProject(projectName);
+		if (project == null) {
+			throw new IllegalArgumentException("Invalid project name '" + projectName + "'. It is not an open project or it does not exist");
+		}
+
+		PendingContributions pendingContributions = new PendingContributions();
+		String contribProjName = pendingContributions.getPendingContributionProject(token);
+
+		if (contribProjName == null) { //wrong token
+			throw new IllegalArgumentException("The contribution you're trying to complete does not exist. It might be expired");
+		} else if (!projectName.equals(contribProjName)) { //token ok, wrong project name
+			throw new IllegalArgumentException("The provided project name does not correspond to the contribution you're trying to complete");
+		} else { //token+projectName are ok
+			//Load data exploiting the InputOutput service class
+			TransformationPipeline pipeline = new TransformationPipeline(new TransformationStep[0]);
+			inputOutputService.loadRDF(file, project.getBaseURI(), format, TransitiveImportMethodAllowance.web, null, null, pipeline, false);
+
+			//Update the status of the project from pristine to staging
+			STUser visitor = UsersManager.getUserByEmail(PmkiConstants.PMKI_VISITOR_EMAIL);
+			ProjectUserBindingsManager.removeAllRoleFromPUBinding(visitor, project);
+			ProjectUserBindingsManager.addRoleToPUBinding(visitor, project, PmkiRole.STAGING);
+
+			//remove the stored pending contribution
+			pendingContributions.removePendingContribution(token);
+		}
 	}
 
 }

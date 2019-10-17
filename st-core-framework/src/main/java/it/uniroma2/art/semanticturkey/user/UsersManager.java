@@ -81,11 +81,11 @@ public class UsersManager {
 	 * @throws IOException
 	 */
 	public static void registerUser(STUser user) throws UserException {
-		if (getUserByIRI(user.getIRI()) != null) {
-			throw new UserException("IRI " + user.getIRI().stringValue() + " already used by another user");
-		}
 		if (getUserByEmail(user.getEmail()) != null) {
 			throw new UserException("E-mail address " + user.getEmail() + " already used by another user");
+		}
+		if (getUserByIRI(user.getIRI()) != null) {
+			throw new UserException("IRI " + user.getIRI().stringValue() + " already used by another user");
 		}
 		user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword())); // encode password
 		user.setRegistrationDate(new Date());

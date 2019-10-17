@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.config.contribution;
 
+import it.uniroma2.art.semanticturkey.pmki.PmkiConversionFormat;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
@@ -12,7 +13,7 @@ public class StoredDevResourceContributionConfiguration extends StoredContributi
 	}
 
 	@STProperty(description = "Input format of the resource to convert", displayName = "Format")
-	public String format;
+	public PmkiConversionFormat format;
 
 	@STProperty(description = "Name of the resource", displayName = "Name")
 	@Required

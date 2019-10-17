@@ -421,18 +421,20 @@ public class Users extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'C')")
-	public ObjectNode enableUser(@RequestParam("email") String email, @RequestParam("enabled") boolean enabled, @Optional (defaultValue = "true") boolean sendNotification)
+	public ObjectNode enableUser(String email, boolean enabled, @Optional (defaultValue = "true") boolean sendNotification)
 			throws UserException, ProjectBindingException {
 		if (UsersManager.getLoggedUser().getEmail().equals(email)) {
 			throw new ProjectBindingException("Cannot disable current logged user");
 		}
 		STUser user = UsersManager.getUserByEmail(email);
-		if (enabled && sendNotification) {
+		if (enabled) {
 			user = UsersManager.updateUserStatus(user, UserStatus.ACTIVE);
-			try {
-				EmailSender.sendEnabledMailToUser(user);
-			} catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {
-				logger.error(Utilities.printFullStackTrace(e));
+			if (sendNotification) {
+				try {
+					EmailSender.sendEnabledMailToUser(user);
+				} catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {
+					logger.error(Utilities.printFullStackTrace(e));
+				}
 			}
 		} else {
 			user = UsersManager.updateUserStatus(user, UserStatus.INACTIVE);
