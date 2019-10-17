@@ -1,39 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.awt.PageAttributes.OriginType;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
-import javax.annotation.Nullable;
-
-import org.eclipse.rdf4j.RDF4JException;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.repository.util.RDFInserter;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFHandler;
-import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.google.common.base.MoreObjects;
 import com.google.common.io.Closer;
-
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
@@ -55,7 +23,6 @@ import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.DataFormat;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -64,6 +31,34 @@ import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipelin
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationStep;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
+import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.util.RDFInserter;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFHandler;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.annotation.Nullable;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * This class provides services for input/output.
@@ -82,7 +77,6 @@ public class InputOutput extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-	@Read
 	public List<DataFormat> getSupportedFormats(String extensionID) {
 		ExtensionFactory<?> extensionPoint = exptManager.getExtension(extensionID);
 
@@ -146,7 +140,6 @@ public class InputOutput extends STServiceAdapter {
 	 * @throws IllegalStateException
 	 * @throws RDF4JException
 	 * @throws LiftingException
-	 * @throws UnsupportedRDFFormatException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
@@ -192,7 +185,7 @@ public class InputOutput extends STServiceAdapter {
 			@Nullable String format, TransitiveImportMethodAllowance transitiveImportAllowance,
 			RepositoryConnection conn, @Nullable PluginSpecification loaderSpec,
 			PluginSpecification rdfLifterSpec, TransformationPipeline transformationPipeline)
-			throws IOException, IllegalStateException, IllegalArgumentException, FileNotFoundException,
+			throws IOException, IllegalStateException, IllegalArgumentException,
 			RDF4JException, NoSuchExtensionException, WrongPropertiesException, STPropertyAccessException,
 			InvalidConfigurationException, LiftingException {
 
@@ -209,7 +202,6 @@ public class InputOutput extends STServiceAdapter {
 			RepositoryConnection tempRepoConn;
 
 			if (transformationPipeline.isEmpty()) {
-				tempRepo = null;
 				tempRepoConn = null;
 			} else {
 				tempRepo = new SailRepository(new MemoryStore());
@@ -397,4 +389,4 @@ public class InputOutput extends STServiceAdapter {
 		return RDF4JUtilities.getInputFormats();
 	}
 
-};
+}

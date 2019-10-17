@@ -25,7 +25,7 @@ import org.xml.sax.SAXException;
 public class XmlReader {
 	
 	private Document doc;
-	
+
 	public Zthes parseZThes(InputStream is) throws ZthesException, SAXException, IOException, ParserConfigurationException {
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
@@ -60,6 +60,20 @@ public class XmlReader {
 				}
 			}
 		}
+		//terms referenced in relations, might be not defined as term element => check and repair
+		for (Term t : zthes.getTerms()) {
+			for (Relation r: t.getRelations()) {
+				Term relatedTerm = zthes.getTermById(r.getTermId());
+				if (relatedTerm == null) { //not defined => create term
+					relatedTerm = new Term(r.getTermId(), r.getTermName());
+					relatedTerm.setTermLanguage(r.getTermLanguage());
+					relatedTerm.setTermQualifier(r.getTermQualifier());
+					relatedTerm.setTermType(r.getTermType());
+				}
+				zthes.addTerm(relatedTerm);
+			}
+		}
+
 		return zthes;
 	}
 	
@@ -99,7 +113,7 @@ public class XmlReader {
 				} else if (childElement.getNodeName().equals(Term.Tag.TERM_MODIFIED_DATE)) {
 					termModifiedDate = childElement.getTextContent();
 				} else if (childElement.getNodeName().equals(Term.Tag.TERM_NAME)) {
-					termName = childElement.getTextContent();
+					termName = sanitizeTextContent(childElement.getTextContent());
 				} else if (childElement.getNodeName().equals(Term.Tag.TERM_NOTE)) {
 					termNotes.add(parseTermNote(childElement));
 				} else if (childElement.getNodeName().equals(Term.Tag.TERM_QUALIFIER)) {
@@ -200,7 +214,7 @@ public class XmlReader {
 				} else if (childElement.getNodeName().equals(Relation.Tag.TERM_LANGUAGE)) {
 					termLanguage = childElement.getTextContent();
 				} else if (childElement.getNodeName().equals(Relation.Tag.TERM_NAME)) {
-					termName = childElement.getTextContent();
+					termName = sanitizeTextContent(childElement.getTextContent());
 				} else if (childElement.getNodeName().equals(Relation.Tag.TERM_QUALIFIER)) {
 					termQualifier = childElement.getTextContent();
 				} else if (childElement.getNodeName().equals(Relation.Tag.TERM_TYPE)) {
@@ -233,7 +247,7 @@ public class XmlReader {
 	}
 	
 	private TermNote parseTermNote(Element termNoteElement) {
-		TermNote termNote = new TermNote(termNoteElement.getTextContent());
+		TermNote termNote = new TermNote(sanitizeTextContent(termNoteElement.getTextContent()));
 		//Optional attributes
 		String label = null;
 		NamedNodeMap nodeAttrs = termNoteElement.getAttributes();
@@ -251,5 +265,12 @@ public class XmlReader {
 		}
 		return termNote;
 	}
-	
+
+	/**
+	 * Removes tabs, newlines and multiple whitespaces from text content string
+	 */
+	private String sanitizeTextContent(String text) {
+		return text.replaceAll("\\n", " ").replaceAll("\\t", " ").replaceAll(" +", " ").trim();
+	}
+
 }
