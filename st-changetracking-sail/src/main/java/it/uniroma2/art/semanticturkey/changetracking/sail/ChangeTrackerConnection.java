@@ -1033,16 +1033,19 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					try (RepositoryConnection supportRepoConn = sail.supportRepo.getConnection()) {
 						supportRepoConn.begin();
 
+						IRI commit = obj instanceof IRI ? (IRI) obj
+								: SimpleValueFactory.getInstance().createIRI(obj.stringValue());
+						
 						if (CHANGETRACKER.ACCEPT.equals(pred)) {
 							QueryResults.stream(HistoryRepositories.getRemovedStaments(supportRepoConn,
-									(IRI) obj, sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
+									commit, sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
 										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 												s.getContext());
 										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 												VALIDATION.stagingRemoveGraph(s.getContext()));
 									});
 							QueryResults.stream(HistoryRepositories.getAddedStaments(supportRepoConn,
-									(IRI) obj, sail.validationGraph)).forEach(s -> {
+									commit, sail.validationGraph)).forEach(s -> {
 										addStatement(s.getSubject(), s.getPredicate(), s.getObject(),
 												s.getContext());
 										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
@@ -1050,30 +1053,30 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 									});
 
 							Model validatedUserMetadataModel = HistoryRepositories.getCommitUserMetadata(
-									supportRepoConn, (IRI) obj, sail.validationGraph, true);
+									supportRepoConn, commit, sail.validationGraph, true);
 
 							stagingArea.getCommitMetadataModel().addAll(validatedUserMetadataModel);
 
 						} else if (CHANGETRACKER.REJECT.equals(pred)) {
 							QueryResults.stream(HistoryRepositories.getRemovedStaments(supportRepoConn,
-									(IRI) obj, sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
+									commit, sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
 										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 												VALIDATION.stagingRemoveGraph(s.getContext()));
 									});
 							QueryResults.stream(HistoryRepositories.getAddedStaments(supportRepoConn,
-									(IRI) obj, sail.validationGraph)).forEach(s -> {
+									commit, sail.validationGraph)).forEach(s -> {
 										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 												VALIDATION.stagingAddGraph(s.getContext()));
 									});
 
-							pendingBlacklisting = (IRI) obj;
+							pendingBlacklisting = commit;
 						} else {
 							throw new SailException("Unrecognized operation: it should be either "
 									+ NTriplesUtil.toNTriplesString(CHANGETRACKER.ACCEPT) + " or "
 									+ NTriplesUtil.toNTriplesString(CHANGETRACKER.REJECT));
 						}
 
-						pendingValidation = (IRI) obj;
+						pendingValidation = commit;
 
 						supportRepoConn.commit();
 					}

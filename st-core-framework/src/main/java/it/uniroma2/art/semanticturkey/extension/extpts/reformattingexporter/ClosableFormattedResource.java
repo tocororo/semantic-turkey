@@ -35,6 +35,10 @@ public class ClosableFormattedResource implements Closeable {
 		this.charset = charset;
 		this.originalFilename = originalFilename;
 	}
+	
+	public File getBackingFile() {
+		return backingFile;
+	}
 
 	public String getDefaultFileExtension() {
 		return defaultFileExtension;

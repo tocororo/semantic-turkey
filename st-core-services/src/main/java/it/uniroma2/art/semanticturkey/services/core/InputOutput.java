@@ -185,8 +185,8 @@ public class InputOutput extends STServiceAdapter {
 			@Nullable String format, TransitiveImportMethodAllowance transitiveImportAllowance,
 			RepositoryConnection conn, @Nullable PluginSpecification loaderSpec,
 			PluginSpecification rdfLifterSpec, TransformationPipeline transformationPipeline)
-			throws IOException, IllegalStateException, IllegalArgumentException,
-			RDF4JException, NoSuchExtensionException, WrongPropertiesException, STPropertyAccessException,
+			throws IOException, IllegalStateException, IllegalArgumentException, RDF4JException,
+			NoSuchExtensionException, WrongPropertiesException, STPropertyAccessException,
 			InvalidConfigurationException, LiftingException {
 
 		Set<IRI> failedImports = new HashSet<>();
@@ -321,7 +321,8 @@ public class InputOutput extends STServiceAdapter {
 									.orElse(null);
 						}
 
-						logger.debug("Supplied format was null. Result of the discovery: actual MIME type: " + actualMIMEType + " / original filename: "
+						logger.debug("Supplied format was null. Result of the discovery: actual MIME type: "
+								+ actualMIMEType + " / original filename: "
 								+ formattedResource.getOriginalFilename() + " / parsed data format: "
 								+ (parsedDataFormat != null ? parsedDataFormat.getName() : null));
 					}
@@ -341,6 +342,10 @@ public class InputOutput extends STServiceAdapter {
 									throws URIGenerationException {
 								return InputOutput.this.generateIRI(xRole, valueMapping);
 							}
+
+							public String getDefaultNamespace() {
+								return getProject().getDefaultNamespace();
+							};
 						});
 			}
 

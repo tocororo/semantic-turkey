@@ -244,10 +244,13 @@ public class Validation extends STServiceAdapter {
 		OperationMetadata operationMetadata = new OperationMetadata();
 		operationMetadata.setUserIRI(UsersManager.getLoggedUser().getIRI(), STCHANGELOG.VALIDATOR);
 		RepositoryConnection conn = getManagedConnection();
+
 		conn.add(operationMetadata.toRDF(), CHANGETRACKER.COMMIT_METADATA);
 		conn.prepareBooleanQuery("ASK {}").evaluate(); // flush commit metadata
 
-		conn.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ACCEPT, validatableCommit, CHANGETRACKER.VALIDATION);
+		conn.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ACCEPT,
+				conn.getValueFactory().createLiteral(validatableCommit.stringValue()),
+				CHANGETRACKER.VALIDATION);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -256,7 +259,9 @@ public class Validation extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
 	public void reject(@SkipTermValidation IRI validatableCommit, @Optional String comment) {
 		RepositoryConnection conn = getManagedConnection();
-		conn.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.REJECT, validatableCommit, CHANGETRACKER.VALIDATION);
+		conn.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.REJECT,
+				conn.getValueFactory().createLiteral(validatableCommit.stringValue()),
+				CHANGETRACKER.VALIDATION);
 		if (comment != null) {
 			conn.add(CHANGETRACKER.VALIDATION, RDFS.COMMENT, conn.getValueFactory().createLiteral(comment),
 					CHANGETRACKER.VALIDATION);

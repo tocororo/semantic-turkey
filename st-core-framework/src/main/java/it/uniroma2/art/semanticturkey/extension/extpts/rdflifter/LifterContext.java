@@ -31,4 +31,11 @@ public interface LifterContext {
 	 * @throws URIGenerationException
 	 */
 	IRI generateIRI(String xRole, Map<String, Value> valueMapping) throws URIGenerationException;
+
+	/**
+	 * Returns the default namespace of the target
+	 * 
+	 * @return the default namespace of the target
+	 */
+	String getDefaultNamespace();
 }
