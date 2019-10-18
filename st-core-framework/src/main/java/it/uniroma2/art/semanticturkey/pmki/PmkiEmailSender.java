@@ -80,7 +80,8 @@ public class PmkiEmailSender {
 			mailContent += "your pre-existing account (email address: " + contribution.contributorEmail + ").\n";
 		}
 		if (contribution.format == null) { //No conversion needed
-			String loadPageUrl = pmkiHostUrl + "#/load/dev/RDF/" + token;
+			String loadPageUrl = pmkiHostUrl + "#/load/dev/" + PmkiConversionFormat.RDF + "/" + token;
+			mailContent += "Now you can load the data at the following link " + loadPageUrl;
 		} else if (contribution.format == PmkiConversionFormat.EXCEL) {
 			mailContent += "Now you can load and convert the data directly from VocBench exploiting the Sheet2RDF tool";
 		} else if (contribution.format == PmkiConversionFormat.TBX || contribution.format == PmkiConversionFormat.ZTHES) {

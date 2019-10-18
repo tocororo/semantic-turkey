@@ -1,10 +1,12 @@
 package it.uniroma2.art.semanticturkey.pmki;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
@@ -21,17 +23,25 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 public class RemoteVBConnector {
@@ -173,6 +183,43 @@ public class RemoteVBConnector {
 		httpPost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
 
 		CloseableHttpResponse response = httpClient.execute(httpPost);
+		return processResponse(response);
+	}
+
+	public ObjectNode getProjectInfo(String projectName) throws IOException, URISyntaxException {
+		String requestUrl = stHost + "semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/Projects/getProjectInfo";
+		URIBuilder builder = new URIBuilder(requestUrl);
+		builder.setParameter("consumer", ProjectConsumer.SYSTEM.getName());
+		builder.setParameter("projectName", projectName);
+		HttpGet httpGet = new HttpGet(builder.build());
+		httpGet.addHeader(HttpHeaders.ACCEPT, "application/json");
+		//Execute and get the response
+		HttpResponse response = httpClient.execute(httpGet);
+		return processResponse(response);
+	}
+
+	public ObjectNode loadRDF(String projectName, String baseURI, File file, String format,
+			PluginSpecification rdfLifterSpec, TransitiveImportMethodAllowance transitiveImportAllowance)
+			throws URISyntaxException, IOException {
+
+		String requestUrl = stHost + "semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/InputOutput/loadRDF";
+		URIBuilder uriBuilder = new URIBuilder(requestUrl);
+		uriBuilder.setParameter("ctx_project", projectName);
+		HttpPost httpPost = new HttpPost(uriBuilder.build());
+
+		MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+		builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+		FileBody fileBody = new FileBody(file, ContentType.DEFAULT_BINARY);
+		builder.addPart("inputFile", fileBody);
+		builder.addPart("baseURI", new StringBody(baseURI, ContentType.MULTIPART_FORM_DATA));
+		builder.addPart("transformationPipeline", new StringBody("[]", ContentType.MULTIPART_FORM_DATA));
+		builder.addPart("rdfLifterSpec", new StringBody(mapper.writeValueAsString(rdfLifterSpec), ContentType.MULTIPART_FORM_DATA));
+		builder.addPart("format", new StringBody(format, ContentType.MULTIPART_FORM_DATA));
+		builder.addPart("transitiveImportAllowance", new StringBody(transitiveImportAllowance.name(), ContentType.MULTIPART_FORM_DATA));
+
+		HttpEntity entity = builder.build();
+		httpPost.setEntity(entity);
+		HttpResponse response = httpClient.execute(httpPost);
 		return processResponse(response);
 	}
 

@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
 
+import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
@@ -224,7 +225,6 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation
-	// TODO @PreAuthorize
 	public List<ProjectInfo> listProjects(@Optional ProjectConsumer consumer,
 			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
 			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel,
@@ -245,6 +245,38 @@ public class Projects extends STServiceAdapter {
 			}
 		}
 
+		return listProjInfo;
+	}
+
+	/**
+	 * Returns the projects where there is at least a user with the given role
+	 * @param consumer
+	 * @param role
+	 * @param requestedAccessLevel
+	 * @param requestedLockLevel
+	 * @param onlyOpen
+	 * @return
+	 * @throws ProjectAccessException
+	 */
+	@STServiceOperation
+	public List<ProjectInfo> listProjectsPerRole(@Optional ProjectConsumer consumer, String role,
+			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
+			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel,
+			@Optional(defaultValue = "false") boolean onlyOpen) throws ProjectAccessException {
+		List<ProjectInfo> listProjInfo = new ArrayList<>();
+
+		for (AbstractProject absProj : ProjectManager.listProjects(consumer)) {
+			ProjectInfo projInfo = getProjectInfoHelper(consumer, requestedAccessLevel, requestedLockLevel, false, onlyOpen, absProj);
+			if (projInfo != null) {
+				Collection<ProjectUserBinding> puBindings = ProjectUserBindingsManager.listPUBindingsOfProject(absProj);
+				for (ProjectUserBinding pub : puBindings) { //looks into the bindings if there is at least one with the given role
+					if (pub.getRoles().stream().anyMatch(r -> r.getName().equals(role))) { //the PU binding has the given role
+						listProjInfo.add(projInfo);
+						break; //project added, no need to look for other PUBindings
+					}
+				}
+			}
+		}
 		return listProjInfo;
 	}
 
@@ -327,9 +359,8 @@ public class Projects extends STServiceAdapter {
 			CorruptedProject proj = (CorruptedProject) absProj;
 			status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
 		}
-		ProjectInfo projInfo = new ProjectInfo(name, open, baseURI, defaultNamespace, model,
+		return new ProjectInfo(name, open, baseURI, defaultNamespace, model,
 				lexicalizationModel, historyEnabled, validationEnabled, access, repoLocation, status);
-		return projInfo;
 	}
 
 	/**
@@ -352,19 +383,16 @@ public class Projects extends STServiceAdapter {
 	 * as the previous</li>
 	 * </ul>
 	 * 
-	 * 
-	 * @param projectName
 	 * @return
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
 	 * @throws ProjectAccessException
 	 * @throws IOException
-	 * @throws ForbiddenProjectAccessException
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
 	public JsonNode getAccessStatusMap() throws InvalidProjectNameException, ProjectInexistentException,
-			ProjectAccessException, ForbiddenProjectAccessException {
+			ProjectAccessException {
 
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode responseNode = jsonFactory.arrayNode();
@@ -392,7 +420,7 @@ public class Projects extends STServiceAdapter {
 				// ACL for other ProjectConsumer
 				for (AbstractProject absCons : consumers) {
 					if (absCons instanceof Project) {
-						consumer = (Project) absCons;
+						consumer = absCons;
 						consumerAclNode = createConsumerAclNode(project, consumer);
 						consumerArrayNode.add(consumerAclNode);
 					}
@@ -474,8 +502,7 @@ public class Projects extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'D')")
-	public void deleteProject(ProjectConsumer consumer, String projectName)
-			throws ProjectDeletionException, IOException {
+	public void deleteProject(ProjectConsumer consumer, String projectName) throws ProjectDeletionException {
 		ProjectManager.deleteProject(projectName);
 	}
 
@@ -573,10 +600,10 @@ public class Projects extends STServiceAdapter {
 	}
 
 	/**
-	 * 
-	 * 
-	 * @param projectName
-	 * @return
+	 *
+	 *
+	 * @param importPackage
+	 * @param newProjectName
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectUpdateException
 	 * @throws ProjectInconsistentException
@@ -591,8 +618,7 @@ public class Projects extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'C')")
 	public void importProject(MultipartFile importPackage, String newProjectName)
 			throws IOException, ProjectCreationException, DuplicatedResourceException,
-			ProjectInconsistentException, ProjectUpdateException, InvalidProjectNameException,
-			ProjectBindingException, ProjectInexistentException, ProjectAccessException {
+			ProjectInconsistentException, ProjectUpdateException, InvalidProjectNameException {
 
 		logger.debug("requested to import project from file: " + importPackage);
 
@@ -623,12 +649,10 @@ public class Projects extends STServiceAdapter {
 
 	/**
 	 * this service returns a list name-value for all the property of a given project. Returns a response with
-	 * elements called {@link #propertyTag} with attributes {@link #propNameAttr} for property name and
+	 * elements called {@code propertyTag} with attributes {@code propNameAttr} for property name and
 	 * 
 	 * @param projectName
 	 *            (optional)the project queried for properties
-	 * @param propNameList
-	 *            a ";" separated list of property names
 	 * @return
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
@@ -638,8 +662,7 @@ public class Projects extends STServiceAdapter {
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
 	public Collection<ProjectPropertyInfo> getProjectPropertyMap(String projectName)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			IOException {
+			throws InvalidProjectNameException, ProjectInexistentException, IOException {
 
 		return ProjectManager.getProjectPropertyMap(projectName).entrySet().stream()
 				.map(entry -> new ProjectPropertyInfo(entry.getKey(), entry.getValue()))
@@ -648,12 +671,10 @@ public class Projects extends STServiceAdapter {
 
 	/**
 	 * this service returns a list name-value for all the property of a given project. Returns a response with
-	 * elements called {@link #propertyTag} with attributes {@link #propNameAttr} for property name and
+	 * elements called {@code propertyTag} with attributes {@code propNameAttr} for property name and
 	 * 
 	 * @param projectName
 	 *            (optional)the project queried for properties
-	 * @param propNameList
-	 *            a ";" separated list of property names
 	 * @return
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
@@ -663,14 +684,13 @@ public class Projects extends STServiceAdapter {
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
 	public String getProjectPropertyFileContent(String projectName) throws InvalidProjectNameException,
-			ProjectInexistentException, ProjectAccessException, IOException {
+			ProjectInexistentException, IOException {
 		return ProjectManager.getProjectPropertyFileContent(projectName);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void saveProjectPropertyFileContent(String projectName, String content)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			IOException {
+			throws InvalidProjectNameException, ProjectInexistentException, IOException {
 		ProjectManager.saveProjectPropertyFileContent(projectName, content);
 	}
 
@@ -853,8 +873,9 @@ public class Projects extends STServiceAdapter {
 
 	/**
 	 * Preloads data from URL.
-	 * 
-	 * @param preloadedDatasetURL
+	 *
+	 * @param preloadedDataURL
+	 * @param preloadedDataFormat
 	 * @return
 	 * @throws IOException
 	 * @throws FileNotFoundException

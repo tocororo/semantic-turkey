@@ -29,6 +29,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConf
 import it.uniroma2.art.semanticturkey.pmki.PendingContributions;
 import it.uniroma2.art.semanticturkey.pmki.PmkiConstants;
 import it.uniroma2.art.semanticturkey.pmki.PmkiConstants.PmkiRole;
+import it.uniroma2.art.semanticturkey.pmki.PmkiConversionFormat;
 import it.uniroma2.art.semanticturkey.pmki.PmkiEmailSender;
 import it.uniroma2.art.semanticturkey.pmki.RemoteVBConnector;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
@@ -107,8 +108,9 @@ public class PMKI extends STServiceAdapter {
 
 	/**
 	 * Initializes all that stuff needed in PMKI.
-	 * 	 * - The roles: pmki-public, pmki-pristine, pmki-staging
-	 * 	 * - The visitor user
+	 * * - The roles: pmki-public, pmki-pristine, pmki-staging
+	 * * - The visitor user
+	 *
 	 * @throws IOException
 	 * @throws UserException
 	 */
@@ -129,7 +131,6 @@ public class PMKI extends STServiceAdapter {
 	}
 
 	/**
-	 *
 	 * @throws IOException
 	 * @throws STPropertyAccessException
 	 */
@@ -146,7 +147,6 @@ public class PMKI extends STServiceAdapter {
 	}
 
 	/**
-	 *
 	 * @param mailTo
 	 * @throws UnsupportedEncodingException
 	 * @throws MessagingException
@@ -203,6 +203,7 @@ public class PMKI extends STServiceAdapter {
 
 	/**
 	 * Approves a stable-resource contribution request
+	 *
 	 * @param projectName
 	 * @param model
 	 * @param lexicalizationModel
@@ -312,8 +313,8 @@ public class PMKI extends STServiceAdapter {
 
 			PmkiEmailSender.sendAcceptedStableResourceContributionMail(reference, contribution, projectName, pmkiHostAddress, token);
 
-			//In order to support the testing, the deletion of the configuration is temporarily skipped TODO restore
-			//exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
+			//contribution approved => delete it from the store
+			exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
 		} catch (MessagingException e) {
 			//failed to send email, it will not be possible to complete the contribution => delete the project just created
 			ProjectManager.disconnectFromProject(ProjectConsumer.SYSTEM, projectName);
@@ -324,6 +325,7 @@ public class PMKI extends STServiceAdapter {
 
 	/**
 	 * Approves a development-resource contribution request
+	 *
 	 * @param projectName
 	 * @param model
 	 * @param lexicalizationModel
@@ -367,7 +369,8 @@ public class PMKI extends STServiceAdapter {
 		try { //surrounded in a try catch since the user email could be already used => user already registered
 			String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~`!@#$%^&*()-_=+[{]}\\|;:\'\",<.>/?";
 			String tempUserPwd = RandomStringUtils.random(15, characters);
-			vbConnector.registerUser(contribution.contributorEmail, tempUserPwd, contribution.contributorName, contribution.contributorLastName, contribution.contributorOrganization);
+			vbConnector.registerUser(contribution.contributorEmail, tempUserPwd, contribution.contributorName,
+					contribution.contributorLastName, contribution.contributorOrganization);
 			vbConnector.enableUser(contribution.contributorEmail);
 			userPassword = tempUserPwd;
 		} catch (IOException e) {
@@ -379,18 +382,23 @@ public class PMKI extends STServiceAdapter {
 		/* send email notification to the contributor */
 		//generate a random token
 		String token = new BigInteger(130, new SecureRandom()).toString(32);
+		PmkiEmailSender.sendAcceptedDevResourceContributionMail(reference, contribution, projectName,
+				pmkiHostAddress, token, vbConnector.getVocbenchUrl(), userPassword);
 		//add the pair token-project to the pending contribution
-		new PendingContributions().addPendingContribution(token, projectName);
-		PmkiEmailSender.sendAcceptedDevResourceContributionMail(reference, contribution, projectName, pmkiHostAddress, token, vbConnector.getVocbenchUrl(), userPassword);
+		//(only if the conversion is not excel, since this requires the load directly on VB)
+		if (contribution.format != PmkiConversionFormat.EXCEL) {
+			new PendingContributions().addPendingContribution(token, projectName);
+		}
 
-		//In order to support the testing, the deletion of the configuration is temporarily skipped TODO restore
-		//exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
+		//contribution approved => delete it from the store
+		exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
 
 
 	}
 
 	/**
 	 * Approves a metadata contribution request
+	 *
 	 * @param configurationReference
 	 * @throws MetadataRegistryWritingException
 	 * @throws NoSuchConfigurationManager
@@ -402,7 +410,6 @@ public class PMKI extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void approveMetadataContribution(String configurationReference) throws MetadataRegistryWritingException, NoSuchConfigurationManager, WrongPropertiesException, ConfigurationNotFoundException, STPropertyAccessException, IOException {
-
 		Reference reference = parseReference(configurationReference);
 
 		StoredMetadataContributionConfiguration config =
@@ -426,16 +433,14 @@ public class PMKI extends STServiceAdapter {
 			}
 
 		}
-
-		//In order to support the testing, the deletion of the configuration is temporarily skipped TODO restore
-		//exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
+		//contribution approved => delete it from the store
+		exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
 	}
 
 	/**
-	 *
 	 * @param token
 	 * @param projectName
-	 * @param file
+	 * @param inputFile
 	 * @param format
 	 * @throws STPropertyAccessException
 	 * @throws IOException
@@ -446,7 +451,8 @@ public class PMKI extends STServiceAdapter {
 	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void loadStableContributionData(String token, String projectName, MultipartFile file, String format)
+	public void loadStableContributionData(String token, String projectName, MultipartFile inputFile, String format,
+			PluginSpecification rdfLifterSpec, TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws STPropertyAccessException, IOException, InvalidConfigurationException, WrongPropertiesException,
 			LiftingException, ProjectBindingException, STPropertyUpdateException {
 		Project project = ProjectManager.getProject(projectName);
@@ -458,13 +464,13 @@ public class PMKI extends STServiceAdapter {
 		String contribProjName = pendingContributions.getPendingContributionProject(token);
 
 		if (contribProjName == null) { //wrong token
-			throw new IllegalArgumentException("The contribution you're trying to complete does not exist. It might be expired");
+			throw new IllegalArgumentException("The contribution you're trying to complete does not exist or it might be expired");
 		} else if (!projectName.equals(contribProjName)) { //token ok, wrong project name
 			throw new IllegalArgumentException("The provided project name does not correspond to the contribution you're trying to complete");
 		} else { //token+projectName are ok
 			//Load data exploiting the InputOutput service class
 			TransformationPipeline pipeline = new TransformationPipeline(new TransformationStep[0]);
-			inputOutputService.loadRDF(file, project.getBaseURI(), format, TransitiveImportMethodAllowance.web, null, null, pipeline, false);
+			inputOutputService.loadRDF(inputFile, project.getBaseURI(), format, transitiveImportAllowance, null, rdfLifterSpec, pipeline, false);
 
 			//Update the status of the project from pristine to staging
 			STUser visitor = UsersManager.getUserByEmail(PmkiConstants.PMKI_VISITOR_EMAIL);
@@ -474,6 +480,49 @@ public class PMKI extends STServiceAdapter {
 			//remove the stored pending contribution
 			pendingContributions.removePendingContribution(token);
 		}
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	public void loadDevContributionData(String token, String projectName, MultipartFile inputFile,
+			String format, PluginSpecification rdfLifterSpec, TransitiveImportMethodAllowance transitiveImportAllowance)
+			throws STPropertyAccessException, IOException, STPropertyUpdateException, URISyntaxException {
+
+		PendingContributions pendingContributions = new PendingContributions();
+		String contribProjName = pendingContributions.getPendingContributionProject(token);
+
+		if (contribProjName == null) { //wrong token
+			throw new IllegalArgumentException("The contribution you're trying to complete does not exist or it might be expired");
+		} else if (!projectName.equals(contribProjName)) { //token ok, wrong project name
+			throw new IllegalArgumentException("The provided project name does not correspond to the contribution you're trying to complete");
+		} else { //token+projectName are ok
+			RemoteVBConnector vbConnector = new RemoteVBConnector();
+			vbConnector.loginAdmin();
+
+			ObjectNode projInfoJson = vbConnector.getProjectInfo(projectName);
+			String baseURI = projInfoJson.findValue("baseURI").asText();
+
+			File tempServerFile = File.createTempFile("loadRdf", inputFile.getOriginalFilename());
+			inputFile.transferTo(tempServerFile);
+
+			vbConnector.loadRDF(projectName, baseURI, tempServerFile, format, rdfLifterSpec, transitiveImportAllowance);
+
+			//remove the stored pending contribution
+			pendingContributions.removePendingContribution(token);
+		}
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void setProjectStatus(String projectName, String status) throws ProjectBindingException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+		STUser visitor = UsersManager.getUserByEmail(PmkiConstants.PMKI_VISITOR_EMAIL);
+		Project project = ProjectManager.getProjectDescription(projectName);
+
+		ProjectUserBindingsManager.removeAllRoleFromPUBinding(visitor, project);
+		Role role = RBACManager.getRole(null, status);
+		if (role == null) {
+			throw new IllegalArgumentException("'" + status + "' is not a valid role");
+		}
+		ProjectUserBindingsManager.addRoleToPUBinding(visitor, project, role);
 	}
 
 }

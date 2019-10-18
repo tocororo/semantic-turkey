@@ -11,10 +11,6 @@ public class StoredStableResourceContributionConfiguration extends StoredContrib
 		return "Stored RDF dataset Contribution";
 	}
 
-	@STProperty(description = "Name of the resource", displayName = "Name")
-	@Required
-	public String resourceName;
-
 	@STProperty(description = "Homepage URL of the resource", displayName = "Homepage")
 	public String homepage;
 

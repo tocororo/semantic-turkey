@@ -22,6 +22,10 @@ public abstract class StoredContributionConfiguration implements Configuration {
 	@STProperty(description = "Organization of the contributor", displayName = "Organization")
 	public String contributorOrganization;
 
+	@STProperty(description = "Name of the resource", displayName = "Name")
+	@Required
+	public String resourceName;
+
 	@STProperty(description = "BaseURI of the resource", displayName = "BaseURI")
 	@Required
 	public IRI baseURI;

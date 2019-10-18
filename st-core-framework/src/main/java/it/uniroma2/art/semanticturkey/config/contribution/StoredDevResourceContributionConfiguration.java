@@ -13,11 +13,7 @@ public class StoredDevResourceContributionConfiguration extends StoredContributi
 	}
 
 	@STProperty(description = "Input format of the resource to convert", displayName = "Format")
-	public PmkiConversionFormat format;
-
-	@STProperty(description = "Name of the resource", displayName = "Name")
-	@Required
-	public String resourceName;
+	public PmkiConversionFormat format; //if not provided, the contribution does not require conversion, the data is already RDF
 
 	@STProperty(description = "Homepage URL of the resource", displayName = "Homepage")
 	public String homepage;

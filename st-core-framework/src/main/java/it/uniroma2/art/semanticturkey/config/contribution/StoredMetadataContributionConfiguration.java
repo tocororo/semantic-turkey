@@ -15,10 +15,6 @@ public class StoredMetadataContributionConfiguration extends StoredContributionC
 
 	@STProperty(description = "Name of the resource", displayName = "Name")
 	@Required
-	public String resourceName; //equivalent of title in it.uniroma2.art.semanticturkey.resources.DatasetMetadata
-
-	@STProperty(description = "Name of the resource", displayName = "Name")
-	@Required
 	public IRI identity;
 
 	@STProperty(description = "URI space", displayName = "URI space")

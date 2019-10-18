@@ -14,6 +14,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Represents a contribution approved by the administrator (the projects has been created)
+ * which the data has still not loaded by the contributor.
+ * A PendingContribution is useful in order to check that the token and the project passed by the contributor
+ * matches and so the contributor is authorized to load the data.
+ * A PendingContribution is stored as Json serialized object in a system setting file.
+ */
 public class PendingContributions {
 
 	private static final String SETTING_KEY = "pmki.pending_contribution_map";
@@ -92,7 +99,6 @@ public class PendingContributions {
 		public long getTimestamp() {
 			return timestamp;
 		}
-
 	}
 
 }
