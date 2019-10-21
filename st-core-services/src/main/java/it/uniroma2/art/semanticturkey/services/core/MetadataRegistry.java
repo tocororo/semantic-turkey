@@ -339,7 +339,7 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * @throws DeniedOperationException
 	 * @throws MetadataDiscoveryException
 	 */
-	@STServiceOperation(method = RequestMethod.POST)
+	@STServiceOperation
 	public DatasetMetadata discoverDatasetMetadata(IRI iri)
 			throws ProjectAccessException, DeniedOperationException, MetadataDiscoveryException {
 		DatasetMetadata datasetMeta = metadataRegistryBackend.findDatasetForResource(iri);
