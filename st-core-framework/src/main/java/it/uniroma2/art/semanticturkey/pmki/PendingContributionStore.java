@@ -1,7 +1,5 @@
 package it.uniroma2.art.semanticturkey.pmki;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,21 +12,14 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Represents a contribution approved by the administrator (the projects has been created)
- * which the data has still not loaded by the contributor.
- * A PendingContribution is useful in order to check that the token and the project passed by the contributor
- * matches and so the contributor is authorized to load the data.
- * A PendingContribution is stored as Json serialized object in a system setting file.
- */
-public class PendingContributions {
+public class PendingContributionStore {
 
 	private static final String SETTING_KEY = "pmki.pending_contribution_map";
 
 	private Map<String, PendingContribution> pendingContributions; //token -> pendingContribution
 	private ObjectMapper mapper;
 
-	public PendingContributions() throws STPropertyAccessException, IOException {
+	public PendingContributionStore() throws STPropertyAccessException, IOException {
 		mapper = new ObjectMapper();
 		String pendingContribSetting = STPropertiesManager.getSystemSetting(SETTING_KEY, this.getClass().getName());
 		if (pendingContribSetting != null) {
@@ -38,23 +29,19 @@ public class PendingContributions {
 		}
 	}
 
-	public void addPendingContribution(String token, String projectName) throws STPropertyUpdateException, JsonProcessingException {
-		pendingContributions.put(token, new PendingContribution(projectName));
+	public void addPendingContribution(String token, String projectName, String contributorEmail, String contributorName,
+			String contributorLastName) throws STPropertyUpdateException, JsonProcessingException {
+		pendingContributions.put(token, new PendingContribution(projectName, contributorEmail, contributorName, contributorLastName));
 		this.store();
 	}
 
 	/**
-	 * Given a token returns the related project name (if any)
+	 * Given a token returns the related pending contribution (if any)
 	 * @param token
 	 * @return the project name of the pending contribution related to the token. Null if the token has no pending contribution
 	 */
-	public String getPendingContributionProject(String token) {
-		PendingContribution pc = pendingContributions.get(token);
-		if (pc != null) {
-			return pc.getProjectName();
-		} else { //no pending contribution (wrong token or contribution expired
-			return null;
-		}
+	public PendingContribution getPendingContribution(String token) {
+		return pendingContributions.get(token);
 	}
 
 	public void removePendingContribution(String token) throws STPropertyUpdateException, JsonProcessingException {
@@ -74,31 +61,6 @@ public class PendingContributions {
 	private void clean() {
 		long currentTime = System.currentTimeMillis();
 		pendingContributions.entrySet().removeIf(pc -> currentTime - pc.getValue().getTimestamp() > DateUtils.MILLIS_PER_DAY * 30);
-	}
-
-
-	private static class PendingContribution {
-		private String projectName;
-		private long timestamp;
-
-		@JsonCreator
-		public PendingContribution(@JsonProperty("projectName") String projectName, @JsonProperty("timestamp") long timestamp) {
-			this.projectName = projectName;
-			this.timestamp = timestamp;
-		}
-
-		public PendingContribution(String projectName) {
-			this.projectName = projectName;
-			timestamp = System.currentTimeMillis();
-		}
-
-		public String getProjectName() {
-			return projectName;
-		}
-
-		public long getTimestamp() {
-			return timestamp;
-		}
 	}
 
 }

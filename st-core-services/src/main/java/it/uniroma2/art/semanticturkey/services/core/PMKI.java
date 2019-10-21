@@ -26,7 +26,8 @@ import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.pmki.PendingContributions;
+import it.uniroma2.art.semanticturkey.pmki.PendingContribution;
+import it.uniroma2.art.semanticturkey.pmki.PendingContributionStore;
 import it.uniroma2.art.semanticturkey.pmki.PmkiConstants;
 import it.uniroma2.art.semanticturkey.pmki.PmkiConstants.PmkiRole;
 import it.uniroma2.art.semanticturkey.pmki.PmkiConversionFormat;
@@ -180,9 +181,13 @@ public class PMKI extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void submitContribution(ObjectNode configuration) throws NoSuchConfigurationManager, IOException,
-			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException, MessagingException {
-		exptManager.storeConfiguration(ContributionStore.class.getName(), new Reference(null, null, String.valueOf(System.currentTimeMillis())), configuration);
-		PmkiEmailSender.sendContributionSubmittedMail();
+			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException, MessagingException,
+			ConfigurationNotFoundException {
+		Reference contribRef = new Reference(null, null, String.valueOf(System.currentTimeMillis()));
+		exptManager.storeConfiguration(ContributionStore.class.getName(), contribRef, configuration);
+		StoredContributionConfiguration contribution = (StoredContributionConfiguration)
+				exptManager.getConfiguration(ContributionStore.class.getName(), contribRef);
+		PmkiEmailSender.sendContributionSubmittedMail(contribution);
 	}
 
 	/**
@@ -195,9 +200,9 @@ public class PMKI extends STServiceAdapter {
 	public void rejectContribution(String relativeReference)
 			throws NoSuchConfigurationManager, ConfigurationNotFoundException, WrongPropertiesException, IOException, STPropertyAccessException, MessagingException {
 		Reference reference = parseReference(relativeReference);
-		exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
 		StoredContributionConfiguration config = (StoredContributionConfiguration) exptManager.getConfiguration(
 				ContributionStore.class.getName(), reference);
+		exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
 		PmkiEmailSender.sendRejectedContributionMail(reference, config);
 	}
 
@@ -309,7 +314,8 @@ public class PMKI extends STServiceAdapter {
 			//generate a random token
 			String token = new BigInteger(130, new SecureRandom()).toString(32);
 			//add the pair token-project to the pending contribution
-			new PendingContributions().addPendingContribution(token, projectName);
+			new PendingContributionStore().addPendingContribution(token, projectName, contribution.contributorEmail,
+					contribution.contributorName, contribution.contributorLastName);
 
 			PmkiEmailSender.sendAcceptedStableResourceContributionMail(reference, contribution, projectName, pmkiHostAddress, token);
 
@@ -357,43 +363,48 @@ public class PMKI extends STServiceAdapter {
 		 * with http requests to the SemanticTurkey for staging project:
 		 * - login as admin
 		 * - create project
-		 * - create a user (email the one of the user and a random password)
-		 * - activate the user
-		 * - assign a role to the user in the project
+		 * According the kind of conversion required by the load
+		 * - In case of spreadsheet conversion
+		 * 		- create a user (email the one of the user and a random password)
+		 * 		- activate the user
+		 * 		- assign a role to the user in the project
+		 * 		- send an email that redirect directly to the VB instance including the credentials
+		 * - Otherwise (Zthes or Tbx conversion, or not conversion at all):
+		 * 		- send an email with the link to a load page in PMKI
+		 * 		- (only after the load, the user will be created, enabled, assigned to the project,
+		 * 			and the email with the VB instance will be send)
 		 */
 		RemoteVBConnector vbConnector = new RemoteVBConnector();
 		vbConnector.loginAdmin();
 		vbConnector.createProject(projectName, baseURI, model, lexicalizationModel, coreRepoSailConfigurerSpecification);
 
-		String userPassword = null;
-		try { //surrounded in a try catch since the user email could be already used => user already registered
-			String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~`!@#$%^&*()-_=+[{]}\\|;:\'\",<.>/?";
-			String tempUserPwd = RandomStringUtils.random(15, characters);
-			vbConnector.registerUser(contribution.contributorEmail, tempUserPwd, contribution.contributorName,
-					contribution.contributorLastName, contribution.contributorOrganization);
+		if (contribution.format == PmkiConversionFormat.EXCEL) {
+			/*
+			 * The load data of a contribution that requires the conversion from an excel file is performed
+			 * directly from the VB instance.
+			 */
+			String userPassword = createRemoteUser(vbConnector, contribution.contributorEmail,
+					contribution.contributorName, contribution.contributorLastName, contribution.contributorOrganization);
 			vbConnector.enableUser(contribution.contributorEmail);
-			userPassword = tempUserPwd;
-		} catch (IOException e) {
-			//user already registered
-		} finally {
-			vbConnector.addRolesToUser(projectName, contribution.contributorEmail, Collections.singletonList(DefaultRole.RDF_GEEK)); //rdfGeek needed for Sheet2RDF
-		}
-
-		/* send email notification to the contributor */
-		//generate a random token
-		String token = new BigInteger(130, new SecureRandom()).toString(32);
-		PmkiEmailSender.sendAcceptedDevResourceContributionMail(reference, contribution, projectName,
-				pmkiHostAddress, token, vbConnector.getVocbenchUrl(), userPassword);
-		//add the pair token-project to the pending contribution
-		//(only if the conversion is not excel, since this requires the load directly on VB)
-		if (contribution.format != PmkiConversionFormat.EXCEL) {
-			new PendingContributions().addPendingContribution(token, projectName);
+			vbConnector.addRolesToUser(projectName, contribution.contributorEmail, Collections.singletonList(DefaultRole.RDF_GEEK)); //rdf geek required for sheet2rdf
+			PmkiEmailSender.sendAcceptedDevExcelResourceContributionMail(reference, contribution, projectName,
+					vbConnector.getVocbenchUrl(), userPassword);
+		} else {
+			/*
+			 * The load data of a contribution that requires no conversion at all (data already in rdf),
+			 * or conversion from zthes or tbx, is performed on PMKI
+			 */
+			//generate a random token
+			String token = new BigInteger(130, new SecureRandom()).toString(32);
+			PmkiEmailSender.sendAcceptedDevGenericResourceContributionMail(reference, contribution, projectName,
+					pmkiHostAddress, token);
+			//add the pair token-project to the pending contribution
+			new PendingContributionStore().addPendingContribution(token, projectName, contribution.contributorEmail,
+					contribution.contributorName, contribution.contributorLastName);
 		}
 
 		//contribution approved => delete it from the store
 		exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
-
-
 	}
 
 	/**
@@ -435,6 +446,8 @@ public class PMKI extends STServiceAdapter {
 		}
 		//contribution approved => delete it from the store
 		exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
+
+		//TODO send mail
 	}
 
 	/**
@@ -451,23 +464,26 @@ public class PMKI extends STServiceAdapter {
 	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void loadStableContributionData(String token, String projectName, MultipartFile inputFile, String format,
-			PluginSpecification rdfLifterSpec, TransitiveImportMethodAllowance transitiveImportAllowance)
-			throws STPropertyAccessException, IOException, InvalidConfigurationException, WrongPropertiesException,
-			LiftingException, ProjectBindingException, STPropertyUpdateException {
+	public void loadStableContributionData(String token, String projectName, String contributorEmail,
+			MultipartFile inputFile, String format, PluginSpecification rdfLifterSpec,
+			TransitiveImportMethodAllowance transitiveImportAllowance) throws STPropertyAccessException,
+			IOException, InvalidConfigurationException, WrongPropertiesException, LiftingException,
+			ProjectBindingException, STPropertyUpdateException {
 		Project project = ProjectManager.getProject(projectName);
 		if (project == null) {
 			throw new IllegalArgumentException("Invalid project name '" + projectName + "'. It is not an open project or it does not exist");
 		}
 
-		PendingContributions pendingContributions = new PendingContributions();
-		String contribProjName = pendingContributions.getPendingContributionProject(token);
+		PendingContributionStore pendingContributionStore = new PendingContributionStore();
+		PendingContribution pendingContrib = pendingContributionStore.getPendingContribution(token);
 
-		if (contribProjName == null) { //wrong token
+		if (pendingContrib == null) { //wrong token
 			throw new IllegalArgumentException("The contribution you're trying to complete does not exist or it might be expired");
-		} else if (!projectName.equals(contribProjName)) { //token ok, wrong project name
+		} else if (!projectName.equals(pendingContrib.getProjectName())) { //token ok, wrong project name
 			throw new IllegalArgumentException("The provided project name does not correspond to the contribution you're trying to complete");
-		} else { //token+projectName are ok
+		} else if (!contributorEmail.equals(pendingContrib.getContributorEmail())) { //token ok, wrong contributor email
+			throw new IllegalArgumentException("The provided email does not correspond to the contribution you're trying to complete");
+		} else { //token+projectName+contributorEmail are ok
 			//Load data exploiting the InputOutput service class
 			TransformationPipeline pipeline = new TransformationPipeline(new TransformationStep[0]);
 			inputOutputService.loadRDF(inputFile, project.getBaseURI(), format, transitiveImportAllowance, null, rdfLifterSpec, pipeline, false);
@@ -478,23 +494,31 @@ public class PMKI extends STServiceAdapter {
 			ProjectUserBindingsManager.addRoleToPUBinding(visitor, project, PmkiRole.STAGING);
 
 			//remove the stored pending contribution
-			pendingContributions.removePendingContribution(token);
+			pendingContributionStore.removePendingContribution(token);
 		}
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void loadDevContributionData(String token, String projectName, MultipartFile inputFile,
+	public void loadDevContributionData(String token, String projectName, String contributorEmail, MultipartFile inputFile,
 			String format, PluginSpecification rdfLifterSpec, TransitiveImportMethodAllowance transitiveImportAllowance)
-			throws STPropertyAccessException, IOException, STPropertyUpdateException, URISyntaxException {
+			throws STPropertyAccessException, IOException, STPropertyUpdateException, URISyntaxException, MessagingException {
 
-		PendingContributions pendingContributions = new PendingContributions();
-		String contribProjName = pendingContributions.getPendingContributionProject(token);
+		PendingContributionStore pendingContributionStore = new PendingContributionStore();
+		PendingContribution pendingContrib = pendingContributionStore.getPendingContribution(token);
 
-		if (contribProjName == null) { //wrong token
+		if (pendingContrib == null) { //wrong token
 			throw new IllegalArgumentException("The contribution you're trying to complete does not exist or it might be expired");
-		} else if (!projectName.equals(contribProjName)) { //token ok, wrong project name
+		} else if (!projectName.equals(pendingContrib.getProjectName())) { //token ok, wrong project name
 			throw new IllegalArgumentException("The provided project name does not correspond to the contribution you're trying to complete");
-		} else { //token+projectName are ok
+		} else if (!contributorEmail.equals(pendingContrib.getContributorEmail())) { //token ok, wrong contributor email
+			throw new IllegalArgumentException("The provided email does not correspond to the contribution you're trying to complete");
+		} else { //token+projectName+contributorEmail are ok
+			/*
+			* On the remove VB instance
+			* - Login as admin
+			* - load the data
+			* - create the user, enable it and assign to the project
+			*/
 			RemoteVBConnector vbConnector = new RemoteVBConnector();
 			vbConnector.loginAdmin();
 
@@ -506,8 +530,14 @@ public class PMKI extends STServiceAdapter {
 
 			vbConnector.loadRDF(projectName, baseURI, tempServerFile, format, rdfLifterSpec, transitiveImportAllowance);
 
+			String userPassword = createRemoteUser(vbConnector, contributorEmail,
+					pendingContrib.getContributorName(), pendingContrib.getContributorLastName(), null);
+			vbConnector.enableUser(contributorEmail);
+			vbConnector.addRolesToUser(projectName, contributorEmail, Collections.singletonList(DefaultRole.RDF_GEEK));
+			PmkiEmailSender.sendLoadedDevGenericResourceContributionMail(projectName, vbConnector.getVocbenchUrl(), contributorEmail, userPassword);
+
 			//remove the stored pending contribution
-			pendingContributions.removePendingContribution(token);
+			pendingContributionStore.removePendingContribution(token);
 		}
 	}
 
@@ -523,6 +553,31 @@ public class PMKI extends STServiceAdapter {
 			throw new IllegalArgumentException("'" + status + "' is not a valid role");
 		}
 		ProjectUserBindingsManager.addRoleToPUBinding(visitor, project, role);
+	}
+
+
+	/**
+	 * Registers and enables a user on the remove ST of the VB instance.
+	 * Returns the password of the user if it is created, null if the user already existed
+	 * @param vbConnector
+	 * @param email
+	 * @param givenName
+	 * @param familyName
+	 * @param organization
+	 * @return
+	 */
+	private String createRemoteUser(RemoteVBConnector vbConnector, String email, String givenName, String familyName, String organization) {
+		String userPassword = null;
+		try { //surrounded in a try catch since the user email could be already used => user already registered
+			String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~`!@#$%^&*()-_=+[{]}\\|;:\'\",<.>/?";
+			String tempUserPwd = RandomStringUtils.random(15, characters);
+			vbConnector.registerUser(email, tempUserPwd, givenName, familyName, organization);
+			vbConnector.enableUser(email);
+			userPassword = tempUserPwd;
+		} catch (IOException e) {
+			//user already registered
+		}
+		return userPassword;
 	}
 
 }

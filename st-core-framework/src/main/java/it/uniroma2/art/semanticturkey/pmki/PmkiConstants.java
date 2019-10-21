@@ -11,7 +11,7 @@ public class PmkiConstants {
 		public static final Role STAGING = new Role("pmki_staging", RoleLevel.system);
 	}
 
-	public static final String PMKI_VISITOR_EMAIL = "pmki@pmki.eu";
+	public static final String PMKI_VISITOR_EMAIL = "public@pmki.eu";
 	public static final String PMKI_VISITOR_PWD = "pmki";
 
 }

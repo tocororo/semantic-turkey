@@ -95,12 +95,10 @@ public class RemoteVBConnector {
 		ObjectNode remoteConfigurationJson;
 
 		ObjectNode respJson = getRemoteAccessConfigurations();
-		System.out.println(respJson);
 		JsonNode remoteConfigsJson = respJson.findValue("remote_configs");
 		if (remoteConfigsJson.isTextual()) {
 			String remoteConfigsValue = remoteConfigsJson.asText();
 			ArrayNode configsJson = (ArrayNode) mapper.readTree(remoteConfigsValue);
-			System.out.println(configsJson);
 			remoteConfigurationJson = (ObjectNode) configsJson.get(0);
 		} else {
 			throw new IllegalStateException("Remote VocBench has not been configured with a'Remote Access configurations'");
