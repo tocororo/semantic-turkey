@@ -340,6 +340,28 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * @throws MetadataDiscoveryException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	public DatasetMetadata discoverDatasetMetadata(IRI iri)
+			throws ProjectAccessException, DeniedOperationException, MetadataDiscoveryException {
+		DatasetMetadata datasetMeta = metadataRegistryBackend.findDatasetForResource(iri);
+
+		if (datasetMeta != null) {
+			throw new DeniedOperationException("A dataset for the provided IRI " + RenderUtils.toSPARQL(iri)
+					+ " is already in the metadata registry: " + datasetMeta.getIdentity());
+		}
+
+		return metadataRegistryBackend.discoverDatasetMetadata(iri);
+	}
+
+	/**
+	 * Discover the metadata for a dataset given an IRI. If discovery is unsuccessful, an exception is thrown.
+	 * 
+	 * @param iri
+	 * @return the newly created dcat:CatalogRecord for the discovered dataset
+	 * @throws ProjectAccessException
+	 * @throws DeniedOperationException
+	 * @throws MetadataDiscoveryException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
 	public AnnotatedValue<IRI> discoverDataset(IRI iri)
 			throws ProjectAccessException, DeniedOperationException, MetadataDiscoveryException {

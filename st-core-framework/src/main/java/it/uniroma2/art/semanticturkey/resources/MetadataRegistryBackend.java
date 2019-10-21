@@ -242,6 +242,16 @@ public interface MetadataRegistryBackend {
 	IRI discoverDataset(IRI iri) throws MetadataDiscoveryException;
 
 	/**
+	 * Discover metadata about a dataset given an IRI without storing it persistently
+	 * 
+	 * @param iri
+	 * @return
+	 * @return the discovered metadata
+	 * @throws MetadataDiscoveryException
+	 */
+	DatasetMetadata discoverDatasetMetadata(IRI iri) throws MetadataDiscoveryException;
+
+	/**
 	 * Assess the lexicalization model of the given {@code dataset}
 	 * 
 	 * @param dataset

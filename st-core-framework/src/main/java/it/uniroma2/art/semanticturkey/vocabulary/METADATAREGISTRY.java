@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.vocabulary;
 
+import java.util.Optional;
+
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
@@ -34,7 +36,7 @@ public abstract class METADATAREGISTRY {
 
 	/** http://semanticturkey.uniroma2.it/ns/mdreg#sparqlEndpointLimitation */
 	public static final IRI SPARQL_ENDPOINT_LIMITATION;
-	
+
 	/** http://semanticturkey.uniroma2.it/ns/mdreg#noAggregation */
 	public static final IRI NO_AGGREGATION;
 
@@ -46,6 +48,16 @@ public abstract class METADATAREGISTRY {
 		NO_DEREFERENCIATION = vf.createIRI(NAMESPACE, "noDereferenciation");
 		SPARQL_ENDPOINT_LIMITATION = vf.createIRI(NAMESPACE, "sparqlEndpointLimitation");
 		NO_AGGREGATION = vf.createIRI(NAMESPACE, "noAggregation");
+	}
+
+	public static Optional<IRI> getDereferenciationSystem(Boolean b) {
+		if (b == null) {
+			return Optional.empty();
+		} else if (Boolean.TRUE.equals(b)) {
+			return Optional.of(STANDARD_DEREFERENCIATION);
+		} else {
+			return Optional.of(NO_DEREFERENCIATION);
+		}
 	}
 
 }

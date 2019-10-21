@@ -33,6 +33,7 @@ import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -52,7 +53,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -1473,15 +1473,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				versionInfo);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see it.uniroma2.art.semanticturkey.resources.M#discoverDataset(org.eclipse.rdf4j.model.IRI)
-	 */
-	@Override
-	public IRI discoverDataset(IRI iri) throws MetadataDiscoveryException {
+	protected Pair<DatasetMetadata, Model> discoverDatasetMetadataInternal(IRI iri)
+			throws MetadataDiscoveryException {
 		try {
-
 			logger.debug("Attempt to discover a dataset from {}", NTriplesUtil.toNTriplesString(iri));
 
 			Boolean datasetDeferenceable = null;
@@ -1582,7 +1576,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			}
 
 			// Use the VoID metadata (if available) to identify the VoID dataset. This happens when the
-			// donwload URL was guessed
+			// download URL was guessed
 
 			if (voidDataset == null) {
 				if (datasetUriSpace != null) {
@@ -1617,7 +1611,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 			if (voidDataset != null) {
 
-				logger.debug("Extract information hold by the VoID dataset");
+				logger.debug("Extract information held by the VoID dataset");
 
 				if (voidStatements.contains(voidDataset, null, null)) {
 					datasetTitle = Models.getPropertyLiteral(voidStatements, voidDataset, DCTERMS.TITLE)
@@ -1655,14 +1649,14 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					sparqlRepository.initialize();
 					try {
 						String exampleResourceQuery =
-						// @formatter:off
-							"SELECT ?resource {\n" +
-							"  ?resource ?p ?o .\n" +
-							"  FILTER(isIRI(?resource))\n" +
-							"  FILTER(STRSTARTS(STR(?resource), ?datasetUriSpace))\n" +
-							"}\n" +
-							"LIMIT 1\n";
-							// @formatter:on
+					// @formatter:off
+						"SELECT ?resource {\n" +
+						"  ?resource ?p ?o .\n" +
+						"  FILTER(isIRI(?resource))\n" +
+						"  FILTER(STRSTARTS(STR(?resource), ?datasetUriSpace))\n" +
+						"}\n" +
+						"LIMIT 1\n";
+						// @formatter:on
 
 						logger.debug("SPARQL Query to find example resource:\n{}", exampleResourceQuery);
 						try (RepositoryConnection conn = sparqlRepository.getConnection()) {
@@ -1698,55 +1692,89 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			}
 
 			if (datasetUriSpace != null) {
-				IRI catalogRecordIRI = addDataset(voidDataset, datasetUriSpace,
-						datasetTitle != null ? datasetTitle.stringValue() : null, datasetDeferenceable,
-						datasetSPARQLEndpoint);
-
-				if (voidDataset != null) {
-					for (IRI subset : Models
-							.objectIRIs(voidStatements.filter(voidDataset, VOID.SUBSET, null))) {
-						if (voidStatements.contains(subset, RDF.TYPE, LIME.LEXICALIZATION_SET)
-								&& voidStatements.contains(subset, LIME.REFERENCE_DATASET, voidDataset)) {
-							IRI lexiconDataset = Models
-									.getPropertyIRI(voidStatements, subset, LIME.LEXICON_DATASET)
-									.orElse(null);
-							IRI lexicalizationModel = Models
-									.getPropertyIRI(voidStatements, subset, LIME.LEXICALIZATION_MODEL)
-									.orElse(null);
-							String language = Models.getPropertyString(voidStatements, subset, LIME.LANGUAGE)
-									.orElse(null);
-							BigInteger lexicalEntries = Models
-									.getPropertyLiteral(voidStatements, subset, LIME.LEXICAL_ENTRIES)
-									.map(l -> Literals.getIntegerValue(l, BigInteger.ZERO)).orElse(null);
-							BigInteger references = Models
-									.getPropertyLiteral(voidStatements, subset, LIME.REFERENCES)
-									.map(l -> Literals.getIntegerValue(l, BigInteger.ZERO)).orElse(null);
-							BigInteger lexicalizations = Models
-									.getPropertyLiteral(voidStatements, subset, LIME.LEXICALIZATIONS)
-									.map(l -> Literals.getIntegerValue(l, BigInteger.ZERO)).orElse(null);
-							BigDecimal percentage = Models
-									.getPropertyLiteral(voidStatements, subset, LIME.PERCENTAGE)
-									.map(l -> Literals.getDecimalValue(l, BigDecimal.ZERO)).orElse(null);
-							BigDecimal avgNumOfLexicalizations = Models
-									.getPropertyLiteral(voidStatements, subset,
-											LIME.AVG_NUM_OF_LEXICALIZATIONS)
-									.map(l -> Literals.getDecimalValue(l, BigDecimal.ZERO)).orElse(null);
-
-							if (language == null || lexicalizationModel == null)
-								continue;
-
-							addEmbeddedLexicalizationSet(voidDataset, null, lexiconDataset,
-									lexicalizationModel, language, references, lexicalEntries,
-									lexicalizations, percentage, avgNumOfLexicalizations);
-						}
-					}
-				}
-
-				return catalogRecordIRI;
+				return ImmutablePair.of(new DatasetMetadata(voidDataset, datasetUriSpace,
+						datasetTitle != null ? datasetTitle.stringValue() : null,
+						METADATAREGISTRY.getDereferenciationSystem(datasetDeferenceable).orElse(null),
+						datasetSPARQLEndpoint != null
+								? new DatasetMetadata.SPARQLEndpointMedatadata(datasetSPARQLEndpoint,
+										Collections.emptySet())
+								: null,
+						null), voidStatements);
 			} else {
 				throw new MetadataDiscoveryException(
 						"Could not discover a dataset from " + RenderUtils.toSPARQL(iri));
 			}
+
+		} catch (MetadataDiscoveryException e) {
+			throw e; // pass through the exception without wrapping it further
+		} catch (MalformedURLException e) {
+			throw new MetadataDiscoveryException(e);
+		}
+	}
+
+	@Override
+	public DatasetMetadata discoverDatasetMetadata(IRI iri) throws MetadataDiscoveryException {
+		return discoverDatasetMetadataInternal(iri).getLeft();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see it.uniroma2.art.semanticturkey.resources.M#discoverDataset(org.eclipse.rdf4j.model.IRI)
+	 */
+	@Override
+	public IRI discoverDataset(IRI iri) throws MetadataDiscoveryException {
+		Pair<DatasetMetadata, Model> pair = discoverDatasetMetadataInternal(iri);
+		DatasetMetadata datasetMetadata = pair.getLeft();
+		Model voidStatements = pair.getRight();
+		try {
+			IRI catalogRecordIRI = addDataset(datasetMetadata.getIdentity(),
+					datasetMetadata.getUriSpace().orElse(null), datasetMetadata.getTitle().orElse(null),
+					datasetMetadata.getDereferenciationSystem()
+							.map(u -> METADATAREGISTRY.STANDARD_DEREFERENCIATION.equals(u)).orElse(null),
+					datasetMetadata.getSparqlEndpoint().orElse(null));
+
+			IRI voidDataset = datasetMetadata.getIdentity();
+
+			if (voidDataset != null) {
+				for (IRI subset : Models.objectIRIs(voidStatements.filter(voidDataset, VOID.SUBSET, null))) {
+					if (voidStatements.contains(subset, RDF.TYPE, LIME.LEXICALIZATION_SET)
+							&& voidStatements.contains(subset, LIME.REFERENCE_DATASET, voidDataset)) {
+						IRI lexiconDataset = Models
+								.getPropertyIRI(voidStatements, subset, LIME.LEXICON_DATASET).orElse(null);
+						IRI lexicalizationModel = Models
+								.getPropertyIRI(voidStatements, subset, LIME.LEXICALIZATION_MODEL)
+								.orElse(null);
+						String language = Models.getPropertyString(voidStatements, subset, LIME.LANGUAGE)
+								.orElse(null);
+						BigInteger lexicalEntries = Models
+								.getPropertyLiteral(voidStatements, subset, LIME.LEXICAL_ENTRIES)
+								.map(l -> Literals.getIntegerValue(l, BigInteger.ZERO)).orElse(null);
+						BigInteger references = Models
+								.getPropertyLiteral(voidStatements, subset, LIME.REFERENCES)
+								.map(l -> Literals.getIntegerValue(l, BigInteger.ZERO)).orElse(null);
+						BigInteger lexicalizations = Models
+								.getPropertyLiteral(voidStatements, subset, LIME.LEXICALIZATIONS)
+								.map(l -> Literals.getIntegerValue(l, BigInteger.ZERO)).orElse(null);
+						BigDecimal percentage = Models
+								.getPropertyLiteral(voidStatements, subset, LIME.PERCENTAGE)
+								.map(l -> Literals.getDecimalValue(l, BigDecimal.ZERO)).orElse(null);
+						BigDecimal avgNumOfLexicalizations = Models
+								.getPropertyLiteral(voidStatements, subset, LIME.AVG_NUM_OF_LEXICALIZATIONS)
+								.map(l -> Literals.getDecimalValue(l, BigDecimal.ZERO)).orElse(null);
+
+						if (language == null || lexicalizationModel == null)
+							continue;
+
+						addEmbeddedLexicalizationSet(voidDataset, null, lexiconDataset, lexicalizationModel,
+								language, references, lexicalEntries, lexicalizations, percentage,
+								avgNumOfLexicalizations);
+					}
+				}
+			}
+
+			return catalogRecordIRI;
+
 		} catch (Exception e) {
 			throw new MetadataDiscoveryException(e);
 		}
