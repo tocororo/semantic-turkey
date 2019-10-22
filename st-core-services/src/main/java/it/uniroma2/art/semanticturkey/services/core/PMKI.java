@@ -420,7 +420,9 @@ public class PMKI extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void approveMetadataContribution(String configurationReference) throws MetadataRegistryWritingException, NoSuchConfigurationManager, WrongPropertiesException, ConfigurationNotFoundException, STPropertyAccessException, IOException {
+	public void approveMetadataContribution(String configurationReference)
+			throws MetadataRegistryWritingException, NoSuchConfigurationManager, WrongPropertiesException,
+			ConfigurationNotFoundException, STPropertyAccessException, IOException, MessagingException {
 		Reference reference = parseReference(configurationReference);
 
 		StoredMetadataContributionConfiguration config =
@@ -439,15 +441,15 @@ public class PMKI extends STServiceAdapter {
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
 			Model model = QueryResults.asModel(conn.getStatements(record, FOAF.PRIMARY_TOPIC, null));
 			IRI datasetIRI = Models.objectIRI(model).orElse(null);
-			if (!config.sparqlLimitations.isEmpty()) { //if it's not empty, set just the first since at the moment we have just a limitation (aggregation)
+			if (config.sparqlLimitations != null && !config.sparqlLimitations.isEmpty()) {
+				//if it's not empty, set just the first since at the moment we have just a limitation (aggregation)
 				metadataRegistryBackend.setSPARQLEndpointLimitation(datasetIRI, config.sparqlLimitations.iterator().next());
 			}
 
 		}
+		PmkiEmailSender.sendAcceptedMetadataContributionMail(reference, config);
 		//contribution approved => delete it from the store
 		exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
-
-		//TODO send mail
 	}
 
 	/**
@@ -468,7 +470,7 @@ public class PMKI extends STServiceAdapter {
 			MultipartFile inputFile, String format, PluginSpecification rdfLifterSpec,
 			TransitiveImportMethodAllowance transitiveImportAllowance) throws STPropertyAccessException,
 			IOException, InvalidConfigurationException, WrongPropertiesException, LiftingException,
-			ProjectBindingException, STPropertyUpdateException {
+			ProjectBindingException, STPropertyUpdateException, MessagingException {
 		Project project = ProjectManager.getProject(projectName);
 		if (project == null) {
 			throw new IllegalArgumentException("Invalid project name '" + projectName + "'. It is not an open project or it does not exist");
@@ -495,6 +497,9 @@ public class PMKI extends STServiceAdapter {
 
 			//remove the stored pending contribution
 			pendingContributionStore.removePendingContribution(token);
+
+			PmkiEmailSender.sendLoadedStableResourceContributionMail(projectName, pendingContrib.getContributorName(),
+					pendingContrib.getContributorLastName(), pendingContrib.getContributorEmail());
 		}
 	}
 
@@ -569,7 +574,7 @@ public class PMKI extends STServiceAdapter {
 	private String createRemoteUser(RemoteVBConnector vbConnector, String email, String givenName, String familyName, String organization) {
 		String userPassword = null;
 		try { //surrounded in a try catch since the user email could be already used => user already registered
-			String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~`!@#$%^&*()-_=+[{]}\\|;:\'\",<.>/?";
+			String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*?";
 			String tempUserPwd = RandomStringUtils.random(15, characters);
 			vbConnector.registerUser(email, tempUserPwd, givenName, familyName, organization);
 			vbConnector.enableUser(email);

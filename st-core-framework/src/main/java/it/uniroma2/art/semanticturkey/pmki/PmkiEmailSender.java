@@ -18,6 +18,13 @@ import java.util.TimeZone;
 
 public class PmkiEmailSender {
 
+	/**
+	 * Mail to the administrator that informs that a new contribution has been submitted
+	 * @param contribution
+	 * @throws STPropertyAccessException
+	 * @throws UnsupportedEncodingException
+	 * @throws MessagingException
+	 */
 	public static void sendContributionSubmittedMail(StoredContributionConfiguration contribution)
 			throws STPropertyAccessException, UnsupportedEncodingException, MessagingException {
 		String contributionType = null;
@@ -30,7 +37,7 @@ public class PmkiEmailSender {
 		}
 		for (String adminEmail: UsersManager.getAdminEmailList()) {
 			String mailContent = "Dear PMKI administrator,\n" +
-					"a new contribution request has been submitted to the PMKI portal:\n" +
+					"a new contribution request has been submitted to the PMKI portal:\n\n" +
 					"Contribution type: " + contributionType + "\n" +
 					"Contributor: " + contribution.contributorName + " " + contribution.contributorLastName +
 					" (email: " + contribution.contributorEmail + ")";
@@ -39,6 +46,7 @@ public class PmkiEmailSender {
 	}
 
 	/**
+	 * Mail to the contributor that inform that his contribution has been accepted
 	 * Note: the project name is not retrieved from the contribution since it could be change from the admin during the approval
 	 * @param reference
 	 * @param contribution
@@ -128,6 +136,24 @@ public class PmkiEmailSender {
 	}
 
 	/**
+	 * Mail to the contributor that informs that his metadata contribution has been accepted
+	 * @param reference
+	 * @param contribution
+	 * @throws UnsupportedEncodingException
+	 * @throws MessagingException
+	 * @throws STPropertyAccessException
+	 */
+	public static void sendAcceptedMetadataContributionMail(Reference reference, StoredMetadataContributionConfiguration contribution)
+			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
+		String formattedDate = getDateFromTimestamp(Long.parseLong(reference.getIdentifier()));
+		String mailContent = "Dear " + contribution.contributorName + " " + contribution.contributorLastName + ",\n" +
+				"Your contribution request submitted on " + formattedDate + " about the metadata of the resource '" +
+				contribution.resourceName + "' has been accepted.\n" +
+				"Thanks for your contribution";
+		EmailSender.sendMail(contribution.contributorEmail, "PMKI Contribution approved", mailContent);
+	}
+
+	/**
 	 * Send email notification to a contributor that has just loaded data. The email contains the reference to the
 	 * VB instance where the data has been loaded.
 	 * @param projectName
@@ -151,6 +177,29 @@ public class PmkiEmailSender {
 			mailContent += "your pre-existing account (email address: " + contributorEmail + ").\n";
 		}
 		EmailSender.sendMail(contributorEmail, "PMKI Contribution approved", mailContent);
+	}
+
+	/**
+	 * Mail to the administrator that informs that the contributor has loaded the data into a stable resource
+	 * contribution project
+	 * @param projectName
+	 * @param contributorName
+	 * @param contributorLastName
+	 * @param contributorEmail
+	 * @throws UnsupportedEncodingException
+	 * @throws MessagingException
+	 * @throws STPropertyAccessException
+	 */
+	public static void sendLoadedStableResourceContributionMail(String projectName, String contributorName,
+			String contributorLastName, String contributorEmail)
+			throws UnsupportedEncodingException,MessagingException, STPropertyAccessException {
+		for (String adminEmail: UsersManager.getAdminEmailList()) {
+			String mailContent = "Dear PMKI administrator,\n" +
+					"the contributor: " + contributorName + " " + contributorLastName +
+					" (email: " + contributorEmail + ") has just uploaded the data into the project '" +
+					projectName + "'. The project is now in the STAGING status until you approve it and make it PUBLIC";
+			EmailSender.sendMail(adminEmail, "PMKI Contribution data loaded", mailContent);
+		}
 	}
 
 	/**

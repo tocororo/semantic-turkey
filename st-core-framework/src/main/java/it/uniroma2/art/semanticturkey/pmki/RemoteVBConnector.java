@@ -226,7 +226,6 @@ public class RemoteVBConnector {
 		String requestUrl = stHost + "semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/PreferencesSettings/getSystemSettings";
 		URIBuilder builder = new URIBuilder(requestUrl);
 		builder.setParameter("properties", "remote_configs");
-		System.out.println("getRemoteAccessConfigurations " + builder.build());
 		HttpGet httpGet = new HttpGet(builder.build());
 		httpGet.addHeader(HttpHeaders.ACCEPT, "application/json");
 		//Execute and get the response

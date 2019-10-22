@@ -1,6 +1,5 @@
 package it.uniroma2.art.semanticturkey.config.contribution;
 
-import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
 
@@ -13,8 +12,7 @@ public class StoredMetadataContributionConfiguration extends StoredContributionC
 		return "Stored Metadata Contribution";
 	}
 
-	@STProperty(description = "Name of the resource", displayName = "Name")
-	@Required
+	@STProperty(description = "Identity", displayName = "Identity")
 	public IRI identity;
 
 	@STProperty(description = "URI space", displayName = "URI space")
