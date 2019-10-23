@@ -43,3 +43,7 @@ description:
       Semantic Turkey is a RDF service platform for Knowledge Management and
       Acquisition realized by the ART Research Group at the University of Tor
       Vergata
+it:
+  countryExtensionVersion: '0.2'
+  riuso:
+    codiceIPA: uni_rm2 
