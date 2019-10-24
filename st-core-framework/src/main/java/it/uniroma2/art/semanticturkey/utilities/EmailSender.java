@@ -32,13 +32,13 @@ public class EmailSender {
 		String adminEmailsMsg = (adminEmails.size() == 1) ? adminEmails.iterator().next() :
 				" one of the following address: " + String.join(", ", adminEmails);
 		String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
-				+ "\nthank you for registering as a user of VocBench 3."
+				+ "<br>thank you for registering to VocBench 3."
 				+ " Your request has been received. Please wait for the administrator to approve it."
-				+ " After approval, you can log into VocBench with the e-mail " + user.getEmail() + " and your chosen password."
-				+ "\nThanks for your interest."
-				+ "\nIf you want to unregister, please send an email with your e-mail address and the subject:"
+				+ " After the approval, you can log into VocBench with the e-mail " + user.getEmail() + " and your chosen password."
+				+ "<br>Thanks for your interest."
+				+ "<br>If you want to unregister, please send an email with your e-mail address and the subject:"
 				+ " 'VocBench - Unregister' to " + adminEmailsMsg + "."
-				+ "\nRegards,\nThe VocBench Team.";
+				+ "<br><br>Regards,<br>The VocBench Team.";
 		sendMail(user.getEmail(), "VocBench registration", text);
 	}
 	
@@ -52,9 +52,9 @@ public class EmailSender {
 	public static void sendEnabledMailToUser(STUser user) 
 			throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
 		String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
-				+ "\nthe administrator has enabled your account."
+				+ "<br>the administrator has enabled your account."
 				+ " You can now log into VocBench with the e-mail " + user.getEmail() + " and your chosen password."
-				+ "\nRegards,\nThe VocBench Team.";
+				+ "<br><br>Regards,<br>The VocBench Team.";
 		sendMail(user.getEmail(), "VocBench account enabled", text);
 	}
 	
@@ -68,11 +68,11 @@ public class EmailSender {
 			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
 		for (String adminEmail: UsersManager.getAdminEmailList()) {
 			String text = "Dear VocBench administrator,"
-					+ "\nthere is a new user registration request for VocBench."
-					+ "\nGiven Name: " + user.getGivenName()
-					+ "\nFamily Name: " + user.getFamilyName()
-					+ "\nE-mail: " + user.getEmail()
-					+ "\nPlease activate the account.\nRegards,\nThe VocBench Team.";
+					+ "<br>there is a new user registration request for VocBench."
+					+ "<br>Given Name: " + user.getGivenName()
+					+ "<br>Family Name: " + user.getFamilyName()
+					+ "<br>E-mail: " + user.getEmail()
+					+ "<br>Please activate the account.<br><br>Regards,<br>The VocBench Team.";
 			sendMail(adminEmail, "VocBench registration", text);
 		}
 	}
@@ -80,36 +80,36 @@ public class EmailSender {
 	public static void sendForgotPasswordMail(STUser user, String forgotPasswordLink)
 			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
 		String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
-				+ "\nwe've received a request to reset the password for the"
+				+ "<br>we've received a request to reset the password for the"
 				+ " VocBench account associated to this email address."
-				+ "\nClick the link below to be redirected to the reset password page."
+				+ "<br>Click the link below to be redirected to the reset password page."
 				+ " This password reset is only valid for a limited time."
-				+ "\n\n" + forgotPasswordLink
-				+ "\n\nIf you did not request a password reset, please ignore this email"
+				+ "<br><br>" + forgotPasswordLink
+				+ "<br><br>If you did not request a password reset, please ignore this email"
 				+ " or report this to the system administrator."
-				+ "\nRegards,\nThe VocBench team";
+				+ "<br><br>Regards,<br>The VocBench team";
 		sendMail(user.getEmail(), "VocBench password reset", text);
 	}
 	
 	public static void sendResetPasswordMail(STUser user, String tempPassword)
 			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
 		String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
-				+ "\nwe confirm you that your password has been reset."
-				+ "\nThis is your new temporary password:"
-				+ "\n\n"+ tempPassword
-				+ "\n\nAfter the login we strongly recommend you to change the password."
-				+ "\nRegards,\nThe VocBench team";
+				+ "<br>we confirm you that your password has been reset."
+				+ "<br>This is your new temporary password:"
+				+ "<br><br>"+ tempPassword
+				+ "<br><br>After the login we strongly recommend you to change the password."
+				+ "<br><br>Regards,<br>The VocBench team";
 		sendMail(user.getEmail(), "VocBench password reset", text);
 	}
 	
 	public static void sendTestMailConfig(String mailTo) 
 			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
-		String text = "This message has been sent in order to check the VocBench e-mail configuration.\n"
-				+ "If you did not request to send this e-mail, please ignore it.\n"
-				+ "Regards,\nThe VocBench team";
+		String text = "This message has been sent in order to check the VocBench e-mail configuration.<br>"
+				+ "If you did not request to send this e-mail, please ignore it.<br><br>"
+				+ "Regards,<br>The VocBench team";
 		sendMail(mailTo, "VocBench e-mail configuration check", text);
 	}
-	
+
 	public static void sendMail(String toEmail, String subject, String text)
 			throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
 		String mailFromAddress = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ADDRESS);
@@ -152,7 +152,8 @@ public class EmailSender {
 		message.setFrom(new InternetAddress(mailFromAddress, mailFromAlias));
 		message.setSubject(subject);
 		message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
-		message.setText(text);
+		message.setContent(text, "text/html; charset=utf-8");
+
 		Transport.send(message);
 	}
 
