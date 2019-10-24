@@ -30,4 +30,6 @@ public abstract class StoredContributionConfiguration implements Configuration {
 	@Required
 	public IRI baseURI;
 
+	public abstract String getContributionTypeLabel();
+
 }

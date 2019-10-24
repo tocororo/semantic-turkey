@@ -4,7 +4,13 @@ import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
 
-public class StoredStableResourceContributionConfiguration extends StoredContributionConfiguration {
+import java.util.Set;
+
+public class StoredStableResourceContributionConfiguration extends StoredMetadataContributionConfiguration {
+
+	public String getContributionTypeLabel() {
+		return "Stable";
+	}
 
 	@Override
 	public String getShortName() {
@@ -28,7 +34,5 @@ public class StoredStableResourceContributionConfiguration extends StoredContrib
 	@STProperty(description = "Lexicalizaion model of the resource", displayName = "Lexicalization model")
 	@Required
 	public IRI lexicalizationModel;
-
-	//TODO other fields resulting the discovering of the baseURI
 
 }

@@ -52,6 +52,7 @@ import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipeline;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationStep;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
@@ -254,7 +255,8 @@ public class PMKI extends STServiceAdapter {
 			InvalidConfigurationException, InvalidProjectNameException, ProjectAccessException,
 			UnloadablePluginConfigurationException, UnsupportedLexicalizationModelException, ProjectInexistentException,
 			ProjectCreationException, ReservedPropertyUpdateException, DuplicatedResourceException, STPropertyAccessException,
-			ConfigurationNotFoundException, NoSuchConfigurationManager, MessagingException, ProjectDeletionException, STPropertyUpdateException {
+			ConfigurationNotFoundException, NoSuchConfigurationManager, MessagingException, ProjectDeletionException,
+			STPropertyUpdateException, MetadataRegistryWritingException {
 		try {
 			/* create project for hosting the stable resource */
 			ProjectConsumer consumer = ProjectConsumer.SYSTEM;
@@ -303,7 +305,8 @@ public class PMKI extends STServiceAdapter {
 					(StoredStableResourceContributionConfiguration) exptManager.getConfiguration(
 							ContributionStore.class.getName(), reference);
 
-			//TODO write also metadata get from the contribution
+			//write also metadata get from the contribution
+			writeMetadataInRegistry(contribution);
 
 			/* Set the project status to "pristine" (by assigning the pristine role to the visitor) */
 
@@ -429,24 +432,8 @@ public class PMKI extends STServiceAdapter {
 				(StoredMetadataContributionConfiguration) exptManager.getConfiguration(
 						ContributionStore.class.getName(), reference);
 
-		Boolean dereferenciability = null;
-		if (config.dereferenciationSystem != null) {
-			if (config.dereferenciationSystem.equals(METADATAREGISTRY.STANDARD_DEREFERENCIATION)) {
-				dereferenciability = true;
-			} else if (config.dereferenciationSystem.equals(METADATAREGISTRY.NO_DEREFERENCIATION)) {
-				dereferenciability = false;
-			}
-		}
-		IRI record = metadataRegistryBackend.addDataset(null, config.uriSpace, config.resourceName, dereferenciability, config.sparqlEndpoint);
-		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
-			Model model = QueryResults.asModel(conn.getStatements(record, FOAF.PRIMARY_TOPIC, null));
-			IRI datasetIRI = Models.objectIRI(model).orElse(null);
-			if (config.sparqlLimitations != null && !config.sparqlLimitations.isEmpty()) {
-				//if it's not empty, set just the first since at the moment we have just a limitation (aggregation)
-				metadataRegistryBackend.setSPARQLEndpointLimitation(datasetIRI, config.sparqlLimitations.iterator().next());
-			}
+		writeMetadataInRegistry(config);
 
-		}
 		PmkiEmailSender.sendAcceptedMetadataContributionMail(reference, config);
 		//contribution approved => delete it from the store
 		exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
@@ -466,6 +453,7 @@ public class PMKI extends STServiceAdapter {
 	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@Write
 	public void loadStableContributionData(String token, String projectName, String contributorEmail,
 			MultipartFile inputFile, String format, PluginSpecification rdfLifterSpec,
 			TransitiveImportMethodAllowance transitiveImportAllowance) throws STPropertyAccessException,
@@ -488,7 +476,8 @@ public class PMKI extends STServiceAdapter {
 		} else { //token+projectName+contributorEmail are ok
 			//Load data exploiting the InputOutput service class
 			TransformationPipeline pipeline = new TransformationPipeline(new TransformationStep[0]);
-			inputOutputService.loadRDF(inputFile, project.getBaseURI(), format, transitiveImportAllowance, null, rdfLifterSpec, pipeline, false);
+			inputOutputService.loadRDFInternal(inputFile, project.getBaseURI(), format, transitiveImportAllowance,
+					getManagedConnection(), null, rdfLifterSpec, pipeline);
 
 			//Update the status of the project from pristine to staging
 			STUser visitor = UsersManager.getUserByEmail(PmkiConstants.PMKI_VISITOR_EMAIL);
@@ -583,6 +572,26 @@ public class PMKI extends STServiceAdapter {
 			//user already registered
 		}
 		return userPassword;
+	}
+
+	private void writeMetadataInRegistry(StoredMetadataContributionConfiguration config) throws MetadataRegistryWritingException {
+		Boolean dereferenciability = null;
+		if (config.dereferenciationSystem != null) {
+			if (config.dereferenciationSystem.equals(METADATAREGISTRY.STANDARD_DEREFERENCIATION)) {
+				dereferenciability = true;
+			} else if (config.dereferenciationSystem.equals(METADATAREGISTRY.NO_DEREFERENCIATION)) {
+				dereferenciability = false;
+			}
+		}
+		IRI record = metadataRegistryBackend.addDataset(null, config.uriSpace, config.resourceName, dereferenciability, config.sparqlEndpoint);
+		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
+			Model model = QueryResults.asModel(conn.getStatements(record, FOAF.PRIMARY_TOPIC, null));
+			IRI datasetIRI = Models.objectIRI(model).orElse(null);
+			if (config.sparqlLimitations != null && !config.sparqlLimitations.isEmpty()) {
+				//if it's not empty, set just the first since at the moment we have just a limitation (aggregation)
+				metadataRegistryBackend.setSPARQLEndpointLimitation(datasetIRI, config.sparqlLimitations.iterator().next());
+			}
+		}
 	}
 
 }

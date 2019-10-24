@@ -7,6 +7,10 @@ import java.util.Set;
 
 public class StoredMetadataContributionConfiguration extends StoredContributionConfiguration {
 
+	public String getContributionTypeLabel() {
+		return "Metadata";
+	}
+
 	@Override
 	public String getShortName() {
 		return "Stored Metadata Contribution";

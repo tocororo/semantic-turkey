@@ -7,6 +7,10 @@ import org.eclipse.rdf4j.model.IRI;
 
 public class StoredDevResourceContributionConfiguration extends StoredContributionConfiguration {
 
+	public String getContributionTypeLabel() {
+		return "Development";
+	}
+
 	@Override
 	public String getShortName() {
 		return "Stored Conversion Contribution";

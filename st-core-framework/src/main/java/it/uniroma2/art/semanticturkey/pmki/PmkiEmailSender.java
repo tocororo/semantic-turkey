@@ -27,18 +27,10 @@ public class PmkiEmailSender {
 	 */
 	public static void sendContributionSubmittedMail(StoredContributionConfiguration contribution)
 			throws STPropertyAccessException, UnsupportedEncodingException, MessagingException {
-		String contributionType = null;
-		if (contribution instanceof StoredDevResourceContributionConfiguration) {
-			contributionType = "Development";
-		} else if (contribution instanceof StoredMetadataContributionConfiguration) {
-			contributionType = "Metadata";
-		} else if (contribution instanceof StoredStableResourceContributionConfiguration) {
-			contributionType = "Stable";
-		}
 		for (String adminEmail: UsersManager.getAdminEmailList()) {
 			String mailContent = "Dear PMKI administrator,\n" +
 					"a new contribution request has been submitted to the PMKI portal:\n\n" +
-					"Contribution type: " + contributionType + "\n" +
+					"Contribution type: " + contribution.getContributionTypeLabel() + "\n" +
 					"Contributor: " + contribution.contributorName + " " + contribution.contributorLastName +
 					" (email: " + contribution.contributorEmail + ")";
 			EmailSender.sendMail(adminEmail, "PMKI Contribution request submitted", mailContent);
@@ -149,7 +141,7 @@ public class PmkiEmailSender {
 		String mailContent = "Dear " + contribution.contributorName + " " + contribution.contributorLastName + ",\n" +
 				"Your contribution request submitted on " + formattedDate + " about the metadata of the resource '" +
 				contribution.resourceName + "' has been accepted.\n" +
-				"Thanks for your contribution";
+				"Thanks for your contribution.";
 		EmailSender.sendMail(contribution.contributorEmail, "PMKI Contribution approved", mailContent);
 	}
 
