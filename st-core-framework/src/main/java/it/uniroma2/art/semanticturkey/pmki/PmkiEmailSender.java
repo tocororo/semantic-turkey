@@ -19,7 +19,9 @@ import java.util.TimeZone;
 public class PmkiEmailSender {
 
 	/**
-	 * Mail to the administrator that informs that a new contribution has been submitted
+	 * Mail to:
+	 *  - the administrator that informs that a new contribution has been submitted
+	 *  - the contributor that informs that the contribution request has been received
 	 * @param contribution
 	 * @throws STPropertyAccessException
 	 * @throws UnsupportedEncodingException
@@ -27,6 +29,7 @@ public class PmkiEmailSender {
 	 */
 	public static void sendContributionSubmittedMail(StoredContributionConfiguration contribution)
 			throws STPropertyAccessException, UnsupportedEncodingException, MessagingException {
+		//to admin
 		for (String adminEmail: UsersManager.getAdminEmailList()) {
 			String mailContent = "Dear PMKI administrator,<br>" +
 					"a new contribution request has been submitted to the PMKI portal:<br><br>" +
@@ -35,6 +38,19 @@ public class PmkiEmailSender {
 					" (email: " + contribution.contributorEmail + ")";
 			EmailSender.sendMail(adminEmail, "PMKI Contribution request submitted", mailContent);
 		}
+		//to contributor
+		String mailContent = "Dear " + contribution.contributorName + " " + contribution.contributorLastName + ",<br>" +
+				"your contribution request ";
+		if (contribution instanceof StoredStableResourceContributionConfiguration) {
+			mailContent += "about the resource " + formatItalic(contribution.resourceName);
+		} else if (contribution instanceof StoredMetadataContributionConfiguration) {
+			mailContent += "about the metadata of the resource " + formatItalic(contribution.resourceName);
+		} else if (contribution instanceof StoredDevResourceContributionConfiguration) {
+			mailContent += "for the development of the resource " + formatItalic(contribution.resourceName);
+		}
+		mailContent += " has been successfully submitted. It will be evaluated by the administrator and " +
+				"you will receive the response to this email address.";
+		EmailSender.sendMail(contribution.contributorEmail, "PMKI Contribution request submitted", mailContent);
 	}
 
 	/**

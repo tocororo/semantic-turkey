@@ -583,7 +583,7 @@ public class PMKI extends STServiceAdapter {
 				dereferenciability = false;
 			}
 		}
-		IRI record = metadataRegistryBackend.addDataset(null, config.uriSpace, config.resourceName, dereferenciability, config.sparqlEndpoint);
+		IRI record = metadataRegistryBackend.addDataset(config.identity, config.uriSpace, config.resourceName, dereferenciability, config.sparqlEndpoint);
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
 			Model model = QueryResults.asModel(conn.getStatements(record, FOAF.PRIMARY_TOPIC, null));
 			IRI datasetIRI = Models.objectIRI(model).orElse(null);
