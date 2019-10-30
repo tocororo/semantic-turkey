@@ -182,22 +182,18 @@ public class Alignment extends STServiceAdapter {
 	 * obtain a list of possible candidate for an alignment between a local resource and resources in a remote
 	 * dataset
 	 * 
-	 * @param intputRes
+	 * @param inputRes
 	 *            the input resources from which to obtain the lexicalizations used in the search in the
 	 *            remote dataset
 	 * @param resourcePosition
 	 *            the remote dataset or a local project
 	 * @param rolesArray
 	 *            the roles to which the returned resources should belong to
-	 * @param langs
-	 *            the optional list of languages that will be used for the search (if no language is passed,
-	 *            then MAPLE is used to obtain the common languages between the current project and the remote
-	 *            dataset)
 	 * @param searchModeList
 	 *            the optional list of searchMode that will be used in the search (is no value is passed, then
 	 *            'contains' and 'fuzzy' are used)
-	 * @param targetLexModel
-	 *            the optional Lexical Model of the target dataset
+	 * @param langToLexModel
+	 *
 	 * @return the list of remote resources obtained from the search
 	 * @throws MetadataRegistryStateException
 	 * @throws NoSuchDatasetMetadataException
@@ -658,10 +654,6 @@ public class Alignment extends STServiceAdapter {
 		alignModel.add(inputServerFile);
 
 		return loadAlignmentHelper(alignModel, leftProject, rightProject);
-	}
-	
-	public JsonNode loadAlignmentHelper(AlignmentModel alignModel) throws AlignmentInitializationException {
-		return this.loadAlignmentHelper(alignModel, null, null);
 	}
 	
 	/**

@@ -213,6 +213,9 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 		alignModel.add(inputServerFile);
 
 		Field connField;
+		Project leftDatasetProject;
+		Project rightDatasetProject;
+
 		try {
 			connField = alignModel.getClass().getDeclaredField("repoConnection");
 			connField.setAccessible(true);
@@ -238,12 +241,12 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 							it.uniroma2.art.semanticturkey.vocabulary.Alignment.ONTO2, (Resource) null)))
 					.orElseThrow(() -> new RuntimeException("Missing onto2 inside alignment")).stringValue());
 
-			Project leftDatasetProject = metadataRegistryBackend.findProjectForDataset(leftDatasetIRI);
+			leftDatasetProject = metadataRegistryBackend.findProjectForDataset(leftDatasetIRI);
 			if (leftDatasetProject == null) {
 				throw new RuntimeException("Unable to find the project associated with the left dataset");
 			}
 
-			Project rightDatasetProject = metadataRegistryBackend.findProjectForDataset(rightDatasetIRI);
+			rightDatasetProject = metadataRegistryBackend.findProjectForDataset(rightDatasetIRI);
 			if (rightDatasetProject == null) {
 				throw new RuntimeException("Unable to find the project associated with the right dataset");
 			}
@@ -262,7 +265,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			throw new RuntimeException(e);
 		}
 
-		return alignmentService.loadAlignmentHelper(alignModel);
+		return alignmentService.loadAlignmentHelper(alignModel, leftDatasetProject, rightDatasetProject);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
