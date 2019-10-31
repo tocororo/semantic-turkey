@@ -227,7 +227,7 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * @throws NoSuchDatasetMetadataException
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+//	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')") //project wide service, could be invoked without a ctx_project, so without capabililties
 	public DatasetMetadata getDatasetMetadata(IRI dataset)
 			throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		return metadataRegistryBackend.getDatasetMetadata(dataset);
@@ -295,7 +295,7 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+//	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')") //project wide service, could be invoked without a ctx_project, so without capabililties
 	public Collection<LinksetMetadata> getEmbeddedLinksets(IRI dataset,
 			@Optional(defaultValue = "0") long treshold, @Optional(defaultValue = "false") boolean coalesce) {
 		return metadataRegistryBackend.getEmbeddedLinksets(dataset, treshold, coalesce);
@@ -384,7 +384,7 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+//	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')") //project wide service, could be invoked without a ctx_project, so without capabililties
 	public Map<String, AnnotatedValue<IRI>> findDatasetForProjects(List<Project> projects) {
 		Map<String, AnnotatedValue<IRI>> rv = new HashMap<>(projects.size());
 		for (Project proj : projects) {
