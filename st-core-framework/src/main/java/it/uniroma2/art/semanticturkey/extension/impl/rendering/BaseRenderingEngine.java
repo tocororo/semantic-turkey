@@ -206,7 +206,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 				}
 
 				if (!acceptedLanguges.isEmpty()) {
-					gp2.append(String.format(" FILTER(LANG(%1$s) == \"\" || LANG(%1$s) IN (%2$s))",
+					gp2.append(String.format(" FILTER(LANG(%1$s) = \"\" || LANG(%1$s) IN (%2$s))",
 							subjectOfProp,
 							acceptedLanguges.stream().map(lang -> "\"" + SPARQLUtil.encodeString(lang) + "\"")
 									.collect(joining(", "))));
