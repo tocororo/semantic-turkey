@@ -15,6 +15,7 @@ date: dd/mm/yyy
   * fix NullPointerException in OntologyManager triggered by an attempt to fetch RDF data from an URL that does
     not return a Content-Type
   * fixed several bugs in the search regarding the use of special characters
+  * fix compatibility issue with Ontotext GraphDB 9.0
   * enabled support for multiple administators
   
 version 6.0
