@@ -58,6 +58,7 @@ import it.uniroma2.art.semanticturkey.services.core.export.TransformationStep;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
+import it.uniroma2.art.semanticturkey.user.RoleCreationException;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
@@ -118,14 +119,16 @@ public class PMKI extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void initPmki() throws IOException, UserException {
+	public void initPmki() throws IOException, UserException, RoleCreationException {
 		Collection<Role> roles = Arrays.asList(PmkiRole.PRISTINE, PmkiRole.PUBLIC, PmkiRole.STAGING);
 		File rolesDir = RBACManager.getRolesDir(null);
 		for (Role r : roles) {
+			File targetRoleFile = new File(rolesDir, "role_" + r.getName() + ".pl");
 			Utilities.copy(Resources.class.getClassLoader()
 							.getResourceAsStream("/it/uniroma2/art/semanticturkey/rbac/roles/role_" + r.getName() + ".pl"),
-					new File(rolesDir, "role_" + r.getName() + ".pl")
+					targetRoleFile
 			);
+			RBACManager.addSystemRole(r.getName(), targetRoleFile);
 		}
 		STUser visitor = new STUser(PmkiConstants.PMKI_VISITOR_EMAIL, PmkiConstants.PMKI_VISITOR_PWD, "Visitor", "PMKI");
 		UsersManager.registerUser(visitor);
@@ -583,7 +586,8 @@ public class PMKI extends STServiceAdapter {
 				dereferenciability = false;
 			}
 		}
-		IRI record = metadataRegistryBackend.addDataset(config.identity, config.uriSpace, config.resourceName, dereferenciability, config.sparqlEndpoint);
+		String uriSpace = config.uriSpace != null ? config.uriSpace : config.baseURI.stringValue();
+		IRI record = metadataRegistryBackend.addDataset(config.identity, uriSpace, config.resourceName, dereferenciability, config.sparqlEndpoint);
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
 			Model model = QueryResults.asModel(conn.getStatements(record, FOAF.PRIMARY_TOPIC, null));
 			IRI datasetIRI = Models.objectIRI(model).orElse(null);

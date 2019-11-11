@@ -183,6 +183,24 @@ public class RBACManager {
 			throw new RoleCreationException(e);
 		}
 	}
+
+	/**
+	 *
+	 * @param roleName
+	 * @param roleFile
+	 * @throws RoleCreationException
+	 */
+	public static void addSystemRole(String roleName, File roleFile) throws RoleCreationException {
+		//look if the role already exists at system level
+		if (rbacMap.get(SYSTEM_PROJ_ID).keySet().contains(roleName)) {
+			throw new RoleCreationException("Role '" + roleName + "' already exists");
+		}
+		try {
+			rbacMap.get(SYSTEM_PROJ_ID).put(roleName, new RBACProcessor(roleFile));
+		} catch (InvalidTheoryException | TheoryNotFoundException e) {
+			throw new RoleCreationException(e);
+		}
+	}
 	
 	public static void deleteRole(Project project, String roleName) {
 		rbacMap.get(project.getName()).remove(roleName);
