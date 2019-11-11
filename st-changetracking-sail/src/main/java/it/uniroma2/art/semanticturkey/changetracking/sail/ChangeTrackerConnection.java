@@ -138,14 +138,21 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		addConnectionListener(connectionListener.get());
 	}
 
-	@Override
-	public void close() throws SailException {
-		try {
-			super.close();
-		} finally {
-			connectionListener.ifPresent(this::removeConnectionListener);
-		}
-	}
+	// We used to remove the connection listener after the connection has been closed. In GDB 9.0, this raised
+	// an
+	// exception (because its Sail first checks that the sail is open). While we might have swapped the two
+	// operations (close the connection and remove the listener), we decided not to explicitly remove the
+	// listener
+	// anymore, since the connection is being closed
+
+	// @Override
+	// public void close() throws SailException {
+	// try {
+	// super.close();
+	// } finally {
+	// connectionListener.ifPresent(this::removeConnectionListener);
+	// }
+	// }
 
 	@Override
 	public void begin() throws SailException {
@@ -1035,7 +1042,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 						IRI commit = obj instanceof IRI ? (IRI) obj
 								: SimpleValueFactory.getInstance().createIRI(obj.stringValue());
-						
+
 						if (CHANGETRACKER.ACCEPT.equals(pred)) {
 							QueryResults.stream(HistoryRepositories.getRemovedStaments(supportRepoConn,
 									commit, sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
@@ -1044,8 +1051,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 												VALIDATION.stagingRemoveGraph(s.getContext()));
 									});
-							QueryResults.stream(HistoryRepositories.getAddedStaments(supportRepoConn,
-									commit, sail.validationGraph)).forEach(s -> {
+							QueryResults.stream(HistoryRepositories.getAddedStaments(supportRepoConn, commit,
+									sail.validationGraph)).forEach(s -> {
 										addStatement(s.getSubject(), s.getPredicate(), s.getObject(),
 												s.getContext());
 										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
@@ -1063,8 +1070,8 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 												VALIDATION.stagingRemoveGraph(s.getContext()));
 									});
-							QueryResults.stream(HistoryRepositories.getAddedStaments(supportRepoConn,
-									commit, sail.validationGraph)).forEach(s -> {
+							QueryResults.stream(HistoryRepositories.getAddedStaments(supportRepoConn, commit,
+									sail.validationGraph)).forEach(s -> {
 										removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
 												VALIDATION.stagingAddGraph(s.getContext()));
 									});
