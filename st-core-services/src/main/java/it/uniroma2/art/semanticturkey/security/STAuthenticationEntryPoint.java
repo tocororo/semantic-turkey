@@ -25,6 +25,7 @@ public class STAuthenticationEntryPoint implements AuthenticationEntryPoint {
             throws IOException, ServletException {
 
 		response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+		response.setContentType("text/plain");
 		ServletOutputStream out = response.getOutputStream();
 		
 		out.print("Access denied. You need to be logged in");

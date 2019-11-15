@@ -1,28 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import static java.util.stream.Collectors.toSet;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -37,6 +16,39 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderException;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * This class provides services for manipulating datatypes.
@@ -257,4 +269,186 @@ public class Datatypes extends STServiceAdapter {
 
 		return qb.runQuery();
 	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	public void setDatatypeRestriction(IRI datatype, IRI restriction, Literal value)  {
+		RepositoryConnection conn = getManagedConnection();
+		ValueFactory vf = conn.getValueFactory();
+
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+
+		BNode restrictionList = getRestrictionList(datatype, conn);
+		if (restrictionList == null) { //still no restrictions => set the first restriction
+			BNode newRestrictionBNode = vf.createBNode();
+			BNode newRestrictionList = addRestrictionInList(newRestrictionBNode, RDF.NIL, conn, modelAdditions);
+			modelAdditions.add(datatype, OWL.WITHRESTRICTIONS, newRestrictionList); //add the new ?datatype owl:withRestrictions _:newList
+			modelAdditions.add(newRestrictionBNode, restriction, value); //(es _:r xsd:pattern "[0-9]+")
+		} else {
+			/*
+			 * restriction list not empty, two scenarios:
+			 * - the restriction has already a value, so it must be replaced
+			 * - the restriction has not a value
+			 */
+			BNode oldRestrictionBNode = getRestrictionNode(restrictionList, restriction, conn);
+			if (oldRestrictionBNode != null) { //restriction already existing => replace
+				Literal oldValue = (Literal) conn.getStatements(oldRestrictionBNode, restriction, null, getWorkingGraph()).next().getObject();
+				modelRemovals.add(oldRestrictionBNode, restriction, oldValue);
+				modelAdditions.add(oldRestrictionBNode, restriction, value);
+			} else { //restriction still not exists => create (the old restrictionList "shifts" as rdf:rest list
+				BNode newRestrictionBNode = vf.createBNode();
+				BNode newRestrictionList = addRestrictionInList(newRestrictionBNode, restrictionList, conn, modelAdditions);
+				modelRemovals.add(datatype, OWL.WITHRESTRICTIONS, restrictionList); //remove the old ?datatype owl:withRestrictions _:oldList
+				modelAdditions.add(datatype, OWL.WITHRESTRICTIONS, newRestrictionList); //add the new ?datatype owl:withRestrictions _:newList
+				modelAdditions.add(newRestrictionBNode, restriction, value); //(es _:r xsd:pattern "[0-9]+")
+			}
+		}
+		conn.add(modelAdditions, getWorkingGraph());
+		conn.remove(modelRemovals, getWorkingGraph());
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	public void deleteDatatypeRestriction(IRI datatype, IRI restriction)  {
+		RepositoryConnection conn = getManagedConnection();
+
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+
+		BNode restrictionList = getRestrictionList(datatype, conn);
+		//No null-check on restrictionList: this service should be invoked only if the datatype has the restriction
+
+		/*
+		 * removes the triple _:r ?restriction ?value
+		 */
+		BNode restrictionBNode = getRestrictionNode(restrictionList, restriction, conn);
+		Literal value = (Literal) conn.getStatements(restrictionBNode, restriction, null, getWorkingGraph()).next().getObject();
+		modelRemovals.add(restrictionBNode, restriction, value);
+		/*
+		 * Now shifts the rest. Two cases:
+		 * - the restriction was the first element of the list => the rest list shifts as object of ?datatype owl:withRestrictions
+		 * - the restriction was not the first element of the list => the rest list shifts as rest of the previous list
+		 */
+		if (conn.hasStatement(restrictionList, RDF.FIRST, restrictionBNode, false, getWorkingGraph())) { //first
+			Resource restList = (Resource) conn.getStatements(restrictionList, RDF.REST, null, getWorkingGraph()).next().getObject();
+			//remove the old list
+			modelRemovals.add(datatype, OWL.WITHRESTRICTIONS, restrictionList);
+			modelRemovals.add(restrictionList, RDF.TYPE, RDF.LIST);
+			modelRemovals.add(restrictionList, RDF.FIRST, restrictionBNode);
+			modelRemovals.add(restrictionList, RDF.REST, restList);
+			//shift the rest
+			if (restList.equals(RDF.NIL)) { //if the restList is nil, completely remove the restrictions to the datatype
+				modelRemovals.add(datatype, OWL.WITHRESTRICTIONS, restrictionList);
+			} else { //set the restList as object of ?datatype owl:withRestrictions
+				modelAdditions.add(datatype, OWL.WITHRESTRICTIONS, restList);
+			}
+		} else { //not first
+			//remove the node and shifts the rest list
+			Resource listNode = conn.getStatements(null, RDF.FIRST, restrictionBNode, getWorkingGraph()).next().getSubject();
+			Resource prevList = conn.getStatements(null, RDF.REST, listNode, getWorkingGraph()).next().getSubject();
+			Resource restList = (Resource) conn.getStatements(listNode, RDF.REST, null, getWorkingGraph()).next().getObject();
+			//remove the old list
+			modelRemovals.add(prevList, RDF.REST, listNode);
+			modelRemovals.add(listNode, RDF.TYPE, RDF.LIST);
+			modelRemovals.add(listNode, RDF.FIRST, restrictionBNode);
+			modelRemovals.add(listNode, RDF.REST, restList);
+			//set the restList as rest of the previous one
+			modelAdditions.add(prevList, RDF.REST, restList);
+		}
+		conn.add(modelAdditions, getWorkingGraph());
+		conn.remove(modelRemovals, getWorkingGraph());
+	}
+
+	/**
+	 * Returns the node representing the restrictions list for the given datatype (?datatype owl:withRestrictions ?restList).
+	 * If the datatype has still no restriction list, returns null
+	 * @param datatype
+	 * @param conn
+	 * @return
+	 */
+	private BNode getRestrictionList(IRI datatype, RepositoryConnection conn) {
+		RepositoryResult<Statement> stmts = conn.getStatements(datatype, OWL.WITHRESTRICTIONS, null, getWorkingGraph());
+		if (stmts.hasNext()) {
+			return (BNode) stmts.next().getObject();
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * Returns the BNode that represents the subject of the triple
+	 * _:b ?restrictionPred ?value
+	 * for the given restriction.
+	 * If the restriction has still no value, returns null
+	 * @param restrictionList
+	 * @param restrictionPred
+	 * @param conn
+	 * @return
+	 */
+	private BNode getRestrictionNode(BNode restrictionList, IRI restrictionPred, RepositoryConnection conn) {
+		Resource graphs = getWorkingGraph();
+		RepositoryResult<Statement> results = conn.getStatements(restrictionList, RDF.FIRST, null, graphs);
+		BNode restrictionNode = (BNode) results.next().getObject();
+		if (conn.hasStatement(restrictionNode, restrictionPred, null, false, graphs)) { //searched restriction is the first
+			return restrictionNode;
+		} else { //look for the restriction in the rest of the list
+			results = conn.getStatements(restrictionList, RDF.REST, null, false, graphs);
+			Resource rest = (Resource) results.next().getObject();
+			if (rest.equals(RDF.NIL)) {
+				return null;
+			} else {
+				return getRestrictionNode((BNode) rest, restrictionPred, conn);
+			}
+		}
+	}
+
+	/**
+	 * Adds a restriction node to a restriction list: creates and returns a new list where the old list "shifts"
+	 * as rest and the restriction node is the new first.
+	 * @param restrictionBNode
+	 * @param list
+	 * @param repoConnection
+	 * @param modelAdditions
+	 * @return
+	 */
+	private BNode addRestrictionInList(BNode restrictionBNode, Resource list, RepositoryConnection repoConnection, Model modelAdditions){
+		BNode newRestrictionListBNode = repoConnection.getValueFactory().createBNode();
+		modelAdditions.add(newRestrictionListBNode, RDF.TYPE, RDF.LIST);
+		modelAdditions.add(newRestrictionListBNode, RDF.FIRST, restrictionBNode);
+		modelAdditions.add(newRestrictionListBNode, RDF.REST, list);
+		return newRestrictionListBNode;
+	}
+
+	@STServiceOperation
+	@Read
+	public Map<IRI, Map<IRI, Literal>> getDatatypeRestrictions() {
+		Map<IRI, Map<IRI, Literal>> restrictionsMap = new HashMap<>();
+		RepositoryConnection conn = getManagedConnection();
+		String query =
+				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
+				"SELECT ?datatype ?facet ?value WHERE { \n" +
+				"GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{\n" +
+				"?datatype a rdfs:Datatype .\n" +
+				"?datatype owl:withRestrictions ?list .\n" +
+				"?list rdf:rest*/rdf:first ?r .\n" +
+				"?r ?facet ?value .\n" +
+				"}\n" +
+				"}";
+		System.out.println(query);
+		TupleQuery tq = conn.prepareTupleQuery(query);
+		TupleQueryResult results = tq.evaluate();
+		while (results.hasNext()) {
+			BindingSet bs = results.next();
+			IRI datatype = (IRI) bs.getValue("datatype");
+			IRI facet = (IRI) bs.getValue("facet");
+			Literal value = (Literal) bs.getValue("value");
+			Map<IRI, Literal> dtEntry = restrictionsMap.computeIfAbsent(datatype, k -> new HashMap<>());
+			dtEntry.put(facet, value);
+		}
+		return restrictionsMap;
+	}
+
 }
