@@ -238,12 +238,10 @@ public class Users extends STServiceAdapter {
 			//if this is the first registered user, it means that it is the first access, so activate it and set it as admin
 			user.setStatus(UserStatus.ACTIVE);
 			UsersManager.registerUser(user);
-			ProjectUserBindingsManager.createPUBindingsOfUser(user);
 			UsersManager.addAdmin(user);
 		} else {
 			//otherwise activate it and send the email notifications
 			UsersManager.registerUser(user);
-			ProjectUserBindingsManager.createPUBindingsOfUser(user);
 			if (sendNotification) {
 				try {
 					EmailSender.sendRegistrationMailToUser(user);

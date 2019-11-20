@@ -1,21 +1,20 @@
 package it.uniroma2.art.semanticturkey.user;
 
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.resources.Resources;
+import org.apache.commons.io.FileUtils;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.rio.RDFParseException;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-
-import org.apache.commons.io.FileUtils;
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.rio.RDFParseException;
-
-import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.project.AbstractProject;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.resources.Resources;
 
 public class ProjectUserBindingsManager {
 	
@@ -78,7 +77,7 @@ public class ProjectUserBindingsManager {
 	/**
 	 * Returns the ProjectUserBinding that binds the given user and project
 	 * @param user
-	 * @param projectName
+	 * @param project
 	 * @return
 	 */
 	public static ProjectUserBinding getPUBinding(STUser user, AbstractProject project) {
@@ -100,7 +99,7 @@ public class ProjectUserBindingsManager {
 	
 	/**
 	 * Returns the ProjectUserBindings of the given project
-	 * @param projectName
+	 * @param project
 	 * @return
 	 */
 	public static Collection<ProjectUserBinding> listPUBindingsOfProject(AbstractProject project) {
@@ -115,7 +114,7 @@ public class ProjectUserBindingsManager {
 	
 	/**
 	 * Checks if there is the folder of project-user bindings for the given project
-	 * @param projectName
+	 * @param project
 	 * @return
 	 */
 	public static boolean existsPUBindingsOfProject(AbstractProject project) {
@@ -127,9 +126,8 @@ public class ProjectUserBindingsManager {
 	 * Useful when a project is created/imported
 	 * and the existing users
 	 * @param project
-	 * @throws IOException 
 	 */
-	public static void createPUBindingsOfProject(AbstractProject project) throws ProjectBindingException {
+	public static void createPUBindingsOfProject(AbstractProject project) {
 		Collection<STUser> users = UsersManager.listUsers();
 		//for each user creates the binding with the given project
 		for (STUser u : users) {
@@ -157,11 +155,11 @@ public class ProjectUserBindingsManager {
 	 * Creates all the project-user bindings folders related to the given user.
 	 * Useful when a user is created/imported
 	 * and the existing projects
-	 * @param projectName
+	 * @param user
 	 * @throws ProjectAccessException 
 	 * @throws IOException 
 	 */
-	public static void createPUBindingsOfUser(STUser user) throws ProjectAccessException, ProjectBindingException {
+	public static void createPUBindingsOfUser(STUser user) throws ProjectAccessException {
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		//for each project creates the binding with the given user
 		for (AbstractProject abstrProj : projects) {
@@ -173,7 +171,7 @@ public class ProjectUserBindingsManager {
 	
 	/**
 	 * When a user is deleted, deletes all the project-user bindings folders related to the given user
-	 * @param userEmail
+	 * @param user
 	 * @throws IOException 
 	 */
 	public static void deletePUBindingsOfUser(STUser user) throws IOException {
@@ -195,8 +193,8 @@ public class ProjectUserBindingsManager {
 	
 	/**
 	 * Adds roles to the binding between the given project-user pair
-	 * @param userEmail
-	 * @param projectName
+	 * @param user
+	 * @param project
 	 * @param roles
 	 * @throws ProjectBindingException
 	 */
@@ -210,9 +208,9 @@ public class ProjectUserBindingsManager {
 	
 	/**
 	 * Adds role to the binding between the given project-user pair
-	 * @param userEmail
-	 * @param projectName
-	 * @param roles
+	 * @param user
+	 * @param project
+	 * @param role
 	 * @throws ProjectBindingException
 	 */
 	public static void addRoleToPUBinding(STUser user, AbstractProject project, Role role) throws ProjectBindingException {
@@ -223,8 +221,8 @@ public class ProjectUserBindingsManager {
 	
 	/**
 	 * Removes a role from the binding between the given project-user pair
-	 * @param userEmail
-	 * @param projectName
+	 * @param user
+	 * @param project
 	 * @param role
 	 * @throws ProjectBindingException
 	 */
@@ -240,7 +238,6 @@ public class ProjectUserBindingsManager {
 	 * Remove all the roles assigned to a user in a project
 	 * @param user
 	 * @param project
-	 * @param role
 	 * @throws ProjectBindingException
 	 */
 	public static void removeAllRoleFromPUBinding(STUser user, AbstractProject project) throws ProjectBindingException {
@@ -283,8 +280,8 @@ public class ProjectUserBindingsManager {
 	
 	/**
 	 * Adds languages to the binding between the given project-user pair
-	 * @param userEmail
-	 * @param projectName
+	 * @param user
+	 * @param project
 	 * @param languages
 	 * @throws ProjectBindingException
 	 */
@@ -299,9 +296,9 @@ public class ProjectUserBindingsManager {
 	
 	/**
 	 * Removes a language from the binding between the given project-user pair
-	 * @param userEmail
-	 * @param projectName
-	 * @param role
+	 * @param user
+	 * @param project
+	 * @param languages
 	 * @throws ProjectBindingException
 	 */
 	public static void updateLanguagesToPUBinding(STUser user, AbstractProject project, Collection<String> languages) throws ProjectBindingException {
@@ -426,8 +423,8 @@ public class ProjectUserBindingsManager {
 	
 	/**
 	 * Returns the user folders under <STData>/pu_bindings/<projectName>/ for the given project-user pair
-	 * @param projectName
-	 * @param userEmail
+	 * @param project
+	 * @param user
 	 * @return
 	 */
 	public static File getPUBindingsFolder(AbstractProject project, STUser user) {
@@ -436,7 +433,7 @@ public class ProjectUserBindingsManager {
 	
 	/**
 	 * Returns the user folders under all the <STData>/pu_bindings/<projName>/ folders
-	 * @param userEmail
+	 * @param user
 	 * @return
 	 */
 	public static Collection<File> getUserBindingsFolders(STUser user) {
@@ -451,7 +448,8 @@ public class ProjectUserBindingsManager {
 	
 	/**
 	 * Returns the binding.tts file of the given puBinding
-	 * @param puBinding
+	 * @param project
+	 * @param user
 	 * @return
 	 */
 	private static File getPUBindingDetailsFile(AbstractProject project, STUser user) {
@@ -463,5 +461,5 @@ public class ProjectUserBindingsManager {
 		}
 		return new File(bindingFolder + File.separator + PU_BINDING_DETAILS_FILE_NAME);
 	}
-	
+
 }
