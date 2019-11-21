@@ -1,6 +1,7 @@
-version 6.1
+version 7.0
 date: dd/mm/yyy
   * new EDOAL model type
+  * add support for SHACL
   * when adding a topConcept, that concept is add to that scheme as well with skos:inScheme
   * rename the service class GENOMA to RemoteAlignmentServices
   * add the possibility to delete a task in remote alignment services
@@ -17,6 +18,7 @@ date: dd/mm/yyy
   * fixed several bugs in the search regarding the use of special characters
   * fix compatibility issue with Ontotext GraphDB 9.0
   * enabled support for multiple administrators
+  * updated to RDF4J 3.0.0
   
 version 6.0
 date: 27/06/2019

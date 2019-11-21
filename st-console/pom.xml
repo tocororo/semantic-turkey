@@ -6,7 +6,7 @@
    <parent>
 		<groupId>it.uniroma2.art.semanticturkey</groupId>
 		<artifactId>semanticturkey</artifactId>
-		<version>6.1-SNAPSHOT</version>
+		<version>7.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>st-console</artifactId>

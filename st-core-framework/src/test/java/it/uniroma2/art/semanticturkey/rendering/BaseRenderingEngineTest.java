@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Properties;
 
-import org.apache.sshd.client.session.forward.DynamicPortForwardingTracker;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -22,9 +21,6 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.aop.framework.AopProxyUtils;
-import org.springframework.aop.framework.ProxyFactory;
-import org.springframework.aop.target.EmptyTargetSource;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextImpl;
@@ -79,7 +75,6 @@ import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STRequest;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
-import it.uniroma2.art.semanticturkey.servlet.Proxy;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
@@ -156,7 +151,7 @@ public class BaseRenderingEngineTest {
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
 						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
 						JsonNodeFactory.instance.objectNode()),
-				null, null, new String[] { "resource" }, null, null, null, null, null, null);
+				null, null, new String[] { "resource" }, null, null, null, null, null, null, false);
 		try {
 			Repository repo = new SailRepository(new MemoryStore());
 			repo.initialize();
@@ -328,7 +323,7 @@ public class BaseRenderingEngineTest {
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
 						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
 						JsonNodeFactory.instance.objectNode()),
-				null, null, new String[] { "resource" }, null, null, null, null, null, null);
+				null, null, new String[] { "resource" }, null, null, null, null, null, null, false);
 		try {
 			STServiceContext stServiceContext = new STServiceContext() {
 

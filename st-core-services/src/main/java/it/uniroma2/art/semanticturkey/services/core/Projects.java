@@ -162,10 +162,10 @@ public class Projects extends STServiceAdapter {
 			@Optional(defaultValue = "resource") String[] updateForRoles,
 			@Optional String preloadedDataFileName, @Optional RDFFormat preloadedDataFormat,
 			@Optional TransitiveImportMethodAllowance transitiveImportAllowance, @Optional String leftDataset,
-			@Optional String rightDataset) throws ProjectInconsistentException, InvalidProjectNameException,
-			ProjectInexistentException, ProjectAccessException, ForbiddenProjectAccessException,
-			DuplicatedResourceException, ProjectCreationException, ClassNotFoundException,
-			WrongPropertiesException, UnsupportedPluginConfigurationException,
+			@Optional String rightDataset, @Optional boolean enableSHACL) throws ProjectInconsistentException,
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
+			ClassNotFoundException, WrongPropertiesException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, ProjectBindingException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, InvalidConfigurationException,
 			STPropertyAccessException, IOException, ReservedPropertyUpdateException, ProjectUpdateException {
@@ -201,7 +201,7 @@ public class Projects extends STServiceAdapter {
 					supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
 					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
 					updateForRoles, preloadedDataFile, preloadedDataFormat, transitiveImportAllowance,
-					failedImports, leftDataset, rightDataset);
+					failedImports, leftDataset, rightDataset, enableSHACL);
 			deletePreloadedDataFile = true;
 		} finally {
 			if (preloadedDataFileName != null) {
@@ -250,6 +250,7 @@ public class Projects extends STServiceAdapter {
 
 	/**
 	 * Returns the projects where there is at least a user with the given role
+	 * 
 	 * @param consumer
 	 * @param role
 	 * @param requestedAccessLevel
@@ -266,13 +267,18 @@ public class Projects extends STServiceAdapter {
 		List<ProjectInfo> listProjInfo = new ArrayList<>();
 
 		for (AbstractProject absProj : ProjectManager.listProjects(consumer)) {
-			ProjectInfo projInfo = getProjectInfoHelper(consumer, requestedAccessLevel, requestedLockLevel, false, onlyOpen, absProj);
+			ProjectInfo projInfo = getProjectInfoHelper(consumer, requestedAccessLevel, requestedLockLevel,
+					false, onlyOpen, absProj);
 			if (projInfo != null) {
-				Collection<ProjectUserBinding> puBindings = ProjectUserBindingsManager.listPUBindingsOfProject(absProj);
-				for (ProjectUserBinding pub : puBindings) { //looks into the bindings if there is at least one with the given role
-					if (pub.getRoles().stream().anyMatch(r -> r.getName().equals(role))) { //the PU binding has the given role
+				Collection<ProjectUserBinding> puBindings = ProjectUserBindingsManager
+						.listPUBindingsOfProject(absProj);
+				for (ProjectUserBinding pub : puBindings) { // looks into the bindings if there is at least
+															// one with the given role
+					if (pub.getRoles().stream().anyMatch(r -> r.getName().equals(role))) { // the PU binding
+																							// has the given
+																							// role
 						listProjInfo.add(projInfo);
-						break; //project added, no need to look for other PUBindings
+						break; // project added, no need to look for other PUBindings
 					}
 				}
 			}
@@ -359,8 +365,8 @@ public class Projects extends STServiceAdapter {
 			CorruptedProject proj = (CorruptedProject) absProj;
 			status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
 		}
-		return new ProjectInfo(name, open, baseURI, defaultNamespace, model,
-				lexicalizationModel, historyEnabled, validationEnabled, access, repoLocation, status);
+		return new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel,
+				historyEnabled, validationEnabled, access, repoLocation, status);
 	}
 
 	/**
@@ -391,8 +397,8 @@ public class Projects extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
-	public JsonNode getAccessStatusMap() throws InvalidProjectNameException, ProjectInexistentException,
-			ProjectAccessException {
+	public JsonNode getAccessStatusMap()
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode responseNode = jsonFactory.arrayNode();
@@ -683,8 +689,8 @@ public class Projects extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
-	public String getProjectPropertyFileContent(String projectName) throws InvalidProjectNameException,
-			ProjectInexistentException, IOException {
+	public String getProjectPropertyFileContent(String projectName)
+			throws InvalidProjectNameException, ProjectInexistentException, IOException {
 		return ProjectManager.getProjectPropertyFileContent(projectName);
 	}
 

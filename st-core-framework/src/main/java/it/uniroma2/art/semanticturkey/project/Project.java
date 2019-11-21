@@ -212,6 +212,9 @@ public abstract class Project extends AbstractProject {
 	public static final String RENDERING_ENGINE_CONFIGURATION_TYPE_PROP = RENDERING_ENGINE_PROP_PREFIX
 			+ ".configType";
 
+	
+	public static final String SHACL_ENABLED_PROP = "shaclEnabled";
+
 	// this hashset, used by the setProperty(...) method, prevents ST system properties from being
 	// accidentally overwritten by third party plugins/extensions
 	public static final HashSet<String> reservedProperties = new HashSet<String>();
@@ -228,6 +231,7 @@ public abstract class Project extends AbstractProject {
 		reservedProperties.add(HISTORY_ENABLED_PROP);
 		reservedProperties.add(VALIDATION_ENABLED_PROP);
 		reservedProperties.add(BLACKLISTING_ENABLED_PROP);
+		reservedProperties.add(SHACL_ENABLED_PROP);
 	}
 
 	private static final String SEPARATION_SYMBOL = ";";

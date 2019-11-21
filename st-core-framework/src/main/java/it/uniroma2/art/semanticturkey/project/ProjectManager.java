@@ -49,6 +49,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.EnumUtils;
@@ -65,6 +66,8 @@ import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.sail.config.SailImplConfig;
+import org.eclipse.rdf4j.sail.shacl.config.ShaclSailConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1311,7 +1314,7 @@ public class ProjectManager {
 			PluginSpecification renderingEngineSpecification, IRI creationDateProperty,
 			IRI modificationDateProperty, String[] updateForRoles, File preloadedDataFile,
 			RDFFormat preloadedDataFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
-			Set<IRI> failedImports, String leftDataset, String rightDataset)
+			Set<IRI> failedImports, String leftDataset, String rightDataset, boolean enableSHACL)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, UnsupportedPluginConfigurationException,
@@ -1370,35 +1373,49 @@ public class ProjectManager {
 				supportRepositoryConfig = null;
 			}
 
+			Function<SailImplConfig, SailImplConfig> backendDecorator = backendSailImplConfig -> {
+				SailImplConfig sailImplConfig = backendSailImplConfig;
+
+				if (supportRepositoryConfig != null) {
+
+					ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(sailImplConfig);
+					changeTrackerSailConfig.setSupportRepositoryID("support");
+					changeTrackerSailConfig.setMetadataNS(defaultNamespace + "metadata#");
+					changeTrackerSailConfig.setHistoryEnabled(historyEnabled);
+					if (historyEnabled) {
+						changeTrackerSailConfig.setHistoryGraph(
+								SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
+					}
+					changeTrackerSailConfig.setValidationEnabled(validationEnabled);
+					if (validationEnabled) {
+						changeTrackerSailConfig.setValidationGraph(
+								SimpleValueFactory.getInstance().createIRI(defaultNamespace + "validation"));
+					}
+					changeTrackerSailConfig.setBlacklistingEnabled(blacklistingEnabled);
+					if (blacklistingEnabled) {
+						changeTrackerSailConfig.setBlacklistGraph(
+								SimpleValueFactory.getInstance().createIRI(defaultNamespace + "blacklist"));
+					}
+
+					sailImplConfig = changeTrackerSailConfig;
+				}
+
+				if (enableSHACL) {
+					ShaclSailConfig shaclSailConfig = new ShaclSailConfig();
+					shaclSailConfig.setIgnoreNoShapesLoadedException(true);
+					shaclSailConfig.setDelegate(sailImplConfig);
+
+					sailImplConfig = shaclSailConfig;
+				}
+
+				return sailImplConfig;
+			};
+
 			if (repositoryAccess.isLocal()) { // Local repositories
 				RepositoryImplConfigurer coreRepoSailConfigurer = instantiateRepositoryImplConfigurer(
 						coreRepoSailConfigurerSpecification);
 				RepositoryImplConfig coreRepositoryImplConfig = coreRepoSailConfigurer
-						.buildRepositoryImplConfig(backendSailImplConfig -> {
-							if (supportRepositoryConfig == null)
-								return backendSailImplConfig;
-
-							ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(
-									backendSailImplConfig);
-							changeTrackerSailConfig.setSupportRepositoryID("support");
-							changeTrackerSailConfig.setMetadataNS(defaultNamespace + "metadata#");
-							changeTrackerSailConfig.setHistoryEnabled(historyEnabled);
-							if (historyEnabled) {
-								changeTrackerSailConfig.setHistoryGraph(SimpleValueFactory.getInstance()
-										.createIRI(defaultNamespace + "history"));
-							}
-							changeTrackerSailConfig.setValidationEnabled(validationEnabled);
-							if (validationEnabled) {
-								changeTrackerSailConfig.setValidationGraph(SimpleValueFactory.getInstance()
-										.createIRI(defaultNamespace + "validation"));
-							}
-							changeTrackerSailConfig.setBlacklistingEnabled(blacklistingEnabled);
-							if (blacklistingEnabled) {
-								changeTrackerSailConfig.setBlacklistGraph(SimpleValueFactory.getInstance()
-										.createIRI(defaultNamespace + "blacklist"));
-							}
-							return changeTrackerSailConfig;
-						});
+						.buildRepositoryImplConfig(backendDecorator);
 				coreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
 
 				if (supportRepositoryConfig != null) {
@@ -1417,32 +1434,7 @@ public class ProjectManager {
 					RepositoryImplConfigurer coreRepoSailConfigurer = instantiateRepositoryImplConfigurer(
 							coreRepoSailConfigurerSpecification);
 					RepositoryImplConfig coreRepositoryImplConfig = coreRepoSailConfigurer
-							.buildRepositoryImplConfig(backendSailImplConfig -> {
-								if (supportRepositoryConfig == null)
-									return backendSailImplConfig;
-
-								ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(
-										backendSailImplConfig);
-								changeTrackerSailConfig.setSupportRepositoryID(supportRepoID);
-								changeTrackerSailConfig.setMetadataNS(defaultNamespace + "metadata#");
-								changeTrackerSailConfig.setHistoryEnabled(historyEnabled);
-								if (historyEnabled) {
-									changeTrackerSailConfig.setHistoryGraph(SimpleValueFactory.getInstance()
-											.createIRI(defaultNamespace + "history"));
-								}
-								changeTrackerSailConfig.setValidationEnabled(validationEnabled);
-								if (validationEnabled) {
-									changeTrackerSailConfig.setValidationGraph(SimpleValueFactory
-											.getInstance().createIRI(defaultNamespace + "validation"));
-								}
-								changeTrackerSailConfig.setBlacklistingEnabled(blacklistingEnabled);
-								if (blacklistingEnabled) {
-									changeTrackerSailConfig.setBlacklistGraph(SimpleValueFactory.getInstance()
-											.createIRI(defaultNamespace + "blacklist"));
-								}
-
-								return changeTrackerSailConfig;
-							});
+							.buildRepositoryImplConfig(backendDecorator);
 					newCoreRepositoryConfig.setRepositoryImplConfig(coreRepositoryImplConfig);
 
 					RepositoryConfig newSupportRepositoryConfig = null;
@@ -1558,7 +1550,7 @@ public class ProjectManager {
 					repositoryAccess, coreRepoID, coreRepositoryConfig, coreBackendType, supportRepoID,
 					supportRepositoryConfig, supportBackendType, uriGeneratorSpecification,
 					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
-					updateForRoles, leftDataset, rightDataset);
+					updateForRoles, leftDataset, rightDataset, enableSHACL);
 
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 
@@ -1703,7 +1695,7 @@ public class ProjectManager {
 			RepositoryConfig supportRepoConfig, String supportBackendType,
 			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
 			IRI creationDateProperty, IRI modificationDateProperty, String[] updateForRoles,
-			String leftDataset, String rightDataset)
+			String leftDataset, String rightDataset, boolean enableSHACL)
 			throws DuplicatedResourceException, ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
@@ -1759,6 +1751,10 @@ public class ProjectManager {
 
 			if (rightDataset != null) {
 				out.write(Project.RIGHT_DATASET_PROP + "=" + escape(rightDataset) + "\n");
+			}
+
+			if (enableSHACL) {
+				out.write(Project.SHACL_ENABLED_PROP + "=" + enableSHACL + "\n");
 			}
 
 			out.close();
