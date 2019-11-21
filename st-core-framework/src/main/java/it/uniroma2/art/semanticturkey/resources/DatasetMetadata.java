@@ -22,6 +22,7 @@
  */
 package it.uniroma2.art.semanticturkey.resources;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -36,6 +37,7 @@ import com.google.common.base.MoreObjects;
 
 import it.uniroma2.art.semanticturkey.utilities.IRI2StringConverter;
 import it.uniroma2.art.semanticturkey.utilities.Optional2StringConverter;
+import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
 
 /**
  * Metadata describing a dataset.
@@ -97,7 +99,8 @@ public class DatasetMetadata {
 
 	@JsonIgnore
 	public boolean isAccessible() {
-		return getSparqlEndpoint().isPresent() || getDereferenciationSystem().isPresent();
+		return getSparqlEndpoint().isPresent() || !Objects.equals(getDereferenciationSystem().orElse(null),
+				METADATAREGISTRY.NO_DEREFERENCIATION);
 	}
 
 	@Override
