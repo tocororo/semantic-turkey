@@ -9,7 +9,6 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import org.apache.commons.io.FileUtils;
-import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
@@ -22,7 +21,6 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -81,7 +79,7 @@ public class UsersManager {
 	 * @throws UserException
 	 * @throws IOException
 	 */
-	public static void registerUser(STUser user) throws UserException, ProjectAccessException, ProjectBindingException {
+	public static void registerUser(STUser user) throws UserException, ProjectAccessException {
 		if (getUserByEmail(user.getEmail()) != null) {
 			throw new UserException("E-mail address " + user.getEmail() + " already used by another user");
 		}
@@ -455,7 +453,7 @@ public class UsersManager {
 	public static void addUserFormCustomField(String field) throws UserException {
 		IRI p = userForm.getFirstAvailableProperty();
 		if (p == null) { //this should never happen, the UI should prevent to add new fields when there are no more fields available 
-			throw new InvalidOperationException("Cannot add a field, the form is already filled");
+			throw new IllegalStateException("Cannot add a field, the form is already filled");
 		}
 		userForm.addField(new UserFormCustomField(p, userForm.getOrderedCustomFields().size(), field));
 		updateUserFormFieldsFile();

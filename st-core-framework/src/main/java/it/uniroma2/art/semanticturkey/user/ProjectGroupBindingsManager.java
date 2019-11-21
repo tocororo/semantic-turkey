@@ -81,7 +81,7 @@ public class ProjectGroupBindingsManager {
 	/**
 	 * Returns the ProjectGroupBinding that binds the given group and project
 	 * @param group
-	 * @param projectName
+	 * @param project
 	 * @return
 	 */
 	public static ProjectGroupBinding getPGBinding(UsersGroup group, AbstractProject project) {
@@ -103,7 +103,7 @@ public class ProjectGroupBindingsManager {
 	
 	/**
 	 * Returns the ProjectGroupBindings of the given project
-	 * @param projectName
+	 * @param project
 	 * @return
 	 */
 	public static Collection<ProjectGroupBinding> listPGBindingsOfProject(AbstractProject project) {
@@ -118,7 +118,7 @@ public class ProjectGroupBindingsManager {
 	
 	/**
 	 * Checks if there is the folder of project-group bindings for the given project
-	 * @param projectName
+	 * @param project
 	 * @return
 	 */
 	public static boolean existsPGBindingsOfProject(AbstractProject project) {
@@ -128,10 +128,9 @@ public class ProjectGroupBindingsManager {
 	/**
 	 * Creates all the project-group bindings folders related to the given project.
 	 * Useful when a project is created/imported
-	 * @param projectName
-	 * @throws IOException 
+	 * @param project
 	 */
-	public static void createPGBindingsOfProject(AbstractProject project) throws ProjectBindingException {
+	public static void createPGBindingsOfProject(AbstractProject project) {
 		Collection<UsersGroup> groups = UsersGroupsManager.listGroups();
 		//for each group creates the binding with the given project
 		for (UsersGroup g : groups) {
@@ -173,7 +172,7 @@ public class ProjectGroupBindingsManager {
 	
 	/**
 	 * When a group is deleted, deletes all the project-group bindings folders related to the given group
-	 * @param userEmail
+	 * @param group
 	 * @throws IOException 
 	 */
 	public static void deletePGBindingsOfGroup(UsersGroup group) throws IOException {
@@ -212,7 +211,7 @@ public class ProjectGroupBindingsManager {
 	 * Adds role to the binding between the given project-group pair
 	 * @param group
 	 * @param project
-	 * @param schemes
+	 * @param scheme
 	 * @throws ProjectBindingException
 	 */
 	public static void addSchemeToPGBinding(UsersGroup group, AbstractProject project, IRI scheme) throws ProjectBindingException {
@@ -223,9 +222,9 @@ public class ProjectGroupBindingsManager {
 	
 	/**
 	 * Removes a scheme from the binding between the given project-group pair
-	 * @param userEmail
-	 * @param projectName
-	 * @param role
+	 * @param group
+	 * @param project
+	 * @param scheme
 	 * @throws ProjectBindingException
 	 */
 	public static void removeSchemeFromPGBinding(UsersGroup group, AbstractProject project, IRI scheme) throws ProjectBindingException {
@@ -236,9 +235,8 @@ public class ProjectGroupBindingsManager {
 	
 	/**
 	 * Remove all the schemes assigned to a group in a project
-	 * @param user
+	 * @param group
 	 * @param project
-	 * @param role
 	 * @throws ProjectBindingException
 	 */
 	public static void removeAllSchemesFromPGBinding(UsersGroup group, AbstractProject project) throws ProjectBindingException {
@@ -249,7 +247,8 @@ public class ProjectGroupBindingsManager {
 	
 	/**
 	 * Removes a scheme from all the bindings of the given project (useful in case a group is deleted)
-	 * @param role
+	 * @param project
+	 * @param scheme
 	 * @throws ProjectBindingException 
 	 */
 	public static void removeSchemeFromPGBindings(AbstractProject project, IRI scheme) throws ProjectBindingException {
@@ -347,8 +346,8 @@ public class ProjectGroupBindingsManager {
 	
 	/**
 	 * Returns the user folders under <STData>/pg_bindings/<projectName>/ for the given project-group pair
-	 * @param projectName
-	 * @param userEmail
+	 * @param project
+	 * @param group
 	 * @return
 	 */
 	public static File getPGBindingsFolder(AbstractProject project, UsersGroup group) {
@@ -372,7 +371,8 @@ public class ProjectGroupBindingsManager {
 	
 	/**
 	 * Returns the binding.tts file of the given puBinding
-	 * @param pgBinding
+	 * @param project
+	 * @param group
 	 * @return
 	 */
 	private static File getPGBindingDetailsFile(AbstractProject project, UsersGroup group) {
@@ -423,8 +423,8 @@ public class ProjectGroupBindingsManager {
 	
 	/**
 	 * Returns the user folders under <STData>/pu_bindings/<projectName>/ for the given project-user pair
-	 * @param projectName
-	 * @param userEmail
+	 * @param project
+	 * @param user
 	 * @return
 	 */
 	public static File getPUBindingsFolder(AbstractProject project, STUser user) {

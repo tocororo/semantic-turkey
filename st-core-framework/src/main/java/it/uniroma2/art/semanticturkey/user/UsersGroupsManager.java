@@ -81,7 +81,7 @@ public class UsersGroupsManager {
 	/**
 	 * Returns the group with the given name. Null if there is no group with the given name.
 	 * 
-	 * @param iri
+	 * @param name
 	 * @return
 	 */
 	public static UsersGroup getGroupByShortName(String name) {
@@ -97,7 +97,7 @@ public class UsersGroupsManager {
 	/**
 	 * Delete the user with the given email
 	 * 
-	 * @param email
+	 * @param group
 	 * @throws IOException
 	 */
 	public static void deleteGroup(UsersGroup group) throws IOException {
@@ -153,9 +153,9 @@ public class UsersGroupsManager {
 	
 	/**
 	 * Updates the webPage of the given group and returns it updated
-	 * 
+	 *
+	 * @param group
 	 * @param webPage
-	 * @param fullName
 	 * @return
 	 * @throws IOException
 	 */
@@ -183,7 +183,7 @@ public class UsersGroupsManager {
 	 * Creates a folder for the given user and serializes the details about the user in a file. If the folder
 	 * is already created, simply update the info in the user details file.
 	 * 
-	 * @param user
+	 * @param group
 	 * @throws IOException
 	 */
 	private static void createOrUpdateGroupDetailsFolder(UsersGroup group) throws UsersGroupException {
@@ -220,8 +220,8 @@ public class UsersGroupsManager {
 				return new File(current, name).isDirectory();
 			}
 		});
-		for (int i = 0; i < groupDirectories.length; i++) {
-			groupFolders.add(new File(groupsFolder + File.separator + groupDirectories[i]));
+		for (String groupDirectory : groupDirectories) {
+			groupFolders.add(new File(groupsFolder + File.separator + groupDirectory));
 		}
 		return groupFolders;
 	}
