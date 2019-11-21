@@ -1,23 +1,13 @@
 package it.uniroma2.art.semanticturkey.user;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.resources.Resources;
 import org.apache.commons.io.FileUtils;
 import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
 import org.eclipse.rdf4j.model.IRI;
@@ -28,7 +18,18 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import it.uniroma2.art.semanticturkey.resources.Resources;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 
 public class UsersManager {
 
@@ -70,7 +71,7 @@ public class UsersManager {
 		//adminEmails could be a plain string for a single address (ST < 6.1.0) or a json serialized list => handle both cases
 		adminSet = adminEmailsSetting.startsWith("[") ?
 				new ObjectMapper().readValue(adminEmailsSetting, new TypeReference<Set<String>>(){}) :
-				new HashSet<>(Arrays.asList(adminEmailsSetting));
+				new HashSet<>(Collections.singletonList(adminEmailsSetting));
 	}
 
 	/**
@@ -80,7 +81,7 @@ public class UsersManager {
 	 * @throws UserException
 	 * @throws IOException
 	 */
-	public static void registerUser(STUser user) throws UserException {
+	public static void registerUser(STUser user) throws UserException, ProjectAccessException, ProjectBindingException {
 		if (getUserByEmail(user.getEmail()) != null) {
 			throw new UserException("E-mail address " + user.getEmail() + " already used by another user");
 		}
@@ -91,6 +92,7 @@ public class UsersManager {
 		user.setRegistrationDate(new Date());
 		userList.add(user);
 		createOrUpdateUserDetailsFolder(user); // serialize user detials
+		ProjectUserBindingsManager.createPUBindingsOfUser(user);
 	}
 
 	/**

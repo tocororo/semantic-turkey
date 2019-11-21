@@ -333,7 +333,7 @@ public class RBACManager {
 			for (String role: rbacMap.get(proj).keySet()) {
 				System.out.print("\tRole: " + role);
 				RBACProcessor rbac = rbacMap.get(proj).get(role);
-				System.out.println("RBACProcessor " + rbac);
+				System.out.println("; RBACProcessor " + rbac);
 			}
 		}
 	}
