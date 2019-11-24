@@ -32,7 +32,8 @@ public abstract class ManchesterClassInterface {
 	private PossType type;
 
 	public static enum PossType {
-		BASE, AND, OR, NOT, ONEOF, SOME, ONLY, MIN, MAX, EXACTLY, VALUE, SELF, LITERALLIST
+		BASE, AND, OR, NOT, ONEOF, SOME, ONLY, MIN, MAX, EXACTLY, VALUE, SELF, LITERALLIST, DATATYPERESTRICTION,
+		DATARANGE, DATACONJUCTION;
 	}
 
 	public ManchesterClassInterface(PossType type) {
@@ -47,13 +48,11 @@ public abstract class ManchesterClassInterface {
 		if(!getPrefixName){
 			return "<"+res.stringValue()+">";
 		}
-		
-		String prefix = namespaceToPrefixsMap.get(res.getNamespace());
-		
-		if(prefix == null) {
-			return "<" + res.stringValue() + ">";
-		} else{
-			return prefix+":"+res.getLocalName();
+
+		if(namespaceToPrefixsMap.containsKey(res.getNamespace())){
+			return namespaceToPrefixsMap.get(res.getNamespace())+":"+res.getLocalName();
+		} else {
+			return printRes(false, null, res);
 		}
 	}
 	
@@ -70,25 +69,22 @@ public abstract class ManchesterClassInterface {
 	/**
 	 * Returns the representation of this class expression conforming to the Manchester syntax. The parameter
 	 * <code>getPrefixName</code> controls whether URIs are shortened into qualified names or presented in
-	 * their full form. The qualified names use prefixes defined by the model that has been used to construct
-	 * this object, unless the parameter <code>prefixMapping</code> holds a non-null reference to an
-	 * alternative {@link PrefixMapping}.
+	 * their full form. The qualified names use prefixes defined in the parameter <code>prefixMapping</code>.
 	 * 
-	 * @param prefixMapping
-	 * @param getPrefixName
+	 * @param namespaceToPrefixsMap the prefix map class to use then getPrefixName is true
+	 * @param getPrefixName to use the qname, if the appropriate prefix has been defined
+	 * @param useUppercaseSyntax to return the the reserved keyword in upper (true) or lower case (false)
 	 * @return
-	 * @throws ModelAccessException
 	 */
 	public abstract String getManchExpr(Map<String, String> namespaceToPrefixsMap, boolean getPrefixName, 
 			boolean useUppercaseSyntax);
 
 	/**
-	 * A shortcut for {@link #getManchExpr(PrefixMapping, boolean)} with the first parameter set to
+	 * A shortcut for {@link #getManchExpr(Map, boolean, boolean)}  with the first parameter set to
 	 * <code>null</code>
 	 * 
-	 * @param getPrefixName
+	 * @param useUppercaseSyntax to return the the reserved keyword in upper (true) or lower case (false)
 	 * @return
-	 * @throws ModelAccessException
 	 */
 	public String getManchExpr(boolean useUppercaseSyntax){
 		return getManchExpr(null, false, useUppercaseSyntax);

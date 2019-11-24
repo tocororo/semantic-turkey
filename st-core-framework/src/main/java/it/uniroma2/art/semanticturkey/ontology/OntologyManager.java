@@ -90,9 +90,10 @@ public interface OntologyManager {
 	 * Removes all prefix declarations for the supplied <code>namespace</code>
 	 * 
 	 * @param namespace
+	 * @param checkOnlyExplicit
 	 * @throws NSPrefixMappingUpdateException
 	 */
-	void removeNSPrefixMapping(String namespace) throws NSPrefixMappingUpdateException;
+	void removeNSPrefixMapping(String namespace, boolean checkOnlyExplicit) throws NSPrefixMappingUpdateException;
 
 	// Add an ontology import from various sources (local file, mirror, web)
 

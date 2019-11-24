@@ -437,6 +437,7 @@ public class Datatypes extends STServiceAdapter {
 				"?r ?facet ?value .\n" +
 				"}\n" +
 				"}";
+		//System.out.println(query);
 		TupleQuery tq = conn.prepareTupleQuery(query);
 		TupleQueryResult results = tq.evaluate();
 		while (results.hasNext()) {

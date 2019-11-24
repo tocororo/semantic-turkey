@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import it.uniroma2.art.semanticturkey.vocabulary.XSDFragment;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -131,65 +132,21 @@ public class ManchesterSyntaxUtils {
 			ManchesterBaseClass mbc = (ManchesterBaseClass) mci;
 			return mbc.getBaseClass();
 		} else if (mci instanceof ManchesterAndClass) { // PossType.AND
-			BNode bnodeForAnd = valueFactory.createBNode();
-			statList.add(valueFactory.createStatement(bnodeForAnd, RDF.TYPE, OWL.CLASS));
-
-			BNode bnodeIntersectionOf = valueFactory.createBNode();
-			statList.add(valueFactory.createStatement(bnodeForAnd, OWL.INTERSECTIONOF, bnodeIntersectionOf));
-
-			boolean first = true;
 			ManchesterAndClass mac = (ManchesterAndClass) mci;
 			List<ManchesterClassInterface> macClassList = mac.getAndClassList();
-			BNode prevBNodeInList = bnodeIntersectionOf;
+			List<Resource> andClassList = new ArrayList<>();
 			for (ManchesterClassInterface mciInner : macClassList) {
-				if (first) {
-					// it is the first element in the list, so it should not be "linked" with
-					// anything using RDF.REST
-					first = false;
-				} else {
-					// it is not the first element in the list, so it should be "linked" with
-					// the previous element in the list using RDF.REST
-					BNode currentBNodeInList = valueFactory.createBNode();
-					statList.add(valueFactory.createStatement(prevBNodeInList, RDF.REST, currentBNodeInList));
-					prevBNodeInList = currentBNodeInList;
-				}
-				Resource innerClass = parseManchesterExpr(mciInner, statList, valueFactory);
-				statList.add(valueFactory.createStatement(prevBNodeInList, RDF.TYPE, RDF.LIST));
-				statList.add(valueFactory.createStatement(prevBNodeInList, RDF.FIRST, innerClass));
+				andClassList.add(parseManchesterExpr(mciInner, statList, valueFactory));
 			}
-			// set the last rest as nil, to "close" the list
-			statList.add(valueFactory.createStatement(prevBNodeInList, RDF.REST, RDF.NIL));
-			return bnodeForAnd;
+			return createRDFList(OWL.CLASS, OWL.INTERSECTIONOF, statList, valueFactory, andClassList);
 		} else if (mci instanceof ManchesterOrClass) { // PossType.OR
-			BNode bnodeForOr = valueFactory.createBNode();
-			statList.add(valueFactory.createStatement(bnodeForOr, RDF.TYPE, OWL.CLASS));
-
-			BNode bnodeUnionOf = valueFactory.createBNode();
-			statList.add(valueFactory.createStatement(bnodeForOr, OWL.UNIONOF, bnodeUnionOf));
-
-			boolean first = true;
 			ManchesterOrClass moc = (ManchesterOrClass) mci;
 			List<ManchesterClassInterface> mocClassList = moc.getOrClassList();
-			BNode prevBNodeInList = bnodeUnionOf;
+			List<Resource> orClassList = new ArrayList<>();
 			for (ManchesterClassInterface mciInner : mocClassList) {
-				if (first) {
-					// it is the first element in the list, so it should not be "linked" with
-					// anything using RDF.REST
-					first = false;
-				} else {
-					// it is not the first element in the list, so it should be "linked" with
-					// the previous element in the list using RDF.REST
-					BNode currentBNodeInList = valueFactory.createBNode();
-					statList.add(valueFactory.createStatement(prevBNodeInList, RDF.REST, currentBNodeInList));
-					prevBNodeInList = currentBNodeInList;
-				}
-				Resource innerClass = parseManchesterExpr(mciInner, statList, valueFactory);
-				statList.add(valueFactory.createStatement(prevBNodeInList, RDF.TYPE, RDF.LIST));
-				statList.add(valueFactory.createStatement(prevBNodeInList, RDF.FIRST, innerClass));
+				orClassList.add(parseManchesterExpr(mciInner, statList, valueFactory));
 			}
-			// set the last rest as nil, to "close" the list
-			statList.add(valueFactory.createStatement(prevBNodeInList, RDF.REST, RDF.NIL));
-			return bnodeForOr;
+			return createRDFList(OWL.CLASS, OWL.UNIONOF, statList, valueFactory, orClassList);
 		} else if (mci instanceof ManchesterCardClass) {// PossType.MAX || PossType.MIN || PossType.EXACTLY
 			ManchesterCardClass mcc = (ManchesterCardClass) mci;
 			int card = mcc.getCard();
@@ -237,57 +194,11 @@ public class ManchesterSyntaxUtils {
 		} else if (mci instanceof ManchesterOneOfClass) { // PossType.ONEOF
 			ManchesterOneOfClass moc = (ManchesterOneOfClass) mci;
 			List<IRI> individualList = moc.getOneOfList();
-			boolean first = true;
-			BNode bnodeClass = valueFactory.createBNode();
-			BNode oneOfClass = valueFactory.createBNode();
-			statList.add(valueFactory.createStatement(bnodeClass, RDF.TYPE, OWL.CLASS));
-			statList.add(valueFactory.createStatement(bnodeClass, OWL.ONEOF, oneOfClass));
-			BNode prevBNodeInList = oneOfClass;
-			for (IRI individual : individualList) {
-				if (first) {
-					// it is the first element in the list, so it should not be "linked" with
-					// anything using RDF.REST
-					first = false;
-				} else {
-					// it is not the first element in the list, so it should be "linked" with
-					// the previous element in the list using RDF.REST
-					BNode currentBNodeInList = valueFactory.createBNode();
-					statList.add(valueFactory.createStatement(prevBNodeInList, RDF.REST, currentBNodeInList));
-					prevBNodeInList = currentBNodeInList;
-				}
-				statList.add(valueFactory.createStatement(prevBNodeInList, RDF.TYPE, RDF.LIST));
-				statList.add(valueFactory.createStatement(prevBNodeInList, RDF.FIRST, individual));
-			}
-			// set the last rest as nil, to "close" the list
-			statList.add(valueFactory.createStatement(prevBNodeInList, RDF.REST, RDF.NIL));
-			return bnodeClass;
+			return createRDFList(OWL.CLASS, OWL.ONEOF, statList, valueFactory, individualList);
 		} else if (mci instanceof ManchesterLiteralListClass) {
 			ManchesterLiteralListClass mllc = (ManchesterLiteralListClass) mci;
-			BNode bnodeDatatype = valueFactory.createBNode();
-			statList.add(valueFactory.createStatement(bnodeDatatype, RDF.TYPE, RDFS.DATATYPE));
 			List<Literal> literalList = mllc.getLiteralList();
-			boolean first = true;
-			BNode oneOfClass = valueFactory.createBNode();
-			statList.add(valueFactory.createStatement(bnodeDatatype, OWL.ONEOF, oneOfClass));
-			BNode prevBNodeInList = oneOfClass;
-			for (Literal literal : literalList) {
-				if (first) {
-					// it is the first element in the list, so it should not be "linked" with
-					// anything using RDF.REST
-					first = false;
-				} else {
-					// it is not the first element in the list, so it should be "linked" with
-					// the previous element in the list using RDF.REST
-					BNode currentBNodeInList = valueFactory.createBNode();
-					statList.add(valueFactory.createStatement(prevBNodeInList, RDF.REST, currentBNodeInList));
-					prevBNodeInList = currentBNodeInList;
-				}
-				statList.add(valueFactory.createStatement(prevBNodeInList, RDF.TYPE, RDF.LIST));
-				statList.add(valueFactory.createStatement(prevBNodeInList, RDF.FIRST, literal));
-			}
-			// set the last rest as nil, to "close" the list
-			statList.add(valueFactory.createStatement(prevBNodeInList, RDF.REST, RDF.NIL));
-			return bnodeDatatype;
+			return createRDFList(RDFS.DATATYPE, OWL.ONEOF, statList, valueFactory, literalList);
 		} else if (mci instanceof ManchesterOnlyClass) { // PossType.ONLY
 			ManchesterOnlyClass moc = (ManchesterOnlyClass) mci;
 			IRI prop = moc.getOnlyProp();
@@ -324,12 +235,158 @@ public class ManchesterSyntaxUtils {
 			statList.add(valueFactory.createStatement(selfClass, valueFactory.createIRI(OWL_SELF),
 					valueFactory.createLiteral("true", XMLSchema.BOOLEAN)));
 			return selfClass;
+		}  else if (mci instanceof ManchesterDatatypeRestriction ) {
+			/*
+			 _:x rdf:type rdfs:Datatype .
+			 _:x owl:onDatatype T(DT) .
+			 _:x owl:withRestrictions T(SEQ _:y1 ... _:yn) .
+			 _:y1 F1 lt1 .
+			 ...
+			 _:yn Fn ltn .
+			 */
+			ManchesterDatatypeRestriction mdtr = (ManchesterDatatypeRestriction) mci;
+			ManchesterClassInterface datatypeMCI = mdtr.getDatatypeMCI();
+			Resource datatypeRes = parseManchesterExpr(datatypeMCI, statList, valueFactory);
+			List<String> facetList = mdtr.getFacetStringList();
+			List<Literal> literalList = mdtr.getLiteralList();
+			//since the list that is going to be generated has "complex" value in it (each RDF.FIRST is not linked with a direct resource but with a "complex" one)
+			//calculate these complex resource and the BNode to which these resources are linked to
+			List<BNode> bnodeList = new ArrayList<>();
+			for(int i=0; i<facetList.size(); ++i){
+				BNode facetsAndLiteralBNode = valueFactory.createBNode();
+				statList.add(valueFactory.createStatement(facetsAndLiteralBNode, getPropforFacets(facetList.get(i), valueFactory), literalList.get(i)));
+				bnodeList.add(facetsAndLiteralBNode);
+			}
+			BNode mainBnode = createRDFList(RDFS.DATATYPE, OWL.WITHRESTRICTIONS, statList, valueFactory, bnodeList);
+			statList.add(valueFactory.createStatement(mainBnode, OWL.ONDATATYPE, datatypeRes));
+			return mainBnode;
+		} else if(mci instanceof ManchesterDataRange){
+			ManchesterDataRange mdr = (ManchesterDataRange) mci;
+			List<ManchesterClassInterface> dataConjunctionList = mdr.getDataConjunctionList();
+			if(dataConjunctionList.size()==1){
+				//there is only one element so no need for the OWL.UNIOFOF
+				return parseManchesterExpr(dataConjunctionList.get(0), statList, valueFactory);
+			} else {
+
+				List<Resource> firstElemInList = new ArrayList<>();
+				for(ManchesterClassInterface dataConjunction : dataConjunctionList){
+					firstElemInList.add(parseManchesterExpr(dataConjunction, statList, valueFactory));
+				}
+				return createRDFList(RDFS.DATATYPE, OWL.UNIONOF, statList, valueFactory, firstElemInList);
+			}
+		} else if(mci instanceof ManchesterDataConjunction) {
+			ManchesterDataConjunction mdc = (ManchesterDataConjunction) mci;
+			List<ManchesterClassInterface> dataPrimaryList = mdc.getDataPrimaryList();
+			if(dataPrimaryList.size() == 1){
+				//there is only one element so no need for the OWL.INTERCECTIONOF
+				return parseManchesterExpr(dataPrimaryList.get(0), statList, valueFactory);
+			} else {
+				List<Resource> firstElemInList = new ArrayList<>();
+				for(ManchesterClassInterface dataPrimary : dataPrimaryList){
+					firstElemInList.add(parseManchesterExpr(dataPrimary, statList, valueFactory));
+				}
+				return createRDFList(RDFS.DATATYPE, OWL.INTERSECTIONOF, statList, valueFactory, firstElemInList);
+			}
 		} else {
 			// this should never happen
 			// TODO decide what to do in this case
 			return null;
 		}
 	}
+
+
+	private static BNode createRDFList(IRI mainElemType, IRI propForList, List<Statement> statList,
+			ValueFactory valueFactory, List<? extends Value> firstElemInList){
+		BNode mainBNode = valueFactory.createBNode();
+
+		statList.add(valueFactory.createStatement(mainBNode, RDF.TYPE, mainElemType));
+		BNode intersectionOfBNode = valueFactory.createBNode();
+		statList.add(valueFactory.createStatement(mainBNode, propForList, intersectionOfBNode));
+		BNode prevBNodeInList = intersectionOfBNode;
+		boolean first = true;
+		for(Value firstElem : firstElemInList){
+			if (first) {
+				// it is the first element in the list, so it should not be "linked" with
+				// anything using RDF.REST
+				first = false;
+			} else {
+				// it is not the first element in the list, so it should be "linked" with
+				// the previous element in the list using RDF.REST
+				BNode currentBNodeInList = valueFactory.createBNode();
+				statList.add(valueFactory.createStatement(prevBNodeInList, RDF.REST, currentBNodeInList));
+				prevBNodeInList = currentBNodeInList;
+			}
+			statList.add(valueFactory.createStatement(prevBNodeInList, RDF.TYPE, RDF.LIST));
+			statList.add(valueFactory.createStatement(prevBNodeInList, RDF.FIRST, firstElem));
+		}
+		// set the last rest as nil, to "close" the list
+		statList.add(valueFactory.createStatement(prevBNodeInList, RDF.REST, RDF.NIL));
+
+		return mainBNode;
+	}
+
+	private static IRI getPropforFacets(String facet, ValueFactory valueFactory) {
+		/*
+			facet 	length 	xsd:length
+			facet 	minLength 	xsd:minLength
+			facet 	maxLength 	xsd:maxLength
+			facet 	pattern 	xsd:pattern
+			facet 	langRange 	rdf:langRange
+			facet 	<= 	xsd:minInclusive
+			facet 	< 	xsd:minExclusive
+			facet 	>= 	xsd:maxInclusive
+			facet 	> 	xsd:maxExclusive
+		 */
+		IRI propFromFacet = null;
+
+		if(facet.toLowerCase().equals(ParserDescription.FACET_LENGTH)){
+			propFromFacet = XSDFragment.LENGTH;
+		} else if(facet.toLowerCase().equals(ParserDescription.FACET_MINLENGTH)) {
+			propFromFacet = XSDFragment.MINLENGTH;
+		} else if(facet.toLowerCase().equals(ParserDescription.FACET_MAXLENGTH)) {
+			propFromFacet = XSDFragment.MAXLENGTH;
+		} else if(facet.toLowerCase().equals(ParserDescription.FACET_PATTERN)) {
+			propFromFacet = XSDFragment.PATTERN;
+		} else if(facet.toLowerCase().equals(ParserDescription.FACET_LANGRANGE)) {
+			propFromFacet = XSDFragment.LANGRANGE;
+		} else if(facet.toLowerCase().equals(ParserDescription.FACET_LESSEQ)) {
+			propFromFacet = XSDFragment.MININCLUSIVE;
+		} else if(facet.toLowerCase().equals(ParserDescription.FACET_LESS)) {
+			propFromFacet = XSDFragment.MINEXCLUSIVE;
+		} else if(facet.toLowerCase().equals(ParserDescription.FACET_GREATEREQ)) {
+			propFromFacet = XSDFragment.MAXINCLUSIVE;
+		} else if(facet.toLowerCase().equals(ParserDescription.FACET_GREATER)) {
+			propFromFacet = XSDFragment.MAXEXCLUSIVE;
+		}
+
+		return propFromFacet;
+	}
+
+	private static String getFacetFromIri(IRI iriFacet) {
+
+		String facet = null;
+		if(iriFacet.equals(XSDFragment.LENGTH)){
+			facet = ParserDescription.FACET_LENGTH;
+		} else if(iriFacet.equals(XSDFragment.MINLENGTH)) {
+			facet = ParserDescription.FACET_MINLENGTH;
+		} else if(iriFacet.equals(XSDFragment.MAXLENGTH)) {
+			facet = ParserDescription.FACET_MAXLENGTH;
+		} else if(iriFacet.equals(XSDFragment.PATTERN)) {
+			facet = ParserDescription.FACET_PATTERN;
+		} else if(iriFacet.equals(XSDFragment.LANGRANGE)) {
+			facet = ParserDescription.FACET_LANGRANGE;
+		} else if(iriFacet.equals(XSDFragment.MININCLUSIVE)) {
+			facet = ParserDescription.FACET_LESSEQ;
+		} else if(iriFacet.equals(XSDFragment.MINEXCLUSIVE)) {
+			facet = ParserDescription.FACET_LESS;
+		} else if(iriFacet.equals(XSDFragment.MAXINCLUSIVE)) {
+			facet = ParserDescription.FACET_GREATEREQ;
+		} else if(iriFacet.equals(XSDFragment.MAXEXCLUSIVE)) {
+			facet = ParserDescription.FACET_GREATER;
+		}
+		return facet;
+	}
+
 
 	public static Resource parseObjectPropertyExpression(ObjectPropertyExpression ope,
 			List<Statement> statList, ValueFactory valueFactory) {
@@ -451,16 +508,23 @@ public class ManchesterSyntaxUtils {
 		// - OWL.SOMEVALUESFROM
 		// - OWL.HASVALUE
 		// - OWL.SELF
+		// - OWL.ONDATATYPE
+		// - OWL.WITHRESTRICTIONS
 
 		IRI prop = null;
 		Value value = null;
 		BNode objBnode = null;
 		IRI objURI = null;
+		BNode objBnode2 = null; // used with OWL.WITHRESTRICTIONS
+		IRI objURI2 = null; // used with OWL.WITHRESTRICTIONS
 		BNode onClassNode = null;
 		IRI onClassIRI = null;
 		PossType type = null;
 		int card = -1;
 		boolean inverse = false;
+		IRI typeInRDF = null;
+
+
 		// while (statements.hasNext()) {
 		for (Statement stat : filteredModel) {
 			// Statement stat = statements.next();
@@ -552,6 +616,24 @@ public class ManchesterSyntaxUtils {
 				} else {
 					onClassIRI = (IRI) stat.getObject();
 				}
+			} else if(pred.equals(RDF.TYPE)){
+				typeInRDF = (IRI) stat.getObject();
+			} else if(pred.equals(OWL.ONDATATYPE)) {
+				type = PossType.DATATYPERESTRICTION;
+				if (stat.getObject() instanceof BNode) {
+					objBnode = (BNode) stat.getObject();
+				} else {
+					// since it is not a bnode, then it is a URI
+					objURI = (IRI) stat.getObject();
+				}
+			} else if(pred.equals(OWL.WITHRESTRICTIONS)){
+				type = PossType.DATATYPERESTRICTION; // a redundancy, just to be sure
+				if (stat.getObject() instanceof BNode) {
+					objBnode2 = (BNode) stat.getObject();
+				} else {
+					// since it is not a bnode, then it is a URI
+					objURI2 = (IRI) stat.getObject();
+				}
 			}
 		}
 
@@ -595,13 +677,24 @@ public class ManchesterSyntaxUtils {
 				}
 			}
 		} else if (type.equals(PossType.AND)) {
-			List<ManchesterClassInterface> andClassList = new ArrayList<ManchesterClassInterface>();
-			parseListFirstRestForManchesterAxiom(objBnode, andClassList, graphs, tripleList, model);
-			mci = new ManchesterAndClass(andClassList);
+			//two restrictions use the PossType.AND, so distinguish among them
+			List<ManchesterClassInterface> andResourceList = new ArrayList<ManchesterClassInterface>();
+			parseListFirstRestForManchesterAxiom(objBnode, andResourceList, graphs, tripleList, model);
+			if(typeInRDF.equals(OWL.CLASS)){
+				mci = new ManchesterAndClass(andResourceList);
+			} else {
+				mci = new ManchesterDataConjunction(andResourceList);
+			}
+
 		} else if (type.equals(PossType.OR)) {
-			List<ManchesterClassInterface> orClassList = new ArrayList<ManchesterClassInterface>();
-			parseListFirstRestForManchesterAxiom(objBnode, orClassList, graphs, tripleList, model);
-			mci = new ManchesterOrClass(orClassList);
+			//two restrictions use the PossType.AND, so distinguish among them
+			List<ManchesterClassInterface> orResourceList = new ArrayList<ManchesterClassInterface>();
+			parseListFirstRestForManchesterAxiom(objBnode, orResourceList, graphs, tripleList, model);
+			if(typeInRDF.equals(OWL.CLASS)){
+				mci = new ManchesterOrClass(orResourceList);
+			} else {
+				mci = new ManchesterDataRange(orResourceList);
+			}
 		} else if (type.equals(PossType.NOT)) {
 			if (objBnode != null) {
 				mci = new ManchesterNotClass(getManchClassFromBNode(objBnode, graphs, tripleList, model));
@@ -616,13 +709,18 @@ public class ManchesterSyntaxUtils {
 			// this one deals with both the list of individuals and the list of literals
 			// List<ManchesterClassInterface> oneOfList = new ArrayList<ManchesterClassInterface>();
 			List<Value> oneOfList = parseListFirstRest(objBnode, graphs, tripleList, model);
-			mci = new ManchesterOneOfClass();
 			boolean containsIRI = false;
 			if (oneOfList.size() > 0) {
 				// check the first element, and see if the list contains URI or literal
 				if (oneOfList.get(0) instanceof IRI) {
 					containsIRI = true;
 				}
+			}
+			//decide if the data are IRI or Literal and instantiate the right structure
+			if(containsIRI){
+				mci = new ManchesterOneOfClass();
+			} else {
+				mci = new ManchesterLiteralListClass();
 			}
 			for (Value oneOfValue : oneOfList) {
 				if (containsIRI) {
@@ -667,6 +765,25 @@ public class ManchesterSyntaxUtils {
 				throw new NotClassAxiomException(bnode, graphs);
 			}
 			mci = new ManchesterSelfClass(inverse, prop);
+		} else if(type.equals(PossType.DATATYPERESTRICTION)) {
+			ManchesterClassInterface dataTypeMCI = null;
+			List<String> facetStringList = new ArrayList<>();
+			List<Literal> literalList = new ArrayList<>();
+			if(objBnode!=null){
+				//the obj should always be an IRI, so there is something wrong
+				throw new NotClassAxiomException(bnode, graphs);
+			} else {
+				dataTypeMCI = new ManchesterBaseClass(objURI);
+			}
+			if(objBnode2!=null){
+				parseListFirstRestForManchesterAxiomForDatatypeRestriction(objBnode2, facetStringList,
+						literalList, graphs, tripleList, model);
+			} else {
+				//the obj should always be a bnode, so there is something wrong
+				throw new NotClassAxiomException(bnode, graphs);
+			}
+
+			mci = new ManchesterDatatypeRestriction(dataTypeMCI, facetStringList, literalList);
 		} else {
 			// this should never happen
 		}
@@ -724,9 +841,9 @@ public class ManchesterSyntaxUtils {
 				// in finding out
 				valueList.add(stat.getObject());
 			} else if (pred.equals(RDF.REST)) {
-				// the first could be a bnode or RDF.Res.NIL
+				// the rest could be a bnode or RDF.Res.NIL
 				if (stat.getObject() instanceof BNode) {
-					parseListFirstRest((BNode) stat.getObject(), graphs, tripleList, model);
+					valueList.addAll(parseListFirstRest((BNode) stat.getObject(), graphs, tripleList, model));
 				} else {
 					// it is RDF.NIL, so set it to null
 				}
@@ -735,6 +852,40 @@ public class ManchesterSyntaxUtils {
 			}
 		}
 		return valueList;
+	}
+
+
+	private static void parseListFirstRestForManchesterAxiomForDatatypeRestriction(BNode bnode, List<String> facetStringList,
+			List<Literal> literalList, Resource[] graphs, List<Statement> tripleList, Model model) throws NotClassAxiomException {
+		Model firstModel = model.filter(bnode, RDF.FIRST, null, graphs);
+		Model restModel = model.filter(bnode, RDF.REST, null, graphs);
+		if (firstModel.isEmpty() || restModel.isEmpty()) {
+			throw new NotClassAxiomException(bnode, graphs);
+		}
+		Value firstValue = Models.object(firstModel).get();
+		if(!(firstValue instanceof BNode)){
+			throw new NotClassAxiomException(bnode, graphs);
+		}
+		Model modelForFirst = model.filter((BNode)firstValue, null, null, graphs);
+		facetStringList.add(getFacetFromIri(Models.predicate(modelForFirst).get()));
+		Value obj = Models.object(modelForFirst).get();
+		if(!(obj instanceof  Literal)){
+			throw new NotClassAxiomException(bnode, graphs);
+		} else {
+			literalList.add((Literal) obj);
+		}
+
+		Value restValue = Models.object(restModel).get();
+		// the first could be a bnode or RDF.Res.NIL
+		if (restValue instanceof BNode) {
+			parseListFirstRestForManchesterAxiomForDatatypeRestriction((BNode) restValue, facetStringList, literalList,
+					graphs, tripleList, model);
+		} else if (restValue.equals(RDF.NIL)) {
+			// it is RDF.NIL, the end of the list
+		} else {
+			// something is wrong with this value, it is a Literal, so return false
+			throw new NotClassAxiomException(bnode, graphs);
+		}
 	}
 
 	public static class BailSimpleLexer extends ManchesterOWL2SyntaxParserLexer {

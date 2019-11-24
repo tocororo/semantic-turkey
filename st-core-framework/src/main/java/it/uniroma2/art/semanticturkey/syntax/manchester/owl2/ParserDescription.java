@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
@@ -20,6 +21,10 @@ import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2Synta
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DataPrimaryContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DataPropertyExpressionContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeRestrictionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.RestrictionValueContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DataConjunctionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DataRangeContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeIRIContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionInnerContext;
@@ -40,8 +45,27 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 	private Map<String, String> prefixToNamespacesMap;
 	
 	ManchesterClassInterface mci = null;
-	
-	
+
+	private static String SOME = "some";
+	private static String ONLY = "only";
+	private static String VALUE = "value";
+	private static String SELF = "self";
+	private static String MIN = "min";
+	private static String MAX = "max";
+	private static String EXACTLY = "exactly";
+
+	//the possible facets values
+	public static String FACET_LENGTH = "length";
+	public static String FACET_MINLENGTH = "minlength";
+	public static String FACET_MAXLENGTH = "maxlength";
+	public static String FACET_PATTERN = "pattern";
+	public static String FACET_LANGRANGE = "langrange";
+	public static String FACET_LESSEQ= "<=";
+	public static String FACET_LESS = "<";
+	public static String FACET_GREATEREQ = ">=";
+	public static String FACET_GREATER= ">";
+
+
 	public ParserDescription(ValueFactory valueFactory, Map<String, String> prefixToNamespacesMap) {
 		this.valueFactory = valueFactory;
 		this.prefixToNamespacesMap = prefixToNamespacesMap;
@@ -54,10 +78,9 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 	// the only entry point for this class to parse the description (which is the main element)
 	@Override
 	public void enterDescription(DescriptionContext ctx){
-		//System.out.println("\nenterDescription");
 		//try {
 			if(mci == null){
-				mci = parseDescription(ctx.descriptionInner());
+				mci = parseDescriptionInner(ctx.descriptionInner());
 			}
 //		} catch (ManchesterParserException e) {
 //			// TODO Auto-generated catch block
@@ -65,30 +88,27 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 //		}
 	}
 	
-	private ManchesterClassInterface parseDescription(DescriptionInnerContext descriptionInnerContext) {
-		//System.out.println("parseDescription"); // da cancellare
+	private ManchesterClassInterface parseDescriptionInner(DescriptionInnerContext descriptionInnerContext) {
 		ManchesterClassInterface manchesterClassInterface;
 		List<ConjunctionContext> conjuctionList = descriptionInnerContext.conjunction();
 		if(conjuctionList.size()>1){
-			//System.out.println("D1"); //da cancellare
+			//there are multiple restristricn separated by 'OR'
 			manchesterClassInterface = new ManchesterOrClass();
 			for(ConjunctionContext conjunctionContext : conjuctionList){
 				((ManchesterOrClass) manchesterClassInterface).addClassToOrClassList(parseConjuction(conjunctionContext));
 			}
 		} else {
-			//System.out.println("D2"); //da cancellare
-			//there is only one element, so it is not a real conjuction
+			//there is only one element, so it is not a real disjunction, just a single conjunction
 			manchesterClassInterface = parseConjuction(conjuctionList.get(0));
 		}
 		return manchesterClassInterface;
 	}
 
 	private ManchesterClassInterface parseConjuction(ConjunctionContext conjunctionContext) {
-		//System.out.println("parseConjunction"); // da cancellare
 		ManchesterAndClass mac = new ManchesterAndClass();
 		if(conjunctionContext.classIRI() != null){
-			//System.out.println("C1"); //da cancellare
-			//first case in the rule conjuction ( classIRI 'that' notRestriction ( 'and' notRestriction )*  )
+			//first case in the rule conjuction ->  classIRI 'THAT' notRestriction ( 'AND' notRestriction )*
+			//TODO this case is not dealt in the right way, since ManchesterAndClass is not able to store it properly, need a fix
 			ClassIRIContext classIRIContext = conjunctionContext.classIRI();
 			IRI iri = getIRIFromResource(classIRIContext);
 			mac.addClassToAndClassList(new ManchesterBaseClass(iri));
@@ -100,17 +120,14 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 				}
 			}
 		} else{
-			//System.out.println("C2"); //da cancellare
-			//second case ( primary ('and' primary)* )
+			//second case -> primary ('AND' primary)*
 			List<PrimaryContext> primaryList = conjunctionContext.primary();
 			if(primaryList.size()>1){
-				//System.out.println("C2_1"); //da cancellare
-				//there are more restriction separated with 'and'
+				//there are more restriction separated with 'AND'
 				for(PrimaryContext pc : primaryList){
 					mac.addClassToAndClassList(parsePrimary(pc));
 				}
 			} else{
-				//System.out.println("C2_2"); //da cancellare
 				//there is only one element, so do not use the ManchesterAndClass created at the beginning
 				return parsePrimary(primaryList.get(0));
 			}
@@ -121,21 +138,21 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 	
 	
 	private ManchesterClassInterface parseNotRestriction(NotRestrictionContext notRestrictionContext)  {
-		//System.out.println("parseNotRestriction"); // da cancellare
-		if(notRestrictionContext.not != null) { 
+		if(notRestrictionContext.not != null) {
+			//a real not restriction
 			return new ManchesterNotClass(parseRestriction(notRestrictionContext.restriction()));
 		} else{
+			// this restriction does not have the 'NOT' in front of it
 			return parseRestriction(notRestrictionContext.restriction()); 
 		}
 	}
 	
 	private ManchesterClassInterface parsePrimary(PrimaryContext primaryContext) 
 			{
-		//System.out.println("parsePrimary"); // da cancellare
 		boolean hasNot = false;
 		
 		if(primaryContext.not != null){
-			//it has the 'not'
+			//it has the 'NOT'
 			hasNot = true;
 		}
 		ManchesterClassInterface mci;
@@ -157,18 +174,17 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 	}
 
 	private ManchesterClassInterface parseAtomic(AtomicContext atomicContext) {
-		//System.out.println("parseAtomic"); // da cancellare
 		if(atomicContext.classIRI() != null){
+			//classIRI
 			ClassIRIContext classIRIContext = atomicContext.classIRI();
 			IRI iri = getIRIFromResource(classIRIContext);
-			//System.out.println("A1 e iri = "+iri.stringValue()); //da cancellare
 			return new ManchesterBaseClass(iri);
 		} else if(atomicContext.individualList() != null){
-			//System.out.println("A2"); //da cancellare
+			//'{' individualList '}'
 			return parseIndividualList(atomicContext.individualList());
 		} else{
-			//System.out.println("A3"); //da cancellare
-			return parseDescription(atomicContext.descriptionInner());
+			//'(' descriptionInner ')'
+			return parseDescriptionInner(atomicContext.descriptionInner());
 		}
 	}
 
@@ -183,55 +199,64 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 	}
 
 	private ManchesterClassInterface parseRestriction(RestrictionContext restrictionContext) {
-		//System.out.println("parseRestriction"); // da cancellare
 		//it can have an objectPropertyExpression or a dataPropertyExpression
 		if(restrictionContext.objectPropertyExpression()!= null){
 			ObjectPropertyExpressionContext objectPropertyExpressionContext 
 				= restrictionContext.objectPropertyExpression();
 			IRI objProp = getIRIFromResource(objectPropertyExpressionContext);
-			//System.out.println("R1 e objProp = "+objProp.stringValue()); //da cancellare
-			if(restrictionContext.type.getText().toLowerCase().equals("some")){
+			if(restrictionContext.type.getText().toLowerCase().equals(SOME)){
+				//objectPropertyExpression type=SOME primary
 				return new ManchesterSomeClass(hasInverse(objectPropertyExpressionContext), objProp, 
 						parsePrimary(restrictionContext.primary()));
-			} else if(restrictionContext.type.getText().toLowerCase().equals("only")){
+			} else if(restrictionContext.type.getText().toLowerCase().equals(ONLY)){
+				//objectPropertyExpression type=ONLY primary
 				return new ManchesterOnlyClass(hasInverse(objectPropertyExpressionContext), objProp, 
 						parsePrimary(restrictionContext.primary()));
-			} else if(restrictionContext.type.getText().toLowerCase().equals("value")){
+			} else if(restrictionContext.type.getText().toLowerCase().equals(VALUE)){
+				//objectPropertyExpression type=VALUE individual
 				return new ManchesterValueClass(hasInverse(objectPropertyExpressionContext), objProp, 
 						parseIndividual(restrictionContext.individual()));
-			} else if(restrictionContext.type.getText().toLowerCase().equals("self")){
+			} else if(restrictionContext.type.getText().toLowerCase().equals(SELF)){
+				//objectPropertyExpression type=SELF
 				return new ManchesterSelfClass(hasInverse(objectPropertyExpressionContext), objProp);
 			} else {// min, max or exactly
 				String card = restrictionContext.type.getText().toLowerCase();
 				PossType posType;
 				int number = Integer.parseInt(restrictionContext.nonNegativeInteger().getText());
 				if(card.toLowerCase().equals("max")){
+					//objectPropertyExpression type=MAX nonNegativeInteger primary?
 					posType = PossType.MAX;
 				} else if (card.toLowerCase().equals("min")){
+					//objectPropertyExpression type=MIN nonNegativeInteger primary?
 					posType = PossType.MIN;
 				} else{
+					//objectPropertyExpression type=EXACTLY nonNegativeInteger primary?
 					posType = PossType.EXACTLY;
 				}
 				if(restrictionContext.primary()!= null){
+					//it has the 'primary'
 					return new ManchesterCardClass(hasInverse(objectPropertyExpressionContext), posType, 
 							number, objProp, parsePrimary(restrictionContext.primary()));
 				} else{
+					//it does not have the 'primary'
 					return new ManchesterCardClass(hasInverse(objectPropertyExpressionContext), posType, 
 							number, objProp);
 				}
 			} 
 		} else { //restrictionContext.dataPropertyExpression() != null
-			//System.out.println("R2"); //da cancellare
-			DataPropertyExpressionContext dataPropertyExpressionContext 
+			DataPropertyExpressionContext dataPropertyExpressionContext
 				= restrictionContext.dataPropertyExpression();
 			IRI dataProp = getIRIFromResource(dataPropertyExpressionContext);
 			if(restrictionContext.type.getText().toLowerCase().equals("some")){
+				//dataPropertyExpression type=SOME dataPrimary
 				return new ManchesterSomeClass(dataProp, 
 						parseDataPrimary(restrictionContext.dataPrimary()));
 			} else if(restrictionContext.type.getText().toLowerCase().equals("only")){
+				//dataPropertyExpression type=ONLY dataPrimary
 				return new ManchesterOnlyClass(dataProp, 
 						parseDataPrimary(restrictionContext.dataPrimary()));
 			} else if(restrictionContext.type.getText().toLowerCase().equals("value")){
+				//dataPropertyExpression type=VALUE literal
 				return new ManchesterValueClass(dataProp, 
 						parseLiteral(restrictionContext.literal()));
 			} else { // min, max or exactly
@@ -239,10 +264,13 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 				PossType posType;
 				int number = Integer.parseInt(restrictionContext.nonNegativeInteger().getText());
 				if(card.toLowerCase().equals("max")){
+					//dataPropertyExpression type=MAX nonNegativeInteger dataPrimary?
 					posType = PossType.MAX;
 				} else if (card.toLowerCase().equals("min")){
+					//dataPropertyExpression type=MIN nonNegativeInteger dataPrimary?
 					posType = PossType.MIN;
 				} else{
+					//dataPropertyExpression type=EXACTLY nonNegativeInteger dataPrimary?
 					posType = PossType.EXACTLY;
 				}
 				if(restrictionContext.dataPrimary()!= null){
@@ -287,8 +315,13 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 		//System.out.println("parseDataAtomic"); // da cancellare
 		if(dataAtomicContext.datatype() != null){
 			return parseDataType(dataAtomicContext.datatype());
-		} else{
+		} else if(dataAtomicContext.literalList() != null){
 			return parseLiteralList(dataAtomicContext.literalList());
+		} else  if(dataAtomicContext.datatypeRestriction() != null){
+			return parseDatatypeRestriction(dataAtomicContext.datatypeRestriction());
+		}  else { // dataAtomicContext.dataRange() != null
+			return parseDataRange(dataAtomicContext.dataRange());
+
 		}
 	}
 
@@ -323,12 +356,57 @@ public class ParserDescription extends ManchesterOWL2SyntaxParserBaseListener {
 		}
 	}
 
+	private ManchesterClassInterface parseDatatypeRestriction(DatatypeRestrictionContext datatypeRestrictionContext){
+		ManchesterClassInterface dataTypeMCI = parseDataType(datatypeRestrictionContext.datatype());
+		List<TerminalNode> facetList = datatypeRestrictionContext.FACET();
+		List<String> facetStringList = new ArrayList<>();
+		for(TerminalNode terminalNode: facetList){
+			facetStringList.add(terminalNode.getText());
+		}
+		List<RestrictionValueContext> restrictionValueList = datatypeRestrictionContext.restrictionValue();
+		List<Literal> literalList = new ArrayList<>();
+		for(RestrictionValueContext restrictionValueContext : restrictionValueList ){
+			literalList.add(parseLiteral(restrictionValueContext.literal()));
+		}
+		//construct the ManchesterDatatypeRestriction
+		return new ManchesterDatatypeRestriction(dataTypeMCI, facetStringList, literalList);
+	}
+
+	private ManchesterClassInterface parseDataRange(DataRangeContext dataRangeContext){
+		List<DataConjunctionContext> dataConjunctionContextList = dataRangeContext.dataConjunction();
+		if(dataConjunctionContextList.size()==1){
+			//there is only one element, so it is not a real disjunction, just a single conjunction
+			return parseDataConjunctionContext(dataConjunctionContextList.get(0));
+		} else {
+			List<ManchesterClassInterface> manchesterDataConjunctionList = new ArrayList<>();
+			for (DataConjunctionContext dataConjunctionContext : dataConjunctionContextList) {
+				manchesterDataConjunctionList.add(parseDataConjunctionContext(dataConjunctionContext));
+			}
+			return new ManchesterDataRange(manchesterDataConjunctionList);
+		}
+	}
+
+	private ManchesterClassInterface parseDataConjunctionContext(DataConjunctionContext dataConjunctionContext){
+		List<DataPrimaryContext> dataPrimaryContextList = dataConjunctionContext.dataPrimary();
+		if(dataPrimaryContextList.size() == 1){
+			//there is only one element, so it is not a real conjunction, just a single value
+			return parseDataPrimary(dataPrimaryContextList.get(0));
+		} else {
+			List<ManchesterClassInterface> dataPrimaryList = new ArrayList<>();
+			for (DataPrimaryContext dataPrimaryContext : dataPrimaryContextList) {
+				dataPrimaryList.add(parseDataPrimary(dataPrimaryContext));
+			}
+			return new ManchesterDataConjunction(dataPrimaryList);
+		}
+	}
+
 	/************************************************************/
 	
 	private IRI getIRIFromResource(ClassIRIContext classIRIcontext){
 		if(classIRIcontext.IRIREF() != null){
 			//it is directly an IRI
 			String baseClass = classIRIcontext.IRIREF().getText();
+			//remove the starting '<' and the ending '>'
 			return valueFactory.createIRI(baseClass.substring(1,  baseClass.length() - 1));
 		} else{
 			//it is a prefixedName

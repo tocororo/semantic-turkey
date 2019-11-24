@@ -29,6 +29,10 @@ public abstract class XSDFragment {
 	public static final IRI MAXINCLUSIVE;
 	public static final IRI MAXEXCLUSIVE;
 	public static final IRI PATTERN;
+	public static final IRI LENGTH;
+	public static final IRI MINLENGTH;
+	public static final IRI MAXLENGTH;
+	public static final IRI LANGRANGE;
 
 	static {
 		ValueFactory vf = SimpleValueFactory.getInstance();
@@ -38,5 +42,9 @@ public abstract class XSDFragment {
 		MAXINCLUSIVE = vf.createIRI(NAMESPACE, "maxInclusive");
 		MAXEXCLUSIVE = vf.createIRI(NAMESPACE, "maxExclusive");
 		PATTERN = vf.createIRI(NAMESPACE, "pattern");
+		LENGTH = vf.createIRI(NAMESPACE, "length");
+		MINLENGTH = vf.createIRI(NAMESPACE, "minLength");
+		MAXLENGTH = vf.createIRI(NAMESPACE, "maxLength");
+		LANGRANGE = vf.createIRI(NAMESPACE, "langRange");
 	}
 }

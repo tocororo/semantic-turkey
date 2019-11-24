@@ -289,8 +289,8 @@ public class ManchesterHandler extends STServiceAdapter {
 
 	/**
 	 * Update the restriction by removing all the RDF triples used to store the old Restriction and then
-	 * creting the new RDF triples. It uses the same BNode as the old restriction to represent the restriction
-	 * itself the input clasIRI
+	 * creating the new RDF triples. It uses the same BNode as the old restriction to represent the restriction
+	 * itself the input bnode
 	 * 
 	 * @param bnode
 	 *            the bnode representing the restriction

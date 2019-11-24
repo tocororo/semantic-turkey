@@ -56,6 +56,7 @@ import org.eclipse.rdf4j.query.impl.BackgroundGraphResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.repository.util.Repositories;
@@ -1231,12 +1232,41 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	@Override
-	public void removeNSPrefixMapping(String namespace) throws NSPrefixMappingUpdateException {
+	public void removeNSPrefixMapping(String namespace,	boolean checkOnlyExplicit) throws NSPrefixMappingUpdateException {
 		try {
-			nsPrefixMappings.removeNSPrefixMapping(namespace);
-			Repositories.consume(repository, conn -> {
-				removeNamespaceInternal(conn, namespace);
-			});
+			//check that the input namespace really exists
+			if (!checkOnlyExplicit) {
+				try (RepositoryConnection conn = repository.getConnection()) {
+					RepositoryResult<Namespace> namespaceRepositoryResult = conn.getNamespaces();
+					boolean found = false;
+					while(namespaceRepositoryResult.hasNext()){
+						Namespace ns = namespaceRepositoryResult.next();
+						if(ns.getName().equals(namespace)){
+							found = true;
+						}
+					}
+					if(!found){
+						throw new NSPrefixMappingUpdateException("inconsistency error: prefix-mapping table does not contain this namespace");
+					}
+				}
+
+				Repositories.consume(repository, conn -> {
+					removeNamespaceInternal(conn, namespace);
+				});
+
+				try {
+					nsPrefixMappings.removeNSPrefixMapping(namespace);
+				} catch (NSPrefixMappingUpdateException e ){
+					//in this case do nothing, since we are considering also not explicitly defined prefix-namespaces and we already checked that the
+					// desired namespace exists
+				}
+
+			} else {
+				nsPrefixMappings.removeNSPrefixMapping(namespace);
+				Repositories.consume(repository, conn -> {
+					removeNamespaceInternal(conn, namespace);
+				});
+			}
 		} catch (RDF4JException e) {
 			throw new NSPrefixMappingUpdateException(e);
 		}

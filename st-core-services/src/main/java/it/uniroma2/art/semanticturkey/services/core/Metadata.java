@@ -143,7 +143,6 @@ public class Metadata extends STServiceAdapter {
 	 * 
 	 * @param prefix
 	 * @param namespace
-	 * @throws ModelUpdateException
 	 * @throws NSPrefixMappingUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -167,15 +166,14 @@ public class Metadata extends STServiceAdapter {
 	/**
 	 * Removes all prefix declarations for the supplied <code>namespace</code>
 	 * 
-	 * @param prefix
 	 * @param namespace
-	 * @throws ModelUpdateException
+	 * @param checkOnlyExplicit
 	 * @throws NSPrefixMappingUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'D')")
-	public void removeNSPrefixMapping(String namespace) throws NSPrefixMappingUpdateException {
-		getOntologyManager().removeNSPrefixMapping(namespace);
+	public void removeNSPrefixMapping(String namespace, @Optional(defaultValue = "true") boolean checkOnlyExplicit ) throws NSPrefixMappingUpdateException {
+		getOntologyManager().removeNSPrefixMapping(namespace, checkOnlyExplicit);
 	}
 
 	/**
@@ -260,7 +258,6 @@ public class Metadata extends STServiceAdapter {
 	 * @param transitiveImportAllowance
 	 * @throws RDF4JException
 	 * @throws OntologyManagerException
-	 * @throws ModelUpdateException
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -293,7 +290,6 @@ public class Metadata extends STServiceAdapter {
 	 * @throws RDF4JException
 	 * @throws MalformedURLException
 	 * @throws OntologyManagerException
-	 * @throws ModelUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
@@ -320,7 +316,6 @@ public class Metadata extends STServiceAdapter {
 	 * @throws RDF4JException
 	 * @throws MalformedURLException
 	 * @throws OntologyManagerException
-	 * @throws ModelUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
@@ -350,7 +345,6 @@ public class Metadata extends STServiceAdapter {
 	 * @throws RDF4JException
 	 * @throws MalformedURLException
 	 * @throws OntologyManagerException
-	 * @throws ModelUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
@@ -374,8 +368,6 @@ public class Metadata extends STServiceAdapter {
 	 * @param baseURI
 	 * @throws RDF4JException
 	 * @throws OntologyManagerException
-	 * @throws ModelUpdateException
-	 * @throws ModelAccessException
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)

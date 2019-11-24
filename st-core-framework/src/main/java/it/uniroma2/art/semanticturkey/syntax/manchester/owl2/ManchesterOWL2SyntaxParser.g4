@@ -53,9 +53,6 @@ conjunction
 	classIRI THAT notRestriction ( AND notRestriction )* 
 	| 
 	primary (AND primary)*
-	//primary 'and' primary ( 'and' primary )* 
-	//| 
-	//primary
 	;
 	
 notRestriction
@@ -123,11 +120,13 @@ dataAtomic
 	datatype 
 	| 
 	'{' literalList '}' 
-	//| 
-	//datatypeRestriction 
-	//| 
-	//'(' dataRange ')'
+	|
+	datatypeRestriction
+	|
+	'(' dataRange ')'
 	;
+
+
 
 
 //taken form previous version
@@ -145,7 +144,7 @@ string
 	
 datatype 
 	: 
-	datatypeIRI 
+	datatypeIRI
 	| 
 	abbr=('integer'|'decimal'|'float'|'string')
 	;
@@ -154,12 +153,33 @@ datatypeIRI
 	:
 	IRIREF | prefixedName
 	;
-	
+
 
 literalList
 	:
 	literal (',' literal)*
 	;
+
+datatypeRestriction
+    :
+    datatype '[' FACET restrictionValue (',' FACET restrictionValue)* ']'
+    ;
+
+restrictionValue
+    :
+    literal
+    ;
+
+
+dataRange
+    :
+    dataConjunction ( OR dataConjunction )*
+    ;
+
+dataConjunction
+    :
+    dataPrimary (AND dataPrimary)*
+    ;
 
 nonNegativeInteger
 	:
@@ -215,6 +235,17 @@ IRIREF
   :
   '<' (~('<' | '>' | '"' | '{' | '}' | '|' | '^' | '`' | '\u0000'..'\u0020'))* '>'
   ;
+
+
+FACET
+    :
+    'length' | 'LENGTH' |
+    'minLength' | 'MINLENGTH' |
+    'maxLength' | 'MAXLENGTH' |
+    'pattern' | 'PATTERN' |
+    'langRange' | 'LANGRANGE'|
+    '<=' | '<' | '>=' | '>'
+    ;
 
 
 OR

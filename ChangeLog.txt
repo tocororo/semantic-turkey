@@ -19,6 +19,7 @@ date: dd/mm/yyy
   * fix compatibility issue with Ontotext GraphDB 9.0
   * enabled support for multiple administrators
   * updated to RDF4J 3.0.0
+  * added fully support for OWL 2 restrictions
   
 version 6.0
 date: 27/06/2019
