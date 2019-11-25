@@ -1607,15 +1607,14 @@ public class Properties extends STServiceAdapter {
 					// do an ASK SPARQL to see if the iriRange is a subClass of rdfs:Literal
 					String query = "ASK WHERE{" + "\n{" +
 					// range being a rdfs:subClassOf rdfs:Literal
-							"\n" + NTriplesUtil.toNTriplesString(rangeIRI) + " "
-							+ NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + "* "
-							+ NTriplesUtil.toNTriplesString(RDFS.LITERAL) + " " + "\n}" + "\nUNION" + "\n{" +
-							// range being an instance of rdfs:Datatype
-							"\n" + NTriplesUtil.toNTriplesString(rangeIRI) + " "
-							+ NTriplesUtil.toNTriplesString(RDF.TYPE) + "* "
-							+ NTriplesUtil.toNTriplesString(RDFS.DATATYPE) + " " + "\n}" +
-
-							"\n}";
+					"\n" + NTriplesUtil.toNTriplesString(rangeIRI) + " "
+					+ NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + "* "
+					+ NTriplesUtil.toNTriplesString(RDFS.LITERAL) + " " + "\n}" + "\nUNION" + "\n{" +
+					// range being an instance of rdfs:Datatype
+					"\n" + NTriplesUtil.toNTriplesString(rangeIRI) + " "
+					+ NTriplesUtil.toNTriplesString(RDF.TYPE) + " "
+					+ NTriplesUtil.toNTriplesString(RDFS.DATATYPE) + " " + "\n}" +
+					"\n}";
 					BooleanQuery booleanQuery = getManagedConnection().prepareBooleanQuery(query);
 					booleanQuery.setIncludeInferred(false);
 					typesAndRanges.setIsLiteral(booleanQuery.evaluate());

@@ -270,38 +270,56 @@ public class Datatypes extends STServiceAdapter {
 		return qb.runQuery();
 	}
 
+	/**
+	 * Set the given restriction (a facet) value to a datatype.
+	 * Example of datatype restriction definition in OWL (source: https://www.w3.org/TR/owl2-syntax/#Datatype_Definitions)
+	 * a:SSN rdf:type rdfs:Datatype .
+	 * a:SSN owl:equivalentClass _:x .
+	 * _:x rdf:type rdfs:Datatype .
+	 * _:x owl:onDatatype xsd:string .
+	 * _:x owl:withRestrictions ( _:y ) .
+	 * _:y xsd:pattern "[0-9]{3}-[0-9]{2}-[0-9]{4}" .
+	 * @param datatype
+	 * @param facet
+	 * @param value
+	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public void setDatatypeRestriction(IRI datatype, IRI restriction, Literal value)  {
+	public void setDatatypeRestriction(IRI datatype, IRI facet, Literal value)  {
 		RepositoryConnection conn = getManagedConnection();
 		ValueFactory vf = conn.getValueFactory();
 
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 
-		BNode restrictionList = getRestrictionList(datatype, conn);
-		if (restrictionList == null) { //still no restrictions => set the first restriction
-			BNode newRestrictionBNode = vf.createBNode();
-			BNode newRestrictionList = addRestrictionInList(newRestrictionBNode, RDF.NIL, conn, modelAdditions);
-			modelAdditions.add(datatype, OWL.WITHRESTRICTIONS, newRestrictionList); //add the new ?datatype owl:withRestrictions _:newList
-			modelAdditions.add(newRestrictionBNode, restriction, value); //(es _:r xsd:pattern "[0-9]+")
+		BNode restrictionBNode = getDatatypeRestrictionNode(datatype, conn);
+		if (restrictionBNode == null) { //still no restrictions => create it
+			restrictionBNode = vf.createBNode();
+			BNode facetBNode = vf.createBNode();
+			BNode restrictionList = addRestrictionInList(facetBNode, RDF.NIL, conn, modelAdditions);
+			modelAdditions.add(datatype, OWL.EQUIVALENTCLASS, restrictionBNode); //?datatype owl:equivalentClass _:r
+			modelAdditions.add(restrictionBNode, RDF.TYPE, RDFS.DATATYPE); //_:r rdf:type rdfs:Datatype
+			//_:x owl:onDatatype xsd:string . ????? TODO
+			modelAdditions.add(restrictionBNode, OWL.WITHRESTRICTIONS, restrictionList); //_:r owl:withRestrictions _:l
+			modelAdditions.add(facetBNode, facet, value); //(es _:f xsd:pattern "[0-9]+")
 		} else {
 			/*
-			 * restriction list not empty, two scenarios:
-			 * - the restriction has already a value, so it must be replaced
-			 * - the restriction has not a value
+			 * restriction already defined, two scenarios:
+			 * - the restriction has already a value for the facet, so it must be replaced
+			 * - the restriction has not a value for the facet
 			 */
-			BNode oldRestrictionBNode = getRestrictionNode(restrictionList, restriction, conn);
-			if (oldRestrictionBNode != null) { //restriction already existing => replace
-				Literal oldValue = (Literal) conn.getStatements(oldRestrictionBNode, restriction, null, getWorkingGraph()).next().getObject();
-				modelRemovals.add(oldRestrictionBNode, restriction, oldValue);
-				modelAdditions.add(oldRestrictionBNode, restriction, value);
-			} else { //restriction still not exists => create (the old restrictionList "shifts" as rdf:rest list
-				BNode newRestrictionBNode = vf.createBNode();
-				BNode newRestrictionList = addRestrictionInList(newRestrictionBNode, restrictionList, conn, modelAdditions);
-				modelRemovals.add(datatype, OWL.WITHRESTRICTIONS, restrictionList); //remove the old ?datatype owl:withRestrictions _:oldList
-				modelAdditions.add(datatype, OWL.WITHRESTRICTIONS, newRestrictionList); //add the new ?datatype owl:withRestrictions _:newList
-				modelAdditions.add(newRestrictionBNode, restriction, value); //(es _:r xsd:pattern "[0-9]+")
+			BNode restrictionList = getRestrictionListNode(restrictionBNode, conn);
+			BNode oldFacetBNode = getFacetNode(restrictionList, facet, conn);
+			if (oldFacetBNode != null) { //facet already existing => replace
+				Literal oldValue = (Literal) conn.getStatements(oldFacetBNode, facet, null, getWorkingGraph()).next().getObject();
+				modelRemovals.add(oldFacetBNode, facet, oldValue);
+				modelAdditions.add(oldFacetBNode, facet, value);
+			} else { //facet still not exists => create (the old restrictionList "shifts" as rdf:rest list
+				BNode newFacetBNode = vf.createBNode();
+				BNode newRestrictionList = addRestrictionInList(newFacetBNode, restrictionList, conn, modelAdditions);
+				modelRemovals.add(restrictionBNode, OWL.WITHRESTRICTIONS, restrictionList); //remove _:r owl:withRestrictions _:oldList
+				modelAdditions.add(restrictionBNode, OWL.WITHRESTRICTIONS, newRestrictionList); //add _:r owl:withRestrictions _:newList
+				modelAdditions.add(newFacetBNode, facet, value); //(es _:r xsd:pattern "[0-9]+")
 			}
 		}
 		conn.add(modelAdditions, getWorkingGraph());
@@ -310,32 +328,33 @@ public class Datatypes extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public void deleteDatatypeRestriction(IRI datatype, IRI restriction)  {
+	public void deleteDatatypeRestriction(IRI datatype, IRI facet)  {
 		RepositoryConnection conn = getManagedConnection();
 
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 
-		BNode restrictionList = getRestrictionList(datatype, conn);
-		//No null-check on restrictionList: this service should be invoked only if the datatype has the restriction
+		BNode restrictionBNode = getDatatypeRestrictionNode(datatype, conn);
+		BNode restrictionList = getRestrictionListNode(restrictionBNode, conn);
+		//No null-check on restrictionBNode: this service should be invoked only if the datatype has the restriction
 
 		/*
-		 * removes the triple _:r ?restriction ?value
+		 * removes the triple _:r ?facet ?value
 		 */
-		BNode restrictionBNode = getRestrictionNode(restrictionList, restriction, conn);
-		Literal value = (Literal) conn.getStatements(restrictionBNode, restriction, null, getWorkingGraph()).next().getObject();
-		modelRemovals.add(restrictionBNode, restriction, value);
+		BNode facetBNode = getFacetNode(restrictionList, facet, conn);
+		Literal value = (Literal) conn.getStatements(facetBNode, facet, null, getWorkingGraph()).next().getObject();
+		modelRemovals.add(facetBNode, facet, value);
 		/*
 		 * Now shifts the rest. Two cases:
 		 * - the restriction was the first element of the list => the rest list shifts as object of ?datatype owl:withRestrictions
 		 * - the restriction was not the first element of the list => the rest list shifts as rest of the previous list
 		 */
-		if (conn.hasStatement(restrictionList, RDF.FIRST, restrictionBNode, false, getWorkingGraph())) { //first
+		if (conn.hasStatement(restrictionList, RDF.FIRST, facetBNode, false, getWorkingGraph())) { //first
 			Resource restList = (Resource) conn.getStatements(restrictionList, RDF.REST, null, getWorkingGraph()).next().getObject();
 			//remove the old list
 			modelRemovals.add(datatype, OWL.WITHRESTRICTIONS, restrictionList);
 			modelRemovals.add(restrictionList, RDF.TYPE, RDF.LIST);
-			modelRemovals.add(restrictionList, RDF.FIRST, restrictionBNode);
+			modelRemovals.add(restrictionList, RDF.FIRST, facetBNode);
 			modelRemovals.add(restrictionList, RDF.REST, restList);
 			//shift the rest
 			if (restList.equals(RDF.NIL)) { //if the restList is nil, completely remove the restrictions to the datatype
@@ -345,13 +364,13 @@ public class Datatypes extends STServiceAdapter {
 			}
 		} else { //not first
 			//remove the node and shifts the rest list
-			Resource listNode = conn.getStatements(null, RDF.FIRST, restrictionBNode, getWorkingGraph()).next().getSubject();
+			Resource listNode = conn.getStatements(null, RDF.FIRST, facetBNode, getWorkingGraph()).next().getSubject();
 			Resource prevList = conn.getStatements(null, RDF.REST, listNode, getWorkingGraph()).next().getSubject();
 			Resource restList = (Resource) conn.getStatements(listNode, RDF.REST, null, getWorkingGraph()).next().getObject();
 			//remove the old list
 			modelRemovals.add(prevList, RDF.REST, listNode);
 			modelRemovals.add(listNode, RDF.TYPE, RDF.LIST);
-			modelRemovals.add(listNode, RDF.FIRST, restrictionBNode);
+			modelRemovals.add(listNode, RDF.FIRST, facetBNode);
 			modelRemovals.add(listNode, RDF.REST, restList);
 			//set the restList as rest of the previous one
 			modelAdditions.add(prevList, RDF.REST, restList);
@@ -361,36 +380,55 @@ public class Datatypes extends STServiceAdapter {
 	}
 
 	/**
-	 * Returns the node representing the restrictions list for the given datatype (?datatype owl:withRestrictions ?restList).
-	 * If the datatype has still no restriction list, returns null
+	 * Returns the restriction bnode of a datatype. A restriction is represented by a bnode linked with the
+	 * owl:equivalentClass property as follow:
+	 * a:SSN owl:equivalentClass _:x .
+	 * If the datatype has no restriction, returns null
 	 * @param datatype
 	 * @param conn
 	 * @return
 	 */
-	private BNode getRestrictionList(IRI datatype, RepositoryConnection conn) {
-		RepositoryResult<Statement> stmts = conn.getStatements(datatype, OWL.WITHRESTRICTIONS, null, getWorkingGraph());
-		if (stmts.hasNext()) {
-			return (BNode) stmts.next().getObject();
+	private BNode getDatatypeRestrictionNode(IRI datatype, RepositoryConnection conn) {
+		String query = "SELECT ?d WHERE {\n" +
+				"graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {\n" +
+				NTriplesUtil.toNTriplesString(datatype) + " " + NTriplesUtil.toNTriplesString(OWL.EQUIVALENTCLASS) + " ?d .\n" +
+				"?d " + NTriplesUtil.toNTriplesString(RDF.TYPE) + " " + NTriplesUtil.toNTriplesString(RDFS.DATATYPE) +  " .\n" +
+				"}\n" +
+				"}\n";
+		TupleQueryResult results = conn.prepareTupleQuery(query).evaluate();
+		if (results.hasNext()) {
+			return (BNode) results.next().getValue("d");
 		} else {
 			return null;
 		}
 	}
 
 	/**
-	 * Returns the BNode that represents the subject of the triple
-	 * _:b ?restrictionPred ?value
-	 * for the given restriction.
-	 * If the restriction has still no value, returns null
-	 * @param restrictionList
-	 * @param restrictionPred
+	 * Returns the node representing the restrictions list for the given restrictionNode (_:r owl:withRestrictions ?restList).
+	 * @param restrictionNode
 	 * @param conn
 	 * @return
 	 */
-	private BNode getRestrictionNode(BNode restrictionList, IRI restrictionPred, RepositoryConnection conn) {
+	private BNode getRestrictionListNode(BNode restrictionNode, RepositoryConnection conn) {
+		RepositoryResult<Statement> stmts = conn.getStatements(restrictionNode, OWL.WITHRESTRICTIONS, null, getWorkingGraph());
+		return (BNode) stmts.next().getObject(); //by-construction there is a list, no need to do .hasNext()
+	}
+
+	/**
+	 * Returns the BNode that represents the subject of the triple
+	 * _:b ?facetPred ?value
+	 * for the given facet.
+	 * If the facet has still no value, returns null
+	 * @param restrictionList
+	 * @param facetPred
+	 * @param conn
+	 * @return
+	 */
+	private BNode getFacetNode(BNode restrictionList, IRI facetPred, RepositoryConnection conn) {
 		Resource graphs = getWorkingGraph();
 		RepositoryResult<Statement> results = conn.getStatements(restrictionList, RDF.FIRST, null, graphs);
 		BNode restrictionNode = (BNode) results.next().getObject();
-		if (conn.hasStatement(restrictionNode, restrictionPred, null, false, graphs)) { //searched restriction is the first
+		if (conn.hasStatement(restrictionNode, facetPred, null, false, graphs)) { //searched restriction is the first
 			return restrictionNode;
 		} else { //look for the restriction in the rest of the list
 			results = conn.getStatements(restrictionList, RDF.REST, null, false, graphs);
@@ -398,7 +436,7 @@ public class Datatypes extends STServiceAdapter {
 			if (rest.equals(RDF.NIL)) {
 				return null;
 			} else {
-				return getRestrictionNode((BNode) rest, restrictionPred, conn);
+				return getFacetNode((BNode) rest, facetPred, conn);
 			}
 		}
 	}
@@ -432,12 +470,13 @@ public class Datatypes extends STServiceAdapter {
 				"SELECT ?datatype ?facet ?value WHERE { \n" +
 				"GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{\n" +
 				"?datatype a rdfs:Datatype .\n" +
-				"?datatype owl:withRestrictions ?list .\n" +
-				"?list rdf:rest*/rdf:first ?r .\n" +
-				"?r ?facet ?value .\n" +
+				"?datatype owl:equivalentClass ?r .\n" +
+				"?r a rdfs:Datatype .\n" +
+				"?r owl:withRestrictions ?list .\n" +
+				"?list rdf:rest*/rdf:first ?f .\n" +
+				"?f ?facet ?value .\n" +
 				"}\n" +
 				"}";
-		//System.out.println(query);
 		TupleQuery tq = conn.prepareTupleQuery(query);
 		TupleQueryResult results = tq.evaluate();
 		while (results.hasNext()) {
