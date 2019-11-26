@@ -14,12 +14,13 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.BroadersStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.ClassAxiomsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.ConstituentsStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DatatypeDefinitionsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DenotationsStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyDisjointWithStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.DomainsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.EquivalentPropertyStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.EvokedLexicalConcepts;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.FormBasedPreviewStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.FormRepresentationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.InSchemeStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LabelRelationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.LexicalFormsStatementConsumer;
@@ -28,10 +29,10 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.Lexic
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.OntologyImportsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.OtherPropertiesStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyChainStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyDisjointWithStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyFacetsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.RDFSMembersStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.RangesStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.FormRepresentationsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SKOSCollectionMembersStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SKOSNotesStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SKOSOrderedCollectionMembersStatementConsumer;
@@ -50,6 +51,9 @@ public class StatementConsumerProvider {
 		TypesStatementConsumer typesStatementConsumer = new TypesStatementConsumer(customFormManager);
 
 		ClassAxiomsStatementConsumer classAxiomsStatementConsumer = new ClassAxiomsStatementConsumer(
+				customFormManager);
+
+		DatatypeDefinitionsStatementConsumer datatypeDefinitionsStatementConsumer = new DatatypeDefinitionsStatementConsumer(
 				customFormManager);
 
 		LexicalizationsStatementConsumer lexicalizationsStatementConsumer = new LexicalizationsStatementConsumer(
@@ -106,6 +110,9 @@ public class StatementConsumerProvider {
 		role2template = new HashMap<>();
 		role2template.put(RDFResourceRole.cls,
 				Arrays.asList(typesStatementConsumer, formBasedPreview, classAxiomsStatementConsumer,
+						lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
+		role2template.put(RDFResourceRole.dataRange,
+				Arrays.asList(typesStatementConsumer, formBasedPreview, datatypeDefinitionsStatementConsumer,
 						lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
 		role2template.put(RDFResourceRole.concept,
 				Arrays.asList(typesStatementConsumer, formBasedPreview, topConceptOfStatementConsumer,
