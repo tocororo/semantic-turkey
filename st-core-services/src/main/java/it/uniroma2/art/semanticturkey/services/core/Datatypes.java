@@ -16,25 +16,19 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderException;
-import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +38,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -66,78 +62,76 @@ public class Datatypes extends STServiceAdapter {
 	private static final Set<IRI> owl2datatypeMap = ImmutableSet.copyOf(new IRI[] {
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2002/07/owl#real"),
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2002/07/owl#rational"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#decimal"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#integer"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#nonNegativeInteger"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#nonPositiveInteger"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#positiveInteger"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#negativeInteger"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#long"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#int"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#short"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#byte"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#unsignedLong"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#unsignedInt"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#unsignedShort"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#unsignedByte"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#string"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#normalizedString"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#token"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#language"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#Name"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#NCName"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#NMTOKEN"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#boolean"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#hexBinary"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#base64Binary"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#anyURI"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#dateTime"),
+			XMLSchema.DECIMAL,
+			XMLSchema.INTEGER,
+			XMLSchema.NON_NEGATIVE_INTEGER,
+			XMLSchema.NON_POSITIVE_INTEGER,
+			XMLSchema.POSITIVE_INTEGER,
+			XMLSchema.NEGATIVE_INTEGER,
+			XMLSchema.LONG,
+			XMLSchema.INT,
+			XMLSchema.SHORT,
+			XMLSchema.BYTE,
+			XMLSchema.UNSIGNED_LONG,
+			XMLSchema.UNSIGNED_INT,
+			XMLSchema.UNSIGNED_SHORT,
+			XMLSchema.UNSIGNED_BYTE,
+			XMLSchema.STRING,
+			XMLSchema.NORMALIZEDSTRING,
+			XMLSchema.TOKEN,
+			XMLSchema.LANGUAGE,
+			XMLSchema.NAME,
+			XMLSchema.NCNAME,
+			XMLSchema.NMTOKEN,
+			XMLSchema.BOOLEAN,
+			XMLSchema.HEXBINARY,
+			XMLSchema.BASE64BINARY,
+			XMLSchema.ANYURI,
+			XMLSchema.DATETIME,
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#dateTimeStamp"),
-			SimpleValueFactory.getInstance()
-					.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral")
-
+			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral")
 	});
 
 	private static final Set<IRI> rdf11XmlSchemaBuiltinDatatypes = ImmutableSet.copyOf(new IRI[] {
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#string"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#boolean"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#decimal"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#integer"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#double"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#float"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#date"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#time"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#dateTime"),
+			XMLSchema.STRING,
+			XMLSchema.BOOLEAN,
+			XMLSchema.DECIMAL,
+			XMLSchema.INTEGER,
+			XMLSchema.DOUBLE,
+			XMLSchema.FLOAT,
+			XMLSchema.DATE,
+			XMLSchema.TIME,
+			XMLSchema.DATETIME,
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#dateTimeStamp"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#gYear"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#gMonth"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#gDay"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#gYearMonth"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#gMonthDay"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#duration"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#yearMonthDuration"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#dayTimeDuration"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#byte"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#short"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#int"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#long"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#unsignedByte"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#unsignedShort"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#unsignedInt"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#unsignedLong"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#positiveInteger"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#nonNegativeInteger"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#negativeInteger"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#nonPositiveInteger"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#hexBinary"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#base64Binary"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#anyURI"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#language"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#normalizedString"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#token"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#NMTOKEN"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#Name"),
-			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#NCName") });
+			XMLSchema.GYEAR,
+			XMLSchema.GMONTH,
+			XMLSchema.GDAY,
+			XMLSchema.GYEARMONTH,
+			XMLSchema.GMONTHDAY,
+			XMLSchema.DURATION,
+			XMLSchema.YEARMONTHDURATION,
+			XMLSchema.DAYTIMEDURATION,
+			XMLSchema.BYTE,
+			XMLSchema.SHORT,
+			XMLSchema.INT,
+			XMLSchema.LONG,
+			XMLSchema.UNSIGNED_BYTE,
+			XMLSchema.UNSIGNED_SHORT,
+			XMLSchema.UNSIGNED_INT,
+			XMLSchema.UNSIGNED_LONG,
+			XMLSchema.POSITIVE_INTEGER,
+			XMLSchema.NON_NEGATIVE_INTEGER,
+			XMLSchema.NEGATIVE_INTEGER,
+			XMLSchema.NON_POSITIVE_INTEGER,
+			XMLSchema.HEXBINARY,
+			XMLSchema.BASE64BINARY,
+			XMLSchema.ANYURI,
+			XMLSchema.LANGUAGE,
+			XMLSchema.NORMALIZEDSTRING,
+			XMLSchema.TOKEN,
+			XMLSchema.NMTOKEN,
+			XMLSchema.NAME,
+			XMLSchema.NCNAME  });
 
 	private static final Set<IRI> builtinDatatypes = Sets.union(rdf11XmlSchemaBuiltinDatatypes,
 			owl2datatypeMap);
@@ -271,191 +265,102 @@ public class Datatypes extends STServiceAdapter {
 	}
 
 	/**
-	 * Set the given restriction (a facet) value to a datatype.
+	 * Creates a restriction with a set of facets for a datatype
 	 * Example of datatype restriction definition in OWL (source: https://www.w3.org/TR/owl2-syntax/#Datatype_Definitions)
 	 * a:SSN rdf:type rdfs:Datatype .
 	 * a:SSN owl:equivalentClass _:x .
 	 * _:x rdf:type rdfs:Datatype .
 	 * _:x owl:onDatatype xsd:string .
 	 * _:x owl:withRestrictions ( _:y ) .
-	 * _:y xsd:pattern "[0-9]{3}-[0-9]{2}-[0-9]{4}" .
+	 * _:y xsd:pattern "[0-9]{3}-[0-9]{2}-[0-9]{4}"
 	 * @param datatype
-	 * @param facet
-	 * @param value
+	 * @param base the xsd datatype for which the restriction is based on
+	 * @param facets mappings between xsd facet and value
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public void setDatatypeRestriction(IRI datatype, IRI facet, Literal value)  {
+	public void setDatatypeRestriction(IRI datatype, IRI base, Map<IRI, Literal> facets)  {
 		RepositoryConnection conn = getManagedConnection();
-		ValueFactory vf = conn.getValueFactory();
-
-		Model modelAdditions = new LinkedHashModel();
-		Model modelRemovals = new LinkedHashModel();
-
-		BNode restrictionBNode = getDatatypeRestrictionNode(datatype, conn);
-		if (restrictionBNode == null) { //still no restrictions => create it
-			restrictionBNode = vf.createBNode();
-			BNode facetBNode = vf.createBNode();
-			BNode restrictionList = addRestrictionInList(facetBNode, RDF.NIL, conn, modelAdditions);
-			modelAdditions.add(datatype, OWL.EQUIVALENTCLASS, restrictionBNode); //?datatype owl:equivalentClass _:r
-			modelAdditions.add(restrictionBNode, RDF.TYPE, RDFS.DATATYPE); //_:r rdf:type rdfs:Datatype
-			//_:x owl:onDatatype xsd:string . ????? TODO
-			modelAdditions.add(restrictionBNode, OWL.WITHRESTRICTIONS, restrictionList); //_:r owl:withRestrictions _:l
-			modelAdditions.add(facetBNode, facet, value); //(es _:f xsd:pattern "[0-9]+")
+		deleteDatatypeRestrictionImpl(conn, datatype); //first remove the old restriction
+		String query =
+				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
+				"INSERT DATA {\n" +
+				"GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {\n" +
+				NTriplesUtil.toNTriplesString(datatype) + " owl:equivalentClass " + " _:restriction .\n" +
+				"_:restriction rdf:type rdfs:Datatype .\n" +
+				"_:restriction owl:onDatatype " + NTriplesUtil.toNTriplesString(base) + " .\n" +
+				"_:restriction owl:withRestrictions _:facetsList .\n";
+		Iterator<Entry<IRI, Literal>> facetsIterator = facets.entrySet().iterator();
+		if (facetsIterator.hasNext()) {
+			query += buildFacetsSparqlInsert("", facetsIterator, "_:facetsList", 0);
 		} else {
-			/*
-			 * restriction already defined, two scenarios:
-			 * - the restriction has already a value for the facet, so it must be replaced
-			 * - the restriction has not a value for the facet
-			 */
-			BNode restrictionList = getRestrictionListNode(restrictionBNode, conn);
-			BNode oldFacetBNode = getFacetNode(restrictionList, facet, conn);
-			if (oldFacetBNode != null) { //facet already existing => replace
-				Literal oldValue = (Literal) conn.getStatements(oldFacetBNode, facet, null, getWorkingGraph()).next().getObject();
-				modelRemovals.add(oldFacetBNode, facet, oldValue);
-				modelAdditions.add(oldFacetBNode, facet, value);
-			} else { //facet still not exists => create (the old restrictionList "shifts" as rdf:rest list
-				BNode newFacetBNode = vf.createBNode();
-				BNode newRestrictionList = addRestrictionInList(newFacetBNode, restrictionList, conn, modelAdditions);
-				modelRemovals.add(restrictionBNode, OWL.WITHRESTRICTIONS, restrictionList); //remove _:r owl:withRestrictions _:oldList
-				modelAdditions.add(restrictionBNode, OWL.WITHRESTRICTIONS, newRestrictionList); //add _:r owl:withRestrictions _:newList
-				modelAdditions.add(newFacetBNode, facet, value); //(es _:r xsd:pattern "[0-9]+")
-			}
+			throw new IllegalArgumentException("Facets map cannot be empty");
 		}
-		conn.add(modelAdditions, getWorkingGraph());
-		conn.remove(modelRemovals, getWorkingGraph());
+		query += "}\n}"; //close graph and insert brackets
+		System.out.println("query " + query);
+		conn.prepareUpdate(query).execute();
 	}
 
-	@STServiceOperation(method = RequestMethod.POST)
-	@Write
-	public void deleteDatatypeRestriction(IRI datatype, IRI facet)  {
-		RepositoryConnection conn = getManagedConnection();
-
-		Model modelAdditions = new LinkedHashModel();
-		Model modelRemovals = new LinkedHashModel();
-
-		BNode restrictionBNode = getDatatypeRestrictionNode(datatype, conn);
-		BNode restrictionList = getRestrictionListNode(restrictionBNode, conn);
-		//No null-check on restrictionBNode: this service should be invoked only if the datatype has the restriction
-
-		/*
-		 * removes the triple _:r ?facet ?value
-		 */
-		BNode facetBNode = getFacetNode(restrictionList, facet, conn);
-		Literal value = (Literal) conn.getStatements(facetBNode, facet, null, getWorkingGraph()).next().getObject();
-		modelRemovals.add(facetBNode, facet, value);
-		/*
-		 * Now shifts the rest. Two cases:
-		 * - the restriction was the first element of the list => the rest list shifts as object of ?datatype owl:withRestrictions
-		 * - the restriction was not the first element of the list => the rest list shifts as rest of the previous list
-		 */
-		if (conn.hasStatement(restrictionList, RDF.FIRST, facetBNode, false, getWorkingGraph())) { //first
-			Resource restList = (Resource) conn.getStatements(restrictionList, RDF.REST, null, getWorkingGraph()).next().getObject();
-			//remove the old list
-			modelRemovals.add(datatype, OWL.WITHRESTRICTIONS, restrictionList);
-			modelRemovals.add(restrictionList, RDF.TYPE, RDF.LIST);
-			modelRemovals.add(restrictionList, RDF.FIRST, facetBNode);
-			modelRemovals.add(restrictionList, RDF.REST, restList);
-			//shift the rest
-			if (restList.equals(RDF.NIL)) { //if the restList is nil, completely remove the restrictions to the datatype
-				modelRemovals.add(datatype, OWL.WITHRESTRICTIONS, restrictionList);
-			} else { //set the restList as object of ?datatype owl:withRestrictions
-				modelAdditions.add(datatype, OWL.WITHRESTRICTIONS, restList);
-			}
-		} else { //not first
-			//remove the node and shifts the rest list
-			Resource listNode = conn.getStatements(null, RDF.FIRST, facetBNode, getWorkingGraph()).next().getSubject();
-			Resource prevList = conn.getStatements(null, RDF.REST, listNode, getWorkingGraph()).next().getSubject();
-			Resource restList = (Resource) conn.getStatements(listNode, RDF.REST, null, getWorkingGraph()).next().getObject();
-			//remove the old list
-			modelRemovals.add(prevList, RDF.REST, listNode);
-			modelRemovals.add(listNode, RDF.TYPE, RDF.LIST);
-			modelRemovals.add(listNode, RDF.FIRST, facetBNode);
-			modelRemovals.add(listNode, RDF.REST, restList);
-			//set the restList as rest of the previous one
-			modelAdditions.add(prevList, RDF.REST, restList);
+	private String buildFacetsSparqlInsert(String query, Iterator<Entry<IRI, Literal>> facetsIterator, String facetsListNodeId, int index) {
+		Entry<IRI, Literal> f = facetsIterator.next();
+		IRI facet = f.getKey();
+		Literal value = f.getValue();
+		String firstBNodeId = "_:first" + index;
+		String restNode = facetsIterator.hasNext() ? "_:restList" + index : "rdf:nil";
+		query +=
+				facetsListNodeId + " a rdf:List .\n" +
+				facetsListNodeId + " rdf:first " + firstBNodeId + " .\n" +
+				firstBNodeId + " " + NTriplesUtil.toNTriplesString(facet) + " " + NTriplesUtil.toNTriplesString(value) + " .\n" +
+				facetsListNodeId + " rdf:rest " + restNode + " .\n";
+		if (facetsIterator.hasNext()) {
+			System.out.println("appendFacetsSparqlInsert query " + query);
+			return buildFacetsSparqlInsert(query, facetsIterator, restNode, ++index);
+		} else {
+			System.out.println("return query " + query);
+			return query;
 		}
-		conn.add(modelAdditions, getWorkingGraph());
-		conn.remove(modelRemovals, getWorkingGraph());
 	}
 
 	/**
-	 * Returns the restriction bnode of a datatype. A restriction is represented by a bnode linked with the
-	 * owl:equivalentClass property as follow:
-	 * a:SSN owl:equivalentClass _:x .
-	 * If the datatype has no restriction, returns null
+	 * Delete the restriction of the given datatype
 	 * @param datatype
-	 * @param conn
-	 * @return
 	 */
-	private BNode getDatatypeRestrictionNode(IRI datatype, RepositoryConnection conn) {
-		String query = "SELECT ?d WHERE {\n" +
-				"graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {\n" +
-				NTriplesUtil.toNTriplesString(datatype) + " " + NTriplesUtil.toNTriplesString(OWL.EQUIVALENTCLASS) + " ?d .\n" +
-				"?d " + NTriplesUtil.toNTriplesString(RDF.TYPE) + " " + NTriplesUtil.toNTriplesString(RDFS.DATATYPE) +  " .\n" +
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	public void deleteDatatypeRestriction(IRI datatype) {
+		RepositoryConnection conn = getManagedConnection();
+		deleteDatatypeRestrictionImpl(conn, datatype);
+	}
+
+	private void deleteDatatypeRestrictionImpl(RepositoryConnection conn, IRI datatype) {
+		String query = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
+				"DELETE {\n" +
+				NTriplesUtil.toNTriplesString(datatype) + " owl:equivalentClass ?restriction .\n" +
+				"?restriction rdf:type rdfs:Datatype .\n" +
+				"?restriction owl:onDatatype ?base .\n" +
+				"?restriction owl:withRestrictions ?facetsList .\n" +
+				"?restNode ?restPred ?restObj .\n" +
+				"?facetNode ?facetPred ?facetValue .\n" +
 				"}\n" +
-				"}\n";
-		TupleQueryResult results = conn.prepareTupleQuery(query).evaluate();
-		if (results.hasNext()) {
-			return (BNode) results.next().getValue("d");
-		} else {
-			return null;
-		}
-	}
-
-	/**
-	 * Returns the node representing the restrictions list for the given restrictionNode (_:r owl:withRestrictions ?restList).
-	 * @param restrictionNode
-	 * @param conn
-	 * @return
-	 */
-	private BNode getRestrictionListNode(BNode restrictionNode, RepositoryConnection conn) {
-		RepositoryResult<Statement> stmts = conn.getStatements(restrictionNode, OWL.WITHRESTRICTIONS, null, getWorkingGraph());
-		return (BNode) stmts.next().getObject(); //by-construction there is a list, no need to do .hasNext()
-	}
-
-	/**
-	 * Returns the BNode that represents the subject of the triple
-	 * _:b ?facetPred ?value
-	 * for the given facet.
-	 * If the facet has still no value, returns null
-	 * @param restrictionList
-	 * @param facetPred
-	 * @param conn
-	 * @return
-	 */
-	private BNode getFacetNode(BNode restrictionList, IRI facetPred, RepositoryConnection conn) {
-		Resource graphs = getWorkingGraph();
-		RepositoryResult<Statement> results = conn.getStatements(restrictionList, RDF.FIRST, null, graphs);
-		BNode restrictionNode = (BNode) results.next().getObject();
-		if (conn.hasStatement(restrictionNode, facetPred, null, false, graphs)) { //searched restriction is the first
-			return restrictionNode;
-		} else { //look for the restriction in the rest of the list
-			results = conn.getStatements(restrictionList, RDF.REST, null, false, graphs);
-			Resource rest = (Resource) results.next().getObject();
-			if (rest.equals(RDF.NIL)) {
-				return null;
-			} else {
-				return getFacetNode((BNode) rest, facetPred, conn);
-			}
-		}
-	}
-
-	/**
-	 * Adds a restriction node to a restriction list: creates and returns a new list where the old list "shifts"
-	 * as rest and the restriction node is the new first.
-	 * @param restrictionBNode
-	 * @param list
-	 * @param repoConnection
-	 * @param modelAdditions
-	 * @return
-	 */
-	private BNode addRestrictionInList(BNode restrictionBNode, Resource list, RepositoryConnection repoConnection, Model modelAdditions){
-		BNode newRestrictionListBNode = repoConnection.getValueFactory().createBNode();
-		modelAdditions.add(newRestrictionListBNode, RDF.TYPE, RDF.LIST);
-		modelAdditions.add(newRestrictionListBNode, RDF.FIRST, restrictionBNode);
-		modelAdditions.add(newRestrictionListBNode, RDF.REST, list);
-		return newRestrictionListBNode;
+				"WHERE {\n" +
+				"GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {\n" +
+				NTriplesUtil.toNTriplesString(datatype) + " owl:equivalentClass ?restriction .\n" +
+				"?restriction rdf:type rdfs:Datatype .\n" +
+				"?restriction owl:onDatatype ?base .\n" +
+				"?restriction owl:withRestrictions ?facetsList .\n" +
+				"?facetsList a rdf:List .\n" +
+				"?facetsList rdf:rest* ?restNode .\n" +
+				"?restNode ?restPred ?restObj .\n" +
+				"?restNode rdf:first ?facetNode .\n" +
+				"?facetNode ?facetPred ?facetValue .\n" +
+				"}\n" + //close graph
+				"}";
+		System.out.println("delete " + query);
+		conn.prepareUpdate(query).execute();
 	}
 
 	@STServiceOperation
