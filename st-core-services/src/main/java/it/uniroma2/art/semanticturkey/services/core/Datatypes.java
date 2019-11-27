@@ -16,10 +16,13 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderException;
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
@@ -299,7 +302,6 @@ public class Datatypes extends STServiceAdapter {
 			throw new IllegalArgumentException("Facets map cannot be empty");
 		}
 		query += "}\n}"; //close graph and insert brackets
-		System.out.println("query " + query);
 		conn.prepareUpdate(query).execute();
 	}
 
@@ -315,10 +317,8 @@ public class Datatypes extends STServiceAdapter {
 				firstBNodeId + " " + NTriplesUtil.toNTriplesString(facet) + " " + NTriplesUtil.toNTriplesString(value) + " .\n" +
 				facetsListNodeId + " rdf:rest " + restNode + " .\n";
 		if (facetsIterator.hasNext()) {
-			System.out.println("appendFacetsSparqlInsert query " + query);
 			return buildFacetsSparqlInsert(query, facetsIterator, restNode, ++index);
 		} else {
-			System.out.println("return query " + query);
 			return query;
 		}
 	}
@@ -359,8 +359,39 @@ public class Datatypes extends STServiceAdapter {
 				"?facetNode ?facetPred ?facetValue .\n" +
 				"}\n" + //close graph
 				"}";
-		System.out.println("delete " + query);
 		conn.prepareUpdate(query).execute();
+	}
+
+	@STServiceOperation
+	@Read
+	public Map<IRI, Value> getRestrictionDescription(BNode restriction) {
+		Map<IRI, Value> description = new HashMap<>(); //map between attribute (base datatype, or facets) and value
+		RepositoryConnection conn = getManagedConnection();
+		String query =
+				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
+				"SELECT ?facet ?value ?base WHERE { \n" +
+				"GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{\n" +
+				"?r a rdfs:Datatype .\n" +
+				"?r owl:onDatatype ?base .\n" +
+				"?r owl:withRestrictions ?list .\n" +
+				"?list rdf:rest*/rdf:first ?f .\n" +
+				"?f ?facet ?value .\n" +
+				"}\n" +
+				"}";
+		TupleQuery tq = conn.prepareTupleQuery(query);
+		tq.setBinding("r", restriction);
+		TupleQueryResult results = tq.evaluate();
+		while (results.hasNext()) {
+			BindingSet bs = results.next();
+			IRI base = (IRI) bs.getValue("base"); //this is always the same for each bs, set it each time anyway
+			IRI facet = (IRI) bs.getValue("facet");
+			Literal value = (Literal) bs.getValue("value");
+			description.put(facet, value);
+			description.put(OWL.ONDATATYPE, base);
+		}
+		return description;
 	}
 
 	@STServiceOperation
