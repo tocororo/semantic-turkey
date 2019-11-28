@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -227,7 +228,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	 * @return the newly created bnode
 	 * @throws ManchesterParserException
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	public AnnotatedValue<BNode> createRestriction(IRI classIri, IRI exprType, String manchExpr)
 			throws ManchesterParserException {
@@ -268,7 +269,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	 *            the bnode representing the restriction
 	 * @throws NotClassAxiomException
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	public void removeExpression(@Optional IRI classIri, @Optional IRI exprType, BNode bnode)
 			throws NotClassAxiomException {
@@ -298,7 +299,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	 * @throws ManchesterParserException
 	 * @throws NotClassAxiomException
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	public AnnotatedValue<BNode> updateExpression(String newManchExpr, BNode bnode)
 			throws ManchesterParserException, NotClassAxiomException {
