@@ -1,7 +1,9 @@
 version 7.0
 date: dd/mm/yyy
   * new EDOAL model type
-  * add support for SHACL
+  * added support for SHACL
+  * added support for datatype definitions through enumerations, restrictions and general dataranges expressed
+    in Manchester syntax
   * when adding a topConcept, that concept is add to that scheme as well with skos:inScheme
   * rename the service class GENOMA to RemoteAlignmentServices
   * add the possibility to delete a task in remote alignment services
