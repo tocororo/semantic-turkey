@@ -1,15 +1,12 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview;
 
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toMap;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
+import com.google.common.collect.Sets;
+import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
+import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -25,18 +22,14 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
-import com.google.common.collect.Sets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
-import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
-import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
-import it.uniroma2.art.semanticturkey.datarange.DataRangeDataOneOf;
-import it.uniroma2.art.semanticturkey.datarange.ParseDataRange;
-import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
-import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toMap;
 
 public abstract class AbstractStatementConsumer implements StatementConsumer {
 
@@ -83,17 +76,10 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 		Map<String, String> namespaceToprefixMap = statements.getNamespaces().stream()
 				.collect(toMap(Namespace::getName, Namespace::getPrefix, (v1, v2) -> v1 != null ? v1 : v2));
 		if (resource instanceof BNode) {
-			if (statements.contains(resource, RDF.TYPE, RDFS.DATATYPE)) {
-				DataRangeAbstract dataRangeAbstract = ParseDataRange.getLiteralEnumeration((BNode) resource,
-						statements);
-				if (dataRangeAbstract instanceof DataRangeDataOneOf) {
-					return ((DataRangeDataOneOf) dataRangeAbstract).getLiteralList().stream()
-							.map(lit -> TurtleHelp.serializeLiteral(lit, namespaceToprefixMap))
-							.collect(Collectors.joining(", ", "{", "}"));
-				}
-			} else if (statements.contains(resource, RDF.TYPE, RDFS.CLASS)
+			if (statements.contains(resource, RDF.TYPE, RDFS.CLASS)
 					|| statements.contains(resource, RDF.TYPE, OWL.CLASS)
-					|| statements.contains(resource, RDF.TYPE, OWL.RESTRICTION)) {
+					|| statements.contains(resource, RDF.TYPE, OWL.RESTRICTION)
+					|| statements.contains(resource, RDF.TYPE, RDFS.DATATYPE)) {
 				String expr;
 				try {
 					expr = ManchesterSyntaxUtils.getManchExprFromBNode((BNode) resource, namespaceToprefixMap,
@@ -190,9 +176,8 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 									Literal creShow = resource2CreShow.get(resource);
 
 									if (creShow != null) {
-										Literal creShowAsLiteral = (Literal) creShow;
-										annotatedResource.setAttribute("show", creShowAsLiteral.getLabel());
-										creShowAsLiteral.getLanguage()
+										annotatedResource.setAttribute("show", creShow.getLabel());
+										creShow.getLanguage()
 												.ifPresent(v -> annotatedResource.setAttribute("lang", v));
 										return;
 									}
