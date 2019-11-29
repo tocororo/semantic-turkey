@@ -6,6 +6,7 @@ import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Created;
@@ -16,11 +17,9 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderException;
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -39,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -305,6 +305,33 @@ public class Datatypes extends STServiceAdapter {
 		conn.prepareUpdate(query).execute();
 	}
 
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	public void setDatatypeManchesterRestriction(IRI datatype, String manchExpr) throws ManchesterParserException {
+		RepositoryConnection conn = getManagedConnection();
+		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+				.getNSPrefixMappings(false);
+		ManchesterClassInterface mci = ManchesterSyntaxUtils.parseDatatypeRestrictionExpression(manchExpr,
+				conn.getValueFactory(), prefixToNamespacesMap);
+
+		List<Statement> statList = new ArrayList<>();
+		// it is possible to cast the Resource to a BNode, because the input mci should have a bnode as
+		// starting element
+		BNode newBnode = (BNode) ManchesterSyntaxUtils.parseManchesterExpr(mci, statList,
+				conn.getValueFactory());
+
+		conn.add(statList, getWorkingGraph());
+
+		// add the subClass o equivalentClass property between the main ClassURI and the new BNode
+		IRI prop = OWL.EQUIVALENTCLASS;
+		conn.add(conn.getValueFactory().createStatement(datatype, prop, newBnode), getWorkingGraph());
+
+		AnnotatedValue<BNode> annBNode = new AnnotatedValue<BNode>(newBnode);
+		annBNode.setAttribute("role", RDFResourceRole.cls.name());
+	}
+
+	
 	private String buildFacetsSparqlInsert(String query, Iterator<Entry<IRI, Literal>> facetsIterator, String facetsListNodeId, int index) {
 		Entry<IRI, Literal> f = facetsIterator.next();
 		IRI facet = f.getKey();

@@ -194,6 +194,26 @@ public class ManchesterHandler extends STServiceAdapter {
 	}
 
 	/**
+	 * returns true if the expression is compliant with the syntax of datatype restrions, false otherwise
+	 *
+	 * @return true if the expression is compliant with the syntax, false otherwise
+	 */
+	@STServiceOperation
+	@Read
+	public Boolean checkDatatypeExpression(String manchExpr) {
+		RepositoryConnection conn = getManagedConnection();
+		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+				.getNSPrefixMappings(false);
+		try {
+			ManchesterSyntaxUtils.parseDatatypeRestrictionExpression(manchExpr, conn.getValueFactory(),
+					prefixToNamespacesMap);
+		} catch (ManchesterParserException e) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * returns true if the expression is compliant with the syntax of object property expressions, false
 	 * otherwise
 	 * 

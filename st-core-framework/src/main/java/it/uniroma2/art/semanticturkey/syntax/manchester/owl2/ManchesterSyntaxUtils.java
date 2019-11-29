@@ -36,6 +36,7 @@ import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface.PossType;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ObjectPropertyExpressionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeRestrictionContext;
 
 public class ManchesterSyntaxUtils {
 
@@ -56,6 +57,40 @@ public class ManchesterSyntaxUtils {
 			return "<" + res.stringValue() + ">";
 		} else {
 			return prefix + ":" + res.getLocalName();
+		}
+	}
+
+	public static ManchesterClassInterface parseCompleteExpression(String mancExp, ValueFactory valueFactory,
+			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException {
+		// Get our lexer
+		// ManchesterOWL2SyntaxParserLexer lexer = new
+		// ManchesterOWL2SyntaxParserLexer(CharStreams.fromString(mancExp));
+		BailSimpleLexer lexer = new BailSimpleLexer(CharStreams.fromString(mancExp));
+		// Get a list of matched tokens
+		CommonTokenStream tokens = new CommonTokenStream(lexer);
+		// Pass the tokens to the parser
+		ManchesterOWL2SyntaxParserParser parser = new ManchesterOWL2SyntaxParserParser(tokens);
+		// set the error handler that does not try to recover from error, it just throw exception
+		parser.setErrorHandler(new BailErrorStrategy());
+		try {
+			DescriptionContext descriptionContext = parser.description();
+
+			// Walk it and attach our listener
+			ParseTreeWalker walker = new ParseTreeWalker();
+			ParserDescription parserDescription = new ParserDescription(valueFactory, prefixToNamespacesMap);
+			walker.walk(parserDescription, descriptionContext);
+			ManchesterClassInterface mci = parserDescription.getManchesterClass();
+
+			if (mci instanceof ManchesterBaseClass) {
+				throw new ManchesterParserException(
+						"The expression " + mancExp + " cannot be composed of a " + "single IRI/QName");
+			}
+
+			return mci;
+		} catch (ManchesterParserRuntimeException e) {
+			throw new ManchesterParserException(e);
+		} catch (StringIndexOutOfBoundsException e) {
+			throw new ManchesterParserException(e);
 		}
 	}
 
@@ -88,7 +123,7 @@ public class ManchesterSyntaxUtils {
 
 	}
 
-	public static ManchesterClassInterface parseCompleteExpression(String mancExp, ValueFactory valueFactory,
+	public static ManchesterClassInterface parseDatatypeRestrictionExpression(String mancExp, ValueFactory valueFactory,
 			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException {
 		// Get our lexer
 		// ManchesterOWL2SyntaxParserLexer lexer = new
@@ -101,12 +136,12 @@ public class ManchesterSyntaxUtils {
 		// set the error handler that does not try to recover from error, it just throw exception
 		parser.setErrorHandler(new BailErrorStrategy());
 		try {
-			DescriptionContext descriptionContext = parser.description();
+			DatatypeRestrictionContext datatypeRestrictionContext = parser.datatypeRestriction();
 
 			// Walk it and attach our listener
 			ParseTreeWalker walker = new ParseTreeWalker();
-			ParserDescription parserDescription = new ParserDescription(valueFactory, prefixToNamespacesMap);
-			walker.walk(parserDescription, descriptionContext);
+			ParserDescription parserDescription = new ParserDatatypeRestrictionExpression(valueFactory, prefixToNamespacesMap);
+			walker.walk(parserDescription, datatypeRestrictionContext);
 			ManchesterClassInterface mci = parserDescription.getManchesterClass();
 
 			if (mci instanceof ManchesterBaseClass) {
