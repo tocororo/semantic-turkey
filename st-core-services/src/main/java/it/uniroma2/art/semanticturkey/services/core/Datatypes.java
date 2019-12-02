@@ -4,12 +4,19 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
+import it.uniroma2.art.semanticturkey.datarange.DataRangeDataOneOf;
+import it.uniroma2.art.semanticturkey.datarange.DatatypeRestrictionDescription;
+import it.uniroma2.art.semanticturkey.datarange.ParseDataRange;
 import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Created;
+import it.uniroma2.art.semanticturkey.services.annotations.Modified;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -20,6 +27,7 @@ import it.uniroma2.art.semanticturkey.services.support.QueryBuilderException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -29,6 +37,7 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
@@ -51,7 +60,7 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * This class provides services for manipulating datatypes.
- * 
+ *
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 @STService
@@ -62,7 +71,7 @@ public class Datatypes extends STServiceAdapter {
 	@Autowired
 	private CustomFormManager cfManager;
 
-	private static final Set<IRI> owl2datatypeMap = ImmutableSet.copyOf(new IRI[] {
+	private static final Set<IRI> owl2datatypeMap = ImmutableSet.copyOf(new IRI[]{
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2002/07/owl#real"),
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2002/07/owl#rational"),
 			XMLSchema.DECIMAL,
@@ -95,7 +104,7 @@ public class Datatypes extends STServiceAdapter {
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral")
 	});
 
-	private static final Set<IRI> rdf11XmlSchemaBuiltinDatatypes = ImmutableSet.copyOf(new IRI[] {
+	private static final Set<IRI> rdf11XmlSchemaBuiltinDatatypes = ImmutableSet.copyOf(new IRI[]{
 			XMLSchema.STRING,
 			XMLSchema.BOOLEAN,
 			XMLSchema.DECIMAL,
@@ -134,7 +143,7 @@ public class Datatypes extends STServiceAdapter {
 			XMLSchema.TOKEN,
 			XMLSchema.NMTOKEN,
 			XMLSchema.NAME,
-			XMLSchema.NCNAME  });
+			XMLSchema.NCNAME});
 
 	private static final Set<IRI> builtinDatatypes = Sets.union(rdf11XmlSchemaBuiltinDatatypes,
 			owl2datatypeMap);
@@ -198,21 +207,21 @@ public class Datatypes extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(datatype)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getDeclaredDatatypes() {
 		QueryBuilder qb = createQueryBuilder(
-		// @formatter:off
-			" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                   \n" +                                      
-			" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                \n" +                                      
-			" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                        \n" +                                      
-			" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                         \n" +
-			" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                      	  \n" +
-            "                                                                             \n" +                                      
-			//adding the nature in the SELECT, which should be removed when the appropriate processor is used
-			" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE { 		  \n" + 
-			"   ?resource a rdfs:Datatype .                                               \n" +
-			"   FILTER(isIRI(?resource))                                                  \n" +
-			generateNatureSPARQLWherePart("?resource") +
-			" }                                                                           \n" + 
-			" GROUP BY ?resource                                                          \n" 
-			// @formatter:on
+				// @formatter:off
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                   \n" +
+						" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                \n" +
+						" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                        \n" +
+						" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                         \n" +
+						" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                      	  \n" +
+						"                                                                             \n" +
+						//adding the nature in the SELECT, which should be removed when the appropriate processor is used
+						" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE { 		  \n" +
+						"   ?resource a rdfs:Datatype .                                               \n" +
+						"   FILTER(isIRI(?resource))                                                  \n" +
+						generateNatureSPARQLWherePart("?resource") +
+						" }                                                                           \n" +
+						" GROUP BY ?resource                                                          \n"
+				// @formatter:on
 		);
 		qb.processRendering();
 		qb.processQName();
@@ -244,22 +253,22 @@ public class Datatypes extends STServiceAdapter {
 	public Collection<AnnotatedValue<Resource>> getIntrinsicDatatypesHelper(Set<IRI> datatypes)
 			throws QueryBuilderException, QueryEvaluationException {
 		QueryBuilder qb = createQueryBuilder(
-		// @formatter:off
-			" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                   \n" +                                      
-			" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                \n" +                                      
-			" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                        \n" +                                      
-			" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                         \n" +
-			" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                      	  \n" +
-            "                                                                             \n" +                                      
-			//adding the nature in the SELECT, which should be removed when the appropriate processor is used
-			" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE { 		  \n" + 
-			"   VALUES(?resource) {                                                       \n" + 
-			datatypes.stream().map(dt -> "(" + RenderUtils.toSPARQL(dt) + ")").collect(Collectors.joining("\n")) +
-			"   }                                                                         \n" + 
-			generateNatureSPARQLWherePart("?resource") +
-			" }                                                                           \n" + 
-			" GROUP BY ?resource                                                          \n"
-			// @formatter:on
+				// @formatter:off
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                   \n" +
+						" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                \n" +
+						" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                        \n" +
+						" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                         \n" +
+						" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                      	  \n" +
+						"                                                                             \n" +
+						//adding the nature in the SELECT, which should be removed when the appropriate processor is used
+						" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE { 		  \n" +
+						"   VALUES(?resource) {                                                       \n" +
+						datatypes.stream().map(dt -> "(" + RenderUtils.toSPARQL(dt) + ")").collect(Collectors.joining("\n")) +
+						"   }                                                                         \n" +
+						generateNatureSPARQLWherePart("?resource") +
+						" }                                                                           \n" +
+						" GROUP BY ?resource                                                          \n"
+				// @formatter:on
 		);
 		qb.processRendering();
 		qb.processQName();
@@ -267,48 +276,59 @@ public class Datatypes extends STServiceAdapter {
 		return qb.runQuery();
 	}
 
-	/**
-	 * Creates a restriction with a set of facets for a datatype
-	 * Example of datatype restriction definition in OWL (source: https://www.w3.org/TR/owl2-syntax/#Datatype_Definitions)
-	 * a:SSN rdf:type rdfs:Datatype .
-	 * a:SSN owl:equivalentClass _:x .
-	 * _:x rdf:type rdfs:Datatype .
-	 * _:x owl:onDatatype xsd:string .
-	 * _:x owl:withRestrictions ( _:y ) .
-	 * _:y xsd:pattern "[0-9]{3}-[0-9]{2}-[0-9]{4}"
-	 * @param datatype
-	 * @param base the xsd datatype for which the restriction is based on
-	 * @param facets mappings between xsd facet and value
-	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public void setDatatypeRestriction(IRI datatype, IRI base, Map<IRI, Literal> facets)  {
+	@PreAuthorize("@auth.isAuthorized('rdf(datatype)', 'C')")
+	public void setDatatypeEnumerationRestrictions(
+			@LocallyDefined @Modified(role = RDFResourceRole.dataRange) IRI datatype, List<Literal> literals) {
 		RepositoryConnection conn = getManagedConnection();
-		deleteDatatypeRestrictionImpl(conn, datatype); //first remove the old restriction
-		String query =
-				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
-				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
-				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
-				"INSERT DATA {\n" +
-				"GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {\n" +
-				NTriplesUtil.toNTriplesString(datatype) + " owl:equivalentClass " + " _:restriction .\n" +
-				"_:restriction rdf:type rdfs:Datatype .\n" +
-				"_:restriction owl:onDatatype " + NTriplesUtil.toNTriplesString(base) + " .\n" +
-				"_:restriction owl:withRestrictions _:facetsList .\n";
-		Iterator<Entry<IRI, Literal>> facetsIterator = facets.entrySet().iterator();
-		if (facetsIterator.hasNext()) {
-			query += buildFacetsSparqlInsert("", facetsIterator, "_:facetsList", 0);
+		deleteDatatypeRestrictionImpl(conn, datatype); //delete the previous
+
+		Model modelAdditions = new LinkedHashModel();
+
+		BNode datarange = conn.getValueFactory().createBNode();
+
+		modelAdditions.add(conn.getValueFactory().createStatement(datatype, OWL.EQUIVALENTCLASS, datarange));
+		modelAdditions
+				.add(conn.getValueFactory().createStatement(datarange, RDF.TYPE, RDFS.DATATYPE));
+
+		// if values is null or empty, create an empty RDF List
+		if (literals == null || literals.isEmpty()) {
+			modelAdditions
+					.add(conn.getValueFactory().createStatement(datarange, OWL.ONEOF, RDF.NIL));
 		} else {
-			throw new IllegalArgumentException("Facets map cannot be empty");
+			BNode tempList = conn.getValueFactory().createBNode();
+			// add the first element to the list
+			modelAdditions
+					.add(conn.getValueFactory().createStatement(datarange, OWL.ONEOF, tempList));
+			modelAdditions
+					.add(conn.getValueFactory().createStatement(tempList, RDF.TYPE, RDF.LIST));
+			modelAdditions.add(
+					conn.getValueFactory().createStatement(tempList, RDF.FIRST, literals.get(0)));
+			// iteration on the other elements of the list
+			for (int i = 1; i < literals.size(); ++i) {
+				BNode newTempList = conn.getValueFactory().createBNode();
+				modelAdditions.add(
+						conn.getValueFactory().createStatement(tempList, RDF.REST, newTempList));
+				modelAdditions.add(
+						conn.getValueFactory().createStatement(newTempList, RDF.TYPE, RDF.LIST));
+				modelAdditions.add(conn.getValueFactory().createStatement(newTempList, RDF.FIRST,
+						literals.get(i)));
+				tempList = newTempList;
+			}
+			modelAdditions.add(conn.getValueFactory().createStatement(tempList, RDF.REST, RDF.NIL));
 		}
-		query += "}\n}"; //close graph and insert brackets
-		conn.prepareUpdate(query).execute();
+
+		conn.add(modelAdditions, getWorkingGraph());
 	}
 
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public void setDatatypeManchesterRestriction(IRI datatype, String manchExpr) throws ManchesterParserException {
+	@PreAuthorize("@auth.isAuthorized('rdf(datatype)', 'C')")
+	public void setDatatypeManchesterRestriction(
+			@LocallyDefined @Modified(role = RDFResourceRole.dataRange) IRI datatype, String manchExpr)
+			throws ManchesterParserException {
 		RepositoryConnection conn = getManagedConnection();
 		deleteDatatypeRestrictionImpl(conn, datatype); //delete the previous
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
@@ -332,7 +352,47 @@ public class Datatypes extends STServiceAdapter {
 		annBNode.setAttribute("role", RDFResourceRole.cls.name());
 	}
 
-	
+	/**
+	 * Creates a restriction with a set of facets for a datatype
+	 * Example of datatype restriction definition in OWL (source: https://www.w3.org/TR/owl2-syntax/#Datatype_Definitions)
+	 * a:SSN rdf:type rdfs:Datatype .
+	 * a:SSN owl:equivalentClass _:x .
+	 * _:x rdf:type rdfs:Datatype .
+	 * _:x owl:onDatatype xsd:string .
+	 * _:x owl:withRestrictions ( _:y ) .
+	 * _:y xsd:pattern "[0-9]{3}-[0-9]{2}-[0-9]{4}"
+	 *
+	 * @param datatype
+	 * @param base     the xsd datatype for which the restriction is based on
+	 * @param facets   mappings between xsd facet and value
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(datatype)', 'C')")
+	public void setDatatypeFacetsRestriction(@LocallyDefined @Modified(role = RDFResourceRole.dataRange) IRI datatype,
+			IRI base, Map<IRI, Literal> facets) {
+		RepositoryConnection conn = getManagedConnection();
+		deleteDatatypeRestrictionImpl(conn, datatype); //first remove the old restriction
+		String query =
+				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
+						"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
+						"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
+						"INSERT DATA {\n" +
+						"GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {\n" +
+						NTriplesUtil.toNTriplesString(datatype) + " owl:equivalentClass " + " _:restriction .\n" +
+						"_:restriction rdf:type rdfs:Datatype .\n" +
+						"_:restriction owl:onDatatype " + NTriplesUtil.toNTriplesString(base) + " .\n" +
+						"_:restriction owl:withRestrictions _:facetsList .\n";
+		Iterator<Entry<IRI, Literal>> facetsIterator = facets.entrySet().iterator();
+		if (facetsIterator.hasNext()) {
+			query += buildFacetsSparqlInsert("", facetsIterator, "_:facetsList", 0);
+		} else {
+			throw new IllegalArgumentException("Facets map cannot be empty");
+		}
+		query += "}\n}"; //close graph and insert brackets
+		conn.prepareUpdate(query).execute();
+	}
+
 	private String buildFacetsSparqlInsert(String query, Iterator<Entry<IRI, Literal>> facetsIterator, String facetsListNodeId, int index) {
 		Entry<IRI, Literal> f = facetsIterator.next();
 		IRI facet = f.getKey();
@@ -341,9 +401,9 @@ public class Datatypes extends STServiceAdapter {
 		String restNode = facetsIterator.hasNext() ? "_:restList" + index : "rdf:nil";
 		query +=
 				facetsListNodeId + " a rdf:List .\n" +
-				facetsListNodeId + " rdf:first " + firstBNodeId + " .\n" +
-				firstBNodeId + " " + NTriplesUtil.toNTriplesString(facet) + " " + NTriplesUtil.toNTriplesString(value) + " .\n" +
-				facetsListNodeId + " rdf:rest " + restNode + " .\n";
+						facetsListNodeId + " rdf:first " + firstBNodeId + " .\n" +
+						firstBNodeId + " " + NTriplesUtil.toNTriplesString(facet) + " " + NTriplesUtil.toNTriplesString(value) + " .\n" +
+						facetsListNodeId + " rdf:rest " + restNode + " .\n";
 		if (facetsIterator.hasNext()) {
 			return buildFacetsSparqlInsert(query, facetsIterator, restNode, ++index);
 		} else {
@@ -353,16 +413,30 @@ public class Datatypes extends STServiceAdapter {
 
 	/**
 	 * Delete the restriction of the given datatype
+	 *
 	 * @param datatype
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public void deleteDatatypeRestriction(IRI datatype) {
+	@PreAuthorize("@auth.isAuthorized('rdf(datatype)', 'D')")
+	public void deleteDatatypeRestriction(@LocallyDefined @Modified(role = RDFResourceRole.dataRange) IRI datatype) {
 		RepositoryConnection conn = getManagedConnection();
 		deleteDatatypeRestrictionImpl(conn, datatype);
 	}
 
 	private void deleteDatatypeRestrictionImpl(RepositoryConnection conn, IRI datatype) {
+		//I don't know if the restriction of the given datatype is based on facets or enumerations, so perform both the remove
+		this.removeDatatypeEnumerationTriples(conn, datatype);
+		this.removeDatatypeFacetsTriples(conn, datatype);
+	}
+
+	/**
+	 * Removes the triples that define a datatype restriction based on facets
+	 *
+	 * @param conn
+	 * @param datatype
+	 */
+	private void removeDatatypeFacetsTriples(RepositoryConnection conn, IRI datatype) {
 		String query = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
 				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
 				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
@@ -390,13 +464,54 @@ public class Datatypes extends STServiceAdapter {
 		conn.prepareUpdate(query).execute();
 	}
 
+	/**
+	 * Removes the triples that define a datatype restriction based on enumeration
+	 *
+	 * @param conn
+	 * @param datatype
+	 */
+	private void removeDatatypeEnumerationTriples(RepositoryConnection conn, IRI datatype) {
+		// prepare a SPARQL update to remove
+		String query = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
+				"DELETE {\n" +
+				"GRAPH ?workingGraph {\n" +
+				NTriplesUtil.toNTriplesString(datatype) + " owl:equivalentClass ?datarange .\n" +
+				"?datarange rdf:type rdfs:Datatype .\n" +
+				"?datarange owl:oneOf ?list .\n" +
+				"?elemInList ?p ?o .\n" +
+				"}\n" + //close delete
+				"}\n" + //close graph
+				"WHERE{\n" +
+				"GRAPH ?workingGraph {\n" +
+				NTriplesUtil.toNTriplesString(datatype) + " owl:equivalentClass ?datarange .\n" +
+				"?datarange rdf:type rdfs:Datatype .\n" +
+				"?datarange owl:oneOf ?list .\n" +
+				//get all the element of the list (including the list itself since it is an element as well)
+				"?list rdf:rest* ?elemInList .\n" +
+				// which is not the subject of any triple)
+				"OPTIONAL{\n" +
+				"?elemInList ?p ?o .\n" +
+				"}\n" + //close optional
+				"}\n" + //close graph
+				"}"; //close where
+		System.out.println(query);
+		Update update = conn.prepareUpdate(query);
+		update.setBinding("workingGraph", getWorkingGraph());
+		update.execute();
+	}
+
 	@STServiceOperation
 	@Read
-	public Map<IRI, Value> getRestrictionDescription(BNode restriction) {
-		Map<IRI, Value> description = new HashMap<>(); //map between attribute (base datatype, or facets) and value
+	public DatatypeRestrictionDescription getRestrictionDescription(BNode restriction) {
+		DatatypeRestrictionDescription description = new DatatypeRestrictionDescription();
+		/**
+		 * It not known if the restriction is described through facets or enumerations, so it tries
+		 * first to get the facets, if the query doesn't return any results tries to get the enumerations
+		 */
 		RepositoryConnection conn = getManagedConnection();
-		String query =
-				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
+		String query = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
 				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
 				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
 				"SELECT ?facet ?value ?base WHERE { \n" +
@@ -411,13 +526,38 @@ public class Datatypes extends STServiceAdapter {
 		TupleQuery tq = conn.prepareTupleQuery(query);
 		tq.setBinding("r", restriction);
 		TupleQueryResult results = tq.evaluate();
-		while (results.hasNext()) {
-			BindingSet bs = results.next();
-			IRI base = (IRI) bs.getValue("base"); //this is always the same for each bs, set it each time anyway
-			IRI facet = (IRI) bs.getValue("facet");
-			Literal value = (Literal) bs.getValue("value");
-			description.put(facet, value);
-			description.put(OWL.ONDATATYPE, base);
+		if (results.hasNext()) {
+			Map<IRI, Value> facetsMap = new HashMap<>(); //map between attribute (base datatype, or facets) and value
+			while (results.hasNext()) {
+				BindingSet bs = results.next();
+				IRI base = (IRI) bs.getValue("base"); //this is always the same for each bs, set it each time anyway
+				IRI facet = (IRI) bs.getValue("facet");
+				Literal value = (Literal) bs.getValue("value");
+				facetsMap.put(facet, value);
+				facetsMap.put(OWL.ONDATATYPE, base);
+			}
+			description.setFacets(facetsMap);
+		} else { //no results from query about the facets => get the enumerations
+			/**
+			 * The following has been copied from the Properties.getDatarangeLiterals() service
+			 */
+			Collection<AnnotatedValue<Literal>> literalList = new ArrayList<>();
+
+			DataRangeDataOneOf dataOneOf = null;
+			DataRangeAbstract dataRangeAbstract = ParseDataRange.getLiteralEnumeration(restriction,
+					getManagedConnection());
+			if (dataRangeAbstract instanceof DataRangeDataOneOf) {
+				dataOneOf = (DataRangeDataOneOf) dataRangeAbstract;
+			} else {
+				// There was an error, since the bnode is not the expected datarange (ONEOF)
+				// TODO decide what to do, at the moment, left the empty list
+			}
+
+			List<Literal> literalTempList = dataOneOf.getLiteralList();
+			for (Literal literal : literalTempList) {
+				literalList.add(new AnnotatedValue<Literal>(literal));
+			}
+			description.setEnumerations(literalList);
 		}
 		return description;
 	}
@@ -429,18 +569,18 @@ public class Datatypes extends STServiceAdapter {
 		RepositoryConnection conn = getManagedConnection();
 		String query =
 				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
-				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
-				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
-				"SELECT ?datatype ?facet ?value WHERE { \n" +
-				"GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{\n" +
-				"?datatype a rdfs:Datatype .\n" +
-				"?datatype owl:equivalentClass ?r .\n" +
-				"?r a rdfs:Datatype .\n" +
-				"?r owl:withRestrictions ?list .\n" +
-				"?list rdf:rest*/rdf:first ?f .\n" +
-				"?f ?facet ?value .\n" +
-				"}\n" +
-				"}";
+						"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
+						"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
+						"SELECT ?datatype ?facet ?value WHERE { \n" +
+						"GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{\n" +
+						"?datatype a rdfs:Datatype .\n" +
+						"?datatype owl:equivalentClass ?r .\n" +
+						"?r a rdfs:Datatype .\n" +
+						"?r owl:withRestrictions ?list .\n" +
+						"?list rdf:rest*/rdf:first ?f .\n" +
+						"?f ?facet ?value .\n" +
+						"}\n" +
+						"}";
 		TupleQuery tq = conn.prepareTupleQuery(query);
 		TupleQueryResult results = tq.evaluate();
 		while (results.hasNext()) {
