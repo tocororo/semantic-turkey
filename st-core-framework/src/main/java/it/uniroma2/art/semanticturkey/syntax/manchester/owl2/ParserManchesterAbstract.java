@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
 import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserRuntimeException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface.PossType;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.*;
+import it.uniroma2.art.semanticturkey.vocabulary.XSDFragment;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -433,7 +434,60 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 	}
 
 	private Literal getLiteral(LiteralContext literalContext) {
-		String literalWithNoises = literalContext.string().getText();
+		if(literalContext.typedLiteral() != null) {
+			//it is a typedLiteral
+			String quotedString = literalContext.typedLiteral().quotedString().getText();
+			String classIRI = literalContext.typedLiteral().classIRI().getText();
+			return valueFactory.createLiteral(quotedString.substring(1, quotedString.length()-1), classIRI);
+		} else if(literalContext.stringLiteralNoLanguage()!=null){
+			String quotedString = literalContext.stringLiteralNoLanguage().quotedString().getText();
+			return valueFactory.createLiteral(quotedString.substring(1, quotedString.length()-1));
+		} else if(literalContext.stringLiteralWithLanguage() != null) {
+			String quotedString = literalContext.stringLiteralWithLanguage().quotedString().getText();
+			String lang = literalContext.stringLiteralWithLanguage().LANGTAG().getText().substring(1);
+			return valueFactory.createLiteral(quotedString.substring(1, quotedString.length()-1), lang);
+		} else if (literalContext.integerLiteral() != null) {
+			String sign = "";
+			if(literalContext.integerLiteral().sign != null && literalContext.integerLiteral().sign.getText().equals("-")) {
+				sign = "-";
+			}
+			String intValue = sign+literalContext.integerLiteral().INTEGER().getText();
+			return valueFactory.createLiteral(intValue, XMLSchema.INTEGER);
+		} else if (literalContext.decimalLiteral() != null) {
+			String sign = "";
+			if(literalContext.decimalLiteral().sign != null && literalContext.decimalLiteral().sign.getText().equals("-")) {
+				sign = "-";
+			}
+			String decimalValue = sign+literalContext.decimalLiteral().intPart.getText()+"."+literalContext.decimalLiteral().decPart.getText();
+			return valueFactory.createLiteral(decimalValue, XMLSchema.DECIMAL);
+		} else if(literalContext.floatingPointLiteral() != null) {
+			String sign = "";
+			if(literalContext.floatingPointLiteral().sign != null && literalContext.floatingPointLiteral().sign.getText().equals("-")) {
+				sign = "-";
+			}
+			String decimalPart = sign+literalContext.floatingPointLiteral().intPart.getText()+".";
+			if (literalContext.floatingPointLiteral().decPart == null ){
+				decimalPart+="0";
+			} else {
+				decimalPart+=literalContext.floatingPointLiteral().decPart.getText();
+			}
+			//get the exponent part
+			ExponentContext exponentContext = literalContext.floatingPointLiteral().exponent();
+			String singExp = "";
+			if(exponentContext.sign != null && exponentContext.sign.getText().equals("-")) {
+				singExp = "-";
+			}
+			String floatPart = "E"+singExp+exponentContext.expPart.getText();
+			//combine the two parts
+			String completeValue = decimalPart+floatPart;
+			return valueFactory.createLiteral(completeValue, XMLSchema.FLOAT);
+		} else {
+			//this should never happen
+			throw new ManchesterParserRuntimeException("The literal  "+literalContext.getText()+" is not supported");
+		}
+
+
+		/*String literalWithNoises = literalContext.string().getText();
 		String label = literalWithNoises.substring(1, literalWithNoises.length()-1);
 		if(literalContext.LANGTAG() != null){
 			return valueFactory.createLiteral(label, literalContext.LANGTAG().getText().substring(1));
@@ -441,7 +495,7 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 			return valueFactory.createLiteral(label, getIRIFromResource(literalContext.classIRI()));
 		} else{
 			return valueFactory.createLiteral(label);
-		}
+		}*/
 	}
 	
 	private IRI getIndividual(IndividualContext individualContext) {

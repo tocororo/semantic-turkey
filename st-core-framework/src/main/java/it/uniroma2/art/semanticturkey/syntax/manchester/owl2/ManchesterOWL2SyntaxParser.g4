@@ -1,5 +1,7 @@
 grammar ManchesterOWL2SyntaxParser;
 
+// from https://www.w3.org/TR/owl2-manchester-syntax/
+
 options {
   language  = Java;
   //output   = AST;
@@ -102,10 +104,11 @@ objectPropertyExpression
 	objectPropertyIRI | inverseObjectProperty	
 	;
 	
-atomic : 
+atomic
+    :
 	classIRI 
 	| 
-	'{' individualList '}' 
+	individualList
 	| 
 	'(' descriptionInner ')'	
 	;
@@ -119,11 +122,11 @@ dataAtomic
 	: 
 	datatype 
 	| 
-	'{' literalList '}' 
+	literalList
 	|
 	datatypeRestriction
 	|
-	'(' dataRange ')'
+	dataRange
 	;
 
 
@@ -131,13 +134,56 @@ dataAtomic
 
 //taken form previous version
 
-literal
+/*literal
 	:
 	//string ( LANGTAG | ( '^^' IRIREF ) )?
 	string ( LANGTAG | ( '^^' classIRI ) )?
 	;
+*/
+literal
+    :
+    typedLiteral | stringLiteralNoLanguage | stringLiteralWithLanguage | integerLiteral
+    | decimalLiteral | floatingPointLiteral
+    ;
 
-string
+typedLiteral
+    :
+    quotedString '^^' classIRI
+    ;
+
+stringLiteralNoLanguage
+    :
+    quotedString
+    ;
+
+stringLiteralWithLanguage
+    :
+    quotedString LANGTAG
+    ;
+
+integerLiteral
+    :
+    (sign='+' | sign='-')? INTEGER
+    ;
+
+decimalLiteral
+    :
+    (sign='+' | sign='-')? intPart=INTEGER '.' decPart=INTEGER
+    ;
+
+floatingPointLiteral
+    :
+    (sign='+' | sign='-')? intPart=INTEGER ('.' decPart=INTEGER)? exponent
+    ;
+
+exponent
+    :
+    ('e' | 'E') (sign='+' | sign='-')? expPart=INTEGER
+    ;
+
+
+
+quotedString
 	:
 	STRING_LITERAL1 | STRING_LITERAL2
 	;
@@ -157,7 +203,7 @@ datatypeIRI
 
 literalList
 	:
-	literal (',' literal)*
+	'{' literal (',' literal)* '}'
 	;
 
 datatypeRestriction
@@ -173,7 +219,7 @@ restrictionValue
 
 dataRange
     :
-    dataConjunction ( OR dataConjunction )*
+    '(' dataConjunction ( OR dataConjunction )* ')'
     ;
 
 dataConjunction
@@ -188,7 +234,7 @@ nonNegativeInteger
 
 individualList
 	:
-	individual (',' individual)*
+	'{' individual (',' individual)* '}'
 	;
 
 individual

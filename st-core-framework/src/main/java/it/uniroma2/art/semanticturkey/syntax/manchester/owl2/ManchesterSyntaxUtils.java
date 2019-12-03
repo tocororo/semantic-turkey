@@ -37,6 +37,7 @@ import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInte
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ObjectPropertyExpressionContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeRestrictionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.LiteralListContext;
 
 public class ManchesterSyntaxUtils {
 
@@ -155,8 +156,43 @@ public class ManchesterSyntaxUtils {
 		} catch (StringIndexOutOfBoundsException e) {
 			throw new ManchesterParserException(e);
 		}
-
 	}
+
+	public static ManchesterClassInterface parseLiteralEnumerationExpression(String mancExp, ValueFactory valueFactory,
+			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException {
+		// Get our lexer
+		// ManchesterOWL2SyntaxParserLexer lexer = new
+		// ManchesterOWL2SyntaxParserLexer(CharStreams.fromString(mancExp));
+		BailSimpleLexer lexer = new BailSimpleLexer(CharStreams.fromString(mancExp));
+		// Get a list of matched tokens
+		CommonTokenStream tokens = new CommonTokenStream(lexer);
+		// Pass the tokens to the parser
+		ManchesterOWL2SyntaxParserParser parser = new ManchesterOWL2SyntaxParserParser(tokens);
+		// set the error handler that does not try to recover from error, it just throw exception
+		parser.setErrorHandler(new BailErrorStrategy());
+		try {
+			LiteralListContext literalListContext = parser.literalList();
+
+			// Walk it and attach our listener
+			ParseTreeWalker walker = new ParseTreeWalker();
+			ParserDescription parserDescription = new ParserLiteralEnumerarionRestrictionExpression(valueFactory, prefixToNamespacesMap);
+			walker.walk(parserDescription, literalListContext);
+			ManchesterClassInterface mci = parserDescription.getManchesterClass();
+
+			if (mci instanceof ManchesterBaseClass) {
+				throw new ManchesterParserException(
+						"The expression " + mancExp + " cannot be composed of a " + "single IRI/QName");
+			}
+
+			return mci;
+		} catch (ManchesterParserRuntimeException e) {
+			throw new ManchesterParserException(e);
+		} catch (StringIndexOutOfBoundsException e) {
+			throw new ManchesterParserException(e);
+		}
+	}
+
+
 
 	public static Resource parseManchesterExpr(ManchesterClassInterface mci, List<Statement> statList,
 			ValueFactory valueFactory) {
