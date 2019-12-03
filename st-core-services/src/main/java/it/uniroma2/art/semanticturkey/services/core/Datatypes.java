@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
-import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
@@ -16,7 +15,6 @@ import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Created;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -26,7 +24,13 @@ import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
-import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
@@ -47,10 +51,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -496,7 +500,6 @@ public class Datatypes extends STServiceAdapter {
 				"}\n" + //close optional
 				"}\n" + //close graph
 				"}"; //close where
-		System.out.println(query);
 		Update update = conn.prepareUpdate(query);
 		update.setBinding("workingGraph", getWorkingGraph());
 		update.execute();
@@ -505,12 +508,51 @@ public class Datatypes extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public DatatypeRestrictionDescription getRestrictionDescription(BNode restriction) {
+		RepositoryConnection conn = getManagedConnection();
+		return describeDatatypeRestriction(conn, restriction);
+	}
+
+	@STServiceOperation
+	@Read
+	public Map<IRI, DatatypeRestrictionDescription> getDatatypeRestrictions() {
+		Map<IRI, DatatypeRestrictionDescription> restrictionsMap = new HashMap<>();
+		//collect all the datatypes which have an rdfs:Datatype bnode equivalent class
+		RepositoryConnection conn = getManagedConnection();
+		String query = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
+				"SELECT ?datatype ?r WHERE { \n" +
+				"GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{\n" +
+				"?datatype a rdfs:Datatype .\n" +
+				"?datatype owl:equivalentClass ?r .\n" +
+				"?r a rdfs:Datatype .\n" +
+				"FILTER(isURI(?datatype))\n" +
+				"FILTER(isBlank(?r))\n" +
+				"}\n" +
+				"}";
+		System.out.println(query);
+		TupleQuery tq = conn.prepareTupleQuery(query);
+		TupleQueryResult results = tq.evaluate();
+		Map<IRI, BNode> datatypeRestrictionMap = new HashMap<>();
+		while (results.hasNext()) {
+			BindingSet bs = results.next();
+			IRI datatype = (IRI) bs.getValue("datatype");
+			BNode restriction = (BNode) bs.getValue("r");
+			datatypeRestrictionMap.put(datatype, restriction);
+		}
+		System.out.println(datatypeRestrictionMap);
+		for (Entry<IRI, BNode> drEntry: datatypeRestrictionMap.entrySet()) {
+			restrictionsMap.put(drEntry.getKey(), describeDatatypeRestriction(conn, drEntry.getValue()));
+		}
+		return restrictionsMap;
+	}
+
+	private DatatypeRestrictionDescription describeDatatypeRestriction(RepositoryConnection conn, BNode restriction) {
 		DatatypeRestrictionDescription description = new DatatypeRestrictionDescription();
-		/**
+		/*
 		 * It not known if the restriction is described through facets or enumerations, so it tries
 		 * first to get the facets, if the query doesn't return any results tries to get the enumerations
 		 */
-		RepositoryConnection conn = getManagedConnection();
 		String query = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
 				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
 				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
@@ -538,7 +580,7 @@ public class Datatypes extends STServiceAdapter {
 			}
 			description.setFacets(facetsMap);
 		} else { //no results from query about the facets => get the enumerations
-			/**
+			/*
 			 * The following has been copied from the Properties.getDatarangeLiterals() service
 			 */
 			Collection<AnnotatedValue<Literal>> literalList = new ArrayList<>();
@@ -550,7 +592,7 @@ public class Datatypes extends STServiceAdapter {
 				dataOneOf = (DataRangeDataOneOf) dataRangeAbstract;
 			} else {
 				// There was an error, since the bnode is not the expected datarange (ONEOF)
-				// TODO decide what to do, at the moment, left the empty list
+				// decide what to do, at the moment, left the empty list
 			}
 
 			List<Literal> literalTempList = dataOneOf.getLiteralList();
@@ -560,38 +602,6 @@ public class Datatypes extends STServiceAdapter {
 			description.setEnumerations(literalList);
 		}
 		return description;
-	}
-
-	@STServiceOperation
-	@Read
-	public Map<IRI, Map<IRI, Literal>> getDatatypeRestrictions() {
-		Map<IRI, Map<IRI, Literal>> restrictionsMap = new HashMap<>();
-		RepositoryConnection conn = getManagedConnection();
-		String query =
-				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n" +
-						"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
-						"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
-						"SELECT ?datatype ?facet ?value WHERE { \n" +
-						"GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{\n" +
-						"?datatype a rdfs:Datatype .\n" +
-						"?datatype owl:equivalentClass ?r .\n" +
-						"?r a rdfs:Datatype .\n" +
-						"?r owl:withRestrictions ?list .\n" +
-						"?list rdf:rest*/rdf:first ?f .\n" +
-						"?f ?facet ?value .\n" +
-						"}\n" +
-						"}";
-		TupleQuery tq = conn.prepareTupleQuery(query);
-		TupleQueryResult results = tq.evaluate();
-		while (results.hasNext()) {
-			BindingSet bs = results.next();
-			IRI datatype = (IRI) bs.getValue("datatype");
-			IRI facet = (IRI) bs.getValue("facet");
-			Literal value = (Literal) bs.getValue("value");
-			Map<IRI, Literal> dtEntry = restrictionsMap.computeIfAbsent(datatype, k -> new HashMap<>());
-			dtEntry.put(facet, value);
-		}
-		return restrictionsMap;
 	}
 
 }
