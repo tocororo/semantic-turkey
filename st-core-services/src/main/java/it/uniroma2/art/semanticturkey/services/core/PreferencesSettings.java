@@ -1,20 +1,9 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.json.JSONException;
-import org.springframework.security.access.prepost.PreAuthorize;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
-
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -35,6 +24,15 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.user.UsersGroup;
 import it.uniroma2.art.semanticturkey.user.UsersGroupsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.json.JSONException;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 @STService
 public class PreferencesSettings extends STServiceAdapter {
@@ -58,11 +56,9 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * Sets the languages preference
 	 * @param languages
 	 * @throws STPropertyUpdateException
-	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void setLanguages(Collection<String> languages)
-			throws STPropertyUpdateException, STPropertyAccessException {
+	public void setLanguages(Collection<String> languages) throws STPropertyUpdateException {
 		String value = "*";
 		if (languages.size() == 1) {
 			value = languages.iterator().next();
@@ -79,7 +75,7 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void setShowFlags(boolean show) throws STPropertyAccessException, STPropertyUpdateException {
+	public void setShowFlags(boolean show) throws STPropertyUpdateException {
 		STPropertiesManager.setPUSetting(STPropertiesManager.PREF_SHOW_FLAGS, show+"", getProject(),
 			UsersManager.getLoggedUser());
 	}
@@ -91,7 +87,7 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void setShowInstancesNumb(boolean show) throws STPropertyAccessException, STPropertyUpdateException {
+	public void setShowInstancesNumb(boolean show) throws STPropertyUpdateException {
 		STPropertiesManager.setPUSetting(STPropertiesManager.PREF_SHOW_INSTANCES_NUMBER, show+"", getProject(),
 			UsersManager.getLoggedUser());
 	}
@@ -99,7 +95,7 @@ public class PreferencesSettings extends STServiceAdapter {
 	/**
 	 * Sets the active scheme preference (in order to retrieve it on the future access) for the current project.
 	 * The scheme is optional, if not provided it means that the concept tree is working in no scheme mode
-	 * @param scheme
+	 * @param schemes
 	 * @throws IllegalStateException
 	 * @throws STPropertyUpdateException
 	 */
@@ -170,8 +166,7 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation
-	public JsonNode getPUSettings(List<String> properties, @Optional String pluginID)
-			throws STPropertyAccessException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+	public JsonNode getPUSettings(List<String> properties, @Optional String pluginID) throws STPropertyAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode respNode = jsonFactory.objectNode();
 		for (String prop: properties) {
@@ -194,7 +189,7 @@ public class PreferencesSettings extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void setPUSetting(String property, @Optional String value, @Optional String pluginID)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException, JSONException {
+			throws STPropertyUpdateException {
 		STPropertiesManager.setPUSetting(property, value, getProject(), UsersManager.getLoggedUser(), pluginID);
 	}
 	
@@ -242,12 +237,11 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * @throws ProjectInexistentException
 	 * @throws ProjectAccessException
 	 * @throws STPropertyUpdateException
-	 * @throws JSONException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void setPGSetting(String property, @Optional String value, @Optional String pluginID, @Optional String projectName, IRI groupIri)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException, JSONException {
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException {
 		Project project;
 		if (projectName != null) {
 			project = ProjectManager.getProjectDescription(projectName);
@@ -304,7 +298,7 @@ public class PreferencesSettings extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project,_)', 'U')")
 	public void setProjectSetting(String property, @Optional String value, @Optional String projectName)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException, JSONException {
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException {
 		Project project = (projectName != null) ? ProjectManager.getProjectDescription(projectName) : getProject();
 		STPropertiesManager.setProjectSetting(property, value, project);
 	}
@@ -361,6 +355,9 @@ public class PreferencesSettings extends STServiceAdapter {
 		File psFile = new File(Resources.getDocsDir(), "privacy_statement.pdf");
 		boolean privacyStatementAvailable = psFile.isFile();
 		respNode.set("privacy_statement_available", jsonFactory.booleanNode(privacyStatementAvailable));
+
+		String homeContentValue = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_HOME_CONTENT);
+		respNode.set(STPropertiesManager.SETTING_HOME_CONTENT, jsonFactory.textNode(homeContentValue));
 		
 		return respNode;
 	}

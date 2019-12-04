@@ -77,6 +77,7 @@ public class STPropertiesManager {
 
 	public static final String SETTING_PROJ_LANGUAGES = "languages";
 	public static final String SETTING_EXP_FEATURES_ENABLED = "experimental_features_enabled";
+	public static final String SETTING_HOME_CONTENT = "home_content";
 
 	public static final String SETTINGS_TYPE_PROPERTY = "@type";
 
