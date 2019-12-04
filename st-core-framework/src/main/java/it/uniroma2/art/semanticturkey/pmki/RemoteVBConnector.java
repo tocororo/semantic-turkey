@@ -222,15 +222,13 @@ public class RemoteVBConnector {
 	}
 
 
-	private ObjectNode getRemoteAccessConfigurations() throws URISyntaxException, IOException {
+	public ObjectNode getRemoteAccessConfigurations() throws URISyntaxException, IOException {
 		String requestUrl = stHost + "semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/PreferencesSettings/getSystemSettings";
 		URIBuilder builder = new URIBuilder(requestUrl);
 		builder.setParameter("properties", "remote_configs");
 		HttpGet httpGet = new HttpGet(builder.build());
 		httpGet.addHeader(HttpHeaders.ACCEPT, "application/json");
 		//Execute and get the response
-		System.out.println(httpGet.getURI());
-
 		CloseableHttpResponse response = httpClient.execute(httpGet);
 		return processResponse(response);
 	}

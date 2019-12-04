@@ -141,9 +141,21 @@ public class PMKI extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAdmin()")
-	public void testVocbenchConfiguration() throws IOException, STPropertyAccessException {
+	public void testVocbenchConfiguration() throws IOException, STPropertyAccessException, URISyntaxException {
 		RemoteVBConnector vbConnector = new RemoteVBConnector();
 		ObjectNode respJson = vbConnector.loginAdmin();
+		/*
+		 * I noticed that in a particular case, even if the stHost is not correct, the login request completes successfully.
+		 * E.g. if the stHost is http://mypath.it/semanticturkey/ it means that the complete login url will be
+		 * http://mypath.it/semanticturkey/ + semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/Auth/login
+		 * that is not correct (notice the double semanticturkey/semanticturkey/. Anyway, the login is performed.
+		 * I guess this is a problem linked with spring-security that processes in a "strange" way the following:
+		 * login-processing-url="/it.uniroma2.art.semanticturkey/st-core-services/Auth/login"
+		 * in spring-security.xml
+		 * In order to avoid such case, if the login goes ok, a further GET request is performed
+		 */
+		vbConnector.getRemoteAccessConfigurations();
+		//if also getRemoteAccessConfigurations complete successfully, check if the logged-in user was an admin
 		boolean isAdmin = respJson.findValue("admin").asBoolean();
 		if (!isAdmin) {
 			throw new IllegalArgumentException(
