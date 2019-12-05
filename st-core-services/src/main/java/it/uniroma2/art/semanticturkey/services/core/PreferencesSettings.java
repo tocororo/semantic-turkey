@@ -389,12 +389,12 @@ public class PreferencesSettings extends STServiceAdapter {
 	/**
 	 * 
 	 * @param property
-	 * @param value
+	 * @param value if not provided, remove the previous value
 	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void setSystemSetting(String property, String value) throws STPropertyUpdateException {
+	public void setSystemSetting(String property, @Optional String value) throws STPropertyUpdateException {
 		STPropertiesManager.setSystemSetting(property, value);
 	}
 	
