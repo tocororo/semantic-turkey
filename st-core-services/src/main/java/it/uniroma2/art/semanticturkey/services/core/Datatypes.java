@@ -530,7 +530,6 @@ public class Datatypes extends STServiceAdapter {
 				"FILTER(isBlank(?r))\n" +
 				"}\n" +
 				"}";
-		System.out.println(query);
 		TupleQuery tq = conn.prepareTupleQuery(query);
 		TupleQueryResult results = tq.evaluate();
 		Map<IRI, BNode> datatypeRestrictionMap = new HashMap<>();

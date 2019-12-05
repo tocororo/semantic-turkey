@@ -87,7 +87,6 @@ import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.RepositoryNotExistingException;
@@ -239,6 +238,7 @@ public abstract class Project extends AbstractProject {
 	protected static Logger logger = LoggerFactory.getLogger(Project.class);
 
 	private Properties stp_properties;
+	public static final String stpComment = "properties of local project";
 	public NSPrefixMappings nsPrefixMappingsPersistence;
 
 	private ProjectACL acl;
@@ -257,7 +257,7 @@ public abstract class Project extends AbstractProject {
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
 	 * folder or creating a new one is in charge of the ProjectManager
 	 * <p>
-	 * the created project gives access to all of its properties, though it needs to be {@link #activate()}d
+	 * the created project gives access to all of its properties, though it needs to be {@link #activate(ExtensionPointManager))}d
 	 * for its RDF content to be accessed
 	 * </p>
 	 * <p>
@@ -342,8 +342,7 @@ public abstract class Project extends AbstractProject {
 		}
 	}
 
-	void activate(ExtensionPointManager exptManager) throws ProjectIncompatibleException,
-			ProjectInconsistentException, RDF4JException, ProjectUpdateException, ProjectAccessException {
+	void activate(ExtensionPointManager exptManager) throws RDF4JException, ProjectUpdateException {
 		this.exptManager = exptManager;
 		try {
 			repositoryManager = new STLocalRepositoryManager(_projectDir);
@@ -509,7 +508,7 @@ public abstract class Project extends AbstractProject {
 		updateTimeStamp();
 	}
 
-	protected void loadingCoreVocabularies() throws RDF4JException, IOException, Exception {
+	protected void loadingCoreVocabularies() throws Exception {
 		try (RepositoryConnection conn = newOntManager.getRepository().getConnection()) {
 			conn.begin();
 
@@ -679,7 +678,7 @@ public abstract class Project extends AbstractProject {
 	private void updateProjectProperties() throws IOException {
 		FileOutputStream os = new FileOutputStream(infoSTPFile);
 		// properties.storeToXML(os, "local cache references for mirroring remote ontologies");
-		stp_properties.store(os, "properties of local project");
+		stp_properties.store(os, stpComment);
 		os.close();
 	}
 

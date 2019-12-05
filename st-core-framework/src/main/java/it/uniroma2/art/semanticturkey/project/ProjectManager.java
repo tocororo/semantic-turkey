@@ -26,51 +26,6 @@
  */
 package it.uniroma2.art.semanticturkey.project;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.EnumUtils;
-import org.eclipse.rdf4j.RDF4JException;
-import org.eclipse.rdf4j.http.protocol.Protocol;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.config.RepositoryConfig;
-import org.eclipse.rdf4j.repository.config.RepositoryConfigUtil;
-import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
-import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
-import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
-import org.eclipse.rdf4j.repository.manager.RepositoryManager;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.sail.config.SailImplConfig;
-import org.eclipse.rdf4j.sail.shacl.config.ShaclSailConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -80,7 +35,6 @@ import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectDeletionException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectIncompatibleException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
@@ -112,6 +66,49 @@ import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
+import org.apache.commons.lang3.EnumUtils;
+import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.http.protocol.Protocol;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryConfigUtil;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
+import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
+import org.eclipse.rdf4j.repository.manager.RepositoryManager;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.sail.config.SailImplConfig;
+import org.eclipse.rdf4j.sail.shacl.config.ShaclSailConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -187,7 +184,7 @@ public class ProjectManager {
 	public static Collection<AbstractProject> listProjects(ProjectConsumer consumer)
 			throws ProjectAccessException {
 		ArrayList<AbstractProject> projects = new ArrayList<AbstractProject>();
-		List<File> projectDirs = null;
+		List<File> projectDirs;
 		try {
 			projectDirs = Utilities.listDirectoryContentAsFiles(Resources.getProjectsDir(), false, true,
 					false);
@@ -197,7 +194,7 @@ public class ProjectManager {
 		for (File projDir : projectDirs) {
 			// an AbstractProject is being declared as it can be both a description of a project, or a
 			// CorruptedProject
-			AbstractProject proj = null;
+			AbstractProject proj;
 
 			if (consumer == null) { // case of no consumer
 				try {
@@ -260,7 +257,7 @@ public class ProjectManager {
 	}
 
 	private static Project activateProject(String projectName)
-			throws ProjectCreationException, ProjectInconsistentException, ProjectUpdateException,
+			throws ProjectCreationException, ProjectUpdateException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		Project proj = getProjectDescription(projectName);
 
@@ -281,13 +278,6 @@ public class ProjectManager {
 			// Utilities.deleteDir(resolveProjectNameToDir(projectName));
 			// I moved the delete to where I'm sure I'm creating the project
 			throw new ProjectCreationException(e);
-		} catch (ProjectIncompatibleException e) {
-			// Utilities.deleteDir(resolveProjectNameToDir(projectName));
-			// surely good to not delete here. The lack of a proper OntologyManager is not something that
-			// would normally happen when creating a project. It usually happens on old projects which have
-			// been created with an ontology manager which is not present in the current installation
-			throw new ProjectCreationException("it is not possible to create a project with OntologyManager: "
-					+ "---" + "because no bundle with such ID has been loaded by OSGi");
 		}
 	}
 
@@ -437,7 +427,7 @@ public class ProjectManager {
 
 	public static void importProject(File semTurkeyProjectFile, String name)
 			throws IOException, ProjectCreationException, DuplicatedResourceException,
-			ProjectInconsistentException, ProjectUpdateException, InvalidProjectNameException {
+			ProjectUpdateException, InvalidProjectNameException {
 		File tempDir = Resources.createTempDir();
 		Utilities.unZip(semTurkeyProjectFile.getPath(), tempDir);
 
@@ -722,95 +712,6 @@ public class ProjectManager {
 		return Long.parseLong(propValue);
 	}
 
-	public static String escape(String in) {
-		return saveConvert(in, false, false);
-	}
-
-	// the methods below come from the Property class in standard java distribution
-
-	/*
-	 * Converts unicodes to encoded &#92;uxxxx and escapes special characters with a preceding slash
-	 */
-	private static String saveConvert(String theString, boolean escapeSpace, boolean escapeUnicode) {
-		int len = theString.length();
-		int bufLen = len * 2;
-		if (bufLen < 0) {
-			bufLen = Integer.MAX_VALUE;
-		}
-		StringBuffer outBuffer = new StringBuffer(bufLen);
-
-		for (int x = 0; x < len; x++) {
-			char aChar = theString.charAt(x);
-			// Handle common case first, selecting largest block that
-			// avoids the specials below
-			if ((aChar > 61) && (aChar < 127)) {
-				if (aChar == '\\') {
-					outBuffer.append('\\');
-					outBuffer.append('\\');
-					continue;
-				}
-				outBuffer.append(aChar);
-				continue;
-			}
-			switch (aChar) {
-			case ' ':
-				if (x == 0 || escapeSpace)
-					outBuffer.append('\\');
-				outBuffer.append(' ');
-				break;
-			case '\t':
-				outBuffer.append('\\');
-				outBuffer.append('t');
-				break;
-			case '\n':
-				outBuffer.append('\\');
-				outBuffer.append('n');
-				break;
-			case '\r':
-				outBuffer.append('\\');
-				outBuffer.append('r');
-				break;
-			case '\f':
-				outBuffer.append('\\');
-				outBuffer.append('f');
-				break;
-			case '=': // Fall through
-			case ':': // Fall through
-			case '#': // Fall through
-			case '!':
-				outBuffer.append('\\');
-				outBuffer.append(aChar);
-				break;
-			default:
-				if (((aChar < 0x0020) || (aChar > 0x007e)) & escapeUnicode) {
-					outBuffer.append('\\');
-					outBuffer.append('u');
-					outBuffer.append(toHex((aChar >> 12) & 0xF));
-					outBuffer.append(toHex((aChar >> 8) & 0xF));
-					outBuffer.append(toHex((aChar >> 4) & 0xF));
-					outBuffer.append(toHex(aChar & 0xF));
-				} else {
-					outBuffer.append(aChar);
-				}
-			}
-		}
-		return outBuffer.toString();
-	}
-
-	/**
-	 * Convert a nibble to a hex character
-	 * 
-	 * @param nibble
-	 *            the nibble to convert.
-	 */
-	private static char toHex(int nibble) {
-		return hexDigit[(nibble & 0xF)];
-	}
-
-	/** A table of hex digits */
-	private static final char[] hexDigit = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C',
-			'D', 'E', 'F' };
-
 	// MULTI PROJECT MANAGEMENT ADDITIONS
 
 	public static class AccessResponse {
@@ -901,7 +802,7 @@ public class ProjectManager {
 	public static Project accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, ProjectBindingException, RBACException {
+			ForbiddenProjectAccessException, RBACException {
 
 		Project project = getProjectDescription(projectName);
 
@@ -939,13 +840,7 @@ public class ProjectManager {
 			} else {
 				throw new ForbiddenProjectAccessException(accessResponse.getMsg());
 			}
-		} catch (ProjectCreationException e) {
-			throw new ProjectAccessException(e);
-		} catch (ProjectInconsistentException e) {
-			throw new ProjectAccessException(e);
-		} catch (ProjectUpdateException e) {
-			throw new ProjectAccessException(e);
-		} catch (InvalidProjectNameException e) {
+		} catch (ProjectCreationException | ProjectUpdateException | InvalidProjectNameException e) {
 			throw new ProjectAccessException(e);
 		}
 
@@ -1005,7 +900,7 @@ public class ProjectManager {
 	 * Return the access level with which the consumer is accessing the project. Null if the consumer does not
 	 * access the given project.
 	 * 
-	 * @param project
+	 * @param projectName
 	 * @param consumer
 	 * @return
 	 * @throws ProjectAccessException
@@ -1016,13 +911,8 @@ public class ProjectManager {
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		Project project = getProjectDescription(projectName);
 		if (isOpen(project)) {// look for the consumer only if the project is open
-			AccessLevel accessLevel = openProjects.getAccessStatusMap(project).get(consumer);
-			if (accessLevel != null) { // accessLevel could be null because project could be open but not from
-										// the given consumer
-				return accessLevel;
-			} else {
-				return null;
-			}
+			// accessLevel could be null because project could be open but not from the given consumer
+			return openProjects.getAccessStatusMap(project).get(consumer);
 		} else {
 			return null;
 		}
@@ -1033,7 +923,6 @@ public class ProjectManager {
 	 * currently locked
 	 * 
 	 * @param projectName
-	 * @param consumer
 	 * @return
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
@@ -1156,7 +1045,7 @@ public class ProjectManager {
 		 * check for lockability is performed, as this method only updates {@link OpenProjectsHolder} internal
 		 * data structures
 		 * 
-		 * @param projectName
+		 * @param project
 		 * @param consumer
 		 * @param lockLevel
 		 */
@@ -1247,7 +1136,7 @@ public class ProjectManager {
 			HashSet<Project> accessedProjects = new HashSet<Project>();
 			for (Entry<Project, Map<ProjectConsumer, ProjectACL.AccessLevel>> mapEntry : projectsAccessStatus
 					.entrySet()) {
-				if (mapEntry.getValue().keySet().contains(consumer))
+				if (mapEntry.getValue().containsKey(consumer))
 					accessedProjects.add(mapEntry.getKey());
 			}
 			return accessedProjects;
@@ -1318,7 +1207,7 @@ public class ProjectManager {
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, WrongPropertiesException, ProjectBindingException,
+			UnloadablePluginConfigurationException, WrongPropertiesException,
 			RBACException, UnsupportedModelException, UnsupportedLexicalizationModelException,
 			ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException,
 			IOException, ReservedPropertyUpdateException, ProjectUpdateException {
@@ -1696,7 +1585,7 @@ public class ProjectManager {
 			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
 			IRI creationDateProperty, IRI modificationDateProperty, String[] updateForRoles,
 			String leftDataset, String rightDataset, boolean enableSHACL)
-			throws DuplicatedResourceException, ProjectCreationException {
+			throws ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
 		try {
@@ -1704,84 +1593,49 @@ public class ProjectManager {
 			logger.debug("creating project info file: " + info_stp);
 			info_stp.createNewFile();
 			logger.debug("project info file: " + info_stp + " created");
-			// here we write directly on the file; once the project is loaded, it will be handled internally
-			// as a property file
-			BufferedWriter out = new BufferedWriter(new FileWriter(info_stp));
-			// out.write(Project.ONTOLOGY_MANAGER_ID_PROP + "=" + escape(ontManagerID) + "\n");
-			// out.write(Project.MODELCONFIG_ID + "=" + escape(modelConfigurationClass) + "\n");
-			out.write(Project.HISTORY_ENABLED_PROP + "=" + historyEnabled + "\n");
-			out.write(Project.VALIDATION_ENABLED_PROP + "=" + validationEnabled + "\n");
-			out.write(Project.BLACKLISTING_ENABLED_PROP + "=" + blacklistingEnabled + "\n");
-			out.write(Project.URI_GENERATOR_FACTORY_ID_PROP + "="
-					+ escape(uriGeneratorSpecification.getFactoryId()) + "\n");
-			out.write(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP + "="
-					+ escape(uriGeneratorSpecification.getConfigType()) + "\n");
-			out.write(Project.RENDERING_ENGINE_FACTORY_ID_PROP + "="
-					+ escape(renderingEngineSpecification.getFactoryId()) + "\n");
-			out.write(Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP + "="
-					+ escape(renderingEngineSpecification.getConfigType()) + "\n");
-			out.write(Project.BASEURI_PROP + "=" + escape(baseURI) + "\n");
-			out.write(Project.DEF_NS_PROP + "=" + escape(defaultNamespace) + "\n");
-			out.write(Project.MODEL_PROP + "=" + escape(model.stringValue()) + "\n");
-			out.write(Project.LEXICALIZATION_MODEL_PROP + "=" + escape(lexicalizationModel.stringValue())
-					+ "\n");
-			out.write(Project.PROJECT_NAME_PROP + "=" + projectName + "\n");
-			out.write(Project.TIMESTAMP_PROP + "=" + Long.toString(new Date().getTime()) + "\n");
-			out.write(ProjectACL.ACL + "="
-					+ ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW) + "\n");
-			out.write(Project.DEFAULT_REPOSITORY_LOCATION_PROP + "="
-					+ escape(RepositoryLocation.fromRepositoryAccess(repositoryAccess).toString()) + "\n");
 
+			Properties projProp = new Properties();
+			projProp.setProperty(Project.BASEURI_PROP, baseURI);
+			projProp.setProperty(Project.HISTORY_ENABLED_PROP, String.valueOf(historyEnabled));
+			projProp.setProperty(Project.VALIDATION_ENABLED_PROP, String.valueOf(validationEnabled));
+			projProp.setProperty(Project.BLACKLISTING_ENABLED_PROP, String.valueOf(blacklistingEnabled));
+			projProp.setProperty(Project.URI_GENERATOR_FACTORY_ID_PROP, uriGeneratorSpecification.getFactoryId());
+			projProp.setProperty(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP, uriGeneratorSpecification.getConfigType());
+			projProp.setProperty(Project.RENDERING_ENGINE_FACTORY_ID_PROP, renderingEngineSpecification.getFactoryId());
+			projProp.setProperty(Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP, renderingEngineSpecification.getConfigType());
+			projProp.setProperty(Project.BASEURI_PROP, baseURI);
+			projProp.setProperty(Project.DEF_NS_PROP, defaultNamespace);
+			projProp.setProperty(Project.MODEL_PROP, model.stringValue());
+			projProp.setProperty(Project.LEXICALIZATION_MODEL_PROP, lexicalizationModel.stringValue());
+			projProp.setProperty(Project.PROJECT_NAME_PROP, projectName);
+			projProp.setProperty(Project.TIMESTAMP_PROP, Long.toString(new Date().getTime()));
+			projProp.setProperty(ProjectACL.ACL, ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW));
+			projProp.setProperty(Project.DEFAULT_REPOSITORY_LOCATION_PROP, RepositoryLocation.fromRepositoryAccess(repositoryAccess).toString());
 			if (creationDateProperty != null) {
-				out.write(
-						Project.CREATION_DATE_PROP + "=" + escape(creationDateProperty.stringValue()) + "\n");
+				projProp.setProperty(Project.CREATION_DATE_PROP, creationDateProperty.stringValue());
 			}
-
 			if (modificationDateProperty != null) {
-				out.write(Project.MODIFICATION_DATE_PROP + "="
-						+ escape(modificationDateProperty.stringValue()) + "\n");
+				projProp.setProperty(Project.MODIFICATION_DATE_PROP, modificationDateProperty.stringValue());
 			}
-
-			out.write(Project.UPDATE_FOR_ROLES_PROP + "="
-					+ escape(Arrays.stream(updateForRoles).collect(Collectors.joining(","))) + "\n");
-
+			projProp.setProperty(Project.UPDATE_FOR_ROLES_PROP, Arrays.stream(updateForRoles).collect(Collectors.joining(",")));
 			if (leftDataset != null) {
-				out.write(Project.LEFT_DATASET_PROP + "=" + escape(leftDataset) + "\n");
+				projProp.setProperty(Project.LEFT_DATASET_PROP, leftDataset);
 			}
-
 			if (rightDataset != null) {
-				out.write(Project.RIGHT_DATASET_PROP + "=" + escape(rightDataset) + "\n");
+				projProp.setProperty(Project.RIGHT_DATASET_PROP, rightDataset);
 			}
-
 			if (enableSHACL) {
-				out.write(Project.SHACL_ENABLED_PROP + "=" + enableSHACL + "\n");
+				projProp.setProperty(Project.SHACL_ENABLED_PROP, String.valueOf(enableSHACL));
 			}
-
-			out.close();
+			try (FileOutputStream os = new FileOutputStream(info_stp)) {
+				projProp.store(os, Project.stpComment);
+			}
 
 			logger.debug("project creation: all project properties have been stored");
 
 			// Prefix Mapping file creation
 			File prefixMappingFile = new File(projectDir, NSPrefixMappings.prefixMappingFileName);
 			prefixMappingFile.createNewFile();
-
-			// // Core Repository Configuration file creation
-			// File coreRepoConfigurationFile = new File(projectDir, Project.COREREPOCONFIG_FILENAME);
-			// coreRepoConfigurationFile.createNewFile();
-			// try (FileWriter fw = new FileWriter(coreRepoConfigurationFile)) {
-			// Model model = new TreeModel();
-			// coreRepoConfig.export(model);
-			// Rio.write(model, fw, org.eclipse.rdf4j.rio.RDFFormat.TURTLE);
-			// }
-			//
-			// // Support Repository Configuration file creation
-			// File supportRepoConfigurationFile = new File(projectDir, Project.SUPPORTREPOCONFIG_FILENAME);
-			// supportRepoConfigurationFile.createNewFile();
-			// try (FileWriter fw = new FileWriter(supportRepoConfigurationFile)) {
-			// Model model = new TreeModel();
-			// supportRepoConfig.export(model);
-			// Rio.write(model, fw, org.eclipse.rdf4j.rio.RDFFormat.TURTLE);
-			// }
 
 			File uriGenConfigurationFile = new File(projectDir, Project.URI_GENERATOR_CONFIG_FILENAME);
 			uriGenConfigurationFile.createNewFile();
@@ -1823,12 +1677,12 @@ public class ProjectManager {
 		boolean alreadyLocked = !projectsLockedForAccess.add(project);
 
 		if (alreadyLocked) {
-			throw new ProjectAccessException("Project \'" + projectName + "\' is already locked");
+			throw new ProjectAccessException("Project '" + projectName + "' is already locked");
 		}
 
 		try {
 			if (isOpen(project)) {
-				throw new ProjectAccessException("Project \'" + projectName + "\' is open");
+				throw new ProjectAccessException("Project '" + projectName + "' is open");
 			}
 
 			projectConsumer.accept(project);
