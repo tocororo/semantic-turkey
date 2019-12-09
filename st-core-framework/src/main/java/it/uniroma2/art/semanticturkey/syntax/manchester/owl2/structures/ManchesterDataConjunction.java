@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures;
 
 import java.util.List;
 import java.util.Map;

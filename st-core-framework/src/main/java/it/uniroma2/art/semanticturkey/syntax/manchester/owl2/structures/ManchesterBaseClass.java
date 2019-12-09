@@ -21,64 +21,36 @@
  *
  */
 
-package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 
-public class ManchesterOneOfClass extends ManchesterClassInterface {
+public class ManchesterBaseClass extends ManchesterClassInterface {
 
-	private List<IRI> oneOfList;
+	private IRI baseClass;
 
-	public ManchesterOneOfClass(List<IRI> oneOfList) {
-		super(PossType.ONEOF);
-		if (oneOfList != null) {
-			this.oneOfList = oneOfList;
-		} else {
-			this.oneOfList = new ArrayList<>();
-		}
+	public ManchesterBaseClass(IRI baseClass) {
+		super(PossType.BASE);
+		this.baseClass = baseClass;
 	}
 
-	public ManchesterOneOfClass() {
-		super(PossType.ONEOF);
-		this.oneOfList = new ArrayList<IRI>();
-	}
-
-	public void addOneOf(IRI oneOf) {
-		oneOfList.add(oneOf);
-	}
-
-	public List<IRI> getOneOfList() {
-		return oneOfList;
+	public IRI getBaseClass() {
+		return baseClass;
 	}
 
 	@Override
 	public String print(String tab) {
 		StringBuffer sb = new StringBuffer();
 		sb.append("\n" + tab + getType());
-		for (int i = 0; i < oneOfList.size(); ++i) {
-			sb.append("\n" + tab + "\t" + oneOfList.get(i).stringValue());
-		}
+		sb.append("\n" + tab + "\t" + baseClass.stringValue());
 		return sb.toString();
 	}
 
 	@Override
-	public String getManchExpr(Map<String, String> namespaceToPrefixsMap, boolean getPrefixName, 
-			boolean useUppercaseSyntax) {
-		String manchExpr = "{";
-		boolean first = true;
-		for (IRI oneOf : oneOfList) {
-			if (!first) {
-				manchExpr += ", ";
-			}
-			first = false;
-			manchExpr += printRes(getPrefixName, namespaceToPrefixsMap, oneOf);
-		}
-		manchExpr += "}";
-		return manchExpr;
+	public String getManchExpr(Map<String, String> namespaceToPrefixsMap, boolean getPrefixName, boolean useUppercaseSyntax){
+		return printRes(getPrefixName, namespaceToPrefixsMap, baseClass);
 	}
 
 }

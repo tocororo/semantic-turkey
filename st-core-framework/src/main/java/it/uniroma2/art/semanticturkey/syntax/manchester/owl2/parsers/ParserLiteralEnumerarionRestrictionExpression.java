@@ -1,6 +1,7 @@
-package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers;
 
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.LiteralListContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface;
 import org.eclipse.rdf4j.model.ValueFactory;
 
 import java.util.Map;

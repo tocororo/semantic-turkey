@@ -1,8 +1,11 @@
-package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers;
 
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.InverseObjectPropertyContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ObjectPropertyExpressionContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ObjectPropertyIRIContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ObjectProperty;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ObjectPropertyExpression;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.InverseObjectProperty;
 import org.eclipse.rdf4j.model.ValueFactory;
 
 import java.util.Map;

@@ -1,9 +1,13 @@
-package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers;
 
 import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserRuntimeException;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterClassInterface.PossType;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserBaseListener;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterSelfClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterSomeClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterValueClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.*;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface.PossType;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.*;
-import it.uniroma2.art.semanticturkey.vocabulary.XSDFragment;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -170,7 +174,7 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 			IRI objProp = getIRIFromResource(objectPropertyExpressionContext);
 			if(restrictionContext.type.getText().toLowerCase().equals(SOME)){
 				//objectPropertyExpression type=SOME primary
-				return new ManchesterSomeClass(hasInverse(objectPropertyExpressionContext), objProp, 
+				return new ManchesterSomeClass(hasInverse(objectPropertyExpressionContext), objProp,
 						parsePrimary(restrictionContext.primary()));
 			} else if(restrictionContext.type.getText().toLowerCase().equals(ONLY)){
 				//objectPropertyExpression type=ONLY primary
@@ -178,7 +182,7 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 						parsePrimary(restrictionContext.primary()));
 			} else if(restrictionContext.type.getText().toLowerCase().equals(VALUE)){
 				//objectPropertyExpression type=VALUE individual
-				return new ManchesterValueClass(hasInverse(objectPropertyExpressionContext), objProp, 
+				return new ManchesterValueClass(hasInverse(objectPropertyExpressionContext), objProp,
 						parseIndividual(restrictionContext.individual()));
 			} else if(restrictionContext.type.getText().toLowerCase().equals(SELF)){
 				//objectPropertyExpression type=SELF
@@ -199,7 +203,7 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 				}
 				if(restrictionContext.primary()!= null){
 					//it has the 'primary'
-					return new ManchesterCardClass(hasInverse(objectPropertyExpressionContext), posType, 
+					return new ManchesterCardClass(hasInverse(objectPropertyExpressionContext), posType,
 							number, objProp, parsePrimary(restrictionContext.primary()));
 				} else{
 					//it does not have the 'primary'

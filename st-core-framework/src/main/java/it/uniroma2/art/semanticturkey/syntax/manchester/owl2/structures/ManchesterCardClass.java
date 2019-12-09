@@ -21,7 +21,7 @@
   *
   */
 
-package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures;
 
 import java.util.Map;
 

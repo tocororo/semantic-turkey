@@ -21,12 +21,13 @@
  *
  */
 
-package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures;
 
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 
 public abstract class ManchesterClassInterface {
 	private PossType type;
@@ -57,13 +58,23 @@ public abstract class ManchesterClassInterface {
 	}
 	
 	protected String printLiteral(boolean getPrefixName, Map<String, String> namespaceToPrefixsMap, Literal literal){
-		String valueString = "\"" + literal.stringValue() + "\"";
-		if (literal.getLanguage().isPresent()) {
-			valueString += "@" + literal.getLanguage().get();
-		} else if (literal.getDatatype() != null) {
-			valueString += "^^" + printRes(getPrefixName, namespaceToPrefixsMap, literal.getDatatype());
-		}
-		return valueString;
+		/*distinguish two cases:
+		- literals representing numbers (xsd:integer , xsd:decimal, xsd:float)
+		- other types of literals
+		*/
+		if(literal.getDatatype() != null && (literal.getDatatype().equals(XMLSchema.INTEGER)  || literal.getDatatype().equals(XMLSchema.DECIMAL)
+				|| literal.getDatatype().equals(XMLSchema.FLOAT))) {
+            return literal.stringValue();
+		} else {
+
+			String valueString = "\"" + literal.stringValue() + "\"";
+			if (literal.getLanguage().isPresent()) {
+				valueString += "@" + literal.getLanguage().get();
+			} else if (literal.getDatatype() != null) {
+				valueString += "^^" + printRes(getPrefixName, namespaceToPrefixsMap, literal.getDatatype());
+			}
+			return valueString;
+			}
 	}
 
 	/**

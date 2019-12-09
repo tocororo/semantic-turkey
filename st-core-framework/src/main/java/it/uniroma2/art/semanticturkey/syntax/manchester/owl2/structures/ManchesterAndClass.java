@@ -21,40 +21,66 @@
   *
   */
 
-package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-public class ManchesterNotClass extends ManchesterClassInterface{
+public class ManchesterAndClass extends ManchesterClassInterface{
 
-	private ManchesterClassInterface notClass;
+	private List<ManchesterClassInterface>andClassList;
 	
-	public ManchesterNotClass(ManchesterClassInterface notClass) {
-		super(PossType.NOT);
-		this.notClass = notClass;
+	public ManchesterAndClass() {
+		super(PossType.AND);
+		this.andClassList = new ArrayList<ManchesterClassInterface>();
 	}
 	
-	public ManchesterClassInterface getNotClass(){
-		return notClass;
+	public ManchesterAndClass(List<ManchesterClassInterface>andClassList) {
+		super(PossType.AND);
+		if(andClassList!=null){
+			this.andClassList = andClassList;
+		} else{
+			this.andClassList = new ArrayList<ManchesterClassInterface>();
+		}
 	}
 	
+	public List<ManchesterClassInterface> getAndClassList(){
+		return andClassList;
+	}
+	
+	public void addClassToAndClassList(ManchesterClassInterface manchClass){
+		andClassList.add(manchClass);
+	}
+
 	@Override
 	public String print(String tab) {
+		
 		StringBuffer sb = new StringBuffer();
 		sb.append("\n"+tab+getType());
-		sb.append("\n"+tab+"\t"+notClass.print(tab+"\t"));
+		for(int i=0; i<andClassList.size(); ++i){
+			sb.append(andClassList.get(i).print("\t"+tab));
+		}
 		return sb.toString();
 	}
 
 	@Override
 	public String getManchExpr(Map<String, String> namespaceToPrefixsMap, boolean getPrefixName, 
 			boolean useUppercaseSyntax) {
-		if(useUppercaseSyntax){
-			return "NOT "+notClass.getManchExpr(namespaceToPrefixsMap, getPrefixName, useUppercaseSyntax);
-		} else {
-			return "not "+notClass.getManchExpr(namespaceToPrefixsMap, getPrefixName, useUppercaseSyntax);
+		String manchExpr = "(";
+		boolean first = true;
+		for(ManchesterClassInterface mci : andClassList){
+			if(!first){
+				if(useUppercaseSyntax){
+					manchExpr += " AND ";
+				} else{
+					manchExpr += " and ";
+				}
+			}
+			first = false;
+			manchExpr += mci.getManchExpr(namespaceToPrefixsMap, getPrefixName, useUppercaseSyntax);
 		}
+		manchExpr += ")";
+		return manchExpr;
 	}
-	
-	
 }

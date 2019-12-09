@@ -1,7 +1,8 @@
-package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
+package it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures;
 
 import java.util.Map;
 
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface;
 import org.eclipse.rdf4j.model.IRI;
 
 public class ManchesterSelfClass extends ManchesterClassInterface {

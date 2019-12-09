@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ObjectPropertyExpression;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.hamcrest.Matchers;
 import org.junit.Test;
