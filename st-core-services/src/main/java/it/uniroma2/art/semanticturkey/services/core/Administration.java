@@ -4,10 +4,8 @@ import alice.tuprolog.InvalidTheoryException;
 import alice.tuprolog.MalformedGoalException;
 import alice.tuprolog.NoMoreSolutionException;
 import alice.tuprolog.NoSolutionException;
-import alice.tuprolog.Term;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -60,7 +58,6 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 @STService
 @Controller
@@ -499,12 +496,8 @@ public class Administration extends STServiceAdapter {
 			try {
 				RBACProcessor rbac = new RBACProcessor(tempServerFile);
 				RBACManager.createRole(getProject(), newRoleName);
-				List<Term> capAsTerms = rbac.getCapabilitiesAsTermList();
-				Collection<String> capabilities = new ArrayList<>();
-				for (Term t: capAsTerms) {
-					capabilities.add(t.toString());
-				}
-				RBACManager.addCapabilities(getProject(), newRoleName, capabilities);
+				Collection<String> capabilities = rbac.getCapabilitiesAsStringList();
+				RBACManager.setCapabilities(getProject(), newRoleName, capabilities);
 			} catch (InvalidTheoryException | TheoryNotFoundException | 
 					MalformedGoalException | NoSolutionException | NoMoreSolutionException e) {
 				throw new RBACException("Invalid role file", e);
@@ -535,7 +528,7 @@ public class Administration extends STServiceAdapter {
 		}
 		//doesn't check the existence of targetRoleName since it is already done by createRole()
 		RBACManager.createRole(getProject(), targetRoleName);
-		RBACManager.addCapabilities(getProject(), targetRoleName, RBACManager.getRoleCapabilities(project, sourceRoleName));
+		RBACManager.setCapabilities(getProject(), targetRoleName, RBACManager.getRoleCapabilities(project, sourceRoleName));
 	}
 	
 	/**

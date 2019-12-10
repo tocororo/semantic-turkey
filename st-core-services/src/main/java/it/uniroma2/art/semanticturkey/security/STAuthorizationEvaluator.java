@@ -97,8 +97,8 @@ public class STAuthorizationEvaluator {
 	 * @throws STPropertyAccessException 
 	 * @throws JSONException 
 	 */
-	public boolean isAuthorized(String prologCapability, String crudv) throws InvalidTheoryException,
-		MalformedGoalException, TheoryNotFoundException, HaltedEngineException, HarmingGoalException, STPropertyAccessException, JSONException {
+	public boolean isAuthorized(String prologCapability, String crudv) throws MalformedGoalException,
+			HaltedEngineException, HarmingGoalException, STPropertyAccessException, JSONException {
 		return this.isAuthorized(prologCapability, "{}", crudv);
 	}
 	
@@ -130,8 +130,8 @@ public class STAuthorizationEvaluator {
 	 * @throws JSONException 
 	 */
 	public boolean isAuthorized(String prologCapability, String userResponsibility, String crudv)
-			throws InvalidTheoryException, TheoryNotFoundException, MalformedGoalException, HaltedEngineException, 
-			HarmingGoalException, STPropertyAccessException, JSONException {
+			throws MalformedGoalException, HaltedEngineException, HarmingGoalException,
+			STPropertyAccessException, JSONException {
 		String prologGoal = "auth(" + prologCapability + ", '" + crudv + "').";
 		
 		//parse userResponsibility
@@ -167,7 +167,7 @@ public class STAuthorizationEvaluator {
 			return false;
 		}
 		
-		boolean authorized = false;
+		boolean authorized;
 		
 		authorized = false;
 		if (loggedUser.isAdmin()) { //admin is authorized for every operation

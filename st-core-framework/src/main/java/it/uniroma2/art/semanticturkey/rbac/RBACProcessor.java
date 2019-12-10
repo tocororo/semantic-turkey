@@ -17,10 +17,20 @@ import alice.tuprolog.SolveInfo;
 import alice.tuprolog.Term;
 import alice.tuprolog.Theory;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+
 public class RBACProcessor {
 
-	private String tboxTheoryLocation = "/it/uniroma2/art/semanticturkey/rbac/rbac_tbox.pl";
-	private String tuprologSupportLocation = "/it/uniroma2/art/semanticturkey/rbac/tuprolog_support.pl";
+	private static String tboxResourcesLocation = "it/uniroma2/art/semanticturkey/rbac/";
+	private String tboxTheoryLocation = tboxResourcesLocation + "rbac_tbox.pl";
+	private String tuprologSupportLocation = tboxResourcesLocation + "tuprolog_support.pl";
+
 	Prolog engine;
 	String role;
 	File roleFile;
@@ -76,7 +86,7 @@ public class RBACProcessor {
 	 * @throws MalformedGoalException
 	 * @throws NoSolutionException
 	 */
-	public Term getCapabilitiesAsListTerm() throws MalformedGoalException, NoSolutionException {
+	private Term getCapabilitiesAsListTerm() throws MalformedGoalException, NoSolutionException {
 		SolveInfo info = engine.solve("getCapabilities(FACTLIST).");
 		return info.getVarValue("FACTLIST");
 	}
@@ -89,9 +99,32 @@ public class RBACProcessor {
 	 * @throws NoSolutionException
 	 * @throws NoMoreSolutionException
 	 */
-	public List<Term> getCapabilitiesAsTermList()
+	private List<Term> getCapabilitiesAsTermList()
 			throws MalformedGoalException, NoSolutionException, NoMoreSolutionException {
 		return getSolutionsAsList("capability(CAP, CRUD).");
+	}
+
+	/**
+	 * This method returns the capabilities terms as a list of String.
+	 * It is better to use this method rather than {@link #getCapabilitiesAsTermList()} since
+	 * the method toString of the class {@link Term} serializes the "wildcard" _ followed by a so-called fingerprint
+	 * (see {@link alice.tuprolog.Var}. This fingerprint is increased each time, so eventual compare of
+	 * string capabilities to term capabilities will fail due to this fingerprint even if the capabilities are the same.
+	 *
+	 * @return
+	 */
+	public List<String> getCapabilitiesAsStringList()
+			throws MalformedGoalException, NoSolutionException, NoMoreSolutionException {
+		List<Term> termList = getSolutionsAsList("capability(CAP, CRUD).");
+		List<String> capabilities = new ArrayList<>();
+		for (Term t : termList) {
+			String termString = t.toString();
+			termString = termString.replaceAll("_[0-9]+", "_"); //removes the fingerprint
+			termString = termString.replace("'", "\""); //replaces the ' with "
+			termString = termString.replaceAll(" ", ""); //removes the whitespaces
+			capabilities.add(termString);
+		}
+		return capabilities;
 	}
 
 	public void runInterpreter() throws Exception {
@@ -170,7 +203,7 @@ public class RBACProcessor {
 	 * 
 	 */
 
-	public List<Term> getSolutionsAsList(String goal)
+	private List<Term> getSolutionsAsList(String goal)
 			throws MalformedGoalException, NoSolutionException, NoMoreSolutionException {
 		SolveInfo preInfo = engine.solve(goal);
 		ArrayList<Term> caps = new ArrayList<>();
@@ -178,8 +211,9 @@ public class RBACProcessor {
 			caps.add(preInfo.getSolution());
 			while (preInfo.hasOpenAlternatives()) {
 				preInfo = engine.solveNext();
-				if (preInfo.isSuccess())
+				if (preInfo.isSuccess()) {
 					caps.add(preInfo.getSolution());
+				}
 			}
 		}
 		return caps;
@@ -198,14 +232,15 @@ public class RBACProcessor {
 			throw new HarmingGoalException (
 					"the RBAC engine has been halted in checking the following authorization:\n" + goal
 							+ "\nengine has been restarted");
-		} else if (info.isSuccess())
-			return true;
-		return false;
+		} else {
+			return info.isSuccess();
+		}
 	}
 
 	public static void main(String args[]) throws Exception {
 		String role = args[0];
-		RBACProcessor rbac = new RBACProcessor(role);
+		File roleFile = new File(RBACProcessor.class.getClassLoader().getResource(tboxResourcesLocation + "roles/role_" + role + ".pl").getFile());
+		RBACProcessor rbac = new RBACProcessor(roleFile);
 		System.out.println("capability list term: " + rbac.getCapabilitiesAsListTerm());
 		System.out.println("capability term list: " + rbac.getCapabilitiesAsTermList());
 

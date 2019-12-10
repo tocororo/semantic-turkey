@@ -1,21 +1,9 @@
 package it.uniroma2.art.semanticturkey.rbac;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import alice.tuprolog.InvalidTheoryException;
 import alice.tuprolog.MalformedGoalException;
 import alice.tuprolog.NoMoreSolutionException;
 import alice.tuprolog.NoSolutionException;
-import alice.tuprolog.Term;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -24,6 +12,16 @@ import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.user.Role.RoleLevel;
 import it.uniroma2.art.semanticturkey.user.RoleCreationException;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RBACManager {
 	
@@ -40,7 +38,7 @@ public class RBACManager {
 	
 	private static final String SYSTEM_PROJ_ID = "SYSTEM";
 	private static final String ROLES_DIR_NAME = "roles";
-	private static final String roleFilenamePattern = "^(role_)(.)+\\.pl$";;
+	private static final String roleFilenamePattern = "^(role_)(.)+\\.pl$";
 	
 	private static Map<String, Map<String, RBACProcessor>> rbacMap = new HashMap<>(); //<projectName, <roleName, RBACProcessor>>
 	
@@ -124,9 +122,8 @@ public class RBACManager {
 	 * Returns the roles defined at system level and in the given project
 	 * @param project
 	 * @return
-	 * @throws RBACException
 	 */
-	public static Collection<Role> getRoles(Project project) throws RBACException {
+	public static Collection<Role> getRoles(Project project) {
 		Collection<Role> roles = new ArrayList<>(); 
 		for (String role: rbacMap.get(SYSTEM_PROJ_ID).keySet()) {
 			roles.add(new Role(role, RoleLevel.system));
@@ -148,13 +145,13 @@ public class RBACManager {
 	 */
 	public static Role getRole(Project project, String roleName) {
 		if (project != null) {
-			if (rbacMap.get(project.getName()).keySet().contains(roleName)) {
+			if (rbacMap.get(project.getName()).containsKey(roleName)) {
 				return new Role(roleName, RoleLevel.project); 
-			} else if (rbacMap.get(SYSTEM_PROJ_ID).keySet().contains(roleName)) {
+			} else if (rbacMap.get(SYSTEM_PROJ_ID).containsKey(roleName)) {
 				return new Role(roleName, RoleLevel.system);
 			}
 		} else {
-			if (rbacMap.get(SYSTEM_PROJ_ID).keySet().contains(roleName)) {
+			if (rbacMap.get(SYSTEM_PROJ_ID).containsKey(roleName)) {
 				return new Role(roleName, RoleLevel.system);
 			}
 		}
@@ -169,10 +166,10 @@ public class RBACManager {
 	 */
 	public static void createRole(Project project, String roleName) throws RoleCreationException {
 		//look if the role already exists at project or system level
-		if (rbacMap.get(SYSTEM_PROJ_ID).keySet().contains(roleName)) {
+		if (rbacMap.get(SYSTEM_PROJ_ID).containsKey(roleName)) {
 			throw new RoleCreationException("Role '" + roleName + "' already exists");
 		}
-		if (rbacMap.get(project.getName()).keySet().contains(roleName)) {
+		if (rbacMap.get(project.getName()).containsKey(roleName)) {
 			throw new RoleCreationException("Role '" + roleName + "' already exists in project " + project.getName());
 		}
 		try {
@@ -192,7 +189,7 @@ public class RBACManager {
 	 */
 	public static void addSystemRole(String roleName, File roleFile) throws RoleCreationException {
 		//look if the role already exists at system level
-		if (rbacMap.get(SYSTEM_PROJ_ID).keySet().contains(roleName)) {
+		if (rbacMap.get(SYSTEM_PROJ_ID).containsKey(roleName)) {
 			throw new RoleCreationException("Role '" + roleName + "' already exists");
 		}
 		try {
@@ -226,17 +223,13 @@ public class RBACManager {
 			if (rbac == null) {
 				throw new RBACException("Role '" + role + "' doesn't exist");
 			}
-			Collection<String> capabilities = new ArrayList<>(); 
-			for (Term t : rbac.getCapabilitiesAsTermList()) {
-				capabilities.add(t.toString().replace("'", "\""));
-			}
-			return capabilities;
+			return rbac.getCapabilitiesAsStringList();
 		} catch (MalformedGoalException | NoSolutionException | NoMoreSolutionException e) {
 			throw new RBACException(e);
 		}
 	}
 	
-	public static void addCapabilities(Project project, String role, Collection<String> capabilities) throws RBACException {
+	public static void setCapabilities(Project project, String role, Collection<String> capabilities) throws RBACException {
 		RBACProcessor rbac = getRBACProcessor(project, role);
 		if (rbac == null) {
 			throw new RBACException("Role '" + role + "' doesn't exist");
@@ -256,15 +249,11 @@ public class RBACManager {
 			throw new RBACException("Role '" + role + "' doesn't exist");
 		} 
 		try {
-			//collect capabilities as collection of string and meanwhile check if capability is duplicated
-			Collection<String> capabilities = new ArrayList<>();
-			List<Term> capabilitiesTerm = rbac.getCapabilitiesAsTermList();
-			
-			for (Term c : capabilitiesTerm) {
-				capabilities.add(c.toString().replace("'", "\""));
-				if (c.toString().equals(capability)) {
-					throw new RBACException("Duplicated capability '" + capability + "' in role " + role);
-				}
+			//check if capability is duplicated
+			capability = capability.replaceAll(" ", ""); //removes whitespaces
+			Collection<String> capabilities = rbac.getCapabilitiesAsStringList();
+			if (capabilities.contains(capability)) {
+				throw new RBACException("Duplicated capability '" + capability + "' in role " + role);
 			}
 			//add capability
 			capabilities.add(capability);
@@ -284,15 +273,8 @@ public class RBACManager {
 			throw new RBACException("Role '" + role + "' doesn't exist");
 		} 
 		try {
-			//collect capabilities as collection of string and meanwhile skip the capability to remove
-			Collection<String> capabilities = new ArrayList<>();
-			List<Term> capabilitiesTerm = rbac.getCapabilitiesAsTermList();
-			for (Term c : capabilitiesTerm) {
-				if (!c.toString().replace("'", "\"").equals(capability)) {
-					capabilities.add(c.toString());
-				}
-			}
-			//finally serialize and update the processor
+			Collection<String> capabilities = rbac.getCapabilitiesAsStringList();
+			capabilities.remove(capability);
 			File roleFile = getRoleFile(project, role);
 			serializeCapabilities(roleFile, capabilities);
 			rbacMap.get(project.getName()).put(role, new RBACProcessor(roleFile));
@@ -301,14 +283,12 @@ public class RBACManager {
 			throw new RBACException("Failed to update the capability of role " + role, e);
 		}
 	}
-	
+
 	private static void serializeCapabilities(File roleFile, Collection<String> capabilities) throws IOException {
 		try (Writer writer = new BufferedWriter(new FileWriter(roleFile))) {
 			for (String capability : capabilities) {
-				writer.append(capability + ".");
-				writer.append(System.lineSeparator());
+				writer.append(capability).append(".").append(System.lineSeparator());
 			}
-			writer.close();
 		}
 	}
 	
