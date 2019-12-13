@@ -2,6 +2,9 @@ package it.uniroma2.art.semanticturkey.services.core.projects;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class RepositorySummary {
 
 	public static class RemoteRepositorySummary {
@@ -10,8 +13,10 @@ public class RepositorySummary {
 		private final String username;
 		private final String password;
 
-		public RemoteRepositorySummary(String serverURL, String repositoryId, String username,
-				String password) {
+		@JsonCreator
+		public RemoteRepositorySummary(@JsonProperty("serverURL") String serverURL,
+				@JsonProperty("repositoryId") String repositoryId, @JsonProperty("username") String username,
+				@JsonProperty("password") String password) {
 			this.serverURL = serverURL;
 			this.repositoryId = repositoryId;
 			this.username = username;
@@ -39,8 +44,9 @@ public class RepositorySummary {
 	private final String description;
 	private RemoteRepositorySummary remoteRepoSummary;
 
-	public RepositorySummary(String id, String description,
-			@Nullable RemoteRepositorySummary remoteRepoSummary) {
+	@JsonCreator
+	public RepositorySummary(@JsonProperty("id") String id, @JsonProperty("description") String description,
+			@JsonProperty("remoteRepoSummary") @Nullable RemoteRepositorySummary remoteRepoSummary) {
 		this.id = id;
 		this.description = description;
 		this.remoteRepoSummary = remoteRepoSummary;
