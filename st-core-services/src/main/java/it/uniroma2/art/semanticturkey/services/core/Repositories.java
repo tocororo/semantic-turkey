@@ -73,6 +73,9 @@ public class Repositories extends STServiceAdapter {
 		}
 
 		public static ExceptionDAO valueOf(Exception e) {
+			if (e == null) {
+				return null;
+			}
 			StringWriter writer = new StringWriter();
 			e.printStackTrace(new PrintWriter(writer));
 			return new ExceptionDAO(e.getClass().getSimpleName(), e.getMessage(), writer.toString());
