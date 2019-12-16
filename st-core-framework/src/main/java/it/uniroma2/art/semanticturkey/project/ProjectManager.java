@@ -26,6 +26,50 @@
  */
 package it.uniroma2.art.semanticturkey.project;
 
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.EnumUtils;
+import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.http.protocol.Protocol;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryConfigUtil;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
+import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
+import org.eclipse.rdf4j.repository.manager.RepositoryManager;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.sail.config.SailImplConfig;
+import org.eclipse.rdf4j.sail.shacl.config.ShaclSailConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -66,49 +110,6 @@ import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
-import org.apache.commons.lang3.EnumUtils;
-import org.eclipse.rdf4j.RDF4JException;
-import org.eclipse.rdf4j.http.protocol.Protocol;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.config.RepositoryConfig;
-import org.eclipse.rdf4j.repository.config.RepositoryConfigUtil;
-import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
-import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
-import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
-import org.eclipse.rdf4j.repository.manager.RepositoryManager;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.sail.config.SailImplConfig;
-import org.eclipse.rdf4j.sail.shacl.config.ShaclSailConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -257,8 +258,8 @@ public class ProjectManager {
 	}
 
 	private static Project activateProject(String projectName)
-			throws ProjectCreationException, ProjectUpdateException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+			throws ProjectCreationException, ProjectUpdateException, InvalidProjectNameException,
+			ProjectInexistentException, ProjectAccessException {
 		Project proj = getProjectDescription(projectName);
 
 		try {
@@ -426,8 +427,8 @@ public class ProjectManager {
 	}
 
 	public static void importProject(File semTurkeyProjectFile, String name)
-			throws IOException, ProjectCreationException, DuplicatedResourceException,
-			ProjectUpdateException, InvalidProjectNameException {
+			throws IOException, ProjectCreationException, DuplicatedResourceException, ProjectUpdateException,
+			InvalidProjectNameException {
 		File tempDir = Resources.createTempDir();
 		Utilities.unZip(semTurkeyProjectFile.getPath(), tempDir);
 
@@ -1207,10 +1208,10 @@ public class ProjectManager {
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, WrongPropertiesException,
-			RBACException, UnsupportedModelException, UnsupportedLexicalizationModelException,
-			ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException,
-			IOException, ReservedPropertyUpdateException, ProjectUpdateException {
+			UnloadablePluginConfigurationException, WrongPropertiesException, RBACException,
+			UnsupportedModelException, UnsupportedLexicalizationModelException, ProjectInconsistentException,
+			InvalidConfigurationException, STPropertyAccessException, IOException,
+			ReservedPropertyUpdateException, ProjectUpdateException {
 
 		if (!validationEnabled && blacklistingEnabled) {
 			throw new IllegalArgumentException(
@@ -1268,7 +1269,8 @@ public class ProjectManager {
 				if (supportRepositoryConfig != null) {
 
 					ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(sailImplConfig);
-					changeTrackerSailConfig.setSupportRepositoryID("support");
+					changeTrackerSailConfig.setSupportRepositoryID(
+							repositoryAccess.isLocal() ? Project.SUPPORT_REPOSITORY : supportRepoID);
 					changeTrackerSailConfig.setMetadataNS(defaultNamespace + "metadata#");
 					changeTrackerSailConfig.setHistoryEnabled(historyEnabled);
 					if (historyEnabled) {
@@ -1584,8 +1586,7 @@ public class ProjectManager {
 			RepositoryConfig supportRepoConfig, String supportBackendType,
 			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
 			IRI creationDateProperty, IRI modificationDateProperty, String[] updateForRoles,
-			String leftDataset, String rightDataset, boolean enableSHACL)
-			throws ProjectCreationException {
+			String leftDataset, String rightDataset, boolean enableSHACL) throws ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
 		try {
@@ -1599,25 +1600,32 @@ public class ProjectManager {
 			projProp.setProperty(Project.HISTORY_ENABLED_PROP, String.valueOf(historyEnabled));
 			projProp.setProperty(Project.VALIDATION_ENABLED_PROP, String.valueOf(validationEnabled));
 			projProp.setProperty(Project.BLACKLISTING_ENABLED_PROP, String.valueOf(blacklistingEnabled));
-			projProp.setProperty(Project.URI_GENERATOR_FACTORY_ID_PROP, uriGeneratorSpecification.getFactoryId());
-			projProp.setProperty(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP, uriGeneratorSpecification.getConfigType());
-			projProp.setProperty(Project.RENDERING_ENGINE_FACTORY_ID_PROP, renderingEngineSpecification.getFactoryId());
-			projProp.setProperty(Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP, renderingEngineSpecification.getConfigType());
+			projProp.setProperty(Project.URI_GENERATOR_FACTORY_ID_PROP,
+					uriGeneratorSpecification.getFactoryId());
+			projProp.setProperty(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP,
+					uriGeneratorSpecification.getConfigType());
+			projProp.setProperty(Project.RENDERING_ENGINE_FACTORY_ID_PROP,
+					renderingEngineSpecification.getFactoryId());
+			projProp.setProperty(Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP,
+					renderingEngineSpecification.getConfigType());
 			projProp.setProperty(Project.BASEURI_PROP, baseURI);
 			projProp.setProperty(Project.DEF_NS_PROP, defaultNamespace);
 			projProp.setProperty(Project.MODEL_PROP, model.stringValue());
 			projProp.setProperty(Project.LEXICALIZATION_MODEL_PROP, lexicalizationModel.stringValue());
 			projProp.setProperty(Project.PROJECT_NAME_PROP, projectName);
 			projProp.setProperty(Project.TIMESTAMP_PROP, Long.toString(new Date().getTime()));
-			projProp.setProperty(ProjectACL.ACL, ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW));
-			projProp.setProperty(Project.DEFAULT_REPOSITORY_LOCATION_PROP, RepositoryLocation.fromRepositoryAccess(repositoryAccess).toString());
+			projProp.setProperty(ProjectACL.ACL,
+					ProjectACL.serializeACL(consumer.getName(), ProjectACL.AccessLevel.RW));
+			projProp.setProperty(Project.DEFAULT_REPOSITORY_LOCATION_PROP,
+					RepositoryLocation.fromRepositoryAccess(repositoryAccess).toString());
 			if (creationDateProperty != null) {
 				projProp.setProperty(Project.CREATION_DATE_PROP, creationDateProperty.stringValue());
 			}
 			if (modificationDateProperty != null) {
 				projProp.setProperty(Project.MODIFICATION_DATE_PROP, modificationDateProperty.stringValue());
 			}
-			projProp.setProperty(Project.UPDATE_FOR_ROLES_PROP, Arrays.stream(updateForRoles).collect(Collectors.joining(",")));
+			projProp.setProperty(Project.UPDATE_FOR_ROLES_PROP,
+					Arrays.stream(updateForRoles).collect(Collectors.joining(",")));
 			if (leftDataset != null) {
 				projProp.setProperty(Project.LEFT_DATASET_PROP, leftDataset);
 			}
