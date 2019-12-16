@@ -1,14 +1,20 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -39,23 +45,16 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.resources.Resources;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
-import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @STService
 public class GlobalSearch extends STServiceAdapter {
@@ -102,7 +101,7 @@ public class GlobalSearch extends STServiceAdapter {
 			try (IndexWriter writer = new IndexWriter(directory, config)) {
 
 				//@formatter:off
-				String query = "";
+				String query;
 				IRI lexModel = getProject().getLexicalizationModel();
 				//prepare the query for the part associated to the LexicalizationModel
 				if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) { //SKOS-XL
@@ -519,38 +518,18 @@ public class GlobalSearch extends STServiceAdapter {
 	 * 
 	 * @throws Exception
 	 */
-	//@STServiceOperation
 	@STServiceOperation(method = RequestMethod.POST)
-	@Write
-	// TODO decide the @PreAuthorize
-	public void clearSpecificIndex() throws Exception {
+	@PreAuthorize("@auth.isAdmin()")
+	public void clearSpecificIndex(String projectName) throws Exception {
 		// classloader magic
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
 		try {
 			Directory directory = FSDirectory.open(getLuceneDir().toPath());
-			try (IndexWriter writer = new IndexWriter(directory,
-					new IndexWriterConfig(new SimpleAnalyzer()))) {
-				
-				
+			try (IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new SimpleAnalyzer()))) {
 				
 				Builder builderBoolean = new BooleanQuery.Builder();
-				builderBoolean.add(new TermQuery(new Term("repId", getProject().getName())), Occur.MUST);
-
-//				Map<String, String> nameValueSearchMap = new HashMap<String, String>();
-//				nameValueSearchMap.put("repId", getProject().getName());
-//				Builder builder = new BooleanQuery.Builder();
-//				for (String name : nameValueSearchMap.keySet()) {
-//					String value = nameValueSearchMap.get(name);
-//
-//					builderBoolean.add(new TermQuery(new Term(name, lang)), Occur.SHOULD);
-//					
-//					QueryParser qp = new QueryParser(name, new SimpleAnalyzer());
-//					Query query = qp.parse("\"" + value + "\"");
-//
-//					// builder.add(new BooleanClause(query, Occur.MUST));
-//					builder.add(query, Occur.MUST);
-//				}
+				builderBoolean.add(new TermQuery(new Term("repId", projectName)), Occur.MUST);
 
 				writer.deleteDocuments(builderBoolean.build());
 			}
@@ -565,8 +544,7 @@ public class GlobalSearch extends STServiceAdapter {
 	 * @throws Exception
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	//@STServiceOperation
-	// TODO decide the @PreAuthorize
+	@PreAuthorize("@auth.isAdmin()")
 	public void clearAllIndex() throws Exception {
 		// classloader magic
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
@@ -588,7 +566,7 @@ public class GlobalSearch extends STServiceAdapter {
 	 * Search in the Lucene index all resources/project matching the input string
 	 * 
 	 * @param searchString
-	 * @param lang
+	 * @param langs
 	 * @throws Exception
 	 */
 	@STServiceOperation
@@ -620,73 +598,71 @@ public class GlobalSearch extends STServiceAdapter {
 						+ SearchMode.startsWith + ", no other values are accepted");
 			}*/
 		
-		if(langs!=null && langs.size()>0) { 
-			String langString = "";
-			for(String lang : langs) {
-				langString+=lang+" ";
+			if(langs!=null && langs.size()>0) {
+				String langString = "";
+				for(String lang : langs) {
+					langString+=lang+" ";
+				}
+				nameValueSearchMap.put("lang", langString.trim());
 			}
-			nameValueSearchMap.put("lang", langString.trim());
-		}
-		
-		for(String name : nameValueSearchMap.keySet()) {
-			Query query = null;
-			String value = nameValueSearchMap.get(name);
-			//behave differently according to the field used for the search
-			if(name.equals("lang")) {
-				Builder builderBoolean = new BooleanQuery.Builder(); //  (0, BooleanClause.Occur.SHOULD);
-				String[] valueArray = value.split(" ");
-				for(String lang : valueArray) {
-					builderBoolean.add(new TermQuery(new Term(name, lang)), Occur.SHOULD);
-				}
-				query = builderBoolean.build();
-			} else if(name.equals("matchedValue")) {
-				//split the value into single words
-				String[] valueArray = value.split(" ");
-				int count;
-				//search in the label
-				PhraseQuery.Builder builderTemp = new PhraseQuery.Builder();
-				count = 0;
-				for(String singleValue: valueArray) {
-					builderTemp.add(new Term(name, singleValue), count++);
-				}
-				Query queryLabel  = builderTemp.build();
-				//check if there should be search in the local name as well
-				if(searchInLocalName) {
-					count = 0;
-					builderTemp = new PhraseQuery.Builder();
-					for(String singleValue: valueArray) {
-						builderTemp.add(new Term("resourceLocalName", singleValue), count++);
-					}
-					Query queryLocalName = builderTemp.build();
-					//combine the query for label and the one for localName
-					Builder builderBoolean = new BooleanQuery.Builder(); //  (0, BooleanClause.Occur.SHOULD);
-					builderBoolean.add(queryLabel, Occur.SHOULD);
-					builderBoolean.add(queryLocalName, Occur.SHOULD);
-					query = builderBoolean.build();
-				} else {
-					//no need to search in the localName, so the query is only about the label
-					query = queryLabel;
-				}
-			} 
-			
-			builderBooleanGlobal.add(query, Occur.MUST);
-		}
-		
-		BooleanQuery booleanQuery = builderBooleanGlobal.build();
-		if(maxResults==0) {
-			maxResults = MAX_RESULTS;
-		}
-		
-		IndexSearcher searcher = createSearcher();
-		TopDocs hits = searcher.search(booleanQuery, maxResults);
 
-		//combine the answer from lucene
-		Map<String, List<ResourceWithLabel>> resToStructMap = combineResoruces(hits, searcher);
-		
-		//prepare the JSON response
-		JsonNode responseJson = prepareResponse(resToStructMap);
-		
-		return responseJson;
+			for(String name : nameValueSearchMap.keySet()) {
+				Query query = null;
+				String value = nameValueSearchMap.get(name);
+				//behave differently according to the field used for the search
+				if(name.equals("lang")) {
+					Builder builderBoolean = new BooleanQuery.Builder(); //  (0, BooleanClause.Occur.SHOULD);
+					String[] valueArray = value.split(" ");
+					for(String lang : valueArray) {
+						builderBoolean.add(new TermQuery(new Term(name, lang)), Occur.SHOULD);
+					}
+					query = builderBoolean.build();
+				} else if(name.equals("matchedValue")) {
+					//split the value into single words
+					String[] valueArray = value.split(" ");
+					int count;
+					//search in the label
+					PhraseQuery.Builder builderTemp = new PhraseQuery.Builder();
+					count = 0;
+					for(String singleValue: valueArray) {
+						builderTemp.add(new Term(name, singleValue), count++);
+					}
+					Query queryLabel  = builderTemp.build();
+					//check if there should be search in the local name as well
+					if(searchInLocalName) {
+						count = 0;
+						builderTemp = new PhraseQuery.Builder();
+						for(String singleValue: valueArray) {
+							builderTemp.add(new Term("resourceLocalName", singleValue), count++);
+						}
+						Query queryLocalName = builderTemp.build();
+						//combine the query for label and the one for localName
+						Builder builderBoolean = new BooleanQuery.Builder(); //  (0, BooleanClause.Occur.SHOULD);
+						builderBoolean.add(queryLabel, Occur.SHOULD);
+						builderBoolean.add(queryLocalName, Occur.SHOULD);
+						query = builderBoolean.build();
+					} else {
+						//no need to search in the localName, so the query is only about the label
+						query = queryLabel;
+					}
+				}
+
+				builderBooleanGlobal.add(query, Occur.MUST);
+			}
+
+			BooleanQuery booleanQuery = builderBooleanGlobal.build();
+			if(maxResults==0) {
+				maxResults = MAX_RESULTS;
+			}
+
+			IndexSearcher searcher = createSearcher();
+			TopDocs hits = searcher.search(booleanQuery, maxResults);
+
+			//combine the answer from lucene
+			Map<String, List<ResourceWithLabel>> resToStructMap = combineResoruces(hits, searcher);
+
+			//prepare the JSON response
+			return prepareResponse(resToStructMap);
 		} finally {
 			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
 		}
@@ -762,8 +738,7 @@ public class GlobalSearch extends STServiceAdapter {
 	private IndexSearcher createSearcher() throws IOException {
 		Directory directory = FSDirectory.open(getLuceneDir().toPath());
 		IndexReader reader = DirectoryReader.open(directory);
-		IndexSearcher searcher = new IndexSearcher(reader);
-		return searcher;
+		return new IndexSearcher(reader);
 	}
 
 
@@ -776,7 +751,7 @@ public class GlobalSearch extends STServiceAdapter {
 		return luceneIndexDir;
 	}
 	
-	private Document addResourceWithLabel(ResourceWithLabel resourceWithLabel) throws IOException {
+	private Document addResourceWithLabel(ResourceWithLabel resourceWithLabel) {
 		Document doc = new Document();
 		
 		//@formatter:off

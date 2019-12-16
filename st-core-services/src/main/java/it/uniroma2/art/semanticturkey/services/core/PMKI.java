@@ -119,7 +119,7 @@ public class PMKI extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void initPmki() throws IOException, UserException, RoleCreationException, ProjectAccessException, ProjectBindingException {
+	public void initPmki() throws IOException, UserException, RoleCreationException, ProjectAccessException {
 		Collection<Role> roles = Arrays.asList(PmkiRole.PRISTINE, PmkiRole.PUBLIC, PmkiRole.STAGING);
 		File rolesDir = RBACManager.getRolesDir(null);
 		for (Role r : roles) {
