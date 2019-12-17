@@ -33,6 +33,7 @@ import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
+import it.uniroma2.art.maple.problem.Dataset;
 import it.uniroma2.art.maple.problem.MatchingProblem;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel;
@@ -271,12 +273,43 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	public String createTask(@JsonSerialized MatchingProblem matchingProblem)
 			throws IOException, GENOMAException {
+
+		//// integrity checks
+
+		// Left dataset has a SPARQL endpoint
+		Dataset leftDataset = matchingProblem.getSourceDataset();
+		if (!leftDataset.getSparqlEndpoint().isPresent()) {
+			throw new GENOMAException("Missing SPARQL endpoint for the left dataset");
+		}
+
+		// Right dataset has a SPARQL endpoint
+		Dataset rightDataset = matchingProblem.getTargetDataset();
+		if (!rightDataset.getSparqlEndpoint().isPresent()) {
+			throw new GENOMAException("Missing SPARQL endpoint for the right dataset");
+		}
+
+		// Every support dataset has a SPARQL endpoint
+		for (Dataset supportDataset : matchingProblem.getSupportDatasets()) {
+			if (!supportDataset.getSparqlEndpoint().isPresent()) {
+				throw new GENOMAException("Missing SPARQL endpoint on the support dataset "
+						+ NTriplesUtil.toNTriplesString(supportDataset.getId()));
+			}
+		}
+
+		// There is at least a pairing of lexicalization sets
+
+		/// End of integrity checks
+
+		if (matchingProblem.getPairings().isEmpty()) {
+			throw new GENOMAException("No pairing of lexicalization set");
+		}
+
 		ObjectMapper objMapper = new ObjectMapper();
 		String matchingProblemJson;
 		try {
 			matchingProblemJson = objMapper.writeValueAsString(matchingProblem);
 		} catch (JsonProcessingException e) {
-			throw new IllegalArgumentException(e); // this should never happern
+			throw new IllegalArgumentException(e); // this should never happen
 		}
 
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
