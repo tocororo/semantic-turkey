@@ -119,6 +119,7 @@ public class ManchesterSyntaxUtils {
 				performSemanticChecks(mcc.getClassCard(), conn, errorMsgList);
 			}
 			IRI prop = mcc.getProp();
+			//TODO  check if it is possibile to understand if the property should be an objectProperty or a datatypePorperty
 			performPropCheck(prop, false, false, conn, namespaceToPrefixMap, errorMsgList);
 		} else if(mci instanceof ManchesterDataConjunction){
 			ManchesterDataConjunction mdc = (ManchesterDataConjunction) mci;
@@ -145,7 +146,7 @@ public class ManchesterSyntaxUtils {
 			ManchesterOneOfClass mooc = (ManchesterOneOfClass) mci;
 			List<IRI> instanceList = mooc.getOneOfList();
 			for(IRI instance : instanceList){
-				perfomrInstanceCheck(instance, conn, namespaceToPrefixMap, errorMsgList);
+				performInstanceCheck(instance, conn, namespaceToPrefixMap, errorMsgList);
 			}
 		} else if(mci instanceof ManchesterOnlyClass){
 			ManchesterOnlyClass moc = (ManchesterOnlyClass) mci;
@@ -178,7 +179,7 @@ public class ManchesterSyntaxUtils {
 			boolean isObjProp;
 			if(value instanceof  IRI){
 				isObjProp=true;
-				perfomrInstanceCheck((IRI) value, conn, namespaceToPrefixMap, errorMsgList);
+				performInstanceCheck((IRI) value, conn, namespaceToPrefixMap, errorMsgList);
 
 			} else {
 				isObjProp = false;
@@ -243,27 +244,17 @@ public class ManchesterSyntaxUtils {
 		}
 	}
 
-	private static void perfomrInstanceCheck(IRI instanceIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<String> errorMsgList){
+	private static void performInstanceCheck(IRI instanceIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<String> errorMsgList){
 		String qnameOrIRI = namespaceToPrefixMap.getOrDefault(instanceIRI.getNamespace(), instanceIRI.getNamespace())+instanceIRI.getLocalName();
 		String msg = qnameOrIRI + " should be an instance";
-		List<IRI> typeList = getTypes(instanceIRI, conn);
+		List<IRI> typeOfTypeList = getTypesOfTypes(instanceIRI, conn);
 		boolean exists = false;
 		boolean rightType = false;
-		if(!typeList.isEmpty()){
+		if(!typeOfTypeList.isEmpty()){
 			exists = true;
-			rightType = true;
-			//in the typeList there should not be:
-			//- owl:Class
-			//- rdfs:Class
-			//- rdf:Property
-			//- owl:AnnotationProperty
-			//- owl:DatatypeProperty
-			//- owl:ObjectProperty
-			//- owl:OntologyProperty
-			for(IRI type : typeList){
-				if(type.equals(OWL.CLASS) || type.equals(RDFS.CLASS) || type.equals(RDF.PROPERTY) || type.equals(OWL.ANNOTATEDPROPERTY) || type.equals(OWL.DATATYPEPROPERTY)
-						|| type.equals(OWL.OBJECTPROPERTY) || type.equals(OWL.ONTOLOGYPROPERTY)){
-					rightType = false;
+			for(IRI typeOfType : typeOfTypeList){
+				if(typeOfType.equals(OWL.CLASS) || typeOfType.equals(RDFS.CLASS)){
+					rightType = true;
 				}
 			}
 		}
@@ -291,6 +282,26 @@ public class ManchesterSyntaxUtils {
 			}
 		}
 		return typeList;
+	}
+
+	private static List<IRI> getTypesOfTypes(IRI resource, RepositoryConnection conn) {
+		List<IRI> typeOfTypeList = new ArrayList<>();
+		String query = "SELECT ?typeOfType" +
+				"\nWHERE{" +
+				"\n"+ NTriplesUtil.toNTriplesString(resource)+" a ?type ." +
+				"\n?type a ?typeOfType ." +
+				"\n}";
+		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+		while(tupleQueryResult.hasNext()){
+			BindingSet bindingSet = tupleQueryResult.next();
+			Value value = bindingSet.getValue("typeOfType");
+			if(value instanceof  IRI) {
+				typeOfTypeList.add((IRI) value);
+			}
+		}
+		return typeOfTypeList;
 	}
 
 	private static String ErrorMessageOrEmpty(String resource, boolean exists, boolean rightValue, String errorMsg) {
