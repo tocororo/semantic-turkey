@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,23 +16,14 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.LexerNoViableAltException;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
-import org.eclipse.rdf4j.query.GraphQuery;
-import org.eclipse.rdf4j.query.GraphQueryResult;
-import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
@@ -43,6 +35,8 @@ import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2Synta
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ObjectPropertyExpressionContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeRestrictionContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.LiteralListContext;
+import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 public class ManchesterSyntaxUtils {
 
@@ -99,6 +93,221 @@ public class ManchesterSyntaxUtils {
 			throw new ManchesterParserException(e);
 		}
 	}
+
+	public static void performSemanticChecks(ManchesterClassInterface mci, RepositoryConnection conn, List<String> errorMsgList){
+		//calculate the namespace-prefix Map
+		RepositoryResult<Namespace> namespaces = conn.getNamespaces();
+		Map<String, String> namespaceToPrefixMap = new HashMap<>();
+		while(namespaces.hasNext()){
+			Namespace namespace = namespaces.next();
+			namespaceToPrefixMap.put(namespace.getName(), namespace.getPrefix()+":");
+		}
+		//check what type of ManchesterClassInterface is
+		if(mci instanceof  ManchesterAndClass){
+			ManchesterAndClass mca = (ManchesterAndClass) mci;
+			List<ManchesterClassInterface> andMciList = mca.getAndClassList();
+			for(ManchesterClassInterface andMci : andMciList){
+				performSemanticChecks(andMci, conn, errorMsgList);
+			}
+		} else if(mci instanceof  ManchesterBaseClass){
+			ManchesterBaseClass mbc = (ManchesterBaseClass) mci;
+			IRI classIRI = mbc.getBaseClass();
+			performClassCheck(classIRI, conn, namespaceToPrefixMap, errorMsgList);
+		} else if(mci instanceof ManchesterCardClass){
+			ManchesterCardClass mcc = (ManchesterCardClass) mci;
+			if(mcc.getClassCard()!=null){
+				performSemanticChecks(mcc.getClassCard(), conn, errorMsgList);
+			}
+			IRI prop = mcc.getProp();
+			performPropCheck(prop, false, false, conn, namespaceToPrefixMap, errorMsgList);
+		} else if(mci instanceof ManchesterDataConjunction){
+			ManchesterDataConjunction mdc = (ManchesterDataConjunction) mci;
+			List<ManchesterClassInterface> dataPrimaryList = mdc.getDataPrimaryList();
+			for(ManchesterClassInterface dataPrimary : dataPrimaryList){
+				performSemanticChecks(dataPrimary, conn, errorMsgList);
+			}
+		} else if(mci instanceof ManchesterDataRange){
+			ManchesterDataRange mdr = (ManchesterDataRange) mci;
+			List<ManchesterClassInterface> dataConjunctionList = mdr.getDataConjunctionList();
+			for(ManchesterClassInterface dataConjunction : dataConjunctionList){
+				performSemanticChecks(dataConjunction, conn, errorMsgList);
+			}
+		} else if(mci instanceof  ManchesterDatatypeRestriction){
+			ManchesterDatatypeRestriction mdr = (ManchesterDatatypeRestriction) mci;
+			ManchesterClassInterface datatype = mdr.getDatatypeMCI();
+			performSemanticChecks(datatype, conn, errorMsgList);
+		} else if(mci instanceof  ManchesterLiteralListClass){
+			//Do nothing, since it is just a list of Literal
+		} else if(mci instanceof ManchesterNotClass){
+			ManchesterNotClass mnc = (ManchesterNotClass) mci;
+			performSemanticChecks(mnc, conn, errorMsgList);
+		} else if(mci instanceof  ManchesterOneOfClass){
+			ManchesterOneOfClass mooc = (ManchesterOneOfClass) mci;
+			List<IRI> instanceList = mooc.getOneOfList();
+			for(IRI instance : instanceList){
+				perfomrInstanceCheck(instance, conn, namespaceToPrefixMap, errorMsgList);
+			}
+		} else if(mci instanceof ManchesterOnlyClass){
+			ManchesterOnlyClass moc = (ManchesterOnlyClass) mci;
+			IRI prop = moc.getOnlyProp();
+			//TODO  check if it is possibile to understand if the property should be an objectProperty or a datatypePorperty
+			performPropCheck(prop, false, false, conn, namespaceToPrefixMap, errorMsgList);
+			ManchesterClassInterface onlyClass = moc.getOnlyClass();
+			performSemanticChecks(onlyClass, conn, errorMsgList);
+		} else if (mci instanceof  ManchesterOrClass){
+			ManchesterOrClass moc = (ManchesterOrClass) mci;
+			List<ManchesterClassInterface> orMciList = moc.getOrClassList();
+			for(ManchesterClassInterface orMci : orMciList){
+				performSemanticChecks(orMci, conn, errorMsgList);
+			}
+		} else if(mci instanceof ManchesterSelfClass){
+			ManchesterSelfClass msc = (ManchesterSelfClass) mci;
+			IRI prop = msc.getProp();
+			performPropCheck(prop, true, false, conn, namespaceToPrefixMap, errorMsgList);
+		} else if(mci instanceof  ManchesterSomeClass){
+			ManchesterSomeClass msc = (ManchesterSomeClass) mci;
+			IRI prop = msc.getSomeProp();
+			//TODO  check if it is possibile to understand if the property should be an objectProperty or a datatypePorperty
+			performPropCheck(prop, false, false, conn, namespaceToPrefixMap, errorMsgList);
+			ManchesterClassInterface someClass = msc.getSomeClass();
+			performSemanticChecks(someClass, conn, errorMsgList);
+		} else if(mci instanceof ManchesterValueClass){
+			ManchesterValueClass mvc = (ManchesterValueClass) mci;
+			IRI prop = mvc.getProp();
+			Value value = mvc.getValue();
+			boolean isObjProp;
+			if(value instanceof  IRI){
+				isObjProp=true;
+				perfomrInstanceCheck((IRI) value, conn, namespaceToPrefixMap, errorMsgList);
+
+			} else {
+				isObjProp = false;
+				//no check, since it is a literal
+			}
+			performPropCheck(prop, isObjProp, !isObjProp, conn, namespaceToPrefixMap, errorMsgList);
+		} else {
+			//This cannot happen
+		}
+
+	}
+
+	private static void performPropCheck(IRI propIRI, boolean mustBeObjProp, boolean mustBeDataProp, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<String> errorMsgList) {
+		String propType = "rdf:Property";
+		if(mustBeDataProp){
+			propType = "owl:DatatypeProperty";
+		} else if (mustBeObjProp){
+			propType = "owl:ObjectProperty";
+		}
+		String qnameOrIRI = namespaceToPrefixMap.getOrDefault(propIRI.getNamespace(), propIRI.getNamespace())+propIRI.getLocalName();
+		String msg = qnameOrIRI + " should be an "+propType;
+		List<IRI> typeList = getTypes(propIRI, conn);
+		boolean exists = false;
+		boolean rightType = false;
+		if(!typeList.isEmpty()){
+			exists = true;
+			for(IRI type : typeList){
+				if(mustBeObjProp && type.equals(OWL.OBJECTPROPERTY)) {
+					rightType = true;
+				} else if(mustBeDataProp && type.equals(OWL.DATATYPEPROPERTY)) {
+					rightType = true;
+				} else if( !mustBeDataProp && !mustBeObjProp && (type.equals(RDF.PROPERTY) || type.equals(OWL.DATATYPEPROPERTY) || type.equals(OWL.OBJECTPROPERTY) ) ){
+					rightType = true;
+				}
+			}
+		}
+		String errorMsg = ErrorMessageOrEmpty(qnameOrIRI, exists, rightType, msg);
+		if(!errorMsg.isEmpty()){
+			errorMsgList.add(errorMsg);
+		}
+
+	}
+
+	private static void performClassCheck(IRI classIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<String> errorMsgList){
+		String qnameOrIRI = namespaceToPrefixMap.getOrDefault(classIRI.getNamespace(), classIRI.getNamespace())+classIRI.getLocalName();
+		String msg = qnameOrIRI + " should be a class";
+		List<IRI> typeList = getTypes(classIRI, conn);
+		boolean exists = false;
+		boolean rightType = false;
+		if(!typeList.isEmpty()){
+			exists = true;
+			for(IRI type : typeList){
+				if(type.equals(OWL.CLASS) || type.equals(RDFS.CLASS)){
+					rightType = true;
+				}
+			}
+
+		}
+		String errorMsg = ErrorMessageOrEmpty(qnameOrIRI, exists, rightType, msg);
+		if(!errorMsg.isEmpty()){
+			errorMsgList.add(errorMsg);
+		}
+	}
+
+	private static void perfomrInstanceCheck(IRI instanceIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<String> errorMsgList){
+		String qnameOrIRI = namespaceToPrefixMap.getOrDefault(instanceIRI.getNamespace(), instanceIRI.getNamespace())+instanceIRI.getLocalName();
+		String msg = qnameOrIRI + " should be an instance";
+		List<IRI> typeList = getTypes(instanceIRI, conn);
+		boolean exists = false;
+		boolean rightType = false;
+		if(!typeList.isEmpty()){
+			exists = true;
+			rightType = true;
+			//in the typeList there should not be:
+			//- owl:Class
+			//- rdfs:Class
+			//- rdf:Property
+			//- owl:AnnotationProperty
+			//- owl:DatatypeProperty
+			//- owl:ObjectProperty
+			//- owl:OntologyProperty
+			for(IRI type : typeList){
+				if(type.equals(OWL.CLASS) || type.equals(RDFS.CLASS) || type.equals(RDF.PROPERTY) || type.equals(OWL.ANNOTATEDPROPERTY) || type.equals(OWL.DATATYPEPROPERTY)
+						|| type.equals(OWL.OBJECTPROPERTY) || type.equals(OWL.ONTOLOGYPROPERTY)){
+					rightType = false;
+				}
+			}
+		}
+		String errorMsg = ErrorMessageOrEmpty(qnameOrIRI, exists, rightType, msg);
+		if(!errorMsg.isEmpty()){
+			errorMsgList.add(errorMsg);
+		}
+	}
+
+
+	private static List<IRI> getTypes(IRI resource, RepositoryConnection conn) {
+		List<IRI> typeList = new ArrayList<>();
+		String query = "SELECT ?type" +
+				"\nWHERE{" +
+				"\n"+ NTriplesUtil.toNTriplesString(resource)+" a ?type ." +
+				"\n}";
+		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+		while(tupleQueryResult.hasNext()){
+			BindingSet bindingSet = tupleQueryResult.next();
+			Value value = bindingSet.getValue("type");
+			if(value instanceof  IRI) {
+				typeList.add((IRI) value);
+			}
+		}
+		return typeList;
+	}
+
+	private static String ErrorMessageOrEmpty(String resource, boolean exists, boolean rightValue, String errorMsg) {
+		String msg;
+		if(!exists){
+			msg = "Resource "+resource+" is not defined";
+		} else {
+			if(!rightValue){
+				msg = errorMsg;
+			}
+			else {
+				msg = "";
+			}
+		}
+		return msg;
+	}
+
 
 	public static ObjectPropertyExpression parseObjectPropertyExpression(String objectPropertyExpression,
 			ValueFactory valueFactory, Map<String, String> prefixToNamespacesMap)

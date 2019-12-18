@@ -23,6 +23,7 @@ date: dd/mm/yyy
   * updated to RDF4J 3.0.0
   * added fully support for OWL 2 restrictions
   * added service for deleting repositories on remote triple stores
+  * added semantic checks for OLW 2 restrictions
   
 version 6.0
 date: 27/06/2019

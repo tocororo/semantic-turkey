@@ -6,6 +6,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -180,17 +184,36 @@ public class ManchesterHandler extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	public Boolean checkExpression(String manchExpr) {
+	public JsonNode checkExpression(String manchExpr) {
+		JsonNodeFactory jf = JsonNodeFactory.instance;
+		ObjectNode respNode = jf.objectNode();
+		List<String> errorMsgList = new ArrayList<>();
+		boolean isValid = true;
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
 				.getNSPrefixMappings(false);
 		try {
-			ManchesterSyntaxUtils.parseCompleteExpression(manchExpr, conn.getValueFactory(),
+			ManchesterClassInterface mci = ManchesterSyntaxUtils.parseCompleteExpression(manchExpr, conn.getValueFactory(),
 					prefixToNamespacesMap);
+			//since there were no syntactic exception during the parser, now perfome some semantic one
+			ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList);
 		} catch (ManchesterParserException e) {
-			return false;
+			isValid = false;
+			errorMsgList.add(manchExpr+" is not a valid Manchester Expression");
 		}
-		return true;
+		ArrayNode detailArray = jf.arrayNode();
+		if(isValid && errorMsgList.isEmpty()){
+			isValid = true;
+		} else {
+			isValid = false;
+			for(String msg : errorMsgList){
+				detailArray.add(msg);
+			}
+		}
+		respNode.set("valid", jf.booleanNode(isValid));
+		respNode.set("details", detailArray);
+
+		return respNode;
 	}
 
 	/**
@@ -200,7 +223,11 @@ public class ManchesterHandler extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	public Boolean checkDatatypeExpression(String manchExpr) {
+	public JsonNode checkDatatypeExpression(String manchExpr) {
+		JsonNodeFactory jf = JsonNodeFactory.instance;
+		ObjectNode respNode = jf.objectNode();
+		List<String> errorMsgList = new ArrayList<>();
+		boolean isValid = true;
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
 				.getNSPrefixMappings(false);
@@ -208,9 +235,22 @@ public class ManchesterHandler extends STServiceAdapter {
 			ManchesterSyntaxUtils.parseDatatypeRestrictionExpression(manchExpr, conn.getValueFactory(),
 					prefixToNamespacesMap);
 		} catch (ManchesterParserException e) {
-			return false;
+			isValid = false;
+			errorMsgList.add(manchExpr+" is not a valid Manchester Expression");
 		}
-		return true;
+		ArrayNode detailArray = jf.arrayNode();
+		if(isValid && errorMsgList.isEmpty()){
+			isValid = true;
+		} else {
+			isValid = false;
+			for(String msg : errorMsgList){
+				detailArray.add(msg);
+			}
+		}
+		respNode.set("valid", jf.booleanNode(isValid));
+		respNode.set("details", detailArray);
+
+		return respNode;
 	}
 
 	/**
@@ -220,7 +260,11 @@ public class ManchesterHandler extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	public Boolean checkLiteralEnumerationExpression(String manchExpr) {
+	public JsonNode checkLiteralEnumerationExpression(String manchExpr) {
+		JsonNodeFactory jf = JsonNodeFactory.instance;
+		ObjectNode respNode = jf.objectNode();
+		List<String> errorMsgList = new ArrayList<>();
+		boolean isValid = true;
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
 				.getNSPrefixMappings(false);
@@ -228,9 +272,22 @@ public class ManchesterHandler extends STServiceAdapter {
 			ManchesterSyntaxUtils.parseLiteralEnumerationExpression(manchExpr, conn.getValueFactory(),
 					prefixToNamespacesMap);
 		} catch (ManchesterParserException e) {
-			return false;
+			isValid = false;
+			errorMsgList.add(manchExpr+" is not a valid Manchester Expression");
 		}
-		return true;
+		ArrayNode detailArray = jf.arrayNode();
+		if(isValid && errorMsgList.isEmpty()){
+			isValid = true;
+		} else {
+			isValid = false;
+			for(String msg : errorMsgList){
+				detailArray.add(msg);
+			}
+		}
+		respNode.set("valid", jf.booleanNode(isValid));
+		respNode.set("details", detailArray);
+
+		return respNode;
 	}
 
 	/**
@@ -242,7 +299,11 @@ public class ManchesterHandler extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	public Boolean checkObjectPropertyExpression(String manchExpr) {
+	public JsonNode checkObjectPropertyExpression(String manchExpr) {
+		JsonNodeFactory jf = JsonNodeFactory.instance;
+		ObjectNode respNode = jf.objectNode();
+		List<String> errorMsgList = new ArrayList<>();
+		boolean isValid = true;
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
 				.getNSPrefixMappings(false);
@@ -250,9 +311,22 @@ public class ManchesterHandler extends STServiceAdapter {
 			ManchesterSyntaxUtils.parseObjectPropertyExpression(manchExpr, conn.getValueFactory(),
 					prefixToNamespacesMap);
 		} catch (ManchesterParserException e) {
-			return false;
+			isValid = false;
+			errorMsgList.add(manchExpr+" is not a valid Manchester Expression");
 		}
-		return true;
+		ArrayNode detailArray = jf.arrayNode();
+		if(isValid && errorMsgList.isEmpty()){
+			isValid = true;
+		} else {
+			isValid = false;
+			for(String msg : errorMsgList){
+				detailArray.add(msg);
+			}
+		}
+		respNode.set("valid", jf.booleanNode(isValid));
+		respNode.set("details", detailArray);
+
+		return respNode;
 	}
 
 	/**
