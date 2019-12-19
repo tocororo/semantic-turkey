@@ -8,7 +8,6 @@ import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
@@ -38,7 +37,6 @@ import java.util.List;
 public class PreferencesSettings extends STServiceAdapter {
 	
 	/**
-	 * TODO
 	 * Currently the UI of VB3 allows only a to manage project preferences (so preferences of a user in a project).
 	 * So the following services just get/set the project preference.
 	 * when there will be a richer UI, this services should get a parameter that specify the level of the preference:
@@ -51,46 +49,6 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * to return all the preferences.
 	 * This choice depends on how I will implements the UI to manage the different preferences/settings (user/project/system)
 	 */
-	
-	/**
-	 * Sets the languages preference
-	 * @param languages
-	 * @throws STPropertyUpdateException
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	public void setLanguages(Collection<String> languages) throws STPropertyUpdateException {
-		String value = "*";
-		if (languages.size() == 1) {
-			value = languages.iterator().next();
-		} else if (languages.size() > 1) {
-			value = String.join(",", languages);
-		}
-		STPropertiesManager.setPUSetting(STPropertiesManager.PREF_LANGUAGES, value, getProject(),	
-				UsersManager.getLoggedUser(), RenderingEngine.class.getName());
-	}
-	
-	/**
-	 * Sets the show_flag preference. If the property is not set, sets true as default in the preference file and returns it.
-	 * @return
-	 * @throws STPropertyAccessException
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	public void setShowFlags(boolean show) throws STPropertyUpdateException {
-		STPropertiesManager.setPUSetting(STPropertiesManager.PREF_SHOW_FLAGS, show+"", getProject(),
-			UsersManager.getLoggedUser());
-	}
-	
-	/**
-	 * Sets the show_instances_number preference. If the property is not set, sets true as default in the preference
-	 * file and returns it.
-	 * @return
-	 * @throws STPropertyAccessException
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	public void setShowInstancesNumb(boolean show) throws STPropertyUpdateException {
-		STPropertiesManager.setPUSetting(STPropertiesManager.PREF_SHOW_INSTANCES_NUMBER, show+"", getProject(),
-			UsersManager.getLoggedUser());
-	}
 	
 	/**
 	 * Sets the active scheme preference (in order to retrieve it on the future access) for the current project.
@@ -113,17 +71,6 @@ public class PreferencesSettings extends STServiceAdapter {
 			STPropertiesManager.setPUSetting(STPropertiesManager.PREF_ACTIVE_SCHEMES, null, getProject(),
 					UsersManager.getLoggedUser());
 		}
-	}
-	
-	/**
-	 * Changes the project theme
-	 * @param themeId
-	 * @throws STPropertyUpdateException
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	public void setProjectTheme(int themeId) throws STPropertyUpdateException {
-		STPropertiesManager.setPUSetting(STPropertiesManager.PREF_PROJ_THEME, themeId+"", getProject(),
-				UsersManager.getLoggedUser());
 	}
 	
 	/**
@@ -166,11 +113,18 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation
-	public JsonNode getPUSettings(List<String> properties, @Optional String pluginID) throws STPropertyAccessException {
+	public JsonNode getPUSettings(List<String> properties, @Optional String projectName, @Optional String pluginID)
+			throws STPropertyAccessException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode respNode = jsonFactory.objectNode();
+		Project project;
+		if (projectName != null) {
+			project = ProjectManager.getProjectDescription(projectName);
+		} else {
+			project = getProject();
+		}
 		for (String prop: properties) {
-			String value = STPropertiesManager.getPUSetting(prop, getProject(), UsersManager.getLoggedUser(), pluginID);
+			String value = STPropertiesManager.getPUSetting(prop, project, UsersManager.getLoggedUser(), pluginID);
 			respNode.set(prop, jsonFactory.textNode(value));
 		}
 		return respNode;
@@ -297,10 +251,36 @@ public class PreferencesSettings extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project,_)', 'U')")
-	public void setProjectSetting(String property, @Optional String value, @Optional String projectName)
+	public void setProjectSetting(String property, @Optional String value, @Optional String projectName, @Optional String pluginID)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException {
 		Project project = (projectName != null) ? ProjectManager.getProjectDescription(projectName) : getProject();
-		STPropertiesManager.setProjectSetting(property, value, project);
+		STPropertiesManager.setProjectSetting(property, value, project, pluginID);
+	}
+
+	@STServiceOperation
+	public JsonNode getPUSettingsProjectDefault(List<String> properties, @Optional String projectName, @Optional String pluginID)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyAccessException {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode respNode = jsonFactory.objectNode();
+		Project project = (projectName != null) ? ProjectManager.getProjectDescription(projectName) : getProject();
+		for (String prop: properties) {
+			String value;
+			if (pluginID == null) {
+				value = STPropertiesManager.getPUSettingProjectDefault(prop, project);
+			} else {
+				value = STPropertiesManager.getPUSettingProjectDefault(prop, project, pluginID);
+			}
+			respNode.set(prop, jsonFactory.textNode(value));
+		}
+		return respNode;
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()") //admin required since it is possible to set the default even for other projects
+	public void setPUSettingProjectDefault(String property, @Optional String value, @Optional String projectName, @Optional String pluginID)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyUpdateException {
+		Project project = (projectName != null) ? ProjectManager.getProjectDescription(projectName) : getProject();
+		STPropertiesManager.setPUSettingProjectDefault(property, value, project, pluginID);
 	}
 	
 	/**

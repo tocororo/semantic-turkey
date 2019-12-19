@@ -167,7 +167,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public Boolean isClassAxiom(BNode bnode) {
-		boolean isClassAxiom = false;
+		boolean isClassAxiom;
 		try {
 			isClassAxiom = ManchesterSyntaxUtils.isClassAxiom(bnode, getUserNamedGraphs(),
 					getManagedConnection());
@@ -199,7 +199,7 @@ public class ManchesterHandler extends STServiceAdapter {
 			ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList);
 		} catch (ManchesterParserException e) {
 			isValid = false;
-			errorMsgList.add(manchExpr+" is not a valid Manchester Expression");
+			errorMsgList.add("Not a valid Manchester Expression");
 		}
 		ArrayNode detailArray = jf.arrayNode();
 		if(isValid && errorMsgList.isEmpty()){
@@ -236,7 +236,7 @@ public class ManchesterHandler extends STServiceAdapter {
 					prefixToNamespacesMap);
 		} catch (ManchesterParserException e) {
 			isValid = false;
-			errorMsgList.add(manchExpr+" is not a valid Manchester Expression");
+			errorMsgList.add("Not a valid Manchester Expression");
 		}
 		ArrayNode detailArray = jf.arrayNode();
 		if(isValid && errorMsgList.isEmpty()){
@@ -273,7 +273,7 @@ public class ManchesterHandler extends STServiceAdapter {
 					prefixToNamespacesMap);
 		} catch (ManchesterParserException e) {
 			isValid = false;
-			errorMsgList.add(manchExpr+" is not a valid Manchester Expression");
+			errorMsgList.add("Not a valid Manchester Expression");
 		}
 		ArrayNode detailArray = jf.arrayNode();
 		if(isValid && errorMsgList.isEmpty()){
@@ -312,7 +312,7 @@ public class ManchesterHandler extends STServiceAdapter {
 					prefixToNamespacesMap);
 		} catch (ManchesterParserException e) {
 			isValid = false;
-			errorMsgList.add(manchExpr+" is not a valid Manchester Expression");
+			errorMsgList.add("Not a valid Manchester Expression");
 		}
 		ArrayNode detailArray = jf.arrayNode();
 		if(isValid && errorMsgList.isEmpty()){

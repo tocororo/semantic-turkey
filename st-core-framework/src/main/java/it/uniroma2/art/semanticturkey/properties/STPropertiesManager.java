@@ -410,7 +410,27 @@ public class STPropertiesManager {
 	 */
 	public static void setPUSettingProjectDefault(String propName, String propValue, Project project)
 			throws STPropertyUpdateException {
-		getPUSettingProjectDefault(propName, propValue, project, CORE_PLUGIN_ID);
+		setPUSettingProjectDefault(propName, propValue, project, CORE_PLUGIN_ID);
+	}
+
+	/**
+	 *
+	 * @param propName
+	 * @param propValue
+	 * @param project
+	 * @param pluginID
+	 * @throws STPropertyUpdateException
+	 */
+	public static void setPUSettingProjectDefault(String propName, String propValue, Project project, String pluginID)
+			throws STPropertyUpdateException {
+		try {
+			File propFile = getPUSettingsProjectDefaultsFile(project, pluginID);
+			Properties properties = loadProperties(propFile);
+			setProperty(properties, propName, propValue);
+			updatePropertyFile(properties, propFile);
+		} catch (STPropertyAccessException e) {
+			throw new STPropertyUpdateException(e);
+		}
 	}
 
 	/**
