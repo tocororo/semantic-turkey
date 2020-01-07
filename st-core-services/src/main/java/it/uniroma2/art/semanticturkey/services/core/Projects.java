@@ -549,13 +549,6 @@ public class Projects extends STServiceAdapter {
 		ProjectManager.disconnectFromProject(consumer, projectName);
 	}
 
-	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
-	public void repairProject(String projectName) throws IOException, InvalidProjectNameException,
-			ProjectInexistentException, ProjectInconsistentException {
-		UpdateRoutines.repairProject(projectName);
-	}
-
 	/*
 	 * this one has being temporarily not imported from the old project service, as it requires to close and
 	 * reopen a project. Not clear if we should allow a project to be deactivated/activated. Surely,

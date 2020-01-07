@@ -23,27 +23,21 @@
 
 package it.uniroma2.art.semanticturkey.resources;
 
+import it.uniroma2.art.semanticturkey.SemanticTurkey;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.rbac.RBACManager;
+import it.uniroma2.art.semanticturkey.user.Role;
+import it.uniroma2.art.semanticturkey.utilities.Utilities;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import it.uniroma2.art.semanticturkey.SemanticTurkey;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
-import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.rbac.RBACManager;
-import it.uniroma2.art.semanticturkey.user.Role;
-import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
 /**
  * This class contains various integrity checks which are launched when Semantic Turkey is being started and
@@ -74,7 +68,7 @@ public class UpdateRoutines {
 
 	protected static Logger logger = LoggerFactory.getLogger(UpdateRoutines.class);
 
-	public static void startUpdatesCheckAndRepair() throws IOException, STPropertyAccessException, STInitializationException {
+	public static void startUpdatesCheckAndRepair() throws IOException {
 		VersionNumber stVersionNumber = Config.getVersionNumber();
 		VersionNumber stDataVersionNumber = Config.getSTDataVersionNumber();
 		logger.debug("version number of installed Semantic Turkey is: " + stVersionNumber);
@@ -94,12 +88,15 @@ public class UpdateRoutines {
 			if (stDataVersionNumber.compareTo(new VersionNumber(6, 0, 0)) < 0) {
 				alignFrom5To6();
 			}
+			if (stDataVersionNumber.compareTo(new VersionNumber(7, 0, 0)) < 0) {
+				alignFrom6To7();
+			}
 			Config.setSTDataVersionNumber(stVersionNumber);
 		}
 
 	}
 	
-	private static void alignFromPreviousTo3() throws IOException, STPropertyAccessException {
+	private static void alignFromPreviousTo3() throws IOException {
 		logger.debug("Version 3.0.0 added capabilities to some roles");
 		//In doubt, update all roles
 		Role[] roles = {
@@ -111,10 +108,11 @@ public class UpdateRoutines {
 		updateRoles(roles);
 
 		logger.debug("Version 3.0.0 added new properties to the default project preferences");
-		updatePUSettingsSystemDefaults();
+		updatePUSettingsSystemDefaults(STPropertiesManager.CORE_PLUGIN_ID);
+		updatePUSettingsSystemDefaults(RenderingEngine.class.getName());
 	}
 	
-	private static void alignFrom3To4() throws IOException, STPropertyAccessException, STInitializationException {
+	private static void alignFrom3To4() throws IOException {
 		logger.debug("Version 4.0.0 renamed some settings files");
 		//users\<username>\plugins\<plugin>\system-preferences.props -> settings.props
 		//users\<username>\plugins\<plugin>\project-preference-defaults.props -> pu-settings-defaults.props
@@ -173,49 +171,30 @@ public class UpdateRoutines {
 		Resources.initializeGroups();
 	}
 	
-	private static void alignFrom4To5() throws IOException, STPropertyAccessException {
+	private static void alignFrom4To5() throws IOException {
 		logger.debug("Version 5.0.0 added a capability to some roles");
 		Role[] roles = { RBACManager.DefaultRole.LEXICOGRAPHER, RBACManager.DefaultRole.MAPPER, RBACManager.DefaultRole.ONTOLOGIST,
 				RBACManager.DefaultRole.PROJECTMANAGER, RBACManager.DefaultRole.RDF_GEEK, RBACManager.DefaultRole.THESAURUS_EDITOR };
 		updateRoles(roles);
 		
 		logger.debug("Version 5.0.0 removed a property from the default project preferences");
-		updatePUSettingsSystemDefaults();
+		updatePUSettingsSystemDefaults(STPropertiesManager.CORE_PLUGIN_ID);
+		updatePUSettingsSystemDefaults(RenderingEngine.class.getName());
 	}
 	
-	private static void alignFrom5To6() throws IOException, STPropertyAccessException {
+	private static void alignFrom5To6() throws IOException {
 		logger.debug("Version 6.0.0 added a docs folder under system/");
 		Resources.getDocsDir().mkdirs();
 		
 		logger.debug("Version 6.0.0 changed a property from the default project preferences");
-		updatePUSettingsSystemDefaults();
+		updatePUSettingsSystemDefaults(STPropertiesManager.CORE_PLUGIN_ID);
+		updatePUSettingsSystemDefaults(RenderingEngine.class.getName());
 	}
-	
-	public static void repairProject(String projectName) throws IOException, InvalidProjectNameException,
-			ProjectInexistentException, ProjectInconsistentException {
-//		// ADDING PROJECT_MODEL_TYPE WHICH WAS MISSING FROM PROJECT STRUCTURE IN 0.7.1
-//		checkAndInitializeMissingProperty(projectName, Project.PROJECT_MODEL_TYPE, OWLModel.class.getName(),
-//				"0.7.0");
-//
-//		// ADDING MODELCONFIG_ID WHICH WAS MISSING FROM PROJECT STRUCTURE IN 0.7.1
-//		ProjectType type = ProjectManager.getProjectType(projectName);
-//		String modelConfigID;
-//		if (type.equals(ProjectType.saveToStore))
-//			modelConfigID = "it.uniroma2.art.owlart.sesame2impl.models.conf.Sesame2NonPersistentInMemoryModelConfiguration";
-//		else
-//			modelConfigID = "it.uniroma2.art.owlart.sesame2impl.models.conf.Sesame2PersistentInMemoryModelConfiguration";
-//		checkAndInitializeMissingProperty(projectName, Project.MODELCONFIG_ID, modelConfigID, "0.7.2");
-//
-//		File projDir = ProjectManager.getProjectDir(projectName);
-//		File modelConfigFile = new File(projDir, Project.MODELCONFIG_FILENAME);
-//		if (!modelConfigFile.exists()) {
-//			try {
-//				modelConfigFile.createNewFile();
-//			} catch (IOException e) {
-//				logger.error("UPDATING OLD PROJECT TO NEW FORMAT: unable to create "
-//						+ Project.MODELCONFIG_FILENAME + " file in Project: " + projectName);
-//			}
-//		}
+
+	private static void alignFrom6To7() throws IOException {
+		logger.debug("Version 7.0.0 updated the class_tree_filter in the pu-settings-defaults");
+		Resources.getDocsDir().mkdirs();
+		updatePUSettingsSystemDefaults(STPropertiesManager.CORE_PLUGIN_ID);
 	}
 	
 	private static void updateRoles(Role[] roles) throws IOException {
@@ -228,19 +207,15 @@ public class UpdateRoutines {
 		}
 	}
 	
-	private static void updatePUSettingsSystemDefaults() throws IOException, STPropertyAccessException {
+	private static void updatePUSettingsSystemDefaults(String pluginId) throws IOException {
 		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
-				"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/pu-settings-defaults.props"),
-				STPropertiesManager.getPUSettingsSystemDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)
-		);
-		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
-				"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine/pu-settings-defaults.props"),
-				STPropertiesManager.getPUSettingsSystemDefaultsFile(RenderingEngine.class.getName())
+				"/it/uniroma2/art/semanticturkey/properties/" + pluginId + "/pu-settings-defaults.props"),
+				STPropertiesManager.getPUSettingsSystemDefaultsFile(pluginId)
 		);
 	}
 	
 	@SuppressWarnings("unused")
-	private static void updateProjectSettingsDefaults() throws IOException, STPropertyAccessException {
+	private static void updateProjectSettingsDefaults() throws IOException {
 		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
 				"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"),
 				STPropertiesManager.getProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID)

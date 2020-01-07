@@ -26,22 +26,19 @@
  */
 package it.uniroma2.art.semanticturkey.resources;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.UUID;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
 
 /**
  * @author Armando Stellato
@@ -105,9 +102,6 @@ public class Resources {
 
 		try {
 			Config.initialize(semTurkeyPropertyFile);
-		} catch (FileNotFoundException e2) {
-			throw new STInitializationException(
-					"Unable to initialize ST properties under /etc/custom.properties: " + e2.getMessage());
 		} catch (IOException e2) {
 			throw new STInitializationException(
 					"Unable to initialize ST properties under /etc/custom.properties: " + e2.getMessage());
@@ -127,7 +121,7 @@ public class Resources {
 		} else { // stData exists => check if need to be updated
 			try {
 				UpdateRoutines.startUpdatesCheckAndRepair();
-			} catch (IOException | STPropertyAccessException e) {
+			} catch (IOException e) {
 				throw new STInitializationException(e);
 			}
 		}

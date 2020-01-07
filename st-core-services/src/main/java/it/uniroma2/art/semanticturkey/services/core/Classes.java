@@ -106,13 +106,14 @@ public class Classes extends STServiceAdapter {
 					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
 					" SELECT ?resource "+generateNatureSPARQLSelectPart()+" 			 		  \n" + 
 					" WHERE {																      \n" +
-					" 	  ?metaClass rdfs:subClassOf* owl:Class .                                 \n" +
+					" 	  ?metaClass rdfs:subClassOf* rdfs:Class .                                \n" +
 					"     ?resource a ?metaClass.                                                 \n" +
 					"     FILTER(isIRI(?resource))                                                \n" +
 					"     FILTER(?resource != owl:Thing)                                          \n" +
+					"     FILTER(?resource != rdfs:Resource)                                      \n" +
 					"     FILTER NOT EXISTS {                                                     \n" +
 					"     	?resource rdfs:subClassOf ?superClass2 .                              \n" +
-					"		FILTER(?resource != ?superClass2)										  \n" +	
+					"		FILTER(?resource != ?superClass2)									  \n" +
 					"       FILTER(isIRI(?superClass2) && ?superClass2 != owl:Thing)              \n" +
 					"       ?superClass2 a ?metaClass2 .                                          \n" +
 					"       ?metaClass2 rdfs:subClassOf* rdfs:Class .                             \n" +
