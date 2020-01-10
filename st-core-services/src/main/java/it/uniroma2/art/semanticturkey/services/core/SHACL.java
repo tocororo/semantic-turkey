@@ -53,7 +53,7 @@ public class SHACL extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('shacl', 'CU')")
+	@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'CU')")
 	public void loadShapes(MultipartFile shapesFile, RDFFormat fileFormat,
 			@Optional(defaultValue = "false") boolean clearExisting) throws IOException {
 		File inputServerFile = File.createTempFile("loadShapes", shapesFile.getOriginalFilename());
@@ -88,7 +88,7 @@ public class SHACL extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('shacl', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'R')")
 	public void exportShapes(HttpServletResponse oRes, @Optional(defaultValue = "TURTLE") RDFFormat rdfFormat,
 			@Optional(defaultValue = "{\"prettyPrint\": true, \"inlineBlankNodes\": true}") ObjectNode exporterConfiguration)
 			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
@@ -111,7 +111,7 @@ public class SHACL extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('shacl', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'D')")
 	public void deleteShapes() throws IOException {
 		getManagedConnection().clear(RDF4J.SHACL_SHAPE_GRAPH);
 	}
