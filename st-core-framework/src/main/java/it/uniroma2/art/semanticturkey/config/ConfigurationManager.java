@@ -49,13 +49,15 @@ public interface ConfigurationManager<CONFTYPE extends Configuration> extends Id
 			rv.addAll(Reference.liftIdentifiers(null, user,
 					((UserConfigurationManager<CONFTYPE>) this).getUserConfigurationIdentifiers(user)));
 		}
-		if (this instanceof ProjectConfigurationManager) {
-			rv.addAll(Reference.liftIdentifiers(project, null, ((ProjectConfigurationManager<CONFTYPE>) this)
-					.getProjectConfigurationIdentifiers(project)));
-		}
-		if (this instanceof PUConfigurationManager) {
-			rv.addAll(Reference.liftIdentifiers(project, user, ((PUConfigurationManager<CONFTYPE>) this)
-					.getProjectConfigurationIdentifiers(project, user)));
+		if (project != null) {
+			if (this instanceof ProjectConfigurationManager) {
+				rv.addAll(Reference.liftIdentifiers(project, null, ((ProjectConfigurationManager<CONFTYPE>) this)
+						.getProjectConfigurationIdentifiers(project)));
+			}
+			if (this instanceof PUConfigurationManager) {
+				rv.addAll(Reference.liftIdentifiers(project, user, ((PUConfigurationManager<CONFTYPE>) this)
+						.getProjectConfigurationIdentifiers(project, user)));
+			}
 		}
 		return rv;
 	}

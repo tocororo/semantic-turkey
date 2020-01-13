@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.io.IOException;
 import java.util.Collection;
 
+import it.uniroma2.art.semanticturkey.project.Project;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,7 +69,11 @@ public class Configurations extends STServiceAdapter {
 	@STServiceOperation
 	public Collection<Reference> getConfigurationReferences(String componentID)
 			throws NoSuchConfigurationManager {
-		return exptManager.getConfigurationReferences(getProject(), UsersManager.getLoggedUser(),
+		Project project = null;
+		if (stServiceContext.hasContextParameter("project")) {
+			project = getProject();
+		}
+		return exptManager.getConfigurationReferences(project, UsersManager.getLoggedUser(),
 				componentID);
 	}
 

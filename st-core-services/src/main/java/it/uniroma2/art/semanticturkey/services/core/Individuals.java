@@ -1,15 +1,5 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.util.Collection;
-
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.access.prepost.PreAuthorize;
-
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -19,6 +9,15 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.util.Collection;
 
 /**
  * This class provides services for manipulating individuals.
@@ -33,8 +32,7 @@ public class Individuals extends STServiceAdapter {
 	/**
 	 * Returns the (explicit) named types of the given individual <code>individual</code>. 
 	 * 
-	 * @param superClass
-	 * @param numInst
+	 * @param individual
 	 * @return
 	 */
 	@STServiceOperation
@@ -108,4 +106,4 @@ public class Individuals extends STServiceAdapter {
 		update.execute();
 	}
 	
-};
+}
