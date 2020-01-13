@@ -54,7 +54,7 @@ import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
-import it.uniroma2.art.coda.pearl.parser.antlr.AntlrParserRuntimeException;
+import it.uniroma2.art.coda.pearl.parser.antlr4.AntlrParserRuntimeException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.semanticturkey.customform.BrokenCFStructure;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;

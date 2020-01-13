@@ -191,10 +191,10 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 				String card = restrictionContext.type.getText().toLowerCase();
 				PossType posType;
 				int number = Integer.parseInt(restrictionContext.nonNegativeInteger().getText());
-				if(card.toLowerCase().equals("max")){
+				if(card.toLowerCase().equals(MAX)){
 					//objectPropertyExpression type=MAX nonNegativeInteger primary?
 					posType = PossType.MAX;
-				} else if (card.toLowerCase().equals("min")){
+				} else if (card.toLowerCase().equals(MIN)){
 					//objectPropertyExpression type=MIN nonNegativeInteger primary?
 					posType = PossType.MIN;
 				} else{
@@ -215,15 +215,15 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 			DataPropertyExpressionContext dataPropertyExpressionContext
 				= restrictionContext.dataPropertyExpression();
 			IRI dataProp = getIRIFromResource(dataPropertyExpressionContext);
-			if(restrictionContext.type.getText().toLowerCase().equals("some")){
+			if(restrictionContext.type.getText().toLowerCase().equals(SOME)){
 				//dataPropertyExpression type=SOME dataPrimary
 				return new ManchesterSomeClass(dataProp, 
 						parseDataPrimary(restrictionContext.dataPrimary()));
-			} else if(restrictionContext.type.getText().toLowerCase().equals("only")){
+			} else if(restrictionContext.type.getText().toLowerCase().equals(ONLY)){
 				//dataPropertyExpression type=ONLY dataPrimary
 				return new ManchesterOnlyClass(dataProp, 
 						parseDataPrimary(restrictionContext.dataPrimary()));
-			} else if(restrictionContext.type.getText().toLowerCase().equals("value")){
+			} else if(restrictionContext.type.getText().toLowerCase().equals(VALUE)){
 				//dataPropertyExpression type=VALUE literal
 				return new ManchesterValueClass(dataProp, 
 						parseLiteral(restrictionContext.literal()));
@@ -231,10 +231,10 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 				String card = restrictionContext.type.getText().toLowerCase();
 				PossType posType;
 				int number = Integer.parseInt(restrictionContext.nonNegativeInteger().getText());
-				if(card.toLowerCase().equals("max")){
+				if(card.toLowerCase().equals(MAX)){
 					//dataPropertyExpression type=MAX nonNegativeInteger dataPrimary?
 					posType = PossType.MAX;
-				} else if (card.toLowerCase().equals("min")){
+				} else if (card.toLowerCase().equals(MIN)){
 					//dataPropertyExpression type=MIN nonNegativeInteger dataPrimary?
 					posType = PossType.MIN;
 				} else{
