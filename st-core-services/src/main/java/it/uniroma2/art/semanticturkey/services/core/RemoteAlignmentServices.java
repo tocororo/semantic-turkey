@@ -82,7 +82,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(RemoteAlignmentServices.class);
 
-	public static final String ALIGNMENTSERVICES_ENDPOINT = "http://localhost:8282/";
+	public static final String ALIGNMENTSERVICES_ENDPOINT = "http://localhost:8282/api/";
 
 	@Autowired
 	private MetadataRegistryBackend metadataRegistryBackend;
