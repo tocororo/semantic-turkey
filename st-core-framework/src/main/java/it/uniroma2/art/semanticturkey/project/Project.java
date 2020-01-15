@@ -746,6 +746,10 @@ public abstract class Project extends AbstractProject {
 		return Boolean.valueOf(ObjectUtils.firstNonNull(getProperty(BLACKLISTING_ENABLED_PROP), "false"));
 	}
 
+	public boolean isSHACLEnabled() {
+		return Boolean.valueOf(getProperty(SHACL_ENABLED_PROP));
+	}
+
 	String getRequiredProperty(String propertyName) throws ProjectInconsistentException {
 		String propValue = stp_properties.getProperty(propertyName);
 		if (propValue != null)

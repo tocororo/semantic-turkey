@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.project;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
 
 public class ProjectInfo {
@@ -12,13 +14,14 @@ public class ProjectInfo {
 	private final String lexicalizationModel;
 	private final boolean historyEnabled;
 	private final boolean validationEnabled;
+	private final boolean shaclEnabled;
 	private final AccessResponse accessible;
 	private final RepositoryLocation repositoryLocation;
 	private final ProjectStatus status;
 	
 	public ProjectInfo(String name, boolean open, String baseURI, String defaultNamespace,
 			String model, String lexicalizationModel, boolean historyEnabled, boolean validationEnabled, 
-			AccessResponse accessible, RepositoryLocation repositoryLocation, ProjectStatus status) {
+			boolean shaclEnabled, AccessResponse accessible, RepositoryLocation repositoryLocation, ProjectStatus status) {
 		this.name = name;
 		this.open = open;
 		this.baseURI = baseURI;
@@ -27,6 +30,7 @@ public class ProjectInfo {
 		this.lexicalizationModel = lexicalizationModel;
 		this.historyEnabled = historyEnabled;
 		this.validationEnabled = validationEnabled;
+		this.shaclEnabled = shaclEnabled;
 		this.accessible = accessible;
 		this.repositoryLocation = repositoryLocation;
 		this.status = status;
@@ -62,6 +66,11 @@ public class ProjectInfo {
 	
 	public boolean isValidationEnabled() {
 		return validationEnabled;
+	}
+	
+	@JsonProperty("shaclEnabled")
+	public boolean isSHACLEnabled() {
+		return shaclEnabled;
 	}
 	
 	public AccessResponse getAccessible() {

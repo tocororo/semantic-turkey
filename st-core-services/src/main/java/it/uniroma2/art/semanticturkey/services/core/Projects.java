@@ -1,71 +1,27 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.io.Closer;
-import it.uniroma2.art.lime.model.repo.LIMERepositoryConnectionWrapper;
-import it.uniroma2.art.lime.profiler.LIMEProfiler;
-import it.uniroma2.art.lime.profiler.ProfilerException;
-import it.uniroma2.art.maple.orchestration.AssessmentException;
-import it.uniroma2.art.maple.orchestration.MediationFramework;
-import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
-import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectDeletionException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
-import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
-import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
-import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
-import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDescription;
-import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
-import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.project.AbstractProject;
-import it.uniroma2.art.semanticturkey.project.CorruptedProject;
-import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectACL;
-import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
-import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
-import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
-import it.uniroma2.art.semanticturkey.project.ProjectInfo;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
-import it.uniroma2.art.semanticturkey.project.ProjectStatus;
-import it.uniroma2.art.semanticturkey.project.ProjectStatus.Status;
-import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
-import it.uniroma2.art.semanticturkey.project.RepositoryLocation;
-import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
-import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
-import it.uniroma2.art.semanticturkey.rbac.RBACException;
-import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataStore;
-import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummary;
-import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
-import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary;
-import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary.RemoteRepositorySummary;
-import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.StringWriter;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
@@ -108,26 +64,74 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.Nullable;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.StringWriter;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.io.Closer;
+
+import it.uniroma2.art.lime.model.repo.LIMERepositoryConnectionWrapper;
+import it.uniroma2.art.lime.profiler.LIMEProfiler;
+import it.uniroma2.art.lime.profiler.ProfilerException;
+import it.uniroma2.art.maple.orchestration.AssessmentException;
+import it.uniroma2.art.maple.orchestration.MediationFramework;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectDeletionException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
+import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDescription;
+import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.CorruptedProject;
+import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectACL;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
+import it.uniroma2.art.semanticturkey.project.ProjectInfo;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
+import it.uniroma2.art.semanticturkey.project.ProjectStatus;
+import it.uniroma2.art.semanticturkey.project.ProjectStatus.Status;
+import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
+import it.uniroma2.art.semanticturkey.project.RepositoryLocation;
+import it.uniroma2.art.semanticturkey.project.SHACLSettings;
+import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.rbac.RBACException;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataStore;
+import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummary;
+import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
+import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary;
+import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary.RemoteRepositorySummary;
+import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 //import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerNotDetectedException;
 //import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerParameterMismatchException;
@@ -160,11 +164,12 @@ public class Projects extends STServiceAdapter {
 			@Optional(defaultValue = "resource") String[] updateForRoles,
 			@Optional String preloadedDataFileName, @Optional RDFFormat preloadedDataFormat,
 			@Optional TransitiveImportMethodAllowance transitiveImportAllowance, @Optional String leftDataset,
-			@Optional String rightDataset, @Optional boolean enableSHACL) throws ProjectInconsistentException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
-			ClassNotFoundException, WrongPropertiesException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, RBACException,
+			@Optional String rightDataset, @Optional boolean shaclEnabled,
+			@Optional @JsonSerialized SHACLSettings shaclSettings)
+			throws ProjectInconsistentException, InvalidProjectNameException, ProjectInexistentException,
+			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
+			ProjectCreationException, ClassNotFoundException, WrongPropertiesException,
+			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, InvalidConfigurationException,
 			STPropertyAccessException, IOException, ReservedPropertyUpdateException, ProjectUpdateException {
 
@@ -183,6 +188,18 @@ public class Projects extends STServiceAdapter {
 					new Properties(), null);
 		}
 
+		if (shaclSettings != null) {
+			if (!shaclEnabled) {
+				throw new IllegalArgumentException(
+						"It is not allowed to specify SHACL-related settings if SHACL is not enabled");
+			}
+
+			if (!repositoryAccess.isCreation()) {
+				throw new IllegalArgumentException(
+						"It is not allowed to sprecify SHACL-related settings if accessing an existing repository");
+			}
+		}
+
 		uriGeneratorSpecification.expandDefaults();
 		renderingEngineSpecification.expandDefaults();
 
@@ -199,7 +216,7 @@ public class Projects extends STServiceAdapter {
 					supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
 					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
 					updateForRoles, preloadedDataFile, preloadedDataFormat, transitiveImportAllowance,
-					failedImports, leftDataset, rightDataset, enableSHACL);
+					failedImports, leftDataset, rightDataset, shaclEnabled, shaclSettings);
 			deletePreloadedDataFile = true;
 		} finally {
 			if (preloadedDataFileName != null) {
@@ -207,6 +224,17 @@ public class Projects extends STServiceAdapter {
 						deletePreloadedDataFile);
 			}
 		}
+	}
+
+	/**
+	 * Returns an empty form for SHACL settings upon project creation.
+	 * 
+	 * @return
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'C')")
+	public SHACLSettings createEmptySHACLSettingsForm() {
+		return new SHACLSettings();
 	}
 
 	/**
@@ -333,6 +361,7 @@ public class Projects extends STServiceAdapter {
 		String lexicalizationModel = null;
 		boolean historyEnabled = false;
 		boolean validationEnabled = false;
+		boolean shaclEnabled = false;
 		boolean open = false;
 		AccessResponse access = null;
 		RepositoryLocation repoLocation = new RepositoryLocation(null);
@@ -347,6 +376,7 @@ public class Projects extends STServiceAdapter {
 			lexicalizationModel = proj.getLexicalizationModel().stringValue();
 			historyEnabled = proj.isHistoryEnabled();
 			validationEnabled = proj.isValidationEnabled();
+			shaclEnabled = proj.isSHACLEnabled();
 			open = ProjectManager.isOpen(proj);
 			access = ProjectManager.checkAccessibility(consumer, proj, requestedAccessLevel,
 					requestedLockLevel);
@@ -364,7 +394,7 @@ public class Projects extends STServiceAdapter {
 			status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
 		}
 		return new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel,
-				historyEnabled, validationEnabled, access, repoLocation, status);
+				historyEnabled, validationEnabled, shaclEnabled, access, repoLocation, status);
 	}
 
 	/**
@@ -614,8 +644,8 @@ public class Projects extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'C')")
 	public void importProject(MultipartFile importPackage, String newProjectName)
-			throws IOException, ProjectCreationException, DuplicatedResourceException,
-			ProjectUpdateException, InvalidProjectNameException {
+			throws IOException, ProjectCreationException, DuplicatedResourceException, ProjectUpdateException,
+			InvalidProjectNameException {
 
 		logger.debug("requested to import project from file: " + importPackage);
 

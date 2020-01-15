@@ -67,6 +67,7 @@ import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.sail.config.SailImplConfig;
 import org.eclipse.rdf4j.sail.shacl.config.ShaclSailConfig;
+import org.eclipse.rdf4j.sail.shacl.config.ShaclSailSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1204,10 +1205,10 @@ public class ProjectManager {
 			PluginSpecification renderingEngineSpecification, IRI creationDateProperty,
 			IRI modificationDateProperty, String[] updateForRoles, File preloadedDataFile,
 			RDFFormat preloadedDataFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
-			Set<IRI> failedImports, String leftDataset, String rightDataset, boolean enableSHACL)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
-			ClassNotFoundException, UnsupportedPluginConfigurationException,
+			Set<IRI> failedImports, String leftDataset, String rightDataset, boolean shaclEnabled,
+			SHACLSettings shaclSettings) throws InvalidProjectNameException, ProjectInexistentException,
+			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
+			ProjectCreationException, ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, ProjectInconsistentException,
 			InvalidConfigurationException, STPropertyAccessException, IOException,
@@ -1291,11 +1292,24 @@ public class ProjectManager {
 					sailImplConfig = changeTrackerSailConfig;
 				}
 
-				if (enableSHACL) {
+				if (shaclEnabled) {
 					ShaclSailConfig shaclSailConfig = new ShaclSailConfig();
 					shaclSailConfig.setIgnoreNoShapesLoadedException(true);
 					shaclSailConfig.setDelegate(sailImplConfig);
 
+					if (shaclSettings != null) {
+						shaclSailConfig.setParallelValidation(shaclSettings.parallelValidation);
+						shaclSailConfig.setUndefinedTargetValidatesAllSubjects(
+								shaclSettings.undefinedTargetValidatesAllSubjects);
+						shaclSailConfig.setLogValidationPlans(shaclSettings.logValidationPlans);
+						shaclSailConfig.setLogValidationViolations(shaclSettings.logValidationViolations);
+						shaclSailConfig.setCacheSelectNodes(shaclSettings.cacheSelectNodes);
+						shaclSailConfig
+								.setGlobalLogValidationExecution(shaclSettings.globalLogValidationExecution);
+						shaclSailConfig.setRdfsSubClassReasoning(shaclSettings.rdfsSubclassReasoning);
+						shaclSailConfig.setPerformanceLogging(shaclSettings.performanceLogging);
+						shaclSailConfig.setSerializableValidation(shaclSettings.serializableValidation);
+					}
 					sailImplConfig = shaclSailConfig;
 				}
 
@@ -1441,7 +1455,7 @@ public class ProjectManager {
 					repositoryAccess, coreRepoID, coreRepositoryConfig, coreBackendType, supportRepoID,
 					supportRepositoryConfig, supportBackendType, uriGeneratorSpecification,
 					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
-					updateForRoles, leftDataset, rightDataset, enableSHACL);
+					updateForRoles, leftDataset, rightDataset, shaclEnabled);
 
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 

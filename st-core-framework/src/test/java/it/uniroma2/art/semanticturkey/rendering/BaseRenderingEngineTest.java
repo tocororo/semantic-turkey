@@ -151,7 +151,7 @@ public class BaseRenderingEngineTest {
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
 						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
 						JsonNodeFactory.instance.objectNode()),
-				null, null, new String[] { "resource" }, null, null, null, null, null, null, false);
+				null, null, new String[] { "resource" }, null, null, null, null, null, null, false, null);
 		try {
 			Repository repo = new SailRepository(new MemoryStore());
 			repo.initialize();
@@ -263,13 +263,14 @@ public class BaseRenderingEngineTest {
 	}
 
 	@Test
-	public void testBaseRenderingEngineWithValidation() throws ClassNotFoundException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
-			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException,
-			WrongPropertiesException, ProjectBindingException, RBACException, UnsupportedModelException,
-			UnsupportedLexicalizationModelException, ProjectInconsistentException,
-			InvalidConfigurationException, STPropertyAccessException, IOException, ReservedPropertyUpdateException, ProjectUpdateException {
+	public void testBaseRenderingEngineWithValidation()
+			throws ClassNotFoundException, InvalidProjectNameException, ProjectInexistentException,
+			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
+			ProjectCreationException, UnsupportedPluginConfigurationException,
+			UnloadablePluginConfigurationException, WrongPropertiesException, ProjectBindingException,
+			RBACException, UnsupportedModelException, UnsupportedLexicalizationModelException,
+			ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException,
+			IOException, ReservedPropertyUpdateException, ProjectUpdateException {
 
 		// initializes custom forms
 		(new CustomFormManager()).init();
@@ -323,7 +324,7 @@ public class BaseRenderingEngineTest {
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
 						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
 						JsonNodeFactory.instance.objectNode()),
-				null, null, new String[] { "resource" }, null, null, null, null, null, null, false);
+				null, null, new String[] { "resource" }, null, null, null, null, null, null, false, null);
 		try {
 			STServiceContext stServiceContext = new STServiceContext() {
 
