@@ -207,7 +207,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			FileUtils.copyInputStreamToFile(response.getBody(), inputServerFile);
 			return null;
 		};
-		restTemplate.execute(ALIGNMENTSERVICES_ENDPOINT + "downloadFile/{taskId}.rdf?fileType=alignment",
+		restTemplate.execute(ALIGNMENTSERVICES_ENDPOINT + "downloadFile/{taskId}?fileType=alignment",
 				HttpMethod.GET, requestCallback, responseExtractor, ImmutableMap.of("taskId", taskId));
 
 		// creating model for loading alignment
@@ -236,11 +236,11 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
 			IRI leftDatasetIRI = vf.createIRI(Models
 					.object(QueryResults.asModel(conn.getStatements(alignmentResource,
-							it.uniroma2.art.semanticturkey.vocabulary.Alignment.ONTO1, (Resource) null)))
+							it.uniroma2.art.semanticturkey.vocabulary.Alignment.ONTO1, null)))
 					.orElseThrow(() -> new RuntimeException("Missing onto1 inside alignment")).stringValue());
 			IRI rightDatasetIRI = vf.createIRI(Models
 					.object(QueryResults.asModel(conn.getStatements(alignmentResource,
-							it.uniroma2.art.semanticturkey.vocabulary.Alignment.ONTO2, (Resource) null)))
+							it.uniroma2.art.semanticturkey.vocabulary.Alignment.ONTO2, null)))
 					.orElseThrow(() -> new RuntimeException("Missing onto2 inside alignment")).stringValue());
 
 			leftDatasetProject = metadataRegistryBackend.findProjectForDataset(leftDatasetIRI);
@@ -253,10 +253,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 				throw new RuntimeException("Unable to find the project associated with the right dataset");
 			}
 
-			conn.remove(alignmentResource, it.uniroma2.art.semanticturkey.vocabulary.Alignment.ONTO1,
-					(Resource) null);
-			conn.remove(alignmentResource, it.uniroma2.art.semanticturkey.vocabulary.Alignment.ONTO2,
-					(Resource) null);
+			conn.remove(alignmentResource, it.uniroma2.art.semanticturkey.vocabulary.Alignment.ONTO1, null);
+			conn.remove(alignmentResource, it.uniroma2.art.semanticturkey.vocabulary.Alignment.ONTO2, null);
 
 			conn.add(alignmentResource, it.uniroma2.art.semanticturkey.vocabulary.Alignment.ONTO1,
 					vf.createIRI(leftDatasetProject.getBaseURI()));
@@ -345,7 +343,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
 			HttpDelete request;
 			try {
-				request = new HttpDelete(new URIBuilder(ALIGNMENTSERVICES_ENDPOINT).setPath("delete")
+				request = new HttpDelete(new URIBuilder(ALIGNMENTSERVICES_ENDPOINT + "delete")
 						.addParameter("id", id).build());
 			} catch (URISyntaxException e) {
 				throw new RuntimeException(e); // should not happen

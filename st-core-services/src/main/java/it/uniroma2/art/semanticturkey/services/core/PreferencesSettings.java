@@ -10,6 +10,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -20,6 +21,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersGroup;
 import it.uniroma2.art.semanticturkey.user.UsersGroupsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -282,6 +284,49 @@ public class PreferencesSettings extends STServiceAdapter {
 		Project project = (projectName != null) ? ProjectManager.getProjectDescription(projectName) : getProject();
 		STPropertiesManager.setPUSettingProjectDefault(property, value, project, pluginID);
 	}
+
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'R') || @auth.isLoggedUser(#email)")
+	public JsonNode getPUSettingsUserDefault(List<String> properties, String email, @Optional String pluginID)
+			throws STPropertyAccessException {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode respNode = jsonFactory.objectNode();
+		STUser user = null;
+		if (email != null) {
+			user = UsersManager.getUserByEmail(email);
+			if (user == null) {
+				throw new IllegalArgumentException("User with email " + email + " doesn't exist");
+			}
+		}
+		for (String prop: properties) {
+			String value;
+			if (pluginID == null) {
+				value = STPropertiesManager.getPUSettingUserDefault(prop, user);
+			} else {
+				value = STPropertiesManager.getPUSettingUserDefault(prop, user, pluginID);
+			}
+			respNode.set(prop, jsonFactory.textNode(value));
+		}
+		return respNode;
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
+	public void setPUSettingUserDefault(String property, String email, @Optional String value, @Optional String pluginID)
+			throws STPropertyUpdateException {
+		STUser user = null;
+		if (email != null) {
+			user = UsersManager.getUserByEmail(email);
+			if (user == null) {
+				throw new IllegalArgumentException("User with email " + email + " doesn't exist");
+			}
+		}
+		if (pluginID == null) {
+			STPropertiesManager.setPUSettingUserDefault(property, value, user);
+		} else {
+			STPropertiesManager.setPUSettingUserDefault(property, value, user, pluginID);
+		}
+	}
 	
 	/**
 	 * Gets the default value of the given project settings
@@ -305,7 +350,7 @@ public class PreferencesSettings extends STServiceAdapter {
 		}
 		return respNode;
 	}
-	
+
 	/**
 	 * Returns some settings needed at the system startup (languages and experimental_features_enabled).
 	 * This information could be retrieved calling {@link #getDefaultProjectSettings(List, String)} 
