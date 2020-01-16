@@ -68,10 +68,6 @@ public class PredefinedRepositoryImplConfigurer implements RepositoryImplConfigu
 				throw new IllegalArgumentException("Unsupported config class: " + config.getClass());
 			}
 
-			if (backendDecorator != null) {
-				sailImplConfig = backendDecorator.apply(sailImplConfig);
-			}
-			
 			RDF4JSailConfigurerConfiguration rdf4jConfig = (RDF4JSailConfigurerConfiguration) config;
 
 			if (rdf4jConfig.rdfsInference) {
@@ -80,6 +76,10 @@ public class PredefinedRepositoryImplConfigurer implements RepositoryImplConfigu
 
 			if (rdf4jConfig.directTypeInference) {
 				sailImplConfig = new DirectTypeHierarchyInferencerConfig(sailImplConfig);
+			}
+
+			if (backendDecorator != null) {
+				sailImplConfig = backendDecorator.apply(sailImplConfig);
 			}
 
 			repositoryImplConfig = new SailRepositoryConfig(sailImplConfig);

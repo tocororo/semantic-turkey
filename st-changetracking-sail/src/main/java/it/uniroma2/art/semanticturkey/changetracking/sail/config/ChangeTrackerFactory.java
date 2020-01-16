@@ -58,8 +58,7 @@ public class ChangeTrackerFactory implements SailFactory {
 
 		if (!interactiveNotifications.isPresent()) {
 			while (config3 instanceof DelegatingSailImplConfig) {
-				config3 = ((DelegatingSailImplConfig) config).getDelegate();
-
+				config3 = ((DelegatingSailImplConfig) config3).getDelegate();
 				String type = config3.getType();
 				if (type.equals("graphdb:FreeSail") || type.equals("owlim:Sail")) {
 					interactiveNotifications = ChangeTracker.OPTIONAL_FALSE;

@@ -308,7 +308,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 
 		ObjectNode config = spec.getConfiguration();
 
-		if (spec.getConfigType() != null && !config.hasNonNull(STPropertiesManager.SETTINGS_TYPE_PROPERTY)) {
+		if (spec.getConfigType() != null && config!= null && !config.hasNonNull(STPropertiesManager.SETTINGS_TYPE_PROPERTY)) {
 			config = config.deepCopy();
 			config.put(STPropertiesManager.SETTINGS_TYPE_PROPERTY, spec.getConfigType());
 		}
