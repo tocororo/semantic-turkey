@@ -89,7 +89,7 @@ public class PreferencesSettings extends STServiceAdapter {
 		Collection<AnnotatedValue<IRI>> schemes = new ArrayList<>();
 		Project project = ProjectManager.getProject(projectName);
 		if (project == null) {
-			throw new ProjectAccessException("Cannot retrieve preferences of project " + projectName 
+			throw new ProjectAccessException("Cannot retrieve preferences of project " + projectName
 					+ ". It could be closed or not existing.");
 		}
 		String value = STPropertiesManager.getPUSetting(STPropertiesManager.PREF_ACTIVE_SCHEMES,
@@ -105,8 +105,10 @@ public class PreferencesSettings extends STServiceAdapter {
 	}
 	
 	/**
-	 * Returns the specified project preferences
+	 * Returns the specified PUSettings
 	 * @param properties
+	 * @param projectName if not provided, the project is retrieved from the context
+	 * @param email if not provided, it is taken the logged user
 	 * @param pluginID
 	 * @return
 	 * @throws STPropertyAccessException
@@ -115,18 +117,31 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation
-	public JsonNode getPUSettings(List<String> properties, @Optional String projectName, @Optional String pluginID)
+	@PreAuthorize("@auth.isAdmin() || @auth.isLoggedUser(#email)")
+	public JsonNode getPUSettings(List<String> properties, String projectName, String email, @Optional String pluginID)
 			throws STPropertyAccessException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode respNode = jsonFactory.objectNode();
 		Project project;
 		if (projectName != null) {
 			project = ProjectManager.getProjectDescription(projectName);
+			if (project == null) {
+				throw new IllegalArgumentException("Project with name '" + projectName + "' doesn't exist");
+			}
 		} else {
 			project = getProject();
 		}
+		STUser user;
+		if (email != null) {
+			user = UsersManager.getUserByEmail(email);
+			if (user == null) {
+				throw new IllegalArgumentException("User with email " + email + " doesn't exist");
+			}
+		} else {
+			user = UsersManager.getLoggedUser();
+		}
 		for (String prop: properties) {
-			String value = STPropertiesManager.getPUSetting(prop, project, UsersManager.getLoggedUser(), pluginID);
+			String value = STPropertiesManager.getPUSetting(prop, project, user, pluginID);
 			respNode.set(prop, jsonFactory.textNode(value));
 		}
 		return respNode;
@@ -144,9 +159,28 @@ public class PreferencesSettings extends STServiceAdapter {
 	 * @throws JSONException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void setPUSetting(String property, @Optional String value, @Optional String pluginID)
-			throws STPropertyUpdateException {
-		STPropertiesManager.setPUSetting(property, value, getProject(), UsersManager.getLoggedUser(), pluginID);
+	@PreAuthorize("@auth.isAdmin() || @auth.isLoggedUser(#email)")
+	public void setPUSetting(String property, @Optional String value, String projectName, String email, @Optional String pluginID)
+			throws STPropertyUpdateException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+		Project project;
+		if (projectName != null) {
+			project = ProjectManager.getProjectDescription(projectName);
+			if (project == null) {
+				throw new IllegalArgumentException("Project with name '" + projectName + "' doesn't exist");
+			}
+		} else {
+			project = getProject();
+		}
+		STUser user = null;
+		if (email != null) {
+			user = UsersManager.getUserByEmail(email);
+			if (user == null) {
+				throw new IllegalArgumentException("User with email " + email + " doesn't exist");
+			}
+		} else {
+			user = UsersManager.getLoggedUser();
+		}
+		STPropertiesManager.setPUSetting(property, value, project, user, pluginID);
 	}
 	
 	/**

@@ -112,7 +112,7 @@ public class SHACL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'D')")
-	public void deleteShapes() throws IOException {
+	public void clearShapes() throws IOException {
 		getManagedConnection().clear(RDF4J.SHACL_SHAPE_GRAPH);
 	}
 

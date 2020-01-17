@@ -386,9 +386,9 @@ public class STAuthorizationEvaluator {
 	
 	/**
 	 * Check if the user that is performing the request has the given email.
-	 * Useful to the Preauthorize annotation in the service to edit user that are
-	 * permitted to those user who have the required capability or to the same user that is
-	 * the subject of the changes.
+	 * Useful to the Preauthorize annotation in those services that allow to edit user related staff.
+	 * This check so is exploited in order to check that the user provided as parameter
+	 * (which is the subject of the changes), is the logged one
 	 * @param email
 	 * @return
 	 */
