@@ -5,9 +5,12 @@ import static java.util.stream.Collectors.joining;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
+import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
@@ -16,6 +19,7 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
+import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
@@ -338,4 +342,25 @@ public class Resources extends STServiceAdapter {
 	public String getResourcePosition(IRI resource) throws ProjectAccessException {
 		return resourceLocator.locateResource(getProject(), getRepository(), resource).toString();
 	}
+
+	/**
+	 * Returns a mapping between the provided resources and their position
+	 * @param resources
+	 * @return
+	 * @throws ProjectAccessException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
+	public Map<String, ResourcePosition> getResourcesPosition(@JsonSerialized IRI[] resources) throws ProjectAccessException {
+		Map<String, ResourcePosition> positionMap = new HashMap<>();
+		Repository repo = getRepository();
+		Project project = getProject();
+		for (IRI resource: resources) {
+			ResourcePosition position = resourceLocator.locateResource(project, repo, resource);
+			positionMap.put(resource.stringValue(), position);
+		}
+		return positionMap;
+	}
+
 }
