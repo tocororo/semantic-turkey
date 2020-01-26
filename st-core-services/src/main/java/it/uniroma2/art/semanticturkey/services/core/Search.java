@@ -413,8 +413,7 @@ public class Search extends STServiceAdapter {
 			@Optional @LocallyDefinedResources List<IRI> narrowerProps,
 			@Optional(defaultValue = "true") boolean includeSubProperties) throws InvalidParameterException {
 
-		
-		
+
 		//if at least one scheme is passed, then get all top concept of such scheme(s) and then later uses 
 		// this information to remove path not going to a topConcept+
 		List<String> topConceptList = new ArrayList<>();
@@ -474,7 +473,7 @@ public class Search extends STServiceAdapter {
 		if (role.equals(RDFResourceRole.concept)) {
 			superResourceVar = "broader";
 			superSuperResourceVar = "broaderOfBroader";
-			String inSchemeOrTopConcept = "<" + SKOS.IN_SCHEME.stringValue() + ">|<" + SKOS.TOP_CONCEPT_OF
+			String inSchemeOrTopConcept = "<" + SKOS.IN_SCHEME + ">|<" + SKOS.TOP_CONCEPT_OF
 					+ "> | ^<"+SKOS.HAS_TOP_CONCEPT+">";
 			
 			//@formatter:off
@@ -482,7 +481,7 @@ public class Search extends STServiceAdapter {
 					"\nWHERE{" +
 					
 					"\nBIND("+NTriplesUtil.toNTriplesString(resourceURI)+" AS ?resource )" +
-					"\n?subConceptClass <"+RDFS.SUBCLASSOF.stringValue()+">* <"+SKOS.CONCEPT.stringValue()+">.";
+					"\n?subConceptClass <"+RDFS.SUBCLASSOF+">* <"+SKOS.CONCEPT+">.";
 					
 					
 			//if a scheme is passed, check that the ?resource belong to such scheme(s)
@@ -502,14 +501,14 @@ public class Search extends STServiceAdapter {
 				query += "\n?broader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> ."+
 						"\nOPTIONAL{" +
 						"\nBIND (\"true\" AS ?isTopConcept)" +
-						"\n?broader (<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) <"+schemesIRI.get(0).stringValue()+"> ." +
+						"\n?broader (<"+SKOS.TOP_CONCEPT_OF+"> | ^<"+SKOS.HAS_TOP_CONCEPT+">) <"+schemesIRI.get(0)+"> ." +
 						"\n}";
 			} else if(schemesIRI != null && schemesIRI.size()>1){
 				query += "\n?broader " + inSchemeOrTopConcept + " ?scheme1 ."+
 						ServiceForSearches.filterWithOrValues(schemesIRI, "?scheme1") +
 						"\nOPTIONAL{" +
 						"\nBIND (\"true\" AS ?isTopConcept)" +
-						"\n?broader (<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) ?scheme2 ." +
+						"\n?broader (<"+SKOS.TOP_CONCEPT_OF+"> | ^<"+SKOS.HAS_TOP_CONCEPT+">) ?scheme2 ." +
 						ServiceForSearches.filterWithOrValues(schemesIRI, "?scheme2") +
 						"\n}";
 			} else if(schemesIRI==null || schemesIRI.size()==0) { //the schemes is either null or an empty list
@@ -539,38 +538,34 @@ public class Search extends STServiceAdapter {
 			//this union is used when the first part does not return anything, so when the desired concept
 			// does not have any broader, but it is defined as topConcept (to either a specified scheme or
 			// to at least one)
-			query+= "\n<" + resourceURI.stringValue() + "> a ?subConceptClass .";
+			query+= "\n<" + resourceURI + "> a ?subConceptClass .";
 			if(schemesIRI != null && schemesIRI.size()==1){
-					query+="\n<"+resourceURI.stringValue()+"> " +
-							"(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) <"+schemesIRI.get(0).stringValue()+"> .";
+					query+="\n<"+resourceURI+"> " +
+							"(<"+SKOS.TOP_CONCEPT_OF+"> | ^<"+SKOS.HAS_TOP_CONCEPT+">) <"+schemesIRI.get(0)+"> .";
 			} else if(schemesIRI != null && schemesIRI.size()>1){
-				query+="\n<"+resourceURI.stringValue()+"> " +
-						"(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) ?scheme4 ."+
+				query+="\n<"+resourceURI+"> " +
+						"(<"+SKOS.TOP_CONCEPT_OF+"> | ^<"+SKOS.HAS_TOP_CONCEPT+">) ?scheme4 ."+
 						ServiceForSearches.filterWithOrValues(schemesIRI, "?scheme4");
 			} else{
-				query+="\n<"+resourceURI.stringValue()+"> " +
-						"(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+">) _:b1";
+				query+="\n<"+resourceURI+"> " +
+						"(<"+SKOS.TOP_CONCEPT_OF+"> | ^<"+SKOS.HAS_TOP_CONCEPT+">) _:b1";
 			}
 			query+="\nBIND(\"true\" AS ?isTop )" +
 					"\n}";
 					
 			// this part, used only when no scheme is selected, is used when the concept does not have any
 			// broader and it is not topConcept of any scheme
-			if(schemesIRI == null){
+			if(schemesIRI == null || schemesIRI.size()==0){
 				query+="\nUNION" +
 						"\n{" +
-						"\n<" + resourceURI.stringValue() + "> a ?subConceptClass ." +
-						//OLD
-						/*"\nFILTER(NOT EXISTS{<"+resourceURI.stringValue()+"> "
-								+ "(<"+SKOS.BROADER+"> | ^<"+SKOS.NARROWER+">) ?genericConcept })" +*/
+						"\n<" + resourceURI + "> a ?subConceptClass ." +
 						"\nMINUS{" +
 						it.uniroma2.art.semanticturkey.services.core.SKOS
 						.combinePathWithVarOrIri(resourceURI, "?genericConcept", broaderNarrowerPath, false)+"\n" +
-						//	.prepareHierarchicalPartForQuery(broaderProp, narrowerProp, resourceURI, 
-						//		"?genericConcept", false, includeSubProperties) +
+						"\n ?genericConcept a/<"+RDFS.SUBCLASSOF+">* <"+SKOS.CONCEPT+"> ." +
 						"\n}" +
-						"\nFILTER (NOT EXISTS{ <"+resourceURI.stringValue()+"> "
-								+ "(<"+SKOS.TOP_CONCEPT_OF.stringValue()+"> | ^<"+SKOS.HAS_TOP_CONCEPT.stringValue()+"> ) ?genericScheme})" +
+						"\nFILTER (NOT EXISTS{ <"+resourceURI+"> "
+								+ "(<"+SKOS.TOP_CONCEPT_OF+"> | ^<"+SKOS.HAS_TOP_CONCEPT+"> ) ?genericScheme})" +
 						"\nBIND(\"true\" AS ?isTop )" +
 						"\n}";
 			}
@@ -584,23 +579,23 @@ public class Search extends STServiceAdapter {
 			query = "SELECT DISTINCT ?superProperty ?superSuperProperty ?isTop" + 
 					"\nWHERE{" + 
 					"\n{" + 
-					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBPROPERTYOF.stringValue() + ">* ?superProperty ." +
+					"\n<" + resourceURI + "> <" + RDFS.SUBPROPERTYOF + ">* ?superProperty ." +
 					"\n?superProperty a ?type ."+ //to get only those properties defined in this project
 					"\nOPTIONAL{" +
-					"\n?superProperty <" + RDFS.SUBPROPERTYOF.stringValue() + "> ?superSuperProperty ." +
+					"\n?superProperty <" + RDFS.SUBPROPERTYOF + "> ?superSuperProperty ." +
 					"\n?superSuperProperty a ?type2 ."+ //to get only those properties defined in this project
 					"\n}" + 
 					"\n}" +
 					"\nUNION" +
 					"\n{" +
-					"\n<"+resourceURI.stringValue()+"> a ?type ." +
+					"\n<"+resourceURI+"> a ?type ." +
 					"\nFILTER( " +
-					"?type = <"+RDF.PROPERTY.stringValue()+"> || " +
-					"?type = <"+OWL.OBJECTPROPERTY.stringValue()+"> || " +
-					"?type = <"+OWL.DATATYPEPROPERTY.stringValue()+"> || " +
-					"?type = <"+OWL.ANNOTATIONPROPERTY.stringValue()+"> || " +
-					"?type = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )" +
-					"\nFILTER NOT EXISTS{<"+resourceURI.stringValue()+"> <"+RDFS.SUBPROPERTYOF.stringValue()+"> ?tempProp ."+
+					"?type = <"+RDF.PROPERTY+"> || " +
+					"?type = <"+OWL.OBJECTPROPERTY+"> || " +
+					"?type = <"+OWL.DATATYPEPROPERTY+"> || " +
+					"?type = <"+OWL.ANNOTATIONPROPERTY+"> || " +
+					"?type = <"+OWL.ONTOLOGYPROPERTY+"> )" +
+					"\nFILTER NOT EXISTS{<"+resourceURI+"> <"+RDFS.SUBPROPERTYOF+"> ?tempProp ."+
 					"\n?tempProp a ?type2 .}" +
 					"\nBIND(\"true\" AS ?isTop )" +
 					"\n}" +
@@ -613,30 +608,30 @@ public class Search extends STServiceAdapter {
 			query = "SELECT DISTINCT ?superClass ?superSuperClass ?isTop" + 
 					"\nWHERE{" + 
 					"\n{" + 
-					"\n<" + resourceURI.stringValue() + "> <" + RDFS.SUBCLASSOF.stringValue() + ">* ?superClass ." +
+					"\n<" + resourceURI + "> <" + RDFS.SUBCLASSOF + ">* ?superClass ." +
 					"\nFILTER(isIRI(?superClass))"; 
 			
 			//if the input root is different from owl:Thing e rdfs:Resource the ?superClass should be 
 			// rdfs:subClass* of such root
 			if(!root.equals(OWL.THING) && !root.equals(RDFS.RESOURCE)) {
-				query += "\n?superClass <" + RDFS.SUBCLASSOF.stringValue() + ">* <"+root.stringValue()+"> ."; 	
+				query += "\n?superClass <" + RDFS.SUBCLASSOF + ">* <"+root+"> .";
 			}
 			
 					//check that the superClass belong to the default graph
-			query +="\n?metaClass1 <" + RDFS.SUBCLASSOF.stringValue() + ">* <"+RDFS.CLASS.stringValue()+"> ." +
+			query +="\n?metaClass1 <" + RDFS.SUBCLASSOF + ">* <"+RDFS.CLASS+"> ." +
 					"\n?superClass a ?metaClass1 ."+
 					
 					"\nOPTIONAL{" +
-					"\n?superClass <" + RDFS.SUBCLASSOF.stringValue() + "> ?superSuperClass ." +
+					"\n?superClass <" + RDFS.SUBCLASSOF + "> ?superSuperClass ." +
 					"\nFILTER(isIRI(?superSuperClass))";
 			//if the input root is different from owl:Thing and rdfs:Resource the ?superClass, in this OPTIONAL,
 			// should be different from the input root
 			if(!root.equals(OWL.THING) && !root.equals(RDFS.RESOURCE)) {
-				query += "\n FILTER(?superClass != <"+root.stringValue()+"> )"; 	
+				query += "\n FILTER(?superClass != <"+root+"> )";
 			}
 			
 					//check that the superSuperClass belong to the default graph
-			query +="\n?metaClass2 <" + RDFS.SUBCLASSOF.stringValue() + ">* <"+RDFS.CLASS.stringValue()+"> ." +
+			query +="\n?metaClass2 <" + RDFS.SUBCLASSOF + ">* <"+RDFS.CLASS+"> ." +
 					"\n?superSuperClass a ?metaClass2 ."+
 					
 					"\n}" + 
@@ -645,13 +640,13 @@ public class Search extends STServiceAdapter {
 					"\n{";
 			if(!root.equals(OWL.THING) && !root.equals(RDFS.RESOURCE)) {
 				query+=
-						"\n<"+resourceURI.stringValue()+"> a <"+OWL.CLASS.stringValue()+">." +
-						"\nFILTER (<"+resourceURI.stringValue()+"> = <"+root.stringValue()+">) " +
+						"\n<"+resourceURI+"> a <"+OWL.CLASS+">." +
+						"\nFILTER (<"+resourceURI+"> = <"+root+">) " +
 						"\nBIND(\"true\" AS ?isTop )";
 			} else {
 				query+=
-						"\n<"+resourceURI.stringValue()+"> a <"+OWL.CLASS.stringValue()+">." +
-						"\nFILTER NOT EXISTS{<"+resourceURI.stringValue()+"> <"+RDFS.SUBCLASSOF.stringValue()+"> _:b1}" +
+						"\n<"+resourceURI+"> a <"+OWL.CLASS+">." +
+						"\nFILTER NOT EXISTS{<"+resourceURI+"> <"+RDFS.SUBCLASSOF+"> _:b1}" +
 						"\nBIND(\"true\" AS ?isTop )";
 			}
 			query+="\n}" +
@@ -660,23 +655,23 @@ public class Search extends STServiceAdapter {
 		} else if (role.equals(RDFResourceRole.skosCollection)) {
 			superResourceVar = "superCollection";
 			superSuperResourceVar = "superSuperCollection";
-			String complexPropPath = "(<" + SKOS.MEMBER.stringValue() + "> | (<"
-					+ SKOS.MEMBER_LIST.stringValue() + ">/<" + RDF.REST.stringValue() + ">*/<"
-					+ RDF.FIRST.stringValue() + ">))";
+			String complexPropPath = "(<" + SKOS.MEMBER + "> | (<"
+					+ SKOS.MEMBER_LIST + ">/<" + RDF.REST + ">*/<"
+					+ RDF.FIRST + ">))";
 			//@formatter:off
 			query = "SELECT DISTINCT ?superCollection ?superSuperCollection ?isTop" +
 					"\nWHERE {"+
 					"\n{"+
-					"\n?superCollection "+complexPropPath+"* <"+resourceURI.stringValue()+"> ." +
+					"\n?superCollection "+complexPropPath+"* <"+resourceURI+"> ." +
 					"\nOPTIONAL {"+
 					"?superSuperCollection "+complexPropPath+" ?superCollection ." +
 					"\n}" +
 					"\n}" +
 					"\nUNION" +
 					"\n{" +
-					"\n<"+resourceURI.stringValue()+"> a ?type ." +
-					"\nFILTER(?type = <"+SKOS.COLLECTION.stringValue()+"> ||  ?type = <"+SKOS.ORDERED_COLLECTION.stringValue()+"> )"+
-					"\nFILTER NOT EXISTS{ _:b1 "+complexPropPath+" <"+resourceURI.stringValue()+"> }" +
+					"\n<"+resourceURI+"> a ?type ." +
+					"\nFILTER(?type = <"+SKOS.COLLECTION+"> ||  ?type = <"+SKOS.ORDERED_COLLECTION+"> )"+
+					"\nFILTER NOT EXISTS{ _:b1 "+complexPropPath+" <"+resourceURI+"> }" +
 					"\nBIND(\"true\" AS ?isTop )" +
 					"\n}" +
 					"\n}";
@@ -781,7 +776,7 @@ public class Search extends STServiceAdapter {
 			if (role.equals(RDFResourceRole.concept)) {
 				// the role is a concept, so check if an input scheme was passed, if so, if it is not a
 				// top concept (for that particular scheme) then pass to the next concept
-				if (schemesIRI != null && !resourceForHierarchy.isTopConcept) {
+				if (schemesIRI != null && schemesIRI.size()>0 && !resourceForHierarchy.isTopConcept) {
 					continue;
 				}
 			}
