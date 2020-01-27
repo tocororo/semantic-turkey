@@ -109,6 +109,21 @@
 				<version>2.3.1</version>
 				<executions>
 					<execution>
+						<id>install-pax-mvn-file</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>install-file</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/src/main/distribution/etc/org.ops4j.pax.url.mvn.cfg</file>
+							<groupId>it.uniroma2.art.semanticturkey</groupId>
+							<artifactId>${project.artifactId}</artifactId>
+							<version>${project.version}</version>
+							<packaging>cfg</packaging>
+							<classifier>pax</classifier>
+						</configuration>
+					</execution>
+					<execution>
 						<id>install-pax-file</id>
 						<phase>compile</phase>
 						<goals>
