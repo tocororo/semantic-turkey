@@ -206,6 +206,7 @@ public class SKOS extends STServiceAdapter {
 					//preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp, "?resource", 
 					//		"?aNarrowerConcept", getManagedConnection(), false, includeSubProperties) +		 "\n" +	
 					combinePathWithVarOrIri("?resource", "?aNarrowerConcept", broaderNarrowerPath, false)+"\n" +
+					"\n?aNarrowerConcept a/rdfs:subClassOf* skos:Concept ." +
 					"}																					  \n" +
 					//prepareHierarchicalPartForQueryPart1(broaderProp , narrowerProp, "?resource", 
 					//		"?aNarrowerConcept", false, includeSubProperties) +
