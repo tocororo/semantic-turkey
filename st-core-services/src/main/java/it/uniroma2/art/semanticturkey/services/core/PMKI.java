@@ -31,7 +31,7 @@ import it.uniroma2.art.semanticturkey.pmki.PendingContributionStore;
 import it.uniroma2.art.semanticturkey.pmki.PmkiConstants;
 import it.uniroma2.art.semanticturkey.pmki.PmkiConstants.PmkiRole;
 import it.uniroma2.art.semanticturkey.pmki.PmkiConversionFormat;
-import it.uniroma2.art.semanticturkey.pmki.PmkiEmailSender;
+import it.uniroma2.art.semanticturkey.email.PmkiEmailService;
 import it.uniroma2.art.semanticturkey.pmki.RemoteVBConnector;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -82,7 +82,6 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.mail.MessagingException;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
 import java.security.SecureRandom;
@@ -163,18 +162,6 @@ public class PMKI extends STServiceAdapter {
 		}
 	}
 
-	/**
-	 * @param mailTo
-	 * @throws UnsupportedEncodingException
-	 * @throws MessagingException
-	 * @throws STPropertyAccessException
-	 */
-	@STServiceOperation
-	@PreAuthorize("@auth.isAdmin()")
-	public void testEmailConfig(String mailTo) throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
-		PmkiEmailSender.sendTestMailConfiguration(mailTo);
-	}
-
 	/* CONTRIBUTION MANAGEMENT */
 
 	/**
@@ -203,7 +190,7 @@ public class PMKI extends STServiceAdapter {
 		exptManager.storeConfiguration(ContributionStore.class.getName(), contribRef, configuration);
 		StoredContributionConfiguration contribution = (StoredContributionConfiguration)
 				exptManager.getConfiguration(ContributionStore.class.getName(), contribRef);
-		PmkiEmailSender.sendContributionSubmittedMail(contribution);
+		new PmkiEmailService().sendContributionSubmittedMail(contribution);
 	}
 
 	/**
@@ -219,7 +206,7 @@ public class PMKI extends STServiceAdapter {
 		StoredContributionConfiguration config = (StoredContributionConfiguration) exptManager.getConfiguration(
 				ContributionStore.class.getName(), reference);
 		exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
-		PmkiEmailSender.sendRejectedContributionMail(reference, config);
+		new PmkiEmailService().sendRejectedContributionMail(reference, config);
 	}
 
 	/**
@@ -335,7 +322,7 @@ public class PMKI extends STServiceAdapter {
 			new PendingContributionStore().addPendingContribution(token, projectName, contribution.contributorEmail,
 					contribution.contributorName, contribution.contributorLastName);
 
-			PmkiEmailSender.sendAcceptedStableResourceContributionMail(reference, contribution, projectName, pmkiHostAddress, token);
+			new PmkiEmailService().sendAcceptedStableResourceContributionMail(reference, contribution, projectName, pmkiHostAddress, token);
 
 			//contribution approved => delete it from the store
 			exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
@@ -396,6 +383,7 @@ public class PMKI extends STServiceAdapter {
 		vbConnector.loginAdmin();
 		vbConnector.createProject(projectName, baseURI, model, lexicalizationModel, coreRepoSailConfigurerSpecification);
 
+		PmkiEmailService pmkiEmailService = new PmkiEmailService();
 		if (contribution.format == PmkiConversionFormat.EXCEL) {
 			/*
 			 * The load data of a contribution that requires the conversion from an excel file is performed
@@ -405,7 +393,7 @@ public class PMKI extends STServiceAdapter {
 					contribution.contributorName, contribution.contributorLastName, contribution.contributorOrganization);
 			vbConnector.enableUser(contribution.contributorEmail);
 			vbConnector.addRolesToUser(projectName, contribution.contributorEmail, Collections.singletonList(DefaultRole.RDF_GEEK)); //rdf geek required for sheet2rdf
-			PmkiEmailSender.sendAcceptedDevExcelResourceContributionMail(reference, contribution, projectName,
+			pmkiEmailService.sendAcceptedDevExcelResourceContributionMail(reference, contribution, projectName,
 					vbConnector.getVocbenchUrl(), userPassword);
 		} else {
 			/*
@@ -414,7 +402,7 @@ public class PMKI extends STServiceAdapter {
 			 */
 			//generate a random token
 			String token = new BigInteger(130, new SecureRandom()).toString(32);
-			PmkiEmailSender.sendAcceptedDevGenericResourceContributionMail(reference, contribution, projectName,
+			pmkiEmailService.sendAcceptedDevGenericResourceContributionMail(reference, contribution, projectName,
 					pmkiHostAddress, token);
 			//add the pair token-project to the pending contribution
 			new PendingContributionStore().addPendingContribution(token, projectName, contribution.contributorEmail,
@@ -449,7 +437,7 @@ public class PMKI extends STServiceAdapter {
 
 		writeMetadataInRegistry(config);
 
-		PmkiEmailSender.sendAcceptedMetadataContributionMail(reference, config);
+		new PmkiEmailService().sendAcceptedMetadataContributionMail(reference, config);
 		//contribution approved => delete it from the store
 		exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
 	}
@@ -502,7 +490,7 @@ public class PMKI extends STServiceAdapter {
 			//remove the stored pending contribution
 			pendingContributionStore.removePendingContribution(token);
 
-			PmkiEmailSender.sendLoadedStableResourceContributionMail(projectName, pendingContrib.getContributorName(),
+			new PmkiEmailService().sendLoadedStableResourceContributionMail(projectName, pendingContrib.getContributorName(),
 					pendingContrib.getContributorLastName(), pendingContrib.getContributorEmail());
 		}
 	}
@@ -543,7 +531,7 @@ public class PMKI extends STServiceAdapter {
 					pendingContrib.getContributorName(), pendingContrib.getContributorLastName(), null);
 			vbConnector.enableUser(contributorEmail);
 			vbConnector.addRolesToUser(projectName, contributorEmail, Collections.singletonList(DefaultRole.RDF_GEEK));
-			PmkiEmailSender.sendLoadedDevGenericResourceContributionMail(projectName, vbConnector.getVocbenchUrl(), contributorEmail, userPassword);
+			new PmkiEmailService().sendLoadedDevGenericResourceContributionMail(projectName, vbConnector.getVocbenchUrl(), contributorEmail, userPassword);
 
 			//remove the stored pending contribution
 			pendingContributionStore.removePendingContribution(token);

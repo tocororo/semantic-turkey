@@ -12,6 +12,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.Files;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
+import it.uniroma2.art.semanticturkey.email.EmailApplicationContext;
+import it.uniroma2.art.semanticturkey.email.EmailService;
+import it.uniroma2.art.semanticturkey.email.PmkiEmailService;
+import it.uniroma2.art.semanticturkey.email.VbEmailService;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
@@ -41,7 +45,6 @@ import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.user.RoleCreationException;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
-import it.uniroma2.art.semanticturkey.utilities.EmailSender;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONException;
@@ -183,8 +186,9 @@ public class Administration extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAdmin()")
-	public void testEmailConfig(String mailTo) throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
-		EmailSender.sendTestMailConfig(mailTo);
+	public void testEmailConfig(String mailTo, @Optional EmailApplicationContext appCtx) throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
+		EmailService emailService = (appCtx == EmailApplicationContext.PMKI) ?  new PmkiEmailService() : new VbEmailService();
+		emailService.sendMailConfigurationTest(mailTo);
 	}
 	
 	
@@ -355,7 +359,7 @@ public class Administration extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('rbac(role)', 'R')")
-	public JsonNode listRoles(@Optional String projectName) throws RBACException, InvalidProjectNameException,
+	public JsonNode listRoles(@Optional String projectName) throws InvalidProjectNameException,
 		ProjectInexistentException, ProjectAccessException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode rolesArrayNode = jsonFactory.arrayNode();

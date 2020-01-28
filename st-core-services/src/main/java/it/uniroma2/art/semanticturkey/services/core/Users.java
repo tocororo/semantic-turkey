@@ -16,6 +16,10 @@ import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import it.uniroma2.art.semanticturkey.email.EmailApplicationContext;
+import it.uniroma2.art.semanticturkey.email.EmailService;
+import it.uniroma2.art.semanticturkey.email.PmkiEmailService;
+import it.uniroma2.art.semanticturkey.email.VbEmailService;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +65,6 @@ import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UserFormCustomField;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
-import it.uniroma2.art.semanticturkey.utilities.EmailSender;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
 @STService
@@ -203,7 +206,7 @@ public class Users extends STServiceAdapter {
 			@Optional String address, @Optional String affiliation, @Optional String url, @Optional String avatarUrl,
 			@Optional String phone, @Optional Collection<String> languageProficiencies, @Optional Map<IRI, String> customProperties,
 			@Optional (defaultValue = "true") boolean sendNotification)
-			throws ProjectAccessException, UserException, ProjectBindingException, STPropertyUpdateException, JsonProcessingException {
+			throws ProjectAccessException, UserException, STPropertyUpdateException, JsonProcessingException {
 		STUser user;
 		if (iri != null) {
 			user = new STUser(iri, email, password, givenName, familyName);
@@ -244,8 +247,9 @@ public class Users extends STServiceAdapter {
 			UsersManager.registerUser(user);
 			if (sendNotification) {
 				try {
-					EmailSender.sendRegistrationMailToUser(user);
-					EmailSender.sendRegistrationMailToAdmin(user);
+					VbEmailService vbEmailService = new VbEmailService();
+					vbEmailService.sendRegistrationMailToUser(user);
+					vbEmailService.sendRegistrationMailToAdmin(user);
 				} catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {
 					logger.error(Utilities.printFullStackTrace(e));
 				}
@@ -429,7 +433,7 @@ public class Users extends STServiceAdapter {
 			user = UsersManager.updateUserStatus(user, UserStatus.ACTIVE);
 			if (sendNotification) {
 				try {
-					EmailSender.sendEnabledMailToUser(user);
+					new VbEmailService().sendEnabledMailToUser(user);
 				} catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {
 					logger.error(Utilities.printFullStackTrace(e));
 				}
@@ -490,7 +494,7 @@ public class Users extends STServiceAdapter {
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
-	public void forgotPassword(HttpServletRequest request, String email, String vbHostAddress) throws Exception {
+	public void forgotPassword(HttpServletRequest request, String email, String vbHostAddress, @Optional EmailApplicationContext appCtx) throws Exception {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
 			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
@@ -503,7 +507,8 @@ public class Users extends STServiceAdapter {
 		//try to send the e-mail containing the link. If it fails, throw an exception
 		try {
 			request.getSession().setAttribute("reset_password_token", email+token);
-			EmailSender.sendForgotPasswordMail(user, resetLink);
+			EmailService emailService = (appCtx == EmailApplicationContext.PMKI) ?  new PmkiEmailService() : new VbEmailService();
+			emailService.sendForgotPasswordMail(user, resetLink);
 		} catch (UnsupportedEncodingException | MessagingException e) {
 			logger.error(Utilities.printFullStackTrace(e));
 			Collection<String> adminEmails = UsersManager.getAdminEmailList();
@@ -515,7 +520,7 @@ public class Users extends STServiceAdapter {
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
-	public void resetPassword(HttpServletRequest request, String email, String token) throws Exception {
+	public void resetPassword(HttpServletRequest request, String email, String token, @Optional EmailApplicationContext appCtx) throws Exception {
 		STUser user = UsersManager.getUserByEmail(email);
 		if (user == null) {
 			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
@@ -533,7 +538,8 @@ public class Users extends STServiceAdapter {
 		
 		try {
 			UsersManager.updateUserPassword(user, tempPwd);
-			EmailSender.sendResetPasswordMail(user, tempPwd);
+			EmailService emailService = (appCtx == EmailApplicationContext.PMKI) ?  new PmkiEmailService() : new VbEmailService();
+			emailService.sendResetPasswordMail(user, tempPwd);
 		} catch (IOException e) {
 			throw new Exception(e);
 		}
