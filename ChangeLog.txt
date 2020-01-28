@@ -28,6 +28,7 @@ date: dd/mm/yyy
     ForwardChainingRDFSInferencer (previously, it was the opposite), implementing inference for the memory and
     native stores. This change fixes a ClassCastException, when activating both validatio/history and RDFS
     reasoning.
+  * add support for SchemaCachingRDFSInferencer
   
 version 6.0
 date: 27/06/2019
