@@ -13,8 +13,10 @@ import org.eclipse.rdf4j.repository.sail.config.SailRepositoryConfig;
 import org.eclipse.rdf4j.repository.sail.config.SailRepositoryFactory;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.config.SailImplConfig;
+import org.eclipse.rdf4j.sail.inferencer.fc.SchemaCachingRDFSInferencer;
 import org.eclipse.rdf4j.sail.inferencer.fc.config.DirectTypeHierarchyInferencerConfig;
 import org.eclipse.rdf4j.sail.inferencer.fc.config.ForwardChainingRDFSInferencerConfig;
+import org.eclipse.rdf4j.sail.inferencer.fc.config.SchemaCachingRDFSInferencerConfig;
 import org.eclipse.rdf4j.sail.memory.config.MemoryStoreConfig;
 import org.eclipse.rdf4j.sail.nativerdf.config.NativeStoreConfig;
 
@@ -35,7 +37,8 @@ public class PredefinedRepositoryImplConfigurer implements RepositoryImplConfigu
 	}
 
 	@Override
-	public RepositoryImplConfig buildRepositoryImplConfig(@Nullable Function<SailImplConfig, SailImplConfig> backendDecorator) {
+	public RepositoryImplConfig buildRepositoryImplConfig(
+			@Nullable Function<SailImplConfig, SailImplConfig> backendDecorator) {
 		RepositoryImplConfig repositoryImplConfig;
 
 		if (config instanceof RDF4JSailConfigurerConfiguration) {
@@ -70,8 +73,17 @@ public class PredefinedRepositoryImplConfigurer implements RepositoryImplConfigu
 
 			RDF4JSailConfigurerConfiguration rdf4jConfig = (RDF4JSailConfigurerConfiguration) config;
 
-			if (rdf4jConfig.rdfsInference) {
+			switch (rdf4jConfig.inferencer) {
+			case RDF4JSailConfigurerConfiguration.NONE_INFERENCER:
+				break; // do nothing
+			case RDF4JSailConfigurerConfiguration.FORWARD_CHAINING_RDFS_INFERENCER:
 				sailImplConfig = new ForwardChainingRDFSInferencerConfig(sailImplConfig);
+				break;
+			case RDF4JSailConfigurerConfiguration.SCHEMA_CACHING_RDFS_INFERENCER:
+				sailImplConfig = new SchemaCachingRDFSInferencerConfig(sailImplConfig);
+				break;
+			default:
+				throw new IllegalArgumentException("Unsupported inferencer: " + rdf4jConfig.inferencer);
 			}
 
 			if (rdf4jConfig.directTypeInference) {
@@ -113,15 +125,15 @@ public class PredefinedRepositoryImplConfigurer implements RepositoryImplConfigu
 			graphdbConfig.parse(model, implNode);
 
 			SailImplConfig sailImplConfig = graphdbConfig;
-			
+
 			boolean decorationApplied = false;
 			if (backendDecorator != null) {
 				SailImplConfig sailImplConfig2 = backendDecorator.apply(sailImplConfig);
-				
+
 				if (sailImplConfig2 != null && sailImplConfig2 != sailImplConfig) {
 					decorationApplied = true;
 				}
-				
+
 				sailImplConfig = sailImplConfig2;
 			}
 
@@ -129,7 +141,7 @@ public class PredefinedRepositoryImplConfigurer implements RepositoryImplConfigu
 			if (config instanceof GraphDBFreeConfigurerConfiguration) {
 				graphdbConfig.setType("graphdb:FreeSail");
 				gdbRepoType = "graphdb:FreeSailRepository";
-			} else if(config instanceof GraphDBSEConfigurerConfiguration) {
+			} else if (config instanceof GraphDBSEConfigurerConfiguration) {
 				graphdbConfig.setType("owlim:Sail");
 				gdbRepoType = "owlim:MonitorRepository";
 			} else {
@@ -138,9 +150,9 @@ public class PredefinedRepositoryImplConfigurer implements RepositoryImplConfigu
 			}
 
 			if (decorationApplied) {
-				gdbRepoType = SailRepositoryFactory.REPOSITORY_TYPE;	
+				gdbRepoType = SailRepositoryFactory.REPOSITORY_TYPE;
 			}
-			
+
 			SailRepositoryConfig repositoryImplConfigTemp = new SailRepositoryConfig(sailImplConfig);
 			repositoryImplConfigTemp.setType(gdbRepoType);
 			repositoryImplConfig = repositoryImplConfigTemp;
