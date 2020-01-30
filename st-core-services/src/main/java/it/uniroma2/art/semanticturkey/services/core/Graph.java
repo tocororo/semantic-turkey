@@ -351,6 +351,7 @@ public class Graph extends STServiceAdapter {
 
 			ObjectNode graphModelNode = jsonFactory.objectNode();
 			graphModelNode.set("classAxiom", jsonFactory.booleanNode(false));
+			graphModelNode.set("rangeDatatype", jsonFactory.booleanNode(isDatatype));
 			graphModelNode.set("link", jsonFactory.textNode(prop));
 			graphModelNode.set("source", jsonFactory.textNode(domain));
 			graphModelNode.set("target", jsonFactory.textNode(range));
@@ -369,6 +370,7 @@ public class Graph extends STServiceAdapter {
 			
 			ObjectNode graphModelNode = jsonFactory.objectNode();
 			graphModelNode.set("classAxiom", jsonFactory.booleanNode(true));
+			graphModelNode.set("rangeDatatype", jsonFactory.booleanNode(false));
 			graphModelNode.set("source", jsonFactory.textNode(subj));
 			graphModelNode.set("link", jsonFactory.textNode(prop));
 			graphModelNode.set("target", jsonFactory.textNode(obj));
