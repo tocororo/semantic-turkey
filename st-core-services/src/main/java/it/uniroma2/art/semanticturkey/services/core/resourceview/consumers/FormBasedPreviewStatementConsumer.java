@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectFactory;
 
 import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -58,7 +57,7 @@ public class FormBasedPreviewStatementConsumer implements StatementConsumer {
 				try {
 					return CustomForms.getResourceFormPreviewHelper(project, codaCore, cfManager, repoConn,
 							resource, types, true);
-				} catch (RDFModelNotSetException | PRParserException e) {
+				} catch (PRParserException e) {
 					logger.error("Unexpected error", e);
 				}
 			} finally {
