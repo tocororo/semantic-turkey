@@ -63,7 +63,7 @@ public class CustomFormManager {
 	/**
 	 * Initializes and registers the CustomForm structure for the given project (<code>projectName SYSTEM</code> to
 	 * initialize at system level)
-	 * @param projectName
+	 * @param project
 	 */
 	public void registerCustomFormModelOfProject(Project project) {
 		try {
@@ -78,7 +78,7 @@ public class CustomFormManager {
 	
 	/**
 	 * Deregisters the CustomForm structure for the given project
-	 * @param projectName
+	 * @param project
 	 */
 	public void unregisterCustomFormModelOfProject(Project project) {
 		cfModelMap.remove(project.getName());
@@ -380,7 +380,6 @@ public class CustomFormManager {
 	
 	/**
 	 * Returns the {@link CustomForm} with the given ID at system level
-	 * @param project
 	 * @param customFormId
 	 * @return
 	 */
@@ -500,8 +499,7 @@ public class CustomFormManager {
 	 * @throws CustomFormException
 	 */
 	public FormsMapping addFormsMapping(Project project, IRI resource, FormCollection formColl, boolean replace) throws CustomFormException {
-		FormsMapping formMapping = cfModelMap.get(project.getName()).addFormsMapping(resource, formColl, replace);
-		return formMapping;
+		return cfModelMap.get(project.getName()).addFormsMapping(resource, formColl, replace);
 	}
 	
 	// FORM COLLECTION
@@ -542,8 +540,7 @@ public class CustomFormManager {
 		if (cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormById(id) != null) {
 			throw new DuplicateIdException("A CustomForm with id '" + id + "' already exists at system level");
 		}
-		CustomForm form = cfModelMap.get(project.getName()).createCustomForm(type, id, name, description, ref, showPropChain);
-		return form;
+		return cfModelMap.get(project.getName()).createCustomForm(type, id, name, description, ref, showPropChain);
 	}
 	
 	/* ##################
@@ -574,7 +571,8 @@ public class CustomFormManager {
 	
 	/**
 	 * Removes a {@link FormCollection} from the configuration of the given project and its file from file-system
-	 * @param formCollId
+	 * @param project
+	 * @param formColl
 	 */
 	public void deleteFormCollection(Project project, FormCollection formColl) {
 		cfModelMap.get(project.getName()).deleteFormCollection(formColl);

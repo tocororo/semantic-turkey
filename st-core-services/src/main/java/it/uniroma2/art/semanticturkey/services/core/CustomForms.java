@@ -1,46 +1,5 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.io.IOUtils;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.URIUtil;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.GraphQuery;
-import org.eclipse.rdf4j.query.GraphQueryResult;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -48,7 +7,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
@@ -84,6 +42,45 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsListSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
+import org.apache.commons.io.IOUtils;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.URIUtil;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.GraphQueryResult;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @STService
 public class CustomForms extends STServiceAdapter {
@@ -109,7 +106,7 @@ public class CustomForms extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ')', 'R')")
 	public Map<String, ResourceViewSection> getGraphObjectDescription(Resource resource, IRI predicate)
-			throws ProjectInconsistentException, RDFModelNotSetException, PRParserException {
+			throws ProjectInconsistentException, PRParserException {
 
 		RepositoryConnection repoConnection = getManagedConnection();
 		CODACore codaCore = getInitializedCodaCore(repoConnection);
@@ -203,7 +200,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @param repoConnection
 	 * @param resource
 	 * @param customFormBearingResources
-	 * @param includeInferred TODO
+	 * @param includeInferred
 	 * @return
 	 * @throws ProjectInconsistentException
 	 * @throws RDFModelNotSetException
@@ -212,7 +209,7 @@ public class CustomForms extends STServiceAdapter {
 	public static Map<String, ResourceViewSection> getResourceFormPreviewHelper(Project project,
 			CODACore codaCore, CustomFormManager cfManager, RepositoryConnection repoConnection,
 			Resource resource, Set<IRI> customFormBearingResources, boolean includeInferred)
-			throws ProjectInconsistentException, RDFModelNotSetException, PRParserException {
+			throws PRParserException {
 
 		Map<String, ResourceViewSection> rv = new LinkedHashMap<>();
 
@@ -317,7 +314,7 @@ public class CustomForms extends STServiceAdapter {
 	@STServiceOperation
 	@Write
 	public void removeReifiedResource(IRI subject, IRI predicate, IRI resource)
-			throws ProjectInconsistentException, PRParserException, RDFModelNotSetException {
+			throws ProjectInconsistentException, PRParserException {
 
 		RepositoryConnection repoConnection = getManagedConnection();
 		// remove resource as object in the triple <s, p, o> for the given subject and predicate
@@ -374,11 +371,11 @@ public class CustomForms extends STServiceAdapter {
 	 * @param repoConnection
 	 * @param resource
 	 * @param predicateOrClasses
-	 * @param includeInferred TODO
+	 * @param includeInferred
 	 * @return
 	 * @throws RDFModelNotSetException
 	 */
-	private static CustomFormGraph getCustomFormGraphSeed(Project project, CODACore codaCore, CustomFormManager cfManager, RepositoryConnection repoConnection, Resource resource, Collection<IRI> predicateOrClasses, boolean includeInferred) throws RDFModelNotSetException {
+	private static CustomFormGraph getCustomFormGraphSeed(Project project, CODACore codaCore, CustomFormManager cfManager, RepositoryConnection repoConnection, Resource resource, Collection<IRI> predicateOrClasses, boolean includeInferred) {
 		
 		if (predicateOrClasses.isEmpty()) { // edge case when no predicate or class is given
 			return null;
@@ -431,7 +428,7 @@ public class CustomForms extends STServiceAdapter {
 	@Read
 	public JsonNode executeURIConverter(String converter, @Optional String value)
 			throws ComponentProvisioningException, ConverterException, ProjectInconsistentException {
-		String result = "";
+		String result;
 		CODACore codaCore = getInitializedCodaCore(getManagedConnection());
 		if (value != null) {
 			result = codaCore.executeURIConverter(converter, value).stringValue();
@@ -670,7 +667,8 @@ public class CustomForms extends STServiceAdapter {
 	 * Removes a CustomForm from an existing FormCollection
 	 * 
 	 * @param formCollectionId
-	 * @param customFormId
+	 * @param customFormIds
+	 * @param suggestions
 	 * @return
 	 * @throws CustomFormException
 	 */
@@ -725,7 +723,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException
 	 */
 	@STServiceOperation
-	public JsonNode getCustomConstructors(IRI resource) throws CustomFormException {
+	public JsonNode getCustomConstructors(IRI resource) {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		// Collection<CustomFormGraph> cForms = cfManager.getAllCustomFormGraphs(getProject(), resource);
 
@@ -864,7 +862,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @param name
 	 * @param description
 	 * @param ref
-	 * @param showProp
+	 * @param showPropChain
 	 *            Useful only if type is "graph"
 	 * @return
 	 * @throws DuplicateIdException
@@ -1054,7 +1052,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @param name
 	 * @param description
 	 * @param ref
-	 * @param showProp
+	 * @param showPropChain
 	 * @return
 	 * @throws CustomFormException
 	 */
@@ -1133,7 +1131,7 @@ public class CustomForms extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	public JsonNode validatePearl(String pearl, String formType)
-			throws ProjectInconsistentException, RDFModelNotSetException, CustomFormException {
+			throws ProjectInconsistentException, CustomFormException {
 		CODACore codaCore = getInitializedCodaCore(getManagedConnection());
 		if (formType.equals(CustomForm.Types.graph.toString())) {
 			try {
@@ -1221,7 +1219,7 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('cform(form, mapping)', 'D')")
-	public void removeFormCollectionOfResource(IRI resource) throws CustomFormException {
+	public void removeFormCollectionOfResource(IRI resource) {
 		cfManager.removeFormsMapping(getProject(), resource);
 	}
 

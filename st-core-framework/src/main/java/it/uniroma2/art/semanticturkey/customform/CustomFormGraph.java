@@ -94,8 +94,7 @@ public class CustomFormGraph extends CustomForm {
 	 * Returns a Collection of {@link UserPromptStruct} that is used to render a form
 	 */
 	@Override
-	public Collection<UserPromptStruct> getForm(CODACore codaCore)
-			throws PRParserException, RDFModelNotSetException {
+	public Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException {
 		Map<String, UserPromptStruct> formMap = new LinkedHashMap<>();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
@@ -236,8 +235,7 @@ public class CustomFormGraph extends CustomForm {
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException
 	 */
-	public String getEntryPointPlaceholder(CODACore codaCore)
-			throws PRParserException, RDFModelNotSetException {
+	public String getEntryPointPlaceholder(CODACore codaCore) throws PRParserException {
 		String entryPoint = null;
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
@@ -269,7 +267,7 @@ public class CustomFormGraph extends CustomForm {
 	 * @throws RDFModelNotSetException
 	 */
 	public String getGraphSectionAsString(CODACore codaCore, boolean optional)
-			throws PRParserException, RDFModelNotSetException {
+			throws PRParserException {
 		StringBuilder sb = new StringBuilder();
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
 
@@ -525,8 +523,8 @@ public class CustomFormGraph extends CustomForm {
 	public String serializePropertyChain() {
 		String serializedPropChain = "";
 		if (this.showPropertyChain.size() > 0) {
-			for (int i = 0; i < showPropertyChain.size(); i++) {
-				serializedPropChain += showPropertyChain.get(i).stringValue() + ",";
+			for (IRI iri : showPropertyChain) {
+				serializedPropChain += iri.stringValue() + ",";
 			}
 			serializedPropChain = serializedPropChain.substring(0, serializedPropChain.length() - 1); // remove
 																										// last
@@ -546,7 +544,7 @@ public class CustomFormGraph extends CustomForm {
 	 * @throws RDFModelNotSetException
 	 */
 	private TypeSystemDescription createTypeSystemDescription(CODACore codaCore)
-			throws ResourceInitializationException, PRParserException, RDFModelNotSetException {
+			throws ResourceInitializationException, PRParserException {
 		TypeSystemDescription tsd = TypeSystemDescriptionFactory.createTypeSystemDescription();
 		// init the projection rules model with the pearl
 		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
@@ -607,14 +605,12 @@ public class CustomFormGraph extends CustomForm {
 		System.out.println("================ TSD structure ================");
 		TypeDescription[] types = tsd.getTypes();
 		System.out.println("type list:");
-		for (int i = 0; i < types.length; i++) {
-			TypeDescription type = types[i];
+		for (TypeDescription type : types) {
 			if (type.getName().startsWith("it.uniroma2.art.semanticturkey")) {
 				System.out.println("\nType: " + type.getName());
 				FeatureDescription[] features = type.getFeatures();
 				System.out.println("features:");
-				for (int j = 0; j < features.length; j++) {
-					FeatureDescription feature = features[j];
+				for (FeatureDescription feature : features) {
 					System.out.println("\t" + feature.getName() + "\t" + feature.getRangeTypeName());
 				}
 			}

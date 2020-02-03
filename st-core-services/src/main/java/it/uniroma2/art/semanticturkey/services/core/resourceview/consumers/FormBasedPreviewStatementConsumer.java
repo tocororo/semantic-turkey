@@ -24,7 +24,6 @@ import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.core.CustomForms;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
@@ -59,7 +58,7 @@ public class FormBasedPreviewStatementConsumer implements StatementConsumer {
 				try {
 					return CustomForms.getResourceFormPreviewHelper(project, codaCore, cfManager, repoConn,
 							resource, types, true);
-				} catch (ProjectInconsistentException | RDFModelNotSetException | PRParserException e) {
+				} catch (RDFModelNotSetException | PRParserException e) {
 					logger.error("Unexpected error", e);
 				}
 			} finally {
