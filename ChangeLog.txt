@@ -22,7 +22,8 @@ date: dd/02/2020
   * fixed several bugs in the search regarding the use of special characters
   * fix compatibility issue with Ontotext GraphDB 9.0
   * enabled support for multiple administrators
-  * updated to RDF4J 3.0.4
+  * updated dependency on RDF4J 3.0.4
+  * updated dependency on CODA 1.6.3, introducing the Formatter converter
   * added full syntactic coverage of OWL 2 restrictions in Manchester syntax
   * added semantic checks for OWL 2 restrictions expressed in Manchester syntax
   * added service for deleting repositories on remote triple stores
@@ -31,6 +32,9 @@ date: dd/02/2020
     native stores. This change fixes a ClassCastException, when activating both validatio/history and RDFS
     reasoning.
   * add support for SchemaCachingRDFSInferencer
+  * The resource-view service mandatorily hides things for which there is no READ permission
+  * the User Administration Service supports enhanced user profiling by setting the default configuration of
+    the views that a User can access. The user can then override this general setting by providing their own ones
   
 version 6.0
 date: 27/06/2019
