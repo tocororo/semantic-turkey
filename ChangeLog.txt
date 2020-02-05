@@ -29,7 +29,7 @@ date: dd/02/2020
   * added service for deleting repositories on remote triple stores
   * in newly created repositories, the change tracking sail is now stacked onto the
     ForwardChainingRDFSInferencer (previously, it was the opposite), implementing inference for the memory and
-    native stores. This change fixes a ClassCastException, when activating both validatio/history and RDFS
+    native stores. This change fixes a ClassCastException, when activating both validation/history and RDFS
     reasoning.
   * add support for SchemaCachingRDFSInferencer
   * The resource-view service mandatorily hides things for which there is no READ permission
