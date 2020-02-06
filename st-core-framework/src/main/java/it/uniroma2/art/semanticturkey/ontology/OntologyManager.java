@@ -98,7 +98,7 @@ public interface OntologyManager {
 	// Add an ontology import from various sources (local file, mirror, web)
 
 	/**
-	 * Imports an ontology from a local file, and copies it to the ontology mirror.
+	 * Imports an ontology from a local file, and optionally copies it to the ontology mirror.
 	 * 
 	 * @param conn
 	 * @param baseURI
@@ -110,8 +110,8 @@ public interface OntologyManager {
 	 * @throws MalformedURLException
 	 * @throws RDF4JException
 	 */
-	void addOntologyImportFromLocalFile(RepositoryConnection conn, String baseURI, ImportModality modality,
-			String fromLocalFilePath, String toLocalFile,
+	void addOntologyImportFromLocalFile(RepositoryConnection conn, @Nullable String baseURI, ImportModality modality,
+			String fromLocalFilePath, @Nullable String toLocalFile,
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws MalformedURLException, RDF4JException;
 

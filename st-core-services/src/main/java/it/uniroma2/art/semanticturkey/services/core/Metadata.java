@@ -172,7 +172,9 @@ public class Metadata extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'D')")
-	public void removeNSPrefixMapping(String namespace, @Optional(defaultValue = "true") boolean checkOnlyExplicit ) throws NSPrefixMappingUpdateException {
+	public void removeNSPrefixMapping(String namespace,
+			@Optional(defaultValue = "true") boolean checkOnlyExplicit)
+			throws NSPrefixMappingUpdateException {
 		getOntologyManager().removeNSPrefixMapping(namespace, checkOnlyExplicit);
 	}
 
@@ -263,11 +265,14 @@ public class Metadata extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(import)', 'C')")
-	public Collection<OntologyImport> addFromLocalFile(String baseURI, MultipartFile localFile,
-			String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
+	public Collection<OntologyImport> addFromLocalFile(@Optional String baseURI, MultipartFile localFile,
+			@Optional String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws RDF4JException, OntologyManagerException, IOException {
 		Set<IRI> failedImports = new HashSet<>();
 		File inputServerFile = File.createTempFile("addFromLocalFile", localFile.getOriginalFilename());
+		if (baseURI == null) {
+			baseURI = inputServerFile.getAbsolutePath();
+		}
 		try {
 			localFile.transferTo(inputServerFile);
 			getOntologyManager().addOntologyImportFromLocalFile(getManagedConnection(), baseURI,

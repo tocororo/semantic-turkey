@@ -264,7 +264,7 @@ public class OntologyManagerImpl implements OntologyManager {
 				+ toLocalFile);
 		addOntologyImportSkeleton(conn, baseURI, updateImportStatement, modality, importedOntologies, () -> {
 			File inputFile = new File(fromLocalFilePath);
-			MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
+			MirroredOntologyFile mirFile = toLocalFile != null ? new MirroredOntologyFile(toLocalFile) : null;
 
 			RDFFormat rdfFormat = Rio.getParserFormatForFileName(inputFile.getName())
 					.orElseThrow(() -> new OntologyManagerException(
@@ -523,15 +523,17 @@ public class OntologyManagerImpl implements OntologyManager {
 
 		if (rdfFormat == null) {
 			// Try to determine the data's MIME type
-			@Nullable String mimeType = con.getContentType();
+			@Nullable
+			String mimeType = con.getContentType();
 			if (mimeType != null) {
 				int semiColonIdx = mimeType.indexOf(';');
 				if (semiColonIdx >= 0) {
 					mimeType = mimeType.substring(0, semiColonIdx).trim();
 				}
 			}
-			
-			System.out.println("path is=" + url.getPath() + "  // rdformat=" + Rio.getParserFormatForFileName(url.getPath()));
+
+			System.out.println("path is=" + url.getPath() + "  // rdformat="
+					+ Rio.getParserFormatForFileName(url.getPath()));
 			rdfFormat = OptionalUtils
 					.firstPresent(Optional.ofNullable(mimeType).flatMap(Rio::getParserFormatForMIMEType),
 							Rio.getParserFormatForFileName(url.getPath()))
@@ -648,10 +650,10 @@ public class OntologyManagerImpl implements OntologyManager {
 
 			if (method == fromWebToMirror) {
 				Utilities.downloadRDF(new URL(sourcePath), localFile.getAbsolutePath());
-			} else if (method == fromLocalFile)
+			} else if (method == fromLocalFile && localFile != null)
 				Utilities.copy(sourcePath, localFile.getAbsolutePath());
 
-			if (method == fromWebToMirror || method == fromLocalFile)
+			if (method == fromWebToMirror || (method == fromLocalFile && localFile != null))
 				OntologiesMirror.addCachedOntologyEntry(baseURI, (MirroredOntologyFile) localFile);
 
 			// if the import is explicitly asked by the user, then the import statement is explicitly
@@ -1232,21 +1234,23 @@ public class OntologyManagerImpl implements OntologyManager {
 	}
 
 	@Override
-	public void removeNSPrefixMapping(String namespace,	boolean checkOnlyExplicit) throws NSPrefixMappingUpdateException {
+	public void removeNSPrefixMapping(String namespace, boolean checkOnlyExplicit)
+			throws NSPrefixMappingUpdateException {
 		try {
-			//check that the input namespace really exists
+			// check that the input namespace really exists
 			if (!checkOnlyExplicit) {
 				try (RepositoryConnection conn = repository.getConnection()) {
 					RepositoryResult<Namespace> namespaceRepositoryResult = conn.getNamespaces();
 					boolean found = false;
-					while(namespaceRepositoryResult.hasNext()){
+					while (namespaceRepositoryResult.hasNext()) {
 						Namespace ns = namespaceRepositoryResult.next();
-						if(ns.getName().equals(namespace)){
+						if (ns.getName().equals(namespace)) {
 							found = true;
 						}
 					}
-					if(!found){
-						throw new NSPrefixMappingUpdateException("inconsistency error: prefix-mapping table does not contain this namespace");
+					if (!found) {
+						throw new NSPrefixMappingUpdateException(
+								"inconsistency error: prefix-mapping table does not contain this namespace");
 					}
 				}
 
@@ -1256,8 +1260,9 @@ public class OntologyManagerImpl implements OntologyManager {
 
 				try {
 					nsPrefixMappings.removeNSPrefixMapping(namespace);
-				} catch (NSPrefixMappingUpdateException e ){
-					//in this case do nothing, since we are considering also not explicitly defined prefix-namespaces and we already checked that the
+				} catch (NSPrefixMappingUpdateException e) {
+					// in this case do nothing, since we are considering also not explicitly defined
+					// prefix-namespaces and we already checked that the
 					// desired namespace exists
 				}
 
