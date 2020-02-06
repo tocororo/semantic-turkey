@@ -1,5 +1,5 @@
 version 7.0
-date: dd/02/2020
+date: 06/02/2020
   * new EDOAL model type for alignment projects
   * added support for SHACL
   * added support for datatype definitions through enumerations, restrictions and general dataranges expressed
