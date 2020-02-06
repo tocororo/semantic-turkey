@@ -1,3 +1,7 @@
+version 7.0.1
+date: dd/mm/yyyy
+  *
+
 version 7.0
 date: 06/02/2020
   * new EDOAL model type for alignment projects
