@@ -432,6 +432,13 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerFactory" />
 	</osgi:service>
+	
+	<!-- Publishes the BioPortal Deployer extension -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.deployer.bioportal.BioPortalDeployerFactory" />
+	</osgi:service>
 
 	<!-- Publishes the ReformattingExporter extension point -->
 

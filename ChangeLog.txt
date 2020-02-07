@@ -1,6 +1,7 @@
-version 7.0.1
+version 7.1
 date: dd/mm/yyyy
-  *
+  * add a Deployer for submitting an ontology (in fact, an OWL ontology or a SKOS thesaurus) to BioPortal
+  * make both the base URI and the ontology mirror file optional when importing an ontology from a local file
 
 version 7.0
 date: 06/02/2020
