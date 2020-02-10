@@ -93,17 +93,23 @@ public abstract class AbstractHTTPDeployer<T extends Source> implements Deployer
 			try (CloseableHttpResponse httpResponse = httpClient.execute(request, context)) {
 				StatusLine statusLine = httpResponse.getStatusLine();
 				if ((statusLine.getStatusCode() / 200) != 1) {
-					throw new IOException(
-							"HTTP Error: " + statusLine.getStatusCode() + ":" + statusLine.getReasonPhrase());
+					throw new IOException(buildExceptionFromResponse(httpResponse));
 				}
 			}
 		}
 
 	}
 
+	protected String buildExceptionFromResponse(CloseableHttpResponse httpResponse) throws IOException {
+		StatusLine statusLine = httpResponse.getStatusLine();
+		return "HTTP Error: " + statusLine.getStatusCode() + ":" + statusLine.getReasonPhrase();
+	}
+
 	protected abstract URI getAddress() throws URISyntaxException;
 
-	protected abstract @Nullable Pair<String, String> getUsernameAndPassword();
+	protected @Nullable Pair<String, String> getUsernameAndPassword() {
+		return null;
+	}
 
 	protected abstract HttpVerbs getHttpVerb();
 
@@ -111,6 +117,6 @@ public abstract class AbstractHTTPDeployer<T extends Source> implements Deployer
 		return null;
 	}
 
-	protected abstract HttpEntity createHttpEntity(T source);
+	protected abstract HttpEntity createHttpEntity(T source) throws IOException;
 
 }
