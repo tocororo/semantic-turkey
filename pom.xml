@@ -87,7 +87,7 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 
 		<dist.client>${dist}/st-client</dist.client>
 		<dist.client.lib>${dist.client}/${dist.lib}</dist.client.lib>
-		<coda.version>1.6.3</coda.version>
+		<coda.version>1.7.0-SNAPSHOT</coda.version>
 		<spring.version>3.2.14.RELEASE</spring.version>
 		<spring-security.version>3.1.4.RELEASE</spring-security.version>
 		<rdf4j.version>3.0.4</rdf4j.version>
