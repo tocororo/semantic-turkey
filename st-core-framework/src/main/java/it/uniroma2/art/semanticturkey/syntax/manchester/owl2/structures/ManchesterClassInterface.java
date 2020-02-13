@@ -16,7 +16,7 @@
  *
  * The ART OWL API were developed by the Artificial Intelligence Research Group
  * (art.uniroma2.it) at the University of Roma Tor Vergata
- * Current information about the ART OWL API can be obtained at 
+ * Current information about the ART OWL API can be obtained at
  * http://art.uniroma2.it/owlart
  *
  */
@@ -28,6 +28,7 @@ import java.util.Map;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 public abstract class ManchesterClassInterface {
 	private PossType type;
@@ -46,58 +47,57 @@ public abstract class ManchesterClassInterface {
 	}
 
 	protected String printRes(boolean getPrefixName, Map<String, String> namespaceToPrefixsMap, IRI res) {
-		if(!getPrefixName){
-			return "<"+res.stringValue()+">";
+		if (!getPrefixName) {
+			return "<" + res.stringValue() + ">";
 		}
 
-		if(namespaceToPrefixsMap.containsKey(res.getNamespace())){
-			return namespaceToPrefixsMap.get(res.getNamespace())+":"+res.getLocalName();
+		if (namespaceToPrefixsMap.containsKey(res.getNamespace())) {
+			return namespaceToPrefixsMap.get(res.getNamespace()) + ":" + res.getLocalName();
 		} else {
 			return printRes(false, null, res);
 		}
 	}
-	
-	protected String printLiteral(boolean getPrefixName, Map<String, String> namespaceToPrefixsMap, Literal literal){
+
+	protected String printLiteral(boolean getPrefixName, Map<String, String> namespaceToPrefixsMap, Literal literal) {
 		/*distinguish two cases:
 		- literals representing numbers (xsd:integer , xsd:decimal, xsd:float)
 		- other types of literals
 		*/
-		if(literal.getDatatype() != null && (literal.getDatatype().equals(XMLSchema.INTEGER)  || literal.getDatatype().equals(XMLSchema.DECIMAL)
+		if (literal.getDatatype() != null && (literal.getDatatype().equals(XMLSchema.INTEGER) || literal.getDatatype().equals(XMLSchema.DECIMAL)
 				|| literal.getDatatype().equals(XMLSchema.FLOAT))) {
-            return literal.stringValue();
+			return literal.stringValue();
 		} else {
-
-			String valueString = "\"" + literal.stringValue() + "\"";
+			String valueString = "\"" + NTriplesUtil.escapeString(literal.getLabel()) + "\"";
 			if (literal.getLanguage().isPresent()) {
 				valueString += "@" + literal.getLanguage().get();
 			} else if (literal.getDatatype() != null) {
 				valueString += "^^" + printRes(getPrefixName, namespaceToPrefixsMap, literal.getDatatype());
 			}
 			return valueString;
-			}
+		}
 	}
 
 	/**
 	 * Returns the representation of this class expression conforming to the Manchester syntax. The parameter
 	 * <code>getPrefixName</code> controls whether URIs are shortened into qualified names or presented in
 	 * their full form. The qualified names use prefixes defined in the parameter <code>prefixMapping</code>.
-	 * 
+	 *
 	 * @param namespaceToPrefixsMap the prefix map class to use then getPrefixName is true
-	 * @param getPrefixName to use the qname, if the appropriate prefix has been defined
-	 * @param useUppercaseSyntax to return the the reserved keyword in upper (true) or lower case (false)
+	 * @param getPrefixName         to use the qname, if the appropriate prefix has been defined
+	 * @param useUppercaseSyntax    to return the the reserved keyword in upper (true) or lower case (false)
 	 * @return
 	 */
-	public abstract String getManchExpr(Map<String, String> namespaceToPrefixsMap, boolean getPrefixName, 
+	public abstract String getManchExpr(Map<String, String> namespaceToPrefixsMap, boolean getPrefixName,
 			boolean useUppercaseSyntax);
 
 	/**
 	 * A shortcut for {@link #getManchExpr(Map, boolean, boolean)}  with the first parameter set to
 	 * <code>null</code>
-	 * 
+	 *
 	 * @param useUppercaseSyntax to return the the reserved keyword in upper (true) or lower case (false)
 	 * @return
 	 */
-	public String getManchExpr(boolean useUppercaseSyntax){
+	public String getManchExpr(boolean useUppercaseSyntax) {
 		return getManchExpr(null, false, useUppercaseSyntax);
 	}
 

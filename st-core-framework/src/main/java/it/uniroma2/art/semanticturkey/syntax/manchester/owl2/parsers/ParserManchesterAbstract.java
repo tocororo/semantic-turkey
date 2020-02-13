@@ -2,12 +2,47 @@ package it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers;
 
 import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserRuntimeException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserBaseListener;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.AtomicContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ClassIRIContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ConjunctionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DataAtomicContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DataConjunctionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DataPrimaryContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DataPropertyExpressionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DataRangeContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeIRIContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeRestrictionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionInnerContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ExponentContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.IndividualContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.IndividualListContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.LiteralContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.LiteralListContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.NotRestrictionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ObjectPropertyExpressionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ObjectPropertyIRIContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.PrefixedNameContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.PrimaryContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.RestrictionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.RestrictionValueContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.TypedLiteralContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterAndClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterBaseClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterCardClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface.PossType;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterDataConjunction;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterDataRange;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterDatatypeRestriction;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterLiteralListClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterNotClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterOneOfClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterOnlyClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterOrClass;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterSelfClass;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterSomeClass;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterValueClass;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.*;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface.PossType;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.*;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -15,6 +50,7 @@ import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -439,17 +475,30 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 
 	private Literal getLiteral(LiteralContext literalContext) {
 		if(literalContext.typedLiteral() != null) {
+			TypedLiteralContext typedLiteralContext = literalContext.typedLiteral();
 			//it is a typedLiteral
-			String quotedString = literalContext.typedLiteral().quotedString().getText();
-			String classIRI = literalContext.typedLiteral().classIRI().getText();
-			return valueFactory.createLiteral(quotedString.substring(1, quotedString.length()-1), classIRI);
+			//- get the literal value
+			String quotedString = typedLiteralContext.quotedString().getText();
+			String litValue = NTriplesUtil.unescapeString(quotedString.substring(1, quotedString.length()-1));
+			//- get the datatype
+			IRI datatype;
+			ClassIRIContext classIRIContext = typedLiteralContext.classIRI();
+			//check if it is as qname or complete IRI
+			if (classIRIContext.prefixedName() != null) { //qname
+				datatype = resolvePrefixedName(classIRIContext.prefixedName());
+			} else { //iri
+				datatype = NTriplesUtil.parseURI(classIRIContext.getText(), valueFactory);
+			}
+			return valueFactory.createLiteral(litValue, datatype);
 		} else if(literalContext.stringLiteralNoLanguage()!=null){
 			String quotedString = literalContext.stringLiteralNoLanguage().quotedString().getText();
-			return valueFactory.createLiteral(quotedString.substring(1, quotedString.length()-1));
+			String litValue = NTriplesUtil.unescapeString(quotedString.substring(1, quotedString.length()-1));
+			return valueFactory.createLiteral(litValue);
 		} else if(literalContext.stringLiteralWithLanguage() != null) {
 			String quotedString = literalContext.stringLiteralWithLanguage().quotedString().getText();
+			String litValue = NTriplesUtil.unescapeString(quotedString.substring(1, quotedString.length()-1));
 			String lang = literalContext.stringLiteralWithLanguage().LANGTAG().getText().substring(1);
-			return valueFactory.createLiteral(quotedString.substring(1, quotedString.length()-1), lang);
+			return valueFactory.createLiteral(litValue, lang);
 		} else if (literalContext.integerLiteral() != null) {
 			String sign = "";
 			if(literalContext.integerLiteral().sign != null && literalContext.integerLiteral().sign.getText().equals("-")) {

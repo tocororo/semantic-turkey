@@ -572,7 +572,7 @@ public class Datatypes extends STServiceAdapter {
 				BindingSet bs = results.next();
 				IRI base = (IRI) bs.getValue("base"); //this is always the same for each bs, set it each time anyway
 				IRI facet = (IRI) bs.getValue("facet");
-				Literal value = (Literal) bs.getValue("value");
+				Value value = bs.getValue("value");
 				facetsMap.put(facet, value);
 				facetsMap.put(OWL.ONDATATYPE, base);
 			}
@@ -588,9 +588,6 @@ public class Datatypes extends STServiceAdapter {
 					getManagedConnection());
 			if (dataRangeAbstract instanceof DataRangeDataOneOf) {
 				dataOneOf = (DataRangeDataOneOf) dataRangeAbstract;
-			} else {
-				// There was an error, since the bnode is not the expected datarange (ONEOF)
-				// decide what to do, at the moment, left the empty list
 			}
 
 			List<Literal> literalTempList = dataOneOf.getLiteralList();

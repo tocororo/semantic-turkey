@@ -217,7 +217,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	}
 
 	/**
-	 * returns true if the expression is compliant with the syntax of datatype restrions, false otherwise
+	 * returns true if the expression is compliant with the syntax of datatype restrictions, false otherwise
 	 *
 	 * @return true if the expression is compliant with the syntax, false otherwise
 	 */
