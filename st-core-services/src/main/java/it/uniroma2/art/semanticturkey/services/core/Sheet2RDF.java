@@ -266,7 +266,7 @@ public class Sheet2RDF extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void updateAdvancedGraphApplication(String headerId, String graphId, String graphPattern, List<String> nodeIds,
-			Map<String, String> prefixMapping) {
+			Map<String, String> prefixMapping, @Optional IRI defaultPredicate) {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
@@ -276,6 +276,7 @@ public class Sheet2RDF extends STServiceAdapter {
 				aga.setNodeIds(nodeIds);
 				aga.setPattern(graphPattern);
 				aga.setPrefixMapping(prefixMapping);
+				aga.setDefaultPredicate(defaultPredicate);
 				break;
 			}
 		}
@@ -291,12 +292,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
-		Iterator<GraphApplication> it = h.getGraphApplications().iterator();
-		while (it.hasNext()) {
-			if (it.next().getId().equals(graphId)) {
-				it.remove();
-			}
-		}
+		h.getGraphApplications().removeIf(graphApplication -> graphApplication.getId().equals(graphId));
 	}
 	
 	/**
@@ -324,11 +320,10 @@ public class Sheet2RDF extends STServiceAdapter {
 	
 	/**
 	 * Creates and adds a node to a header. 
-	 * Note: This service does not perform any check on node ID collision. This check shoul be done separately
+	 * Note: This service does not perform any check on node ID collision. This check should be done separately
 	 * via {@link #isNodeIdAlreadyUsed(String)}
 	 * Note 2: The creation of a node doesn't imply that it is used in a graph application.
-	 * This needs to be done separately (with {@link #addGraphApplicationToHeader(String, IRI, String, IRI)} 
-	 * or {@link #updateGraphApplication(String, String, IRI, String, IRI)}  
+	 * This needs to be done separately (with add/update Simple/Advanced GraphApplicationToHeader}
 	 * 
 	 * @param headerId
 	 * @param nodeId
@@ -399,12 +394,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
 		//remove the node
-		Iterator<NodeConversion> itNodes = h.getNodeConversions().iterator();
-		while (itNodes.hasNext()) {
-			if (itNodes.next().getNodeId().equals(nodeId)) {
-				itNodes.remove();
-			}
-		}
+		h.getNodeConversions().removeIf(nodeConversion -> nodeConversion.getNodeId().equals(nodeId));
 		//Remove the node from the graphApplications that use it.
 		for (GraphApplication g: h.getGraphApplications()) {
 			g.removeNode(nodeId);
@@ -433,8 +423,7 @@ public class Sheet2RDF extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void updateSubjectHeader(String headerId, String converterContract, @Optional IRI type,
-			@Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) 
-			throws JsonParseException, JsonMappingException, IOException {
+			@Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 		SubjectHeader subjHeader = mappingStruct.getSubjectHeader();
@@ -675,14 +664,12 @@ public class Sheet2RDF extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public JsonNode getTriplesPreview(int maxTableRows) throws UIMAException, PRParserException,
-			ComponentProvisioningException, ConverterException, DependencyException,
-			ProjectInconsistentException, RDFModelNotSetException,
+			ComponentProvisioningException, ConverterException, DependencyException, RDFModelNotSetException,
 			ProjectionRuleModelNotSet, UnassignableFeaturePathException {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		JCas jcas = ctx.getSheet2RDFCore().executeAnnotator();
 		Sheet2RDFCODA s2rdfCoda = new Sheet2RDFCODA(getManagedConnection(), ctx.getCodaCore());
-		List<SuggOntologyCoda> listSuggOntCoda = new ArrayList<SuggOntologyCoda>();
-		listSuggOntCoda = s2rdfCoda.suggestTriples(jcas, ctx.getPearlFile());
+		List<SuggOntologyCoda> listSuggOntCoda = s2rdfCoda.suggestTriples(jcas, ctx.getPearlFile());
 		ctx.setSuggestedTriples(listSuggOntCoda);
 
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
@@ -785,9 +772,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		List<PrefixMapping> prefMappings = new ArrayList<>();
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		Map<String, String> s2rdfPrefixMappings = ctx.getSheet2RDFCore().getMergedPrefixMapping();
-		Iterator<Entry<String, String>> it = s2rdfPrefixMappings.entrySet().iterator();
-		while (it.hasNext()) {
-			Entry<String, String> entry = it.next();
+		for (Entry<String, String> entry : s2rdfPrefixMappings.entrySet()) {
 			prefMappings.add(new PrefixMapping(entry.getKey(), entry.getValue(), false));
 		}
 		return prefMappings;
@@ -931,8 +916,7 @@ public class Sheet2RDF extends STServiceAdapter {
 	 */
 	private Object parseStringOrValue(String s) {
 		try {
-			Value rdf4jValue = NTriplesUtil.parseValue(s, SimpleValueFactory.getInstance());
-			return rdf4jValue;
+			return NTriplesUtil.parseValue(s, SimpleValueFactory.getInstance());
 		} catch (IllegalArgumentException e) {
 			return s;
 		}
