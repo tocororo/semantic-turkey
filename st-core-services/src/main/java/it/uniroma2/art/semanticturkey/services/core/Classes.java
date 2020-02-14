@@ -97,33 +97,33 @@ public class Classes extends STServiceAdapter {
 		if (OWL.THING.equals(superClass)) {
 			qb = createQueryBuilder(
 					// @formatter:off
-					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                   \n" +                                      
-					" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                \n" +                                      
-					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                        \n" +                                      
-					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                         \n" +
-					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                      	  \n" +
-                    "                                                                             \n" +                                      
+					"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
+					"PREFIX owl: <http://www.w3.org/2002/07/owl#>							\n" +
+					"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
+					"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>					\n" +
+					"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>					\n" +
+                    "																		\n" +
 					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
-					" SELECT ?resource "+generateNatureSPARQLSelectPart()+" 			 		  \n" + 
-					" WHERE {																      \n" +
-					" 	  ?metaClass rdfs:subClassOf* rdfs:Class .                                \n" +
-					"     ?resource a ?metaClass.                                                 \n" +
-					"     FILTER(isIRI(?resource))                                                \n" +
-					"     FILTER(?resource != owl:Thing)                                          \n" +
-					"     FILTER(?resource != rdfs:Resource)                                      \n" +
-					"     FILTER NOT EXISTS {                                                     \n" +
-					"     	?resource rdfs:subClassOf ?superClass2 .                              \n" +
-					"		FILTER(?resource != ?superClass2)									  \n" +
-					"       FILTER(isIRI(?superClass2) && ?superClass2 != owl:Thing)              \n" +
-					"       ?superClass2 a ?metaClass2 .                                          \n" +
-					"       ?metaClass2 rdfs:subClassOf* rdfs:Class .                             \n" +
-					"     }                                                                       \n" +
+					"SELECT ?resource "+generateNatureSPARQLSelectPart()+"					\n" +
+					"WHERE {																\n" +
+					"	?metaClass rdfs:subClassOf* rdfs:Class .							\n" +
+					"	?resource a ?metaClass.												\n" +
+					"	FILTER(isIRI(?resource))											\n" +
+					"	FILTER(?resource != owl:Thing)										\n" +
+					"	FILTER(?resource != rdfs:Resource)									\n" +
+					"	FILTER(?metaClass != rdfs:Datatype)									\n" +
+					"	FILTER NOT EXISTS {													\n" +
+					"		?resource rdfs:subClassOf ?superClass2 .						\n" +
+					"		FILTER(?resource != ?superClass2)								\n" +
+					"		FILTER(isIRI(?superClass2) && ?superClass2 != owl:Thing)		\n" +
+					"		?superClass2 a ?metaClass2 .									\n" +
+					"		?metaClass2 rdfs:subClassOf* rdfs:Class .						\n" +
+					"	}																	\n" +
 					//adding the nature in the query (will be replaced by the appropriate processor), 
 					//remember to change the SELECT as well
 					generateNatureSPARQLWherePart("?resource") +
-					
-					" }                                                                           \n" +
-					" GROUP BY ?resource			                                              \n"                             
+					"}																		\n" +
+					"GROUP BY ?resource														\n"
 					// @formatter:on
 			);
 		} else if (RDFS.RESOURCE.equals(superClass)) {
