@@ -1742,11 +1742,7 @@ class TypesAndRanges {
 		if (types.contains(OWL.OBJECTPROPERTY.stringValue())) {
 			return "resource";
 		} else if (types.contains(OWL.DATATYPEPROPERTY.stringValue())) {
-			if (ranges.isEmpty()) {
-				return "literal";
-			} else {
-				return "typedLiteral";
-			}
+			return "literal";
 		} else {
 			if (ranges.isEmpty()) {
 				return "undetermined";

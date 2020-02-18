@@ -24,11 +24,11 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
 
+import it.uniroma2.art.coda.provisioning.ConverterContractDescription;
 import org.apache.commons.io.IOUtils;
 import org.apache.uima.UIMAException;
 import org.apache.uima.jcas.JCas;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.MalformedQueryException;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
@@ -78,7 +78,6 @@ import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.coda.structures.SuggOntologyCoda;
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
@@ -124,12 +123,11 @@ public class Sheet2RDF extends STServiceAdapter {
 	 * @param fsNamingStrategy
 	 * @return
 	 * @throws IOException 
-	 * @throws ProjectInconsistentException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	public void uploadSpreadsheet(MultipartFile file, @Optional(defaultValue = "columnNumericIndex") FsNamingStrategy fsNamingStrategy) 
-			throws IOException, ProjectInconsistentException {
+			throws IOException {
 		String fileName = file.getOriginalFilename();
         //create a temp file (in karaf data/temp folder) to copy the received file 
 		File serverSpreadsheetFile = File.createTempFile("sheet", fileName.substring(fileName.lastIndexOf(".")));
@@ -334,6 +332,7 @@ public class Sheet2RDF extends STServiceAdapter {
 	 * @param converterParams
 	 * @param memoize
 	 */
+	@Read
 	@STServiceOperation(method = RequestMethod.POST)
 	public void addNodeToHeader(String headerId, String nodeId, RDFCapabilityType converterCapability, 
 			String converterContract, @Optional String converterDatatypeUri, @Optional String converterLanguage,
@@ -344,7 +343,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		//create node and add it to the header
 		NodeConversion n = new NodeConversion();
 		n.setNodeId(nodeId);
-		CODAConverter c = new CODAConverter(converterCapability, converterContract);
+		CODAConverter c = resolveCodaConverter(converterContract, converterCapability);
 		c.setDatatypeUri(converterDatatypeUri);
 		c.setLanguage(converterLanguage);
 		if (converterParams != null) {
@@ -355,7 +354,8 @@ public class Sheet2RDF extends STServiceAdapter {
 		n.setMemoize(memoize);
 		h.addNodeConversions(n);
 	}
-	
+
+	@Read
 	@STServiceOperation(method = RequestMethod.POST)
 	public void updateNodeInHeader(String headerId, String nodeId, RDFCapabilityType converterCapability, 
 			String converterContract, @Optional String converterDatatypeUri, @Optional String converterLanguage,
@@ -368,7 +368,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		for (NodeConversion node: nodes) {
 			if (node.getNodeId().equals(nodeId)) {
 				//update the node
-				CODAConverter c = new CODAConverter(converterCapability, converterContract);
+				CODAConverter c = resolveCodaConverter(converterContract, converterCapability);
 				c.setDatatypeUri(converterDatatypeUri);
 				c.setLanguage(converterLanguage);
 				if (converterParams != null) {
@@ -421,6 +421,7 @@ public class Sheet2RDF extends STServiceAdapter {
 	 * @param converterParams
 	 * @param memoize
 	 */
+	@Read
 	@STServiceOperation(method = RequestMethod.POST)
 	public void updateSubjectHeader(String headerId, String converterContract, @Optional IRI type,
 			@Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) {
@@ -430,7 +431,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		subjHeader.setId(headerId);
 		//update the converter in the node conversion
 		NodeConversion n = subjHeader.getNodeConversion();
-		CODAConverter c = new CODAConverter(RDFCapabilityType.uri, converterContract);
+		CODAConverter c = resolveCodaConverter(converterContract, RDFCapabilityType.uri);
 		if (converterParams != null) {
 			Map<String, Object> resolvedConvParams = resolveConverterParamsMap(converterParams);
 			c.setParams(resolvedConvParams);
@@ -655,7 +656,6 @@ public class Sheet2RDF extends STServiceAdapter {
 	 * @throws PRParserException 
 	 * @throws UIMAException 
 	 * @throws DependencyException 
-	 * @throws ProjectInconsistentException 
 	 * @throws RDFModelNotSetException
 	 * @throws UnassignableFeaturePathException 
 	 * @throws ProjectionRuleModelNotSet 
@@ -907,6 +907,31 @@ public class Sheet2RDF extends STServiceAdapter {
 			}
 		}
 		return resolvedConvParams;
+	}
+
+	/**
+	 * Initializes an instance of {@link CODAConverter} for the given contract and with the specified capability.
+	 * (Note: the capability is necessary for distinguish the usage of those converter that can produces node, namely
+	 * both uri and literal nodes). The instantiated converter is initialized also with the datatpe capability that is
+	 * useful in Sheet2RDF client side.
+	 * @param converterContract
+	 * @param converterCapability
+	 * @return
+	 */
+	private CODAConverter resolveCodaConverter(String converterContract, RDFCapabilityType converterCapability) {
+		CODAConverter converter = null;
+		CODACore codaCore = getInitializedCodaCore(getManagedConnection());
+		for (ConverterContractDescription aDescr : codaCore.listConverterContracts()) {
+			if (converterContract.equals(aDescr.getContractURI())) {
+				converter = new CODAConverter(converterCapability, converterContract);
+				Set<IRI> datatypes = aDescr.getDatatypes();
+				if (datatypes.size() > 0) { //even if getDatatypes returns a list, I can assume a converter has (at max) only one declared datatype
+					converter.setDatatypeCapability(datatypes.iterator().next().stringValue());
+				}
+			}
+		}
+		shutDownCodaCore(codaCore);
+		return converter;
 	}
 	
 	/**

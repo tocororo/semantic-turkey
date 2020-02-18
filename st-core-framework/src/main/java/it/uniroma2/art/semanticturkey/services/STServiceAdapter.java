@@ -187,8 +187,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	 * @return
 	 * @throws ProjectInconsistentException
 	 */
-	protected CODACore getInitializedCodaCore(RepositoryConnection repoConnection)
-			throws ProjectInconsistentException {
+	protected CODACore getInitializedCodaCore(RepositoryConnection repoConnection) {
 		CODACore codaCore = codaCoreProviderFactory.getObject().getCODACore();
 		codaCore.initialize(repoConnection);
 		return codaCore;
@@ -212,7 +211,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	 */
 	protected void enrichWithCustomForm(RepositoryConnection repoConn, Model modelAdditions,
 			Model modelRemovals, CustomForm cForm, Map<String, Object> userPromptMap, StandardForm stdForm)
-			throws ProjectInconsistentException, CODAException, CustomFormException {
+			throws CODAException, CustomFormException {
 		CODACore codaCore = getInitializedCodaCore(repoConn);
 		try {
 			if (cForm.isTypeGraph()) {
@@ -242,7 +241,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	}
 
 	protected void addValue(RepositoryConnection repoConn, Resource subject, IRI predicate,
-			SpecialValue value) throws ProjectInconsistentException, CODAException {
+			SpecialValue value) throws CODAException {
 		if (value.isRdf4jValue()) {
 			repoConn.add(subject, predicate, value.getRdf4jValue(), getWorkingGraph());
 		} else { // value.isCustomFormValue()

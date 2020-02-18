@@ -29,7 +29,6 @@ import it.uniroma2.art.semanticturkey.customform.UserPromptStruct;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -98,7 +97,6 @@ public class CustomForms extends STServiceAdapter {
 	 * @param resource
 	 * @param predicate
 	 * @return
-	 * @throws ProjectInconsistentException
 	 * @throws RDFModelNotSetException
 	 * @throws PRParserException
 	 */
@@ -106,7 +104,7 @@ public class CustomForms extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ')', 'R')")
 	public Map<String, ResourceViewSection> getGraphObjectDescription(Resource resource, IRI predicate)
-			throws ProjectInconsistentException, PRParserException {
+			throws PRParserException {
 
 		RepositoryConnection repoConnection = getManagedConnection();
 		CODACore codaCore = getInitializedCodaCore(repoConnection);
@@ -202,7 +200,6 @@ public class CustomForms extends STServiceAdapter {
 	 * @param customFormBearingResources
 	 * @param includeInferred
 	 * @return
-	 * @throws ProjectInconsistentException
 	 * @throws RDFModelNotSetException
 	 * @throws PRParserException
 	 */
@@ -307,14 +304,13 @@ public class CustomForms extends STServiceAdapter {
 	 * @param predicate
 	 * @param resource
 	 * @return
-	 * @throws ProjectInconsistentException
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException
 	 */
 	@STServiceOperation
 	@Write
 	public void removeReifiedResource(IRI subject, IRI predicate, IRI resource)
-			throws ProjectInconsistentException, PRParserException {
+			throws PRParserException {
 
 		RepositoryConnection repoConnection = getManagedConnection();
 		// remove resource as object in the triple <s, p, o> for the given subject and predicate
@@ -427,7 +423,7 @@ public class CustomForms extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public JsonNode executeURIConverter(String converter, @Optional String value)
-			throws ComponentProvisioningException, ConverterException, ProjectInconsistentException {
+			throws ComponentProvisioningException, ConverterException {
 		String result;
 		CODACore codaCore = getInitializedCodaCore(getManagedConnection());
 		if (value != null) {
@@ -443,7 +439,7 @@ public class CustomForms extends STServiceAdapter {
 	@Read
 	public JsonNode executeLiteralConverter(String converter, String value, @Optional String datatype,
 			@Optional String lang)
-			throws ComponentProvisioningException, ConverterException, ProjectInconsistentException {
+			throws ComponentProvisioningException, ConverterException {
 		CODACore codaCore = getInitializedCodaCore(getManagedConnection());
 		if (datatype != null && datatype.equals(""))
 			datatype = null;
@@ -785,7 +781,6 @@ public class CustomForms extends STServiceAdapter {
 	 * 
 	 * @param id
 	 * @return
-	 * @throws ProjectInconsistentException
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException
 	 * @throws CustomFormException
@@ -793,7 +788,7 @@ public class CustomForms extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	// This service has no authorization in that the UI representation of a CF is necessary for prompting data
-	public JsonNode getCustomFormRepresentation(String id) throws ProjectInconsistentException,
+	public JsonNode getCustomFormRepresentation(String id) throws
 			PRParserException, RDFModelNotSetException, CustomFormException {
 		CustomForm cForm = cfManager.getCustomForm(getProject(), id);
 		if (cForm != null) {
@@ -1124,14 +1119,12 @@ public class CustomForms extends STServiceAdapter {
 	 * @param formType
 	 *            tells if the CF is type "node" or "graph". Determines also the nature of the pearl parameter
 	 * @return
-	 * @throws ProjectInconsistentException
 	 * @throws RDFModelNotSetException
 	 * @throws CustomFormException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
-	public JsonNode validatePearl(String pearl, String formType)
-			throws ProjectInconsistentException, CustomFormException {
+	public JsonNode validatePearl(String pearl, String formType) throws CustomFormException {
 		CODACore codaCore = getInitializedCodaCore(getManagedConnection());
 		if (formType.equals(CustomForm.Types.graph.toString())) {
 			try {

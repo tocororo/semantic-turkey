@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
@@ -32,7 +31,6 @@ import it.uniroma2.art.semanticturkey.customform.SpecialValue;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -218,7 +216,7 @@ public class Resources extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', '{lang: ''' +@auth.langof(#value)+ '''}','C')")
 	public void addValue(@LocallyDefined @Modified Resource subject, IRI property, SpecialValue value)
-			throws ProjectInconsistentException, CODAException {
+			throws CODAException {
 		addValue(getManagedConnection(), subject, property, value);
 	}
 
@@ -269,7 +267,7 @@ public class Resources extends STServiceAdapter {
 	/**
 	 * Return the description of a list of resources, including show and nature
 	 * 
-	 * @param resource
+	 * @param resources
 	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)

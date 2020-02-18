@@ -35,12 +35,10 @@ package it.uniroma2.art.semanticturkey.vocabulary;
  */
 public enum RDFTypesEnum {
 
-	undetermined, resource, bnode, uri, literal, plainLiteral, typedLiteral;
+	undetermined, resource, bnode, uri, literal;
 
 	public static boolean isLiteral(RDFTypesEnum lit) {
-		return (lit == RDFTypesEnum.literal
-		|| lit == RDFTypesEnum.plainLiteral
-		|| lit == RDFTypesEnum.typedLiteral);
+		return (lit == RDFTypesEnum.literal);
 	}
 	
 	public static boolean isResource(RDFTypesEnum type) {
