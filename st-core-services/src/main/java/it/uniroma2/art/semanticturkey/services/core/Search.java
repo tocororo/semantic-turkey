@@ -370,9 +370,9 @@ public class Search extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = new QueryBuilder(stServiceContext, query);
+		qb.processQName();
 		qb.processRendering();
 		return qb.runQuery();
-
 	}
 
 	@STServiceOperation
