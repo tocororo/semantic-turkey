@@ -75,6 +75,8 @@ public class STPropertiesManager {
 	public static final String SETTING_MAIL_FROM_PASSWORD = "mail.from.password";
 	public static final String SETTING_MAIL_FROM_ALIAS = "mail.from.alias";
 
+	public static final String SETTING_ALIGNMENT_REMOTE_PORT = "alignment.remote.port";
+
 	public static final String SETTING_PROJ_LANGUAGES = "languages";
 	public static final String SETTING_EXP_FEATURES_ENABLED = "experimental_features_enabled";
 	public static final String SETTING_HOME_CONTENT = "home_content";

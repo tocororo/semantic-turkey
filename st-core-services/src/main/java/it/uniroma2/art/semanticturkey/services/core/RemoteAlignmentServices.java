@@ -13,6 +13,8 @@ import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletResponse;
 
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
@@ -82,8 +84,6 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(RemoteAlignmentServices.class);
 
-	public static final String ALIGNMENTSERVICES_ENDPOINT = "http://localhost:8282/api/";
-
 	@Autowired
 	private MetadataRegistryBackend metadataRegistryBackend;
 	@Autowired
@@ -129,7 +129,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 		}
 
 		ResponseEntity<List<MatchingStatus>> response = restTemplate.exchange(
-				ALIGNMENTSERVICES_ENDPOINT + "getMatchingList", HttpMethod.GET, null,
+				getAlignmentServiceEndpoint() + "getMatchingList", HttpMethod.GET, null,
 				new ParameterizedTypeReference<List<MatchingStatus>>() {
 				});
 
@@ -191,7 +191,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			return null;
 
 		};
-		restTemplate.execute(ALIGNMENTSERVICES_ENDPOINT + "downloadFile/{taskId}.rdf?fileType=alignment",
+		restTemplate.execute(getAlignmentServiceEndpoint() + "downloadFile/{taskId}.rdf?fileType=alignment",
 				HttpMethod.GET, requestCallback, responseExtractor, ImmutableMap.of("taskId", taskId));
 	}
 
@@ -207,7 +207,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			FileUtils.copyInputStreamToFile(response.getBody(), inputServerFile);
 			return null;
 		};
-		restTemplate.execute(ALIGNMENTSERVICES_ENDPOINT + "downloadFile/{taskId}?fileType=alignment",
+		restTemplate.execute(getAlignmentServiceEndpoint() + "downloadFile/{taskId}?fileType=alignment",
 				HttpMethod.GET, requestCallback, responseExtractor, ImmutableMap.of("taskId", taskId));
 
 		// creating model for loading alignment
@@ -311,7 +311,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 		}
 
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
-			HttpPost request = new HttpPost(ALIGNMENTSERVICES_ENDPOINT + "runMatch");
+			HttpPost request = new HttpPost(getAlignmentServiceEndpoint() + "runMatch");
 			request.setEntity(new StringEntity(matchingProblemJson, ContentType.APPLICATION_JSON));
 			try (CloseableHttpResponse httpReponse = httpClient.execute(request)) {
 				StatusLine statusLine = httpReponse.getStatusLine();
@@ -343,7 +343,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
 			HttpDelete request;
 			try {
-				request = new HttpDelete(new URIBuilder(ALIGNMENTSERVICES_ENDPOINT + "delete")
+				request = new HttpDelete(new URIBuilder(getAlignmentServiceEndpoint() + "delete")
 						.addParameter("id", id).build());
 			} catch (URISyntaxException e) {
 				throw new RuntimeException(e); // should not happen
@@ -367,5 +367,19 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 				}
 			}
 		}
+	}
+
+
+	private String getAlignmentServiceEndpoint() {
+		String alignmentPort = null;
+		try {
+			alignmentPort = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_ALIGNMENT_REMOTE_PORT);
+		} catch (STPropertyAccessException e) {
+			e.printStackTrace();
+		}
+		if (alignmentPort == null) {
+			alignmentPort = "7575";
+		}
+		return "http://localhost:" + alignmentPort + "/api/";
 	}
 }

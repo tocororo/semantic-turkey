@@ -30,6 +30,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
@@ -121,7 +122,7 @@ public class Resources {
 		} else { // stData exists => check if need to be updated
 			try {
 				UpdateRoutines.startUpdatesCheckAndRepair();
-			} catch (IOException e) {
+			} catch (IOException | STPropertyUpdateException e) {
 				throw new STInitializationException(e);
 			}
 		}

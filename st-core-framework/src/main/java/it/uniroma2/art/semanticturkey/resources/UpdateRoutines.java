@@ -27,6 +27,7 @@ import it.uniroma2.art.semanticturkey.SemanticTurkey;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
@@ -68,7 +69,7 @@ public class UpdateRoutines {
 
 	protected static Logger logger = LoggerFactory.getLogger(UpdateRoutines.class);
 
-	public static void startUpdatesCheckAndRepair() throws IOException {
+	public static void startUpdatesCheckAndRepair() throws IOException, STPropertyUpdateException {
 		VersionNumber stVersionNumber = Config.getVersionNumber();
 		VersionNumber stDataVersionNumber = Config.getSTDataVersionNumber();
 		logger.debug("version number of installed Semantic Turkey is: " + stVersionNumber);
@@ -90,6 +91,9 @@ public class UpdateRoutines {
 			}
 			if (stDataVersionNumber.compareTo(new VersionNumber(7, 0, 0)) < 0) {
 				alignFrom6To7();
+			}
+			if (stDataVersionNumber.compareTo(new VersionNumber(7, 1, 0)) < 0) {
+				alignFrom7To71();
 			}
 			Config.setSTDataVersionNumber(stVersionNumber);
 		}
@@ -195,6 +199,11 @@ public class UpdateRoutines {
 		logger.debug("Version 7.0.0 updated the class_tree_filter in the pu-settings-defaults");
 		Resources.getDocsDir().mkdirs();
 		updatePUSettingsSystemDefaults(STPropertiesManager.CORE_PLUGIN_ID);
+	}
+
+	private static void alignFrom7To71() throws STPropertyUpdateException {
+		logger.debug("Version 7.1 added alignment.remote.port to the system settings");
+		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ALIGNMENT_REMOTE_PORT, "7575");
 	}
 	
 	private static void updateRoles(Role[] roles) throws IOException {

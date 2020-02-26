@@ -7,3 +7,4 @@ mail.smtp.port=465
 mail.smtp.auth=true
 mail.smtp.ssl.enable=true
 mail.smtp.starttls.enable=false
+alignment.remote.port=7575
