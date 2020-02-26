@@ -23,7 +23,7 @@ public class BioPortalDeployerFactory implements ExtensionFactory<BioPortalDeplo
 
 	@Override
 	public String getDescription() {
-		return "A deployer that submits an ontology (or more precisely, an OWL ontology or a SKOS theaurus) to BioPortal";
+		return "A deployer that submits an ontology (or more precisely, an OWL ontology or a SKOS theaurus) to a BioPortal-compatible catalog";
 	}
 
 	@Override

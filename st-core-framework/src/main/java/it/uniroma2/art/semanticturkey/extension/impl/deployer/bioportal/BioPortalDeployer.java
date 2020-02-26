@@ -1,12 +1,12 @@
 package it.uniroma2.art.semanticturkey.extension.impl.deployer.bioportal;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.Map;
@@ -24,6 +24,7 @@ import org.eclipse.rdf4j.rio.Rio;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Closer;
 
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.Deployer;
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RepositorySource;
@@ -31,9 +32,11 @@ import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RepositorySource
 import it.uniroma2.art.semanticturkey.extension.impl.deployer.http.AbstractHTTPDeployer;
 
 /**
- * Implementation of the {@link Deployer} that uses the SPARQL 1.1 HTTP Graph Store API.
+ * Implementation of the {@link Deployer} that uses the BioPortal REST API.
  * 
- * <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ * @see <a href="http://data.bioontology.org/documentation#OntologySubmission">Ontology submission</a>
+ * 
  */
 public class BioPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		implements RepositorySourcedDeployer {
@@ -43,18 +46,28 @@ public class BioPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 
 	private BioPortalDeployerConfiguration conf;
 
+	// can be used to register resources to be freed after the deployment
+	protected ThreadLocal<Closer> requestScopedResourcesToRelease;
+
 	public BioPortalDeployer(BioPortalDeployerConfiguration conf) {
 		this.conf = conf;
+		this.requestScopedResourcesToRelease = ThreadLocal.withInitial(Closer::create);
 	}
 
 	@Override
 	public void deploy(RepositorySource source) throws IOException {
-		deployInternal(source);
+		try {
+			deployInternal(source);
+		} finally {
+			this.requestScopedResourcesToRelease.get().close();
+		}
 	}
 
 	protected URI getAddress() throws URISyntaxException {
-		return UriComponentsBuilder.fromHttpUrl(BIOPORTAL_BASE).path(SUBMISSIONS_ENDPOINT)
-				.buildAndExpand(ImmutableMap.of("acronym", conf.acronym)).toUri();
+		return UriComponentsBuilder
+				.fromHttpUrl(
+						StringUtils.isNoneBlank(conf.apiBaseURL) ? conf.apiBaseURL.trim() : BIOPORTAL_BASE)
+				.path(SUBMISSIONS_ENDPOINT).buildAndExpand(ImmutableMap.of("acronym", conf.acronym)).toUri();
 	}
 
 	@Override
@@ -111,10 +124,12 @@ public class BioPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		}
 
 		Path tempFilePath = Files.createTempFile("bioportal_deployer", "rdf");
-		source.getSourceRepositoryConnection().export(
-				Rio.createWriter(RDFFormat.RDFXML, Files.newOutputStream(tempFilePath)), source.getGraphs());
-		entityBuilder.addBinaryBody("tempFile",
-				Files.newInputStream(tempFilePath, StandardOpenOption.DELETE_ON_CLOSE),
+		this.requestScopedResourcesToRelease.get().register(() -> Files.deleteIfExists(tempFilePath));
+		try (OutputStream os = Files.newOutputStream(tempFilePath)) {
+			source.getSourceRepositoryConnection().export(Rio.createWriter(RDFFormat.RDFXML, os),
+					source.getGraphs());
+		}
+		entityBuilder.addBinaryBody("tempFile", tempFilePath.toFile(),
 				ContentType.create("application/rdf+xml", StandardCharsets.UTF_8), "submission.rdf");
 
 		return entityBuilder.build();

@@ -25,6 +25,9 @@ public class BioPortalDeployerConfiguration implements Configuration {
 				+ "Be aware that the system administration could be able to see it.";
 	}
 
+	@STProperty(description = "The base URL of an implementation of the BioPortal REST API. If this parameter is omitted, then the deployer defaults to the official base URL of the BioPortal official server (https://data.bioontology.org/)", displayName = "API Base URL")
+	public String apiBaseURL;
+
 	@STProperty(description = "A valid API key for the BioPortal REST API. A user's API key be found on the account page of that user", displayName = "API Key")
 	@Required
 	public String apiKey;
@@ -33,19 +36,19 @@ public class BioPortalDeployerConfiguration implements Configuration {
 	@Required
 	public String acronym;
 
-	@STProperty(description = "Description of the submission", displayName = "Description")
+	@STProperty(description = "Description of the ontology", displayName = "Description")
 	@Required
 	public String description;
 
-	@STProperty(description = "Version of the submission", displayName = "Version")
+	@STProperty(description = "Version of the ontology", displayName = "Version")
 	public String version;
 
-	@STProperty(description = "Ontology language used by the submission", displayName = "Format")
+	@STProperty(description = "Ontology language", displayName = "Format")
 	@Enumeration({ "OWL", "SKOS" })
 	@Required
 	public String hasOntologyLanguage;
 
-	@STProperty(description = "Status of the submission", displayName = "Status")
+	@STProperty(description = "Status of the ontology", displayName = "Status")
 	@Enumeration({ "alpha", "beta", "production", "retired" })
 	@Required
 	public String status;
@@ -54,7 +57,7 @@ public class BioPortalDeployerConfiguration implements Configuration {
 	@Required
 	public String released;
 
-	@STProperty(description = "Contacts for the submission. Each contact should be provided as a string matching this paattern: name (email)", displayName = "Contacts")
+	@STProperty(description = "Contacts for the ontology. Each contact should be provided as a string matching this paattern: name (email)", displayName = "Contacts")
 	@Required
 	// @Size(min = 1)
 	// public List<Contact> contact;

@@ -92,7 +92,7 @@ public abstract class AbstractHTTPDeployer<T extends Source> implements Deployer
 			request.setEntity(createHttpEntity(source));
 			try (CloseableHttpResponse httpResponse = httpClient.execute(request, context)) {
 				StatusLine statusLine = httpResponse.getStatusLine();
-				if ((statusLine.getStatusCode() / 200) != 1) {
+				if ((statusLine.getStatusCode() / 100) != 2) {
 					throw new IOException(buildExceptionFromResponse(httpResponse));
 				}
 			}
