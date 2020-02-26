@@ -67,7 +67,6 @@ import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.sail.config.SailImplConfig;
 import org.eclipse.rdf4j.sail.shacl.config.ShaclSailConfig;
-import org.eclipse.rdf4j.sail.shacl.config.ShaclSailSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,7 +148,7 @@ import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
  */
 public class ProjectManager {
 
-	public static enum ProjectType {
+	public enum ProjectType {
 		continousEditing, saveToStore
 	}
 
@@ -231,7 +230,8 @@ public class ProjectManager {
 	 * @param projectName
 	 * @throws ProjectDeletionException
 	 */
-	public static void deleteProject(String projectName) throws ProjectDeletionException {
+	public static void deleteProject(String projectName) throws ProjectDeletionException, ProjectAccessException,
+			ProjectUpdateException, ReservedPropertyUpdateException, InvalidProjectNameException, ProjectInexistentException {
 		File projectDir;
 		try {
 			projectDir = getProjectDir(projectName);
@@ -252,6 +252,17 @@ public class ProjectManager {
 			ProjectGroupBindingsManager.deletePGBindingsOfProject(projectName);
 		} catch (IOException e) {
 			throw new ProjectDeletionException(e);
+		}
+
+		//check and eventually delete the reference to the deleted project in the ACL of other projects
+		Project deletingProject = getProject(projectName, true);
+		for (AbstractProject absProj : listProjects()) {
+			if (absProj instanceof Project) {
+				ProjectACL acl = ((Project) absProj).getACL();
+				if (acl.hasInACL(deletingProject)) {
+					acl.revokeAccess(deletingProject);
+				}
+			}
 		}
 
 		if (!Utilities.deleteDir(projectDir))

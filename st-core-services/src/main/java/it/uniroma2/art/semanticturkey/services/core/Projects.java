@@ -536,7 +536,9 @@ public class Projects extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'D')")
-	public void deleteProject(ProjectConsumer consumer, String projectName) throws ProjectDeletionException {
+	public void deleteProject(ProjectConsumer consumer, String projectName) throws ProjectDeletionException,
+			ProjectAccessException, ProjectUpdateException, ReservedPropertyUpdateException,
+			InvalidProjectNameException, ProjectInexistentException {
 		ProjectManager.deleteProject(projectName);
 	}
 
