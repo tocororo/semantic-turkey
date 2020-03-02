@@ -18,7 +18,7 @@ import java.util.TimeZone;
 
 public class PmkiEmailService extends EmailService {
 
-	PmkiEmailService() {
+	public PmkiEmailService() {
 		super(EmailApplicationContext.PMKI);
 	}
 

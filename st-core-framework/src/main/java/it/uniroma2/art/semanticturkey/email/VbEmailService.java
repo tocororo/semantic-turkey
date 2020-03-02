@@ -25,7 +25,7 @@ public class VbEmailService extends EmailService {
 	private static final String ADMIN_FAMILY_NAME_PLACEHOLDER = "{{admin.familyName}}";
 	private static final String ADMIN_LIST_PLACEHOLDER = "{{adminList}}";
 
-	VbEmailService() {
+	public VbEmailService() {
 		super(EmailApplicationContext.VB);
 	}
 
