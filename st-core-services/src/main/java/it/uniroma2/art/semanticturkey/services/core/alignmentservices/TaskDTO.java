@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.services.core.genoma;
+package it.uniroma2.art.semanticturkey.services.core.alignmentservices;
 
 import java.net.URL;
 import java.util.Date;
@@ -6,7 +6,7 @@ import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 
-public class Task {
+public class TaskDTO {
 	private String id;
 	private DatasetInfo leftDataset;
 	private DatasetInfo rightDataset;
@@ -16,7 +16,7 @@ public class Task {
 	private Date startTime;
 	@JsonFormat(shape = Shape.STRING, pattern = "EEE MMM dd HH:mm:ss Z yyyy", locale = "us")
 	private Date endTime;
-
+	
 	public String getId() {
 		return id;
 	}

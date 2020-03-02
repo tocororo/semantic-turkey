@@ -2,10 +2,8 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
 import java.lang.reflect.Field;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -13,21 +11,8 @@ import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletResponse;
 
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -42,14 +27,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableMap;
 
 import it.uniroma2.art.maple.problem.Dataset;
@@ -60,6 +47,8 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
@@ -68,10 +57,11 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.core.genoma.DatasetInfo;
-import it.uniroma2.art.semanticturkey.services.core.genoma.GENOMAException;
-import it.uniroma2.art.semanticturkey.services.core.genoma.Task;
-import it.uniroma2.art.semanticturkey.services.core.genoma.backend.MatchingStatus;
+import it.uniroma2.art.semanticturkey.services.core.alignmentservices.AlignmentServiceException;
+import it.uniroma2.art.semanticturkey.services.core.alignmentservices.DatasetInfo;
+import it.uniroma2.art.semanticturkey.services.core.alignmentservices.TaskDTO;
+import it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.Task;
+import it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.TaskSubmission;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 
 /**
@@ -92,6 +82,13 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
 	public RemoteAlignmentServices() {
 		restTemplate = new RestTemplate();
+		for (HttpMessageConverter<?> msgConv : restTemplate.getMessageConverters()) {
+			if (msgConv instanceof MappingJackson2HttpMessageConverter) {
+				ObjectMapper objectMapper = ((MappingJackson2HttpMessageConverter) msgConv).getObjectMapper();
+				objectMapper.registerModule(new JavaTimeModule());
+			}
+		}
+
 	}
 
 	/**
@@ -108,7 +105,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-	public List<Task> listTasks(Project leftDataset, @Optional Project rightDataset,
+	public List<TaskDTO> listTasks(Project leftDataset, @Optional Project rightDataset,
 			boolean allowReordering) {
 		IRI leftDatasetIRI = metadataRegistryBackend.findDatasetForProject(leftDataset);
 
@@ -128,32 +125,30 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			rightDatasetIRI = null;
 		}
 
-		ResponseEntity<List<MatchingStatus>> response = restTemplate.exchange(
-				getAlignmentServiceEndpoint() + "getMatchingList", HttpMethod.GET, null,
-				new ParameterizedTypeReference<List<MatchingStatus>>() {
+		ResponseEntity<List<Task>> response = restTemplate.exchange(getAlignmentServiceEndpoint() + "tasks",
+				HttpMethod.GET, null, new ParameterizedTypeReference<List<Task>>() {
 				});
 
-		return response.getBody().stream().filter(matchingStatus -> { // filter by matching the provided
-																		// datasets
-			if (Objects.equals(matchingStatus.getOntology1(), leftDatasetIRI) && (rightDatasetIRI == null
-					|| Objects.equals(matchingStatus.getOntology2(), rightDatasetIRI))) {
+		return response.getBody().stream().filter(task -> { // filter by matching the provided
+															// datasets
+			if (Objects.equals(task.getLeftDataset(), leftDatasetIRI)
+					&& (rightDatasetIRI == null || Objects.equals(task.getRightDataset(), rightDatasetIRI))) {
 				return true;
 			} else if (allowReordering) {
-				return Objects.equals(matchingStatus.getOntology2(), leftDatasetIRI)
-						&& (rightDatasetIRI == null
-								|| Objects.equals(matchingStatus.getOntology1(), rightDatasetIRI));
+				return Objects.equals(task.getRightDataset(), leftDatasetIRI) && (rightDatasetIRI == null
+						|| Objects.equals(task.getLeftDataset(), rightDatasetIRI));
 			} else {
 				return false;
 			}
 		}).flatMap(matchingStatus -> {
 			Project leftProject = metadataRegistryBackend
-					.findProjectForDataset(matchingStatus.getOntology1());
+					.findProjectForDataset(matchingStatus.getLeftDataset());
 			if (leftProject == null) {
 				return Stream.empty();
 			}
 
 			Project rightProject = metadataRegistryBackend
-					.findProjectForDataset(matchingStatus.getOntology2());
+					.findProjectForDataset(matchingStatus.getRightDataset());
 			if (rightProject == null) {
 				return Stream.empty();
 			}
@@ -165,18 +160,22 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 				return Stream.empty();
 			}
 
-			DatasetInfo leftDatasetInfo = DatasetInfo.valueOf(leftProject, matchingStatus.getOntology1());
-			DatasetInfo rightDatasetInfo = DatasetInfo.valueOf(rightProject, matchingStatus.getOntology2());
+			DatasetInfo leftDatasetInfo = DatasetInfo.valueOf(leftProject, matchingStatus.getLeftDataset());
+			DatasetInfo rightDatasetInfo = DatasetInfo.valueOf(rightProject,
+					matchingStatus.getRightDataset());
 
-			Task task = new Task();
-			task.setId(matchingStatus.getId());
-			task.setLeftDataset(leftDatasetInfo);
-			task.setRightDataset(rightDatasetInfo);
-			task.setEngine(matchingStatus.getEngine());
-			task.setStatus(matchingStatus.getStatus());
-			task.setStartTime(matchingStatus.getStartTime());
-			task.setEndTime(matchingStatus.getEndTime());
-			return Stream.of(task);
+			TaskDTO taskDTO = new TaskDTO();
+			taskDTO.setId(matchingStatus.getId());
+			taskDTO.setLeftDataset(leftDatasetInfo);
+			taskDTO.setRightDataset(rightDatasetInfo);
+			taskDTO.setStatus(matchingStatus.getStatus());
+			if (matchingStatus.getStartTime() != null) {
+				taskDTO.setStartTime(Date.from(matchingStatus.getStartTime().toInstant()));
+			}
+			if (matchingStatus.getEndTime() != null) {
+				taskDTO.setEndTime(Date.from(matchingStatus.getEndTime().toInstant()));
+			}
+			return Stream.of(taskDTO);
 		}).collect(Collectors.toList());
 	}
 
@@ -191,8 +190,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			return null;
 
 		};
-		restTemplate.execute(getAlignmentServiceEndpoint() + "downloadFile/{taskId}.rdf?fileType=alignment",
-				HttpMethod.GET, requestCallback, responseExtractor, ImmutableMap.of("taskId", taskId));
+		restTemplate.execute(getAlignmentServiceEndpoint() + "tasks/{id}/alignment",
+				HttpMethod.GET, requestCallback, responseExtractor, ImmutableMap.of("id", taskId));
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -207,8 +206,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			FileUtils.copyInputStreamToFile(response.getBody(), inputServerFile);
 			return null;
 		};
-		restTemplate.execute(getAlignmentServiceEndpoint() + "downloadFile/{taskId}?fileType=alignment",
-				HttpMethod.GET, requestCallback, responseExtractor, ImmutableMap.of("taskId", taskId));
+		restTemplate.execute(getAlignmentServiceEndpoint() + "tasks/{id}/alignment",
+				HttpMethod.GET, requestCallback, responseExtractor, ImmutableMap.of("id", taskId));
 
 		// creating model for loading alignment
 		AlignmentModel alignModel = new AlignmentModel();
@@ -270,26 +269,26 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public String createTask(@JsonSerialized MatchingProblem matchingProblem)
-			throws IOException, GENOMAException {
-
+			throws IOException, AlignmentServiceException {
+		
 		//// integrity checks
 
 		// Left dataset has a SPARQL endpoint
-		Dataset leftDataset = matchingProblem.getSourceDataset();
+		Dataset leftDataset = matchingProblem.getLeftDataset();
 		if (!leftDataset.getSparqlEndpoint().isPresent()) {
-			throw new GENOMAException("Missing SPARQL endpoint for the left dataset");
+			throw new AlignmentServiceException("Missing SPARQL endpoint for the left dataset");
 		}
 
 		// Right dataset has a SPARQL endpoint
-		Dataset rightDataset = matchingProblem.getTargetDataset();
+		Dataset rightDataset = matchingProblem.getRightDataset();
 		if (!rightDataset.getSparqlEndpoint().isPresent()) {
-			throw new GENOMAException("Missing SPARQL endpoint for the right dataset");
+			throw new AlignmentServiceException("Missing SPARQL endpoint for the right dataset");
 		}
 
 		// Every support dataset has a SPARQL endpoint
 		for (Dataset supportDataset : matchingProblem.getSupportDatasets()) {
 			if (!supportDataset.getSparqlEndpoint().isPresent()) {
-				throw new GENOMAException("Missing SPARQL endpoint on the support dataset "
+				throw new AlignmentServiceException("Missing SPARQL endpoint on the support dataset "
 						+ NTriplesUtil.toNTriplesString(supportDataset.getId()));
 			}
 		}
@@ -299,87 +298,33 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 		/// End of integrity checks
 
 		if (matchingProblem.getPairings().isEmpty()) {
-			throw new GENOMAException("No pairing of lexicalization set");
+			throw new AlignmentServiceException("No pairing of lexicalization set");
 		}
 
-		ObjectMapper objMapper = new ObjectMapper();
-		String matchingProblemJson;
-		try {
-			matchingProblemJson = objMapper.writeValueAsString(matchingProblem);
-		} catch (JsonProcessingException e) {
-			throw new IllegalArgumentException(e); // this should never happen
-		}
-
-		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
-			HttpPost request = new HttpPost(getAlignmentServiceEndpoint() + "runMatch");
-			request.setEntity(new StringEntity(matchingProblemJson, ContentType.APPLICATION_JSON));
-			try (CloseableHttpResponse httpReponse = httpClient.execute(request)) {
-				StatusLine statusLine = httpReponse.getStatusLine();
-				if ((statusLine.getStatusCode() / HttpStatus.SC_OK) != 1) {
-					throw new IOException(statusLine.getStatusCode() + ":" + statusLine.getReasonPhrase());
-				}
-
-				HttpEntity entity = httpReponse.getEntity();
-				String responseString = IOUtils.toString(entity.getContent(),
-						java.util.Optional.ofNullable(ContentType.get(entity).getCharset())
-								.orElse(StandardCharsets.UTF_8).name());
-				ObjectMapper mapper = new ObjectMapper();
-				JsonNode responseObject = mapper.readTree(new StringReader(responseString));
-				JsonNode errorNode = responseObject.get("error");
-
-				if (errorNode != null) {
-					throw new GENOMAException(errorNode.textValue());
-				}
-
-				return responseObject.get("id").textValue();
-			}
-
-		}
-
+		TaskSubmission taskSubmission = new TaskSubmission();
+		taskSubmission.setTaskReport(matchingProblem);
+		Task task = restTemplate.postForObject(getAlignmentServiceEndpoint() + "tasks", taskSubmission,
+				Task.class);
+		return task.getId();
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void deleteTask(String id) throws IOException, GENOMAException {
-		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
-			HttpDelete request;
-			try {
-				request = new HttpDelete(new URIBuilder(getAlignmentServiceEndpoint() + "delete")
-						.addParameter("id", id).build());
-			} catch (URISyntaxException e) {
-				throw new RuntimeException(e); // should not happen
-			}
-			try (CloseableHttpResponse httpReponse = httpClient.execute(request)) {
-				StatusLine statusLine = httpReponse.getStatusLine();
-				if ((statusLine.getStatusCode() / HttpStatus.SC_OK) != 1) {
-					throw new IOException(statusLine.getStatusCode() + ":" + statusLine.getReasonPhrase());
-				}
-
-				HttpEntity entity = httpReponse.getEntity();
-				String responseString = IOUtils.toString(entity.getContent(),
-						java.util.Optional.ofNullable(ContentType.get(entity).getCharset())
-								.orElse(StandardCharsets.UTF_8).name());
-				ObjectMapper mapper = new ObjectMapper();
-				JsonNode responseObject = mapper.readTree(new StringReader(responseString));
-				JsonNode errorNode = responseObject.get("error");
-
-				if (errorNode != null) {
-					throw new GENOMAException(errorNode.textValue());
-				}
-			}
-		}
+	public void deleteTask(String id) throws IOException, AlignmentServiceException {
+		restTemplate.delete(getAlignmentServiceEndpoint() + "tasks/{id}", HttpMethod.DELETE,
+				ImmutableMap.of("id", id));
 	}
-
 
 	private String getAlignmentServiceEndpoint() {
 		String alignmentPort = null;
 		try {
-			alignmentPort = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_ALIGNMENT_REMOTE_PORT);
+			alignmentPort = STPropertiesManager
+					.getSystemSetting(STPropertiesManager.SETTING_ALIGNMENT_REMOTE_PORT);
 		} catch (STPropertyAccessException e) {
 			e.printStackTrace();
 		}
 		if (alignmentPort == null) {
 			alignmentPort = "7575";
 		}
-		return "http://localhost:" + alignmentPort + "/api/";
+		return "http://localhost:" + alignmentPort + "/";
 	}
 }

@@ -34,6 +34,7 @@
 		<bundle dependency="true">mvn:org.yaml/snakeyaml/1.18</bundle>
 		<bundle dependency="true">mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.9.6</bundle>
 		<bundle dependency="true">mvn:com.fasterxml.jackson.datatype/jackson-datatype-jdk8/2.9.6</bundle>
+		<bundle dependency="true">mvn:com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.9.6</bundle>
 
 		<!-- CODA -->
 		<feature dependency="true" version="[1.3,2)">coda</feature>

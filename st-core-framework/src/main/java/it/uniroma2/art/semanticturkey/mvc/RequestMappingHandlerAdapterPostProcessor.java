@@ -22,6 +22,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import it.uniroma2.art.semanticturkey.json.PairSerializer;
 import it.uniroma2.art.semanticturkey.json.TripleSerializer;
@@ -63,6 +64,8 @@ public class RequestMappingHandlerAdapterPostProcessor implements BeanPostProces
 		ObjectMapper newObjectMapper = new ObjectMapper();
 		newObjectMapper.registerModule(customTypeHandlers);
 		newObjectMapper.registerModule(new Jdk8Module());
+		newObjectMapper.registerModule(new JavaTimeModule());
+		
 		this.objectMapper = newObjectMapper;
 
 	}

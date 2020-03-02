@@ -1,5 +1,7 @@
 version 7.1
 date: dd/mm/yyyy
+  * use the Alignment Services API defined by MAPLE
+  * Update to MAPLE 0.0.6
   * add a Deployer for submitting an ontology (in fact, an OWL ontology or a SKOS thesaurus) to
     BioPortal-compatible catalogs
   * make both the base URI and the ontology mirror file optional when importing an ontology from a local file

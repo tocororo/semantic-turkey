@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.services.core.genoma;
+package it.uniroma2.art.semanticturkey.services.core.alignmentservices;
 
 import org.eclipse.rdf4j.model.IRI;
 
