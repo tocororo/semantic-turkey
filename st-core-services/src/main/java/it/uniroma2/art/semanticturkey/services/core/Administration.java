@@ -188,7 +188,7 @@ public class Administration extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	public void testEmailConfig(String mailTo, @Optional EmailApplicationContext appCtx) throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
 		EmailService emailService = (appCtx == EmailApplicationContext.PMKI) ?  new PmkiEmailService() : new VbEmailService();
-		emailService.sendMailConfigurationTest(mailTo);
+		emailService.sendMailServiceConfigurationTest(mailTo);
 	}
 	
 	

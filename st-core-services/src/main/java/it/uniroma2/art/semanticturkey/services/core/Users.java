@@ -74,7 +74,7 @@ public class Users extends STServiceAdapter {
 	
 	@Autowired
 	private SessionRegistry sessionRegistry;
-	
+
 	/**
 	 * If there are no registered users return an empty response;
 	 * If there is a user logged, returns a user object that is a json representation of the logged user.
@@ -508,7 +508,7 @@ public class Users extends STServiceAdapter {
 		try {
 			request.getSession().setAttribute("reset_password_token", email+token);
 			EmailService emailService = (appCtx == EmailApplicationContext.PMKI) ?  new PmkiEmailService() : new VbEmailService();
-			emailService.sendForgotPasswordMail(user, resetLink);
+			emailService.sendResetPasswordRequestedMail(user, resetLink);
 		} catch (UnsupportedEncodingException | MessagingException e) {
 			logger.error(Utilities.printFullStackTrace(e));
 			Collection<String> adminEmails = UsersManager.getAdminEmailList();
@@ -539,7 +539,7 @@ public class Users extends STServiceAdapter {
 		try {
 			UsersManager.updateUserPassword(user, tempPwd);
 			EmailService emailService = (appCtx == EmailApplicationContext.PMKI) ?  new PmkiEmailService() : new VbEmailService();
-			emailService.sendResetPasswordMail(user, tempPwd);
+			emailService.sendResetPasswordConfirmedMail(user, tempPwd);
 		} catch (IOException e) {
 			throw new Exception(e);
 		}

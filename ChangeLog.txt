@@ -3,7 +3,10 @@ date: dd/mm/yyyy
   * add a Deployer for submitting an ontology (in fact, an OWL ontology or a SKOS thesaurus) to
     BioPortal-compatible catalogs
   * make both the base URI and the ontology mirror file optional when importing an ontology from a local file
+  * port of the remote alignment system (Genoma) is now configurable
   * fix mishandling of status code by HTTP-based deployers
+  * updated dependency on Sheet2RDF 4.0.1
+  * updated dependency on CODA 1.7.0
 
 version 7.0
 date: 06/02/2020

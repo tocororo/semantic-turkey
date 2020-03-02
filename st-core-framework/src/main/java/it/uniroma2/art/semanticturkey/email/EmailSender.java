@@ -11,10 +11,7 @@ import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Properties;
-import java.util.TimeZone;
 
 public class EmailSender {
 	
@@ -64,28 +61,4 @@ public class EmailSender {
 
 		Transport.send(message);
 	}
-
-
-	/*
-	 * UTILS
-	 */
-
-	/**
-	 *
-	 * @param timestamp
-	 * @return
-	 */
-	public static String getDateFromTimestamp(long timestamp) {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-		return sdf.format(new Date(timestamp));
-	}
-
-	public static String formatBold(String text) {
-		return "<b>" + text + "</b>";
-	}
-	public static String formatItalic(String text) {
-		return "<i>" + text + "</i>";
-	}
-
 }

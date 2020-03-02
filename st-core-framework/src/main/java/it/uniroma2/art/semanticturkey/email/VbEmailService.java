@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.email;
 
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -8,7 +9,25 @@ import javax.mail.MessagingException;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 
-public class VbEmailService implements EmailService{
+public class VbEmailService extends EmailService {
+
+	//Settings
+	public static final String SETTING_MAIL_CONTENT_REGISTRATION_TO_USER = "mail.content.user_registered.user";
+	public static final String SETTING_MAIL_CONTENT_REGISTRATION_TO_ADMIN = "mail.content.user_registered.admin";
+	public static final String SETTING_MAIL_CONTENT_ENABLED = "mail.content.user_enabled";
+
+	//placeholders
+	private static final String USER_EMAIL_PLACEHOLDER = "{{user.email}}";
+	private static final String USER_GIVEN_NAME_PLACEHOLDER = "{{user.givenName}}";
+	private static final String USER_FAMILY_NAME_PLACEHOLDER = "{{user.familyName}}";
+	private static final String ADMIN_EMAIL_PLACEHOLDER = "{{admin.email}}";
+	private static final String ADMIN_GIVEN_NAME_PLACEHOLDER = "{{admin.givenName}}";
+	private static final String ADMIN_FAMILY_NAME_PLACEHOLDER = "{{admin.familyName}}";
+	private static final String ADMIN_LIST_PLACEHOLDER = "{{adminList}}";
+
+	VbEmailService() {
+		super(EmailApplicationContext.VB);
+	}
 
 	/**
 	 * Sends an email to the registered user
@@ -17,20 +36,20 @@ public class VbEmailService implements EmailService{
 	 * @throws UnsupportedEncodingException
 	 * @throws STPropertyAccessException
 	 */
-	public void sendRegistrationMailToUser(STUser user)
-			throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
-		Collection<String> adminEmails = UsersManager.getAdminEmailList();
-		String adminEmailsMsg = (adminEmails.size() == 1) ?
-				adminEmails.iterator().next() :
-				" one of the following address: " + String.join(", ", adminEmails);
-		String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
-				+ "<br>thank you for registering to VocBench 3."
-				+ " Your request has been received. Please wait for the administrator to approve it."
-				+ " After the approval, you can log into VocBench with the e-mail " + user.getEmail() + " and your chosen password."
-				+ "<br>Thanks for your interest."
-				+ "<br>If you want to unregister, please send an email with your e-mail address and the subject:"
-				+ " 'VocBench - Unregister' to " + adminEmailsMsg + "."
-				+ "<br><br>Regards,<br>The VocBench Team.";
+	public void sendRegistrationMailToUser(STUser user) throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
+		String text = STPropertiesManager.getSystemSetting(SETTING_MAIL_CONTENT_REGISTRATION_TO_USER);
+		if (text == null) {
+			text = "Dear {{user.givenName}} {{user.familyName}},<br>" +
+					"thank you for registering to VocBench. Your request has been received. " +
+					"Please wait for the administrator to approve it.<br>" +
+					"After the approval, you can log into VocBench with the e-mail {{user.email}} and your chosen password.<br>" +
+					"Thanks for your interest.<br><br>" +
+					"If you want to unregister, please send an email with your e-mail address and the subject: " +
+					"'<i>VocBench - Unregister</i>' to one of the administrators ({{adminList}}).<br><br>" +
+					"Regards,<br>The VocBench Team.";
+		}
+		text = replaceUserPlaceholders(text, user);
+		text = replaceGenericPlaceholders(text);
 		EmailSender.sendMail(user.getEmail(), "VocBench registration", text);
 	}
 
@@ -41,12 +60,16 @@ public class VbEmailService implements EmailService{
 	 * @throws UnsupportedEncodingException
 	 * @throws STPropertyAccessException
 	 */
-	public void sendEnabledMailToUser(STUser user)
-			throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
-		String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
-				+ "<br>the administrator has enabled your account."
-				+ " You can now log into VocBench with the e-mail " + user.getEmail() + " and your chosen password."
-				+ "<br><br>Regards,<br>The VocBench Team.";
+	public void sendEnabledMailToUser(STUser user) throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
+		String text = STPropertiesManager.getSystemSetting(SETTING_MAIL_CONTENT_ENABLED);
+		if (text == null) {
+			text = "Dear {{user.givenName}} {{user.familyName}},<br>" +
+					"the administrator has enabled your account. You can now log into VocBench with the email " +
+					"<i>{{user.email}}</i> and your chosen password.<br><br>" +
+					"Regards,<br>The VocBench Team.";
+		}
+		text = replaceUserPlaceholders(text, user);
+		text = replaceGenericPlaceholders(text);
 		EmailSender.sendMail(user.getEmail(), "VocBench account enabled", text);
 	}
 
@@ -59,46 +82,62 @@ public class VbEmailService implements EmailService{
 	public void sendRegistrationMailToAdmin(STUser user)
 			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
 		for (String adminEmail: UsersManager.getAdminEmailList()) {
-			String text = "Dear VocBench administrator,"
-					+ "<br>there is a new user registration request for VocBench."
-					+ "<br>Given Name: " + user.getGivenName()
-					+ "<br>Family Name: " + user.getFamilyName()
-					+ "<br>E-mail: " + user.getEmail()
-					+ "<br>Please activate the account.<br><br>Regards,<br>The VocBench Team.";
+			STUser admin = UsersManager.getUserByEmail(adminEmail);
+			String text = STPropertiesManager.getSystemSetting(SETTING_MAIL_CONTENT_REGISTRATION_TO_USER);
+			if (text == null) {
+				text = "Dear {{admin.givenName}} {{admin.familyName}},<br>" +
+						"there is a new user registered to VocBench.<br>" +
+						"Given Name: <i>{{user.givenName}}</i><br>" +
+						"Family Name: <i>{{user.familyName}}</i><br>" +
+						"Email: <i>{{user.email}}</i><br>" +
+						"Please, activate the account.<br><br>Regards.";
+			}
+			text = replaceUserPlaceholders(text, user);
+			text = replaceAdminPlaceholders(text, admin);
+			text = replaceGenericPlaceholders(text);
 			EmailSender.sendMail(adminEmail, "VocBench registration", text);
 		}
 	}
 
-	@Override
-	public void sendMailConfigurationTest(String mailTo) throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
-		String text = "This message has been sent in order to check the VocBench e-mail configuration.<br>"
-				+ "If you did not request to send this e-mail, please ignore it.";
-		EmailSender.sendMail(mailTo, "VocBench e-mail configuration check", text);
+	/**
+	 * Replaces references to user placeholders with the info about the given user.
+	 * This must be used only in those email messages which content involves the user
+	 * (e.g. user registered, account enabled, ..., so not in the email-service test message)
+	 * @param text
+	 * @param user
+	 * @return
+	 */
+	private static String replaceUserPlaceholders(String text, STUser user) {
+		String replaced = text;
+		replaced = replaced.replace(USER_EMAIL_PLACEHOLDER, user.getEmail());
+		replaced = replaced.replace(USER_GIVEN_NAME_PLACEHOLDER, user.getGivenName());
+		replaced = replaced.replace(USER_FAMILY_NAME_PLACEHOLDER, user.getFamilyName());
+		return replaced;
 	}
 
-	@Override
-	public void sendResetPasswordMail(STUser user, String tempPassword)
-			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
-		String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
-				+ "<br>we confirm you that your password has been reset."
-				+ "<br>This is your new temporary password:"
-				+ "<br><br>"+ tempPassword
-				+ "<br><br>After the login we strongly recommend you to change the password.";
-		EmailSender.sendMail(user.getEmail(), "VocBench password reset", text);
+	/**
+	 * Replaces references to (a specific) admin placeholders with the info about the given admin.
+	 * This must be used only in those email messages which content involves the admin
+	 * (e.g. user registered, ..., so not in emails toward the sole user (account enabled) or the email-service test message)
+	 * @param text
+	 * @param admin
+	 * @return
+	 */
+	private static String replaceAdminPlaceholders(String text, STUser admin) {
+		String replaced = text;
+		replaced = replaced.replace(ADMIN_EMAIL_PLACEHOLDER, admin.getEmail());
+		replaced = replaced.replace(ADMIN_GIVEN_NAME_PLACEHOLDER, admin.getGivenName());
+		replaced = replaced.replace(ADMIN_FAMILY_NAME_PLACEHOLDER, admin.getFamilyName());
+		return replaced;
 	}
 
-	@Override
-	public void sendForgotPasswordMail(STUser user, String forgotPasswordLink)
-			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
-		String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
-				+ "<br>we've received a request to reset the password for the"
-				+ " VocBench account associated to this email address."
-				+ "<br>Click the link below to be redirected to the reset password page."
-				+ " This password reset is only valid for a limited time."
-				+ "<br><br>" + forgotPasswordLink
-				+ "<br><br>If you did not request a password reset, please ignore this email"
-				+ " or report this to the system administrator.";
-		EmailSender.sendMail(user.getEmail(), "VocBench password reset", text);
+	private static String replaceGenericPlaceholders(String text) {
+		String replaced = text;
+		if (replaced.contains(ADMIN_LIST_PLACEHOLDER)) {
+			Collection<String> adminEmails = UsersManager.getAdminEmailList();
+			replaced = replaced.replace(ADMIN_LIST_PLACEHOLDER, String.join(", ", adminEmails));
+		}
+		return replaced;
 	}
 
 }
