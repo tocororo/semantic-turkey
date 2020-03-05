@@ -139,7 +139,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public String searchResource(STServiceContext stServiceContext,
 			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, boolean useNotes, 
-			SearchMode searchMode, @Optional List<IRI> schemes, @Optional List<String> langs, 
+			SearchMode searchMode, @Optional List<IRI> schemes, String schemeFilter, @Optional List<String> langs,
 			boolean includeLocales, IRI lexModel, boolean searchInRDFSLabel, 
 			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex) 
 					throws IllegalStateException, STPropertyAccessException {
@@ -161,7 +161,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
 				searchInSKOSXLLabel, searchInOntolex, true);
 		//filter the resource according to its type
-		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, null,
+		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, schemeFilter, null,
 				null);
 
 		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
@@ -212,7 +212,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
 				searchInSKOSXLLabel, searchInOntolex, false);
 		//filter the resource according to its type
-		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, null,
+		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, "or", null,
 				lexicons);
 
 		//add the information about the lexicon
@@ -237,7 +237,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional List<String> langs, @Optional IRI cls, boolean includeLocales) 
+			@Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter,
+			@Optional List<String> langs, @Optional IRI cls, boolean includeLocales)
 					throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
@@ -298,8 +299,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//if the user specify a role, filter the results according to the type
 		if(rolesArray!=null && rolesArray.length>0){
 			//filter the resource according to its type
-			query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, 
-					cls, null);
+			query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes,
+					schemeFilter, cls, null);
 		}
 		query+="\n}";
 		//@formatter:on
@@ -313,7 +314,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter,
+			@Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
@@ -326,7 +328,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			//filter the resource according to its type
 			query+= "\n{ SELECT ?resource \nWHERE {\n" +
 					serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, 
-							cls, null) +
+							schemeFilter, cls, null) +
 				"\n}" +
 				"\n}";
 		} else {

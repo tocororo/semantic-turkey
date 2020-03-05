@@ -43,18 +43,18 @@ public interface SearchStrategy extends Extension {
 
 	String searchResource(STServiceContext stServiceContext, String searchString, String[] rolesArray,
 			boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode,
-			@Nullable List<IRI> schemes, @Nullable List<String> langs, boolean includeLocales, IRI lexModel,
+			@Nullable List<IRI> schemes, String schemeFilter, @Nullable List<String> langs, boolean includeLocales, IRI lexModel,
 			boolean searchInRDFSLabel, boolean searchInSKOSLabel, boolean searchInSKOSXLLabel,
 			boolean searchInOntolex) throws IllegalStateException, STPropertyAccessException;
 
 	Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
-			@Nullable List<IRI> schemes, @Nullable List<String> langs, @Nullable IRI cls,
+			@Nullable List<IRI> schemes, String schemeFilter, @Nullable List<String> langs, @Nullable IRI cls,
 			boolean includeLocales) throws IllegalStateException, STPropertyAccessException;
 
 	Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, SearchMode searchMode, @Nullable List<IRI> schemes,
-			@Nullable IRI cls) throws IllegalStateException, STPropertyAccessException;
+			String schemeFilter, @Nullable IRI cls) throws IllegalStateException, STPropertyAccessException;
 
 	String searchInstancesOfClass(STServiceContext stServiceContext, List<List<IRI>> clsListList,
 			String searchString, boolean useLocalName, boolean useURI, boolean useNotes,

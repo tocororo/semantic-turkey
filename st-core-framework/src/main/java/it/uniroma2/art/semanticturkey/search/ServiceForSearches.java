@@ -91,7 +91,7 @@ public class ServiceForSearches {
 
 	
 	public String filterResourceTypeAndSchemeAndLexicons(String varResource, String varType, 
-			List<IRI> schemes, IRI cls, List<IRI> lexicons){
+			List<IRI> schemes, String schemeFilter, IRI cls, List<IRI> lexicons){
 		boolean otherWanted = false;
 		String filterQuery = "";
 		// @formatter:off
@@ -134,7 +134,13 @@ public class ServiceForSearches {
 				filterQuery += "\n"+varResource+" "+schemeOrTopConcept+" <"+schemes.get(0).stringValue()+"> ."+
 						"\n"+varResource+" "+schemeOrTopConcept+" ?scheme .";
 			} else if(schemes!=null && schemes.size()>1){
-				filterQuery += "\n"+varResource+" "+schemeOrTopConcept+" ?scheme . "+
+				if(schemeFilter.equals("and")){
+					for(IRI scheme : schemes) {
+						filterQuery += "\n" + varResource + " " + schemeOrTopConcept + " " + NTriplesUtil.toNTriplesString(scheme) + " .";
+					}
+				}
+				//this part is included in the "and" case, because the query needs the ?scheme variable
+				filterQuery += "\n" + varResource + " " + schemeOrTopConcept + " ?scheme . " +
 						filterWithOrValues(schemes, "?scheme");
 			} else{ // schemes!=null
 				//since no scheme restriction is passed, then also concepts not belonging to any concepts 

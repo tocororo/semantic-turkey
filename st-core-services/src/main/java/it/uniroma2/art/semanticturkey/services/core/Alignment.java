@@ -271,7 +271,8 @@ public class Alignment extends STServiceAdapter {
 					String query = ServiceForSearches.getPrefixes() + "\n"
 							+ SearchStrategyUtils.instantiateSearchStrategy(exptManager, searchStrategy)
 								.searchResource(simpleSTServiceContext, label.getLabel(), rolesArray,
-									false, false, false, searchMode, null, langs, false, lexModel,
+									false, false, false, searchMode, null, "or",
+										langs, false, lexModel,
 									false, false, false, false);
 		
 					logger.debug("query = " + query);

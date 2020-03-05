@@ -155,7 +155,7 @@ public class AdvancedSearch {
 		}
 		
 		//filter the resource according to its type
-		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons(varResource, varType, null, null, null);
+		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons(varResource, varType, null, "or", null, null);
 		
 		//calculate the show
 		query+= calculateShow(varResource, varSingleShow, whatToShow );

@@ -55,7 +55,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	@Override
 	public String searchResource(STServiceContext stServiceContext,
 			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, boolean useNotes,
-			SearchMode searchMode, @Optional List<IRI> schemes, @Optional List<String> langs, 
+			SearchMode searchMode, @Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter,
+			@Optional List<String> langs,
 			boolean includeLocales, IRI lexModel, boolean searchInRDFSLabel, 
 			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex) 
 					throws IllegalStateException, STPropertyAccessException {
@@ -71,8 +72,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
 			"\nWHERE{"; // +
 		//get the candidate resources
-		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, null, 
-				null);
+		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes,
+				schemeFilter, null, null);
 		
 		//now examine the rdfs:label and/or skos:xlabel/skosxl:label
 		//see if the localName and/or URI should be used in the query or not
@@ -119,7 +120,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
 				"\nWHERE{"; // +
 		//get the candidate resources
-		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, null,
+		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, "", null,
 				lexicons);
 		
 		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
@@ -146,7 +147,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	@Override
 	public Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional List<String> langs, @Optional IRI cls, boolean includeLocales) 
+			@Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter,
+			@Optional List<String> langs, @Optional IRI cls, boolean includeLocales)
 					throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
@@ -156,8 +158,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			"\nWHERE{";
 		
 		//get the candidate resources
-		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, cls, 
-				null);
+		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes,
+				schemeFilter, cls, null);
 		
 		//check if the request want to search in the local name
 		if(useLocalName){
@@ -213,7 +215,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	@Override
 	public Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter,
+			@Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
@@ -226,7 +229,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			//filter the resource according to its type
 			query+= "\n{ SELECT ?resource \nWHERE {\n" +
 					serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, 
-							cls, null) +
+							schemeFilter, cls, null) +
 				"\n}" +
 				"\n}";
 		} else {
