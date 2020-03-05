@@ -75,8 +75,8 @@
 		<!-- Use this filter at position CHANNEL_FILTER (1st) in order to add CORS 
 			headers to responses -->
 		<custom-filter position="CHANNEL_FILTER" ref="corsFilter" />
-		
-        <session-management session-fixation-protection="migrateSession"> 
+
+        <session-management>
             <concurrency-control session-registry-alias="sessionRegistry" max-sessions="10"/>
         </session-management>
 
@@ -89,7 +89,7 @@
 		</authentication-provider>
 	</authentication-manager>
 
-	<global-method-security pre-post-annotations="enabled"></global-method-security>
+	<global-method-security pre-post-annotations="enabled"/>
 
 	<context:component-scan base-package="it.uniroma2.art.semanticturkey.security" />
 

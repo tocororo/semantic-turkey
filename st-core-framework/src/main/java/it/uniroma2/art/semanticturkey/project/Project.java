@@ -49,6 +49,8 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -167,6 +169,8 @@ public abstract class Project extends AbstractProject {
 	protected IRI model;
 	protected IRI lexicalizationModel;
 
+	protected Map<String, String> facets;
+
 	protected Set<RDFResourceRole> updateForRoles;
 
 	public static final String INFOFILENAME = "project.info";
@@ -182,6 +186,9 @@ public abstract class Project extends AbstractProject {
 	public static final String LEXICALIZATION_MODEL_PROP = "lexicalizationModel";
 	public static final String UPDATE_FOR_ROLES_PROP = "updateForRoles";
 	public static final String PLUGINS_PROP = "plugins";
+
+	public static final String FACETS_PROP = "facets";
+	private static final String FACET_DIR = "dir";
 
 	public static final String HISTORY_ENABLED_PROP = "historyEnabled";
 	public static final String VALIDATION_ENABLED_PROP = "validationEnabled";
@@ -292,6 +299,15 @@ public abstract class Project extends AbstractProject {
 
 			checkModels(model, lexicalizationModel);
 
+			//init project facets
+			String facetsString = stp_properties.getProperty(FACETS_PROP);
+			if (facetsString != null) {
+				ObjectMapper mapper = new ObjectMapper();
+				facets = mapper.readValue(facetsString, new TypeReference<Map<String, String>>() {});
+			} else {
+				facets = new HashMap<>(); //default empty map
+			}
+
 			String updateForRolesString = MoreObjects
 					.firstNonNull(stp_properties.getProperty(UPDATE_FOR_ROLES_PROP), "resource");
 
@@ -311,18 +327,14 @@ public abstract class Project extends AbstractProject {
 	}
 
 	public static void checkModels(IRI model, IRI lexicalizationModel) throws UnsupportedModelException,
-			UnsupportedLexicalizationModelException, ProjectInconsistentException {
-		try {
-			checkModel(model);
-			checkLexicalizationModel(lexicalizationModel);
+		UnsupportedLexicalizationModelException, ProjectInconsistentException {
+		checkModel(model);
+		checkLexicalizationModel(lexicalizationModel);
 
-			if (model.equals(ONTOLEXLEMON_MODEL)
-					&& !lexicalizationModel.equals(ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
-				throw new ProjectInconsistentException(
-						"When OntoLex Lemon is used as model, it is shall also be used as lexicalization model");
-			}
-		} catch (UnsupportedModelException | UnsupportedLexicalizationModelException e) {
-			throw e;
+		if (model.equals(ONTOLEXLEMON_MODEL)
+				&& !lexicalizationModel.equals(ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+			throw new ProjectInconsistentException(
+					"When OntoLex Lemon is used as model, it is shall also be used as lexicalization model");
 		}
 	}
 
@@ -658,19 +670,7 @@ public abstract class Project extends AbstractProject {
 	}
 
 	public void deactivate() {
-		try {
-			repositoryManager.shutDown();
-		} finally {
-			// try {
-			// if (newOntManager != null) {
-			// newOntManager.getRepository().shutDown();
-			// }
-			// } finally {
-			// if (supportOntManager != null) {
-			// supportOntManager.getRepository().shutDown();
-			// }
-			// }
-		}
+		repositoryManager.shutDown();
 	}
 
 	protected abstract void loadTriples() throws RDF4JException;
@@ -735,19 +735,19 @@ public abstract class Project extends AbstractProject {
 	}
 
 	public boolean isHistoryEnabled() {
-		return Boolean.valueOf(getProperty(HISTORY_ENABLED_PROP));
+		return Boolean.parseBoolean(getProperty(HISTORY_ENABLED_PROP));
 	}
 
 	public boolean isValidationEnabled() {
-		return Boolean.valueOf(getProperty(VALIDATION_ENABLED_PROP));
+		return Boolean.parseBoolean(getProperty(VALIDATION_ENABLED_PROP));
 	}
 
 	public boolean isBlacklistingEnabled() {
-		return Boolean.valueOf(ObjectUtils.firstNonNull(getProperty(BLACKLISTING_ENABLED_PROP), "false"));
+		return Boolean.parseBoolean(ObjectUtils.firstNonNull(getProperty(BLACKLISTING_ENABLED_PROP), "false"));
 	}
 
 	public boolean isSHACLEnabled() {
-		return Boolean.valueOf(getProperty(SHACL_ENABLED_PROP));
+		return Boolean.parseBoolean(getProperty(SHACL_ENABLED_PROP));
 	}
 
 	String getRequiredProperty(String propertyName) throws ProjectInconsistentException {
@@ -869,8 +869,8 @@ public abstract class Project extends AbstractProject {
 				pluginsString = pluginName;
 			// checks that the plugin has not already been registered for this project
 			else {
-				for (int i = 0; i < plugins.length; i++) {
-					if (plugins[i].equals(pluginName))
+				for (String plugin : plugins) {
+					if (plugin.equals(pluginName))
 						throw new DuplicatedResourceException(
 								"a plugin with this name is already associated to this project; this may be due to a naming conflict between two plugins or an incorrect deregistration of the same one");
 				}
@@ -916,9 +916,9 @@ public abstract class Project extends AbstractProject {
 					+ " actually it seems there is no plugin associated to this project");
 
 		pluginsString = "";
-		for (int i = 0; i < plugins.length; i++) {
-			if (!plugins[i].equals(pluginName))
-				pluginsString = addPluginToPropertyValue(plugins[i], pluginsString);
+		for (String plugin : plugins) {
+			if (!plugin.equals(pluginName))
+				pluginsString = addPluginToPropertyValue(plugin, pluginsString);
 			else
 				modified = true;
 		}
@@ -1193,6 +1193,45 @@ public abstract class Project extends AbstractProject {
 					projectName);
 		}
 		ProjectManager.logger.debug("name is valid");
+	}
+
+	/*
+	 * FACETS MANAGEMENT
+	 */
+
+	/**
+	 * API for setting/removing a facet. If the value is null, the facet is removed from the facets map
+	 * @param facetName
+	 * @param facetValue
+	 * @throws ProjectUpdateException
+	 */
+	private void setFacet(String facetName, String facetValue) throws ProjectUpdateException {
+		if (facetValue == null) {
+			facets.remove(facetName);
+		} else {
+			facets.put(facetName, facetValue);
+		}
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			stp_properties.setProperty(FACETS_PROP, mapper.writeValueAsString(facets));
+			updateProjectProperties();
+		} catch (IOException e) {
+			throw new ProjectUpdateException(e);
+		}
+	}
+
+	public Map<String,String> getFacets() {
+		return facets;
+	}
+
+	public String getFacetDir() {
+		return facets.get(FACET_DIR);
+	}
+	public void setFacetDir(String dirName) throws ProjectUpdateException {
+		setFacet(FACET_DIR, dirName);
+	}
+	public void removeFacetDir() throws ProjectUpdateException {
+		setFacet(FACET_DIR, null);
 	}
 
 }

@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -149,7 +150,7 @@ public class Projects extends STServiceAdapter {
 
 	// TODO understand how to specify remote repository / different sail configurations
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'C')")
+	@PreAuthorize("@auth.isAdmin()")
 	public void createProject(ProjectConsumer consumer, String projectName, IRI model,
 			IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
 			@Optional(defaultValue = "false") boolean blacklistingEnabled, RepositoryAccess repositoryAccess,
@@ -359,6 +360,7 @@ public class Projects extends STServiceAdapter {
 		String defaultNamespace = null;
 		String model = null;
 		String lexicalizationModel = null;
+		Map<String, String> facets = null;
 		boolean historyEnabled = false;
 		boolean validationEnabled = false;
 		boolean shaclEnabled = false;
@@ -374,6 +376,7 @@ public class Projects extends STServiceAdapter {
 			defaultNamespace = proj.getDefaultNamespace();
 			model = proj.getModel().stringValue();
 			lexicalizationModel = proj.getLexicalizationModel().stringValue();
+			facets = proj.getFacets();
 			historyEnabled = proj.isHistoryEnabled();
 			validationEnabled = proj.isValidationEnabled();
 			shaclEnabled = proj.isSHACLEnabled();
@@ -394,7 +397,7 @@ public class Projects extends STServiceAdapter {
 			status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
 		}
 		return new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel,
-				historyEnabled, validationEnabled, shaclEnabled, access, repoLocation, status);
+				historyEnabled, validationEnabled, shaclEnabled, facets, access, repoLocation, status);
 	}
 
 	/**
@@ -522,7 +525,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ReservedPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
+	@PreAuthorize("@auth.isAdmin()")
 	public void updateAccessLevel(String projectName, String consumerName, @Optional AccessLevel accessLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {
@@ -535,7 +538,7 @@ public class Projects extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'D')")
+	@PreAuthorize("@auth.isAdmin()")
 	public void deleteProject(ProjectConsumer consumer, String projectName) throws ProjectDeletionException,
 			ProjectAccessException, ProjectUpdateException, ReservedPropertyUpdateException,
 			InvalidProjectNameException, ProjectInexistentException {
@@ -560,11 +563,11 @@ public class Projects extends STServiceAdapter {
 	 * @throws RBACException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
 	public void accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, RBACException {
-
 		ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
 	}
 
@@ -575,7 +578,7 @@ public class Projects extends STServiceAdapter {
 	 * @param projectName
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'D')")
+	@PreAuthorize("@auth.isAdmin()")
 	public void disconnectFromProject(ProjectConsumer consumer, String projectName) {
 
 		ProjectManager.disconnectFromProject(consumer, projectName);
@@ -603,7 +606,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'RC')")
+	@PreAuthorize("@auth.isAdmin()")
 	public void cloneProject(String projectName, String newProjectName) throws InvalidProjectNameException,
 			DuplicatedResourceException, IOException, ProjectInexistentException, ProjectAccessException {
 
@@ -644,7 +647,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectInexistentException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'C')")
+	@PreAuthorize("@auth.isAdmin()")
 	public void importProject(MultipartFile importPackage, String newProjectName)
 			throws IOException, ProjectCreationException, DuplicatedResourceException, ProjectUpdateException,
 			InvalidProjectNameException {
@@ -668,7 +671,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ReservedPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
+	@PreAuthorize("@auth.isAdmin()")
 	public void updateLockLevel(String projectName, LockLevel lockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {
@@ -718,6 +721,7 @@ public class Projects extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
 	public void saveProjectPropertyFileContent(String projectName, String content)
 			throws InvalidProjectNameException, ProjectInexistentException, IOException {
 		ProjectManager.saveProjectPropertyFileContent(projectName, content);
@@ -736,12 +740,33 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
+	@PreAuthorize("@auth.isAdmin()")
 	public void setProjectProperty(String projectName, String propName, String propValue)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {
 		Project project = ProjectManager.getProjectDescription(projectName);
 		project.setProperty(propName, propValue);
+	}
+
+	/**
+	 * Sets the "dir" facet to the given project. If the value is null, the facet is removed
+	 * @param projectName
+	 * @param facetValue
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws ProjectUpdateException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void setProjectFacetDir(String projectName, @Optional String facetValue) throws InvalidProjectNameException,
+			ProjectInexistentException, ProjectAccessException, ProjectUpdateException {
+		Project project = ProjectManager.getProjectDescription(projectName);
+		if (facetValue != null) {
+			project.setFacetDir(facetValue);
+		} else {
+			project.removeFacetDir();
+		}
 	}
 
 	/**
@@ -821,7 +846,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectInexistentException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
+	@PreAuthorize("@auth.isAdmin()")
 	public void modifyRepositoryAccessCredentials(String projectName, String repositoryID,
 			@Optional String newUsername, @Optional String newPassword)
 			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
@@ -854,7 +879,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectInexistentException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
+	@PreAuthorize("@auth.isAdmin()")
 	public void batchModifyRepostoryAccessCredentials(String projectName, String serverURL,
 			@Optional(defaultValue = "false") boolean matchUsername, @Optional String currentUsername,
 			@Optional String newUsername, @Optional String newPassword)
@@ -887,6 +912,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
 	public PreloadedDataSummary preloadDataFromFile(MultipartFile preloadedData,
 			RDFFormat preloadedDataFormat) throws IOException, RDFParseException, RepositoryException,
 			ProfilerException, AssessmentException, STPropertyAccessException {
@@ -915,6 +941,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
 	public PreloadedDataSummary preloadDataFromURL(URL preloadedDataURL,
 			@Optional RDFFormat preloadedDataFormat)
 			throws FileNotFoundException, IOException, RDFParseException, RepositoryException,
@@ -987,6 +1014,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
 	public PreloadedDataSummary preloadDataFromCatalog(String connectorId, String datasetId)
 			throws IOException, RDFParseException, RepositoryException, ProfilerException,
 			AssessmentException, STPropertyAccessException {

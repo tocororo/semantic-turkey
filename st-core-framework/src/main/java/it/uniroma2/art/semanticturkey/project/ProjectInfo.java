@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
 
+import java.util.Map;
+
 public class ProjectInfo {
 	
 	private final String name;
@@ -18,10 +20,12 @@ public class ProjectInfo {
 	private final AccessResponse accessible;
 	private final RepositoryLocation repositoryLocation;
 	private final ProjectStatus status;
+	private final Map<String, String> facets;
 	
 	public ProjectInfo(String name, boolean open, String baseURI, String defaultNamespace,
 			String model, String lexicalizationModel, boolean historyEnabled, boolean validationEnabled, 
-			boolean shaclEnabled, AccessResponse accessible, RepositoryLocation repositoryLocation, ProjectStatus status) {
+			boolean shaclEnabled, Map<String,String> facets, AccessResponse accessible,
+			RepositoryLocation repositoryLocation, ProjectStatus status) {
 		this.name = name;
 		this.open = open;
 		this.baseURI = baseURI;
@@ -31,6 +35,7 @@ public class ProjectInfo {
 		this.historyEnabled = historyEnabled;
 		this.validationEnabled = validationEnabled;
 		this.shaclEnabled = shaclEnabled;
+		this.facets = facets;
 		this.accessible = accessible;
 		this.repositoryLocation = repositoryLocation;
 		this.status = status;
@@ -71,6 +76,10 @@ public class ProjectInfo {
 	@JsonProperty("shaclEnabled")
 	public boolean isSHACLEnabled() {
 		return shaclEnabled;
+	}
+
+	public Map<String,String> getFacets() {
+		return facets;
 	}
 	
 	public AccessResponse getAccessible() {
