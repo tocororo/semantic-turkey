@@ -98,8 +98,9 @@ public class SKOS extends STServiceAdapter {
 	 * @param schemes an optional list of schemes. When passed, only concept being topConcept of one of the 
 	 * passed schemes will be returned. When not passed, all concepts not having a broader concept will be 
 	 * returned
-	 * @param broaderProp an optional property used as broader. When not passed, skos:broader will be used 
-	 * @param narrowerProp an optional property used as narrower. if skos:broader is passed as broaderProp 
+	 * @param schemeFilter how the scheme(s) should be considered, in 'or' or in 'and' ('or' is the default value)
+	 * @param broaderProps an optional list of properties used as broader. When not passed, skos:broader will be used
+	 * @param narrowerProps an optional list of properties used as narrower. if skos:broader is passed as broaderProp
 	 * and narrowerProp is null, then narrowerProp will have the value skos:narrower
 	 * @param includeSubProperties if null or true, then all subProperty of broaderProp and narrowerProp will be
 	 * used in the concept hierarchy
@@ -109,6 +110,7 @@ public class SKOS extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getTopConcepts(@Optional @LocallyDefinedResources List<IRI> schemes,
+			@Optional(defaultValue="or") String schemeFilter,
 			@Optional @LocallyDefinedResources List<IRI> broaderProps, 
 			@Optional @LocallyDefinedResources List<IRI> narrowerProps,
 			@Optional(defaultValue="true") boolean includeSubProperties) {
@@ -125,62 +127,31 @@ public class SKOS extends STServiceAdapter {
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
 					// @formatter:off
-					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
-					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
-					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
-					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                          		 \n" +
-					" PREFIX owl: <http://www.w3.org/2002/07/owl#>			                             \n" +
-                    "                                                                                    \n" +
-					//" SELECT ?resource ?attr_more {                                                \n" +
+					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
+					"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+					"\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+					"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
+					"\nPREFIX owl: <http://www.w3.org/2002/07/owl#>	" +
+                    "\n " +
 					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
-					" SELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+" 					 \n" + 
-					" WHERE {                                                \n" +
-					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
-					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
-					"     ?resource skos:topConceptOf|^skos:hasTopConcept ?scheme .                      \n" +
-					"FILTER(";
-			boolean first=true;
-			//filter according to the scheme
-			for(IRI scheme : schemes){
-				if(!first){
-					query+= " || ";
-				}
-				first=false;
-				query+="?scheme="+NTriplesUtil.toNTriplesString(scheme);
-			}		
-			query += ") 																				 \n" +
-					//prepareHierarchicalPartForQueryPart1(broaderProp , narrowerProp, "?aNarrowerConcept", 
-					//		"?resource", false, includeSubProperties) +
-					"     \nOPTIONAL {                                                                     \n" +
-					"         BIND( EXISTS {															 \n" +
-					//"					?aNarrowerConcept skos:broader|^skos:narrower ?resource .    	 \n" + OLD
-					//prepareHierarchicalPartForQueryPart2(broaderProp , narrowerProp, "?aNarrowerConcept", 
-					//		"?resource", false, includeSubProperties) +										"\n" +
+					"\nSELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart() +
+					"\nWHERE { " +
+					"\n?conceptSubClass rdfs:subClassOf* skos:Concept . " +
+					"\n?resource rdf:type ?conceptSubClass . " +
+					filterAndOrScheme(schemeFilter, schemes, "?resource", "?scheme", "?subPropInScheme1", false)+
+					//prepareHierarchicalPartForQueryPart1(broaderProp , narrowerProp, "?aNarrowerConcept",
+					"\nOPTIONAL { " +
+					"\nBIND( EXISTS { " +
 					combinePathWithVarOrIri("?aNarrowerConcept", "?resource", broaderNarrowerPath, false)+"\n" +
-					"         			?subPropInScheme rdfs:subPropertyOf* skos:inScheme .         	 \n" +
-					//"                   ?aNarrowerConcept ?subPropInScheme ?scheme . } as ?attr_more )   \n" +
-					//"     }                                                                              \n" +
-					"                   ?aNarrowerConcept ?subPropInScheme2 ?scheme2 . 					 \n" +
-					"FILTER (";
-					first=true;
-					for(IRI scheme : schemes){
-						if(!first){
-							query+= " || ";
-						}
-						first=false;
-						query+="?scheme2="+NTriplesUtil.toNTriplesString(scheme);
-					}	
-					query += ") 																		\n" +		 
-							"} as ?attr_more )   \n" +
-							"      }                                                                      \n" +
-					
-					
-					//adding the nature in the query (will be replaced by the appropriate processor), 
+					filterAndOrScheme(schemeFilter, schemes, " ?aNarrowerConcept", "?scheme2",
+									"?subPropInScheme2", true) +
+							"} as ?attr_more )" +
+							"\n}" +
+					//adding the nature in the query (will be replaced by the appropriate processor),
 					//remember to change the SELECT as well
 					generateNatureSPARQLWherePart("?resource") +
-					
-					" }                                                                                  \n" +
-					" GROUP BY ?resource ?attr_more                                                      \n";
+					"\n}" +
+					"\nGROUP BY ?resource ?attr_more ";
 			// @formatter:on
 			qb = createQueryBuilder(query);
 		} else {
@@ -244,8 +215,9 @@ public class SKOS extends STServiceAdapter {
 	 * @param concept the concept to which the returned concepts are the narrower of
 	 * @param schemes an optional list of schemes. When passed, only narrower concepts belonging to of one of the 
 	 * passed schemes will be returned. When not passed, all narrower concepts will be returned
-	 * @param broaderProp an optional property used as broader. When not passed, skos:broader will be used 
-	 * @param narrowerProp an optional property used as narrower. If skos:broader is passed as broaderProp 
+	 * @param schemeFilter how the scheme(s) should be considered, in 'or' or in 'and' ('or' is the default value)
+	 * @param broaderProps an optional list of properties used as broader. When not passed, skos:broader will be used
+	 * @param narrowerProps an optional list of properties used as narrower. If skos:broader is passed as broaderProp
 	 * and narrowerProp is null, then narrowerProp will have the value skos:narrower
 	 * @param includeSubProperties if null or true, then all subProperty of broaderProp and narrowerProp will be
 	 * used in the concept hierarchy
@@ -255,6 +227,7 @@ public class SKOS extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getNarrowerConcepts(@LocallyDefined Resource concept,
+			@Optional(defaultValue="or") String schemeFilter,
 			@Optional @LocallyDefinedResources List<IRI> schemes, 
 			@Optional @LocallyDefinedResources List<IRI> broaderProps,
 			@Optional @LocallyDefinedResources List<IRI> narrowerProps, 
@@ -273,61 +246,35 @@ public class SKOS extends STServiceAdapter {
 		// @formatter:off
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
-					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
-					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
-					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
-					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                          		 \n" +
-					" PREFIX owl: <http://www.w3.org/2002/07/owl#>			                             \n" +
-                    "                                                                                    \n" +
-					//" SELECT ?resource ?attr_more WHERE {                                                \n" +
+					"PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
+					"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+					"\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+					"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
+					"\nPREFIX owl: <http://www.w3.org/2002/07/owl#>	" +
+                    "\n" +
 					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
-					" SELECT DISTINCT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
-					" WHERE {																			 \n" +
+					"\nSELECT DISTINCT ?resource ?attr_more "+generateNatureSPARQLSelectPart() +
+					"\nWHERE {	" +
 						combinePathWithVarOrIri("?resource", (IRI)concept, broaderNarrowerPath, false)+"\n" +
-					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
-					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
-					//"     ?resource skos:broader|^skos:narrower ?concept .                               \n" + OLD
-					//prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?resource", 
-					//		(IRI)concept, false, includeSubProperties) +
-					"\n     ?subPropInScheme rdfs:subPropertyOf* skos:inScheme .                         \n" +
-					"     ?resource ?subPropInScheme ?scheme .                                           \n" +
-					"FILTER (";
-			boolean first=true;
-			for(IRI scheme : schemes){
-				if(!first){
-					query+= " || ";
-				}
-				first=false;
-				query+="?scheme="+NTriplesUtil.toNTriplesString(scheme);
-			}	
-			query += ") 																				 \n" +
-					"     OPTIONAL {                                                                     \n" +
-					"         BIND( EXISTS {															 \n" +
+					"\n?resource rdf:type ?conceptSubClass ." +
+					"\n?conceptSubClass rdfs:subClassOf* skos:Concept ." +
+					filterAndOrScheme(schemeFilter, schemes, "?resource", "?scheme",
+							"?subPropInScheme1", true) +
+					"\nOPTIONAL {" +
+					"\nBIND( EXISTS { " +
 					//"?aNarrowerConcept skos:broader|^skos:narrower ?resource .    \n" + OLD
 					//prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?aNarrowerConcept", 
 					//		"?resource", true, includeSubProperties) + 										 "\n"+
-					combinePathWithVarOrIri("?aNarrowerConcept", "?resource", broaderNarrowerPath, false)+"\n" +
-					"         			?subPropInScheme2 rdfs:subPropertyOf* skos:inScheme .         	 \n" +
-					"                   ?aNarrowerConcept ?subPropInScheme2 ?scheme2 . 					 \n" +
-					"FILTER (";
-			first=true;
-			for(IRI scheme : schemes){
-				if(!first){
-					query+= " || ";
-				}
-				first=false;
-				query+="?scheme2="+NTriplesUtil.toNTriplesString(scheme);
-			}	
-			query += ") 																				\n" +		 
-					"} as ?attr_more )   \n" +
-					"     }                                                                              \n" +
-					
-					//adding the nature in the query (will be replaced by the appropriate processor), 
+					combinePathWithVarOrIri("?aNarrowerConcept", "?resource", broaderNarrowerPath, false)+
+					filterAndOrScheme(schemeFilter, schemes, "?aNarrowerConcept", "?scheme2",
+							"?subPropInScheme2", true )+
+					"} as ?attr_more ) " +
+					"\n} " +
+					//adding the nature in the query (will be replaced by the appropriate processor),
 					//remember to change the SELECT as well
 					generateNatureSPARQLWherePart("?resource") +
-					
-					" }                                                                                  \n" +
-					" GROUP BY ?resource ?attr_more                                                      \n";
+					"\n} " +
+					"\nGROUP BY ?resource ?attr_more ";
 			qb = createQueryBuilder(query);
 			//qb.setBinding("scheme", scheme);
 		} else {
@@ -383,8 +330,9 @@ public class SKOS extends STServiceAdapter {
 	 * @param concept the concept to which the returned concepts are the broader of 
 	 * @param schemes an optional list of schemes. When passed, only broader concepts belonging to of one of the 
 	 * passed schemes will be returned. When not passed, all broader concepts will be returned
-	 * @param broaderProp an optional property used as broader. When not passed, skos:broader will be used 
-	 * @param narrowerProp an optional property used as narrower. If skos:broader is passed as broaderProp 
+	 * @param schemeFilter how the scheme(s) should be considered, in 'or' or in 'and' ('or' is the default value)
+	 * @param broaderProps an optional list of properties used as broader. When not passed, skos:broader will be used
+	 * @param narrowerProps an optional list of properties used as narrower. If skos:broader is passed as broaderProp
 	 * and narrowerProp is null, then narrowerProp will have the value skos:narrower
 	 * @param includeSubProperties if null or true, then all subProperty of broaderProp and narrowerProp will be
 	 * used in the concept hierarchy
@@ -395,7 +343,8 @@ public class SKOS extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getBroaderConcepts(@LocallyDefined Resource concept,
-			@Optional @LocallyDefinedResources List<IRI> schemes, 
+			@Optional @LocallyDefinedResources List<IRI> schemes,
+			@Optional(defaultValue="or") String schemeFilter,
 			@Optional @LocallyDefinedResources List<IRI> broaderProps,
 			@Optional @LocallyDefinedResources List<IRI> narrowerProps, 
 			@Optional(defaultValue="true") boolean includeSubProperties) {
@@ -412,56 +361,40 @@ public class SKOS extends STServiceAdapter {
 		// @formatter:off
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
-					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
-					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
-					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
-					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                          		 \n" +
-					" PREFIX owl: <http://www.w3.org/2002/07/owl#>			                             \n" +
-                    "                                                                                    \n" +
-					" SELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
-					" WHERE {																			 \n" +
-					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
-					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
-					//"     ?resource skos:narrower|^skos:broader ?concept .                               \n" + OLD
-					//prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?concept", 
-					//		"?resource", false, includeSubProperties) +
-					combinePathWithVarOrIri("?concept", "?resource", broaderNarrowerPath, false)+		"\n" +
-					"     ?subPropInScheme rdfs:subPropertyOf* skos:inScheme .                           \n" +
-					"     ?resource ?subPropInScheme ?scheme .                                           \n" +
-					"FILTER (";
-			boolean first=true;
-			for(IRI scheme : schemes){
-				if(!first){
-					query+= " || ";
-				}
-				first=false;
-				query+="?scheme="+NTriplesUtil.toNTriplesString(scheme);
-			}	
-			query += ") 																				 \n" +
+					"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>" +
+					"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>" +
+					"\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
+					"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>" +
+					"\nPREFIX owl: <http://www.w3.org/2002/07/owl#>" +
+                    "\n" +
+					"\nSELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+
+					"\nWHERE {" +
+					"\n?conceptSubClass rdfs:subClassOf* skos:Concept ." +
+					"\n?resource rdf:type ?conceptSubClass ." +
+					combinePathWithVarOrIri("?concept", "?resource", broaderNarrowerPath, false)+
+					filterAndOrScheme(schemeFilter, schemes, "?resource", "?scheme",
+							"?subPropInScheme", true ) +
 					generateNatureSPARQLWherePart("?resource") +
-					" }                                                                                  \n" +
-					" GROUP BY ?resource ?attr_more                                                      \n";
+					"\n}" +
+					"\nGROUP BY ?resource ?attr_more";
 			qb = createQueryBuilder(query);
 			//qb.setBinding("scheme", scheme);
 		} else {
 			qb = createQueryBuilder(
-					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
-					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
-					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                          \n" +
-					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                          		 \n" +
-					" PREFIX owl: <http://www.w3.org/2002/07/owl#>			                             \n" +
-                    "                                                                                    \n" +
-					" SELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
-					" WHERE {																			 \n" +
-					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
-					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
-					//"     ?resource skos:narrower|^skos:broader ?concept .                               \n" + OLD
-					//prepareHierarchicalPartForQuery(broaderProp , narrowerProp, "?", 
-					//		"?resource", false, includeSubProperties) +
-					combinePathWithVarOrIri("?concept", "?resource", broaderNarrowerPath, false)+		"\n" +
+					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>" +
+					"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>" +
+					"\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
+					"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>" +
+					"\nPREFIX owl: <http://www.w3.org/2002/07/owl#>" +
+                    "\n" +
+					"\nSELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+
+					"\nWHERE {" +
+					"\n?conceptSubClass rdfs:subClassOf* skos:Concept ." +
+					"\n?resource rdf:type ?conceptSubClass ." +
+					combinePathWithVarOrIri("?concept", "?resource", broaderNarrowerPath, false)+
 					generateNatureSPARQLWherePart("?resource") +
-					" }                                                                                  \n" +
-					" GROUP BY ?resource ?attr_more                                                      \n"
+					"\n}" +
+					"\nGROUP BY ?resource ?"
 					
 			);
 		}
@@ -612,15 +545,14 @@ public class SKOS extends STServiceAdapter {
 	 * 		preferred label of the concept
 	 * @param broaderConcept
 	 * 		broader of the new created concept. If not provided the new concept will be a top concept
-	 * @param conceptScheme
-	 * 		concept scheme where the concept belongs
+	 * @param conceptSchemes
+	 * 		concept schemes where the concept belongs
 	 * @param conceptCls
 	 * 		class type of the new created concept. It must be a subClassOf skos:Concept. If not provided the new concept
 	 * 		will be simply a skos:Concept
-	 * @param customFormId
-	 * 		id of the custom form to use to add additional info to the concept
-	 * @param userPromptMap
-	 * 		(json) map of userPrompt field to use with the custom form
+	 * @param broaderProp
+	 * @param checkExistingAltLabel
+	 * @param customFormValue
 	 * @return
 	 * @throws URIGenerationException
 	 * @throws ProjectInconsistentException
@@ -1526,7 +1458,7 @@ public class SKOS extends STServiceAdapter {
 	
 	/**
 	 * Deletes a Concept
-	 * @param scheme
+	 * @param concept the concept to be deleted
 	 * @throws DeniedOperationException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -2401,8 +2333,47 @@ public class SKOS extends STServiceAdapter {
 		
 		return query;
 	}
-	
-	
+
+	private String filterAndOrScheme(String schemeFilter, List<IRI> schemes, String resourceVar, String schemeVar,
+			String propForInScheme, boolean forInScheme){
+		if(schemes==null || schemes.size()==0){
+			//the list of scheme is either null or empty, so just return an empty string
+			return "";
+		}
+		String queryPart = "";
+		if(schemeFilter.toLowerCase().equals("and")){
+			if(forInScheme){
+				queryPart+= "\n"+propForInScheme+" rdfs:subPropertyOf* skos:inScheme .";
+				for(IRI scheme : schemes){
+					queryPart+="\n"+resourceVar+" "+propForInScheme+" "+NTriplesUtil.toNTriplesString(scheme)+" .";
+				}
+			} else{
+				for(IRI scheme : schemes) {
+					queryPart += "\n" + resourceVar + " skos:topConceptOf|^skos:hasTopConcept "
+							+ NTriplesUtil.toNTriplesString(scheme) + " .  ";
+				}
+			}
+		} else {
+			if(forInScheme){
+				queryPart+= "\n"+propForInScheme+" rdfs:subPropertyOf* skos:inScheme ."+
+						"\n"+resourceVar+" "+propForInScheme+" "+schemeVar+" .";
+			} else {
+				queryPart+="\n"+resourceVar+" skos:topConceptOf|^skos:hasTopConcept ?scheme .  ";
+			}
+			queryPart+= "\nFILTER (";
+			boolean first=true;
+			for(IRI scheme : schemes){
+				if(!first){
+					queryPart+= " || ";
+				}
+				first=false;
+				queryPart+=schemeVar+"="+NTriplesUtil.toNTriplesString(scheme);
+			}
+			queryPart += ") ";
+		}
+		return queryPart;
+	}
+
 	public static String preparePropPathForHierarchicalForQuery(List<IRI> broaderProps, 
 			List<IRI> inverseHierachicalProps, RepositoryConnection repoConnection, 
 			boolean includeSubProperties) {
