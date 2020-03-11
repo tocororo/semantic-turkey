@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import it.uniroma2.art.coda.structures.CODATriple;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
@@ -32,7 +33,6 @@ import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.pearl.model.ProjectionOperator;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
-import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
@@ -223,10 +223,10 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 						sessionData);
 				shutDownCodaCore(codaCore);
 
-				for (ARTTriple t : updates.getInsertTriples()) {
+				for (CODATriple t : updates.getInsertTriples()) {
 					modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
 				}
-				for (ARTTriple t : updates.getDeleteTriples()) {
+				for (CODATriple t : updates.getDeleteTriples()) {
 					modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
 				}
 			} else {
@@ -260,7 +260,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 					UpdateTripleSet updates = cfGraph.executePearlForRange(codaCore,
 							cfValue.getUserPromptMap(), sessionData);
 					// link the generated graph with the resource
-					List<ARTTriple> insertTriples = updates.getInsertTriples();
+					List<CODATriple> insertTriples = updates.getInsertTriples();
 					if (!insertTriples.isEmpty()) {
 						Resource graphEntry = detectGraphEntry(insertTriples);
 						VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(graphEntry); // set
@@ -268,11 +268,11 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 																												// for
 																												// versioning
 						modelAdditions.add(subject, predicate, graphEntry);
-						for (ARTTriple t : insertTriples) {
+						for (CODATriple t : insertTriples) {
 							modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject());
 						}
 					}
-					for (ARTTriple t : updates.getDeleteTriples()) {
+					for (CODATriple t : updates.getDeleteTriples()) {
 						modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject());
 					}
 				} else if (cForm.isTypeNode()) {
@@ -302,11 +302,11 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	 * @param triples
 	 * @return
 	 */
-	private Resource detectGraphEntry(List<ARTTriple> triples) {
-		for (ARTTriple t1 : triples) {
+	private Resource detectGraphEntry(List<CODATriple> triples) {
+		for (CODATriple t1 : triples) {
 			Resource subj = t1.getSubject();
 			boolean neverObj = true;
-			for (ARTTriple t2 : triples) {
+			for (CODATriple t2 : triples) {
 				if (subj.equals(t2.getObject()))
 					neverObj = false;
 			}

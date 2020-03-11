@@ -25,6 +25,7 @@ import java.util.Set;
 import javax.servlet.http.HttpServletResponse;
 
 import it.uniroma2.art.coda.provisioning.ConverterContractDescription;
+import it.uniroma2.art.coda.structures.CODATriple;
 import org.apache.commons.io.IOUtils;
 import org.apache.uima.UIMAException;
 import org.apache.uima.jcas.JCas;
@@ -45,7 +46,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.DOMException;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -74,7 +74,6 @@ import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemPlaceholder;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
 import it.uniroma2.art.coda.pearl.parser.PearlParserAntlr4;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
-import it.uniroma2.art.coda.structures.ARTTriple;
 import it.uniroma2.art.coda.structures.SuggOntologyCoda;
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration;
@@ -688,10 +687,10 @@ public class Sheet2RDF extends STServiceAdapter {
 		//(one annotation for each table rows)
 		for (int i = 0; i < maxTableRows; i++) { 
 			SuggOntologyCoda suggOntCoda = listSuggOntCoda.get(i);
-			List<ARTTriple> tripleList = suggOntCoda.getAllInsertARTTriple();
+			List<CODATriple> tripleList = suggOntCoda.getAllInsertARTTriple();
 			triplesPreviewCount = triplesPreviewCount + tripleList.size();
 			tripleTotCount = tripleTotCount + tripleList.size();
-			for (ARTTriple t : tripleList) {
+			for (CODATriple t : tripleList) {
 				ObjectNode tripleJson = jsonFactory.objectNode();
 				tripleJsonArray.add(tripleJson);
 				tripleJson.set("row", jsonFactory.textNode(suggOntCoda.getAnnotation().getBegin() + ""));
@@ -722,8 +721,8 @@ public class Sheet2RDF extends STServiceAdapter {
 		List<SuggOntologyCoda> suggTriples = ctx.getCachedSuggestedTriples();
 		RepositoryConnection connection = getManagedConnection();
 		for (SuggOntologyCoda sugg : suggTriples){
-			List<ARTTriple> triples = sugg.getAllInsertARTTriple();
-			for (ARTTriple t : triples){
+			List<CODATriple> triples = sugg.getAllInsertARTTriple();
+			for (CODATriple t : triples){
 				connection.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
 			}
 		}
@@ -741,8 +740,8 @@ public class Sheet2RDF extends STServiceAdapter {
 		RepositoryConnection connection = rep.getConnection();
 
 		for (SuggOntologyCoda sugg : suggTriples){
-			List<ARTTriple> triples = sugg.getAllInsertARTTriple();
-			for (ARTTriple t : triples) {
+			List<CODATriple> triples = sugg.getAllInsertARTTriple();
+			for (CODATriple t : triples) {
 				connection.add(t.getSubject(), t.getPredicate(), t.getObject());
 			}
 		}
