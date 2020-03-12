@@ -299,7 +299,7 @@ public class PMKI extends STServiceAdapter {
 					supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
 					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
 					updateForRoles, preloadedDataFile, preloadedDataFormat, transitiveImportAllowance,
-					failedImports, leftDataset, rightDataset, false, null);
+					failedImports, leftDataset, rightDataset, false, null,false);
 
 			Reference reference = parseReference(configurationReference);
 

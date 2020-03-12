@@ -151,7 +151,7 @@ public class BaseRenderingEngineTest {
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
 						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
 						JsonNodeFactory.instance.objectNode()),
-				null, null, new String[] { "resource" }, null, null, null, null, null, null, false, null);
+				null, null, new String[] { "resource" }, null, null, null, null, null, null, false, null,false);
 		try {
 			Repository repo = new SailRepository(new MemoryStore());
 			repo.initialize();
@@ -324,7 +324,7 @@ public class BaseRenderingEngineTest {
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
 						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
 						JsonNodeFactory.instance.objectNode()),
-				null, null, new String[] { "resource" }, null, null, null, null, null, null, false, null);
+				null, null, new String[] { "resource" }, null, null, null, null, null, null, false, null,false);
 		try {
 			STServiceContext stServiceContext = new STServiceContext() {
 

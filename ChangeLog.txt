@@ -1,5 +1,6 @@
 version 7.1
 date: dd/mm/yyyy
+  * add a sail for trivial reasoning (based on symmetric / inverse properties)
   * use the Alignment Services API defined by MAPLE
   * Update to MAPLE 0.0.6
   * add a Deployer for submitting an ontology (in fact, an OWL ontology or a SKOS thesaurus) to

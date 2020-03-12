@@ -88,6 +88,7 @@
 
 		<!-- Finally install Semantic Turkey -->
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-changetracking-sail/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-trivial-inference-sail/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-framework/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-services/${project.version}</bundle>
 	</feature>

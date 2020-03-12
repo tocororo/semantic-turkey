@@ -121,6 +121,7 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 	<modules>
 		<module>st-codegen-annotations</module>
 		<module>st-changetracking-sail</module>
+		<module>st-trivial-inference-sail</module>
 		<module>st-core-framework</module>
 		<module>st-codegen-processor</module>
 		<module>st-core-services</module>

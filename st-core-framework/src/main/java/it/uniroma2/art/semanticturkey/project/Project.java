@@ -49,8 +49,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -75,6 +73,8 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
@@ -218,8 +218,8 @@ public abstract class Project extends AbstractProject {
 	public static final String RENDERING_ENGINE_CONFIGURATION_TYPE_PROP = RENDERING_ENGINE_PROP_PREFIX
 			+ ".configType";
 
-	
 	public static final String SHACL_ENABLED_PROP = "shaclEnabled";
+	public static final String TRIVIAL_INFERENCER_ENABLED_PROP = "trivialInferencerEnabled";
 
 	// this hashset, used by the setProperty(...) method, prevents ST system properties from being
 	// accidentally overwritten by third party plugins/extensions
@@ -264,8 +264,8 @@ public abstract class Project extends AbstractProject {
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
 	 * folder or creating a new one is in charge of the ProjectManager
 	 * <p>
-	 * the created project gives access to all of its properties, though it needs to be {@link #activate(ExtensionPointManager))}d
-	 * for its RDF content to be accessed
+	 * the created project gives access to all of its properties, though it needs to be
+	 * {@link #activate(ExtensionPointManager))}d for its RDF content to be accessed
 	 * </p>
 	 * <p>
 	 * implementation of this constructor by subclasses <b><i>must</i></b> take care of properly initializing
@@ -299,13 +299,14 @@ public abstract class Project extends AbstractProject {
 
 			checkModels(model, lexicalizationModel);
 
-			//init project facets
+			// init project facets
 			String facetsString = stp_properties.getProperty(FACETS_PROP);
 			if (facetsString != null) {
 				ObjectMapper mapper = new ObjectMapper();
-				facets = mapper.readValue(facetsString, new TypeReference<Map<String, String>>() {});
+				facets = mapper.readValue(facetsString, new TypeReference<Map<String, String>>() {
+				});
 			} else {
-				facets = new HashMap<>(); //default empty map
+				facets = new HashMap<>(); // default empty map
 			}
 
 			String updateForRolesString = MoreObjects
@@ -327,7 +328,7 @@ public abstract class Project extends AbstractProject {
 	}
 
 	public static void checkModels(IRI model, IRI lexicalizationModel) throws UnsupportedModelException,
-		UnsupportedLexicalizationModelException, ProjectInconsistentException {
+			UnsupportedLexicalizationModelException, ProjectInconsistentException {
 		checkModel(model);
 		checkLexicalizationModel(lexicalizationModel);
 
@@ -743,11 +744,16 @@ public abstract class Project extends AbstractProject {
 	}
 
 	public boolean isBlacklistingEnabled() {
-		return Boolean.parseBoolean(ObjectUtils.firstNonNull(getProperty(BLACKLISTING_ENABLED_PROP), "false"));
+		return Boolean
+				.parseBoolean(ObjectUtils.firstNonNull(getProperty(BLACKLISTING_ENABLED_PROP), "false"));
 	}
 
 	public boolean isSHACLEnabled() {
 		return Boolean.parseBoolean(getProperty(SHACL_ENABLED_PROP));
+	}
+
+	public boolean isTrivialInferencerEnabled() {
+		return Boolean.parseBoolean(getProperty(TRIVIAL_INFERENCER_ENABLED_PROP));
 	}
 
 	String getRequiredProperty(String propertyName) throws ProjectInconsistentException {
@@ -1201,6 +1207,7 @@ public abstract class Project extends AbstractProject {
 
 	/**
 	 * API for setting/removing a facet. If the value is null, the facet is removed from the facets map
+	 * 
 	 * @param facetName
 	 * @param facetValue
 	 * @throws ProjectUpdateException
@@ -1220,16 +1227,18 @@ public abstract class Project extends AbstractProject {
 		}
 	}
 
-	public Map<String,String> getFacets() {
+	public Map<String, String> getFacets() {
 		return facets;
 	}
 
 	public String getFacetDir() {
 		return facets.get(FACET_DIR);
 	}
+
 	public void setFacetDir(String dirName) throws ProjectUpdateException {
 		setFacet(FACET_DIR, dirName);
 	}
+
 	public void removeFacetDir() throws ProjectUpdateException {
 		setFacet(FACET_DIR, null);
 	}

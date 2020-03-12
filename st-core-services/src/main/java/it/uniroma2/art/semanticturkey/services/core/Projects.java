@@ -166,7 +166,7 @@ public class Projects extends STServiceAdapter {
 			@Optional String preloadedDataFileName, @Optional RDFFormat preloadedDataFormat,
 			@Optional TransitiveImportMethodAllowance transitiveImportAllowance, @Optional String leftDataset,
 			@Optional String rightDataset, @Optional boolean shaclEnabled,
-			@Optional @JsonSerialized SHACLSettings shaclSettings)
+			@Optional @JsonSerialized SHACLSettings shaclSettings,  @Optional boolean trivialInferenceEnabled)
 			throws ProjectInconsistentException, InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
 			ProjectCreationException, ClassNotFoundException, WrongPropertiesException,
@@ -217,7 +217,7 @@ public class Projects extends STServiceAdapter {
 					supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
 					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
 					updateForRoles, preloadedDataFile, preloadedDataFormat, transitiveImportAllowance,
-					failedImports, leftDataset, rightDataset, shaclEnabled, shaclSettings);
+					failedImports, leftDataset, rightDataset, shaclEnabled, shaclSettings, trivialInferenceEnabled);
 			deletePreloadedDataFile = true;
 		} finally {
 			if (preloadedDataFileName != null) {

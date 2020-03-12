@@ -104,6 +104,8 @@ import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
+import it.uniroma2.art.semanticturkey.trivialinference.sail.TrivialInferencer;
+import it.uniroma2.art.semanticturkey.trivialinference.sail.config.TrivialInferencerConfig;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
@@ -1217,7 +1219,7 @@ public class ProjectManager {
 			IRI modificationDateProperty, String[] updateForRoles, File preloadedDataFile,
 			RDFFormat preloadedDataFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
 			Set<IRI> failedImports, String leftDataset, String rightDataset, boolean shaclEnabled,
-			SHACLSettings shaclSettings) throws InvalidProjectNameException, ProjectInexistentException,
+			SHACLSettings shaclSettings, boolean trivialInferenceEnabled) throws InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
 			ProjectCreationException, ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException, RBACException,
@@ -1301,6 +1303,12 @@ public class ProjectManager {
 					}
 
 					sailImplConfig = changeTrackerSailConfig;
+				}
+				
+				if (trivialInferenceEnabled) {
+					TrivialInferencerConfig trivialInferencerConfig = new TrivialInferencerConfig();
+					trivialInferencerConfig.setDelegate(sailImplConfig);
+					sailImplConfig = trivialInferencerConfig;
 				}
 
 				if (shaclEnabled) {
@@ -1466,7 +1474,7 @@ public class ProjectManager {
 					repositoryAccess, coreRepoID, coreRepositoryConfig, coreBackendType, supportRepoID,
 					supportRepositoryConfig, supportBackendType, uriGeneratorSpecification,
 					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
-					updateForRoles, leftDataset, rightDataset, shaclEnabled);
+					updateForRoles, leftDataset, rightDataset, shaclEnabled, trivialInferenceEnabled);
 
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 
@@ -1611,7 +1619,7 @@ public class ProjectManager {
 			RepositoryConfig supportRepoConfig, String supportBackendType,
 			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
 			IRI creationDateProperty, IRI modificationDateProperty, String[] updateForRoles,
-			String leftDataset, String rightDataset, boolean enableSHACL) throws ProjectCreationException {
+			String leftDataset, String rightDataset, boolean enableSHACL, boolean trivialInferenceEnabled) throws ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
 		try {
@@ -1659,6 +1667,9 @@ public class ProjectManager {
 			}
 			if (enableSHACL) {
 				projProp.setProperty(Project.SHACL_ENABLED_PROP, String.valueOf(enableSHACL));
+			}
+			if (trivialInferenceEnabled) {
+				projProp.setProperty(Project.TRIVIAL_INFERENCER_ENABLED_PROP, String.valueOf(trivialInferenceEnabled));
 			}
 			try (FileOutputStream os = new FileOutputStream(info_stp)) {
 				projProp.store(os, Project.stpComment);
