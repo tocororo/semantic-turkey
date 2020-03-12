@@ -12,6 +12,8 @@ import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
+import it.uniroma2.art.coda.pearl.model.annotation.Annotation;
+import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueInterface;
 import it.uniroma2.art.coda.pearl.parser.antlr4.AntlrParserRuntimeException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.semanticturkey.customform.BrokenCFStructure;
@@ -64,12 +66,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -809,7 +809,7 @@ public class CustomForms extends STServiceAdapter {
 				converterNode.set("uri", jsonFactory.textNode(converter.getURI()));
 
 				// for special case langString, specify the converter argument too
-				if (formEntry.getConverterArgPhId() != null) {
+				if (formEntry.getConverterArgPhId() != null) { //converter argument is a placeholder
 					String phLangId = formEntry.getConverterArgPhId();
 					/*
 					 * the language placeholder (arguments of langString converter) is already added to the
@@ -826,6 +826,10 @@ public class CustomForms extends STServiceAdapter {
 							break;
 						}
 					}
+				} else if (formEntry.getConverterArgLangTag() != null) { //converter argument is a string (langTag)
+					ObjectNode convArgNode = jsonFactory.objectNode();
+					convArgNode.set("lang", jsonFactory.textNode(formEntry.getConverterArgLangTag()));
+					converterNode.set("arg", convArgNode);
 				}
 				formEntryNode.set("converter", converterNode);
 
@@ -837,6 +841,29 @@ public class CustomForms extends STServiceAdapter {
 						formEntryNode.set("lang", jsonFactory.textNode(formEntry.getLiteralLang()));
 					}
 				}
+
+				ArrayNode annotationsNode = jsonFactory.arrayNode();
+				List<Annotation> annotationList = formEntry.getAnnotations();
+				for (Annotation ann: formEntry.getAnnotations()) {
+					ObjectNode annNode = jsonFactory.objectNode();
+					String annName = ann.getName();
+					//handle only known annotations: ObjectOneOf, DataOneOf, Role, Range, RangeList, Foreign
+					if (
+						!annName.equals("ObjectOneOf") && !annName.equals("DataOneOf") && !annName.equals("Role") &&
+						!annName.equals("Range") && !annName.equals("RangeList") && !annName.equals("Foreign")
+					) continue;
+					annNode.set("name", jsonFactory.textNode(annName));
+					ArrayNode valuesNode = jsonFactory.arrayNode();
+					List<ParamValueInterface> valuesList = ann.getParamValueList("value");
+					if (valuesList != null) {
+						for (ParamValueInterface v : valuesList) {
+							valuesNode.add(v.toString());
+						}
+					}
+					annNode.set("values", valuesNode);
+					annotationsNode.add(annNode);
+				}
+				formEntryNode.set("annotations", annotationsNode);
 
 				formArrayNode.add(formEntryNode);
 			}
@@ -1128,8 +1155,7 @@ public class CustomForms extends STServiceAdapter {
 		CODACore codaCore = getInitializedCodaCore(getManagedConnection());
 		if (formType.equals(CustomForm.Types.graph.toString())) {
 			try {
-				InputStream pearlStream = new ByteArrayInputStream(pearl.getBytes(StandardCharsets.UTF_8));
-				codaCore.setProjectionRulesModel(pearlStream);
+				codaCore.setAllProjectionRulelModelFromInputStreamList(CustomFormGraph.getCombinedPearlStreamList(pearl));
 				// setProjectionRulesModelAndParseIt didn't throw exception, so pearl is valid
 				return JsonNodeFactory.instance.booleanNode(true);
 			} catch (PRParserException e) {

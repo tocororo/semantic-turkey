@@ -51,7 +51,6 @@ import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingLiteralFormForRe
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.PrefAltLabelClashException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
@@ -555,7 +554,6 @@ public class SKOS extends STServiceAdapter {
 	 * @param customFormValue
 	 * @return
 	 * @throws URIGenerationException
-	 * @throws ProjectInconsistentException
 	 * @throws CustomFormException
 	 * @throws CODAException
 	 * @throws UnsupportedLexicalizationModelException 
@@ -572,7 +570,7 @@ public class SKOS extends STServiceAdapter {
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#Concept") IRI conceptCls,
 			@Optional CustomFormValue customFormValue,
 			@Optional(defaultValue="true") boolean checkExistingAltLabel, @Optional @LocallyDefined IRI broaderProp )
-					throws URIGenerationException, ProjectInconsistentException, CustomFormException, 
+					throws URIGenerationException, CustomFormException,
 					CODAException, UnsupportedLexicalizationModelException, 
 					AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException {
 		
@@ -646,7 +644,7 @@ public class SKOS extends STServiceAdapter {
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2004/02/skos/core#ConceptScheme") IRI schemeCls,
 			@Optional CustomFormValue customFormValue,
 			@Optional(defaultValue="true") boolean checkExistingAltLabel)
-					throws URIGenerationException, ProjectInconsistentException, CustomFormException,
+					throws URIGenerationException, CustomFormException,
 					CODAException, UnsupportedLexicalizationModelException, 
 					AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException {
 		
@@ -851,9 +849,9 @@ public class SKOS extends STServiceAdapter {
 			@Optional(defaultValue="true") boolean setTopConcept) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		
-		List<IRI>broaderPropsToUse = null;
-		List<IRI>narrowerPropsToUse = null;
-		String broaderNarrowerPath = null;
+		List<IRI>broaderPropsToUse;
+		List<IRI>narrowerPropsToUse;
+		String broaderNarrowerPath;
 		
 		List<IRI>newTopConceptList = new ArrayList<>();
 		
@@ -935,6 +933,7 @@ public class SKOS extends STServiceAdapter {
 		for (RDFResourceRole updatableRole : stServiceContext.getProject().getUpdateForRoles()) {
 			if (RDFResourceRole.subsumes(updatableRole, role, true)) {
 				addModifiedDate = true;
+				break;
 			}
 		}
 		Project project = stServiceContext.getProject();
@@ -1540,7 +1539,7 @@ public class SKOS extends STServiceAdapter {
 			@Optional(defaultValue = "false") boolean bnodeCreationMode,
 			@Optional CustomFormValue customFormValue,
 			@Optional(defaultValue="true") boolean checkExistingAltLabel)
-					throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException, 
+					throws URIGenerationException, CustomFormException, CODAException,
 					IllegalAccessException, UnsupportedLexicalizationModelException, 
 					AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException {
 		
@@ -1945,14 +1944,14 @@ public class SKOS extends STServiceAdapter {
 	@DisplayName("add alternative label")
 	public void addNote(@LocallyDefined @Modified IRI resource, 
 			@Optional @LocallyDefined @SubPropertyOf(superPropertyIRI = "http://www.w3.org/2004/02/skos/core#note") IRI predicate,
-			SpecialValue value) throws ProjectInconsistentException, CODAException {
+			SpecialValue value) throws CODAException {
 		addValue(getManagedConnection(), resource, predicate, value);
 	}
 
 	
 	/**
 	 * Generates a new URI for a SKOS concept, optionally given its accompanying preferred label and concept
-	 * scheme. The actual generation of the URI is delegated to {@link #generateURI(String, Map)}, which in
+	 * scheme. The actual generation of the URI is delegated to {@link #generateIRI(String, Map)}, which in
 	 * turn invokes the current binding for the extension point {@link URIGenerator}. In the end, the <i>URI
 	 * generator</i> will be provided with the following:
 	 * <ul>
@@ -2078,7 +2077,7 @@ public class SKOS extends STServiceAdapter {
 	private void enrichWithCustomFormUsingLexicalizationModel(Resource resource, Literal label, 
 			RepositoryConnection repoConnection, Model modelAdditions, Model modelRemovals, 
 			CustomFormValue customFormValue, IRI xLabelIRI) 
-					throws ProjectInconsistentException, CODAException, CustomFormException{
+					throws CODAException, CustomFormException{
 		IRI lexModel = getProject().getLexicalizationModel();
 		
 		StandardForm stdForm = new StandardForm();
@@ -2104,7 +2103,7 @@ public class SKOS extends STServiceAdapter {
 	
 	/**
 	 * Generates a new URI for a SKOSXL Label, based on the provided mandatory parameters. The actual
-	 * generation of the URI is delegated to {@link #generateURI(String, Map)}, which in turn invokes the
+	 * generation of the URI is delegated to {@link #generateIRI(String, Map)}, which in turn invokes the
 	 * current binding for the extension point {@link URIGenerator}. In the end, the <i>URI generator</i> will
 	 * be provided with the following:
 	 * <ul>
@@ -2417,13 +2416,13 @@ public class SKOS extends STServiceAdapter {
 				BindingSet bindingSet = tupleQueryResult.next();
 				if(bindingSet.hasBinding("subProp")) {
 					Value value = bindingSet.getValue("subProp");
-					if(value instanceof IRI && !subPropList.contains((IRI)value)) {
+					if(value instanceof IRI && !subPropList.contains(value)) {
 						subPropList.add((IRI)value);
 					}
 				}
 				if(bindingSet.hasBinding("subInverseProp")) {
 					Value value = bindingSet.getValue("subInverseProp");
-					if(value instanceof IRI && !inverseSubPropList.contains((IRI)value)) {
+					if(value instanceof IRI && !inverseSubPropList.contains(value)) {
 						inverseSubPropList.add((IRI)value);
 					}
 				}
@@ -2536,4 +2535,4 @@ class CollectionsMoreProcessor implements QueryBuilderProcessor {
 	public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
 		return null;
 	}
-};
+}

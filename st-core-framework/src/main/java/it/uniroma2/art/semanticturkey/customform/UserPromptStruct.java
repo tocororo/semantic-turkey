@@ -1,10 +1,13 @@
 package it.uniroma2.art.semanticturkey.customform;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import it.uniroma2.art.coda.pearl.model.ConverterArgumentExpression;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.model.ConverterRDFLiteralArgument;
+import it.uniroma2.art.coda.pearl.model.annotation.Annotation;
 
 public class UserPromptStruct {
 	
@@ -15,7 +18,10 @@ public class UserPromptStruct {
 	private String literalLang; //optional language of the literal converter
 	private ConverterMention converter; //in the future this could be a list since a placeholder could be defined through multiple waterfall converters
 	private String converterArgPhId; //used only when converter is langString and uses a placeholder as argument
+	private String converterArgLangTag; //used only when converter is langString and uses a languageTag (string) as argument
 	private boolean mandatory;
+
+	private List<Annotation> annotations;
 	
 	/**
 	 * Creates a new UserPromptStruct with the given name and the given type
@@ -28,6 +34,7 @@ public class UserPromptStruct {
 		this.rdfType = rdfType;
 		this.mandatory = true;
 		this.converter = new ConverterMention("http://art.uniroma2.it/coda/contracts/default");
+		this.annotations = new ArrayList<>();
 	}
 	
 	public String getPlaceholderId() {
@@ -44,6 +51,14 @@ public class UserPromptStruct {
 
 	public void setUserPromptName(String userPromptName) {
 		this.userPromptName = userPromptName;
+	}
+
+	public List<Annotation> getAnnotations() {
+		return annotations;
+	}
+
+	public void setAnnotations(List<Annotation> annotations) {
+		this.annotations = annotations;
 	}
 
 	/**
@@ -92,6 +107,14 @@ public class UserPromptStruct {
 	
 	public void setConverterArgPhId(String phId) {
 		this.converterArgPhId = phId;
+	}
+
+	public String getConverterArgLangTag(){
+		return converterArgLangTag;
+	}
+
+	public void setConverterArgLangTag(String lang) {
+		this.converterArgLangTag = lang;
 	}
 	
 	public boolean isMandatory(){

@@ -12,13 +12,13 @@ public abstract class CustomForm {
 	public static String PREFIX = "it.uniroma2.art.semanticturkey.customform.form.";
 	
 	public enum Types {
-		node, graph;
+		node, graph
 	}
 	
-	private String id = "";
-	private String name = "";
-	private String description = "";
-	private String ref = "";
+	private String id;
+	private String name;
+	private String description;
+	private String ref;
 	private CustomFormLevel level;
 	
 	/**
@@ -131,7 +131,6 @@ public abstract class CustomForm {
 	 * @return
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException 
-	 * @throws ModelAccessException 
 	 */
 	public abstract Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException, RDFModelNotSetException;
 	

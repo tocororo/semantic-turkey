@@ -1,0 +1,42 @@
+
+@Retained
+@Description('This annotation declares the set of possible values - IRIs - that are expected to be stored in the related node')
+@Target(node)
+Annotation ObjectOneOf {
+    IRI [] value();
+}
+
+@Retained
+@Description('This annotation declares the set of possible values - literals - that are expected to be stored in the related node')
+@Target(node)
+Annotation DataOneOf {
+    Literal [] value();
+}
+
+@Retained
+@Description('this annotation constrain the role(s) that a certain node may assume')
+@Target(node)
+Annotation Role {
+    String [] value();
+}
+
+@Retained
+@Description('this annotation describes the class that is meant to be used for feeding potential values to the annotated node')
+@Target(node)
+Annotation Range {
+    IRI value();
+}
+
+@Retained
+@Description('this annotation describes the classes meant to be used for feeding potential values to the annotated node; there\'s no assumption on the semantics of this list of potential ranges, whether it is an UNION or the INTERSECTION of them; it is only meant for actionable form filling, proposing a set of classes as sources for the element to be stored in the annotated node')
+@Target(node)
+Annotation RangeList {
+    IRI [] value();
+}
+
+@Retained
+@Description('the value for this annotation is the ID of another project. This annotation can be used in combination with another annotation, telling which project to look for when picking values for the annotated node')
+@Target(node)
+Annotation Foreign {
+    String [] value();
+}

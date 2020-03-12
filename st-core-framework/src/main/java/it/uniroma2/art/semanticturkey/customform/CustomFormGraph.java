@@ -3,16 +3,18 @@ package it.uniroma2.art.semanticturkey.customform;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import it.uniroma2.art.coda.pearl.model.ConverterArgumentExpression;
+import it.uniroma2.art.coda.pearl.model.ConverterRDFLiteralArgument;
 import org.apache.uima.UIMAException;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.Feature;
@@ -96,75 +98,100 @@ public class CustomFormGraph extends CustomForm {
 	@Override
 	public Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException {
 		Map<String, UserPromptStruct> formMap = new LinkedHashMap<>();
-		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
+		ProjectionRulesModel prRuleModel = initProjectionRuleModel(codaCore);
+
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Set<String> prRuleIds = prRuleMap.keySet();
 		for (String prId : prRuleIds) {
 			ProjectionRule projRule = prRuleMap.get(prId);
-			// get the nodes section
-			Map<String, PlaceholderStruct> plHolderMap = projRule.getPlaceholderMap();
-			Set<String> pHoldIds = plHolderMap.keySet();
-			for (String phId : pHoldIds) {
-				PlaceholderStruct placeHolderStruct = plHolderMap.get(phId);
+			// get the nodes section, iterate over the PH declaration (e.g. cityNode literal@en userPrompt/city)
+			for (PlaceholderStruct placeHolderStruct : projRule.getPlaceholderMap().values()) {
 				if (placeHolderStruct.hasFeaturePath()) {
 					String featurePath = placeHolderStruct.getFeaturePath();
 					if (featurePath.startsWith(USER_PROMPT_FEATURE_NAME + "/")) {
+						//PH declaration involves the userPrompt/ feature path? => produce a UPS (entry in the form)
 						String placeholderId = placeHolderStruct.getName();
 						String rdfType = placeHolderStruct.getRDFType();
 						ConverterMention converter = placeHolderStruct.getConverterList().get(0);
 						String converterArgPh = null;
-						if (converter.getURI()
-								.equals(ContractConstants.CODA_CONTRACTS_BASE_URI + "langString")) {
+						String converterArgLangTag = null;
+						if (converter.getURI().equals(ContractConstants.CODA_CONTRACTS_BASE_URI + "langString")) {
 							// there's no control of the proper use of coda:langString, is take for granted
-							// that it is used properly (coda:langString[$lang])
+							// that it is used properly (coda:langString($lang) or coda:langString("en"))
 							// otherwise it can throw an unchecked exception
-							converterArgPh = ((ConverterPlaceholderArgument) converter
-									.getAdditionalArguments().get(0)).getPlaceholderId();
+							ConverterArgumentExpression arg = converter.getAdditionalArguments().get(0);
+							if (arg instanceof ConverterPlaceholderArgument) {
+								converterArgPh = ((ConverterPlaceholderArgument) arg).getPlaceholderId();
+							} else if (arg instanceof ConverterRDFLiteralArgument) {
+								converterArgLangTag = ((ConverterRDFLiteralArgument) arg).getLiteralValue().getLabel();
+							}
 						}
 						String literalLang = placeHolderStruct.getLiteralLang();
 						String literalDatatype = placeHolderStruct.getLiteralDatatype();
 						String userPromptField = featurePath.substring(USER_PROMPT_FEATURE_NAME.length() + 1);
 						/*
-						 * Create a new UserPromptStruct only when for a new placeholder one of the following
-						 * condition is true: - The feature seed of the placeholder is not in any of the
-						 * UserPromptStruct already created - The coda:langSting converter (if used) depends
-						 * from a language placeholder never used in the UPS already created - The type is
-						 * literal and language is never used in the UPS already created To perform these
-						 * checks create a String id for every UPS based on the above values
+						 * For each PH defined in a node section of a pearl, it is not mandatory that the
+						 * userPrompt/... feature path produces a UserPromptStruct (namely an entry in the CF).
+						 * For example the two following PH definitions:
+						 * node1 literal userPrompt/field .
+						 * node2 literal userPrompt/field .
+						 * must produce a single entry (labeled "field") in the CF.
+						 * So for each PH definition, a new UserPromptStruct is created only if one of the following
+						 * conditions is true:
+						 * - The userPrompt path (e.g. userPrompt/myField) is not in any of the UserPromptStruct
+						 * already created (in other words, a field with the same label has not been added yet);
+						 * - The coda:langSting converter (if used) depends	from a language placeholder never used
+						 *   in the UPS already created (Note: when I revised this comment I didn't get the reason of
+						 *   this check, anyway it's better to leave the code as it is)
+						 * - The type is literal and language was never used in the UPS already created.
+						 * 	 If I have these two PH definitions:
+						 *     node1 literal userPrompt/field .
+						 *     node1 literal@it userPrompt/field .
+						 *   The 2n definition "override" the UPS already created for the "field" CF entry since now
+						 *   we know that the language is constrained to "it" lang.
+						 *
+						 * For supporting these checks, when a UserPromptStruct is created, it is stored in a map
+						 * which the key is an ID produced by concatenating:
+						 * - the userPrompt path name
+						 * - the (optional) langString converter arg
+						 * - the (optional) language tag of the default literal converter
 						 */
 						String ID_SEPARATOR = "$";
 						String upsId = userPromptField + ID_SEPARATOR + converterArgPh + ID_SEPARATOR
 								+ literalLang;
 						boolean alreadyInForm = false;
-						for (Entry<String, UserPromptStruct> formMapEntry : formMap.entrySet()) {
-							if (formMapEntry.getKey().equals(upsId)) {
-								alreadyInForm = true;
-								// update the mandatory attribute with the OR between the mandatory of the
-								// current phStruct and the one of UPS already in form
-								UserPromptStruct upsAlreadyIn = formMapEntry.getValue();
-								upsAlreadyIn.setMandatory(upsAlreadyIn.isMandatory()
-										|| placeHolderStruct.isMandatoryInGraphSection());
-								// if the already in form is uri and the new one is literal, prioritize the
-								// literal one, so remove the uri ups
-								if (upsAlreadyIn.getRdfType().equals("uri") && rdfType.equals("literal")) {
-									formMap.remove(upsId);
-									alreadyInForm = false;// cause the old UPS has been removed, so it allows
-															// to add the new one
-								}
-								break;
+						UserPromptStruct alreadyCreatedUps = formMap.get(upsId);
+						if (alreadyCreatedUps != null) {
+							//the UserPromptStruct was already created for a previous PH definition => update it
+							alreadyInForm = true;
+							/*
+							 * update the mandatory attribute with the OR between the mandatory of the current
+							 * phStruct and the one of UPS already in form. In other words, in order to be
+							 * mandatory, it is enough that the node is mandatory just one time in the graph section
+							 */
+							alreadyCreatedUps.setMandatory(alreadyCreatedUps.isMandatory() || placeHolderStruct.isMandatoryInGraphSection());
+							/*
+							 * if the UPS already in form is uri and the new one is literal, prioritize the
+							 * literal one, so remove the uri ups
+							 */
+							if (alreadyCreatedUps.getRdfType().equals("uri") && rdfType.equals("literal")) {
+								formMap.remove(upsId);
+								alreadyInForm = false; //set this to false, so that later it is added again
 							}
 						}
+
+						//add the UPS to the map
 						if (!alreadyInForm) {
 							UserPromptStruct upStruct = new UserPromptStruct(placeholderId, userPromptField,
 									rdfType);
 							// fill the UserPromptStruct independently from its type (literal or uri)
 							upStruct.setLiteralDatatype(literalDatatype);
 							upStruct.setLiteralLang(literalLang);
-							upStruct.setConverter(converter);// for now I suppese there is used only one
-																// converter
+							upStruct.setConverter(converter);//for now I suppese there is used only one converter
 							upStruct.setConverterArgPhId(converterArgPh);
+							upStruct.setConverterArgLangTag(converterArgLangTag);
 							upStruct.setMandatory(placeHolderStruct.isMandatoryInGraphSection());
+							upStruct.setAnnotations(placeHolderStruct.getAnnotationList());
 							formMap.put(upsId, upStruct);
 						}
 
@@ -186,8 +213,7 @@ public class CustomFormGraph extends CustomForm {
 	public Map<String, String> getRelevantFormPlaceholders(CODACore codaCore) throws PRParserException {
 		Map<String, String> phPromptMap = new LinkedHashMap<>(); // placeholderId-userPrompt
 		// crete the PEARL model
-		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
+		ProjectionRulesModel prRuleModel = initProjectionRuleModel(codaCore);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Set<String> prRuleIds = prRuleMap.keySet();
 		// here iterate over the rules of the pearl. This is not necessary since a CRE has only one rule (I
@@ -208,16 +234,17 @@ public class CustomFormGraph extends CustomForm {
 						phPromptMap.put(phId, featurePath.substring(USER_PROMPT_FEATURE_NAME.length() + 1));
 
 						ConverterMention converter = placeHolderStruct.getConverterList().get(0);
-						// if langString is used, remove the placeholder argument from the placeholder to
-						// return;
-						if (converter.getURI()
-								.equals(ContractConstants.CODA_CONTRACTS_BASE_URI + "langString")) {
+						// if langString is used with a placeholder parameter, remove that placeholder
+						// from the placeholder those to return;
+						if (converter.getURI().equals(ContractConstants.CODA_CONTRACTS_BASE_URI + "langString")) {
 							// there's no control of the proper use of coda:langString, is take for granted
-							// that it is used properly (coda:langString[$lang])
+							// that it is used properly (coda:langString($lang))
 							// otherwise it can throw an unchecked exception
-							String convArgPhId = ((ConverterPlaceholderArgument) converter
-									.getAdditionalArguments().get(0)).getPlaceholderId();
-							phPromptMap.remove(convArgPhId);
+							ConverterArgumentExpression convArg = converter.getAdditionalArguments().get(0);
+							if (convArg instanceof ConverterPlaceholderArgument) {
+								String convArgPhId = ((ConverterPlaceholderArgument) convArg).getPlaceholderId();
+								phPromptMap.remove(convArgPhId);
+							}
 						}
 					}
 				}
@@ -237,8 +264,7 @@ public class CustomFormGraph extends CustomForm {
 	 */
 	public String getEntryPointPlaceholder(CODACore codaCore) throws PRParserException {
 		String entryPoint = null;
-		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
+		ProjectionRulesModel prRuleModel = initProjectionRuleModel(codaCore);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
 		if (prRulesIt.hasNext()) {
@@ -269,9 +295,7 @@ public class CustomFormGraph extends CustomForm {
 	public String getGraphSectionAsString(CODACore codaCore, boolean optional)
 			throws PRParserException {
 		StringBuilder sb = new StringBuilder();
-		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
+		ProjectionRulesModel prRuleModel = initProjectionRuleModel(codaCore);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
 		if (prRulesIt.hasNext()) {
@@ -408,8 +432,7 @@ public class CustomFormGraph extends CustomForm {
 			// analyseCas(aCAS);
 			// run coda with the given pearl and the cas just created.
 			// System.out.println("pearl:\t" + getRef());
-			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-			codaCore.setProjectionRulesModel(pearlStream);
+			codaCore.setAllProjectionRulelModelFromInputStreamList(getCombinedPearlStreamList(getRef()));
 			codaCore.setJCas(jcas);
 			while (codaCore.isAnotherAnnotationPresent()) {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
@@ -476,8 +499,7 @@ public class CustomFormGraph extends CustomForm {
 			// analyseCas(aCAS);
 
 			// run coda with the given pearl and the cas just created.
-			InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-			codaCore.setProjectionRulesModel(pearlStream);
+			initProjectionRuleModel(codaCore);
 			codaCore.setJCas(jcas);
 			while (codaCore.isAnotherAnnotationPresent()) {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
@@ -547,8 +569,7 @@ public class CustomFormGraph extends CustomForm {
 			throws ResourceInitializationException, PRParserException {
 		TypeSystemDescription tsd = TypeSystemDescriptionFactory.createTypeSystemDescription();
 		// init the projection rules model with the pearl
-		InputStream pearlStream = new ByteArrayInputStream(getRef().getBytes(StandardCharsets.UTF_8));
-		ProjectionRulesModel prRuleModel = codaCore.setProjectionRulesModel(pearlStream);
+		ProjectionRulesModel prRuleModel = initProjectionRuleModel(codaCore);
 		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
 		Set<String> prRuleIds = prRuleMap.keySet();
 		for (String prId : prRuleIds) {
@@ -597,6 +618,17 @@ public class CustomFormGraph extends CustomForm {
 		}
 		// describeTSD(tsd);
 		return tsd;
+	}
+
+	private ProjectionRulesModel initProjectionRuleModel(CODACore codaCore) throws PRParserException {
+		List<InputStream> pearlList = getCombinedPearlStreamList(getRef());
+		return codaCore.setAllProjectionRulelModelFromInputStreamList(pearlList);
+	}
+
+	public static List<InputStream> getCombinedPearlStreamList(String pearlRule) {
+		InputStream annDefStream = CustomFormGraph.class.getResourceAsStream("/it/uniroma2/art/semanticturkey/customform/annDef.pr");
+		InputStream pearlStream = new ByteArrayInputStream(pearlRule.getBytes(StandardCharsets.UTF_8));
+		return Arrays.asList(annDefStream, pearlStream);
 	}
 
 	// For debug decomment in createTypeSystemDescription
