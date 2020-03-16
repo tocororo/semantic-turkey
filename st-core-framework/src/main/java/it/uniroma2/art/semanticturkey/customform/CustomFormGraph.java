@@ -19,6 +19,7 @@ import org.apache.uima.UIMAException;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.Feature;
 import org.apache.uima.cas.FeatureStructure;
+import org.apache.uima.cas.StringArrayFS;
 import org.apache.uima.cas.Type;
 import org.apache.uima.cas.TypeSystem;
 import org.apache.uima.cas.text.AnnotationFS;
@@ -26,6 +27,7 @@ import org.apache.uima.cas.text.AnnotationIndex;
 import org.apache.uima.fit.factory.JCasFactory;
 import org.apache.uima.fit.factory.TypeSystemDescriptionFactory;
 import org.apache.uima.jcas.JCas;
+import org.apache.uima.jcas.cas.NonEmptyFSList;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.resource.metadata.FeatureDescription;
 import org.apache.uima.resource.metadata.TypeDescription;
@@ -417,7 +419,7 @@ public class CustomFormGraph extends CustomForm {
 			// in getTypeSystemDescription())
 			Type annotationType = ts.getType(annotationTypeName);
 			AnnotationFS ann = aCAS.createAnnotation(annotationType, 0, 0);
-			// create a FS of type userPromptType and fill its features with the value find in inputMap
+			// create a FS of type userPromptType and fill its features with the value found in inputMap
 			Type userPromptType = ts.getType(USER_PROMPT_TYPE_PATH);
 			Feature userPromptFeature = annotationType.getFeatureByBaseName(USER_PROMPT_FEATURE_NAME);
 			FeatureStructure userPromptFS = createAndFillPromptFS(userPromptType, aCAS, userPromptMap);
@@ -430,9 +432,10 @@ public class CustomFormGraph extends CustomForm {
 
 			aCAS.addFsToIndexes(ann);
 			// analyseCas(aCAS);
+
 			// run coda with the given pearl and the cas just created.
-			// System.out.println("pearl:\t" + getRef());
-			codaCore.setAllProjectionRulelModelFromInputStreamList(getCombinedPearlStreamList(getRef()));
+			//No need to init the projection rule model (already done in createTypeSystemDescription)
+//			codaCore.setAllProjectionRulelModelFromInputStreamList(getCombinedPearlStreamList(getRef()));
 			codaCore.setJCas(jcas);
 			while (codaCore.isAnotherAnnotationPresent()) {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
@@ -523,13 +526,24 @@ public class CustomFormGraph extends CustomForm {
 		List<Feature> featuresList = annType.getFeatures();
 		// fill the feature with the values specified in the inputMap
 		for (Feature f : featuresList) {
+			//consider only feature starting with the given type (e.g. userPrompt/)
 			if (f.getName().startsWith(annType.getName())) {
-				// get the value of the given feature from the map
 				String promptName = f.getShortName();
-				// add the value to the FS only if has value
+				// get the value (if present) of the given feature from the map
 				Object promptValue = promptValueMap.get(promptName);
+				// add the value to the FS only if has value
 				if (promptValue != null) {
-					promptFS.setStringValue(f, promptValue.toString());
+					if (promptValue instanceof List) { //if the value is a list, create and set an array FS
+						List<String> promptValueList = (List) promptValue;
+						StringArrayFS fsList = aCAS.createStringArrayFS(promptValueList.size());
+						for (int i = 0; i < promptValueList.size(); i++) {
+							fsList.set(i, promptValueList.get(i));
+						}
+						promptFS.setFeatureValue(f, fsList);
+					} else { //if the value is a single value, set its string value
+						promptFS.setStringValue(f, promptValue.toString());
+					}
+
 				}
 			}
 		}
@@ -600,7 +614,11 @@ public class CustomFormGraph extends CustomForm {
 					// add feature only for that featurePath that start with userPrompt/ or stdForm/
 					if (featurePath.startsWith(USER_PROMPT_FEATURE_NAME + "/")) {
 						String prompt = featurePath.substring(USER_PROMPT_FEATURE_NAME.length() + 1);
-						userPromptType.addFeature(prompt, "", CAS.TYPE_NAME_STRING);
+						if (placeHolderStruct.getAnnotationList().stream().anyMatch(a -> a.getName().equals("List"))) {
+							userPromptType.addFeature(prompt, "", CAS.TYPE_NAME_STRING_ARRAY);
+						} else {
+							userPromptType.addFeature(prompt, "", CAS.TYPE_NAME_STRING);
+						}
 					} else if (featurePath.startsWith(SESSION_DATA_FEATURE_NAME + "/")) {
 						String prompt = featurePath.substring(SESSION_DATA_FEATURE_NAME.length() + 1);
 						sessionDataType.addFeature(prompt, "", CAS.TYPE_NAME_STRING);

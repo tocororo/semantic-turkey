@@ -13,6 +13,8 @@ import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.model.annotation.Annotation;
+import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueDouble;
+import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueInteger;
 import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueInterface;
 import it.uniroma2.art.coda.pearl.parser.antlr4.AntlrParserRuntimeException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
@@ -847,20 +849,27 @@ public class CustomForms extends STServiceAdapter {
 				for (Annotation ann: formEntry.getAnnotations()) {
 					ObjectNode annNode = jsonFactory.objectNode();
 					String annName = ann.getName();
-					//handle only known annotations: ObjectOneOf, DataOneOf, Role, Range, RangeList, Foreign
-					if (
-						!annName.equals("ObjectOneOf") && !annName.equals("DataOneOf") && !annName.equals("Role") &&
-						!annName.equals("Range") && !annName.equals("RangeList") && !annName.equals("Foreign")
-					) continue;
 					annNode.set("name", jsonFactory.textNode(annName));
-					ArrayNode valuesNode = jsonFactory.arrayNode();
-					List<ParamValueInterface> valuesList = ann.getParamValueList("value");
-					if (valuesList != null) {
-						for (ParamValueInterface v : valuesList) {
-							valuesNode.add(v.toString());
+					/*
+					 * Handle the known annotation params:
+					 * - value: for most of the annotations
+					 * - min & max: for List annotation
+					 */
+					Map<String, List<ParamValueInterface>> paramMap = ann.getParamMap();
+					for (String paramName: paramMap.keySet()) {
+						List<ParamValueInterface> paramValueList = ann.getParamValueList(paramName);
+						ArrayNode paramValuesNode = jsonFactory.arrayNode();
+						for (ParamValueInterface v : paramValueList) {
+							if (v instanceof ParamValueInteger) {
+								paramValuesNode.add(Integer.parseInt(v.toString()));
+							} else if (v instanceof ParamValueDouble) {
+								paramValuesNode.add(Double.parseDouble(v.toString()));
+							} else {
+								paramValuesNode.add(v.toString());
+							}
 						}
+						annNode.set(paramName, paramValuesNode);
 					}
-					annNode.set("values", valuesNode);
 					annotationsNode.add(annNode);
 				}
 				formEntryNode.set("annotations", annotationsNode);
