@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,7 +15,6 @@ import javax.servlet.http.HttpServletResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.TextNode;
-import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -190,7 +190,7 @@ public class SHACL extends STServiceAdapter {
 			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
 		}
 		//generate the propInInfoMap
-		Map<String, PropInfo> propToPropInfoMap = generatePropInfoMap(rep, targetShape, classIri);
+		Map<String, PropInfo> propToPropInfoMap = generatePropInfoMap(rep, targetShape, classIri, null);
 		//generate the content of the PEARL file
 		String pearlFileText = generatePearlFileString(propToPropInfoMap, prefixToNamespaceMap, classIri);
 		//return the content of the PEARL file in a JsonNode as a text
@@ -200,18 +200,52 @@ public class SHACL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	//@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'R')") //TODO
-	public void extractCFfromShapesGraph(IRI classIri, IRI targetShape) {
-		//TODO
+	public JsonNode extractCFfromShapesGraph(IRI classIri, IRI targetShape) {
+		if(!getProject().isSHACLEnabled()){
+			//TODO decide what to do, since this project does not have a SCHACL Graph
+		}
+
+		//prepare the namespace map
+		Map <String, String> prefixToNamespaceMap = new HashMap<>();
+		RepositoryResult<Namespace> namespaceRepositoryResult = getManagedConnection().getNamespaces();
+		while(namespaceRepositoryResult.hasNext()) {
+			Namespace namespace = namespaceRepositoryResult.next();
+			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
+		}
+		//generate the propInInfoMap
+		Map<String, PropInfo> propToPropInfoMap = generatePropInfoMap(getManagedConnection().getRepository(), targetShape, classIri, RDF4J.SHACL_SHAPE_GRAPH);
+		//generate the content of the PEARL file
+		String pearlFileText = generatePearlFileString(propToPropInfoMap, prefixToNamespaceMap, classIri);
+		//return the content of the PEARL file in a JsonNode as a text
+		return JsonNodeFactory.instance.textNode(pearlFileText);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	//@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'R')") //TODO
-	public void extractCFfromShapeURL(IRI classIri, IRI shape, IRI targetShape) {
-		//TODO
+	public JsonNode extractCFfromShapeURL(IRI classIri, String shape, IRI targetShape, RDFFormat fileFormat) throws IOException {
+		URL url = new URL(shape);
+		Repository rep = new SailRepository(new MemoryStore());
+		rep.init();
+		RepositoryConnection connection = rep.getConnection();
+		connection.add(url, getProject().getBaseURI(), fileFormat);
+
+		//prepare the namespace map
+		Map <String, String> prefixToNamespaceMap = new HashMap<>();
+		RepositoryResult<Namespace> namespaceRepositoryResult = connection.getNamespaces();
+		while(namespaceRepositoryResult.hasNext()) {
+			Namespace namespace = namespaceRepositoryResult.next();
+			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
+		}
+		//generate the propInInfoMap
+		Map<String, PropInfo> propToPropInfoMap = generatePropInfoMap(rep, targetShape, classIri, null);
+		//generate the content of the PEARL file
+		String pearlFileText = generatePearlFileString(propToPropInfoMap, prefixToNamespaceMap, classIri);
+		//return the content of the PEARL file in a JsonNode as a text
+		return JsonNodeFactory.instance.textNode(pearlFileText);
 	}
 
-	private Map<String, PropInfo> generatePropInfoMap(Repository rep, IRI targetShapeIRI, IRI classIRI) {
+	private Map<String, PropInfo> generatePropInfoMap(Repository rep, IRI targetShapeIRI, IRI classIRI, IRI shaclGraph) {
 		RepositoryConnection conn = rep.getConnection();
 
 		Map<String, PropInfo> propToPropInfoMap = new HashMap<>();
@@ -225,12 +259,18 @@ public class SHACL extends STServiceAdapter {
 				//"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
 				"\nDESCRIBE ?nodeShape "+
 						"\nWHERE {";
+		if(shaclGraph!=null){
+			query += "\nGRAPH "+NTriplesUtil.toNTriplesString(shaclGraph)+" {";
+		}
 		if(targetShapeIRI!= null){
 			query+="\nBIND("+ NTriplesUtil.toNTriplesString(targetShapeIRI)+" AS ?nodeShape)";
 		} else {
 			query+="\nBIND("+NTriplesUtil.toNTriplesString(classIRI)+" AS ?targetClass) "+
 					"\n?nodeShape <"+SH_TARGETCLASS+"> ?targetClass ."+
 					"\n?nodeShape a <"+SH_NODESHAPE+"> .";
+		}
+		if(shaclGraph!=null){
+			query += "\n}";
 		}
 		query+="\n}";
 
@@ -241,12 +281,13 @@ public class SHACL extends STServiceAdapter {
 
 		//create a temporary repository to host these triples so they can be access in the easiest way possible
 		SailRepository repTemp = new SailRepository(new MemoryStore());
-		repTemp.initialize();
+		repTemp.init();
 		SailRepositoryConnection connTemp = repTemp.getConnection();
 		while(graphQueryResult.hasNext()){
 			Statement statement = graphQueryResult.next();
 			connTemp.add(statement);
 		}
+
 
 		//now get the data from the tempRepository to construct the needed structure
 		SimpleValueFactory svf = SimpleValueFactory.getInstance();
@@ -451,9 +492,13 @@ public class SHACL extends STServiceAdapter {
 		sb.append("\t}");
 		sb.append("\n");
 
-		sb.append("\t}");
+		sb.append("}");
 		sb.append("\n");
-        return sb.toString();
+        return replaceTab(sb.toString());
+	}
+
+	private String replaceTab(String text){
+		return text.replaceAll("\t", "    ");
 	}
 
 	private List<Value> getListValues(BNode bnode,  SailRepositoryConnection connTemp){
