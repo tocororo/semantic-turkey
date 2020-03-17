@@ -743,11 +743,15 @@ public class Projects extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void setProjectProperty(String projectName, String propName, String propValue)
+	public void setProjectProperty(String projectName, String propName, @Optional String propValue)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {
 		Project project = ProjectManager.getProjectDescription(projectName);
-		project.setProperty(propName, propValue);
+		if (propValue != null) {
+			project.setProperty(propName, propValue);
+		} else {
+			project.removeProperty(propName, propValue);
+		}
 	}
 
 	/**
