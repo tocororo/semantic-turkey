@@ -368,6 +368,7 @@ public class Projects extends STServiceAdapter {
 		AccessResponse access = null;
 		RepositoryLocation repoLocation = new RepositoryLocation(null);
 		ProjectStatus status = new ProjectStatus(Status.ok);
+		String description = null;
 
 		if (absProj instanceof Project) {
 			Project proj = (Project) absProj;
@@ -384,6 +385,7 @@ public class Projects extends STServiceAdapter {
 			access = ProjectManager.checkAccessibility(consumer, proj, requestedAccessLevel,
 					requestedLockLevel);
 			repoLocation = proj.getDefaultRepositoryLocation();
+			description = proj.getDescription();
 
 			if (onlyOpen && !open) {
 				return null;
@@ -397,7 +399,7 @@ public class Projects extends STServiceAdapter {
 			status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
 		}
 		return new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel,
-				historyEnabled, validationEnabled, shaclEnabled, facets, access, repoLocation, status);
+				historyEnabled, validationEnabled, shaclEnabled, facets, access, repoLocation, status, description);
 	}
 
 	/**
@@ -1060,7 +1062,7 @@ public class Projects extends STServiceAdapter {
 			if (profilerDataSizeTresholdString != null) {
 				profilerDataSizeTreshold = Long.parseLong(profilerDataSizeTresholdString);
 			} else {
-				profilerDataSizeTreshold = 1 * FileUtils.ONE_MB;
+				profilerDataSizeTreshold = FileUtils.ONE_MB;
 			}
 			if (dataSize > profilerDataSizeTreshold) { // preloaded data too big to profile
 				preloadWarnings = new ArrayList<>(1);

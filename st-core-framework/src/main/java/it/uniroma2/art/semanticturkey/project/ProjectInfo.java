@@ -21,11 +21,12 @@ public class ProjectInfo {
 	private final RepositoryLocation repositoryLocation;
 	private final ProjectStatus status;
 	private final Map<String, String> facets;
+	private final String description;
 	
 	public ProjectInfo(String name, boolean open, String baseURI, String defaultNamespace,
 			String model, String lexicalizationModel, boolean historyEnabled, boolean validationEnabled, 
 			boolean shaclEnabled, Map<String,String> facets, AccessResponse accessible,
-			RepositoryLocation repositoryLocation, ProjectStatus status) {
+			RepositoryLocation repositoryLocation, ProjectStatus status, String description) {
 		this.name = name;
 		this.open = open;
 		this.baseURI = baseURI;
@@ -39,6 +40,7 @@ public class ProjectInfo {
 		this.accessible = accessible;
 		this.repositoryLocation = repositoryLocation;
 		this.status = status;
+		this.description = description;
 	}
 	
 	public String getName() {
@@ -93,5 +95,8 @@ public class ProjectInfo {
 	public ProjectStatus getStatus() {
 		return this.status;
 	}
-	
+
+	public String getDescription() {
+		return description;
+	}
 }

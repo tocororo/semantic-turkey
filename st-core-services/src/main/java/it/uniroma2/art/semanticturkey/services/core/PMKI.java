@@ -307,6 +307,8 @@ public class PMKI extends STServiceAdapter {
 					(StoredStableResourceContributionConfiguration) exptManager.getConfiguration(
 							ContributionStore.class.getName(), reference);
 
+			newProject.setProperty(Project.DESCRIPTION_PROP, contribution.description);
+
 			//write also metadata get from the contribution
 			writeMetadataInRegistry(contribution);
 

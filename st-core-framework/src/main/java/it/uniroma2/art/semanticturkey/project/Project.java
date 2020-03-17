@@ -171,6 +171,8 @@ public abstract class Project extends AbstractProject {
 
 	protected Map<String, String> facets;
 
+	protected String description;
+
 	protected Set<RDFResourceRole> updateForRoles;
 
 	public static final String INFOFILENAME = "project.info";
@@ -193,6 +195,8 @@ public abstract class Project extends AbstractProject {
 	public static final String HISTORY_ENABLED_PROP = "historyEnabled";
 	public static final String VALIDATION_ENABLED_PROP = "validationEnabled";
 	public static final String BLACKLISTING_ENABLED_PROP = "blacklistingEnabled";
+
+	public static final String DESCRIPTION_PROP = "description";
 
 	public static final String CREATION_DATE_PROP = "creationDate";
 	public static final String MODIFICATION_DATE_PROP = "modificationDate";
@@ -320,6 +324,8 @@ public abstract class Project extends AbstractProject {
 			versionManager = new VersionManager(this);
 			defaultRepositoryLocation = Optional.ofNullable(getProperty(DEFAULT_REPOSITORY_LOCATION_PROP))
 					.map(RepositoryLocation::fromString).orElse(null);
+
+			description = Optional.ofNullable(getProperty(DESCRIPTION_PROP)).orElse(null);
 		} catch (IOException | UnsupportedLexicalizationModelException | UnsupportedModelException
 				| ProjectInconsistentException e1) {
 			logger.debug("an exception occurred inside the constructor of a corrupted project", e1);
@@ -1199,6 +1205,10 @@ public abstract class Project extends AbstractProject {
 					projectName);
 		}
 		ProjectManager.logger.debug("name is valid");
+	}
+
+	public String getDescription() {
+		return description;
 	}
 
 	/*
