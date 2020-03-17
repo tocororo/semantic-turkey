@@ -119,7 +119,7 @@ public class CustomForms extends STServiceAdapter {
 			if (cfGraph != null) {
 				// retrieves, through a query, the values of those placeholders filled through a userPrompt in
 				// the CustomForm
-				Map<String, Value> promptValuesMap = new HashMap<String, Value>();
+				Multimap<String, Value> promptValuesMap = HashMultimap.create();
 				String graphSection = cfGraph.getGraphSectionAsString(codaCore, true);
 				Map<String, String> phUserPromptMap = cfGraph.getRelevantFormPlaceholders(codaCore);
 				String bindings = "";
@@ -154,29 +154,33 @@ public class CustomForms extends STServiceAdapter {
 
 				SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
-				for (Entry<String, Value> promptValue : promptValuesMap.entrySet()) {
+				for (String userPrompt : promptValuesMap.keySet()) {
 					// create a "fake" predicate to represent the userPrompt label
-					IRI predResource = vf.createIRI(repoConnection.getNamespace(""), promptValue.getKey());
+					IRI predResource = vf.createIRI(repoConnection.getNamespace(""), userPrompt);
 
 					AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<IRI>(predResource);
 					annotatedPredicate.setAttribute("role", RDFResourceRole.property.toString());
 					annotatedPredicate.setAttribute("explicit", true);
-					annotatedPredicate.setAttribute("show", promptValue.getKey());
+					annotatedPredicate.setAttribute("show", userPrompt);
 
 					propMap.put(predResource, annotatedPredicate);
 
-					AnnotatedValue<?> annotatedObject = new AnnotatedValue<>(promptValue.getValue());
-					// I don't know how to retrieve role and other attributes
-					// annotatedObject.setAttribute("role",
-					// vf.createLiteral(RDFResourceRolesEnum.undetermined.toString()));
-					annotatedObject.setAttribute("explicit", true);
-					if (promptValue.getValue() instanceof Literal) {
-						annotatedObject.setAttribute("show",
-								NTriplesUtil.toNTriplesString(promptValue.getValue()));
-					} else {
-						annotatedObject.setAttribute("show", promptValue.getValue().stringValue());
+					Collection<Value> promptValues = promptValuesMap.get(userPrompt);
+
+					for (Value pValue: promptValues) {
+						AnnotatedValue<?> annotatedObject = new AnnotatedValue<>(pValue);
+						// I don't know how to retrieve role and other attributes
+						// annotatedObject.setAttribute("role",
+						// vf.createLiteral(RDFResourceRolesEnum.undetermined.toString()));
+						annotatedObject.setAttribute("explicit", true);
+						if (pValue instanceof Literal) {
+							annotatedObject.setAttribute("show",
+									NTriplesUtil.toNTriplesString(pValue));
+						} else {
+							annotatedObject.setAttribute("show", pValue.stringValue());
+						}
+						valueMultiMap.put(predResource, annotatedObject);
 					}
-					valueMultiMap.put(predResource, annotatedObject);
 				}
 				// use a PredicateObjectList (although this is not a pred-obj list, but a "userPrompt"-value)
 				// to exploit the serialization
@@ -373,14 +377,17 @@ public class CustomForms extends STServiceAdapter {
 	 * @return
 	 * @throws RDFModelNotSetException
 	 */
-	private static CustomFormGraph getCustomFormGraphSeed(Project project, CODACore codaCore, CustomFormManager cfManager, RepositoryConnection repoConnection, Resource resource, Collection<IRI> predicateOrClasses, boolean includeInferred) {
+	private static CustomFormGraph getCustomFormGraphSeed(Project project, CODACore codaCore, CustomFormManager cfManager,
+			RepositoryConnection repoConnection, Resource resource, Collection<IRI> predicateOrClasses, boolean includeInferred) {
 		
 		if (predicateOrClasses.isEmpty()) { // edge case when no predicate or class is given
 			return null;
 		}
 		
-		Collection<CustomFormGraph> cForms = predicateOrClasses.stream().flatMap(aPredOrClass -> cfManager.getAllCustomFormGraphs(project, aPredOrClass).stream()).collect(Collectors.toList());
-		
+		Collection<CustomFormGraph> cForms = predicateOrClasses.stream().flatMap(
+				aPredOrClass -> cfManager.getAllCustomFormGraphs(project, aPredOrClass).stream())
+				.collect(Collectors.toList());
+
 		if (cForms.isEmpty())  { // no custom form --> just return null
 			return null;
 		} else if (cForms.size() == 1) { // only one custom form --> return it
@@ -399,7 +406,7 @@ public class CustomForms extends STServiceAdapter {
 					queryBuilder.append(cf.getGraphSectionAsString(codaCore, true));
 					queryBuilder.append(" }");
 					String query = queryBuilder.toString();
-					
+
 					GraphQuery gq = repoConnection.prepareGraphQuery(query);
 					gq.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), resource);
 					gq.setIncludeInferred(includeInferred);
