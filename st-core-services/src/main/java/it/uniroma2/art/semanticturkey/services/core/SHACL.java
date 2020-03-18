@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.TextNode;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -25,14 +26,18 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDF4J;
+import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.GraphQueryResult;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
@@ -170,7 +175,14 @@ public class SHACL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	//@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'R')") //TODO
-	public JsonNode extractCFfromShapeFile(IRI classIri, MultipartFile shapesFile, RDFFormat fileFormat, IRI targetShape) throws IOException {
+	public JsonNode extractCFfromShapeFile(IRI classIri, MultipartFile shapesFile, @Optional RDFFormat fileFormat,
+			@Optional IRI targetShape) throws IOException, OntologyManagerException {
+		//if fileForma is null, try to guess it
+		if(fileFormat==null) {
+			fileFormat = Rio.getParserFormatForFileName(shapesFile.getOriginalFilename())
+					.orElseThrow(() -> new OntologyManagerException(
+							"Could not match a parser for file name: " + shapesFile.getOriginalFilename()));
+		}
 		//create a temporary repository
 		//create a temp file (in karaf data/temp folder) to copy the received file
 		String fileName = shapesFile.getOriginalFilename();
@@ -226,7 +238,14 @@ public class SHACL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	//@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'R')") //TODO
-	public JsonNode extractCFfromShapeURL(IRI classIri, String shape, IRI targetShape, RDFFormat fileFormat) throws IOException {
+	public JsonNode extractCFfromShapeURL(IRI classIri, String shape, @Optional  IRI targetShape,
+			@Optional RDFFormat fileFormat) throws IOException, OntologyManagerException {
+		//if fileForma is null, try to guess it
+		if(fileFormat==null) {
+			fileFormat = Rio.getParserFormatForFileName(shape)
+					.orElseThrow(() -> new OntologyManagerException(
+							"Could not match a parser for file name: " + shape));
+		}
 		URL url = new URL(shape);
 		Repository rep = new SailRepository(new MemoryStore());
 		rep.init();
