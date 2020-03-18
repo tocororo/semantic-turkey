@@ -14,7 +14,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.TextNode;
+import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLNoTargetShapeFromClassIri;
+import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLGenericException;
+import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLMultipleTargetShapeFromClassIRI;
+import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLTargetShapeNotExisting;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.model.BNode;
@@ -26,10 +29,8 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDF4J;
-import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.GraphQueryResult;
-import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -176,7 +177,7 @@ public class SHACL extends STServiceAdapter {
 	@Read
 	//@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'R')") //TODO
 	public JsonNode extractCFfromShapeFile(IRI classIri, MultipartFile shapesFile, @Optional RDFFormat fileFormat,
-			@Optional IRI targetShape) throws IOException, OntologyManagerException {
+			@Optional IRI targetShape) throws IOException, OntologyManagerException, SHACLGenericException {
 		//if fileForma is null, try to guess it
 		if(fileFormat==null) {
 			fileFormat = Rio.getParserFormatForFileName(shapesFile.getOriginalFilename())
@@ -215,7 +216,7 @@ public class SHACL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	//@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'R')") //TODO
-	public JsonNode extractCFfromShapesGraph(IRI classIri, IRI targetShape) {
+	public JsonNode extractCFfromShapesGraph(IRI classIri, IRI targetShape) throws SHACLGenericException {
 		if(!getProject().isSHACLEnabled()){
 			//TODO decide what to do, since this project does not have a SCHACL Graph
 		}
@@ -239,7 +240,7 @@ public class SHACL extends STServiceAdapter {
 	@Read
 	//@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'R')") //TODO
 	public JsonNode extractCFfromShapeURL(IRI classIri, String shape, @Optional  IRI targetShape,
-			@Optional RDFFormat fileFormat) throws IOException, OntologyManagerException {
+			@Optional RDFFormat fileFormat) throws IOException, OntologyManagerException, SHACLGenericException {
 		//if fileForma is null, try to guess it
 		if(fileFormat==null) {
 			fileFormat = Rio.getParserFormatForFileName(shape)
@@ -267,16 +268,46 @@ public class SHACL extends STServiceAdapter {
 		return JsonNodeFactory.instance.textNode(pearlFileText);
 	}
 
-	private Map<String, PropInfo> generatePropInfoMap(Repository rep, IRI targetShapeIRI, IRI classIRI, IRI shaclGraph) {
+	private Map<String, PropInfo> generatePropInfoMap(Repository rep, IRI targetShapeIRI, IRI classIRI, IRI shaclGraph) throws SHACLGenericException {
 		RepositoryConnection conn = rep.getConnection();
 
 		Map<String, PropInfo> propToPropInfoMap = new HashMap<>();
 		String query;
 
+		//perform some checks before getting the data
+		if(targetShapeIRI!=null) {
+			//check that the targetShapeIRI exists
+			query = "\nSELECT * " +
+					"\nWHERE{" +
+					"\n" + NTriplesUtil.toNTriplesString(targetShapeIRI) + " a <" + SH_NODESHAPE + "> ." +
+					"\n" + NTriplesUtil.toNTriplesString(targetShapeIRI) + " a ?type ." +
+					"\n";
+			try(TupleQueryResult tupleQueryResult = conn.prepareTupleQuery(query).evaluate()) {
+				if (!tupleQueryResult.hasNext()) {
+					throw new SHACLTargetShapeNotExisting(targetShapeIRI);
+				}
+			}
+		} else {
+			query = "\nSELECT ?nodeShape " +
+					"\nWHERE{" +
+					"\n ?nodeShape <"+SH_TARGETCLASS+ "> " +NTriplesUtil.toNTriplesString(classIRI) + " ." +
+					"\n";
+			try(TupleQueryResult tupleQueryResult = conn.prepareTupleQuery(query).evaluate()) {
+				if (!tupleQueryResult.hasNext()) {
+					throw new SHACLNoTargetShapeFromClassIri(classIRI);
+				}
+				List<IRI> targetShapeIriList = new ArrayList<>();
+				while(tupleQueryResult.hasNext()){
+					targetShapeIriList.add((IRI) tupleQueryResult.next().getValue("nodeShape"));
+				}
+				if(targetShapeIriList.size()>1){
+					throw new SHACLMultipleTargetShapeFromClassIRI(classIRI, targetShapeIriList);
+				}
+			}
+		}
+
 		//use the classIRI and targetShapeIRI (if present)
 		//perform a describe (so all list will be taken with a single query)
-
-
 		query = //"PREFIX sh: <http://www.w3.org/ns/shacl#>" +
 				//"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
 				"\nDESCRIBE ?nodeShape "+
@@ -449,6 +480,10 @@ public class SHACL extends STServiceAdapter {
 			sb.append("\n");
 			String propName = propToPropInfoMap.get(prop).getPropIRI().getLocalName();
 			PropInfo propInfo = propToPropInfoMap.get(prop);
+			if(propInfo.getSh_hasValue()!=null){
+				//since this prop SH_HASVALUE, its placeholder will not be generated, so just skip it
+				continue;
+			}
 			if(propInfo.getMinCount()!=-1 || propInfo.getMaxCount()!=-1){
 				//the Annotation List is needed
 				String min = propInfo.getMinCount()!=-1 ? "min="+propInfo.getMinCount() : "";
