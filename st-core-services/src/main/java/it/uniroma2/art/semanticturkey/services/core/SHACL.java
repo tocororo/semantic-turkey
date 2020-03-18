@@ -89,6 +89,9 @@ public class SHACL extends STServiceAdapter {
 	private static final String ANN_OBJECTONEOF = "@ObjectOneOf";
 	private static final String ANN_DATAONEOF = "@DataOneOf";
 
+	//User Prompt for the CF PEARL
+	final String USERPROMT = "userPrompt/";
+
 	/**
 	 * Loads SHACL shapes into the SHACL Shape Graph associated with the contextual project. Existing shapes
 	 * are deleted by default, but this behavior can be overridden.
@@ -463,7 +466,7 @@ public class SHACL extends STServiceAdapter {
 			}
 			//now add the node definition
 			String literalConv = "literal"+(propInfo.getSh_datatype()!=null ? "^^"+getQName(propInfo.getSh_datatype(), prefixToNamespaceMap) : "");
-			sb.append("\t\t"+propName+"\t"+(propInfo.isLiteral() ? literalConv : "uri")+"\t"+propName+" .");
+			sb.append("\t\t"+propName+"\t"+(propInfo.isLiteral() ? literalConv : "uri")+"\t"+USERPROMT+propName+" .");
 			sb.append("\n");
 		}
 		sb.append("\t}");
