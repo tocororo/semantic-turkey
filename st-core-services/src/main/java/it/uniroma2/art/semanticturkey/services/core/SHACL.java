@@ -198,7 +198,7 @@ public class SHACL extends STServiceAdapter {
 		RepositoryConnection connection = rep.getConnection();
 		connection.add(serverShaclFile, getProject().getBaseURI(), fileFormat);
 
-		//prepare the namespace map
+		//prepare the prefix-namespace map
 		Map <String, String> prefixToNamespaceMap = new HashMap<>();
 		RepositoryResult<Namespace> namespaceRepositoryResult = connection.getNamespaces();
 		while(namespaceRepositoryResult.hasNext()) {

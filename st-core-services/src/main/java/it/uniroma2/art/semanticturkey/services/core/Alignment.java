@@ -270,10 +270,10 @@ public class Alignment extends STServiceAdapter {
 					String lang = label.getLanguage().get();
 					String query = ServiceForSearches.getPrefixes() + "\n"
 							+ SearchStrategyUtils.instantiateSearchStrategy(exptManager, searchStrategy)
-								.searchResource(simpleSTServiceContext, label.getLabel(), rolesArray,
+								.searchResource(simpleSTServiceContext, label.getLabel(), rolesArray, true,
 									false, false, false, searchMode, null, "or",
 										langs, false, lexModel,
-									false, false, false, false);
+									false, false, false, false, null);
 		
 					logger.debug("query = " + query);
 		

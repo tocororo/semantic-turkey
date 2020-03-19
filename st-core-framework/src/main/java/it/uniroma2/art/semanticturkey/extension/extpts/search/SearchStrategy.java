@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.extension.extpts.search;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -42,10 +43,10 @@ public interface SearchStrategy extends Extension {
 	void update(RepositoryConnection connection) throws Exception;
 
 	String searchResource(STServiceContext stServiceContext, String searchString, String[] rolesArray,
-			boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode,
+			boolean useLexicalizations, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode,
 			@Nullable List<IRI> schemes, String schemeFilter, @Nullable List<String> langs, boolean includeLocales, IRI lexModel,
 			boolean searchInRDFSLabel, boolean searchInSKOSLabel, boolean searchInSKOSXLLabel,
-			boolean searchInOntolex) throws IllegalStateException, STPropertyAccessException;
+			boolean searchInOntolex, Map<String, String> prefixToNamespaceMap) throws IllegalStateException, STPropertyAccessException;
 
 	Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
@@ -54,10 +55,10 @@ public interface SearchStrategy extends Extension {
 
 	Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, SearchMode searchMode, @Nullable List<IRI> schemes,
-			String schemeFilter, @Nullable IRI cls) throws IllegalStateException, STPropertyAccessException;
+			String schemeFilter, @Nullable IRI cls, Map<String, String> prefixToNamespaceMap) throws IllegalStateException, STPropertyAccessException;
 
 	String searchInstancesOfClass(STServiceContext stServiceContext, List<List<IRI>> clsListList,
-			String searchString, boolean useLocalName, boolean useURI, boolean useNotes,
+			String searchString, boolean  useLexicalizations, boolean useLocalName, boolean useURI, boolean useNotes,
 			SearchMode searchMode, @Nullable List<String> langs, boolean includeLocales,
 			boolean searchStringCanBeNull, boolean searchInSubTypes, IRI lexModel, boolean searchInRDFSLabel,
 			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex,
@@ -65,15 +66,16 @@ public interface SearchStrategy extends Extension {
 			@Nullable List<Pair<IRI, List<Value>>> outgoingLinks,
 			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
 			@JsonSerialized List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy,
-			String baseURI) throws IllegalStateException, STPropertyAccessException;
+			String baseURI, Map<String, String> prefixToNamespaceMap) throws IllegalStateException, STPropertyAccessException;
 
 	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode,
 			String indexToUse, List<String> langs, boolean includeLocales, boolean forLocalName);
 
-	String searchLexicalEntry(STServiceContext stServiceContext, String searchString, boolean useLocalName,
+	String searchLexicalEntry(STServiceContext stServiceContext, String searchString,
+			boolean useLexicalizations, boolean useLocalName,
 			boolean useURI, boolean useNotes, SearchMode searchMode, List<IRI> lexicons, List<String> langs,
 			boolean includeLocales, IRI iri, boolean searchInRDFSLabel, boolean searchInSKOSLabel,
-			boolean searchInSKOSXLLabel, boolean searchInOntolex)
+			boolean searchInSKOSXLLabel, boolean searchInOntolex, Map<String, String> prefixToNamespaceMap)
 			throws IllegalStateException, STPropertyAccessException;
 	
 	//common methods used by its implementations

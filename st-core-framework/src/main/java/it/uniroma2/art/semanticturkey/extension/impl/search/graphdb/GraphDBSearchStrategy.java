@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.extension.impl.search.graphdb;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -14,7 +15,6 @@ import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,13 +138,14 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 	@Override
 	public String searchResource(STServiceContext stServiceContext,
-			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, boolean useNotes, 
+			String searchString, String[] rolesArray, boolean useLexicalizations, boolean useLocalName, boolean useURI, boolean useNotes,
 			SearchMode searchMode, @Optional List<IRI> schemes, String schemeFilter, @Optional List<String> langs,
-			boolean includeLocales, IRI lexModel, boolean searchInRDFSLabel, 
-			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex) 
+			boolean includeLocales, IRI lexModel, boolean searchInRDFSLabel,
+			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex, Map<String, String> prefixToNamespaceMap)
 					throws IllegalStateException, STPropertyAccessException {
 
 		logger.debug("searchResource in GraphDBSearchStrategy, searchString="+searchString +", "
+				+ "useLexicalizations="+useLexicalizations+", useNotes="+useNotes+", "
 				+ "useURI="+useURI+", useLocalName="+useLocalName);
 		
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
@@ -155,11 +156,11 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				NatureRecognitionOrchestrator.getNatureSPARQLSelectPart() +
 			"\nWHERE{";
 		
-		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
-		// the useLocalName and useURI
-		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
+		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, useLexicalizations.
+		// the useLocalName, useURI and useNotes
+		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLexicalizations, useLocalName, useURI,
 				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
-				searchInSKOSXLLabel, searchInOntolex, true);
+				searchInSKOSXLLabel, searchInOntolex, true, prefixToNamespaceMap);
 		//filter the resource according to its type
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, schemeFilter, null,
 				null);
@@ -185,10 +186,11 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	@Override
 	public String searchLexicalEntry(STServiceContext stServiceContext,
-			String searchString, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode, 
-			List<IRI> lexicons, List<String> langs, boolean includeLocales, IRI lexModel, 
-			boolean searchInRDFSLabel, boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, 
-			boolean searchInOntolex) 
+			String searchString, boolean useLocalName, boolean useLexicalizations,
+			boolean useURI, boolean useNotes, SearchMode searchMode,
+			List<IRI> lexicons, List<String> langs, boolean includeLocales, IRI lexModel,
+			boolean searchInRDFSLabel, boolean searchInSKOSLabel, boolean searchInSKOSXLLabel,
+			boolean searchInOntolex, Map<String, String> prefixToNamespaceMap)
 					throws IllegalStateException, STPropertyAccessException {
 		
 		logger.debug("searchLexicalEntry in GraphDBSearchStrategy, searchString="+searchString+", "
@@ -208,9 +210,10 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
-		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
+		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLexicalizations,
+				useLocalName, useURI,
 				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
-				searchInSKOSXLLabel, searchInOntolex, false);
+				searchInSKOSXLLabel, searchInOntolex, false, prefixToNamespaceMap);
 		//filter the resource according to its type
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, "or", null,
 				lexicons);
@@ -314,10 +317,20 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter,
-			@Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<IRI> schemes, @Optional(defaultValue = "or") String schemeFilter,
+			@Optional IRI cls, Map<String, String> prefixToNamespaceMap) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
+
+		//check if searchString represents a qname and searchMode is SearchMode.startsWith.
+		// In this case, try to expand it via the prefixMap
+		if(searchString.contains(":") && searchMode.equals(SearchMode.startsWith)){
+			String prefix = searchString.split(":")[0];
+			String localName = searchString.split(":")[1];
+			if(prefixToNamespaceMap.containsKey(prefix)){
+				searchString = prefixToNamespaceMap.get(prefix)+localName;
+			}
+		}
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource "+ 
@@ -347,14 +360,15 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 	@Override
 	public String searchInstancesOfClass(STServiceContext stServiceContext,
-			List<List<IRI>> clsListList, String searchString, boolean useLocalName, boolean useURI, 
+			List<List<IRI>> clsListList, String searchString, boolean  useLexicalizations, boolean useLocalName, boolean useURI,
 			boolean useNotes, SearchMode searchMode, @Optional List<String> langs, boolean includeLocales,
-			boolean searchStringCanBeNull, boolean searchInSubTypes, IRI lexModel, boolean searchInRDFSLabel, 
+			boolean searchStringCanBeNull, boolean searchInSubTypes, IRI lexModel, boolean searchInRDFSLabel,
 			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex,
-			@Nullable List<List<IRI>> schemes, StatusFilter statusFilter, 
+			@Nullable List<List<IRI>> schemes, StatusFilter statusFilter,
 			@Nullable List<Pair<IRI, List<Value>>> outgoingLinks,
-			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch, 
-			@Nullable List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy, String baseURI) 
+			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
+			@Nullable List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy, String baseURI,
+			Map<String, String> prefixToNamespaceMap)
 					throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
@@ -374,9 +388,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
 		if(searchString!=null && searchString.length()>0) {
-			query += prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
+			query += prepareQueryforResourceUsingSearchString(searchString, searchMode, useLexicalizations, useLocalName, useURI,
 				useNotes, langs, includeLocales,  lexModel, searchInRDFSLabel, searchInSKOSLabel, 
-				searchInSKOSXLLabel, searchInOntolex, true);
+				searchInSKOSXLLabel, searchInOntolex, true, prefixToNamespaceMap);
 		}
 		
 		//the part relative to the schemes
@@ -406,9 +420,10 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	
 	private String prepareQueryforResourceUsingSearchString(String searchString, SearchMode searchMode, 
-			boolean useLocalName, boolean useURI, boolean useNotes, List<String> langs, 
+			boolean useLexicalizations, boolean useLocalName, boolean useURI, boolean useNotes, List<String> langs,
 			boolean includeLocales,  IRI lexModel, boolean searchInRDFSLabel, boolean searchInSKOSLabel, 
-			boolean searchInSKOSXLLabel, boolean searchInOntolex, boolean includeResToLexicalEntry) {
+			boolean searchInSKOSXLLabel, boolean searchInOntolex, boolean includeResToLexicalEntry,
+			Map<String, String> prefixToNamespaceMap) {
 		String query="";
 		
 		
@@ -422,25 +437,39 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			query+="\n{"+
 					searchSpecificModePrepareQuery("?resource", searchString, searchMode,
 							LUCENEINDEXLOCALNAME, null, false, true)+
-					"\n}"+
-					"\nUNION";
+					"\n}";
+			if(useURI || useLexicalizations) {
+				query+="\nUNION";
+			}
 		}
 		if(useURI){
+			String searchStringForUri = searchString;
 			//the part related to the URI. Since the indexes are not able to indexing URI, a standard regex is
 			// used
+			//check if searchString represents a qname and searchMode is SearchMode.startsWith.
+			// In this case, try to expand it via the prefixMap
+			if(searchString.contains(":") && searchMode.equals(SearchMode.startsWith)){
+				String prefix = searchString.split(":")[0];
+				String localName = searchString.split(":")[1];
+				if(prefixToNamespaceMap.containsKey(prefix)){
+					searchStringForUri = prefixToNamespaceMap.get(prefix)+localName;
+				}
+			}
 			query+="\n{"+
 					"\n?resource a ?type . " + // otherwise the filter may not be computed
-					searchModePrepareQueryNoIndexes("?resource", searchString, searchMode) +
-					"\n}"+
-					"\nUNION";
+					searchModePrepareQueryNoIndexes("?resource", searchStringForUri, searchMode) +
+					"\n}";
+			if(useLexicalizations) {
+				query+="\nUNION";
+			}
 		}
 		
 		
 		//if there is a part related to the localName or the URI, then the part related to the label
 		// is inside { and } and linked to the previous part with an UNION
-		if(useLocalName || useURI){
+		/*if(useLocalName || useURI){
 			query+="\n{";
-		}
+		}*/
 		
 		//use the indexes to search in the literals, and then get the associated resource
 		query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs, 
@@ -520,9 +549,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			}
 		}
 		
-		if(useLocalName || useURI || useNotes){
+		/*if(useLocalName || useURI || useNotes){
 			query+="\n}";
-		}
+		}*/
 		
 		//close the nested query
 		query+="\n}"+

@@ -32,6 +32,7 @@ import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sparql.query.QueryStringUtil;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
@@ -40,7 +41,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.google.common.collect.Sets;
 
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.config.sparql.SPARQLParameterizationStore;
 import it.uniroma2.art.semanticturkey.config.sparql.SPARQLStore;
@@ -73,7 +73,6 @@ import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
-import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 @STService
 public class Search extends STServiceAdapter {
@@ -210,6 +209,7 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> advancedSearch(@Optional String searchString,
+			@Optional(defaultValue = "true") boolean  useLexicalizations,
 			@Optional(defaultValue="false") boolean useLocalName, 
 			@Optional(defaultValue="false") boolean useURI, 
 			@Optional SearchMode searchMode, 
@@ -238,23 +238,29 @@ public class Search extends STServiceAdapter {
 			}
 		}
 
+		//prepare the namespace map
+		Map <String, String> prefixToNamespaceMap = new HashMap<>();
+		RepositoryResult<Namespace> namespaceRepositoryResult = getManagedConnection().getNamespaces();
+		while(namespaceRepositoryResult.hasNext()) {
+			Namespace namespace = namespaceRepositoryResult.next();
+			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
+		}
+
 		String query= ServiceForSearches.getPrefixes() +
 				"\nSELECT DISTINCT ?resource ?attr_nature ?attr_scheme" +
 				"\nWHERE{" +
 				"\n{";
 		
 		//use the searchInstancesOfClass to construct the first part of the query (the subquery)
-		query += instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, types, searchString,
+		query += instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, types, searchString, useLexicalizations,
 				useLocalName, useURI, useNotes, searchMode, langs, includeLocales, true, true, lexModel,
 				searchInRDFSLabel, searchInSKOSLabel, searchInSKOSXLLabel, searchInOntolex, schemes, 
 				statusFilter, outgoingLinks, outgoingSearch, ingoingLinks, instantiateSearchStrategy(), 
-				getProject().getBaseURI());
+				getProject().getBaseURI(), prefixToNamespaceMap);
 		
 		
 		query+="\n}";
-		
-		
-	
+
 		
 		query+= "\nFILTER(BOUND(?resource))" + //used only to not have problem with the OPTIONAL in qb.processRendering(); 
 				"\n}" +
@@ -295,6 +301,7 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchResource(String searchString, String[] rolesArray,
+			@Optional(defaultValue = "true") boolean  useLexicalizations,
 			boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Optional(defaultValue = "false") boolean useNotes, @Optional List<IRI> schemes,
 			@Optional(defaultValue="or") String schemeFilter,
@@ -308,10 +315,26 @@ public class Search extends STServiceAdapter {
 		if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
 			searchInRDFSLabel = true;
 		}
+		//check that at least one of the different type of use* is set to true
+		if(!useLexicalizations && !useLocalName && !useURI && !useNotes){
+			throw  new IllegalArgumentException("All these parameters could not be false: useLexicalizations, useLocalName, useURI, useNotes");
+		}
+		if(!useLexicalizations && useNotes){
+			throw  new IllegalArgumentException("useNodes cannot be true while useLexicalizations is false");
+		}
+
+		//prepare the namespace map
+		Map <String, String> prefixToNamespaceMap = new HashMap<>();
+		RepositoryResult<Namespace> namespaceRepositoryResult = getManagedConnection().getNamespaces();
+		while(namespaceRepositoryResult.hasNext()) {
+			Namespace namespace = namespaceRepositoryResult.next();
+			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
+		}
+
 		String query = ServiceForSearches.getPrefixes() + "\n"
-				+ instantiateSearchStrategy().searchResource(stServiceContext, searchString, rolesArray,
+				+ instantiateSearchStrategy().searchResource(stServiceContext, searchString, rolesArray, useLexicalizations,
 						useLocalName, useURI, useNotes, searchMode, schemes, schemeFilter, langs, includeLocales, lexModel,
-						searchInRDFSLabel, searchInSKOSLabel, searchInSKOSXLLabel, searchInOntolex);
+						searchInRDFSLabel, searchInSKOSLabel, searchInSKOSXLLabel, searchInOntolex, prefixToNamespaceMap);
 
 		logger.debug("query = " + query);
 
@@ -344,18 +367,35 @@ public class Search extends STServiceAdapter {
 			SearchMode searchMode, @Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter, @Optional IRI cls)
 			throws IllegalStateException, STPropertyAccessException {
 
+		//prepare the namespace map
+		Map <String, String> prefixToNamespaceMap = new HashMap<>();
+		RepositoryResult<Namespace> namespaceRepositoryResult = getManagedConnection().getNamespaces();
+		while(namespaceRepositoryResult.hasNext()) {
+			Namespace namespace = namespaceRepositoryResult.next();
+			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
+		}
+
 		return instantiateSearchStrategy().searchURIList(stServiceContext, searchString, rolesArray,
-				searchMode, schemes, schemeFilter, cls);
+				searchMode, schemes, schemeFilter, cls, prefixToNamespaceMap);
 	}
 
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, instances)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchInstancesOfClass(IRI cls, String searchString,
+			@Optional(defaultValue = "true") boolean  useLexicalizations,
 			boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Optional(defaultValue = "false") boolean useNotes, @Optional List<String> langs,
 			@Optional(defaultValue = "false") boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException {
+
+		//prepare the namespace map
+		Map <String, String> prefixToNamespaceMap = new HashMap<>();
+		RepositoryResult<Namespace> namespaceRepositoryResult = getManagedConnection().getNamespaces();
+		while(namespaceRepositoryResult.hasNext()) {
+			Namespace namespace = namespaceRepositoryResult.next();
+			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
+		}
 
 		IRI lexModel = getProject().getLexicalizationModel();
 		List<IRI> clsList = new ArrayList<>();
@@ -364,9 +404,9 @@ public class Search extends STServiceAdapter {
 		clsListList.add(clsList);
 		String query = ServiceForSearches.getPrefixes() + "\n"
 				+ instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, clsListList,
-						searchString, useLocalName, useURI, useNotes, searchMode, langs, includeLocales,
+						searchString, useLexicalizations, useLocalName, useURI, useNotes, searchMode, langs, includeLocales,
 						false, false, lexModel, false, false, false, false, null, null, null, null, null, 
-						instantiateSearchStrategy(), getProject().getBaseURI());
+						instantiateSearchStrategy(), getProject().getBaseURI(), prefixToNamespaceMap);
 
 		logger.debug("query = " + query);
 
@@ -380,7 +420,9 @@ public class Search extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(limeLexicon)', 'R')")
-	public Collection<AnnotatedValue<Resource>> searchLexicalEntry(String searchString, boolean useLocalName,
+	public Collection<AnnotatedValue<Resource>> searchLexicalEntry(String searchString,
+			@Optional(defaultValue = "true") boolean  useLexicalizations,
+			boolean useLocalName,
 			boolean useURI, SearchMode searchMode, @Optional(defaultValue = "false") boolean useNotes,
 			@Optional List<IRI> lexicons, @Optional List<String> langs,
 			@Optional(defaultValue = "false") boolean includeLocales,
@@ -390,11 +432,20 @@ public class Search extends STServiceAdapter {
 			@Optional(defaultValue = "false") boolean searchInOntolex)
 			throws IllegalStateException, STPropertyAccessException {
 
+		//prepare the namespace map
+		Map <String, String> prefixToNamespaceMap = new HashMap<>();
+		RepositoryResult<Namespace> namespaceRepositoryResult = getManagedConnection().getNamespaces();
+		while(namespaceRepositoryResult.hasNext()) {
+			Namespace namespace = namespaceRepositoryResult.next();
+			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
+		}
+
 		String query = ServiceForSearches.getPrefixes() + "\n"
-				+ instantiateSearchStrategy().searchLexicalEntry(stServiceContext, searchString, useLocalName,
+				+ instantiateSearchStrategy().searchLexicalEntry(stServiceContext, searchString,
+						useLexicalizations, useLocalName,
 						useURI, useNotes, searchMode, lexicons, langs, includeLocales,
 						getProject().getLexicalizationModel(), searchInRDFSLabel, searchInSKOSLabel,
-						searchInSKOSXLLabel, searchInOntolex);
+						searchInSKOSXLLabel, searchInOntolex, prefixToNamespaceMap);
 
 		logger.debug("query = " + query);
 

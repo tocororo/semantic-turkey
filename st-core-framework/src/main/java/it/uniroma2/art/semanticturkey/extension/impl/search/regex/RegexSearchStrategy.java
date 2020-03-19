@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.extension.impl.search.regex;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -13,7 +14,6 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +22,6 @@ import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
-import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy.StatusFilter;
 import it.uniroma2.art.semanticturkey.extension.impl.search.AbstractSearchStrategy;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.Pair;
@@ -54,11 +53,12 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 	@Override
 	public String searchResource(STServiceContext stServiceContext,
-			String searchString, String[] rolesArray, boolean useLocalName, boolean useURI, boolean useNotes,
+			String searchString, String[] rolesArray, boolean useLocalName, boolean  useLexicalizations,
+			boolean useURI, boolean useNotes,
 			SearchMode searchMode, @Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter,
 			@Optional List<String> langs,
 			boolean includeLocales, IRI lexModel, boolean searchInRDFSLabel, 
-			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex) 
+			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex, Map <String, String> prefixToNamespaceMap)
 					throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
@@ -77,9 +77,9 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		
 		//now examine the rdfs:label and/or skos:xlabel/skosxl:label
 		//see if the localName and/or URI should be used in the query or not
-		query += prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
+		query += prepareQueryforResourceUsingSearchString(searchString, searchMode, useLexicalizations, useLocalName, useURI,
 				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
-				searchInSKOSXLLabel, searchInOntolex, true);
+				searchInSKOSXLLabel, searchInOntolex, true, prefixToNamespaceMap);
 		
 		
 		
@@ -100,10 +100,11 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	
 	@Override
 	public String searchLexicalEntry(STServiceContext stServiceContext,
-			String searchString, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode, 
+			String searchString, boolean useLexicalizations,
+			boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode,
 			List<IRI> lexicons, List<String> langs, boolean includeLocales, IRI lexModel, 
 			boolean searchInRDFSLabel, boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, 
-			boolean searchInOntolex) 
+			boolean searchInOntolex, Map<String, String> prefixToNamespaceMap)
 					throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
@@ -123,9 +124,10 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, "", null,
 				lexicons);
 		
-		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
+		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLexicalizations,
+				useLocalName, useURI,
 				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
-				searchInSKOSXLLabel, searchInOntolex, false);
+				searchInSKOSXLLabel, searchInOntolex, false, prefixToNamespaceMap);
 		
 		//add the information about the lexicon
 		query+="\nOPTIONAL{ ?lexicon <"+LIME.ENTRY.stringValue()+"> ?resource . }";
@@ -215,10 +217,20 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	@Override
 	public Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, SearchMode searchMode,
-			@Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter,
-			@Optional IRI cls) throws IllegalStateException, STPropertyAccessException {
+			@Optional List<IRI> schemes, @Optional(defaultValue = "or") String schemeFilter,
+			@Optional IRI cls, Map<String, String> prefixToNamespaceMap) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
+
+		//check if searchString represents a qname and searchMode is SearchMode.startsWith.
+		// In this case, try to expand it via the prefixMap
+		if(searchString.contains(":") && searchMode.equals(SearchMode.startsWith)){
+			String prefix = searchString.split(":")[0];
+			String localName = searchString.split(":")[1];
+			if(prefixToNamespaceMap.containsKey(prefix)){
+				searchString = prefixToNamespaceMap.get(prefix)+localName;
+			}
+		}
 
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource "+ 
@@ -240,6 +252,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				"\n}";
 		//@formatter:on
 
+		System.out.println("\n"+query+"\n"); // da cancellare
+
 		logger.debug("query = " + query);
 
 		return serviceForSearches.executeGenericSearchQueryForStringList(query, stServiceContext.getRGraphs(),
@@ -248,14 +262,14 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 	@Override
 	public String searchInstancesOfClass(STServiceContext stServiceContext,
-			List<List<IRI>> clsListList, String searchString, boolean useLocalName, boolean useURI, 
-			boolean useNotes, SearchMode searchMode,@Optional List<String> langs, boolean includeLocales,
-			boolean searchStringCanBeNull, boolean searchInSubTypes, IRI lexModel, boolean searchInRDFSLabel, 
+			List<List<IRI>> clsListList, String searchString, boolean useLexicalizations, boolean useLocalName, boolean useURI,
+			boolean useNotes, SearchMode searchMode, @Optional List<String> langs, boolean includeLocales,
+			boolean searchStringCanBeNull, boolean searchInSubTypes, IRI lexModel, boolean searchInRDFSLabel,
 			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex,
-			@Nullable List<List<IRI>> schemes, StatusFilter statusFilter, 
+			@Nullable List<List<IRI>> schemes, StatusFilter statusFilter,
 			@Nullable List<Pair<IRI, List<Value>>> outgoingLinks,
-			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch, 
-			@Nullable List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy, String baseURI) 
+			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
+			@Nullable List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy, String baseURI, Map<String, String> prefixToNamespaceMap)
 					throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
@@ -278,9 +292,10 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		
 		
 		if(searchString!=null && searchString.length()>0) {
-			query += prepareQueryforResourceUsingSearchString(searchString, searchMode, useLocalName, useURI, 
+			query += prepareQueryforResourceUsingSearchString(searchString, searchMode,
+					useLexicalizations, useLocalName, useURI,
 					useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
-					searchInSKOSXLLabel, searchInOntolex, true);
+					searchInSKOSXLLabel, searchInOntolex, true, prefixToNamespaceMap);
 		}
 		
 		
@@ -368,10 +383,12 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		return query;
 	}
 	
-	private String prepareQueryforResourceUsingSearchString(String searchString, SearchMode searchMode, 
+	private String prepareQueryforResourceUsingSearchString(String searchString, SearchMode searchMode,
+			boolean useLexicalizations,
 			boolean useLocalName, boolean useURI, boolean useNotes, List<String> langs, 
 			boolean includeLocales,  IRI lexModel, boolean searchInRDFSLabel, boolean searchInSKOSLabel, 
-			boolean searchInSKOSXLLabel, boolean searchInOntolex, boolean includeResToLexicalEntry) {
+			boolean searchInSKOSXLLabel, boolean searchInOntolex, boolean includeResToLexicalEntry,
+			Map<String, String> prefixToNamespaceMap) {
 		String query="";
 	
 		//check if the request want to search in the local name
@@ -381,99 +398,115 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
 					searchSpecificModePrepareQuery("?localName", searchString, searchMode, null, null, 
 							includeLocales) +
-					"\n}"+
-					"\nUNION";
+					"\n}";
+			if(useURI || useLexicalizations) {
+				query+="\nUNION";
+			}
 		}
 		
 		//check if the request want to search in the complete URI
 		if(useURI){
+			String searchStringForUri = searchString;
+			//check if searchString represents a qname and searchMode is SearchMode.startsWith.
+			// In this case, try to expand it via the prefixMap
+			if(searchString.contains(":") && searchMode.equals(SearchMode.startsWith)){
+				String prefix = searchString.split(":")[0];
+				String localName = searchString.split(":")[1];
+				if(prefixToNamespaceMap.containsKey(prefix)){
+					searchStringForUri = prefixToNamespaceMap.get(prefix)+localName;
+				}
+			}
 			query+="\n{" +
 					"\n?resource a ?type . " + // otherwise the completeURI is not computed
 					"\nBIND(str(?resource) AS ?complURI)"+
-					searchSpecificModePrepareQuery("?complURI", searchString, searchMode, null, null, includeLocales) +
-					"\n}"+
-					"\nUNION";
+					searchSpecificModePrepareQuery("?complURI", searchStringForUri, searchMode, null, null, includeLocales) +
+					"\n}";
+			if(useLexicalizations) {
+				query+="\nUNION";
+			}
 		}
-		//check if the request want to search in the notes as well (plain or reified)
-		if(useNotes) {
-			query+="\n{" +
-					"\n{SELECT ?propNote{?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
-					"\n?resource ?propNote ?label ." +
+		if(useLexicalizations){
+			//check if the request want to search in the notes as well (plain or reified)
+			if(useNotes) {
+				query+="\n{" +
+						"\n{SELECT ?propNote{?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
+						"\n?resource ?propNote ?label ." +
+						searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+						"\n}" +
+						"\nUNION" +
+						"\n{" +
+						"\n{SELECT?propNote {?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
+						"\n?resource ?propNote ?refNote ." +
+						"\n?refNote <"+RDF.VALUE+"> ?label ." +
+						searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+						"\n}"+
+						"\nUNION";
+			}
+
+
+			boolean unionNeeded = false;
+			if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) || searchInRDFSLabel) {
+				//search in the rdfs:label
+				query+="\n{" +
+					"\n?resource <"+RDFS.LABEL+"> ?label ." +
 					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}" + 
-					"\nUNION" +
-					"\n{" +
-					"\n{SELECT?propNote {?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
-					"\n?resource ?propNote ?refNote ." +
-					"\n?refNote <"+RDF.VALUE+"> ?label ." +
+					"\n}";
+				unionNeeded = true;
+			}
+			if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) || searchInSKOSLabel) {
+				//search in skos:prefLabel and skos:altLabel
+				if(unionNeeded) {
+					query += "\nUNION";
+				}
+				unionNeeded = true;
+				//search in skos:prefLabel and skos:altLabel
+				query+="\n{" +
+					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
 					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}"+
-					"\nUNION";
-		}
-		
-		
-		boolean unionNeeded = false;
-		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) || searchInRDFSLabel) {
-			//search in the rdfs:label
-			query+="\n{" +
-				"\n?resource <"+RDFS.LABEL+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}";
-			unionNeeded = true;
-		}
-		if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) || searchInSKOSLabel) {
-			//search in skos:prefLabel and skos:altLabel
-			if(unionNeeded) {
-				query += "\nUNION";
+					"\n}" ;
 			}
-			unionNeeded = true;
-			//search in skos:prefLabel and skos:altLabel
-			query+="\n{" +
-				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}" ;
-		}
-		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || searchInSKOSXLLabel) {
-			if(unionNeeded) {
-				query += "\nUNION";
+			if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || searchInSKOSXLLabel) {
+				if(unionNeeded) {
+					query += "\nUNION";
+				}
+				unionNeeded = true;
+				//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
+				query+="\n{" +
+					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
+					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+					"\n}";
 			}
-			unionNeeded = true;
-			//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
-			query+="\n{" +
-				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
-				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}";
-		}
-		if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL) || searchInOntolex) {
-			//construct the complex path from a resource to a LexicalEntry
-			String allResToLexicalEntry = getAllPathRestToLexicalEntry();
-			if(unionNeeded) {
-				query += "\nUNION";
+			if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL) || searchInOntolex) {
+				//construct the complex path from a resource to a LexicalEntry
+				String allResToLexicalEntry = getAllPathRestToLexicalEntry();
+				if (unionNeeded) {
+					query += "\nUNION";
+				}
+				unionNeeded = true;
+				//search in dct:title
+				query += "\n{" +
+						"\n?resource <" + DCTERMS.TITLE + "> ?label ." +
+						searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+						"\n}" +
+
+
+						//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+						"\nUNION" +
+						"\n{" +
+						"\n?resource (<" + ONTOLEX.CANONICAL_FORM.stringValue() + "> | <" + ONTOLEX.OTHER_FORM.stringValue() + ">) ?ontoForm ." +
+						"\n?ontoForm <" + ONTOLEX.WRITTEN_REP.stringValue() + "> ?label ." +
+						searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+						"\n}" +
+						//search in allResToLexicalEntry/(ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+						"\nUNION" +
+						"\n{" +
+						"\n?resource (" + allResToLexicalEntry + ")/" +
+						"(<" + ONTOLEX.CANONICAL_FORM.stringValue() + "> | <" + ONTOLEX.OTHER_FORM.stringValue() + ">) ?ontoForm ." +
+						"\n?ontoForm <" + ONTOLEX.WRITTEN_REP.stringValue() + "> ?label ." +
+						searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+						"\n}";
 			}
-			unionNeeded = true;
-			//search in dct:title
-			query+="\n{" +
-				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}"+	
-				
-				
-				//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
-				"\nUNION" +
-				"\n{" +
-				"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
-				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}"+
-				//search in allResToLexicalEntry/(ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
-				"\nUNION" +
-				"\n{" +
-				"\n?resource ("+allResToLexicalEntry+")/"+
-				"(<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
-				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
-				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-				"\n}";
 		}
 		
 		return query;

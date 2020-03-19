@@ -1,5 +1,6 @@
 version 7.1
 date: dd/mm/yyyy
+  * added the prefix resolution in all Search services
   * added SHACL to PEARL
   * add a sail for trivial reasoning (based on symmetric / inverse properties)
   * use the Alignment Services API defined by MAPLE
