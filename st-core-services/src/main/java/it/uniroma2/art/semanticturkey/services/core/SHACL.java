@@ -37,6 +37,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
+import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
@@ -269,189 +270,197 @@ public class SHACL extends STServiceAdapter {
 	}
 
 	private Map<String, PropInfo> generatePropInfoMap(Repository rep, IRI targetShapeIRI, IRI classIRI, IRI shaclGraph) throws SHACLGenericException {
-		RepositoryConnection conn = rep.getConnection();
-
-		Map<String, PropInfo> propToPropInfoMap = new HashMap<>();
-		String query;
-
-		//perform some checks before getting the data
-		if(targetShapeIRI!=null) {
-			//check that the targetShapeIRI exists
-			query = "\nSELECT * " +
-					"\nWHERE{" +
-					"\n" + NTriplesUtil.toNTriplesString(targetShapeIRI) + " a <" + SH_NODESHAPE + "> ." +
-					"\n" + NTriplesUtil.toNTriplesString(targetShapeIRI) + " a ?type ." +
-					"\n";
-			try(TupleQueryResult tupleQueryResult = conn.prepareTupleQuery(query).evaluate()) {
-				if (!tupleQueryResult.hasNext()) {
-					throw new SHACLTargetShapeNotExisting(targetShapeIRI);
+		RepositoryConnection projConn = rep.getConnection();
+		
+		Repository tempRep = new SailRepository(new MemoryStore());
+		tempRep.init();
+		try(RepositoryConnection conn = tempRep.getConnection()) {
+			projConn.export(new RDFInserter(conn), shaclGraph);
+			
+			Map<String, PropInfo> propToPropInfoMap = new HashMap<>();
+			String query;
+	
+			//perform some checks before getting the data
+			if(targetShapeIRI!=null) {
+				//check that the targetShapeIRI exists
+				query = "\nSELECT * " +
+						"\nWHERE{" +
+						"\n" + NTriplesUtil.toNTriplesString(targetShapeIRI) + " a <" + SH_NODESHAPE + "> ." +
+						"\n" + NTriplesUtil.toNTriplesString(targetShapeIRI) + " a ?type ." +
+						"\n}";
+				try(TupleQueryResult tupleQueryResult = conn.prepareTupleQuery(query).evaluate()) {
+					if (!tupleQueryResult.hasNext()) {
+						throw new SHACLTargetShapeNotExisting(targetShapeIRI);
+					}
+				}
+			} else {
+				query = "\nSELECT ?nodeShape " +
+						"\nWHERE{" +
+						"\n ?nodeShape <"+SH_TARGETCLASS+ "> " +NTriplesUtil.toNTriplesString(classIRI) + " ." +
+						"\n}";
+				try(TupleQueryResult tupleQueryResult = conn.prepareTupleQuery(query).evaluate()) {
+					if (!tupleQueryResult.hasNext()) {
+						throw new SHACLNoTargetShapeFromClassIri(classIRI);
+					}
+					List<IRI> targetShapeIriList = new ArrayList<>();
+					while(tupleQueryResult.hasNext()){
+						targetShapeIriList.add((IRI) tupleQueryResult.next().getValue("nodeShape"));
+					}
+					if(targetShapeIriList.size()>1){
+						throw new SHACLMultipleTargetShapeFromClassIRI(classIRI, targetShapeIriList);
+					}
 				}
 			}
-		} else {
-			query = "\nSELECT ?nodeShape " +
-					"\nWHERE{" +
-					"\n ?nodeShape <"+SH_TARGETCLASS+ "> " +NTriplesUtil.toNTriplesString(classIRI) + " ." +
-					"\n";
-			try(TupleQueryResult tupleQueryResult = conn.prepareTupleQuery(query).evaluate()) {
-				if (!tupleQueryResult.hasNext()) {
-					throw new SHACLNoTargetShapeFromClassIri(classIRI);
+	
+			//use the classIRI and targetShapeIRI (if present)
+			//perform a describe (so all list will be taken with a single query)
+			query = //"PREFIX sh: <http://www.w3.org/ns/shacl#>" +
+					//"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+					"\nDESCRIBE ?nodeShape "+
+							"\nWHERE {";
+			if(shaclGraph!=null){
+				query += "\nGRAPH "+NTriplesUtil.toNTriplesString(shaclGraph)+" {";
+			}
+			if(targetShapeIRI!= null){
+				query+="\nBIND("+ NTriplesUtil.toNTriplesString(targetShapeIRI)+" AS ?nodeShape)";
+			} else {
+				query+="\nBIND("+NTriplesUtil.toNTriplesString(classIRI)+" AS ?targetClass) "+
+						"\n?nodeShape <"+SH_TARGETCLASS+"> ?targetClass ."+
+						"\n?nodeShape a <"+SH_NODESHAPE+"> .";
+			}
+			if(shaclGraph!=null){
+				query += "\n}";
+			}
+			query+="\n}";
+	
+			//logger.debug("query: \n" + query);
+			GraphQuery graphQuery = conn.prepareGraphQuery(query);
+			graphQuery.setIncludeInferred(false);
+			GraphQueryResult graphQueryResult = graphQuery.evaluate();
+	
+			//create a temporary repository to host these triples so they can be access in the easiest way possible
+			SailRepository repTemp = new SailRepository(new MemoryStore());
+			repTemp.init();
+			SailRepositoryConnection connTemp = repTemp.getConnection();
+			while(graphQueryResult.hasNext()){
+				Statement statement = graphQueryResult.next();
+				connTemp.add(statement);
+			}
+	
+	
+			//now get the data from the tempRepository to construct the needed structure
+			SimpleValueFactory svf = SimpleValueFactory.getInstance();
+			IRI currentNodeShapeIRI = null;
+			if(targetShapeIRI != null){
+				currentNodeShapeIRI = targetShapeIRI;
+			} else {
+				RepositoryResult<Statement> repositoryResult = connTemp.getStatements(null, RDF.TYPE, svf.createIRI(SH_NODESHAPE));
+				if(repositoryResult.hasNext()) {
+					currentNodeShapeIRI = (IRI) repositoryResult.next().getSubject();
 				}
-				List<IRI> targetShapeIriList = new ArrayList<>();
-				while(tupleQueryResult.hasNext()){
-					targetShapeIriList.add((IRI) tupleQueryResult.next().getValue("nodeShape"));
+			}
+			//now get all the SH_PROPERTY construct
+			RepositoryResult<Statement> repositoryResultPropertyList = connTemp.getStatements(currentNodeShapeIRI, svf.createIRI(SH_PROPERTY), null);
+			while (repositoryResultPropertyList.hasNext()){
+				BNode bnode = (BNode) repositoryResultPropertyList.next().getObject();
+				//get the sh:path which is the property this construct is using
+				RepositoryResult<Statement> rsPath = connTemp.getStatements(bnode, svf.createIRI(SH_PATH), null);
+				//RepositoryResult<Statement> rsPath = connTemp.getStatements(bnode, null, null);
+				if(rsPath==null || !rsPath.hasNext()){
+					//it has no path, so just skip this construct
+					continue;
 				}
-				if(targetShapeIriList.size()>1){
-					throw new SHACLMultipleTargetShapeFromClassIRI(classIRI, targetShapeIriList);
+				Value obj = rsPath.next().getObject();
+				if(!(obj instanceof  IRI)){
+					//it is not a IRI, so it is a bnode and, at the moment, this is not supported
+					continue;
 				}
-			}
-		}
-
-		//use the classIRI and targetShapeIRI (if present)
-		//perform a describe (so all list will be taken with a single query)
-		query = //"PREFIX sh: <http://www.w3.org/ns/shacl#>" +
-				//"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
-				"\nDESCRIBE ?nodeShape "+
-						"\nWHERE {";
-		if(shaclGraph!=null){
-			query += "\nGRAPH "+NTriplesUtil.toNTriplesString(shaclGraph)+" {";
-		}
-		if(targetShapeIRI!= null){
-			query+="\nBIND("+ NTriplesUtil.toNTriplesString(targetShapeIRI)+" AS ?nodeShape)";
-		} else {
-			query+="\nBIND("+NTriplesUtil.toNTriplesString(classIRI)+" AS ?targetClass) "+
-					"\n?nodeShape <"+SH_TARGETCLASS+"> ?targetClass ."+
-					"\n?nodeShape a <"+SH_NODESHAPE+"> .";
-		}
-		if(shaclGraph!=null){
-			query += "\n}";
-		}
-		query+="\n}";
-
-		//logger.debug("query: \n" + query);
-		GraphQuery graphQuery = conn.prepareGraphQuery(query);
-		graphQuery.setIncludeInferred(false);
-		GraphQueryResult graphQueryResult = graphQuery.evaluate();
-
-		//create a temporary repository to host these triples so they can be access in the easiest way possible
-		SailRepository repTemp = new SailRepository(new MemoryStore());
-		repTemp.init();
-		SailRepositoryConnection connTemp = repTemp.getConnection();
-		while(graphQueryResult.hasNext()){
-			Statement statement = graphQueryResult.next();
-			connTemp.add(statement);
-		}
-
-
-		//now get the data from the tempRepository to construct the needed structure
-		SimpleValueFactory svf = SimpleValueFactory.getInstance();
-		IRI currentNodeShapeIRI = null;
-		if(targetShapeIRI != null){
-			currentNodeShapeIRI = targetShapeIRI;
-		} else {
-			RepositoryResult<Statement> repositoryResult = connTemp.getStatements(null, RDF.TYPE, svf.createIRI(SH_NODESHAPE));
-			if(repositoryResult.hasNext()) {
-				currentNodeShapeIRI = (IRI) repositoryResult.next().getSubject();
-			}
-		}
-		//now get all the SH_PROPERTY construct
-		RepositoryResult<Statement> repositoryResultPropertyList = connTemp.getStatements(currentNodeShapeIRI, svf.createIRI(SH_PROPERTY), null);
-		while (repositoryResultPropertyList.hasNext()){
-			BNode bnode = (BNode) repositoryResultPropertyList.next().getObject();
-			//get the sh:path which is the property this construct is using
-			RepositoryResult<Statement> rsPath = connTemp.getStatements(bnode, svf.createIRI(SH_PATH), null);
-			//RepositoryResult<Statement> rsPath = connTemp.getStatements(bnode, null, null);
-			if(rsPath==null || !rsPath.hasNext()){
-				//it has no path, so just skip this construct
-				continue;
-			}
-			Value obj = rsPath.next().getObject();
-			if(!(obj instanceof  IRI)){
-				//it is not a IRI, so it is a bnode and, at the moment, this is not supported
-				continue;
-			}
-			IRI path = (IRI) obj;
-			if(propToPropInfoMap.containsKey(path.stringValue())){
-				//TODO there is already a structure for this property, this should not happen, decide what to do
-				continue;
-			}
-
-			//now check the other info of such constuct
-			int sh_minCount = -1;
-			int sh_maxCount = -1;
-			IRI sh_class = null;
-			Value sh_hasValue = null;
-			List<Value> sh_in = new ArrayList();
-			IRI sh_datatype = null;
-			boolean isLiteral = false;
-			RepositoryResult<Statement> rsAll = connTemp.getStatements(bnode, null, null);
-			while(rsAll.hasNext()){
-				Statement statement = rsAll.next();
-				IRI pred = statement.getPredicate();
-				obj = statement.getObject();
-				//check the pred and decide what to do
-				switch (pred.stringValue()){
-					case SH_CLASS:
-						if(obj instanceof  IRI && sh_class == null) {
-							sh_class = (IRI) obj;
-						} else {
-							//TODO error, decide what to do
-						}
-						break;
-					case SH_HASVALUE:
-						if(sh_hasValue == null){
-							sh_hasValue = obj;
-						} else {
-							//TODO error, decide what to do
-						}
-						break;
-					case SH_IN:
-						if(obj instanceof BNode && sh_in.isEmpty()) {
-							//the predicate is a list, so get all the value of the list
-							sh_in.addAll(getListValues((BNode) obj, connTemp));
-							isLiteral = areLiterals(sh_in);
-						} else {
-							//TODO error, decide what to do
-						}
-						break;
-					case SH_MINCOUNT:
-						if(obj instanceof Literal && sh_minCount==-1) {
-							try{
-								sh_minCount = Integer.parseInt(obj.stringValue());
-							} catch (NumberFormatException e){
+				IRI path = (IRI) obj;
+				if(propToPropInfoMap.containsKey(path.stringValue())){
+					//TODO there is already a structure for this property, this should not happen, decide what to do
+					continue;
+				}
+	
+				//now check the other info of such constuct
+				int sh_minCount = -1;
+				int sh_maxCount = -1;
+				IRI sh_class = null;
+				Value sh_hasValue = null;
+				List<Value> sh_in = new ArrayList();
+				IRI sh_datatype = null;
+				boolean isLiteral = false;
+				RepositoryResult<Statement> rsAll = connTemp.getStatements(bnode, null, null);
+				while(rsAll.hasNext()){
+					Statement statement = rsAll.next();
+					IRI pred = statement.getPredicate();
+					obj = statement.getObject();
+					//check the pred and decide what to do
+					switch (pred.stringValue()){
+						case SH_CLASS:
+							if(obj instanceof  IRI && sh_class == null) {
+								sh_class = (IRI) obj;
+							} else {
 								//TODO error, decide what to do
 							}
-						} else {
-							//TODO error, decide what to do
-						}
-						break;
-					case  SH_MAXCOUNT:
-						if(obj instanceof Literal && sh_maxCount==-1) {
-							try{
-								sh_maxCount = Integer.parseInt(obj.stringValue());
-							} catch (NumberFormatException e){
+							break;
+						case SH_HASVALUE:
+							if(sh_hasValue == null){
+								sh_hasValue = obj;
+							} else {
 								//TODO error, decide what to do
 							}
-						} else {
-							//TODO error, decide what to do
-						}
-						break;
-					case SH_DATATYPE:
-						if(obj instanceof IRI && sh_datatype == null){
-							sh_datatype = (IRI) obj;
-							isLiteral = true;
-						} else {
-							//TODO error, decide what to do
-						}
-						break;
-					default:
-						//the SH_PROPERTY is not supported, so skip it
-						continue;
+							break;
+						case SH_IN:
+							if(obj instanceof BNode && sh_in.isEmpty()) {
+								//the predicate is a list, so get all the value of the list
+								sh_in.addAll(getListValues((BNode) obj, connTemp));
+								isLiteral = areLiterals(sh_in);
+							} else {
+								//TODO error, decide what to do
+							}
+							break;
+						case SH_MINCOUNT:
+							if(obj instanceof Literal && sh_minCount==-1) {
+								try{
+									sh_minCount = Integer.parseInt(obj.stringValue());
+								} catch (NumberFormatException e){
+									//TODO error, decide what to do
+								}
+							} else {
+								//TODO error, decide what to do
+							}
+							break;
+						case  SH_MAXCOUNT:
+							if(obj instanceof Literal && sh_maxCount==-1) {
+								try{
+									sh_maxCount = Integer.parseInt(obj.stringValue());
+								} catch (NumberFormatException e){
+									//TODO error, decide what to do
+								}
+							} else {
+								//TODO error, decide what to do
+							}
+							break;
+						case SH_DATATYPE:
+							if(obj instanceof IRI && sh_datatype == null){
+								sh_datatype = (IRI) obj;
+								isLiteral = true;
+							} else {
+								//TODO error, decide what to do
+							}
+							break;
+						default:
+							//the SH_PROPERTY is not supported, so skip it
+							continue;
+					}
 				}
+				PropInfo propInfo = new PropInfo(path, sh_minCount, sh_maxCount, sh_class, sh_hasValue, sh_in, sh_datatype, isLiteral);
+				propToPropInfoMap.put(path.stringValue(), propInfo);
 			}
-			PropInfo propInfo = new PropInfo(path, sh_minCount, sh_maxCount, sh_class, sh_hasValue, sh_in, sh_datatype, isLiteral);
-			propToPropInfoMap.put(path.stringValue(), propInfo);
+			return propToPropInfoMap;
+		} finally {
+			tempRep.shutDown();
 		}
-		return propToPropInfoMap;
 	}
 
 	private String generatePearlFileString(Map<String, PropInfo> propToPropInfoMap, Map <String, String>prefixToNamespaceMap, IRI classIRI) {
