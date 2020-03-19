@@ -1076,6 +1076,44 @@ public class Search extends STServiceAdapter {
 	// return filterQuery;
 	// }
 
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
+	public Collection<String> searchPrefix(String searchString, SearchMode searchMode){
+		List<String> prefixList = new ArrayList<>();
+
+		//prepare the namespace map
+		Map <String, String> prefixToNamespaceMap = new HashMap<>();
+		RepositoryResult<Namespace> namespaceRepositoryResult = getManagedConnection().getNamespaces();
+		while(namespaceRepositoryResult.hasNext()) {
+			Namespace namespace = namespaceRepositoryResult.next();
+			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
+		}
+
+		//iterate over the prefixToNamespaceMap to get the desired prefixes according to the
+		// searchString and searchMode
+		for(String prefix : prefixToNamespaceMap.keySet()){
+			if(searchMode.equals(SearchMode.contains)){
+				if(prefix.contains(searchString)){
+					prefixList.add(prefix);
+				}
+			} else if(searchMode.equals(SearchMode.startsWith)){
+				if (prefix.startsWith(searchString)) {
+					prefixList.add(prefix);
+				}
+			} else if (searchMode.equals(SearchMode.endsWith)) {
+				if (prefix.endsWith(searchString)) {
+					prefixList.add(prefix);
+				}
+			} else {
+				throw new IllegalArgumentException("The only accepted SearchMode are: " + SearchMode.contains +
+						", " + SearchMode.startsWith + " and " + SearchMode.endsWith);
+			}
+		}
+
+		return prefixList;
+	}
+
 	private void addSubResourcesListUsingResourceFroHierarchy(String targetRes, ResourceForHierarchy resource,
 			List<String> currentPathList, List<List<String>> pathList,
 			Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap) {
