@@ -6,11 +6,11 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SHACLMultipleTargetShapeFromClassIRI extends SHACLGenericException {
+public class SHACLMultipleTargetShapeFromClassIRIException extends SHACLGenericException {
     private List<IRI> targetShapeList;
     private IRI classIRI;
 
-    public SHACLMultipleTargetShapeFromClassIRI(IRI classIRI, List<IRI> targetShapeList) {
+    public SHACLMultipleTargetShapeFromClassIRIException(IRI classIRI, List<IRI> targetShapeList) {
         this.classIRI = classIRI;
         this.targetShapeList = targetShapeList;
     }

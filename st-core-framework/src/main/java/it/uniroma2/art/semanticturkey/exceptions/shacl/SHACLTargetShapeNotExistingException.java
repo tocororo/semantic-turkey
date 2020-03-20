@@ -3,10 +3,10 @@ package it.uniroma2.art.semanticturkey.exceptions.shacl;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
-public class SHACLTargetShapeNotExisting extends SHACLGenericException {
+public class SHACLTargetShapeNotExistingException extends SHACLGenericException {
     private IRI targetShape;
 
-    public SHACLTargetShapeNotExisting(IRI targetShape) {
+    public SHACLTargetShapeNotExistingException(IRI targetShape) {
         this.targetShape = targetShape;
     }
 

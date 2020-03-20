@@ -14,10 +14,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLNoTargetShapeFromClassIri;
+import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLMultipleTargetShapeFromClassIRIException;
 import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLGenericException;
-import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLMultipleTargetShapeFromClassIRI;
-import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLTargetShapeNotExisting;
+import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLNoTargetShapeFromClassIriException;
+import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLNotEnabledException;
+import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLTargetShapeNotExistingException;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.model.BNode;
@@ -29,6 +30,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDF4J;
+import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.GraphQueryResult;
 import org.eclipse.rdf4j.query.TupleQueryResult;
@@ -196,20 +198,24 @@ public class SHACL extends STServiceAdapter {
 
 		Repository rep = new SailRepository(new MemoryStore());
 		rep.init();
-		RepositoryConnection connection = rep.getConnection();
-		connection.add(serverShaclFile, getProject().getBaseURI(), fileFormat);
+		String pearlFileText="";
+		try(RepositoryConnection connection = rep.getConnection();) {
+			connection.add(serverShaclFile, getProject().getBaseURI(), fileFormat);
 
-		//prepare the prefix-namespace map
-		Map <String, String> prefixToNamespaceMap = new HashMap<>();
-		RepositoryResult<Namespace> namespaceRepositoryResult = connection.getNamespaces();
-		while(namespaceRepositoryResult.hasNext()) {
-			Namespace namespace = namespaceRepositoryResult.next();
-			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
+			//prepare the prefix-namespace map
+			Map<String, String> prefixToNamespaceMap = new HashMap<>();
+			RepositoryResult<Namespace> namespaceRepositoryResult = connection.getNamespaces();
+			while (namespaceRepositoryResult.hasNext()) {
+				Namespace namespace = namespaceRepositoryResult.next();
+				prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
+			}
+			//generate the propInInfoMap
+			Map<String, PropInfo> propToPropInfoMap = generatePropInfoMap(rep, targetShape, classIri);
+			//generate the content of the PEARL file
+			pearlFileText = generatePearlFileString(propToPropInfoMap, prefixToNamespaceMap, classIri);
+		} finally {
+			rep.shutDown();
 		}
-		//generate the propInInfoMap
-		Map<String, PropInfo> propToPropInfoMap = generatePropInfoMap(rep, targetShape, classIri, null);
-		//generate the content of the PEARL file
-		String pearlFileText = generatePearlFileString(propToPropInfoMap, prefixToNamespaceMap, classIri);
 		//return the content of the PEARL file in a JsonNode as a text
 		return JsonNodeFactory.instance.textNode(pearlFileText);
 	}
@@ -217,9 +223,9 @@ public class SHACL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	//@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'R')") //TODO
-	public JsonNode extractCFfromShapesGraph(IRI classIri, IRI targetShape) throws SHACLGenericException {
+	public JsonNode extractCFfromShapesGraph(IRI classIri, @Optional IRI targetShape) throws SHACLGenericException {
 		if(!getProject().isSHACLEnabled()){
-			//TODO decide what to do, since this project does not have a SCHACL Graph
+			throw new SHACLNotEnabledException();
 		}
 
 		//prepare the namespace map
@@ -229,10 +235,24 @@ public class SHACL extends STServiceAdapter {
 			Namespace namespace = namespaceRepositoryResult.next();
 			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
 		}
-		//generate the propInInfoMap
-		Map<String, PropInfo> propToPropInfoMap = generatePropInfoMap(getManagedConnection().getRepository(), targetShape, classIri, RDF4J.SHACL_SHAPE_GRAPH);
-		//generate the content of the PEARL file
-		String pearlFileText = generatePearlFileString(propToPropInfoMap, prefixToNamespaceMap, classIri);
+		//get all the triples related to the SHACL graph
+
+		String pearlFileText = "";
+		RepositoryConnection projConn = getManagedConnection();
+
+		Repository tempRep = new SailRepository(new MemoryStore());
+		tempRep.init();
+		try(RepositoryConnection conn = tempRep.getConnection()) {
+			projConn.export(new RDFInserter(conn), RDF4J.SHACL_SHAPE_GRAPH);
+			//generate the propInInfoMap
+			Map<String, PropInfo> propToPropInfoMap = generatePropInfoMap(tempRep, targetShape, classIri);
+			//generate the content of the PEARL file
+			pearlFileText = generatePearlFileString(propToPropInfoMap, prefixToNamespaceMap, classIri);
+		} finally {
+			tempRep.shutDown();
+		}
+
+
 		//return the content of the PEARL file in a JsonNode as a text
 		return JsonNodeFactory.instance.textNode(pearlFileText);
 	}
@@ -240,7 +260,7 @@ public class SHACL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	//@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'R')") //TODO
-	public JsonNode extractCFfromShapeURL(IRI classIri, String shape, @Optional  IRI targetShape,
+	public JsonNode extractCFfromShapeURL(IRI classIri, String shape, @Optional IRI targetShape,
 			@Optional RDFFormat fileFormat) throws IOException, OntologyManagerException, SHACLGenericException {
 		//if fileForma is null, try to guess it
 		if(fileFormat==null) {
@@ -251,136 +271,126 @@ public class SHACL extends STServiceAdapter {
 		URL url = new URL(shape);
 		Repository rep = new SailRepository(new MemoryStore());
 		rep.init();
-		RepositoryConnection connection = rep.getConnection();
-		connection.add(url, getProject().getBaseURI(), fileFormat);
+		String pearlFileText = "";
+		try(RepositoryConnection connection = rep.getConnection()) {
+			connection.add(url, getProject().getBaseURI(), fileFormat);
 
-		//prepare the namespace map
-		Map <String, String> prefixToNamespaceMap = new HashMap<>();
-		RepositoryResult<Namespace> namespaceRepositoryResult = connection.getNamespaces();
-		while(namespaceRepositoryResult.hasNext()) {
-			Namespace namespace = namespaceRepositoryResult.next();
-			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
+			//prepare the namespace map
+			Map<String, String> prefixToNamespaceMap = new HashMap<>();
+			RepositoryResult<Namespace> namespaceRepositoryResult = connection.getNamespaces();
+			while (namespaceRepositoryResult.hasNext()) {
+				Namespace namespace = namespaceRepositoryResult.next();
+				prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
+			}
+			//generate the propInInfoMap
+			Map<String, PropInfo> propToPropInfoMap = generatePropInfoMap(rep, targetShape, classIri);
+			//generate the content of the PEARL file
+			pearlFileText = generatePearlFileString(propToPropInfoMap, prefixToNamespaceMap, classIri);
+		} finally {
+			rep.shutDown();
 		}
-		//generate the propInInfoMap
-		Map<String, PropInfo> propToPropInfoMap = generatePropInfoMap(rep, targetShape, classIri, null);
-		//generate the content of the PEARL file
-		String pearlFileText = generatePearlFileString(propToPropInfoMap, prefixToNamespaceMap, classIri);
 		//return the content of the PEARL file in a JsonNode as a text
 		return JsonNodeFactory.instance.textNode(pearlFileText);
 	}
 
-	private Map<String, PropInfo> generatePropInfoMap(Repository rep, IRI targetShapeIRI, IRI classIRI, IRI shaclGraph) throws SHACLGenericException {
-		RepositoryConnection projConn = rep.getConnection();
-		
-		Repository tempRep = new SailRepository(new MemoryStore());
-		tempRep.init();
-		try(RepositoryConnection conn = tempRep.getConnection()) {
-			projConn.export(new RDFInserter(conn), shaclGraph);
-			
-			Map<String, PropInfo> propToPropInfoMap = new HashMap<>();
+	private Map<String, PropInfo> generatePropInfoMap(Repository rep, IRI targetShapeIRI, IRI classIRI) throws SHACLGenericException {
+		Map<String, PropInfo> propToPropInfoMap = new HashMap<>();
+		try(RepositoryConnection conn = rep.getConnection()) {
 			String query;
-	
 			//perform some checks before getting the data
-			if(targetShapeIRI!=null) {
+			if (targetShapeIRI != null) {
 				//check that the targetShapeIRI exists
 				query = "\nSELECT * " +
 						"\nWHERE{" +
 						"\n" + NTriplesUtil.toNTriplesString(targetShapeIRI) + " a <" + SH_NODESHAPE + "> ." +
 						"\n" + NTriplesUtil.toNTriplesString(targetShapeIRI) + " a ?type ." +
 						"\n}";
-				try(TupleQueryResult tupleQueryResult = conn.prepareTupleQuery(query).evaluate()) {
+				try (TupleQueryResult tupleQueryResult = conn.prepareTupleQuery(query).evaluate()) {
 					if (!tupleQueryResult.hasNext()) {
-						throw new SHACLTargetShapeNotExisting(targetShapeIRI);
+						throw new SHACLTargetShapeNotExistingException(targetShapeIRI);
 					}
 				}
 			} else {
 				query = "\nSELECT ?nodeShape " +
 						"\nWHERE{" +
-						"\n ?nodeShape <"+SH_TARGETCLASS+ "> " +NTriplesUtil.toNTriplesString(classIRI) + " ." +
+						"\n ?nodeShape <" + SH_TARGETCLASS + "> " + NTriplesUtil.toNTriplesString(classIRI) + " ."  +
 						"\n}";
-				try(TupleQueryResult tupleQueryResult = conn.prepareTupleQuery(query).evaluate()) {
+				try (TupleQueryResult tupleQueryResult = conn.prepareTupleQuery(query).evaluate()) {
 					if (!tupleQueryResult.hasNext()) {
-						throw new SHACLNoTargetShapeFromClassIri(classIRI);
+						throw new SHACLNoTargetShapeFromClassIriException(classIRI);
 					}
 					List<IRI> targetShapeIriList = new ArrayList<>();
-					while(tupleQueryResult.hasNext()){
+					while (tupleQueryResult.hasNext()) {
 						targetShapeIriList.add((IRI) tupleQueryResult.next().getValue("nodeShape"));
 					}
-					if(targetShapeIriList.size()>1){
-						throw new SHACLMultipleTargetShapeFromClassIRI(classIRI, targetShapeIriList);
+					if (targetShapeIriList.size() > 1) {
+						throw new SHACLMultipleTargetShapeFromClassIRIException(classIRI, targetShapeIriList);
 					}
 				}
 			}
-	
+
 			//use the classIRI and targetShapeIRI (if present)
 			//perform a describe (so all list will be taken with a single query)
 			query = //"PREFIX sh: <http://www.w3.org/ns/shacl#>" +
 					//"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
-					"\nDESCRIBE ?nodeShape "+
+					"\nDESCRIBE ?nodeShape " +
 							"\nWHERE {";
-			if(shaclGraph!=null){
-				query += "\nGRAPH "+NTriplesUtil.toNTriplesString(shaclGraph)+" {";
-			}
-			if(targetShapeIRI!= null){
-				query+="\nBIND("+ NTriplesUtil.toNTriplesString(targetShapeIRI)+" AS ?nodeShape)";
+			if (targetShapeIRI != null) {
+				query += "\nBIND(" + NTriplesUtil.toNTriplesString(targetShapeIRI) + " AS ?nodeShape)";
 			} else {
-				query+="\nBIND("+NTriplesUtil.toNTriplesString(classIRI)+" AS ?targetClass) "+
-						"\n?nodeShape <"+SH_TARGETCLASS+"> ?targetClass ."+
-						"\n?nodeShape a <"+SH_NODESHAPE+"> .";
+				query += "\nBIND(" + NTriplesUtil.toNTriplesString(classIRI) + " AS ?targetClass) " +
+						"\n?nodeShape <" + SH_TARGETCLASS + "> ?targetClass ." +
+						"\n?nodeShape a <" + SH_NODESHAPE + "> .";
 			}
-			if(shaclGraph!=null){
-				query += "\n}";
-			}
-			query+="\n}";
-	
+			query += "\n}";
+
 			//logger.debug("query: \n" + query);
 			GraphQuery graphQuery = conn.prepareGraphQuery(query);
 			graphQuery.setIncludeInferred(false);
 			GraphQueryResult graphQueryResult = graphQuery.evaluate();
-	
+
 			//create a temporary repository to host these triples so they can be access in the easiest way possible
 			SailRepository repTemp = new SailRepository(new MemoryStore());
 			repTemp.init();
 			SailRepositoryConnection connTemp = repTemp.getConnection();
-			while(graphQueryResult.hasNext()){
+			while (graphQueryResult.hasNext()) {
 				Statement statement = graphQueryResult.next();
 				connTemp.add(statement);
 			}
-	
-	
+
 			//now get the data from the tempRepository to construct the needed structure
 			SimpleValueFactory svf = SimpleValueFactory.getInstance();
 			IRI currentNodeShapeIRI = null;
-			if(targetShapeIRI != null){
+			if (targetShapeIRI != null) {
 				currentNodeShapeIRI = targetShapeIRI;
 			} else {
 				RepositoryResult<Statement> repositoryResult = connTemp.getStatements(null, RDF.TYPE, svf.createIRI(SH_NODESHAPE));
-				if(repositoryResult.hasNext()) {
+				if (repositoryResult.hasNext()) {
 					currentNodeShapeIRI = (IRI) repositoryResult.next().getSubject();
 				}
 			}
 			//now get all the SH_PROPERTY construct
 			RepositoryResult<Statement> repositoryResultPropertyList = connTemp.getStatements(currentNodeShapeIRI, svf.createIRI(SH_PROPERTY), null);
-			while (repositoryResultPropertyList.hasNext()){
+			while (repositoryResultPropertyList.hasNext()) {
 				BNode bnode = (BNode) repositoryResultPropertyList.next().getObject();
 				//get the sh:path which is the property this construct is using
 				RepositoryResult<Statement> rsPath = connTemp.getStatements(bnode, svf.createIRI(SH_PATH), null);
 				//RepositoryResult<Statement> rsPath = connTemp.getStatements(bnode, null, null);
-				if(rsPath==null || !rsPath.hasNext()){
+				if (rsPath == null || !rsPath.hasNext()) {
 					//it has no path, so just skip this construct
 					continue;
 				}
 				Value obj = rsPath.next().getObject();
-				if(!(obj instanceof  IRI)){
+				if (!(obj instanceof IRI)) {
 					//it is not a IRI, so it is a bnode and, at the moment, this is not supported
 					continue;
 				}
 				IRI path = (IRI) obj;
-				if(propToPropInfoMap.containsKey(path.stringValue())){
+				if (propToPropInfoMap.containsKey(path.stringValue())) {
 					//TODO there is already a structure for this property, this should not happen, decide what to do
 					continue;
 				}
-	
+
 				//now check the other info of such constuct
 				int sh_minCount = -1;
 				int sh_maxCount = -1;
@@ -390,28 +400,28 @@ public class SHACL extends STServiceAdapter {
 				IRI sh_datatype = null;
 				boolean isLiteral = false;
 				RepositoryResult<Statement> rsAll = connTemp.getStatements(bnode, null, null);
-				while(rsAll.hasNext()){
+				while (rsAll.hasNext()) {
 					Statement statement = rsAll.next();
 					IRI pred = statement.getPredicate();
 					obj = statement.getObject();
 					//check the pred and decide what to do
-					switch (pred.stringValue()){
+					switch (pred.stringValue()) {
 						case SH_CLASS:
-							if(obj instanceof  IRI && sh_class == null) {
+							if (obj instanceof IRI && sh_class == null) {
 								sh_class = (IRI) obj;
 							} else {
 								//TODO error, decide what to do
 							}
 							break;
 						case SH_HASVALUE:
-							if(sh_hasValue == null){
+							if (sh_hasValue == null) {
 								sh_hasValue = obj;
 							} else {
 								//TODO error, decide what to do
 							}
 							break;
 						case SH_IN:
-							if(obj instanceof BNode && sh_in.isEmpty()) {
+							if (obj instanceof BNode && sh_in.isEmpty()) {
 								//the predicate is a list, so get all the value of the list
 								sh_in.addAll(getListValues((BNode) obj, connTemp));
 								isLiteral = areLiterals(sh_in);
@@ -420,21 +430,21 @@ public class SHACL extends STServiceAdapter {
 							}
 							break;
 						case SH_MINCOUNT:
-							if(obj instanceof Literal && sh_minCount==-1) {
-								try{
+							if (obj instanceof Literal && sh_minCount == -1) {
+								try {
 									sh_minCount = Integer.parseInt(obj.stringValue());
-								} catch (NumberFormatException e){
+								} catch (NumberFormatException e) {
 									//TODO error, decide what to do
 								}
 							} else {
 								//TODO error, decide what to do
 							}
 							break;
-						case  SH_MAXCOUNT:
-							if(obj instanceof Literal && sh_maxCount==-1) {
-								try{
+						case SH_MAXCOUNT:
+							if (obj instanceof Literal && sh_maxCount == -1) {
+								try {
 									sh_maxCount = Integer.parseInt(obj.stringValue());
-								} catch (NumberFormatException e){
+								} catch (NumberFormatException e) {
 									//TODO error, decide what to do
 								}
 							} else {
@@ -442,7 +452,7 @@ public class SHACL extends STServiceAdapter {
 							}
 							break;
 						case SH_DATATYPE:
-							if(obj instanceof IRI && sh_datatype == null){
+							if (obj instanceof IRI && sh_datatype == null) {
 								sh_datatype = (IRI) obj;
 								isLiteral = true;
 							} else {
@@ -457,10 +467,8 @@ public class SHACL extends STServiceAdapter {
 				PropInfo propInfo = new PropInfo(path, sh_minCount, sh_maxCount, sh_class, sh_hasValue, sh_in, sh_datatype, isLiteral);
 				propToPropInfoMap.put(path.stringValue(), propInfo);
 			}
-			return propToPropInfoMap;
-		} finally {
-			tempRep.shutDown();
 		}
+		return propToPropInfoMap;
 	}
 
 	private String generatePearlFileString(Map<String, PropInfo> propToPropInfoMap, Map <String, String>prefixToNamespaceMap, IRI classIRI) {
