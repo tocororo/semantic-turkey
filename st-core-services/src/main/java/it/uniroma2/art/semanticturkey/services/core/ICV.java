@@ -1364,14 +1364,14 @@ public class ICV extends STServiceAdapter {
 				+ "{?attr_concept ^"+NTriplesUtil.toNTriplesString(SKOS.NARROWER)+" ?attr_other_concept .\n"
 				+ "BIND( "+NTriplesUtil.toNTriplesString(SKOS.NARROWER)+"AS ?attr_predicate)}\n"
 		//now bind the three elements (?attr_concept, ?attr_predicate and ?attr_other_concept )
-				+ "{?attr_concept a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT)+" .\n" //added to have some results
-				+ "BIND(?attr_concept AS ?resource)}\n"
+				+ "{BIND(?attr_concept AS ?resource)\n"
+				+ "?resource "+broaderOrInverseNarrower()+" ?attr_other_concept .}\n"
 				+ "UNION\n"
-				+ "{?attr_concept a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT)+" .\n"//added to have some results
-				+ "BIND(?attr_predicate AS ?resource)}\n"
+				+ "{BIND(?attr_predicate AS ?resource)\n"
+				+ "?resource ?useless_prep ?useless_obj}\n"
 				+ "UNION\n"
-				+ "{?attr_concept a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT)+" .\n" //added to have some results
-				+ "BIND(?attr_other_concept AS ?resource)}\n"
+				+ "{BIND(?attr_other_concept AS ?resource)\n"
+				+ "?attr_concept "+broaderOrInverseNarrower()+" ?resource .}\n"
 
 				+ "} \n"
 				+ "GROUP BY ?resource ?attr_concept ?attr_other_concept ?attr_predicate ";
