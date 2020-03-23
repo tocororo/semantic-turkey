@@ -139,7 +139,7 @@ public class ServiceForSearches {
 						filterQuery += "\n" + varResource + " " + schemeOrTopConcept + " " + NTriplesUtil.toNTriplesString(scheme) + " .";
 					}
 				}
-				//this part is included in the "and" case, because the query needs the ?scheme variable
+				//this part is included also in the "and" case, because the query needs the ?scheme variable
 				filterQuery += "\n" + varResource + " " + schemeOrTopConcept + " ?scheme . " +
 						filterWithOrValues(schemes, "?scheme");
 			} else{ // schemes!=null

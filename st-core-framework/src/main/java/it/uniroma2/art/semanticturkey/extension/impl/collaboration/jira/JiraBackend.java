@@ -781,9 +781,11 @@ public class JiraBackend implements CollaborationBackend {
 			summary = issue.get("fields").get("summary").asText();
 		}
 		String issueStatus="";
+		String issueStatusId="";
 		if(issue.get("fields")!=null && issue.get("fields").get("status") !=null &&
 				issue.get("fields").get("status").get("name")!=null) {
 			issueStatus=issue.get("fields").get("status").get("name").asText();
+			issueStatusId = issue.get("fields").get("status").get("id").asText();
 		};
 		String category="";
 		if(issue.get("fields") != null && issue.get("fields").get("status") != null &&
@@ -828,6 +830,7 @@ public class JiraBackend implements CollaborationBackend {
 		issueRedux.set("summary", jsonFactory.textNode(summary));
 		issueRedux.set("key", jsonFactory.textNode(issueKey));
 		issueRedux.set("status", jsonFactory.textNode(issueStatus));
+		issueRedux.set("statusId", jsonFactory.textNode(issueStatusId));
 		issueRedux.set("url", jsonFactory.textNode(urlIssue));
 		issueRedux.set("labels", labelsArray);
 		issueRedux.set("resolution", jsonFactory.textNode(resolution));
