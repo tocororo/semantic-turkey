@@ -93,6 +93,10 @@ public class Search extends STServiceAdapter {
 	}*/
 	//@formatter:on
 
+	/**
+	 * Creates the Indexes. Only useful in GraphDB repositories
+	 * @throws Exception
+	 */
 	@STServiceOperation
 	@Write
 	// TODO decide the @PreAuthorize
@@ -104,6 +108,10 @@ public class Search extends STServiceAdapter {
 				});
 	}
 
+	/**
+	 * Updates the indexes. Only useful in GraphDB repositories
+	 * @throws Exception
+	 */
 	@STServiceOperation
 	@Write
 	// TODO decide the @PreAuthorize
@@ -115,6 +123,18 @@ public class Search extends STServiceAdapter {
 				});
 	}
 
+	/**
+	 * Perform a custom search by passing a SPARQL query and a map of variable-value to assign to such
+	 * SPARQL query
+	 * @param searchParameterizationReference the SPARQL query to execute
+	 * @param boundValues the map of variable-value to assign to the the SPARQL query
+	 * @return The list of AnnotatedValue<Resource> with all the infos about the desired resources
+	 * @throws IOException
+	 * @throws ConfigurationNotFoundException
+	 * @throws WrongPropertiesException
+	 * @throws NoSuchConfigurationManager
+	 * @throws STPropertyAccessException
+	 */
 	@STServiceOperation(method = RequestMethod.GET)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
@@ -202,8 +222,37 @@ public class Search extends STServiceAdapter {
 		return qb.runQuery();
 	}
 
-	
-	
+
+	/**
+	 * Perform a complext search with many custom input parameters
+	 * If parameter useURI is true and searchMode is startsWith, prefixes in qname (in the searchString) are expanded
+	 * @param searchString the text to search
+	 * @param useLexicalizations true to search in the lexicalizations, false otherwise. Optional and default value is true
+	 * @param useLocalName true to search in the localName of the resources, false otherwise
+	 * @param useURI true to search in the URI of the resources, false otherwise
+	 * @param searchMode the searchMode to use during the search. Check {@link it.uniroma2.art.semanticturkey.search.SearchMode} to get the
+	 * 	 *                   possible SerchMode
+	 * @param useNotes true to search in all the values of the skos:note and its subProperties, false otherwise. Can be set to true only if
+	 * 	 *                 the parameter useLocalName is true as well. Optional and default value is false
+	 * @param langs the languages of the Literals in which to search the input text. Optional
+	 * @param includeLocales true to includes locales in the search
+	 * @param statusFilter the status of the desired resources. Check {@link it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy.StatusFilter}
+	 *                        to get the possible Statuses
+	 * @param types the list of
+	 * @param schemes the list of schemes in which the skos:Concept will be searched. Useful only in SKOS/SKOSXL.
+	 *               This list is composed of List of Schemes considered in AND (so an OR list of AND schemes)   Optional
+	 * @param outgoingLinks a list of outgoing predicate and List of Values for the desired resources
+	 * @param outgoingSearch a list of outgoing predicate and a search function (stringSearch and SearchMode)
+	 *                          for the object of such predicate    for the desired resources
+	 * @param ingoingLinks a list of incoming predicate and List of Values for the desired resources
+	 * @param searchInRDFSLabel true to search in rdfs:label, false otherwise. Optional and default value is false
+	 * @param searchInSKOSLabel true to search in SKOS lexicalizations, false otherwise. Optional and default value is false
+	 * @param searchInSKOSXLLabel true to search in SKOSXL Lericalizations, false otherwise. Optional and default value is false
+	 * @param searchInOntolex true to search in ONTOLEX lexicalizations, false otherwise. Optional and default value is false
+	 * @return The list of AnnotatedValue<Resource> with all the infos about the desired resources
+	 * @throws IllegalStateException
+	 * @throws STPropertyAccessException
+	 */
 	//@formatter:off
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
@@ -212,7 +261,7 @@ public class Search extends STServiceAdapter {
 			@Optional(defaultValue = "true") boolean  useLexicalizations,
 			@Optional(defaultValue="false") boolean useLocalName, 
 			@Optional(defaultValue="false") boolean useURI, 
-			@Optional SearchMode searchMode, 
+			SearchMode searchMode,
 			@Optional(defaultValue="false") boolean useNotes,
 			@Optional List<String> langs, @Optional(defaultValue="false") boolean includeLocales,
 			StatusFilter statusFilter,
@@ -239,12 +288,7 @@ public class Search extends STServiceAdapter {
 		}
 
 		//prepare the namespace map
-		Map <String, String> prefixToNamespaceMap = new HashMap<>();
-		RepositoryResult<Namespace> namespaceRepositoryResult = getManagedConnection().getNamespaces();
-		while(namespaceRepositoryResult.hasNext()) {
-			Namespace namespace = namespaceRepositoryResult.next();
-			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
-		}
+		Map<String, String> prefixToNamespaceMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
 
 		String query= ServiceForSearches.getPrefixes() +
 				"\nSELECT DISTINCT ?resource ?attr_nature ?attr_scheme" +
@@ -297,6 +341,33 @@ public class Search extends STServiceAdapter {
 		}
 	}
 
+	/**
+	 * The standard search in all resources. Its input can be a URI (part of it) or a text (part of a Lexicalization and/or notes)
+	 * depending on the other input parameters. It returns all relevant info about the desired resources (such as the show).
+	 * If parameter useURI is true and searchMode is startsWith, prefixes in qname (in the searchString) are expanded
+	 * @param searchString the text to search
+	 * @param rolesArray the role(s) the returned resources should belong to
+	 * @param useLexicalizations true to search in the lexicalizations, false otherwise. Optional and default value is true
+	 * @param useLocalName true to search in the localName of the resources, false otherwise
+	 * @param useURI true to search in the URI of the resources, false otherwise
+	 * @param searchMode the searchMode to use during the search. Check {@link it.uniroma2.art.semanticturkey.search.SearchMode} to get the
+	 *                   possible SerchMode
+	 * @param useNotes true to search in all the values of the skos:note and its subProperties, false otherwise. Can be set to true only if
+	 *                 the parameter useLocalName is true as well. Optional and default value is false
+	 * @param schemes the list of schemes in which the skos:Concept will be searched. Useful only in SKOS/SKOSXL. Optional
+	 * @param schemeFilter if the returned concepts should belong to just one of the input sheme ()or value or to all of them (and value).
+	 *                     Optional and default value is or
+	 * @param langs the languages of the Literals in which to search the input text. Optional
+	 * @param includeLocales true to includes locales in the search (e.g. searching in 'en' will include results from 'en-us' as well).
+	 *                       Optional and default value is false
+	 * @param searchInRDFSLabel true to search in rdfs:label, false otherwise. Optional and default value is false
+	 * @param searchInSKOSLabel true to search in SKOS lexicalizations, false otherwise. Optional and default value is false
+	 * @param searchInSKOSXLLabel true to search in SKOSXL Lericalizations, false otherwise. Optional and default value is false
+	 * @param searchInOntolex true to search in ONTOLEX lexicalizations, false otherwise. Optional and default value is false
+	 * @return The list of AnnotatedValue<Resource> with all the infos about the desired resources
+	 * @throws IllegalStateException
+	 * @throws STPropertyAccessException
+	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
@@ -324,12 +395,7 @@ public class Search extends STServiceAdapter {
 		}
 
 		//prepare the namespace map
-		Map <String, String> prefixToNamespaceMap = new HashMap<>();
-		RepositoryResult<Namespace> namespaceRepositoryResult = getManagedConnection().getNamespaces();
-		while(namespaceRepositoryResult.hasNext()) {
-			Namespace namespace = namespaceRepositoryResult.next();
-			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
-		}
+		Map <String, String> prefixToNamespaceMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
 
 		String query = ServiceForSearches.getPrefixes() + "\n"
 				+ instantiateSearchStrategy().searchResource(stServiceContext, searchString, rolesArray, useLexicalizations,
@@ -346,6 +412,24 @@ public class Search extends STServiceAdapter {
 
 	}
 
+	/**
+	 * Searches the Resource (and returns their labels), according to the input parameters, and return their IRIs (as String)
+	 * @param searchString the text to search
+	 * @param rolesArray the role(s) the returned resources should belong to. Optional
+	 * @param useLocalName true to search in the localName of the resources, false otherwise
+	 * @param searchMode the searchMode to use during the search. Check {@link it.uniroma2.art.semanticturkey.search.SearchMode} to get the
+	 * 	 *                   possible SerchMode
+	 * @param schemes the list of schemes in which the skos:Concept will be searched. Useful only in SKOS/SKOSXL. Optional
+	 * @param schemeFilter if the returned concepts should belong to just one of the input sheme ()or value or to all of them (and value).
+	 * 	 *                     Optional and default value is or
+	 * @param langs the languages of the Literals in which to search the input text. Optional
+	 * @param cls the iri of the class in which to search Instances matching the input text. Optional
+	 * @param includeLocales true to includes locales in the search (e.g. searching in 'en' will include results from 'en-us' as well).
+	 * 	 *                       Optional and default value is false
+	 * @return the list of Labels of the desired resources
+	 * @throws IllegalStateException
+	 * @throws STPropertyAccessException
+	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
@@ -360,6 +444,21 @@ public class Search extends STServiceAdapter {
 				useLocalName, searchMode, schemes, schemeFilter, langs, cls, includeLocales);
 	}
 
+	/**
+	 * Search the resources, according to the specified input parameters
+	 * If searchMode is startsWith, prefixes in qname (in the searchString) are expanded
+	 * @param searchString the text to search
+	 * @param rolesArray the role(s) the returned resources should belong to. Optional
+	 * @param searchMode the searchMode to use during the search. Check {@link it.uniroma2.art.semanticturkey.search.SearchMode} to get the
+	 * 	 *                   possible SerchMode
+	 * @param schemes the list of schemes in which the skos:Concept will be searched. Useful only in SKOS/SKOSXL. Optional
+	 * @param schemeFilter if the returned concepts should belong to just one of the input sheme ()or value or to all of them (and value).
+	 * 	 *                     Optional and default value is or
+	 * @param cls the iri of the classes in which to search Instances matching the input text. Optional
+	 * @return List of Local names of the retrieved resources
+	 * @throws IllegalStateException
+	 * @throws STPropertyAccessException
+	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
@@ -368,17 +467,31 @@ public class Search extends STServiceAdapter {
 			throws IllegalStateException, STPropertyAccessException {
 
 		//prepare the namespace map
-		Map <String, String> prefixToNamespaceMap = new HashMap<>();
-		RepositoryResult<Namespace> namespaceRepositoryResult = getManagedConnection().getNamespaces();
-		while(namespaceRepositoryResult.hasNext()) {
-			Namespace namespace = namespaceRepositoryResult.next();
-			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
-		}
+		Map <String, String> prefixToNamespaceMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
 
 		return instantiateSearchStrategy().searchURIList(stServiceContext, searchString, rolesArray,
 				searchMode, schemes, schemeFilter, cls, prefixToNamespaceMap);
 	}
 
+	/**
+	 * Searched the Instances of the given class and return all relevant info about the desired resources
+	 * (such as the show).
+	 * @param cls the iri of the classes in which to search Instances matching the input text
+	 * @param searchString the text to search
+	 * @param useLexicalizations true to search in the lexicalizations, false otherwise. Optional and default value is true
+	 * @param useLocalName true to search in the localName of the resources, false otherwise
+	 * @param useURI true to search in the URI of the resources, false otherwise
+	 * @param searchMode the searchMode to use during the search. Check {@link it.uniroma2.art.semanticturkey.search.SearchMode} to get the
+	 * 	 *                   possible SerchMode
+	 * @param useNotes true to search in all the values of the skos:note and its subProperties, false otherwise. Can be set to true only if
+	 * 	 *                 the parameter useLocalName is true as well. Optional and default value is false
+	 * @param langs the languages of the Literals in which to search the input text. Optional
+	 * @param includeLocales true to includes locales in the search (e.g. searching in 'en' will include results from 'en-us' as well).
+	 * 	 *                       Optional and default value is false
+	 * @return he list of AnnotatedValue<Resource> with all the infos about the desired instances
+	 * @throws IllegalStateException
+	 * @throws STPropertyAccessException
+	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, instances)', 'R')")
@@ -390,12 +503,7 @@ public class Search extends STServiceAdapter {
 			throws IllegalStateException, STPropertyAccessException {
 
 		//prepare the namespace map
-		Map <String, String> prefixToNamespaceMap = new HashMap<>();
-		RepositoryResult<Namespace> namespaceRepositoryResult = getManagedConnection().getNamespaces();
-		while(namespaceRepositoryResult.hasNext()) {
-			Namespace namespace = namespaceRepositoryResult.next();
-			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
-		}
+		Map <String, String> prefixToNamespaceMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
 
 		IRI lexModel = getProject().getLexicalizationModel();
 		List<IRI> clsList = new ArrayList<>();
@@ -417,6 +525,29 @@ public class Search extends STServiceAdapter {
 		return qb.runQuery();
 	}
 
+	/**
+	 * Search in the Lexical Entries
+	 * @param searchString the text to search
+	 * @param useLexicalizations true to search in the lexicalizations, false otherwise. Optional and default value is true
+	 * @param useLocalName  true to search in the localName of the resources, false otherwise
+	 * @param useURI true to search in the URI of the resources, false otherwise
+	 * @param searchMode the searchMode to use during the search. Check {@link it.uniroma2.art.semanticturkey.search.SearchMode} to get the
+	 * 	 *                   possible SerchMode
+	 * @param useNotes true to search in all the values of the skos:note and its subProperties, false otherwise. Can be set to true only if
+	 * 	 *                 the parameter useLocalName is true as well. Optional and default value is false
+	 * @param lexicons the Lexicons the Lexical Entries should belong to (in OR)
+	 * @param langs the languages of the Literals in which to search the input text. Optional
+	 * @param includeLocales true to includes locales in the search (e.g. searching in 'en' will include results from 'en-us' as well).
+	 * 	 *                       Optional and default value is false
+	 * @param searchInRDFSLabel true to search in rdfs:label, false otherwise. Optional and default value is false
+	 * @param searchInSKOSLabel  true to search in SKOS lexicalizations, false otherwise. Optional and default value is false
+	 * @param searchInSKOSXLLabel true to search in SKOSXL Lericalizations, false otherwise. Optional and default value is false
+	 * @param searchInOntolex true to search in ONTOLEX lexicalizations, false otherwise. Optional and default value is false
+	 * 	 * @return The list of AnnotatedValue<Resource> with all the infos about the desired resources
+	 * @return The list of  AnnotatedValue<Resource> with all the infos about the desired Lexical Entries
+	 * @throws IllegalStateException
+	 * @throws STPropertyAccessException
+	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(limeLexicon)', 'R')")
@@ -433,12 +564,7 @@ public class Search extends STServiceAdapter {
 			throws IllegalStateException, STPropertyAccessException {
 
 		//prepare the namespace map
-		Map <String, String> prefixToNamespaceMap = new HashMap<>();
-		RepositoryResult<Namespace> namespaceRepositoryResult = getManagedConnection().getNamespaces();
-		while(namespaceRepositoryResult.hasNext()) {
-			Namespace namespace = namespaceRepositoryResult.next();
-			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
-		}
+		Map <String, String> prefixToNamespaceMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
 
 		String query = ServiceForSearches.getPrefixes() + "\n"
 				+ instantiateSearchStrategy().searchLexicalEntry(stServiceContext, searchString,
@@ -456,6 +582,21 @@ public class Search extends STServiceAdapter {
 		return qb.runQuery();
 	}
 
+	/**
+	 * Returns the shortest path from the Root Element to the desired resource
+	 * @param role the role of the input resource
+	 * @param resourceURI the input resource to which the path is searched
+	 * @param schemesIRI the list of schemes in which the skos:Concept will be searched. Useful only in SKOS/SKOSXL. Optional
+	 * @param schemeFilter if the returned concepts should belong to just one of the input sheme ()or value or to all of them (and value).
+	 * 	 *                     Optional and default value is or
+	 * @param root the Root element (if a single root is present). Optional
+	 * @param broaderProps the list of broader property to use (when role is concept)
+	 * @param narrowerProps the list of broader property to use (when role is concept)
+	 * @param includeSubProperties true to include subproperty of the broader/narrower passed properties
+	 *                                (when role is concept)
+	 * @return the shortest path to reach the desired concept
+	 * @throws InvalidParameterException
+	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resourceURI)+ ')', 'R')")
@@ -520,25 +661,20 @@ public class Search extends STServiceAdapter {
 				}
 			}
 		}
-		
-		
-		
-		// ARTURIResource inputResource = owlModel.createURIResource(resourceURI);
-
-		// check if the client passed a hierachicalProp, otherwise, set it as skos:broader
-		List<IRI> broaderPropsToUse = it.uniroma2.art.semanticturkey.services.core.SKOS
-				.getHierachicalProps(broaderProps, narrowerProps);
-		// inversHierachicalProp could be null if the hierachicalProp has no inverse
-		List<IRI> narrowerPropsToUse = it.uniroma2.art.semanticturkey.services.core.SKOS
-				.getInverseOfHierachicalProp(broaderProps, narrowerProps);
-
-		String broaderNarrowerPath = it.uniroma2.art.semanticturkey.services.core.SKOS
-				.preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse,
-						getManagedConnection(), includeSubProperties);
 
 		String query = null;
 		String superResourceVar = null, superSuperResourceVar = null;
 		if (role.equals(RDFResourceRole.concept)) {
+			// check if the client passed a hierachicalProp, otherwise, set it as skos:broader
+			List<IRI> broaderPropsToUse = it.uniroma2.art.semanticturkey.services.core.SKOS
+					.getHierachicalProps(broaderProps, narrowerProps);
+			// inversHierachicalProp could be null if the hierachicalProp has no inverse
+			List<IRI> narrowerPropsToUse = it.uniroma2.art.semanticturkey.services.core.SKOS
+					.getInverseOfHierachicalProp(broaderProps, narrowerProps);
+
+			String broaderNarrowerPath = it.uniroma2.art.semanticturkey.services.core.SKOS
+					.preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse,
+							getManagedConnection(), includeSubProperties);
 			superResourceVar = "broader";
 			superSuperResourceVar = "broaderOfBroader";
 			String inSchemeOrTopConcept = "<" + SKOS.IN_SCHEME + ">|<" + SKOS.TOP_CONCEPT_OF
@@ -1083,12 +1219,7 @@ public class Search extends STServiceAdapter {
 		List<String> prefixList = new ArrayList<>();
 
 		//prepare the namespace map
-		Map <String, String> prefixToNamespaceMap = new HashMap<>();
-		RepositoryResult<Namespace> namespaceRepositoryResult = getManagedConnection().getNamespaces();
-		while(namespaceRepositoryResult.hasNext()) {
-			Namespace namespace = namespaceRepositoryResult.next();
-			prefixToNamespaceMap.put(namespace.getPrefix(), namespace.getName());
-		}
+		Map <String, String> prefixToNamespaceMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
 
 		//iterate over the prefixToNamespaceMap to get the desired prefixes according to the
 		// searchString and searchMode
