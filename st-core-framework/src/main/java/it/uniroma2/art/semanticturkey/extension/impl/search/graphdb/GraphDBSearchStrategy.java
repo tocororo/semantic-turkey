@@ -425,13 +425,13 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			boolean searchInSKOSXLLabel, boolean searchInOntolex, boolean includeResToLexicalEntry,
 			Map<String, String> prefixToNamespaceMap) {
 		String query="";
-		
-		
+
+
 		//prepare an inner query, which seems to be working faster (since it executed by GraphDB before the
 		// rest of the query and it uses the Lucene indexes)
 		query+="\n{SELECT ?resource ?type ?attr_matchMode "+
 				"\nWHERE{";
-		
+
 		if(useLocalName){
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
@@ -463,90 +463,87 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				query+="\nUNION";
 			}
 		}
-		
-		
-		//if there is a part related to the localName or the URI, then the part related to the label
-		// is inside { and } and linked to the previous part with an UNION
-		/*if(useLocalName || useURI){
+
+		if(useLexicalizations){
 			query+="\n{";
-		}*/
-		
-		//use the indexes to search in the literals, and then get the associated resource
-		query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs, 
-				includeLocales, false);
-		
-		
-		//check if the request want to search in the notes as well (plain or reified)
-		if(useNotes) {
-			query+="\n{" +
-					"\n{SELECT ?propNote {?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
-					"\n?resource ?propNote ?label ." +
-					"\n}" + 
+			//use the indexes to search in the literals, and then, in the rest of the query, get the associated resource
+			query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs,
+					includeLocales, false);
+
+
+			//check if the request want to search in the notes as well (plain or reified)
+			if(useNotes) {
+				query+="\n{" +
+						"\n{SELECT ?propNote {?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
+						"\n?resource ?propNote ?label ." +
+						"\n}" +
+						"\nUNION" +
+						"\n{" +
+						"\n{SELECT ?propNote {?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
+						"\n?resource ?propNote ?refNote ." +
+						"\n?refNote <"+RDF.VALUE+"> ?label ." +
+						"\n}" +
+						"\nUNION";
+			}
+
+			boolean unionNeeded = false;
+			if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) || searchInRDFSLabel) {
+				//search in the rdfs:label
+				query+="\n{" +
+						"\n?resource <"+RDFS.LABEL+"> ?label ." +
+						"\n}";
+				unionNeeded = true;
+			}
+			if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) || searchInSKOSLabel) {
+				//search in skos:prefLabel and skos:altLabel
+				if(unionNeeded) {
+					query += "\nUNION";
+				}
+				unionNeeded = true;
+				query +="\n{" +
+					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
+					"\n}";
+			}
+
+			if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || searchInSKOSXLLabel) {
+				if(unionNeeded) {
+					query += "\nUNION";
+				}
+				unionNeeded = true;
+				//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
+				query +="\n{" +
+					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
+					"\n}";
+			}
+			if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL) || searchInOntolex) {
+				if(unionNeeded) {
+					query += "\nUNION";
+				}
+				unionNeeded = true;
+				//search in dct:title
+				query +="\n{" +
+					"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
+					"\n}"+
+					//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
 					"\nUNION" +
 					"\n{" +
-					"\n{SELECT ?propNote {?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
-					"\n?resource ?propNote ?refNote ." +
-					"\n?refNote <"+RDF.VALUE+"> ?label ." +
-					"\n}" +
-					"\nUNION";
-		}
-
-		boolean unionNeeded = false;
-		if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) || searchInRDFSLabel) {
-			//search in the rdfs:label
-			query+="\n{" +
-					"\n?resource <"+RDFS.LABEL+"> ?label ." +
-					"\n}";
-			unionNeeded = true;
-		}
-		if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) || searchInSKOSLabel) {
-			//search in skos:prefLabel and skos:altLabel
-			if(unionNeeded) {
-				query += "\nUNION";
-			}
-			unionNeeded = true;
-			query +="\n{" +
-				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
-				"\n}";
-		}
-		
-		if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || searchInSKOSXLLabel) {
-			if(unionNeeded) {
-				query += "\nUNION";
-			}
-			unionNeeded = true;
-			//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
-			query +="\n{" +
-				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
-				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
-				"\n}";
-		}
-		if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL) || searchInOntolex) {
-			if(unionNeeded) {
-				query += "\nUNION";
-			}
-			unionNeeded = true;
-			//search in dct:title
-			query +="\n{" +
-				"\n?resource <"+DCTERMS.TITLE+"> ?label ." +
-				"\n}"+	
-				//search in (ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
-				"\nUNION" +
-				"\n{" +
-				"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
-				"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
-				"\n}";
-			if(includeResToLexicalEntry) {
-				//search in allResToLexicalEntry/(ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
-				//construct the complex path from a resource to a LexicalEntry
-				String allResToLexicalEntry = getAllPathRestToLexicalEntry();
-				query+="\nUNION" +
-					"\n{" +
-					"\n?resource ("+allResToLexicalEntry+")/"+
-					"(<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+					"\n?resource (<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
 					"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
 					"\n}";
+				if(includeResToLexicalEntry) {
+					//search in allResToLexicalEntry/(ontolex:canonicalForm->ontolex:writtenRep and ontolex:otherform->ontolex:writtenRep
+					//construct the complex path from a resource to a LexicalEntry
+					String allResToLexicalEntry = getAllPathRestToLexicalEntry();
+					query+="\nUNION" +
+						"\n{" +
+						"\n?resource ("+allResToLexicalEntry+")/"+
+						"(<"+ONTOLEX.CANONICAL_FORM.stringValue()+"> | <"+ONTOLEX.OTHER_FORM.stringValue()+">) ?ontoForm ." +
+						"\n?ontoForm <"+ONTOLEX.WRITTEN_REP.stringValue()+"> ?label ." +
+						"\n}";
+				}
 			}
+			query +="\n}";
 		}
 		
 		/*if(useLocalName || useURI || useNotes){
