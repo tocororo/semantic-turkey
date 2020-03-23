@@ -616,7 +616,7 @@ public class Refactor extends STServiceAdapter  {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(concept)', '{lang: ''' +@auth.langof(#xLabel)+ '''}','C')")
 	public AnnotatedValue<IRI> spawnNewConceptFromLabel(
 			@Optional @NotLocallyDefined IRI newConcept, 
 			@LocallyDefined Resource xLabel,
@@ -738,7 +738,7 @@ public class Refactor extends STServiceAdapter  {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#sourceResource)+ ', lexicalization)', 'CD')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#sourceResource)+ ', lexicalization)', '{lang: ''' +@auth.langof(#xLabel)+ '''}', 'CD')")
 	public void moveXLabelToResource(
 			@LocallyDefined Resource sourceResource, IRI predicate, @LocallyDefined Resource xLabel,
 			@LocallyDefined Resource targetResource,@Optional(defaultValue = "false") Boolean force)
