@@ -324,12 +324,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 		//check if searchString represents a qname and searchMode is SearchMode.startsWith.
 		// In this case, try to expand it via the prefixMap
-		if(searchString.contains(":") && searchMode.equals(SearchMode.startsWith)){
-			String prefix = searchString.split(":")[0];
-			String localName = searchString.split(":")[1];
-			if(prefixToNamespaceMap.containsKey(prefix)){
-				searchString = prefixToNamespaceMap.get(prefix)+localName;
-			}
+		if(searchMode.equals(SearchMode.startsWith) ) {
+			searchString = ServiceForSearches.getUriStartFromQname(searchString, prefixToNamespaceMap);
 		}
 
 		//@formatter:off
@@ -448,12 +444,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			// used
 			//check if searchString represents a qname and searchMode is SearchMode.startsWith.
 			// In this case, try to expand it via the prefixMap
-			if(searchString.contains(":") && searchMode.equals(SearchMode.startsWith)){
-				String prefix = searchString.split(":")[0];
-				String localName = searchString.split(":")[1];
-				if(prefixToNamespaceMap.containsKey(prefix)){
-					searchStringForUri = prefixToNamespaceMap.get(prefix)+localName;
-				}
+			if(searchMode.equals(SearchMode.startsWith) ) {
+				searchString = ServiceForSearches.getUriStartFromQname(searchString, prefixToNamespaceMap);
 			}
 			query+="\n{"+
 					"\n?resource a ?type . " + // otherwise the filter may not be computed

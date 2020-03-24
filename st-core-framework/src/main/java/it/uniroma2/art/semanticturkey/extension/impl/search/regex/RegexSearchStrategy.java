@@ -224,12 +224,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 		//check if searchString represents a qname and searchMode is SearchMode.startsWith.
 		// In this case, try to expand it via the prefixMap
-		if(searchString.contains(":") && searchMode.equals(SearchMode.startsWith)){
-			String prefix = searchString.split(":")[0];
-			String localName = searchString.split(":")[1];
-			if(prefixToNamespaceMap.containsKey(prefix)){
-				searchString = prefixToNamespaceMap.get(prefix)+localName;
-			}
+		if(searchMode.equals(SearchMode.startsWith) ) {
+			searchString = ServiceForSearches.getUriStartFromQname(searchString, prefixToNamespaceMap);
 		}
 
 		//@formatter:off
@@ -251,8 +247,6 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		query += searchSpecificModePrepareQuery("?resource", searchString, searchMode, null, null, false)+
 				"\n}";
 		//@formatter:on
-
-		System.out.println("\n"+query+"\n"); // da cancellare
 
 		logger.debug("query = " + query);
 
@@ -409,13 +403,10 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			String searchStringForUri = searchString;
 			//check if searchString represents a qname and searchMode is SearchMode.startsWith.
 			// In this case, try to expand it via the prefixMap
-			if(searchString.contains(":") && searchMode.equals(SearchMode.startsWith)){
-				String prefix = searchString.split(":")[0];
-				String localName = searchString.split(":")[1];
-				if(prefixToNamespaceMap.containsKey(prefix)){
-					searchStringForUri = prefixToNamespaceMap.get(prefix)+localName;
-				}
+			if(searchMode.equals(SearchMode.startsWith) ) {
+				searchString = ServiceForSearches.getUriStartFromQname(searchString, prefixToNamespaceMap);
 			}
+
 			query+="\n{" +
 					"\n?resource a ?type . " + // otherwise the completeURI is not computed
 					"\nBIND(str(?resource) AS ?complURI)"+

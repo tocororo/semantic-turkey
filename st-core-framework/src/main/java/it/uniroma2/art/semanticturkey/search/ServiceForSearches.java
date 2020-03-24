@@ -1010,6 +1010,37 @@ public class ServiceForSearches {
 
 	
 
-	
+	public static String getUriStartFromQname(String qnameToCheck, Map<String, String> prefixToNamespaceMap){
+		String prefix="", localNamePart="";
+		if(qnameToCheck.contains(":") ){
+			//it has the :, so it could be a qname, check if the : are used only once
+			String[] qnameArray = qnameToCheck.split(":");
+			if(qnameArray.length>2){
+				//there are more : , so return the input text
+				return qnameToCheck;
+			} else  if(qnameArray.length == 2){ // prefix:localNamePart
+				prefix = qnameArray[0];
+				localNamePart = qnameArray[1];
+
+			} else if(qnameArray.length == 1) { // prefix:
+				prefix = qnameArray[0];
+				localNamePart = "";
+			} else if(qnameArray.length == 0) { // :
+				prefix = "";
+				localNamePart = "";
+			}
+
+			if(prefixToNamespaceMap.containsKey(prefix)){
+				return prefixToNamespaceMap.get(prefix)+localNamePart;
+			} else {
+				//the prefixToNamespaceMap it does not have that prefix, so return the input text
+				return qnameToCheck;
+			}
+
+		}
+		//it is not a qname, so return the input text
+		return qnameToCheck;
+	}
+
 }
 
