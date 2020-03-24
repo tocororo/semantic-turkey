@@ -2,25 +2,46 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import static java.util.stream.Collectors.joining;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.GraphQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFWriter;
+import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -359,6 +380,107 @@ public class Resources extends STServiceAdapter {
 			positionMap.put(resource.stringValue(), position);
 		}
 		return positionMap;
+	}
+
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', values)', 'R')")
+	public String getResourceTriplesDescription(IRI resource, String format) {
+		RepositoryConnection conn = getManagedConnection();
+		GraphQueryResult res = getResourceDescription(conn, resource);
+
+		Repository tempRep = new SailRepository(new MemoryStore());
+		tempRep.init();
+		RepositoryConnection tempConn = tempRep.getConnection();
+
+		while (res.hasNext()) {
+			Statement stmt = res.next();
+			tempConn.add(stmt);
+		}
+
+		StringWriter sw = new StringWriter();
+		RDFFormat rdfFormat = RDF4JUtilities.getRDFFormat(format);
+		RDFWriter writer = Rio.createWriter(rdfFormat, sw);
+
+		tempConn.export(writer);
+
+		return sw.toString();
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', values)', 'U')")
+	public void updateResourceTriplesDescription(@LocallyDefined IRI resource, String triples, String format) throws IOException {
+		RepositoryConnection conn = getManagedConnection();
+
+		InputStream triplesStream = new ByteArrayInputStream(triples.getBytes(StandardCharsets.UTF_8));
+		RDFFormat rdfFormat = RDF4JUtilities.getRDFFormat(format);
+
+		List<Statement> oldDescription = new ArrayList<>();
+		List<Statement> newDescription = new ArrayList<>();
+
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+
+		//get the statements of the updated description
+		Repository tempRep = new SailRepository(new MemoryStore());
+		tempRep.init();
+		RepositoryConnection tempConn = tempRep.getConnection();
+		tempConn.add(triplesStream, getProject().getNewOntologyManager().getBaseURI(), rdfFormat);
+		RepositoryResult<Statement> stmts = tempConn.getStatements(null, null, null);
+		while (stmts.hasNext()) {
+			Statement s = stmts.next();
+			if (s.getSubject().equals(resource)) {
+				newDescription.add(s);
+			}
+		}
+
+		//get the statements of the old description
+		GraphQueryResult res = getResourceDescription(conn, resource);
+		while (res.hasNext()) {
+			oldDescription.add(res.next());
+		}
+
+		//get the statements to add: those present in the new description and missing in the old one
+		newDescription.stream()
+				.filter(newStmt -> oldDescription.stream()
+						.noneMatch(oldStmt ->
+								newStmt.getSubject().equals(oldStmt.getSubject()) &&
+								newStmt.getPredicate().equals(oldStmt.getPredicate()) &&
+								newStmt.getObject().equals(oldStmt.getObject())))
+				.forEach(modelAdditions::add);
+
+		//get the statements to remove: those present in the old description and missing in the new one
+		oldDescription.stream()
+				.filter(oldStmt -> newDescription.stream()
+						.noneMatch(newStmt ->
+								oldStmt.getSubject().equals(newStmt.getSubject()) &&
+								oldStmt.getPredicate().equals(newStmt.getPredicate()) &&
+								oldStmt.getObject().equals(newStmt.getObject())))
+				.forEach(modelRemovals::add);
+
+		//prevent to delete the whole description
+		if (modelRemovals.size() == oldDescription.size()) {
+			throw new IllegalArgumentException("Cannot delete all the resource triples");
+		}
+
+		conn.add(modelAdditions, getWorkingGraph());
+		conn.remove(modelRemovals, getWorkingGraph());
+	}
+	
+	private GraphQueryResult getResourceDescription(RepositoryConnection conn, IRI resource) {
+		String query = "CONSTRUCT {																				\n" +
+				"	?s ?p ?o .																					\n" +
+				"} WHERE {																						\n" +
+				"	GRAPH ?g {																					\n" +
+				"		?s ?p ?o																				\n" +
+				"	}																							\n" +
+				"}																								\n" +
+				"VALUES(?g ?s) {																				\n" +
+				"	(" + RenderUtils.toSPARQL(getWorkingGraph()) + " " + RenderUtils.toSPARQL(resource) + ")	\n" +
+				"}";
+		GraphQuery gq = conn.prepareGraphQuery(query);
+		return gq.evaluate();
 	}
 
 }
