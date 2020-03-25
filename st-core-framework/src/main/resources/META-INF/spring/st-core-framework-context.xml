@@ -555,5 +555,28 @@
 	<osgi:service auto-export="interfaces">
 		<bean class="it.uniroma2.art.semanticturkey.config.importer.Importer" />
 	</osgi:service>
+	
+	
+	<!-- Publishes the CustomServiceDefinitionStore -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefinitionStore" />
+	</osgi:service>
+	
+	<!-- Publishes the CustomServiceBackend extension point -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.extpts.customservice.CustomServiceBackendExtensionPoint" />
+	</osgi:service>
+	
+	<!-- Publishes the SPARQL Custom Service Backend -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql.SPARQLCustomServiceBackendFactory" />
+	</osgi:service>	
+	
 
 </beans>

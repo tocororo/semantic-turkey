@@ -67,6 +67,9 @@
 		<bundle dependency="true">mvn:org.apache.commons/commons-lang3/${commons-lang3.version}</bundle>
 		<bundle dependency="true">mvn:javax.annotation/javax.annotation-api/${javax.annotations-api.version}</bundle>
 
+		<!-- Byte-Buddy -->
+		<bundle dependency="true">mvn:net.bytebuddy/byte-buddy/${byte-buddy.version}</bundle>
+		
 		<!-- Console -->
 		<configfile finalname="/lib/st-console-${project.version}.jar"
 			override="false">

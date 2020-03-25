@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>it.uniroma2.art.semanticturkey</groupId>
@@ -105,6 +106,7 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<sshd.version>1.7.0</sshd.version>
 		<javax.annotations-api.version>1.3.2</javax.annotations-api.version>
 		<commons-lang3.version>3.8.1</commons-lang3.version>
+		<byte-buddy.version>1.8.3</byte-buddy.version>
 	</properties>
 
 	<scm>
@@ -145,11 +147,12 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.22.1</version>
-<!-- the following was useful for debugging, but seems to make the overall build fail on some tests of the st-changetracking-sail -->
-<!-- 				<configuration> -->
-<!-- 					<forkCount>0</forkCount> -->
-<!-- 					<argLine>-XX:-OmitStackTraceInFastThrow</argLine> -->
-<!-- 				</configuration> -->
+				<!-- the following was useful for debugging, but seems to make the overall 
+					build fail on some tests of the st-changetracking-sail -->
+				<!-- <configuration> -->
+				<!-- <forkCount>0</forkCount> -->
+				<!-- <argLine>-XX:-OmitStackTraceInFastThrow</argLine> -->
+				<!-- </configuration> -->
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
