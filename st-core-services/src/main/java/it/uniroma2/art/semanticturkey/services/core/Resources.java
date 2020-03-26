@@ -38,8 +38,11 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
+import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
@@ -47,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import javax.swing.plaf.nimbus.State;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -382,7 +386,7 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', values)', 'R')")
-	public String getOutgoingTriples(IRI resource, RDFFormat format) {
+	public String getOutgoingTriples(Resource resource, RDFFormat format) {
 		RepositoryConnection conn = getManagedConnection();
 		GraphQueryResult res = getOutgoingTriplesQueryResult(conn, resource);
 
@@ -406,39 +410,33 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', values)', 'U')")
-	public void updateResourceTriplesDescription(@LocallyDefined IRI resource, String triples, RDFFormat format) throws IOException {
+	public void updateResourceTriplesDescription(@LocallyDefined Resource resource, String triples, RDFFormat format) throws IOException {
 		RepositoryConnection conn = getManagedConnection();
 
 		InputStream triplesStream = new ByteArrayInputStream(triples.getBytes(StandardCharsets.UTF_8));
 
-		List<Statement> oldDescription = new ArrayList<>();
-		List<Statement> newDescription = new ArrayList<>();
-
-		Model modelAdditions = new LinkedHashModel();
-		Model modelRemovals = new LinkedHashModel();
+		Model oldDescriptionModel = new LinkedHashModel();
+		Model newDescriptionModel = new LinkedHashModel();
 
 		//get the statements of the updated description
-		Repository tempRep = new SailRepository(new MemoryStore());
-		tempRep.init();
-		RepositoryConnection tempConn = tempRep.getConnection();
-		tempConn.add(triplesStream, getProject().getNewOntologyManager().getBaseURI(), format);
-		RepositoryResult<Statement> stmts = tempConn.getStatements(null, null, null);
-		while (stmts.hasNext()) {
-			Statement s = stmts.next();
-			if (s.getSubject().equals(resource)) {
-				newDescription.add(s);
-			}
-		}
+		RDFParser rdfParser = Rio.createParser(format);
+		rdfParser.getParserConfig().set(BasicParserSettings.PRESERVE_BNODE_IDS, true);
+		rdfParser.setRDFHandler(new StatementCollector(newDescriptionModel));
+		rdfParser.parse(triplesStream, getProject().getNewOntologyManager().getBaseURI());
 
 		//get the statements of the old description
 		GraphQueryResult res = getOutgoingTriplesQueryResult(conn, resource);
 		while (res.hasNext()) {
-			oldDescription.add(res.next());
+			oldDescriptionModel.add(res.next());
 		}
 
+		//Diff
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+
 		//get the statements to add: those present in the new description and missing in the old one
-		newDescription.stream()
-				.filter(newStmt -> oldDescription.stream()
+		newDescriptionModel.stream()
+				.filter(newStmt -> oldDescriptionModel.stream()
 						.noneMatch(oldStmt ->
 								newStmt.getSubject().equals(oldStmt.getSubject()) &&
 								newStmt.getPredicate().equals(oldStmt.getPredicate()) &&
@@ -446,8 +444,8 @@ public class Resources extends STServiceAdapter {
 				.forEach(modelAdditions::add);
 
 		//get the statements to remove: those present in the old description and missing in the new one
-		oldDescription.stream()
-				.filter(oldStmt -> newDescription.stream()
+		oldDescriptionModel.stream()
+				.filter(oldStmt -> newDescriptionModel.stream()
 						.noneMatch(newStmt ->
 								oldStmt.getSubject().equals(newStmt.getSubject()) &&
 								oldStmt.getPredicate().equals(newStmt.getPredicate()) &&
@@ -455,7 +453,7 @@ public class Resources extends STServiceAdapter {
 				.forEach(modelRemovals::add);
 
 		//prevent to delete the whole description
-		if (modelRemovals.size() == oldDescription.size()) {
+		if (modelRemovals.size() == oldDescriptionModel.size()) {
 			throw new IllegalArgumentException("Cannot delete all the resource triples");
 		}
 
@@ -463,18 +461,19 @@ public class Resources extends STServiceAdapter {
 		conn.remove(modelRemovals, getWorkingGraph());
 	}
 	
-	private GraphQueryResult getOutgoingTriplesQueryResult(RepositoryConnection conn, IRI resource) {
-		String query = "CONSTRUCT {																				\n" +
-				"	?s ?p ?o .																					\n" +
-				"} WHERE {																						\n" +
-				"	GRAPH ?g {																					\n" +
-				"		?s ?p ?o																				\n" +
-				"	}																							\n" +
-				"}																								\n" +
-				"VALUES(?g ?s) {																				\n" +
-				"	(" + RenderUtils.toSPARQL(getWorkingGraph()) + " " + RenderUtils.toSPARQL(resource) + ")	\n" +
+	private GraphQueryResult getOutgoingTriplesQueryResult(RepositoryConnection conn, Resource resource) {
+		String query = "CONSTRUCT {											\n" +
+				"	?s ?p ?o .												\n" +
+				"} WHERE {													\n" +
+				"	GRAPH ?g {												\n" +
+				"		?s ?p ?o											\n" +
+				"	}														\n" +
+				"}															\n" +
+				"VALUES(?g) {												\n" +
+				"	(" + RenderUtils.toSPARQL(getWorkingGraph()) + ")		\n" +
 				"}";
 		GraphQuery gq = conn.prepareGraphQuery(query);
+		gq.setBinding("s", resource);
 		return gq.evaluate();
 	}
 
