@@ -1,25 +1,25 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import static java.util.stream.Collectors.joining;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.customform.SpecialValue;
+import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
-import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
+import it.uniroma2.art.semanticturkey.services.annotations.Modified;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -47,26 +47,23 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
-import it.uniroma2.art.semanticturkey.customform.SpecialValue;
-import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
-import it.uniroma2.art.semanticturkey.exceptions.CODAException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
-import it.uniroma2.art.semanticturkey.services.annotations.Modified;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
-import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
-import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import static java.util.stream.Collectors.joining;
+
 //import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
-import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 @STService
 public class Resources extends STServiceAdapter {
@@ -385,9 +382,9 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', values)', 'R')")
-	public String getResourceTriplesDescription(IRI resource, String format) {
+	public String getOutgoingTriples(IRI resource, RDFFormat format) {
 		RepositoryConnection conn = getManagedConnection();
-		GraphQueryResult res = getResourceDescription(conn, resource);
+		GraphQueryResult res = getOutgoingTriplesQueryResult(conn, resource);
 
 		Repository tempRep = new SailRepository(new MemoryStore());
 		tempRep.init();
@@ -399,8 +396,7 @@ public class Resources extends STServiceAdapter {
 		}
 
 		StringWriter sw = new StringWriter();
-		RDFFormat rdfFormat = RDF4JUtilities.getRDFFormat(format);
-		RDFWriter writer = Rio.createWriter(rdfFormat, sw);
+		RDFWriter writer = Rio.createWriter(format, sw);
 
 		tempConn.export(writer);
 
@@ -410,11 +406,10 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', values)', 'U')")
-	public void updateResourceTriplesDescription(@LocallyDefined IRI resource, String triples, String format) throws IOException {
+	public void updateResourceTriplesDescription(@LocallyDefined IRI resource, String triples, RDFFormat format) throws IOException {
 		RepositoryConnection conn = getManagedConnection();
 
 		InputStream triplesStream = new ByteArrayInputStream(triples.getBytes(StandardCharsets.UTF_8));
-		RDFFormat rdfFormat = RDF4JUtilities.getRDFFormat(format);
 
 		List<Statement> oldDescription = new ArrayList<>();
 		List<Statement> newDescription = new ArrayList<>();
@@ -426,7 +421,7 @@ public class Resources extends STServiceAdapter {
 		Repository tempRep = new SailRepository(new MemoryStore());
 		tempRep.init();
 		RepositoryConnection tempConn = tempRep.getConnection();
-		tempConn.add(triplesStream, getProject().getNewOntologyManager().getBaseURI(), rdfFormat);
+		tempConn.add(triplesStream, getProject().getNewOntologyManager().getBaseURI(), format);
 		RepositoryResult<Statement> stmts = tempConn.getStatements(null, null, null);
 		while (stmts.hasNext()) {
 			Statement s = stmts.next();
@@ -436,7 +431,7 @@ public class Resources extends STServiceAdapter {
 		}
 
 		//get the statements of the old description
-		GraphQueryResult res = getResourceDescription(conn, resource);
+		GraphQueryResult res = getOutgoingTriplesQueryResult(conn, resource);
 		while (res.hasNext()) {
 			oldDescription.add(res.next());
 		}
@@ -468,7 +463,7 @@ public class Resources extends STServiceAdapter {
 		conn.remove(modelRemovals, getWorkingGraph());
 	}
 	
-	private GraphQueryResult getResourceDescription(RepositoryConnection conn, IRI resource) {
+	private GraphQueryResult getOutgoingTriplesQueryResult(RepositoryConnection conn, IRI resource) {
 		String query = "CONSTRUCT {																				\n" +
 				"	?s ?p ?o .																					\n" +
 				"} WHERE {																						\n" +
