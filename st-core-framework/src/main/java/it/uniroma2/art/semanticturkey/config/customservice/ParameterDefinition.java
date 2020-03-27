@@ -17,14 +17,10 @@ public class ParameterDefinition implements STProperties {
 		return "Parameter Definition";
 	}
 	
-	@STProperty(displayName="Name", description="The name of the parameter")
-	@Required
-	public String name;
-
 	@STProperty(displayName="Required", description="Whether the parameter is required or not")
 	@Required
 	public Boolean required;
 	
-	@STProperty(displayName="Schema", description="The schema of the parameter")
-	public Schema schema;
+	@STProperty(displayName="Type", description="Type of the parameter")
+	public TypeDescription type;
 }

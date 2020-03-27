@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.customservice;
 
-public class SchemaException extends Exception {
+public class SchemaException extends RuntimeException {
 
 	public SchemaException(String msg) {
 		super(msg);

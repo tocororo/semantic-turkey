@@ -5,21 +5,26 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.core.Ordered;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -35,7 +40,7 @@ import it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefiniti
 import it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefinitionStore;
 import it.uniroma2.art.semanticturkey.config.customservice.OperationDefintion;
 import it.uniroma2.art.semanticturkey.config.customservice.ParameterDefinition;
-import it.uniroma2.art.semanticturkey.config.customservice.Schema;
+import it.uniroma2.art.semanticturkey.config.customservice.TypeDescription;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
@@ -44,6 +49,7 @@ import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.properties.ExtensionSpecification;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.Response;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
@@ -54,7 +60,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.annotation.AnnotationDescription;
 import net.bytebuddy.description.type.TypeDefinition;
-import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType.Builder;
 import net.bytebuddy.dynamic.DynamicType.Builder.MethodDefinition.ParameterDefinition.Annotatable;
 import net.bytebuddy.dynamic.DynamicType.Builder.MethodDefinition.ParameterDefinition.Initial;
@@ -67,7 +72,6 @@ import net.bytebuddy.implementation.InvocationHandlerAdapter;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  *
  */
-@Component
 public class CustomServiceHandlerMapping extends AbstractHandlerMapping implements Ordered {
 
 	public static final String CUSTOM_SERVICES_URL_PREFIX = "it.uniroma2.art.semanticturkey/st-custom-services/";
@@ -133,15 +137,19 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 					.createInvocationHandler(operationDefinition);
 			boolean isWrite = customServiceBackend.isWrite();
 
+			TypeDefinition returnTypeDefinition = generateTypeDefinitionFromSchema(
+					operationEntry.getValue().returns);
+
 			Initial<Object> methodBuilder = serviceClassBuilder.defineMethod(operationEntry.getKey(),
-					String.class, Modifier.PUBLIC);
+					returnTypeDefinition, Modifier.PUBLIC);
 
 			Annotatable<Object> parameterBuilder = null;
 
-			for (ParameterDefinition parameterDefinition : operationDefinition.parameters) {
+			for (Entry<String, ParameterDefinition> parameterDefinition : operationDefinition.parameters
+					.entrySet()) {
 				parameterBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder).withParameter(
-						generateTypeDefinitionFromSchema(parameterDefinition.schema),
-						parameterDefinition.name);
+						generateTypeDefinitionFromSchema(parameterDefinition.getValue().type),
+						parameterDefinition.getKey());
 			}
 			serviceClassBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder)
 					.intercept(InvocationHandlerAdapter.of(invocationHandler))
@@ -170,19 +178,27 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 							null, null, operationImplConfig.getConfig()));
 			boolean isWrite = customServiceBackend.isWrite();
 
-			Initial<Object> methodBuilder = controllerClassBuilder.defineMethod(operationEntry.getKey(),
-					TypeDescription.Generic.Builder.parameterizedType(Response.class, String.class).build(),
-					Modifier.PUBLIC);
+			TypeDefinition returnTypeDefinition = generateTypeDefinitionFromSchema(
+					operationEntry.getValue().returns);
+
+			Initial<Object> methodBuilder = controllerClassBuilder
+					.defineMethod(operationEntry.getKey(),
+							net.bytebuddy.description.type.TypeDescription.Generic.Builder.parameterizedType(
+									net.bytebuddy.description.type.TypeDescription.Generic.Builder
+											.rawType(Response.class).build().asErasure(),
+									returnTypeDefinition).build(),
+							Modifier.PUBLIC);
 
 			Annotatable<Object> parameterBuilder = null;
 
-			for (ParameterDefinition parameterDefinition : operationDefinition.parameters) {
+			for (Entry<String, ParameterDefinition> parameterDefinition : operationDefinition.parameters
+					.entrySet()) {
 				parameterBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder)
-						.withParameter(generateTypeDefinitionFromSchema(parameterDefinition.schema),
-								parameterDefinition.name)
+						.withParameter(generateTypeDefinitionFromSchema(parameterDefinition.getValue().type),
+								parameterDefinition.getKey())
 						.annotateParameter(AnnotationDescription.Builder.ofType(RequestParam.class)
-								.define("value", parameterDefinition.name)
-								.define("required", parameterDefinition.required).build());
+								.define("value", parameterDefinition.getKey())
+								.define("required", parameterDefinition.getValue().required).build());
 			}
 
 			controllerClassBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder)
@@ -194,7 +210,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 									.filter(method2 -> method2.getName().equals(operationEntry.getKey()))
 									.findAny().get();
 							Object out = m.invoke(service, args);
-							return new Response<>((String) out);
+							return new Response<>(out);
 						}
 					}))
 					.annotateMethod(AnnotationDescription.Builder.ofType(RequestMapping.class)
@@ -219,13 +235,35 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		customServiceHandlers.put(customServiceCfg.name, controller);
 	}
 
-	protected TypeDefinition generateTypeDefinitionFromSchema(Schema schema) throws SchemaException {
-		if ("string".equals(schema.type)) {
-			return TypeDescription.STRING;
-		} else if ("boolean".equals(schema.type)) {
-			return TypeDescription.Generic.Builder.rawType(boolean.class).build();
+	protected TypeDefinition generateTypeDefinitionFromSchema(TypeDescription typeDescription)
+			throws SchemaException {
+		if ("AnnotatedValue".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.Generic.Builder
+					.parameterizedType(AnnotatedValue.class, Value.class).build();
+		} else if ("java.lang.String".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.STRING;
+		} else if ("boolean".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(Boolean.class)
+					.build();
+		} else if ("List".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.Generic.Builder
+					.parameterizedType(TypeDefinition.Sort.describe(List.class).asErasure(),
+							typeDescription.getTypeArguments().stream()
+									.map(this::generateTypeDefinitionFromSchema).collect(Collectors.toList()))
+					.build();
+		} else if ("IRI".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(IRI.class).build();
+		} else if ("Literal".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(Literal.class)
+					.build();
+		} else if ("BNode".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(BNode.class)
+					.build();
+		} else if ("RDFValue".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(Value.class)
+					.build();
 		} else {
-			throw new SchemaException("Unknown type '" + schema.type);
+			throw new SchemaException("Unknown type '" + typeDescription.getName());
 		}
 	}
 

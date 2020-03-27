@@ -124,6 +124,10 @@
 		class="it.uniroma2.art.semanticturkey.coda.converters.STSpecificRandomIDGenerator"
 		id="stSpecificRandomIDGenerator" />
 
+	<bean
+		class="it.uniroma2.art.semanticturkey.customservice.CustomServiceHandlerMapping"
+		id="customServiceHandlerMapping" />
+	
 	<!-- Enable @PreAuthorize and @PostAuthorize annotation for securing methods -->
 	<security:global-method-security
 		pre-post-annotations="enabled" />
