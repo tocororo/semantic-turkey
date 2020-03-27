@@ -145,11 +145,9 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 			Annotatable<Object> parameterBuilder = null;
 
-			for (Entry<String, ParameterDefinition> parameterDefinition : operationDefinition.parameters
-					.entrySet()) {
+			for (ParameterDefinition parameterDefinition : operationDefinition.parameters) {
 				parameterBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder).withParameter(
-						generateTypeDefinitionFromSchema(parameterDefinition.getValue().type),
-						parameterDefinition.getKey());
+						generateTypeDefinitionFromSchema(parameterDefinition.type), parameterDefinition.name);
 			}
 			serviceClassBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder)
 					.intercept(InvocationHandlerAdapter.of(invocationHandler))
@@ -191,14 +189,13 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 			Annotatable<Object> parameterBuilder = null;
 
-			for (Entry<String, ParameterDefinition> parameterDefinition : operationDefinition.parameters
-					.entrySet()) {
+			for (ParameterDefinition parameterDefinition : operationDefinition.parameters) {
 				parameterBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder)
-						.withParameter(generateTypeDefinitionFromSchema(parameterDefinition.getValue().type),
-								parameterDefinition.getKey())
+						.withParameter(generateTypeDefinitionFromSchema(parameterDefinition.type),
+								parameterDefinition.name)
 						.annotateParameter(AnnotationDescription.Builder.ofType(RequestParam.class)
-								.define("value", parameterDefinition.getKey())
-								.define("required", parameterDefinition.getValue().required).build());
+								.define("value", parameterDefinition.name)
+								.define("required", parameterDefinition.required).build());
 			}
 
 			controllerClassBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder)

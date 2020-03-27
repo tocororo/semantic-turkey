@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.config.customservice;
 
-import java.util.Map;
+import java.util.List;
 
 import it.uniroma2.art.semanticturkey.properties.ExtensionSpecification;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
@@ -20,7 +20,7 @@ public class OperationDefintion implements STProperties {
 	}
 
 	@STProperty(description = "Definitions of the parameters of a custom service operation", displayName = "Parameters")
-	public Map<String, ParameterDefinition> parameters;
+	public List<ParameterDefinition> parameters;
 
 	@STProperty(description = "Return value", displayName = "Returns")
 	public TypeDescription returns;
