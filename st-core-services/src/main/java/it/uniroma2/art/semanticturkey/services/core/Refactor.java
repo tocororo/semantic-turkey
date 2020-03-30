@@ -106,31 +106,41 @@ public class Refactor extends STServiceAdapter  {
 					+ " because a resource with this name already exists");
 		}
 		// @formatter:off
-		query =	"DELETE { 							\n" +
-				"	GRAPH ?graph { 					\n" + 
-				"		?oldRes ?p1 ?o1 .			\n" +
-				"		?s2 ?oldRes ?o2 .			\n" +
-				"		?s3 ?p3 ?oldRes .			\n" +
-				"	} 								\n" +
-				"} 									\n" +
-				"INSERT {							\n" +
-				"	GRAPH ?graph { 					\n" + 
-				"		?newRes ?p1 ?o1 .			\n" +
-				"		?s2 ?newRes ?o2 .			\n" +
-				"		?s3 ?p3 ?newRes .			\n" +
-				"	} 								\n" +
-				"} 									\n" +
-				"WHERE { 							\n" +
-				"	BIND (%graph_uri% as ?graph)	\n" +
-				"	BIND (%oldRes_uri% as ?oldRes)	\n" +
-				"	BIND (%newRes_uri% as ?newRes)	\n" +
-				"	GRAPH ?graph { 					\n" + 
-				"		{ ?oldRes ?p1 ?o1 . }		\n" +
-				"		UNION						\n" +
-				"		{ ?s2 ?oldRes ?o2 . }		\n" +
-				"		UNION						\n" +
-				"		{ ?s3 ?p3 ?oldRes . }		\n" +
-				"	} 								\n" +
+		query =	"DELETE { 													\n" +
+				"	GRAPH ?graph { 											\n" +
+				"		?oldRes ?p1 ?o1 .									\n" + //as subject
+				"		?s2 ?oldRes ?o2 .									\n" + //as predicate
+				"		?s3 ?p3 ?oldRes .									\n" + //as object
+				"		?s4 ?p4 ?oldTypedLit .								\n" + //as datatype
+				"	} 														\n" +
+				"} 															\n" +
+				"INSERT {													\n" +
+				"	GRAPH ?graph { 											\n" +
+				"		?newRes ?p1 ?o1 .									\n" +
+				"		?s2 ?newRes ?o2 .									\n" +
+				"		?s3 ?p3 ?newRes .									\n" +
+				"		?s4 ?p4 ?newTypedLit .								\n" +
+				"	} 														\n" +
+				"} 															\n" +
+				"WHERE { 													\n" +
+				"	BIND (%graph_uri% as ?graph)							\n" +
+				"	BIND (%oldRes_uri% as ?oldRes)							\n" +
+				"	BIND (%newRes_uri% as ?newRes)							\n" +
+				"	GRAPH ?graph { 											\n" +
+				"		{ ?oldRes ?p1 ?o1 . }								\n" +
+				"		UNION												\n" +
+				"		{ ?s2 ?oldRes ?o2 . }								\n" +
+				"		UNION												\n" +
+				"		{ ?s3 ?p3 ?oldRes . }								\n" +
+				"		UNION { 											\n" +
+				" 			?s4 ?p4 ?oldTypedLit							\n" +
+				"			BIND (%oldRes_uri% as ?oldDt)					\n" +
+				"			BIND (%newRes_uri% as ?newDt)					\n" +
+				"			BIND (str(?oldTypedLit) as ?oldLit)				\n" +
+				" 			FILTER (datatype(?oldTypedLit) = ?oldDt)		\n" +
+				" 			BIND (strdt(?oldLit, ?newDt) as ?newTypedLit)	\n" +
+				"		}													\n" +
+				"	} 														\n" +
 				"}";
 		// @formatter:on
 		query = query.replace("%graph_uri%", NTriplesUtil.toNTriplesString(getWorkingGraph()));
