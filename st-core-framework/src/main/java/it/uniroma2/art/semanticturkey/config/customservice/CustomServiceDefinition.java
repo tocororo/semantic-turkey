@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.config.customservice;
 
-import java.util.Map;
+import java.util.List;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.properties.Required;
@@ -28,6 +28,6 @@ public class CustomServiceDefinition implements Configuration {
 	public String description;
 
 	@STProperty(description = "Definitions of the operations defined by this custom service", displayName = "Operations")
-	public Map<String, OperationDefintion> operations;
+	public List<OperationDefintion> operations;
 
 }

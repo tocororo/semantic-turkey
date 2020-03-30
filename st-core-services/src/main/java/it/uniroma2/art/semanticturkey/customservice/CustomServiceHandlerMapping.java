@@ -6,12 +6,8 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
@@ -25,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,6 +30,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.handler.AbstractHandlerMapping;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import com.google.common.base.MoreObjects;
 
@@ -57,6 +56,9 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
+import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
+import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.annotation.AnnotationDescription;
 import net.bytebuddy.description.type.TypeDefinition;
@@ -87,9 +89,30 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 	private ConcurrentHashMap<String, Object> customServiceHandlers = new ConcurrentHashMap<>();
 
+	class DelegateRequestMappingHandlerMapping extends RequestMappingHandlerMapping {
+
+		protected void initHandlerMethods() {
+
+			for (Object h : customServiceHandlers.values()) {
+				detectHandlerMethods(h);
+			}
+
+			handlerMethodsInitialized(getHandlerMethods());
+		};
+
+		@Override
+		public HandlerMethod getHandlerInternal(HttpServletRequest request) throws Exception {
+			return super.getHandlerInternal(request);
+		}
+
+	};
+
+	private DelegateRequestMappingHandlerMapping delegateMapping = new DelegateRequestMappingHandlerMapping();
+
 	@PostConstruct
 	public void init() throws NoSuchConfigurationManager {
 		registerStoredCustomServices();
+		delegateMapping.afterPropertiesSet();
 	}
 
 	protected void registerStoredCustomServices() throws NoSuchConfigurationManager {
@@ -115,8 +138,8 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		// object. The controller binds the request parameters and delegates the actual implementation to the
 		// servuce
 
-		Map<String, OperationDefintion> operationDefinitions = Optional
-				.ofNullable(customServiceCfg.operations).orElse(Collections.emptyMap());
+		List<OperationDefintion> operationDefinitions = Optional.ofNullable(customServiceCfg.operations)
+				.orElse(Collections.emptyList());
 
 		// build the service class
 		Builder<Object> serviceClassBuilder = new ByteBuddy().subclass(Object.class);
@@ -125,9 +148,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 				.defineField("stServiceContext", STServiceContext.class, Modifier.PUBLIC)
 				.annotateField(AnnotationDescription.Builder.ofType(Autowired.class).build());
 
-		for (Entry<String, OperationDefintion> operationEntry : operationDefinitions.entrySet()) {
-
-			OperationDefintion operationDefinition = operationEntry.getValue();
+		for (OperationDefintion operationDefinition : operationDefinitions) {
 
 			ExtensionSpecification operationImplConfig = operationDefinition.implementation;
 			CustomServiceBackend customServiceBackend = exptManager.instantiateExtension(
@@ -138,9 +159,15 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 			boolean isWrite = customServiceBackend.isWrite();
 
 			TypeDefinition returnTypeDefinition = generateTypeDefinitionFromSchema(
-					operationEntry.getValue().returns);
+					operationDefinition.returns);
 
-			Initial<Object> methodBuilder = serviceClassBuilder.defineMethod(operationEntry.getKey(),
+			if (isWrite) {
+				if (!returnTypeDefinition.equals(net.bytebuddy.description.type.TypeDescription.VOID)) {
+					throw new RuntimeException("Mutation operations may not return a value");
+				}
+			}
+
+			Initial<Object> methodBuilder = serviceClassBuilder.defineMethod(operationDefinition.name,
 					returnTypeDefinition, Modifier.PUBLIC);
 
 			Annotatable<Object> parameterBuilder = null;
@@ -153,7 +180,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 					.intercept(InvocationHandlerAdapter.of(invocationHandler))
 					.annotateMethod(AnnotationDescription.Builder.ofType(STServiceOperation.class)
 							.define("method", isWrite ? RequestMethod.POST : RequestMethod.GET).build(),
-							AnnotationDescription.Builder.ofType(isWrite ? Read.class : Write.class).build());
+							AnnotationDescription.Builder.ofType(isWrite ? Write.class : Read.class).build());
 		}
 
 		Class<?> serviceClass = serviceClassBuilder.make().load(getClass().getClassLoader()).getLoaded();
@@ -167,9 +194,8 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		controllerClassBuilder = controllerClassBuilder
 				.annotateType(AnnotationDescription.Builder.ofType(Controller.class).build());
 
-		for (Entry<String, OperationDefintion> operationEntry : operationDefinitions.entrySet()) {
+		for (OperationDefintion operationDefinition : operationDefinitions) {
 
-			OperationDefintion operationDefinition = operationEntry.getValue();
 			ExtensionSpecification operationImplConfig = operationDefinition.implementation;
 			CustomServiceBackend customServiceBackend = exptManager.instantiateExtension(
 					CustomServiceBackend.class, new PluginSpecification(operationImplConfig.getExtensionID(),
@@ -177,15 +203,18 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 			boolean isWrite = customServiceBackend.isWrite();
 
 			TypeDefinition returnTypeDefinition = generateTypeDefinitionFromSchema(
-					operationEntry.getValue().returns);
+					operationDefinition.returns);
 
-			Initial<Object> methodBuilder = controllerClassBuilder
-					.defineMethod(operationEntry.getKey(),
-							net.bytebuddy.description.type.TypeDescription.Generic.Builder.parameterizedType(
-									net.bytebuddy.description.type.TypeDescription.Generic.Builder
-											.rawType(Response.class).build().asErasure(),
-									returnTypeDefinition).build(),
-							Modifier.PUBLIC);
+			Initial<Object> methodBuilder = controllerClassBuilder.defineMethod(operationDefinition.name,
+					isWrite ? net.bytebuddy.description.type.TypeDescription.Generic.Builder
+							.parameterizedType(HttpEntity.class, String.class).build()
+							: net.bytebuddy.description.type.TypeDescription.Generic.Builder
+									.parameterizedType(
+											net.bytebuddy.description.type.TypeDescription.Generic.Builder
+													.rawType(Response.class).build().asErasure(),
+											returnTypeDefinition)
+									.build(),
+					Modifier.PUBLIC);
 
 			Annotatable<Object> parameterBuilder = null;
 
@@ -204,23 +233,35 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 						@Override
 						public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 							Method m = Arrays.stream(service.getClass().getMethods())
-									.filter(method2 -> method2.getName().equals(operationEntry.getKey()))
+									.filter(method2 -> method2.getName().equals(operationDefinition.name))
 									.findAny().get();
 							Object out = m.invoke(service, args);
-							return new Response<>(out);
+							if (isWrite) {
+								return new HttpEntity<>(ServletUtilities.getService()
+										.createReplyResponse(operationDefinition.name, RepliesStatus.ok,
+												SerializationType.json)
+										.getResponseContent(), new HttpHeaders());
+							} else {
+								return new Response<>(out);
+							}
 						}
 					}))
 					.annotateMethod(AnnotationDescription.Builder.ofType(RequestMapping.class)
 							.defineArray("value",
 									CUSTOM_SERVICES_URL_PREFIX + customServiceCfg.name + "/"
-											+ operationEntry.getKey())
+											+ operationDefinition.name)
 							.defineEnumerationArray("method",
 									org.springframework.web.bind.annotation.RequestMethod.class,
 									isWrite ? org.springframework.web.bind.annotation.RequestMethod.POST
 											: org.springframework.web.bind.annotation.RequestMethod.GET)
-							.defineArray("produces", "application/json").build())
+							.defineArray("produces", "application/json;charset=UTF-8").build())
 					.annotateMethod(AnnotationDescription.Builder.ofType(ResponseBody.class).build());
 
+			System.out.println("operationName : " + operationDefinition.name);
+			System.out.println(
+					"method: " + (isWrite ? org.springframework.web.bind.annotation.RequestMethod.POST
+							: org.springframework.web.bind.annotation.RequestMethod.GET));
+			System.out.println("produces: " + "application/json;charset=UTF-8");
 		}
 
 		Class<? extends Object> controllerClass = controllerClassBuilder.make()
@@ -259,6 +300,8 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		} else if ("RDFValue".equals(typeDescription.getName())) {
 			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(Value.class)
 					.build();
+		} else if ("void".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.VOID;
 		} else {
 			throw new SchemaException("Unknown type '" + typeDescription.getName());
 		}
@@ -266,25 +309,6 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 	@Override
 	protected Object getHandlerInternal(HttpServletRequest request) throws Exception {
-		Pattern pattern = Pattern.compile("^" + Pattern.quote(request.getContextPath()) + "/"
-				+ Pattern.quote(CUSTOM_SERVICES_URL_PREFIX) + "(?<serviceName>.*)/(?<operationName>.*)$");
-		Matcher m = pattern.matcher(request.getRequestURI());
-
-		if (m.find()) {
-			String serviceName = m.group("serviceName");
-			String operationName = m.group("operationName");
-
-			Object handler = customServiceHandlers.get(serviceName);
-			if (handler != null) {
-				Optional<Method> handlerMethod = Arrays.stream(handler.getClass().getMethods())
-						.filter(method -> method.getName().equals(operationName)).findAny();
-				if (handlerMethod.isPresent()) {
-					return new HandlerMethod(handler, handlerMethod.get());
-				}
-			}
-
-		}
-		return null;
+		return delegateMapping.getHandlerInternal(request);
 	}
-
 }

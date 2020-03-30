@@ -31,6 +31,7 @@ import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.MapBindingSet;
 import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
 import org.eclipse.rdf4j.query.parser.ParsedOperation;
@@ -175,6 +176,16 @@ public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 				};
 			}
 
+		} else if (parsedQuery instanceof ParsedUpdate) {
+			handler = (stServiceContext, bindingSet) -> {
+				Repository repo = STServiceContextUtils.getRepostory(stServiceContext);
+				RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repo, false);
+
+				Update query = conn.prepareUpdate(queryString);
+				bindingSet.forEach(b -> query.setBinding(b.getName(), b.getValue()));
+				query.execute();
+				return null;
+			};
 		} else {
 			throw new IllegalStateException("Unsupported SPARQL operation type");
 		}
