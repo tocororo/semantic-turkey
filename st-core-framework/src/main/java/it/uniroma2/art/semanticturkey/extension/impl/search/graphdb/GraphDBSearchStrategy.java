@@ -318,7 +318,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	public Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, SearchMode searchMode,
 			@Optional List<IRI> schemes, @Optional(defaultValue = "or") String schemeFilter,
-			@Optional IRI cls, Map<String, String> prefixToNamespaceMap) throws IllegalStateException, STPropertyAccessException {
+			@Optional IRI cls, Map<String, String> prefixToNamespaceMap, int maxNumResults) throws IllegalStateException, STPropertyAccessException {
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
@@ -346,6 +346,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		query += searchModePrepareQueryNoIndexes("?resource", searchString, searchMode)+
 				"\n}";
+		if(maxNumResults>0){
+			query+="\nLIMIT "+maxNumResults;
+		}
 		//@formatter:on
 
 		logger.debug("query = " + query);

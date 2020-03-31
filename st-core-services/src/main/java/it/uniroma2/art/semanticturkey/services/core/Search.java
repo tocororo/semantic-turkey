@@ -74,6 +74,8 @@ import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRen
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
+import javax.validation.constraints.Min;
+
 @STService
 public class Search extends STServiceAdapter {
 
@@ -455,6 +457,8 @@ public class Search extends STServiceAdapter {
 	 * @param schemeFilter if the returned concepts should belong to just one of the input sheme ()or value or to all of them (and value).
 	 * 	 *                     Optional and default value is or
 	 * @param cls the iri of the classes in which to search Instances matching the input text. Optional
+	 * @param maxNumResults the maximum number of results the service will return. Only positive numbers are accepted.
+	 *                         0 means no limit in the number of results. Optional and default value is 0 (no limit)
 	 * @return List of Local names of the retrieved resources
 	 * @throws IllegalStateException
 	 * @throws STPropertyAccessException
@@ -463,14 +467,15 @@ public class Search extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
 	public Collection<String> searchURIList(String searchString, @Optional String[] rolesArray,
-			SearchMode searchMode, @Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter, @Optional IRI cls)
+			SearchMode searchMode, @Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter, @Optional IRI cls,
+			@Optional(defaultValue="0") @Min(0) int maxNumResults)
 			throws IllegalStateException, STPropertyAccessException {
 
 		//prepare the namespace map
 		Map <String, String> prefixToNamespaceMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
 
 		return instantiateSearchStrategy().searchURIList(stServiceContext, searchString, rolesArray,
-				searchMode, schemes, schemeFilter, cls, prefixToNamespaceMap);
+				searchMode, schemes, schemeFilter, cls, prefixToNamespaceMap, maxNumResults);
 	}
 
 	/**

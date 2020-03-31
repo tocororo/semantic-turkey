@@ -55,7 +55,7 @@ public interface SearchStrategy extends Extension {
 
 	Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, SearchMode searchMode, @Nullable List<IRI> schemes,
-			String schemeFilter, @Nullable IRI cls, Map<String, String> prefixToNamespaceMap) throws IllegalStateException, STPropertyAccessException;
+			String schemeFilter, @Nullable IRI cls, Map<String, String> prefixToNamespaceMap, int maxNumResults) throws IllegalStateException, STPropertyAccessException;
 
 	String searchInstancesOfClass(STServiceContext stServiceContext, List<List<IRI>> clsListList,
 			String searchString, boolean  useLexicalizations, boolean useLocalName, boolean useURI, boolean useNotes,
