@@ -1,10 +1,20 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -13,16 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @STService
 public class Graph extends STServiceAdapter {
@@ -39,15 +41,15 @@ public class Graph extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public JsonNode getGraphModel() {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-
 		ArrayNode graphModelArrayNode = jsonFactory.arrayNode();
-		
+
+		RepositoryConnection conn = getManagedConnection();
+
 		/*
 		 * Property range-domain
 		 */
 		
-		RepositoryConnection conn = getManagedConnection();
-		String query = 
+		String query =
 				// @formatter:off
 				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>								\n" +
 				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>									\n" +
@@ -77,22 +79,33 @@ public class Graph extends STServiceAdapter {
 		/*
 		 * class axioms
 		 */
-		
-		query = 
+
+		List<String> graphs = QueryResults.stream(conn.getContextIDs())
+				.filter(g -> !g.equals(getWorkingGraph()))
+				.map(NTriplesUtil::toNTriplesString)
+				.collect(Collectors.toList());
+
+		query =
 				// @formatter:off
-				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>										\n" +
 				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>											\n" +
-				"PREFIX owl: <http://www.w3.org/2002/07/owl#>													\n" +                                      
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#>													\n" +
 				"SELECT DISTINCT ?s ?p ?o WHERE {																\n" +
 				"	?metaclass rdfs:subClassOf* rdfs:Class .													\n" +
-				"	 GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {							\n" +
+				"	GRAPH ?g1 {																					\n" +
 				"		?s a ?metaclass .																		\n" +
-				"		?o a ?metaclass .																		\n" +
-				"		?s ?p ?o .																				\n" +
-				"		FILTER (isIRI(?s))																		\n" +
-				"		FILTER (isIRI(?o))																		\n" +
-				"		FILTER (?p IN(rdfs:subClassOf,owl:complementOf,owl:disjointWith,owl:equivalentClass))	\n" +
 				"	}																							\n" +
+				"	GRAPH ?g2 {																					\n" +
+				"		?o a ?metaclass .																		\n" +
+				"	}																							\n" +
+				"	?s ?p ?o .																					\n" +
+				"	FILTER (isIRI(?s))																			\n" +
+				"	FILTER (isIRI(?o))																			\n" +
+				"	FILTER (?p IN(rdfs:subClassOf,owl:complementOf,owl:disjointWith,owl:equivalentClass))		\n" +
+				//eclude triples where both subject and object are not in the working graph
+				"	FILTER (																					\n" +
+				"		?g1 NOT IN(" + String.join(",", graphs) + ") ||											\n" +
+				"		?g2 NOT IN(" + String.join(",", graphs) + ")											\n" +
+				"	)																							\n" +
 				"}";
 				// @formatter:on
 		logger.debug("query: " + query);
@@ -165,7 +178,6 @@ public class Graph extends STServiceAdapter {
 		
 		query = 
 				// @formatter:off
-				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>										\n" +
 				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>											\n" +
 				"PREFIX owl: <http://www.w3.org/2002/07/owl#>													\n" +                                      
 				"SELECT DISTINCT ?s ?p ?o WHERE {																\n" +
@@ -208,9 +220,7 @@ public class Graph extends STServiceAdapter {
 			RepositoryConnection conn = getManagedConnection();
 			String query = 
 					// @formatter:off
-					"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>								\n" +
 					"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>									\n" +
-					"PREFIX owl: <http://www.w3.org/2002/07/owl#>											\n" +
 					"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>									\n" +
 					"SELECT DISTINCT ?s ?p ?o WHERE {														\n";
 			if (role == RDFResourceRole.concept) {
@@ -271,9 +281,7 @@ public class Graph extends STServiceAdapter {
 			RepositoryConnection conn = getManagedConnection();
 			String query = 
 					// @formatter:off
-					"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>								\n" +
 					"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>									\n" +
-					"PREFIX owl: <http://www.w3.org/2002/07/owl#>											\n" +
 					"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>									\n" +
 					"SELECT DISTINCT ?s ?p ?o WHERE {														\n";
 			if (role == RDFResourceRole.concept) {
