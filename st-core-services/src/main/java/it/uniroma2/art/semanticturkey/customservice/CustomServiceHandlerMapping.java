@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
@@ -23,6 +25,7 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -61,6 +64,7 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationTyp
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.annotation.AnnotationDescription;
+import net.bytebuddy.description.annotation.AnnotationValue;
 import net.bytebuddy.description.type.TypeDefinition;
 import net.bytebuddy.dynamic.DynamicType.Builder;
 import net.bytebuddy.dynamic.DynamicType.Builder.MethodDefinition.ParameterDefinition.Annotatable;
@@ -129,6 +133,31 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		}
 
 	}
+
+	/*
+	 * @formatter:off
+	 * Pattern for the recognition of authorizations.
+	 * These are the named capturing group:
+	 * - "area": matches the area (restricted to letters)
+	 * - "subjfun": matches the subject as a function invocation; "subjfunpar" is the parameter
+	 * - "subjlit": matches the subject as a a literal (exclusive with the previous)
+	 * - "scope": optionally, matches the scope as a literal (restricted to letters)
+	 * - "userkey": optionally, matches a key in the userResponsibility structure (restricted to letters)
+	 * - "userlit": optionally, the value associated with the key (as word characters)
+	 * - "userfun": optionally, the value associated with the key as a function invocation (exclusive with the previous); "usefunpar" is the parameter
+	 * - "crudv": the operation in the CRUDV model
+	 * 
+	 * The pattern matches unquoted authorizations:
+	 *  rdf(@typeof(#root),lexicalizations), {lang: @langOf}, R
+	 *  
+	 *  quotes should be added:
+	 *  
+	 *  'rdf(' + @auth.typeof(#root) + ',lexicalizations)', '{lang: ''' + @auth.langOf(#label) + '''}', 'R'
+	 * @formatter:on
+	 */
+	private Pattern AUTHORIZATION_PATTERN = Pattern.compile(
+			"^\\s*(?<area>[a-z]+)\\(((?<subjfun>@typeof\\(#(?<subjfunpar>[a-z]+)\\))|(?<subjlit>[a-z]+))(\\s*,\\s*(?<scope>\\w+))?\\)(\\s*,\\s*\\{\\s*(?<userkey>[a-z]+)\\s*:\\s*((?<userlit>\\w+)|(?<userfun>(@langOf\\(#(?<userfunpar>[a-z]+)\\))))\\})?\\s*,\\s*(?<crudv>[CRUDV])\\s*$",
+			Pattern.CASE_INSENSITIVE);
 
 	private void registerCustomService(CustomServiceDefinition customServiceCfg)
 			throws InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
@@ -227,6 +256,46 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 								.define("required", parameterDefinition.required).build());
 			}
 
+			String preauthorizeValue;
+
+			if (operationDefinition.authorization != null) {
+				Matcher m = AUTHORIZATION_PATTERN.matcher(operationDefinition.authorization);
+				if (!m.find()) {
+					throw new RuntimeException("Invalid authorization string");
+				}
+
+				StringBuilder sb = new StringBuilder();
+				sb.append("@auth.isAuthorized(");
+				sb.append("'");
+				sb.append(m.group("area"));
+				if (m.group("subjlit") != null) {
+					sb.append(m.group("subjlit"));
+				} else {
+					sb.append("' +");
+					sb.append("@auth." + m.group("subjfun").substring(1)); // removes leading @
+					sb.append("+ '");
+				}
+				if (m.group("scope") != null) {
+					sb.append(", ").append(m.group("scope"));
+				}
+				sb.append(")");
+				sb.append("'");
+				if (m.group("userkey") != null) {
+					sb.append(", '{" + m.group("userkey") + ": ");
+					if (m.group("userlit") != null) {
+						sb.append("''").append(m.group("userlit")).append("''");
+					} else {
+						sb.append("'''").append(" + @auth." + m.group("userfun").substring(1))
+								.append(" + '''");
+					}
+					sb.append("}'");
+				}
+				sb.append(", '").append(m.group("crudv")).append("'");
+				sb.append(")");
+				preauthorizeValue = sb.toString();
+			} else {
+				preauthorizeValue = "@auth.isAuthorized(true)";
+			}
 			controllerClassBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder)
 					.intercept(InvocationHandlerAdapter.of(new InvocationHandler() {
 
@@ -255,13 +324,9 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 									isWrite ? org.springframework.web.bind.annotation.RequestMethod.POST
 											: org.springframework.web.bind.annotation.RequestMethod.GET)
 							.defineArray("produces", "application/json;charset=UTF-8").build())
-					.annotateMethod(AnnotationDescription.Builder.ofType(ResponseBody.class).build());
-
-			System.out.println("operationName : " + operationDefinition.name);
-			System.out.println(
-					"method: " + (isWrite ? org.springframework.web.bind.annotation.RequestMethod.POST
-							: org.springframework.web.bind.annotation.RequestMethod.GET));
-			System.out.println("produces: " + "application/json;charset=UTF-8");
+					.annotateMethod(AnnotationDescription.Builder.ofType(ResponseBody.class).build(),
+							AnnotationDescription.Builder.ofType(PreAuthorize.class)
+									.define("value", preauthorizeValue).build());
 		}
 
 		Class<? extends Object> controllerClass = controllerClassBuilder.make()
