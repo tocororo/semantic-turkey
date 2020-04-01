@@ -1,44 +1,14 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.mail.MessagingException;
-import javax.servlet.http.HttpServletRequest;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
-import it.uniroma2.art.semanticturkey.email.EmailApplicationContext;
-import it.uniroma2.art.semanticturkey.email.EmailService;
-import it.uniroma2.art.semanticturkey.email.PmkiEmailService;
-import it.uniroma2.art.semanticturkey.email.VbEmailService;
-import org.eclipse.rdf4j.model.IRI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.session.SessionInformation;
-import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.RequestParam;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
+import it.uniroma2.art.semanticturkey.email.EmailApplicationContext;
+import it.uniroma2.art.semanticturkey.email.EmailService;
+import it.uniroma2.art.semanticturkey.email.PmkiEmailService;
+import it.uniroma2.art.semanticturkey.email.VbEmailService;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -66,6 +36,34 @@ import it.uniroma2.art.semanticturkey.user.UserFormCustomField;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.session.SessionInformation;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import javax.mail.MessagingException;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 @STService
 public class Users extends STServiceAdapter {
@@ -182,6 +180,26 @@ public class Users extends STServiceAdapter {
 		}
 		
 		return userArrayNode;
+	}
+
+	@STServiceOperation
+	@PreAuthorize("@auth.isAdmin()")
+	public List<String> listProjectsBoundToUser(String userIri) throws ProjectAccessException {
+		List<String> listProj = new ArrayList<>();
+		STUser user = UsersManager.getUserByIRI(SimpleValueFactory.getInstance().createIRI(userIri));
+		if (user == null) {
+			throw new IllegalArgumentException("User with IRI " + userIri + " doesn't exist");
+		}
+		Collection<AbstractProject> projects = ProjectManager.listProjects();
+		for (AbstractProject absProj : projects) {
+			if (absProj instanceof Project) {
+				Project project = (Project) absProj;
+				if (ProjectUserBindingsManager.hasUserAccessToProject(user, project)) {
+					listProj.add(project.getName());
+				}
+			}
+		}
+		return listProj;
 	}
 	
 	/**
