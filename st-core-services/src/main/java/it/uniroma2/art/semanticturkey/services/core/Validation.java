@@ -135,9 +135,6 @@ public class Validation extends STServiceAdapter {
 			String timeUpperBound, @Optional(defaultValue = "Unordered") SortingDirection operationSorting,
 			@Optional(defaultValue = "Descending") SortingDirection timeSorting,
 			@Optional(defaultValue = "0") long page, @Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
-
-
-
 		return getCommitsInternal(operationFilter, performerFilter, timeLowerBound, timeUpperBound,
 				operationSorting, timeSorting, page, limit);
 	}

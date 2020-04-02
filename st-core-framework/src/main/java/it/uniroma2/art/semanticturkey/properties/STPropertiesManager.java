@@ -124,9 +124,6 @@ public class STPropertiesManager {
 	 */
 	public static String getPUSetting(String propName, Project project, STUser user, String pluginID)
 			throws STPropertyAccessException {
-		if (pluginID == null) {
-			pluginID = CORE_PLUGIN_ID;
-		}
 		String value;
 		value = loadProperties(getPUSettingsFile(project, user, pluginID)).getProperty(propName);
 		if (value == null) {
@@ -192,9 +189,6 @@ public class STPropertiesManager {
 	 */
 	public static void setPUSetting(String propName, String propValue, Project project, STUser user,
 			String pluginID) throws STPropertyUpdateException {
-		if (pluginID == null) {
-			pluginID = CORE_PLUGIN_ID;
-		}
 		try {
 			File propFile = getPUSettingsFile(project, user, pluginID);
 			Properties properties = loadProperties(propFile);
@@ -244,9 +238,6 @@ public class STPropertiesManager {
 	 */
 	public static void setPUSettings(STProperties settings, Project project, STUser user, String pluginID)
 			throws STPropertyUpdateException {
-		if (pluginID == null) {
-			pluginID = CORE_PLUGIN_ID;
-		}
 		setPUSettings(settings, project, user, pluginID, false);
 	}
 
@@ -281,9 +272,6 @@ public class STPropertiesManager {
 	 */
 	public static String getPGSetting(String propName, Project project, UsersGroup group, String pluginID)
 			throws STPropertyAccessException {
-		if (pluginID == null) {
-			pluginID = CORE_PLUGIN_ID;
-		}
 		String value;
 		value = loadProperties(getPGSettingsFile(project, group, pluginID)).getProperty(propName);
 		return value;
@@ -316,9 +304,6 @@ public class STPropertiesManager {
 	 */
 	public static void setPGSetting(String propName, String propValue, Project project, UsersGroup group,
 			String pluginID) throws STPropertyUpdateException {
-		if (pluginID == null) {
-			pluginID = CORE_PLUGIN_ID;
-		}
 		try {
 			File propFile = getPGSettingsFile(project, group, pluginID);
 			Properties properties = loadProperties(propFile);
@@ -368,9 +353,6 @@ public class STPropertiesManager {
 	 */
 	public static void setPGSettings(STProperties settings, Project project, UsersGroup group,
 			String pluginID) throws STPropertyUpdateException {
-		if (pluginID == null) {
-			pluginID = CORE_PLUGIN_ID;
-		}
 		setPGSettings(settings, project, group, pluginID, false);
 	}
 
@@ -1299,6 +1281,9 @@ public class STPropertiesManager {
 	 * @return
 	 */
 	public static File getSystemPropertyFolder(String pluginID) {
+		if (pluginID == null) {
+			pluginID = CORE_PLUGIN_ID;
+		}
 		return new File(Resources.getSystemDir() + File.separator + "plugins" + File.separator + pluginID);
 	}
 
@@ -1310,6 +1295,9 @@ public class STPropertiesManager {
 	 * @return
 	 */
 	public static File getProjectPropertyFolder(Project project, String pluginID) {
+		if (pluginID == null) {
+			pluginID = CORE_PLUGIN_ID;
+		}
 		return new File(Resources.getProjectsDir() + File.separator + project.getName()
 				+ File.separator + "plugins" + File.separator + pluginID);
 	}
@@ -1322,6 +1310,9 @@ public class STPropertiesManager {
 	 * @return
 	 */
 	public static File getUserPropertyFolder(STUser user, String pluginID) {
+		if (pluginID == null) {
+			pluginID = CORE_PLUGIN_ID;
+		}
 		return new File(
 				Resources.getUsersDir() + File.separator + STUser.encodeUserIri(user.getIRI())
 						+ File.separator + "plugins" + File.separator + pluginID);
@@ -1336,6 +1327,9 @@ public class STPropertiesManager {
 	 * @return
 	 */
 	public static File getPUBindingPropertyFolder(Project project, STUser user, String pluginID) {
+		if (pluginID == null) {
+			pluginID = CORE_PLUGIN_ID;
+		}
 		return new File(Resources.getProjectUserBindingsDir() + File.separator + project.getName()
 				+ File.separator + STUser.encodeUserIri(user.getIRI()) + File.separator + "plugins"
 				+ File.separator + pluginID);
@@ -1350,6 +1344,9 @@ public class STPropertiesManager {
 	 * @return
 	 */
 	public static File getPGBindingPropertyFolder(Project project, UsersGroup group, String pluginID) {
+		if (pluginID == null) {
+			pluginID = CORE_PLUGIN_ID;
+		}
 		return new File(Resources.getProjectGroupBindingsDir() + File.separator + project.getName()
 				+ File.separator + UsersGroup.encodeGroupIri(group.getIRI()) + File.separator + "plugins"
 				+ File.separator + pluginID);
