@@ -776,6 +776,27 @@ public class Projects extends STServiceAdapter {
 	}
 
 	/**
+	 *
+	 * @param oldValue
+	 * @param newValue
+	 * @throws ProjectAccessException
+	 * @throws ProjectUpdateException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void renameProjectFacetDir(String oldValue, String newValue) throws ProjectAccessException, ProjectUpdateException {
+		Collection<AbstractProject> projects = ProjectManager.listProjects();
+		for (AbstractProject absProj : projects) {
+			if (absProj instanceof Project) {
+				Project project = (Project) absProj;
+				if (oldValue.equals(project.getFacetDir())) {
+					project.setFacetDir(newValue);
+				}
+			}
+		}
+	}
+
+	/**
 	 * Returns the repositories associated with a (closed) project. Optionally, it is possible to skip local
 	 * repositories.
 	 * 

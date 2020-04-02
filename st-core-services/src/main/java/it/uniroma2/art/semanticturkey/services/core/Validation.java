@@ -4,11 +4,13 @@ import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.stream.Collectors;
 
+import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
@@ -61,6 +63,20 @@ public class Validation extends STServiceAdapter {
 	public ValidationPaginationInfo getStagedCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
 			@Optional(defaultValue = "") IRI[] performerFilter, @Optional String timeLowerBound,
 			@Optional String timeUpperBound, @Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
+		return getStagedCommitSummaryInternal(operationFilter, performerFilter, timeLowerBound, timeUpperBound, limit);
+	}
+
+	@STServiceOperation
+	@Read
+	public ValidationPaginationInfo getCurrentUserStagedCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
+			@Optional String timeLowerBound, @Optional String timeUpperBound,
+			@Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
+		IRI[] performerFilter = { UsersManager.getLoggedUser().getIRI() };
+		return getStagedCommitSummaryInternal(operationFilter, performerFilter, timeLowerBound, timeUpperBound, limit);
+	}
+
+	private ValidationPaginationInfo getStagedCommitSummaryInternal(IRI[] operationFilter, IRI[] performerFilter,
+			String timeLowerBound, String timeUpperBound, long limit) {
 		IRI validationGraph = SupportRepositoryUtils.obtainValidationGraph(getManagedConnection());
 
 		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound,
@@ -72,32 +88,31 @@ public class Validation extends STServiceAdapter {
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
 			String queryString =
-			// @formatter:off
-					" PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                 \n" +
-					" PREFIX prov: <http://www.w3.org/ns/prov#>                                    \n" +
-					" PREFIX dcterms: <http://purl.org/dc/terms/>                                  \n" +
-					" SELECT (MAX(?endTimeT) as ?tipTime) (COUNT(?commit) as ?commitCount)         \n" +
+					// @formatter:off
+					" PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>					\n" +
+					" PREFIX prov: <http://www.w3.org/ns/prov#>										\n" +
+					" PREFIX dcterms: <http://purl.org/dc/terms/>									\n" +
+					" SELECT (MAX(?endTimeT) as ?tipTime) (COUNT(?commit) as ?commitCount)			\n" +
 					//" FROM " + RenderUtils.toSPARQL(validationGraph ) + "\n" +
-					" WHERE {                                                                      \n" +
+					" WHERE {																		\n" +
 					" GRAPH "+  RenderUtils.toSPARQL(validationGraph ) + "\n {" +
-					"     ?commit a cl:Commit .                                                    \n" +
-					"     ?commit prov:startedAtTime ?startTimeT .                                 \n" +
-					"     ?commit prov:endedAtTime ?endTimeT .                                     \n" +
+					"     ?commit a cl:Commit .														\n" +
+					"     ?commit prov:startedAtTime ?startTimeT .									\n" +
+					"     ?commit prov:endedAtTime ?endTimeT .										\n" +
 					timeBoundsSPARQLFilter +
 					SupportRepositoryUtils.conditionalOptional(operationSPARQLFilter.isEmpty(),
-					"     ?commit prov:used ?operationT .                                          \n"
+					"     ?commit prov:used ?operationT .											\n"
 					) +
 					operationSPARQLFilter +
 					SupportRepositoryUtils.conditionalOptional(performerSPARQLFilter.isEmpty(),
-					"     ?commit prov:qualifiedAssociation [                                  \n" +
-					"         prov:agent ?performerT ;                                         \n" +
-					"         prov:hadRole <" + STCHANGELOG.PERFORMER + ">\n" +
-					"     ]                                                                    \n"
+					"     ?commit prov:qualifiedAssociation [										\n" +
+					"         prov:agent ?performerT ;												\n" +
+					"         prov:hadRole <" + STCHANGELOG.PERFORMER + ">							\n" +
+					"     ]																			\n"
 					) +
 					performerSPARQLFilter +
-					" } \n }                                                                      \n"
+					" } \n }";
 					// @formatter:on
-			;
 
 			TupleQuery tupleQuery = conn.prepareTupleQuery(queryString);
 			tupleQuery.setIncludeInferred(false);
@@ -120,6 +135,28 @@ public class Validation extends STServiceAdapter {
 			String timeUpperBound, @Optional(defaultValue = "Unordered") SortingDirection operationSorting,
 			@Optional(defaultValue = "Descending") SortingDirection timeSorting,
 			@Optional(defaultValue = "0") long page, @Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
+
+
+
+		return getCommitsInternal(operationFilter, performerFilter, timeLowerBound, timeUpperBound,
+				operationSorting, timeSorting, page, limit);
+	}
+
+	@STServiceOperation
+	@Read
+	public Collection<CommitInfo> getCurrentUserCommits(@Optional(defaultValue = "") IRI[] operationFilter,
+			@Optional String timeLowerBound, String timeUpperBound,
+			@Optional(defaultValue = "Unordered") SortingDirection operationSorting,
+			@Optional(defaultValue = "Descending") SortingDirection timeSorting,
+			@Optional(defaultValue = "0") long page, @Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
+		IRI[] performerFilter = { UsersManager.getLoggedUser().getIRI() };
+		return getCommitsInternal(operationFilter, performerFilter, timeLowerBound, timeUpperBound,
+				operationSorting, timeSorting, page, limit);
+	}
+
+	private Collection<CommitInfo> getCommitsInternal(IRI[] operationFilter, IRI[] performerFilter,
+				String timeLowerBound, String timeUpperBound, SortingDirection operationSorting,
+				SortingDirection timeSorting, long page, long limit) {
 
 		IRI validationGraph = SupportRepositoryUtils.obtainValidationGraph(getManagedConnection());
 
@@ -181,9 +218,8 @@ public class Validation extends STServiceAdapter {
 				" OFFSET " + (page * limit) + "                                                \n" +
 				" LIMIT " + limit + "                                                          \n";
 				// @formatter:on
-			;
 
-			TupleQuery tupleQuery = conn.prepareTupleQuery(queryString.toString());
+			TupleQuery tupleQuery = conn.prepareTupleQuery(queryString);
 			tupleQuery.setIncludeInferred(false);
 
 			return QueryResults.stream(tupleQuery.evaluate()).map(bindingSet -> {
@@ -259,6 +295,42 @@ public class Validation extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
 	public void reject(@SkipTermValidation IRI validatableCommit, @Optional String comment) {
 		RepositoryConnection conn = getManagedConnection();
+		rejectInternal(conn, validatableCommit, comment);
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@OmitHistoryMetadata
+	public void rejectCurrentUserCommit(@SkipTermValidation IRI validatableCommit, @Optional String comment) throws DeniedOperationException {
+		STUser user = UsersManager.getLoggedUser();
+
+		RepositoryConnection conn = getManagedConnection();
+		IRI validationGraph = SupportRepositoryUtils.obtainValidationGraph(conn);
+
+		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
+		try (RepositoryConnection supportConn = supportRepository.getConnection()) {
+			String query = "PREFIX prov: <http://www.w3.org/ns/prov#>		\n" +
+					"ASK {													\n" +
+					" 	GRAPH %graph% {										\n" +
+					"		%commit% prov:qualifiedAssociation [			\n" +
+					"			prov:agent %performer%;						\n" +
+					"		]												\n" +
+					"	}													\n" +
+					"}";
+			query = query.replace("%graph%", RenderUtils.toSPARQL(validationGraph));
+			query = query.replace("%commit%", RenderUtils.toSPARQL(validatableCommit));
+			query = query.replace("%performer%", RenderUtils.toSPARQL(user.getIRI()));
+			BooleanQuery bq = supportConn.prepareBooleanQuery(query);
+			boolean isAllowed = bq.evaluate();
+			if (isAllowed) {
+				rejectInternal(conn, validatableCommit, comment);
+			} else {
+				throw new DeniedOperationException("You cannot reject commit about operation performed by other users");
+			}
+		}
+	}
+
+	private void rejectInternal(RepositoryConnection conn, IRI validatableCommit, String comment) {
 		conn.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.REJECT,
 				conn.getValueFactory().createLiteral(validatableCommit.stringValue()),
 				CHANGETRACKER.VALIDATION);
@@ -267,4 +339,5 @@ public class Validation extends STServiceAdapter {
 					CHANGETRACKER.VALIDATION);
 		}
 	}
+
 }
