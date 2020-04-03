@@ -1,7 +1,16 @@
 package it.uniroma2.art.semanticturkey.mvc;
 
+import java.io.StringWriter;
+
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.rdf4j.exceptions.ValidationException;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.WriterConfig;
+import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.hibernate.validator.method.MethodConstraintViolation;
 import org.hibernate.validator.method.MethodConstraintViolationException;
 import org.slf4j.Logger;
@@ -10,6 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.w3c.dom.Document;
@@ -29,30 +39,61 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 public class CatchAllExceptionHandlerControllerAdvice {
 
 	private static Logger logger = LoggerFactory.getLogger(CatchAllExceptionHandlerControllerAdvice.class);
-	
+
 	/**
-	 * In st-core-services some methods are secured with @PreAuthorized annotation. 
-	 * When an authenticated user that has no enough privileges try to access the method, 
-	 * an AccessDeniedException is thrown. This exception should be handled by 
-	 * STAccessDeniedHandler (a custom AccessDeniedHandler).
-	 * The following ExceptionHandler prevent @ExceptionHandler(Exception.class) from catching the
-	 * AccessDeniedException and simply re-throw it so that it bubble up untill the STAccessDeniedHandler
+	 * In st-core-services some methods are secured with @PreAuthorized annotation. When an authenticated user
+	 * that has no enough privileges try to access the method, an AccessDeniedException is thrown. This
+	 * exception should be handled by STAccessDeniedHandler (a custom AccessDeniedHandler). The following
+	 * ExceptionHandler prevent @ExceptionHandler(Exception.class) from catching the AccessDeniedException and
+	 * simply re-throw it so that it bubble up untill the STAccessDeniedHandler
+	 * 
 	 * @param ex
 	 * @param request
 	 */
 	@ExceptionHandler(AccessDeniedException.class)
 	public void handleException(AccessDeniedException ex, HttpServletRequest request) {
-		
+
 		logger.error("Exception catched by the Controller Advice", ex);
 		throw new AccessDeniedException(ex.getMessage());
 	}
-	
+
+	@ExceptionHandler(TransactionSystemException.class)
+	public ResponseEntity<String> handleException(TransactionSystemException ex, HttpServletRequest request) {
+
+		logger.error("Exception catched by the Controller Advice", ex);
+
+		Throwable cause = ex.getRootCause();
+		if (cause instanceof ValidationException) { // SHACL ValidationException
+			Model validatioReport = ((ValidationException) cause).validationReportAsModel();
+
+			StringWriter reportWriter = new StringWriter();
+
+			WriterConfig writerConfig = new WriterConfig();
+			writerConfig.set(BasicWriterSettings.PRETTY_PRINT, true);
+			writerConfig.set(BasicWriterSettings.INLINE_BLANK_NODES, true);
+
+			Rio.write(validatioReport, reportWriter, RDFFormat.TURTLE, writerConfig);
+
+			StringBuilder errorMsg = new StringBuilder();
+			errorMsg.append("SHACL validation failed with the following report:\n\n").append(reportWriter);
+
+			ServletUtilities servUtils = ServletUtilities.getService();
+			Response stResp = servUtils.createExceptionResponse(extractServicRequestName(request), ex,
+					errorMsg.toString());
+
+			return formatResponse(stResp, request);
+
+		} else { // Otherwise, fall back to the default exception handler
+			return handleException((Exception) ex, request);
+		}
+	}
+
 	@ExceptionHandler(MethodConstraintViolationException.class)
 	public ResponseEntity<String> handleException(MethodConstraintViolationException ex,
 			HttpServletRequest request) {
-		
+
 		logger.error("Exception catched by the Controller Advice", ex);
-		
+
 		ServletUtilities servUtils = ServletUtilities.getService();
 
 		StringBuilder errorMsg = new StringBuilder();
@@ -74,7 +115,7 @@ public class CatchAllExceptionHandlerControllerAdvice {
 		ServletUtilities servUtils = ServletUtilities.getService();
 
 		logger.error("Exception catched by the Controller Advice", ex);
-		
+
 		Response stResp;
 
 		if (ex instanceof RuntimeException) {
