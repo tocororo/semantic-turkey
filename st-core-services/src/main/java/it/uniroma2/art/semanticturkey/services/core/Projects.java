@@ -252,7 +252,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation
-	public List<ProjectInfo> listProjects(@Optional ProjectConsumer consumer,
+	public List<ProjectInfo> listProjects(@Optional(defaultValue = "SYSTEM") ProjectConsumer consumer,
 			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
 			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel,
 			@Optional(defaultValue = "false") boolean userDependent,
@@ -287,7 +287,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation
-	public List<ProjectInfo> listProjectsPerRole(@Optional ProjectConsumer consumer, String role,
+	public List<ProjectInfo> listProjectsPerRole(@Optional(defaultValue = "SYSTEM") ProjectConsumer consumer, String role,
 			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
 			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel,
 			@Optional(defaultValue = "false") boolean onlyOpen) throws ProjectAccessException {
@@ -326,7 +326,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation
-	public ProjectInfo getProjectInfo(@Optional ProjectConsumer consumer,
+	public ProjectInfo getProjectInfo(@Optional(defaultValue = "SYSTEM") ProjectConsumer consumer,
 			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
 			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel, String projectName)
 			throws IllegalStateException, ProjectAccessException, InvalidProjectNameException,
