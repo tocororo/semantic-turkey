@@ -4,13 +4,12 @@ import java.io.StringWriter;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.rdf4j.exceptions.ValidationException;
 import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.WriterConfig;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
+import org.eclipse.rdf4j.sail.shacl.ShaclSailValidationException;
 import org.hibernate.validator.method.MethodConstraintViolation;
 import org.hibernate.validator.method.MethodConstraintViolationException;
 import org.slf4j.Logger;
@@ -63,8 +62,8 @@ public class CatchAllExceptionHandlerControllerAdvice {
 		logger.error("Exception catched by the Controller Advice", ex);
 
 		Throwable cause = ex.getRootCause();
-		if (cause instanceof ValidationException) { // SHACL ValidationException
-			Model validatioReport = ((ValidationException) cause).validationReportAsModel();
+		if (cause instanceof ShaclSailValidationException) { // TODO: change when updating to 3.2.0
+			Model validatioReport = ((ShaclSailValidationException) cause).validationReportAsModel();
 
 			StringWriter reportWriter = new StringWriter();
 

@@ -11,6 +11,7 @@ date: dd/mm/yyyy
   * make both the base URI and the ontology mirror file optional when importing an ontology from a local file
   * port of the remote alignment system (Genoma) is now configurable
   * fix mishandling of status code by HTTP-based deployers
+  * fix authentication bug when deleting the remote repositories associated with a project
   * added support in CustomForm for new Pearl annotations
   * updated dependency on Sheet2RDF 4.0.1
   * updated dependency on CODA 1.7.0

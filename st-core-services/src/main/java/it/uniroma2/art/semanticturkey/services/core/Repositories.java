@@ -123,9 +123,9 @@ public class Repositories extends STServiceAdapter {
 
 			RepositoryManager repoManager;
 			if (username != null) {
-				repoManager = RemoteRepositoryManager.getInstance(serverURL);
-			} else {
 				repoManager = RemoteRepositoryManager.getInstance(serverURL, username, password);
+			} else {
+				repoManager = RemoteRepositoryManager.getInstance(serverURL);
 			}
 			try {
 
