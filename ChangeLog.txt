@@ -1,5 +1,9 @@
 version 7.1
 date: dd/mm/yyyy
+  * change the namespace of the vocabulary used by the metadata registry
+  * partial modularization of the platform. The following parts were moved to dedicated modules:
+    - metadata registry
+    - utilities
   * added custom services with an implementation based on SPARQL
   * added the prefix resolution in all Search services
   * added SHACL to PEARL

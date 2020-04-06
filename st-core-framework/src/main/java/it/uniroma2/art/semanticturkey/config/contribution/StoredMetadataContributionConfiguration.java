@@ -23,8 +23,8 @@ public class StoredMetadataContributionConfiguration extends StoredContributionC
 	public String uriSpace;
 
 	/**
-	 * YES => http://semanticturkey.uniroma2.it/ns/mdreg#standardDereferenciation
-	 * NO => http://semanticturkey.uniroma2.it/ns/mdreg#noDereferenciation
+	 * YES => http://semanticturkey.uniroma2.it/ns/mdr#standardDereferenciation
+	 * NO => http://semanticturkey.uniroma2.it/ns/mdr#noDereferenciation
 	 */
 	@STProperty(description = "Dereferenciation system", displayName = "Dereferenciation system")
 	public IRI dereferenciationSystem;

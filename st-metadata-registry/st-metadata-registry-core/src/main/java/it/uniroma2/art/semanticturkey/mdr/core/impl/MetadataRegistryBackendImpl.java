@@ -266,7 +266,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                \n" +
 				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                  \n" +
 				" PREFIX void: <http://rdfs.org/ns/void#>                                    \n" +
-				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                \n" +
+				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdr#>                  \n" +
 				"                                                                            \n" +
 				" INSERT {                                                                   \n" +
 				"   ?catalog a dcat:Catalog ;                                                \n" +
@@ -622,7 +622,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
 				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
 				" PREFIX void: <http://rdfs.org/ns/void#>                                         \n" +
-				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                     \n" +
+				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdr#>                       \n" +
 				"                                                                                 \n" +
 				" DELETE {                                                                        \n" +
 				"   ?record dcterms:modified ?oldModified .                                       \n" +
@@ -749,7 +749,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
 				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
 				" PREFIX void: <http://rdfs.org/ns/void#>                                         \n" +
-				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                     \n" +
+				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdr#>                       \n" +
 				"                                                                                 \n" +
 				" DELETE {                                                                        \n" +
 				"   ?record dcterms:modified ?oldModified .                                       \n" +
@@ -783,7 +783,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
 				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
 				" PREFIX void: <http://rdfs.org/ns/void#>                                         \n" +
-				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                     \n" +
+				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdr#>                       \n" +
 				"                                                                                 \n" +
 				" DELETE {                                                                        \n" +
 				"   ?record dcterms:modified ?oldModified .                                       \n" +
@@ -822,7 +822,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                         \n" +
 				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                           \n" +
 				" PREFIX void: <http://rdfs.org/ns/void#>                                             \n" +
-				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                         \n" +
+				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdr#>                           \n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                        \n" +
                 "                                                                                     \n" +
 				" SELECT ?record (MIN(?recordIssued) as ?recordIssuedT)                               \n" +
@@ -1098,7 +1098,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			// @formatter:off
 				"PREFIX dcterms: <http://purl.org/dc/terms/>                                          \n" +
 				"PREFIX void: <http://rdfs.org/ns/void#>                                              \n" +
-				"PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                          \n" +
+				"PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdr#>                          \n" +
 				"PREFIX owl: <http://www.w3.org/2002/07/owl#>                                         \n" +
 				"SELECT ?dataset (MIN(?datasetUriSpace) as ?datasetUriSpaceT) (MIN(?datasetTitle) as ?datasetTitleT) \n" +
 			    "       (MIN(?datasetDereferenciationSystem) as ?datasetDereferenciationSystemT) \n" +
@@ -1127,7 +1127,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 			tupleQuerySb.append(
 			// @formatter:off
-				"   ?dataset a void:Dataset .                                                         \n" +
+				"   ?dataset a void:Dataset .                                                        \n" +
 				wrapWithOptional.apply("datasetUriSpace",
 				"     ?dataset void:uriSpace ?datasetUriSpace .                                      \n"
 				) +

@@ -140,7 +140,7 @@ public class STMetadataRegistryBackendImpl extends MetadataRegistryBackendImpl
 						" PREFIX dcterms: <http://purl.org/dc/terms/>                                \n" +
 						" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                  \n" +
 						" PREFIX void: <http://rdfs.org/ns/void#>                                    \n" +
-						" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdreg#>                \n" +
+						" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdr#>                  \n" +
 						"                                                                            \n" +
 						" INSERT {                                                                   \n" +
 						"   ?catalog a dcat:Catalog ;                                                \n" +

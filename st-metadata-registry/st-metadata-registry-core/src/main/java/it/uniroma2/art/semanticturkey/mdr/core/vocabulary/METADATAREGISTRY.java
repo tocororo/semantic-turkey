@@ -12,32 +12,32 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
  *
  */
 public abstract class METADATAREGISTRY {
-	/** http://semanticturkey.uniroma2.it/ns/mdreg# */
-	public static final String NAMESPACE = "http://semanticturkey.uniroma2.it/ns/mdreg#";
+	/** http://semanticturkey.uniroma2.it/ns/mdr# */
+	public static final String NAMESPACE = "http://semanticturkey.uniroma2.it/ns/mdr#";
 
 	/**
-	 * Recommended prefix for the STCHANGELOG namespace: "mdreg"
+	 * Recommended prefix for the STCHANGELOG namespace: "mdr"
 	 */
-	public static final String PREFIX = "mdreg";
+	public static final String PREFIX = "mdr";
 
 	/**
 	 * An immutable {@link Namespace} constant that represents the METADATAREGISTRY namespace.
 	 */
 	public static final Namespace NS = new SimpleNamespace(PREFIX, NAMESPACE);
 
-	/** http://semanticturkey.uniroma2.it/ns/mdreg#dereferenciationSystem */
+	/** http://semanticturkey.uniroma2.it/ns/mdr#dereferenciationSystem */
 	public static final IRI DEREFERENCIATION_SYSTEM;
 
-	/** http://semanticturkey.uniroma2.it/ns/mdreg#standardDereferenciation */
+	/** http://semanticturkey.uniroma2.it/ns/mdr#standardDereferenciation */
 	public static final IRI STANDARD_DEREFERENCIATION;
 
-	/** http://semanticturkey.uniroma2.it/ns/mdreg#noDereferenciation */
+	/** http://semanticturkey.uniroma2.it/ns/mdr#noDereferenciation */
 	public static final IRI NO_DEREFERENCIATION;
 
-	/** http://semanticturkey.uniroma2.it/ns/mdreg#sparqlEndpointLimitation */
+	/** http://semanticturkey.uniroma2.it/ns/mdr#sparqlEndpointLimitation */
 	public static final IRI SPARQL_ENDPOINT_LIMITATION;
 
-	/** http://semanticturkey.uniroma2.it/ns/mdreg#noAggregation */
+	/** http://semanticturkey.uniroma2.it/ns/mdr#noAggregation */
 	public static final IRI NO_AGGREGATION;
 
 	static {
