@@ -5,6 +5,7 @@ import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.user.Role.RoleLevel;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.stream.Collectors;
 
 public class ProjectUserBindingsManager {
 	
@@ -361,6 +363,41 @@ public class ProjectUserBindingsManager {
 			return pub.getGroup();
 		}
 		return null;
+	}
+
+	/* =================================
+	 * Misc
+	 * ================================= */
+
+	/**
+	 * Clone the PUBinding settings from a project-user pair to another.
+	 * The roles project-defined are ignored
+	 * @param sourceUser
+	 * @param targetUser
+	 * @param sourceProject
+	 * @param targetProject
+	 * @throws ProjectBindingException
+	 */
+	public static void clonePUBinding(STUser sourceUser, Project sourceProject, STUser targetUser, Project targetProject)
+			throws ProjectBindingException {
+		ProjectUserBinding sourcePub = getPUBinding(sourceUser, sourceProject);
+		Collection<Role> roles = sourcePub.getRoles();
+		UsersGroup group = sourcePub.getGroup();
+		boolean groupLimitations = sourcePub.isSubjectToGroupLimitations();
+		Collection<String> languages = sourcePub.getLanguages();
+
+		//if projects are different, skip the clone of roles project-defined
+		if (!sourceProject.getName().equals(targetProject.getName())) {
+			roles = roles.stream().filter(r -> r.getLevel().equals(RoleLevel.system)).collect(Collectors.toList());
+		}
+
+		ProjectUserBinding targetPub = getPUBinding(targetUser, targetProject);
+		targetPub.setRoles(roles);
+		targetPub.assignGroup(group);
+		targetPub.setSubjectToGroupLimitations(groupLimitations);
+		targetPub.setLanguages(languages);
+
+		createOrUpdatePUBindingFolder(targetPub);
 	}
 	
 	/* =================================

@@ -104,8 +104,6 @@ public class ProjectUserBindingsRepoHelper {
 	
 	/**
 	 * Returns the binding about the given user and project
-	 * @param userEmail
-	 * @param projectName
 	 * @return
 	 */
 	public Collection<ProjectUserBinding> listPUBindings() {
@@ -150,54 +148,54 @@ public class ProjectUserBindingsRepoHelper {
 			}
 			
 			IRI userIRI = (IRI) tuple.getValue(BINDING_USER);
-			STUser user = UsersManager.getUserByIRI(userIRI);
-			if (user == null) { //there is a binding that references a no more existing user
+			try {
+				STUser user = UsersManager.getUserByIRI(userIRI);
+
+				ProjectUserBinding puBinding = new ProjectUserBinding(project, user);
+
+				Role role = null;
+				if (tuple.getBinding(BINDING_ROLE) != null) {
+					role = getRoleFromIRI((IRI) tuple.getValue(BINDING_ROLE));
+				}
+				String lang = null;
+				if (tuple.getBinding(BINDING_LANGUAGE) != null) {
+					lang = tuple.getValue(BINDING_LANGUAGE).stringValue();
+				}
+				// Check if the current tuple is about a binding already fetched (and so it differs just for role or lang)
+				for (ProjectUserBinding b : list) {
+					if (b.getProject().getName().equals(project.getName()) && b.getUser().getIRI().equals(user.getIRI())) {
+						// binding already in list => add the role or the lang to it
+						if (role != null) {
+							b.addRole(role);
+						}
+						if (lang != null) {
+							b.addLanguage(lang);
+						}
+						continue tupleLoop;
+					}
+				}
+				//if it reach this point, current binding was not already fetched so add the role to the binding
+				if (role != null) {
+					puBinding.addRole(role);
+				}
+				if (lang != null) {
+					puBinding.addLanguage(lang);
+				}
+
+				UsersGroup group;
+				if (tuple.getBinding(BINDING_GROUP) != null) {
+					group = UsersGroupsManager.getGroupByIRI((IRI) tuple.getBinding(BINDING_GROUP).getValue());
+					puBinding.assignGroup(group);
+					if (tuple.getBinding(BINDING_GROUP_LIMITATION) != null) {
+						puBinding.setSubjectToGroupLimitations(Boolean.parseBoolean(tuple.getBinding(BINDING_GROUP_LIMITATION).getValue().stringValue()));
+					}
+				}
+
+				list.add(puBinding);
+			} catch (UserException e) { //a binding references a no more existing user
 				logger.warn("Invalid binding: IRI " + userIRI.stringValue() + " references to a not existing user."
 						+ " Project-User bindings with this user will be ignored");
-				continue; // => binding ignored
 			}
-			
-			ProjectUserBinding puBinding = new ProjectUserBinding(project, user);
-			
-			Role role = null;
-			if (tuple.getBinding(BINDING_ROLE) != null) {
-				role = getRoleFromIRI((IRI) tuple.getValue(BINDING_ROLE));
-			}
-			String lang = null;
-			if (tuple.getBinding(BINDING_LANGUAGE) != null) {
-				lang = tuple.getValue(BINDING_LANGUAGE).stringValue();
-			}
-			// Check if the current tuple is about a binding already fetched (and so it differs just for role or lang)
-			for (ProjectUserBinding b : list) {
-				if (b.getProject().getName().equals(project.getName()) && b.getUser().getIRI().equals(user.getIRI())) {
-					// binding already in list => add the role or the lang to it
-					if (role != null) {
-						b.addRole(role);
-					}
-					if (lang != null) {
-						b.addLanguage(lang);
-					}
-					continue tupleLoop;
-				}
-			}
-			//if it reach this point, current binding was not already fetched so add the role to the binding
-			if (role != null) {
-				puBinding.addRole(role);
-			}
-			if (lang != null) {
-				puBinding.addLanguage(lang);
-			}
-			
-			UsersGroup group = null;
-			if (tuple.getBinding(BINDING_GROUP) != null) {
-				group = UsersGroupsManager.getGroupByIRI((IRI) tuple.getBinding(BINDING_GROUP).getValue());
-				puBinding.assignGroup(group);
-				if (tuple.getBinding(BINDING_GROUP_LIMITATION) != null) {
-					puBinding.setSubjectToGroupLimitations(Boolean.parseBoolean(tuple.getBinding(BINDING_GROUP_LIMITATION).getValue().stringValue()));
-				}
-			}
-			
-			list.add(puBinding);
 		}
 		return list;
 	}
@@ -208,8 +206,7 @@ public class ProjectUserBindingsRepoHelper {
 	 * @throws IOException
 	 */
 	public void saveBindingDetailsFile(File file) throws IOException {
-		RepositoryConnection conn = repository.getConnection();
-		try {
+		try (RepositoryConnection conn = repository.getConnection()) {
 			RepositoryResult<Statement> stats = conn.getStatements(null, null, null, false);
 			Model model = Iterations.addAll(stats, new LinkedHashModel());
 			try (FileOutputStream out = new FileOutputStream(file)) {
@@ -222,8 +219,6 @@ public class ProjectUserBindingsRepoHelper {
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
-		} finally {
-			conn.close();
 		}
 	}
 	

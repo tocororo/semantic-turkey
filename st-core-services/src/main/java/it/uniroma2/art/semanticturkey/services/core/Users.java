@@ -184,12 +184,9 @@ public class Users extends STServiceAdapter {
 
 	@STServiceOperation
 	@PreAuthorize("@auth.isAdmin()")
-	public List<String> listProjectsBoundToUser(String userIri) throws ProjectAccessException {
+	public List<String> listProjectsBoundToUser(IRI userIri) throws ProjectAccessException, UserException {
 		List<String> listProj = new ArrayList<>();
-		STUser user = UsersManager.getUserByIRI(SimpleValueFactory.getInstance().createIRI(userIri));
-		if (user == null) {
-			throw new IllegalArgumentException("User with IRI " + userIri + " doesn't exist");
-		}
+		STUser user = UsersManager.getUserByIRI(userIri);
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		for (AbstractProject absProj : projects) {
 			if (absProj instanceof Project) {

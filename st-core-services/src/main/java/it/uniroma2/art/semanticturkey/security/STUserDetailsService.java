@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.security;
 
+import it.uniroma2.art.semanticturkey.user.UserException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -24,11 +25,10 @@ public class STUserDetailsService implements UserDetailsService {
 	
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		STUser user;
-		user = UsersManager.getUserByEmail(username);
-		if (user != null) {
-			return user;
-		} else {
+		STUser user = null;
+		try {
+			return UsersManager.getUserByEmail(username);
+		} catch (UserException e) {
 			throw new UsernameNotFoundException("User with e-mail address '" + username + "' not found");
 		}
 	}

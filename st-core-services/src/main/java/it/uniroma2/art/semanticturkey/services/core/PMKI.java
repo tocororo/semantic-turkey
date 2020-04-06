@@ -258,7 +258,7 @@ public class PMKI extends STServiceAdapter {
 			UnloadablePluginConfigurationException, UnsupportedLexicalizationModelException, ProjectInexistentException,
 			ProjectCreationException, ReservedPropertyUpdateException, DuplicatedResourceException, STPropertyAccessException,
 			ConfigurationNotFoundException, NoSuchConfigurationManager, MessagingException, ProjectDeletionException,
-			STPropertyUpdateException, MetadataRegistryWritingException {
+			STPropertyUpdateException, MetadataRegistryWritingException, UserException {
 		try {
 			/* create project for hosting the stable resource */
 			ProjectConsumer consumer = ProjectConsumer.SYSTEM;
@@ -463,7 +463,7 @@ public class PMKI extends STServiceAdapter {
 			MultipartFile inputFile, String format, PluginSpecification rdfLifterSpec,
 			TransitiveImportMethodAllowance transitiveImportAllowance) throws STPropertyAccessException,
 			IOException, InvalidConfigurationException, WrongPropertiesException, LiftingException,
-			ProjectBindingException, STPropertyUpdateException, MessagingException {
+			ProjectBindingException, STPropertyUpdateException, MessagingException, UserException {
 		Project project = ProjectManager.getProject(projectName);
 		if (project == null) {
 			throw new IllegalArgumentException("Invalid project name '" + projectName + "'. It is not an open project or it does not exist");
@@ -542,7 +542,7 @@ public class PMKI extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void setProjectStatus(String projectName, String status) throws ProjectBindingException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+	public void setProjectStatus(String projectName, String status) throws ProjectBindingException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
 		STUser visitor = UsersManager.getUserByEmail(PmkiConstants.PMKI_VISITOR_EMAIL);
 		Project project = ProjectManager.getProjectDescription(projectName);
 

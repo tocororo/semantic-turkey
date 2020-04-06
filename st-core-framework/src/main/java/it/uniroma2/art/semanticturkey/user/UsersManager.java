@@ -80,10 +80,10 @@ public class UsersManager {
 	 * @throws IOException
 	 */
 	public static void registerUser(STUser user) throws UserException, ProjectAccessException {
-		if (getUserByEmail(user.getEmail()) != null) {
+		if (isEmailUsed(user.getEmail())) {
 			throw new UserException("E-mail address " + user.getEmail() + " already used by another user");
 		}
-		if (getUserByIRI(user.getIRI()) != null) {
+		if (isIriUsed(user.getIRI())) {
 			throw new UserException("IRI " + user.getIRI().stringValue() + " already used by another user");
 		}
 		user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword())); // encode password
@@ -153,12 +153,15 @@ public class UsersManager {
 	 * @param email
 	 * @return
 	 */
-	public static STUser getUserByEmail(String email) {
+	public static STUser getUserByEmail(String email) throws UserException {
 		STUser user = null;
 		for (STUser u : userList) {
 			if (u.getEmail().equals(email)) {
 				user = u;
 			}
+		}
+		if (user == null) {
+			throw new UserException("User with email " + email + " doesn't exist");
 		}
 		return user;
 	}
@@ -169,14 +172,45 @@ public class UsersManager {
 	 * @param iri
 	 * @return
 	 */
-	public static STUser getUserByIRI(IRI iri) {
+	public static STUser getUserByIRI(IRI iri) throws UserException {
 		STUser user = null;
 		for (STUser u : userList) {
 			if (u.getIRI().equals(iri)) {
 				user = u;
 			}
 		}
+		if (user == null) {
+			throw new UserException("User with IRI " + iri.stringValue() + " doesn't exist");
+		}
 		return user;
+	}
+
+	/**
+	 * Check if the given email is already used
+	 * @param email
+	 * @return
+	 */
+	public static boolean isEmailUsed(String email) {
+		for (STUser u : userList) {
+			if (u.getEmail().equals(email)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Check if the given iri is already used
+	 * @param iri
+	 * @return
+	 */
+	public static boolean isIriUsed(IRI iri) {
+		for (STUser u : userList) {
+			if (u.getIRI().equals(iri)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

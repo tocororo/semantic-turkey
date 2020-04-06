@@ -10,7 +10,6 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -22,6 +21,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UsersGroup;
 import it.uniroma2.art.semanticturkey.user.UsersGroupsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -37,20 +37,6 @@ import java.util.List;
 
 @STService
 public class PreferencesSettings extends STServiceAdapter {
-	
-	/**
-	 * Currently the UI of VB3 allows only a to manage project preferences (so preferences of a user in a project).
-	 * So the following services just get/set the project preference.
-	 * when there will be a richer UI, this services should get a parameter that specify the level of the preference:
-	 * - project preference (done already in this method)
-	 * - project preference - project default
-	 * - project preference - user default
-	 * - project preference - system default
-	 * 
-	 * At the moment, I disabled the getter of the single preferences since I preferred to provide a single service
-	 * to return all the preferences.
-	 * This choice depends on how I will implements the UI to manage the different preferences/settings (user/project/system)
-	 */
 	
 	/**
 	 * Sets the active scheme preference (in order to retrieve it on the future access) for the current project.
@@ -145,20 +131,14 @@ public class PreferencesSettings extends STServiceAdapter {
 	@STServiceOperation
 	@PreAuthorize("@auth.isAdmin()")
 	public JsonNode getPUSettingsOfUser(List<String> properties, @Optional String projectName, String email, @Optional String pluginID)
-			throws STPropertyAccessException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+			throws STPropertyAccessException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
 		Project project;
 		if (projectName != null) {
 			project = ProjectManager.getProjectDescription(projectName);
-			if (project == null) {
-				throw new IllegalArgumentException("Project with name '" + projectName + "' doesn't exist");
-			}
 		} else {
 			project = getProject();
 		}
 		STUser user = UsersManager.getUserByEmail(email);
-		if (user == null) {
-			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
-		}
 		return getPUSettings(properties, project, user, pluginID);
 	}
 
@@ -214,7 +194,7 @@ public class PreferencesSettings extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void setPUSettingOfUser(String property, @Optional String value, @Optional String projectName, String email, @Optional String pluginID)
-			throws STPropertyUpdateException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+			throws STPropertyUpdateException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
 		Project project;
 		if (projectName != null) {
 			project = ProjectManager.getProjectDescription(projectName);
@@ -225,9 +205,6 @@ public class PreferencesSettings extends STServiceAdapter {
 			project = getProject();
 		}
 		STUser user = UsersManager.getUserByEmail(email);
-		if (user == null) {
-			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
-		}
 		STPropertiesManager.setPUSetting(property, value, project, user, pluginID);
 	}
 
@@ -370,15 +347,12 @@ public class PreferencesSettings extends STServiceAdapter {
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'R') || @auth.isLoggedUser(#email)")
 	public JsonNode getPUSettingsUserDefault(List<String> properties, String email, @Optional String pluginID)
-			throws STPropertyAccessException {
+			throws STPropertyAccessException, UserException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode respNode = jsonFactory.objectNode();
 		STUser user = null;
 		if (email != null) {
 			user = UsersManager.getUserByEmail(email);
-			if (user == null) {
-				throw new IllegalArgumentException("User with email " + email + " doesn't exist");
-			}
 		}
 		for (String prop: properties) {
 			String value;
@@ -395,13 +369,10 @@ public class PreferencesSettings extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public void setPUSettingUserDefault(String property, String email, @Optional String value, @Optional String pluginID)
-			throws STPropertyUpdateException {
+			throws STPropertyUpdateException, UserException {
 		STUser user = null;
 		if (email != null) {
 			user = UsersManager.getUserByEmail(email);
-			if (user == null) {
-				throw new IllegalArgumentException("User with email " + email + " doesn't exist");
-			}
 		}
 		if (pluginID == null) {
 			STPropertiesManager.setPUSettingUserDefault(property, value, user);
@@ -504,6 +475,5 @@ public class PreferencesSettings extends STServiceAdapter {
 	public void setSystemSetting(String property, @Optional String value) throws STPropertyUpdateException {
 		STPropertiesManager.setSystemSetting(property, value);
 	}
-	
-	
+
 }

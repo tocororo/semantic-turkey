@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.Collection;
 
+import it.uniroma2.art.semanticturkey.user.UserException;
 import org.eclipse.rdf4j.model.IRI;
 import org.json.JSONException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -179,15 +180,9 @@ public class UsersGroups extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, group)', 'U')")
 	public void assignGroupToUser(String projectName, String email, IRI groupIri) throws ProjectBindingException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
 		STUser user = UsersManager.getUserByEmail(email);
-		if (user == null) {
-			throw new ProjectBindingException("No user found with email " + email);
-		}
 		Project project = ProjectManager.getProjectDescription(projectName);
-		if (project == null) {
-			throw new ProjectBindingException("Project " + projectName + " doesn't exist");
-		}
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
 		if (group == null) {
 			throw new ProjectBindingException("Group not found");
@@ -209,15 +204,9 @@ public class UsersGroups extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, group)', 'U')")
 	public void setGroupLimitationsToUser(String projectName, String email, IRI groupIri, boolean limitations) throws ProjectBindingException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
 		STUser user = UsersManager.getUserByEmail(email);
-		if (user == null) {
-			throw new ProjectBindingException("No user found with email " + email);
-		}
 		Project project = ProjectManager.getProjectDescription(projectName);
-		if (project == null) {
-			throw new ProjectBindingException("Project " + projectName + " doesn't exist");
-		}
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
 		if (group == null) {
 			throw new ProjectBindingException("Group not found");
@@ -237,15 +226,9 @@ public class UsersGroups extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, group)', 'U')")
 	public void removeGroupFromUser(String projectName, String email) throws ProjectBindingException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
 		STUser user = UsersManager.getUserByEmail(email);
-		if (user == null) {
-			throw new ProjectBindingException("No user found with email " + email);
-		}
 		Project project = ProjectManager.getProjectDescription(projectName);
-		if (project == null) {
-			throw new ProjectBindingException("Project " + projectName + " doesn't exist");
-		}
 		ProjectUserBindingsManager.removeGroupFromPUBinding(user, project);
 	}
 	
@@ -302,16 +285,13 @@ public class UsersGroups extends STServiceAdapter {
 	 * @throws STPropertyAccessException 
 	 */
 	@STServiceOperation
-	public JsonNode getProjectGroupBinding(String projectName, IRI groupIri) throws ProjectBindingException, JSONException, 
-		InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyAccessException {
+	public JsonNode getProjectGroupBinding(String projectName, IRI groupIri) throws ProjectBindingException,
+		InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
 		if (group == null) {
 			throw new ProjectBindingException("No group found " + groupIri);
 		}
 		Project project = ProjectManager.getProjectDescription(projectName);
-		if (project == null) {
-			throw new ProjectBindingException("Project " + projectName + " doesn't exist");
-		}
 		ProjectGroupBinding pgBinding = ProjectGroupBindingsManager.getPGBinding(group, project);
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode bindingNode = jsonFactory.objectNode();

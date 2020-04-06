@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import it.uniroma2.art.semanticturkey.user.UserException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
@@ -56,7 +57,7 @@ public class History extends STServiceAdapter {
 
 	public static enum SortingDirection {
 		Ascending, Descending, Unordered
-	};
+	}
 
 	@Autowired
 	private STServiceTracker stServiceTracker;
@@ -215,7 +216,7 @@ public class History extends STServiceAdapter {
 				" OFFSET " + (page * limit) + "                                                \n" +
 				" LIMIT " + limit + "                                                          \n";
 				// @formatter:on
-			;
+
 			logger.debug("query: " + queryString);
 			TupleQuery tupleQuery = conn.prepareTupleQuery(queryString);
 			tupleQuery.setIncludeInferred(false);
@@ -242,13 +243,15 @@ public class History extends STServiceAdapter {
 
 				if (bindingSet.hasBinding("agent")) {
 					AnnotatedValue<IRI> user = new AnnotatedValue<IRI>((IRI) bindingSet.getValue("agent"));
-					STUser userDetails = UsersManager.getUserByIRI(user.getValue());
-					if (userDetails != null) {
-						String show = new StringBuilder().append(userDetails.getGivenName()).append(" ")
-								.append(userDetails.getFamilyName()).append(" <")
-								.append(userDetails.getEmail()).append(">").toString();
-						user.setAttribute("show", show);
-					}
+					try {
+						STUser userDetails = UsersManager.getUserByIRI(user.getValue());
+						if (userDetails != null) {
+							String show = new StringBuilder().append(userDetails.getGivenName()).append(" ")
+									.append(userDetails.getFamilyName()).append(" <")
+									.append(userDetails.getEmail()).append(">").toString();
+							user.setAttribute("show", show);
+						}
+					} catch (UserException e) {}
 					commitInfo.setUser(user);
 				}
 

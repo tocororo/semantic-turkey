@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.email;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 import javax.mail.MessagingException;
@@ -80,7 +81,7 @@ public class VbEmailService extends EmailService {
 	 * @throws STPropertyAccessException
 	 */
 	public void sendRegistrationMailToAdmin(STUser user)
-			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
+			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException, UserException {
 		for (String adminEmail: UsersManager.getAdminEmailList()) {
 			STUser admin = UsersManager.getUserByEmail(adminEmail);
 			String text = STPropertiesManager.getSystemSetting(SETTING_MAIL_CONTENT_REGISTRATION_TO_USER);
