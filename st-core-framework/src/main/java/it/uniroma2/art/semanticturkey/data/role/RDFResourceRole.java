@@ -37,7 +37,6 @@ import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
-import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 /**
  * this enum class provides a closed list of resource types according to the OWL vocabulary. Can be used as a
@@ -62,7 +61,7 @@ public enum RDFResourceRole {
 		map.put(annotationProperty, OWL.ANNOTATIONPROPERTY);
 		map.put(ontologyProperty, OWL.ONTOLOGYPROPERTY);
 		map.put(ontology, OWL.ONTOLOGY);
-		map.put(dataRange, OWL2Fragment.DATARANGE);
+		map.put(dataRange, OWL.DATARANGE);
 		map.put(concept, SKOS.CONCEPT);
 		map.put(conceptScheme, SKOS.CONCEPT_SCHEME);
 		map.put(xLabel, SKOSXL.LABEL);

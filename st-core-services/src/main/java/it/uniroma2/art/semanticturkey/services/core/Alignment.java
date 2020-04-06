@@ -61,13 +61,13 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
+import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryStateException;
+import it.uniroma2.art.semanticturkey.mdr.core.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
-import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryStateException;
-import it.uniroma2.art.semanticturkey.mdr.core.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.search.AdvancedSearch;
 import it.uniroma2.art.semanticturkey.search.AdvancedSearch.InWhatToSearch;
 import it.uniroma2.art.semanticturkey.search.AdvancedSearch.WhatToShow;
@@ -85,7 +85,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
-import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 @STService
 public class Alignment extends STServiceAdapter {
@@ -111,7 +110,7 @@ public class Alignment extends STServiceAdapter {
 			OWL.EQUIVALENTCLASS, OWL.DISJOINTWITH, RDFS.SUBCLASSOF);
 
 	private static List<IRI> propertiesMappingRelations = Arrays.asList(OWL.EQUIVALENTPROPERTY,
-			OWL2Fragment.PROPERTY_DISJOINT_WITH, RDFS.SUBPROPERTYOF);
+			OWL.PROPERTYDISJOINTWITH, RDFS.SUBPROPERTYOF);
 
 	// map that contain <id, context> pairs to handle multiple sessions
 	private Map<String, AlignmentModel> modelsMap = new HashMap<>();

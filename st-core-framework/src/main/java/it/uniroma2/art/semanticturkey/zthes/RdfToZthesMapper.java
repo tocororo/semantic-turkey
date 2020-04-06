@@ -14,6 +14,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
@@ -28,7 +29,6 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ExporterContext;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 public class RdfToZthesMapper {
 	
@@ -151,7 +151,7 @@ public class RdfToZthesMapper {
 					preferredTerms.forEach(pt -> pt.setTermCreatedDate(formattedDate));
 				} else if (predicate.equals(DCTERMS.CREATOR)) {
 					preferredTerms.forEach(pt -> pt.setTermCreatedBy(stmt.getObject().stringValue()));
-				} else if (predicate.equals(OWL2Fragment.DEPRECATED) && stmt.getObject().stringValue().equals("true")) {
+				} else if (predicate.equals(OWL.DEPRECATED) && stmt.getObject().stringValue().equals("true")) {
 //					ptPivot.setTermStatus(TermStatus.deactivated);
 					preferredTerms.forEach(pt -> pt.setTermStatus(TermStatus.deactivated));
 				}

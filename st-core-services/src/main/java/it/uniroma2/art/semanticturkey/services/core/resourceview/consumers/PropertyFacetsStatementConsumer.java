@@ -41,17 +41,16 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStateme
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsListSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyFacetsSection.FacetStructure;
-import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 
 	private static List<Pair<IRI, String>> facetClassAndNameList = Arrays.asList(
 			new ImmutablePair<>(OWL.SYMMETRICPROPERTY, "symmetric"),
-			new ImmutablePair<>(OWL2Fragment.ASYMMETRICPROPERTY, "asymmetric"),
+			new ImmutablePair<>(OWL.ASYMMETRICPROPERTY, "asymmetric"),
 			new ImmutablePair<>(OWL.FUNCTIONALPROPERTY, "functional"),
 			new ImmutablePair<>(OWL.INVERSEFUNCTIONALPROPERTY, "inverseFunctional"),
-			new ImmutablePair<>(OWL2Fragment.REFLEXIVEPROPERTY, "reflexive"),
-			new ImmutablePair<>(OWL2Fragment.IRREFLEXIVEPROPERTY, "irreflexive"),
+			new ImmutablePair<>(OWL.REFLEXIVEPROPERTY, "reflexive"),
+			new ImmutablePair<>(OWL.IRREFLEXIVEPROPERTY, "irreflexive"),
 			new ImmutablePair<>(OWL.TRANSITIVEPROPERTY, "transitive"));
 
 	private AbstractPropertyMatchingStatementConsumer inverseOfMatcher;

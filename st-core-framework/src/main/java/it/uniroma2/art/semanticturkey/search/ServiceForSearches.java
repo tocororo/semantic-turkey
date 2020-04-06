@@ -33,7 +33,6 @@ import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy.Sta
 import it.uniroma2.art.semanticturkey.properties.Pair;
 import it.uniroma2.art.semanticturkey.properties.TripleForSearch;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 public class ServiceForSearches {
 
@@ -508,7 +507,7 @@ public class ServiceForSearches {
 			} else if(statusFilter.equals(StatusFilter.NOT_DEPRECATED)) {
 				//check that the resource is not marked as deprecated
 				query += "\nFILTER NOT EXISTS{" +
-						"\n{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }" +
+						"\n{?resource "+NTriplesUtil.toNTriplesString(OWL.DEPRECATED)+" true }" +
 						"\nUNION"+
 						"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }" +
 						"\nUNION"+
@@ -518,7 +517,7 @@ public class ServiceForSearches {
 			} else if(statusFilter.equals(StatusFilter.ONLY_DEPRECATED)) {
 				//check that the resource is marked as deprecated
 				query += 
-					"\n{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }" +
+					"\n{?resource "+NTriplesUtil.toNTriplesString(OWL.DEPRECATED)+" true }" +
 					"\nUNION"+
 					"\n{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }" +
 					"\nUNION"+
@@ -536,7 +535,7 @@ public class ServiceForSearches {
 				IRI validationGraph = (IRI) VALIDATION.stagingAddGraph(SimpleValueFactory.getInstance()
 						.createIRI(baseURI));
 				String valGraph = NTriplesUtil.toNTriplesString(validationGraph);
-				query +="\n{GRAPH "+valGraph+"{?resource "+NTriplesUtil.toNTriplesString(OWL2Fragment.DEPRECATED)+" true }}" +
+				query +="\n{GRAPH "+valGraph+"{?resource "+NTriplesUtil.toNTriplesString(OWL.DEPRECATED)+" true }}" +
 						"\nUNION"+
 						"\n{GRAPH "+valGraph+"{?resource a "+NTriplesUtil.toNTriplesString(OWL.DEPRECATEDCLASS)+" }}" +
 						"\nUNION"+

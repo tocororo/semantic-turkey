@@ -74,7 +74,6 @@ import org.xml.sax.SAXException;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
-import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 public class AlignmentModel {
 
@@ -808,7 +807,7 @@ public class AlignmentModel {
 			} else if (relation.equals("<")) {
 				suggested.add(RDFS.SUBPROPERTYOF);
 			} else if (relation.equals("%")) {
-				suggested.add(OWL2Fragment.PROPERTY_DISJOINT_WITH);
+				suggested.add(OWL.PROPERTYDISJOINTWITH);
 			} else if (relation.equals("InstanceOf")) {
 				suggested.add(RDF.TYPE);
 			} else if (relation.equals("HasInstance")) {

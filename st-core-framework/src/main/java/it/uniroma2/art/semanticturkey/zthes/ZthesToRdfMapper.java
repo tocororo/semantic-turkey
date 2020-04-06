@@ -20,6 +20,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
@@ -29,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LifterContext;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.vocabulary.OWL2Fragment;
 
 public class ZthesToRdfMapper {
 	
@@ -170,7 +170,7 @@ public class ZthesToRdfMapper {
 	private void enrichTermStatus(IRI resource, Term term) {
 		TermStatus termStatus = term.getTermStatus();
 		if (termStatus == TermStatus.deactivated) {
-			model.add(resource, OWL2Fragment.DEPRECATED, vf.createLiteral(true));
+			model.add(resource, OWL.DEPRECATED, vf.createLiteral(true));
 		}
 	}
 	
