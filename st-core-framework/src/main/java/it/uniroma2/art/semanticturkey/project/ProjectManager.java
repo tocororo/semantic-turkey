@@ -47,6 +47,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -91,7 +92,6 @@ import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
-import it.uniroma2.art.semanticturkey.ontology.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
@@ -101,15 +101,14 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
-import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
-import it.uniroma2.art.semanticturkey.trivialinference.sail.TrivialInferencer;
 import it.uniroma2.art.semanticturkey.trivialinference.sail.config.TrivialInferencerConfig;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 
@@ -150,6 +149,12 @@ import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
  */
 public class ProjectManager {
 
+	public interface ProjectEventHandler {
+		void afterProjectInitialization(Project project);
+
+		void beforeProjectTearDown(Project project);
+	};
+
 	public enum ProjectType {
 		continousEditing, saveToStore
 	}
@@ -161,7 +166,6 @@ public class ProjectManager {
 	private static OpenProjectsHolder openProjects = new OpenProjectsHolder();
 
 	private static volatile ExtensionPointManager exptManager;
-	private static volatile MetadataRegistryBackend metadataRegistryBackend;
 
 	private static Set<Project> projectsLockedForAccess = ConcurrentHashMap.newKeySet();
 
@@ -169,9 +173,16 @@ public class ProjectManager {
 		ProjectManager.exptManager = exptManager;
 	}
 
-	public static void setMetadataRegistryBackend(MetadataRegistryBackend metadataRegistryBackend) {
-		ProjectManager.metadataRegistryBackend = metadataRegistryBackend;
+	private static List<ProjectEventHandler> projectEventHandlers = new CopyOnWriteArrayList<>();
+
+	public static void registerProjectEventHandler(ProjectEventHandler handler) {
+		projectEventHandlers.add(handler);
 	}
+	
+	public static void unregisterProjectEventHandler(ProjectEventHandler handler) {
+		projectEventHandlers.remove(handler);
+	}
+
 
 	/**
 	 * lists the projects available (stored in the projects directory of Semantic Turkey). If
@@ -232,8 +243,9 @@ public class ProjectManager {
 	 * @param projectName
 	 * @throws ProjectDeletionException
 	 */
-	public static void deleteProject(String projectName) throws ProjectDeletionException, ProjectAccessException,
-			ProjectUpdateException, ReservedPropertyUpdateException, InvalidProjectNameException, ProjectInexistentException {
+	public static void deleteProject(String projectName)
+			throws ProjectDeletionException, ProjectAccessException, ProjectUpdateException,
+			ReservedPropertyUpdateException, InvalidProjectNameException, ProjectInexistentException {
 		File projectDir;
 		try {
 			projectDir = getProjectDir(projectName);
@@ -256,7 +268,7 @@ public class ProjectManager {
 			throw new ProjectDeletionException(e);
 		}
 
-		//check and eventually delete the reference to the deleted project in the ACL of other projects
+		// check and eventually delete the reference to the deleted project in the ACL of other projects
 		Project deletingProject = getProject(projectName, true);
 		for (AbstractProject absProj : listProjects()) {
 			if (absProj instanceof Project) {
@@ -849,7 +861,10 @@ public class ProjectManager {
 					ProjectGroupBindingsManager.createPGBindingsOfProject(project);
 				}
 				RBACManager.loadRBACProcessor(project);
-				metadataRegistryBackend.registerProject(project);
+
+				for (ProjectEventHandler h : projectEventHandlers) {
+					h.afterProjectInitialization(project);
+				}
 
 				return project;
 			} else {
@@ -906,7 +921,9 @@ public class ProjectManager {
 		project.deactivate();
 		CustomFormManager.getInstance().unregisterCustomFormModelOfProject(project);
 		RBACManager.unloadRBACProcessor(project);
-		metadataRegistryBackend.unregisterProject(project);
+		for (ProjectEventHandler h : projectEventHandlers) {
+			h.beforeProjectTearDown(project);
+		}
 
 		openProjects.removeProject(project);
 	}
@@ -1219,9 +1236,10 @@ public class ProjectManager {
 			IRI modificationDateProperty, String[] updateForRoles, File preloadedDataFile,
 			RDFFormat preloadedDataFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
 			Set<IRI> failedImports, String leftDataset, String rightDataset, boolean shaclEnabled,
-			SHACLSettings shaclSettings, boolean trivialInferenceEnabled) throws InvalidProjectNameException, ProjectInexistentException,
-			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
-			ProjectCreationException, ClassNotFoundException, UnsupportedPluginConfigurationException,
+			SHACLSettings shaclSettings, boolean trivialInferenceEnabled)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
+			ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, ProjectInconsistentException,
 			InvalidConfigurationException, STPropertyAccessException, IOException,
@@ -1304,7 +1322,7 @@ public class ProjectManager {
 
 					sailImplConfig = changeTrackerSailConfig;
 				}
-				
+
 				if (trivialInferenceEnabled) {
 					TrivialInferencerConfig trivialInferencerConfig = new TrivialInferencerConfig();
 					trivialInferencerConfig.setDelegate(sailImplConfig);
@@ -1619,7 +1637,8 @@ public class ProjectManager {
 			RepositoryConfig supportRepoConfig, String supportBackendType,
 			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
 			IRI creationDateProperty, IRI modificationDateProperty, String[] updateForRoles,
-			String leftDataset, String rightDataset, boolean enableSHACL, boolean trivialInferenceEnabled) throws ProjectCreationException {
+			String leftDataset, String rightDataset, boolean enableSHACL, boolean trivialInferenceEnabled)
+			throws ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
 		try {
@@ -1669,7 +1688,8 @@ public class ProjectManager {
 				projProp.setProperty(Project.SHACL_ENABLED_PROP, String.valueOf(enableSHACL));
 			}
 			if (trivialInferenceEnabled) {
-				projProp.setProperty(Project.TRIVIAL_INFERENCER_ENABLED_PROP, String.valueOf(trivialInferenceEnabled));
+				projProp.setProperty(Project.TRIVIAL_INFERENCER_ENABLED_PROP,
+						String.valueOf(trivialInferenceEnabled));
 			}
 			try (FileOutputStream os = new FileOutputStream(info_stp)) {
 				projProp.store(os, Project.stpComment);

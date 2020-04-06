@@ -7,12 +7,12 @@ import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.UnknownResourcePosition;
+import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
+import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryStateException;
+import it.uniroma2.art.semanticturkey.mdr.core.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
-import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
-import it.uniroma2.art.semanticturkey.resources.MetadataRegistryStateException;
-import it.uniroma2.art.semanticturkey.resources.NoSuchDatasetMetadataException;;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;;
 
 public class StringToResourcePositionConverter implements Converter<String, ResourcePosition> {
 

@@ -1,8 +1,6 @@
 package it.uniroma2.art.semanticturkey.rendering;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -70,7 +68,6 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
-import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STRequest;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -112,16 +109,6 @@ public class BaseRenderingEngineTest {
 		PluginManager.setTestPluginFactoryImpls(Arrays.asList(new NativeTemplateBasedURIGeneratorFactory(),
 				new SKOSRenderingEngineFactory()));
 
-		ProjectManager.setMetadataRegistryBackend((MetadataRegistryBackend) java.lang.reflect.Proxy
-				.newProxyInstance(this.getClass().getClassLoader(),
-						new Class<?>[] { MetadataRegistryBackend.class }, new InvocationHandler() {
-
-							@Override
-							public Object invoke(Object proxy, Method method, Object[] args)
-									throws Throwable {
-								return null;
-							}
-						}));
 		ProjectManager.setExtensionPointManager(new ExtensionPointManagerImpl() {
 			@Override
 			public ExtensionFactory<?> getExtension(String componentID) throws NoSuchExtensionException {
@@ -281,16 +268,6 @@ public class BaseRenderingEngineTest {
 		PluginManager.setTestPluginFactoryImpls(Arrays.asList(new NativeTemplateBasedURIGeneratorFactory(),
 				new SKOSRenderingEngineFactory()));
 
-		ProjectManager.setMetadataRegistryBackend((MetadataRegistryBackend) java.lang.reflect.Proxy
-				.newProxyInstance(this.getClass().getClassLoader(),
-						new Class<?>[] { MetadataRegistryBackend.class }, new InvocationHandler() {
-
-							@Override
-							public Object invoke(Object proxy, Method method, Object[] args)
-									throws Throwable {
-								return null;
-							}
-						}));
 		ProjectManager.setExtensionPointManager(new ExtensionPointManagerImpl() {
 			@Override
 			public ExtensionFactory<?> getExtension(String componentID) throws NoSuchExtensionException {

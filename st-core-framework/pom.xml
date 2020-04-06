@@ -47,7 +47,6 @@
 							javax.servlet.http,
 							it.uniroma2.art.coda.converters.impl;implementation=true,
 							!org.apache.xerces.*,
-							!org.mortbay.http.*,
 							*
 						</Import-Package>
 
@@ -291,7 +290,6 @@
 			<artifactId>commons-lang3</artifactId>
 			<version>${commons-lang3.version}</version>
 		</dependency>
-
 		<dependency>
 			<groupId>org.hamcrest</groupId>
 			<artifactId>java-hamcrest</artifactId>
@@ -343,6 +341,16 @@
 			<groupId>it.uniroma2.art.sheet2rdf</groupId>
 			<artifactId>sheet2rdf-osgi-bundle</artifactId>
 			<version>${sheet2rdf.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>it.uniroma2.art.semanticturkey</groupId>
+			<artifactId>st-utilities</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>it.uniroma2.art.semanticturkey</groupId>
+			<artifactId>st-metadata-registry-core</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 	</dependencies>
 </project>

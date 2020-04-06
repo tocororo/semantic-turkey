@@ -28,7 +28,6 @@ import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.URISyntaxException;
 
-import org.mortbay.http.HttpServer;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
@@ -55,9 +54,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
  */
 public class SemanticTurkey implements BundleActivator {
 	
-	static protected HttpServer s_httpServer;
 	protected static Logger logger = LoggerFactory.getLogger(SemanticTurkey.class);
-	private static HttpServer server = null;
 
 	/**
 	 * main initialization method which is invoked by the Semantic Turkey javascript client through
@@ -124,21 +121,6 @@ public class SemanticTurkey implements BundleActivator {
 	    }
 	}
 
-	// public static void main(String[] args) {
-	// String extensionDir = new File(System.getProperty("user.dir")).toURI()
-	// .toString();
-	// System.out.println("ext dir: " + extensionDir);
-	// initialize(extensionDir);
-	// }
-
-	/**
-	 * return the server instance
-	 * 
-	 * @return HttpServer
-	 */
-	public static HttpServer getHTTPServer() {
-		return server;
-	}
 
 	public void start(BundleContext arg0) throws Exception {
 		PluginManager.setContext(arg0);

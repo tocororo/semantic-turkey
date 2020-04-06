@@ -14,7 +14,7 @@
 
 	<!-- Retrieves the MetadataRegistry -->
 	<osgi:reference id="metadataRegistryBackend"
-		interface="it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend" />
+		interface="it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend" />
 
 	<!-- Overrides the default entry point of authentication. As default Spring-Security 
 		redirects to login page -->

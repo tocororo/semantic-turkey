@@ -90,6 +90,10 @@
 		<feature>semantic_prereq</feature>
 
 		<!-- Finally install Semantic Turkey -->
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-utilities/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-metadata-registry-core/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-metadata-registry-bindings/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-metadata-registry-services/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-changetracking-sail/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-trivial-inference-sail/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-framework/${project.version}</bundle>

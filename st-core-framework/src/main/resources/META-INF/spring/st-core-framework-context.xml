@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:osgi="http://www.springframework.org/schema/osgi" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:osgi="http://www.springframework.org/schema/osgi"
+	xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:aop="http://www.springframework.org/schema/aop"
 	xsi:schemaLocation="http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi.xsd
 		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.2.xsd
@@ -12,7 +14,8 @@
 
 	<!-- Scans the main package of this extension, and some packages provided 
 		by ST framework -->
-	<context:component-scan base-package="it.uniroma2.art.semanticturkey" />
+	<context:component-scan
+		base-package="it.uniroma2.art.semanticturkey" />
 
 	<!-- Registers the it.uniroma2.art.semanticturkey.repository.config.ReadOnlyRepositoryWrapperFactory -->
 	<bean
@@ -33,7 +36,8 @@
 	<bean id="codaURIGeneratorFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODAURIGeneratorFactory" />
 
-	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
 		ref="codaURIGeneratorFactory">
 		<osgi:service-properties>
 			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
@@ -46,7 +50,8 @@
 	<bean id="nativeTemplateBasedURIGeneratorFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory" />
 
-	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
 		ref="nativeTemplateBasedURIGeneratorFactory">
 		<osgi:service-properties>
 			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
@@ -58,7 +63,8 @@
 	<bean id="rdfsRenderingEngineFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory" />
 
-	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
 		ref="rdfsRenderingEngineFactory">
 		<osgi:service-properties>
 			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
@@ -70,7 +76,8 @@
 	<bean id="skosRenderingEngineFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory" />
 
-	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
 		ref="skosRenderingEngineFactory">
 		<osgi:service-properties>
 			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
@@ -82,7 +89,8 @@
 	<bean id="skosxlRenderingEngineFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory" />
 
-	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
 		ref="skosxlRenderingEngineFactory">
 		<osgi:service-properties>
 			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
@@ -95,7 +103,8 @@
 	<bean id="ontolexLemonRenderingEngineFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngineFactory" />
 
-	<osgi:service interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
+	<osgi:service
+		interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
 		ref="ontolexLemonRenderingEngineFactory">
 		<osgi:service-properties>
 			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
@@ -103,17 +112,14 @@
 		</osgi:service-properties>
 	</osgi:service>
 
-	<!-- Publishes the MetadataRegistry as an OSGi service -->
-	<bean id="metadataRegistry"
-		class="it.uniroma2.art.semanticturkey.resources.impl.MetadataRegistryBackendImpl">
-		<constructor-arg ref="mediationFramework" />
-		<constructor-arg ref="extensionPointManager" />
-	</bean>
-
-	<osgi:service
-		interface="it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend"
-		ref="metadataRegistry">
-	</osgi:service>
+	<!-- the following reference was made optional (cardinality = 0..1) because 
+		of a circular dependency between st-core-framework and st-metadata-registry-bindings 
+		(that prevented the initialization of the application context associated 
+		with either bundle -->
+	<osgi:reference
+		interface="it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend"
+		id="metadataRegistry" cardinality="0..1">
+	</osgi:reference>
 
 	<!-- Publishes the ResourceLocator as an OSGi service -->
 	<bean id="resourceLocator"
@@ -341,7 +347,8 @@
 	<!-- Publishes the SPARQLStore -->
 
 	<osgi:service auto-export="interfaces">
-		<bean class="it.uniroma2.art.semanticturkey.config.sparql.SPARQLStore" />
+		<bean
+			class="it.uniroma2.art.semanticturkey.config.sparql.SPARQLStore" />
 	</osgi:service>
 
 	<!-- Publishes the SPARQLParameterizationStore -->
@@ -350,11 +357,12 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.config.sparql.SPARQLParameterizationStore" />
 	</osgi:service>
-	
+
 	<!-- Publishes the AdvancedGraphApplicationStore -->
 
 	<osgi:service auto-export="interfaces">
-		<bean class="it.uniroma2.art.semanticturkey.config.sheet2rdf.AdvancedGraphApplicationStore" />
+		<bean
+			class="it.uniroma2.art.semanticturkey.config.sheet2rdf.AdvancedGraphApplicationStore" />
 	</osgi:service>
 
 	<!-- Publishes the ProjectMetadataStore -->
@@ -370,7 +378,7 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.settings.search.CustomSearchStore" />
 	</osgi:service>
-	
+
 	<!-- Publishes the ContributionStore -->
 
 	<osgi:service auto-export="interfaces">
@@ -382,13 +390,14 @@
 
 	<osgi:service auto-export="interfaces">
 		<bean
-				class="it.uniroma2.art.semanticturkey.config.template.TemplateStore" />
+			class="it.uniroma2.art.semanticturkey.config.template.TemplateStore" />
 	</osgi:service>
-	
+
 	<!-- Publishes the Exporter -->
 
 	<osgi:service auto-export="interfaces">
-		<bean class="it.uniroma2.art.semanticturkey.config.exporter.Exporter" />
+		<bean
+			class="it.uniroma2.art.semanticturkey.config.exporter.Exporter" />
 	</osgi:service>
 
 	<!-- Publishes the Deployer extension point -->
@@ -432,7 +441,7 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerFactory" />
 	</osgi:service>
-	
+
 	<!-- Publishes the BioPortal Deployer extension -->
 
 	<osgi:service auto-export="interfaces">
@@ -523,9 +532,9 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderFactory" />
 	</osgi:service>
-	
+
 	<!-- Publishes the DatasetCatalogConnector extension point -->
-	
+
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnectorExtensionPoint" />
@@ -534,49 +543,53 @@
 	<!-- Publishes the connector to LOV -->
 
 	<osgi:service auto-export="interfaces">
-		<bean class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.LOVConnectorFactory" />
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.LOVConnectorFactory" />
 	</osgi:service>
 
 	<!-- Publishes the connector to EU ODP -->
 
 	<osgi:service auto-export="interfaces">
-		<bean class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.euodp.EUODPConnectorFactory" />
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.euodp.EUODPConnectorFactory" />
 	</osgi:service>
 
 
 	<!-- Publishes the connector to LOD Cloud -->
 
 	<osgi:service auto-export="interfaces">
-		<bean class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud.LODCloudConnectorFactory" />
+		<bean
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud.LODCloudConnectorFactory" />
 	</osgi:service>
 
 	<!-- Publishes the Importer -->
 
 	<osgi:service auto-export="interfaces">
-		<bean class="it.uniroma2.art.semanticturkey.config.importer.Importer" />
+		<bean
+			class="it.uniroma2.art.semanticturkey.config.importer.Importer" />
 	</osgi:service>
-	
-	
+
+
 	<!-- Publishes the CustomServiceDefinitionStore -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefinitionStore" />
 	</osgi:service>
-	
+
 	<!-- Publishes the CustomServiceBackend extension point -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.customservice.CustomServiceBackendExtensionPoint" />
 	</osgi:service>
-	
+
 	<!-- Publishes the SPARQL Custom Service Backend -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql.SPARQLCustomServiceBackendFactory" />
-	</osgi:service>	
-	
+	</osgi:service>
+
 
 </beans>

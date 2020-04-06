@@ -56,7 +56,7 @@ import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesChecker;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
-import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
@@ -80,7 +80,7 @@ public class MAPLE extends STServiceAdapter {
 	private MediationFramework mediationFramework;
 
 	@Autowired
-	private MetadataRegistryBackend metadataRegistryBackend;
+	private STMetadataRegistryBackend metadataRegistryBackend;
 
 	/**
 	 * Profiles the current project and stores its LIME metadata (as a settings using the
@@ -97,7 +97,7 @@ public class MAPLE extends STServiceAdapter {
 	public void profileProject() throws ProfilerException, NoSuchSettingsManager, IllegalStateException,
 			STPropertyAccessException, STPropertyUpdateException {
 		SailRepository metadataRepository = new SailRepository(new MemoryStore());
-		metadataRepository.initialize();
+		metadataRepository.init();
 		try {
 			try (SailRepositoryConnection metadataConnection = metadataRepository.getConnection()) {
 				ValueFactory vf = metadataConnection.getValueFactory();
@@ -260,7 +260,7 @@ public class MAPLE extends STServiceAdapter {
 					((LocalResourcePosition) targetPosition).getProject());
 		} else if (targetPosition instanceof RemoteResourcePosition) { // remote dataset
 			// Extracts metadata from the metadata registry
-			it.uniroma2.art.semanticturkey.resources.DatasetMetadata targetDatasetMetadata = ((RemoteResourcePosition) targetPosition)
+			it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata targetDatasetMetadata = ((RemoteResourcePosition) targetPosition)
 					.getDatasetMetadata();
 
 			try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {

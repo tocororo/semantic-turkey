@@ -107,6 +107,11 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>it.uniroma2.art.semanticturkey</groupId>
+			<artifactId>st-metadata-registry-bindings</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>net.bytebuddy</groupId>
 			<artifactId>byte-buddy</artifactId>
 			<version>${byte-buddy.version}</version>
@@ -161,7 +166,6 @@
 							it.uniroma2.art.semanticturkey.history,
 							it.uniroma2.art.semanticturkey.exceptions,
 							it.uniroma2.art.semanticturkey.ontology,
-							it.uniroma2.art.semanticturkey.ontology.utilities,
 							it.uniroma2.art.semanticturkey.plugin,
 							it.uniroma2.art.semanticturkey.plugin.extpts,
 							it.uniroma2.art.semanticturkey.project,
@@ -221,6 +225,7 @@
 							<!--org.apache.commons.fileupload;version="[1.2.0,2)", -->
 							org.apache.commons.io,
 							org.antlr.runtime.*,
+							it.uniroma2.art.semanticturkey.http.session,
 							*;resolution:=optional
 						</Import-Package>
 						<DynamicImport-Package>*</DynamicImport-Package>

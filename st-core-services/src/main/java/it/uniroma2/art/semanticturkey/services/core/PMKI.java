@@ -1,6 +1,35 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.io.File;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.net.URISyntaxException;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Properties;
+import java.util.Set;
+
+import javax.mail.MessagingException;
+
+import org.apache.commons.lang.RandomStringUtils;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.FOAF;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.config.contribution.ContributionStore;
@@ -8,6 +37,7 @@ import it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConf
 import it.uniroma2.art.semanticturkey.config.contribution.StoredDevResourceContributionConfiguration;
 import it.uniroma2.art.semanticturkey.config.contribution.StoredMetadataContributionConfiguration;
 import it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration;
+import it.uniroma2.art.semanticturkey.email.PmkiEmailService;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -22,6 +52,9 @@ import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LiftingException;
+import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryWritingException;
+import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.METADATAREGISTRY;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
@@ -31,7 +64,6 @@ import it.uniroma2.art.semanticturkey.pmki.PendingContributionStore;
 import it.uniroma2.art.semanticturkey.pmki.PmkiConstants;
 import it.uniroma2.art.semanticturkey.pmki.PmkiConstants.PmkiRole;
 import it.uniroma2.art.semanticturkey.pmki.PmkiConversionFormat;
-import it.uniroma2.art.semanticturkey.email.PmkiEmailService;
 import it.uniroma2.art.semanticturkey.pmki.RemoteVBConnector;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -44,8 +76,6 @@ import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
-import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
-import it.uniroma2.art.semanticturkey.resources.MetadataRegistryWritingException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -64,33 +94,6 @@ import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
-import it.uniroma2.art.semanticturkey.vocabulary.METADATAREGISTRY;
-import org.apache.commons.lang.RandomStringUtils;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.FOAF;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.multipart.MultipartFile;
-
-import javax.mail.MessagingException;
-import java.io.File;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.net.URISyntaxException;
-import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Properties;
-import java.util.Set;
 
 @STService
 public class PMKI extends STServiceAdapter {
@@ -100,7 +103,7 @@ public class PMKI extends STServiceAdapter {
 	@Autowired
 	private ExtensionPointManager exptManager;
 	@Autowired
-	private MetadataRegistryBackend metadataRegistryBackend;
+	private STMetadataRegistryBackend metadataRegistryBackend;
 	@Autowired
 	private InputOutput inputOutputService;
 

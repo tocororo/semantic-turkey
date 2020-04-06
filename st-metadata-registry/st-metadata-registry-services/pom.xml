@@ -1,0 +1,197 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>it.uniroma2.art.semanticturkey</groupId>
+		<artifactId>st-metadata-registry</artifactId>
+		<version>7.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>st-metadata-registry-services</artifactId>
+	<packaging>bundle</packaging>
+
+	<dependencies>
+		<!-- The following dependency is necessary for the execution of the annotation 
+			processor generating sources from the annotations on Semantic Turkey services -->
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>st-codegen-processor</artifactId>
+			<version>${project.version}</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<!-- Spring mvc -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+			<version>${spring.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+
+		<!-- The following dependency is necessary for the development of a Semantic 
+			Turkey service -->
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>st-core-framework</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- The following dependency is necessary for using the STMetadataRegistryBackend -->
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>st-metadata-registry-bindings</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<version>3.0.1</version>
+				<extensions>true</extensions>
+				<configuration>
+					<instructions>
+						<Webapp-Context>${project.artifactId}</Webapp-Context>
+						<Web-ContextPath>semanticturkey/${project.groupId}/${project.artifactId}</Web-ContextPath>
+						<Import-Package>
+							<!-- this import is neessary for the ConversionService -->
+							org.springframework.core.convert,
+							org.springframework.context.support,
+							org.springframework.security.crypto.bcrypt,
+							<!-- this import is necessary for instantiating OsgiBundleXmlWebApplicationContext -->
+							org.springframework.osgi.web.context.support,
+							<!-- this import is necessary for transaction management -->
+							org.springframework.transaction.support,
+							org.springframework.transaction.annotation,
+							org.springframework.transaction,
+							org.springframework.web.context,
+							org.springframework.web.context.request,
+							org.springframework.web.filter,
+							org.springframework.security.web.session,
+							org.springframework.security.web.authentication,
+							<!-- The imports org.springframework.cglib.* seem necessary after 
+								the move to Karaf -->
+							org.springframework.cglib.proxy,
+							org.springframework.cglib.core,
+							org.springframework.cglib.reflect,
+							<!-- This dependency is required for the instantiation of the ST HTTP 
+								Context -->
+							it.uniroma2.art.semanticturkey.services.http,
+							<!-- This dependency is required for the exception handler -->
+							it.uniroma2.art.semanticturkey.mvc,
+							<!-- These dependencies are required for multipart resolver -->
+							org.springframework.web.multipart.commons,
+							<!--org.apache.commons.fileupload;version="[1.2.0,2)", -->
+							org.apache.commons.io,
+							<!-- this import is required for the instantiation of the converters -->
+							it.uniroma2.art.semanticturkey.converters,
+							<!-- this import is required for custom form management -->
+							it.uniroma2.art.semanticturkey.customform,
+							<!-- this dependency is required for the MVC front servlet -->
+							org.springframework.web.servlet,
+							it.uniroma2.art.semanticturkey.security,
+							it.uniroma2.art.coda.osgi.bundle,
+							it.uniroma2.art.semanticturkey.extension,
+							it.uniroma2.art.coda.interfaces,
+							org.springframework.validation.beanvalidation,
+							org.hibernate.validator,
+							org.springframework.web.servlet.view,
+							it.uniroma2.art.semanticturkey.services.aspects,
+							it.uniroma2.art.semanticturkey.user,
+							it.uniroma2.art.semanticturkey.tx,
+							it.uniroma2.art.semanticturkey.history,
+							it.uniroma2.art.semanticturkey.validation,
+							it.uniroma2.art.semanticturkey.versioning,
+							it.uniroma2.art.semanticturkey.search,
+							org.springframework.aop,
+							org.springframework.aop.scope,
+							org.springframework.aop.framework,
+							javax.servlet,
+							javax.servlet.annotation,
+							org.osgi.service.http,
+							org.ops4j.pax.web.service,
+							org.eclipse.jetty.websocket.jsr356.server.deploy,
+							org.springframework.beans.factory,
+							org.springframework.web,
+							org.eclipse.jetty.websocket.server,
+							ch.qos.logback.classic.servlet,
+							org.osgi.service.packageadmin,
+							org.xml.sax,
+							org.springframework.beans.factory.xml,
+							javax.annotation,
+							org.springframework.osgi.service.importer,
+							org.springframework.core,
+							org.aspectj.lang.annotation,
+							org.aopalliance.aop,
+							it.uniroma2.art.semanticturkey.config,
+							it.uniroma2.art.semanticturkey.properties,
+							it.uniroma2.art.semanticturkey.resources,
+							it.uniroma2.art.semanticturkey.plugin,
+							com.fasterxml.jackson.databind.node,
+							javax.persistence,
+							org.joda.time,
+							org.springframework.transaction.interceptor,
+							it.uniroma2.art.coda.core,
+							org.osgi.framework,
+							org.springframework.osgi.service.exporter.support,
+							org.springframework.osgi.context,
+							org.springframework.osgi.service.exporter,
+							it.uniroma2.art.maple.orchestration.model,
+							it.uniroma2.art.maple.problem,
+							org.springframework.web.accept,
+							org.springframework.web.servlet.handler,
+							javax.servlet.http,
+							org.springframework.web.servlet.mvc.method.annotation,
+							org.springframework.web.servlet.mvc.method,
+							org.springframework.web.context.support,
+							org.springframework.web.util,
+							javax.validation,
+							it.uniroma2.art.semanticturkey.data.role,
+							org.eclipse.rdf4j.query,
+							it.uniroma2.art.semanticturkey.services.support,
+							it.uniroma2.art.semanticturkey.extension.extpts.search,
+							it.uniroma2.art.semanticturkey.plugin.extpts,
+							org.springframework.validation,
+							javax.validation.metadata,
+							javax.validation.executable,
+							org.springframework.core.io,
+							org.springframework.web.bind.support,
+							org.springframework.web.bind,
+							org.springframework.http.converter,
+							org.springframework.http.converter.xml,
+							javax.xml.transform,
+							org.springframework.http.converter.support,
+							org.springframework.http.converter.json,
+							com.fasterxml.jackson.databind,
+							org.springframework.web.servlet.support,
+							org.springframework.core.task,
+							org.springframework.web.method.support,
+							org.springframework.web.servlet.mvc.annotation,
+							org.springframework.web.servlet.mvc.support,
+							org.springframework.web.servlet.mvc,
+							org.springframework.web.servlet.resource,
+							org.springframework.security.core,
+							org.aopalliance.intercept,
+							org.springframework.security.access,
+							org.springframework.security.access.vote,
+							org.springframework.security.authentication,
+							org.springframework.security.config.method,
+							org.springframework.security.access.intercept,
+							org.springframework.web.multipart,
+							org.apache.commons.fileupload.disk,
+							org.apache.commons.fileupload,
+							org.springframework.web.servlet.i18n,
+							org.springframework.web.servlet.theme,
+							it.uniroma2.art.semanticturkey.http.session,
+							*
+						</Import-Package>
+					</instructions>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>

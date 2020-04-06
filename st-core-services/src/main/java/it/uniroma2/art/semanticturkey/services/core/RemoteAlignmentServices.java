@@ -43,13 +43,13 @@ import it.uniroma2.art.maple.problem.Dataset;
 import it.uniroma2.art.maple.problem.MatchingProblem;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel;
+import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -75,7 +75,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	private static Logger logger = LoggerFactory.getLogger(RemoteAlignmentServices.class);
 
 	@Autowired
-	private MetadataRegistryBackend metadataRegistryBackend;
+	private STMetadataRegistryBackend metadataRegistryBackend;
 	@Autowired
 	private it.uniroma2.art.semanticturkey.services.core.Alignment alignmentService;
 	private RestTemplate restTemplate;
@@ -190,8 +190,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			return null;
 
 		};
-		restTemplate.execute(getAlignmentServiceEndpoint() + "tasks/{id}/alignment",
-				HttpMethod.GET, requestCallback, responseExtractor, ImmutableMap.of("id", taskId));
+		restTemplate.execute(getAlignmentServiceEndpoint() + "tasks/{id}/alignment", HttpMethod.GET,
+				requestCallback, responseExtractor, ImmutableMap.of("id", taskId));
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -206,8 +206,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			FileUtils.copyInputStreamToFile(response.getBody(), inputServerFile);
 			return null;
 		};
-		restTemplate.execute(getAlignmentServiceEndpoint() + "tasks/{id}/alignment",
-				HttpMethod.GET, requestCallback, responseExtractor, ImmutableMap.of("id", taskId));
+		restTemplate.execute(getAlignmentServiceEndpoint() + "tasks/{id}/alignment", HttpMethod.GET,
+				requestCallback, responseExtractor, ImmutableMap.of("id", taskId));
 
 		// creating model for loading alignment
 		AlignmentModel alignModel = new AlignmentModel();
@@ -270,7 +270,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	public String createTask(@JsonSerialized MatchingProblem matchingProblem)
 			throws IOException, AlignmentServiceException {
-		
+
 		//// integrity checks
 
 		// Left dataset has a SPARQL endpoint

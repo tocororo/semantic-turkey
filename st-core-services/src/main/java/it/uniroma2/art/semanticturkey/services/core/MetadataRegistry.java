@@ -18,16 +18,16 @@ import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.mdr.core.CatalogRecord;
+import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
+import it.uniroma2.art.semanticturkey.mdr.core.LexicalizationSetMetadata;
+import it.uniroma2.art.semanticturkey.mdr.core.LinksetMetadata;
+import it.uniroma2.art.semanticturkey.mdr.core.MetadataDiscoveryException;
+import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryStateException;
+import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryWritingException;
+import it.uniroma2.art.semanticturkey.mdr.core.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.resources.CatalogRecord;
-import it.uniroma2.art.semanticturkey.resources.DatasetMetadata;
-import it.uniroma2.art.semanticturkey.resources.LexicalizationSetMetadata;
-import it.uniroma2.art.semanticturkey.resources.LinksetMetadata;
-import it.uniroma2.art.semanticturkey.resources.MetadataDiscoveryException;
-import it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend;
-import it.uniroma2.art.semanticturkey.resources.MetadataRegistryStateException;
-import it.uniroma2.art.semanticturkey.resources.MetadataRegistryWritingException;
-import it.uniroma2.art.semanticturkey.resources.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -41,12 +41,12 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 @STService
 public class MetadataRegistry extends STServiceAdapter {
 
-	private MetadataRegistryBackend metadataRegistryBackend;
+	private STMetadataRegistryBackend metadataRegistryBackend;
 
 	private ResourceLocator resourceLocator;
 
 	@Autowired
-	public void setMetadataRegistry(MetadataRegistryBackend metadataRegistryBackend) {
+	public void setMetadataRegistry(STMetadataRegistryBackend metadataRegistryBackend) {
 		this.metadataRegistryBackend = metadataRegistryBackend;
 	}
 
