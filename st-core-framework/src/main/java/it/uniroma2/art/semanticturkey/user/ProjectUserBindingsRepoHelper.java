@@ -149,7 +149,7 @@ public class ProjectUserBindingsRepoHelper {
 			
 			IRI userIRI = (IRI) tuple.getValue(BINDING_USER);
 			try {
-				STUser user = UsersManager.getUserByIRI(userIRI);
+				STUser user = UsersManager.getUser(userIRI);
 
 				ProjectUserBinding puBinding = new ProjectUserBinding(project, user);
 

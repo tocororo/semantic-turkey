@@ -37,7 +37,6 @@ import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -186,7 +185,7 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	public List<String> listProjectsBoundToUser(IRI userIri) throws ProjectAccessException, UserException {
 		List<String> listProj = new ArrayList<>();
-		STUser user = UsersManager.getUserByIRI(userIri);
+		STUser user = UsersManager.getUser(userIri);
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		for (AbstractProject absProj : projects) {
 			if (absProj instanceof Project) {
@@ -283,7 +282,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserGivenName(String email, String givenName) throws UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		user = UsersManager.updateUserGivenName(user, givenName);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
@@ -299,7 +298,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserFamilyName(String email, String familyName) throws UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		user = UsersManager.updateUserFamilyName(user, familyName);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
@@ -316,9 +315,9 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserEmail(String email, String newEmail) throws UserException, STPropertyUpdateException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		//check if there is already a user that uses the newEmail
-		if (UsersManager.getUserByEmail(newEmail) != null) {
+		if (UsersManager.isEmailUsed(newEmail)) {
 			throw new UserException("Cannot update the email for the user " + email + ". The email " + newEmail + 
 					" is already used by another user");
 		}
@@ -341,7 +340,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserPhone(String email, @Optional String phone) throws UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		user = UsersManager.updateUserPhone(user, phone);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
@@ -357,7 +356,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserAddress(String email, @Optional String address) throws UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		user = UsersManager.updateUserAddress(user, address);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
@@ -373,7 +372,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserAffiliation(String email, @Optional String affiliation) throws UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		user = UsersManager.updateUserAffiliation(user, affiliation);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
@@ -389,7 +388,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserUrl(String email, @Optional String url) throws UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		user = UsersManager.updateUserUrl(user, url);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
@@ -405,7 +404,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserAvatarUrl(String email, @Optional String avatarUrl) throws UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		user = UsersManager.updateUserAvatarUrl(user, avatarUrl);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
@@ -422,7 +421,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserLanguageProficiencies(String email, Collection<String> languageProficiencies) throws UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		user = UsersManager.updateUserLanguageProficiencies(user, languageProficiencies);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
@@ -443,7 +442,7 @@ public class Users extends STServiceAdapter {
 		if (UsersManager.getLoggedUser().getEmail().equals(email)) {
 			throw new ProjectBindingException("Cannot disable current logged user");
 		}
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		if (enabled) {
 			user = UsersManager.updateUserStatus(user, UserStatus.ACTIVE);
 			if (sendNotification) {
@@ -467,7 +466,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'D')")
 	public void deleteUser(@RequestParam("email") String email) throws Exception {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		if (user == null) {
 			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
 		}
@@ -480,7 +479,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isLoggedUser(#email)")
 	public void changePassword(String email, String oldPassword, String newPassword) throws Exception {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		if (user == null) {
 			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
 		}
@@ -501,7 +500,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void forcePassword(String email, String password) throws Exception {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		if (user == null) {
 			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
 		}
@@ -510,7 +509,7 @@ public class Users extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	public void forgotPassword(HttpServletRequest request, String email, String vbHostAddress, @Optional EmailApplicationContext appCtx) throws Exception {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		if (user == null) {
 			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
 		}
@@ -536,7 +535,7 @@ public class Users extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	public void resetPassword(HttpServletRequest request, String email, String token, @Optional EmailApplicationContext appCtx) throws Exception {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		if (user == null) {
 			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
 		}
@@ -630,7 +629,7 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserCustomField(String email, IRI property, @Optional String value) throws UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		user = UsersManager.updateUserCustomProperty(user, property, value);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();

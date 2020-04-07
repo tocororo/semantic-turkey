@@ -49,7 +49,6 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.json.JSONException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -109,7 +108,7 @@ public class Administration extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void setAdministrator(String email) throws STPropertyUpdateException, JsonProcessingException, UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		UsersManager.addAdmin(user);
 	}
 
@@ -122,7 +121,7 @@ public class Administration extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void removeAdministrator(String email) throws STPropertyUpdateException, JsonProcessingException, UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		UsersManager.removeAdmin(user);
 	}
 	
@@ -202,7 +201,7 @@ public class Administration extends STServiceAdapter {
 	@STServiceOperation
 	public JsonNode getProjectUserBinding(String projectName, String email) throws JSONException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyAccessException, UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		Project project = ProjectManager.getProjectDescription(projectName);
 		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
@@ -256,7 +255,7 @@ public class Administration extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'C')")
 	public void addRolesToUser(String projectName, String email, String[] roles) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		Project project = ProjectManager.getProjectDescription(projectName);
 		Collection<Role> roleList = new ArrayList<>();
 		for (String r : roles) {
@@ -281,7 +280,7 @@ public class Administration extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'D')")
 	public void removeUserFromProject(String projectName, String email) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		Project project = ProjectManager.getProjectDescription(projectName);
 		//removes all role from the binding
 		ProjectUserBindingsManager.removeAllRoleFromPUBinding(user, project);
@@ -296,7 +295,7 @@ public class Administration extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'D')")
 	public void removeRoleFromUser(String projectName, String email, String role) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		Project project = ProjectManager.getProjectDescription(projectName);
 		Role aRole = RBACManager.getRole(project, role);
 		if (aRole == null) {
@@ -312,7 +311,7 @@ public class Administration extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'U')")
 	public void updateLanguagesOfUserInProject(String projectName, String email, Collection<String> languages) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		Project project = ProjectManager.getProjectDescription(projectName);
 		ProjectUserBindingsManager.updateLanguagesToPUBinding(user, project, languages);
 	}
@@ -564,10 +563,10 @@ public class Administration extends STServiceAdapter {
 			ProjectInexistentException, ProjectAccessException, ProjectBindingException, UserException {
 		Project sourceProject = ProjectManager.getProjectDescription(sourceProjectName);
 		Project targetProject = ProjectManager.getProjectDescription(targetProjectName);
-		STUser sourceUser = UsersManager.getUserByIRI(sourceUserIri);
+		STUser sourceUser = UsersManager.getUser(sourceUserIri);
 		STUser targetUser;
 		if (targetUserIri != null) {
-			targetUser = UsersManager.getUserByIRI(targetUserIri);
+			targetUser = UsersManager.getUser(targetUserIri);
 		} else { //if target user is not provided, the target user is the same source user
 			targetUser = sourceUser;
 		}

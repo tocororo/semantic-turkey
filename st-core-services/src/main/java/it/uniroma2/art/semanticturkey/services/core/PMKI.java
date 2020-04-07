@@ -29,7 +29,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.config.contribution.ContributionStore;
@@ -317,7 +316,7 @@ public class PMKI extends STServiceAdapter {
 
 			/* Set the project status to "pristine" (by assigning the pristine role to the visitor) */
 
-			STUser visitor = UsersManager.getUserByEmail(PmkiConstants.PMKI_VISITOR_EMAIL);
+			STUser visitor = UsersManager.getUser(PmkiConstants.PMKI_VISITOR_EMAIL);
 			ProjectUserBindingsManager.addRoleToPUBinding(visitor, newProject, PmkiRole.PRISTINE);
 
 			/* send email notification to the contributor */
@@ -488,7 +487,7 @@ public class PMKI extends STServiceAdapter {
 					getManagedConnection(), null, rdfLifterSpec, pipeline);
 
 			//Update the status of the project from pristine to staging
-			STUser visitor = UsersManager.getUserByEmail(PmkiConstants.PMKI_VISITOR_EMAIL);
+			STUser visitor = UsersManager.getUser(PmkiConstants.PMKI_VISITOR_EMAIL);
 			ProjectUserBindingsManager.removeAllRoleFromPUBinding(visitor, project);
 			ProjectUserBindingsManager.addRoleToPUBinding(visitor, project, PmkiRole.STAGING);
 
@@ -546,7 +545,7 @@ public class PMKI extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void setProjectStatus(String projectName, String status) throws ProjectBindingException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
-		STUser visitor = UsersManager.getUserByEmail(PmkiConstants.PMKI_VISITOR_EMAIL);
+		STUser visitor = UsersManager.getUser(PmkiConstants.PMKI_VISITOR_EMAIL);
 		Project project = ProjectManager.getProjectDescription(projectName);
 
 		ProjectUserBindingsManager.removeAllRoleFromPUBinding(visitor, project);

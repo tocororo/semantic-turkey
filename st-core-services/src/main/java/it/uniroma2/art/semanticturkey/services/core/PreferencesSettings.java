@@ -138,7 +138,7 @@ public class PreferencesSettings extends STServiceAdapter {
 		} else {
 			project = getProject();
 		}
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		return getPUSettings(properties, project, user, pluginID);
 	}
 
@@ -204,7 +204,7 @@ public class PreferencesSettings extends STServiceAdapter {
 		} else {
 			project = getProject();
 		}
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		STPropertiesManager.setPUSetting(property, value, project, user, pluginID);
 	}
 
@@ -352,7 +352,7 @@ public class PreferencesSettings extends STServiceAdapter {
 		ObjectNode respNode = jsonFactory.objectNode();
 		STUser user = null;
 		if (email != null) {
-			user = UsersManager.getUserByEmail(email);
+			user = UsersManager.getUser(email);
 		}
 		for (String prop: properties) {
 			String value;
@@ -372,7 +372,7 @@ public class PreferencesSettings extends STServiceAdapter {
 			throws STPropertyUpdateException, UserException {
 		STUser user = null;
 		if (email != null) {
-			user = UsersManager.getUserByEmail(email);
+			user = UsersManager.getUser(email);
 		}
 		if (pluginID == null) {
 			STPropertiesManager.setPUSettingUserDefault(property, value, user);

@@ -27,7 +27,7 @@ public class STUserDetailsService implements UserDetailsService {
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		STUser user = null;
 		try {
-			return UsersManager.getUserByEmail(username);
+			return UsersManager.getUser(username);
 		} catch (UserException e) {
 			throw new UsernameNotFoundException("User with e-mail address '" + username + "' not found");
 		}

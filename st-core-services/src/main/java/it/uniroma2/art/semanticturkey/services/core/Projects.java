@@ -432,60 +432,71 @@ public class Projects extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
 	public JsonNode getAccessStatusMap()
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
-
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode responseNode = jsonFactory.arrayNode();
-
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
-
 		for (AbstractProject absProj : projects) {
 			if (absProj instanceof Project) {
 				Project project = (Project) absProj;
-
-				ObjectNode projectNode = jsonFactory.objectNode();
-				projectNode.set("name", jsonFactory.textNode(project.getName()));
-
-				ArrayNode consumerArrayNode = jsonFactory.arrayNode();
-
-				Collection<AbstractProject> consumers = ProjectManager.listProjects();
-				consumers.remove(project);// remove itself from its possible consumers
-
-				ProjectACL projectAcl = project.getACL();
-
-				// status for SYSTEM
-				ProjectConsumer consumer = ProjectConsumer.SYSTEM;
-				JsonNode consumerAclNode = createConsumerAclNode(project, consumer);
-				consumerArrayNode.add(consumerAclNode);
-				// ACL for other ProjectConsumer
-				for (AbstractProject absCons : consumers) {
-					if (absCons instanceof Project) {
-						consumer = absCons;
-						consumerAclNode = createConsumerAclNode(project, consumer);
-						consumerArrayNode.add(consumerAclNode);
-					}
-				}
-
-				projectNode.set("consumers", consumerArrayNode);
-
-				// LOCK for the project
-				ObjectNode lockNode = jsonFactory.objectNode();
-				lockNode.set("availableLockLevel", jsonFactory.textNode(projectAcl.getLockLevel().name()));
-				ProjectConsumer lockingConsumer = ProjectManager.getLockingConsumer(project.getName());
-				String lockingConsumerName = null;
-				String acquiredLockLevel = null;
-				if (lockingConsumer != null) { // the project could be not locked by any consumer
-					lockingConsumerName = lockingConsumer.getName();
-					acquiredLockLevel = ProjectManager.getLockingLevel(project.getName(), lockingConsumer)
-							.name();
-				}
-				lockNode.set("lockingConsumer", jsonFactory.textNode(lockingConsumerName));
-				lockNode.set("acquiredLockLevel", jsonFactory.textNode(acquiredLockLevel));
-				projectNode.set("lock", lockNode);
-
+				JsonNode projectNode = createProjectAclNode(project);
 				responseNode.add(projectNode);
 			}
 		}
 		return responseNode;
+	}
+
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
+	public JsonNode getAccessStatus(String projectName)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+		Project project = ProjectManager.getProjectDescription(projectName);
+		return createProjectAclNode(project);
+	}
+
+	private JsonNode createProjectAclNode(Project project) throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+
+		ObjectNode projectNode = jsonFactory.objectNode();
+		projectNode.set("name", jsonFactory.textNode(project.getName()));
+
+		ArrayNode consumerArrayNode = jsonFactory.arrayNode();
+
+		Collection<AbstractProject> consumers = ProjectManager.listProjects();
+		consumers.removeIf(c -> c.getName().equals(project.getName())); // remove itself from its possible consumers
+
+		ProjectACL projectAcl = project.getACL();
+
+		// status for SYSTEM
+		ProjectConsumer consumer = ProjectConsumer.SYSTEM;
+		JsonNode consumerAclNode = createConsumerAclNode(project, consumer);
+		consumerArrayNode.add(consumerAclNode);
+		// ACL for other ProjectConsumer
+		for (AbstractProject absCons : consumers) {
+			if (absCons instanceof Project) {
+				consumer = absCons;
+				consumerAclNode = createConsumerAclNode(project, consumer);
+				consumerArrayNode.add(consumerAclNode);
+			}
+		}
+
+		projectNode.set("consumers", consumerArrayNode);
+
+		// LOCK for the project
+		ObjectNode lockNode = jsonFactory.objectNode();
+		lockNode.set("availableLockLevel", jsonFactory.textNode(projectAcl.getLockLevel().name()));
+		ProjectConsumer lockingConsumer = ProjectManager.getLockingConsumer(project.getName());
+		String lockingConsumerName = null;
+		String acquiredLockLevel = null;
+		if (lockingConsumer != null) { // the project could be not locked by any consumer
+			lockingConsumerName = lockingConsumer.getName();
+			acquiredLockLevel = ProjectManager.getLockingLevel(project.getName(), lockingConsumer)
+					.name();
+		}
+		lockNode.set("lockingConsumer", jsonFactory.textNode(lockingConsumerName));
+		lockNode.set("acquiredLockLevel", jsonFactory.textNode(acquiredLockLevel));
+		projectNode.set("lock", lockNode);
+
+		return projectNode;
 	}
 
 	private JsonNode createConsumerAclNode(Project project, ProjectConsumer consumer)

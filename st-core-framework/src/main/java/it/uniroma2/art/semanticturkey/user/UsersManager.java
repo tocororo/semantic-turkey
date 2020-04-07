@@ -148,12 +148,12 @@ public class UsersManager {
 	}
 
 	/**
-	 * Returns the user with the given email. Null if there is no user with the given email.
+	 * Returns the user with the given email. If no user with the given email exists, throws a UserException
 	 *
 	 * @param email
 	 * @return
 	 */
-	public static STUser getUserByEmail(String email) throws UserException {
+	public static STUser getUser(String email) throws UserException {
 		STUser user = null;
 		for (STUser u : userList) {
 			if (u.getEmail().equals(email)) {
@@ -167,12 +167,12 @@ public class UsersManager {
 	}
 
 	/**
-	 * Returns the user with the given IRI. Null if there is no user with the given IRI.
+	 * Returns the user with the given IRI. If no user with the given IRI exists, throws a UserException
 	 *
 	 * @param iri
 	 * @return
 	 */
-	public static STUser getUserByIRI(IRI iri) throws UserException {
+	public static STUser getUser(IRI iri) throws UserException {
 		STUser user = null;
 		for (STUser u : userList) {
 			if (u.getIRI().equals(iri)) {

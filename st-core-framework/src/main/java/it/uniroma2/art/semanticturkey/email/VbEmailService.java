@@ -83,7 +83,7 @@ public class VbEmailService extends EmailService {
 	public void sendRegistrationMailToAdmin(STUser user)
 			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException, UserException {
 		for (String adminEmail: UsersManager.getAdminEmailList()) {
-			STUser admin = UsersManager.getUserByEmail(adminEmail);
+			STUser admin = UsersManager.getUser(adminEmail);
 			String text = STPropertiesManager.getSystemSetting(SETTING_MAIL_CONTENT_REGISTRATION_TO_USER);
 			if (text == null) {
 				text = "Dear {{admin.givenName}} {{admin.familyName}},<br>" +

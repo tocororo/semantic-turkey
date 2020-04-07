@@ -241,7 +241,7 @@ public class Validation extends STServiceAdapter {
 				if (bindingSet.hasBinding("agent")) {
 					AnnotatedValue<IRI> user = new AnnotatedValue<IRI>((IRI) bindingSet.getValue("agent"));
 					try {
-						STUser userDetails = UsersManager.getUserByIRI(user.getValue());
+						STUser userDetails = UsersManager.getUser(user.getValue());
 						if (userDetails != null) {
 							String show = new StringBuilder().append(userDetails.getGivenName()).append(" ")
 									.append(userDetails.getFamilyName()).append(" <")

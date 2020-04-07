@@ -181,7 +181,7 @@ public class UsersGroups extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('pm(project, group)', 'U')")
 	public void assignGroupToUser(String projectName, String email, IRI groupIri) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		Project project = ProjectManager.getProjectDescription(projectName);
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
 		if (group == null) {
@@ -205,7 +205,7 @@ public class UsersGroups extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('pm(project, group)', 'U')")
 	public void setGroupLimitationsToUser(String projectName, String email, IRI groupIri, boolean limitations) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		Project project = ProjectManager.getProjectDescription(projectName);
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
 		if (group == null) {
@@ -227,7 +227,7 @@ public class UsersGroups extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('pm(project, group)', 'U')")
 	public void removeGroupFromUser(String projectName, String email) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
-		STUser user = UsersManager.getUserByEmail(email);
+		STUser user = UsersManager.getUser(email);
 		Project project = ProjectManager.getProjectDescription(projectName);
 		ProjectUserBindingsManager.removeGroupFromPUBinding(user, project);
 	}
