@@ -5,28 +5,27 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 /**
- * A <em>parameter definition</em> of an operation of a custom service
+ * The definition of <em>parameter</em> of a custom service operation
  * 
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
- *
+ * @see Operation
  */
-public class ParameterDefinition implements STProperties {
+public class Parameter implements STProperties {
 
 	@Override
 	public String getShortName() {
-		return "Parameter Definition";
+		return "Parameter";
 	}
-	
-	@STProperty(displayName="Name", description="The name of the parameter")
+
+	@STProperty(displayName = "Name", description = "The name of this parameter")
 	@Required
 	public String name;
 
-	
-	@STProperty(displayName="Required", description="Whether the parameter is required or not")
+	@STProperty(displayName = "Required", description = "Whether this parameter is required or not")
 	@Required
 	public Boolean required;
-	
-	@STProperty(displayName="Type", description="Type of the parameter")
+
+	@STProperty(displayName = "Type", description = "The type of this parameter")
 	@Required
-	public TypeDescription type;
+	public Type type;
 }

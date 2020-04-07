@@ -1,32 +1,5 @@
 package it.uniroma2.art.semanticturkey.properties;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JBNodeDeserializer;
-import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JIRIDeserializer;
-import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JLiteralDeserializer;
-import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JResourceDeserializer;
-import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JValueDeserializer;
-import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JValueSerializer;
-import it.uniroma2.art.semanticturkey.resources.Resources;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
-import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UsersGroup;
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -36,6 +9,40 @@ import java.io.Reader;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+
+import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.DeserializationConfig;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JBNodeDeserializer;
+import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JIRIDeserializer;
+import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JLiteralDeserializer;
+import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JResourceDeserializer;
+import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JValueDeserializer;
+import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JValueSerializer;
+import it.uniroma2.art.semanticturkey.properties.yaml.STPropertiesPersistenceDeserializer;
+import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersGroup;
 
 public class STPropertiesManager {
 
@@ -405,8 +412,8 @@ public class STPropertiesManager {
 	 * @param pluginID
 	 * @throws STPropertyUpdateException
 	 */
-	public static void setPUSettingProjectDefault(String propName, String propValue, Project project, String pluginID)
-			throws STPropertyUpdateException {
+	public static void setPUSettingProjectDefault(String propName, String propValue, Project project,
+			String pluginID) throws STPropertyUpdateException {
 		try {
 			File propFile = getPUSettingsProjectDefaultsFile(project, pluginID);
 			Properties properties = loadProperties(propFile);
@@ -660,9 +667,43 @@ public class STPropertiesManager {
 		stPropsModule.addDeserializer(IRI.class, new RDF4JIRIDeserializer());
 		stPropsModule.addDeserializer(Literal.class, new RDF4JLiteralDeserializer());
 		stPropsModule.addSerializer(new RDF4JValueSerializer());
+		// see: https://stackoverflow.com/a/18405958
+		stPropsModule.setDeserializerModifier(new BeanDeserializerModifier()
+	    {
+				@Override
+				public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config,
+						BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
+					// create an STProperties deserializer targeting a given type
+					if (STProperties.class.isAssignableFrom(beanDesc.getBeanClass())) {
+						return new STPropertiesPersistenceDeserializer(beanDesc.getBeanClass());
+					}
+					
+					return deserializer;
+				}
+	    });
 		ObjectMapper mapper = new ObjectMapper(fact);
 		mapper.registerModule(stPropsModule);
 		return mapper;
+	}
+	
+	public static ObjectNode storeSTPropertiesToObjectNode(STProperties properties, boolean storeObjType) {
+		ObjectMapper mapper = createObjectMapper();
+		return storeSTPropertiesToObjectNode(mapper, properties, storeObjType);
+	}
+
+	public static ObjectNode storeSTPropertiesToObjectNode(ObjectMapper mapper, STProperties properties,
+			boolean storeObjType) {
+		ObjectNode objectNode = mapper.valueToTree(properties);
+
+		if (storeObjType) {
+			ObjectNode newObjectNode = JsonNodeFactory.instance.objectNode();
+			newObjectNode.put(SETTINGS_TYPE_PROPERTY, properties.getClass().getName());
+			newObjectNode.setAll(objectNode);
+
+			objectNode = newObjectNode;
+		}
+
+		return objectNode;
 	}
 
 	public static void storeSTPropertiesInYAML(STProperties properties, File propertiesFile,
@@ -670,16 +711,9 @@ public class STPropertiesManager {
 		if (!propertiesFile.getParentFile().exists()) { // if path doesn't exist, first create it
 			propertiesFile.getParentFile().mkdirs();
 		}
-		ObjectMapper mapper = createObjectMapper();
-		ObjectNode objectNode = mapper.valueToTree(properties);
 
-		if (storeObjType) {
-			ObjectNode newObjectNode = JsonNodeFactory.instance.objectNode();
-			newObjectNode.put(SETTINGS_TYPE_PROPERTY, properties.getClass().getName());
-			newObjectNode.setAll(objectNode);
-			
-			objectNode = newObjectNode;
-		}
+		ObjectMapper mapper = createObjectMapper();
+		ObjectNode objectNode = storeSTPropertiesToObjectNode(mapper, properties, storeObjType);
 
 		mapper.writeValue(propertiesFile, objectNode);
 	}
@@ -1298,8 +1332,8 @@ public class STPropertiesManager {
 		if (pluginID == null) {
 			pluginID = CORE_PLUGIN_ID;
 		}
-		return new File(Resources.getProjectsDir() + File.separator + project.getName()
-				+ File.separator + "plugins" + File.separator + pluginID);
+		return new File(Resources.getProjectsDir() + File.separator + project.getName() + File.separator
+				+ "plugins" + File.separator + pluginID);
 	}
 
 	/**
@@ -1313,9 +1347,8 @@ public class STPropertiesManager {
 		if (pluginID == null) {
 			pluginID = CORE_PLUGIN_ID;
 		}
-		return new File(
-				Resources.getUsersDir() + File.separator + STUser.encodeUserIri(user.getIRI())
-						+ File.separator + "plugins" + File.separator + pluginID);
+		return new File(Resources.getUsersDir() + File.separator + STUser.encodeUserIri(user.getIRI())
+				+ File.separator + "plugins" + File.separator + pluginID);
 	}
 
 	/**

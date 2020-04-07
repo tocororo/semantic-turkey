@@ -50,7 +50,7 @@
 							*
 						</Import-Package>
 
-						<Export-Package>{local-packages}</Export-Package>
+						<Export-Package>{local-packages},it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql</Export-Package>
 
 						<Bundle-Activator>it.uniroma2.art.semanticturkey.SemanticTurkey</Bundle-Activator>
 						<!-- <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency> <Embed-Directory>lib</Embed-Directory> -->

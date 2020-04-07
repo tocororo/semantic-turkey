@@ -12,7 +12,7 @@ import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class SPARQLCustomServiceBackendFactory implements ExtensionFactory<SPARQLCustomServiceBackend>,
-		ConfigurableExtensionFactory<SPARQLCustomServiceBackend, SPARQLCustomServiceBackendConfiguration> {
+		ConfigurableExtensionFactory<SPARQLCustomServiceBackend, SPARQLOperation> {
 
 	@Override
 	public String getName() {
@@ -25,13 +25,13 @@ public class SPARQLCustomServiceBackendFactory implements ExtensionFactory<SPARQ
 	}
 
 	@Override
-	public SPARQLCustomServiceBackend createInstance(SPARQLCustomServiceBackendConfiguration conf) {
+	public SPARQLCustomServiceBackend createInstance(SPARQLOperation conf) {
 		return new SPARQLCustomServiceBackend(conf);
 	}
 
 	@Override
-	public Collection<SPARQLCustomServiceBackendConfiguration> getConfigurations() {
-		return Arrays.asList(new SPARQLCustomServiceBackendConfiguration());
+	public Collection<SPARQLOperation> getConfigurations() {
+		return Arrays.asList(new SPARQLOperation());
 	}
 
 }

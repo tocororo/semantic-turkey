@@ -6,19 +6,19 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * A schema
+ * Type information used in the definiion of a custom service.
  * 
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
- *
+ * @see CustomService
  */
-public class TypeDescription {
+public class Type {
 
 	private String name;
-	private List<TypeDescription> typeArguments;
+	private List<Type> typeArguments;
 
 	@JsonCreator
-	public TypeDescription(@JsonProperty(value = "name", required = true) String name,
-			@JsonProperty(value = "typeArguments", required = false) List<TypeDescription> typeArguments) {
+	public Type(@JsonProperty(value = "name", required = true) String name,
+			@JsonProperty(value = "typeArguments", required = false) List<Type> typeArguments) {
 		this.name = name;
 		this.typeArguments = typeArguments;
 	}
@@ -27,7 +27,7 @@ public class TypeDescription {
 		return name;
 	}
 
-	public List<TypeDescription> getTypeArguments() {
+	public List<Type> getTypeArguments() {
 		return typeArguments;
 	}
 }

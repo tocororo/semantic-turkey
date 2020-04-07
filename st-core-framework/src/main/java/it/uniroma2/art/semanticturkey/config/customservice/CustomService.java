@@ -7,27 +7,27 @@ import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 /**
- * A <em>custom service</em> definition supports the implementation and deployment of an ST service without
- * writing ordinary Java code.
+ * The definition of a <em>custom service</em>, which supports the implementation and deployment of an ST
+ * service without the need to write, build and deploy Java code.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  *
  */
-public class CustomServiceDefinition implements Configuration {
+public class CustomService implements Configuration {
 
 	@Override
 	public String getShortName() {
-		return "Custom Service Definition";
+		return "Custom Service";
 	}
 
-	@STProperty(description = "The name used to group all operations defined by this service", displayName = "Service name")
+	@STProperty(description = "The name used to group all operations defined by this custom service", displayName = "Service name")
 	@Required
 	public String name;
 
 	@STProperty(description = "A description of this custom service", displayName = "Description")
 	public String description;
 
-	@STProperty(description = "Definitions of the operations defined by this custom service", displayName = "Operations")
-	public List<OperationDefintion> operations;
+	@STProperty(description = "The operations provided by this custom service", displayName = "Operations")
+	public List<Operation> operations;
 
 }

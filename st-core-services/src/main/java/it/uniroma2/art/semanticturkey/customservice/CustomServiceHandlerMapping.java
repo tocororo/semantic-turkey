@@ -38,17 +38,18 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import com.google.common.base.MoreObjects;
 
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
-import it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefinition;
+import it.uniroma2.art.semanticturkey.config.customservice.CustomService;
 import it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefinitionStore;
-import it.uniroma2.art.semanticturkey.config.customservice.OperationDefintion;
-import it.uniroma2.art.semanticturkey.config.customservice.ParameterDefinition;
-import it.uniroma2.art.semanticturkey.config.customservice.TypeDescription;
+import it.uniroma2.art.semanticturkey.config.customservice.Operation;
+import it.uniroma2.art.semanticturkey.config.customservice.Parameter;
+import it.uniroma2.art.semanticturkey.config.customservice.Type;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.extpts.customservice.CustomServiceBackend;
+import it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql.SPARQLCustomServiceBackend;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.properties.ExtensionSpecification;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -64,7 +65,6 @@ import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationTyp
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.annotation.AnnotationDescription;
-import net.bytebuddy.description.annotation.AnnotationValue;
 import net.bytebuddy.description.type.TypeDefinition;
 import net.bytebuddy.dynamic.DynamicType.Builder;
 import net.bytebuddy.dynamic.DynamicType.Builder.MethodDefinition.ParameterDefinition.Annotatable;
@@ -125,7 +125,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 		for (String customServiceCfgID : cs.getSystemConfigurationIdentifiers()) {
 			try {
-				CustomServiceDefinition customServiceCfg = cs.getSystemConfiguration(customServiceCfgID);
+				CustomService customServiceCfg = cs.getSystemConfiguration(customServiceCfgID);
 				registerCustomService(customServiceCfg);
 			} catch (Exception e) {
 				e.printStackTrace(); // store the exception somewhere to enable inspection
@@ -159,15 +159,15 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 			"^\\s*(?<area>[a-z]+)\\(((?<subjfun>@typeof\\(#(?<subjfunpar>[a-z]+)\\))|(?<subjlit>[a-z]+))(\\s*,\\s*(?<scope>\\w+))?\\)(\\s*,\\s*\\{\\s*(?<userkey>[a-z]+)\\s*:\\s*((?<userlit>\\w+)|(?<userfun>(@langOf\\(#(?<userfunpar>[a-z]+)\\))))\\})?\\s*,\\s*(?<crudv>[CRUDV])\\s*$",
 			Pattern.CASE_INSENSITIVE);
 
-	private void registerCustomService(CustomServiceDefinition customServiceCfg)
+	private void registerCustomService(CustomService customServiceCfg)
 			throws InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
 			NoSuchExtensionException, WrongPropertiesException, STPropertyAccessException,
 			InvalidConfigurationException {
 		// mimicking ordinary ST service, we have to build i) a Spring MVC controller, and ii) an @STService
 		// object. The controller binds the request parameters and delegates the actual implementation to the
-		// servuce
+		// service
 
-		List<OperationDefintion> operationDefinitions = Optional.ofNullable(customServiceCfg.operations)
+		List<Operation> operationDefinitions = Optional.ofNullable(customServiceCfg.operations)
 				.orElse(Collections.emptyList());
 
 		// build the service class
@@ -177,14 +177,13 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 				.defineField("stServiceContext", STServiceContext.class, Modifier.PUBLIC)
 				.annotateField(AnnotationDescription.Builder.ofType(Autowired.class).build());
 
-		for (OperationDefintion operationDefinition : operationDefinitions) {
+		for (Operation operationDefinition : operationDefinitions) {
 
-			ExtensionSpecification operationImplConfig = operationDefinition.implementation;
 			CustomServiceBackend customServiceBackend = exptManager.instantiateExtension(
-					CustomServiceBackend.class, new PluginSpecification(operationImplConfig.getExtensionID(),
-							null, null, operationImplConfig.getConfig()));
+					CustomServiceBackend.class, new PluginSpecification(SPARQLCustomServiceBackend.class.getName(),
+							null, null, STPropertiesManager.storeSTPropertiesToObjectNode(operationDefinition, true)));
 			InvocationHandler invocationHandler = customServiceBackend
-					.createInvocationHandler(operationDefinition);
+					.createInvocationHandler();
 			boolean isWrite = customServiceBackend.isWrite();
 
 			TypeDefinition returnTypeDefinition = generateTypeDefinitionFromSchema(
@@ -201,7 +200,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 			Annotatable<Object> parameterBuilder = null;
 
-			for (ParameterDefinition parameterDefinition : operationDefinition.parameters) {
+			for (Parameter parameterDefinition : operationDefinition.parameters) {
 				parameterBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder).withParameter(
 						generateTypeDefinitionFromSchema(parameterDefinition.type), parameterDefinition.name);
 			}
@@ -223,12 +222,11 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		controllerClassBuilder = controllerClassBuilder
 				.annotateType(AnnotationDescription.Builder.ofType(Controller.class).build());
 
-		for (OperationDefintion operationDefinition : operationDefinitions) {
+		for (Operation operationDefinition : operationDefinitions) {
 
-			ExtensionSpecification operationImplConfig = operationDefinition.implementation;
 			CustomServiceBackend customServiceBackend = exptManager.instantiateExtension(
-					CustomServiceBackend.class, new PluginSpecification(operationImplConfig.getExtensionID(),
-							null, null, operationImplConfig.getConfig()));
+					CustomServiceBackend.class, new PluginSpecification(SPARQLCustomServiceBackend.class.getName(),
+							null, null, STPropertiesManager.storeSTPropertiesToObjectNode(operationDefinition, true)));
 			boolean isWrite = customServiceBackend.isWrite();
 
 			TypeDefinition returnTypeDefinition = generateTypeDefinitionFromSchema(
@@ -247,7 +245,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 			Annotatable<Object> parameterBuilder = null;
 
-			for (ParameterDefinition parameterDefinition : operationDefinition.parameters) {
+			for (Parameter parameterDefinition : operationDefinition.parameters) {
 				parameterBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder)
 						.withParameter(generateTypeDefinitionFromSchema(parameterDefinition.type),
 								parameterDefinition.name)
@@ -338,7 +336,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		customServiceHandlers.put(customServiceCfg.name, controller);
 	}
 
-	protected TypeDefinition generateTypeDefinitionFromSchema(TypeDescription typeDescription)
+	protected TypeDefinition generateTypeDefinitionFromSchema(Type typeDescription)
 			throws SchemaException {
 		if ("AnnotatedValue".equals(typeDescription.getName())) {
 			return net.bytebuddy.description.type.TypeDescription.Generic.Builder

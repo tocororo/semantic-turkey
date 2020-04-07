@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql;
 
-import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.customservice.Operation;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
@@ -9,11 +9,11 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  * 
  * <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class SPARQLCustomServiceBackendConfiguration implements Configuration {
+public class SPARQLOperation extends Operation {
 
 	@Override
 	public String getShortName() {
-		return "SPARQL Custom Service Configuration";
+		return "SPARQL Custom Service Operation";
 	}
 
 	@STProperty(description = "Implementation of a custom service operation in SPARQL", displayName = "SPARQL")

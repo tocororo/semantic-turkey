@@ -8,7 +8,7 @@ import it.uniroma2.art.semanticturkey.extension.SystemScopedConfigurableComponen
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  * 
  */
-public class CustomServiceDefinitionStore implements SystemScopedConfigurableComponent<CustomServiceDefinition> {
+public class CustomServiceDefinitionStore implements SystemScopedConfigurableComponent<CustomService> {
 
 	@Override
 	public String getId() {

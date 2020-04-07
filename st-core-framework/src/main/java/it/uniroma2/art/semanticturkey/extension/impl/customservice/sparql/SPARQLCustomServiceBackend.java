@@ -43,8 +43,6 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sparql.query.QueryStringUtil;
 
-import it.uniroma2.art.semanticturkey.config.customservice.OperationDefintion;
-import it.uniroma2.art.semanticturkey.config.customservice.TypeDescription;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.extension.extpts.customservice.CustomServiceBackend;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -61,20 +59,20 @@ import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
  */
 public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 
-	private SPARQLCustomServiceBackendConfiguration conf;
+	private SPARQLOperation conf;
 
-	public SPARQLCustomServiceBackend(SPARQLCustomServiceBackendConfiguration conf) {
+	public SPARQLCustomServiceBackend(SPARQLOperation conf) {
 		this.conf = conf;
 	}
 
 	@Override
-	public InvocationHandler createInvocationHandler(OperationDefintion operationDefinition) {
-		String queryString = operationDefinition.implementation.getConfig().get("sparql").asText();
+	public InvocationHandler createInvocationHandler() {
+		String queryString = conf.sparql;
 		ParsedOperation parsedQuery = QueryParserUtil.parseOperation(QueryLanguage.SPARQL, queryString, null);
 
 		BiFunction<STServiceContext, BindingSet, Object> handler;
 
-		TypeDescription returnedTypeDescription = operationDefinition.returns;
+		it.uniroma2.art.semanticturkey.config.customservice.Type returnedTypeDescription = conf.returns;
 
 		if (parsedQuery instanceof ParsedBooleanQuery) {
 			if (!"boolean".equals(returnedTypeDescription.getName())) {
@@ -95,13 +93,14 @@ public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 						"SELECT queries only allowed in operations that return a List");
 			}
 
-			List<TypeDescription> typeArgs = returnedTypeDescription.getTypeArguments();
+			List<it.uniroma2.art.semanticturkey.config.customservice.Type> typeArgs = returnedTypeDescription
+					.getTypeArguments();
 
 			if (typeArgs == null || typeArgs.size() != 1) {
 				throw new IllegalArgumentException("A List return type requires exactly one type argument");
 			}
 
-			TypeDescription elementType = typeArgs.iterator().next();
+			it.uniroma2.art.semanticturkey.config.customservice.Type elementType = typeArgs.iterator().next();
 
 			Set<String> bindingNames = ((ParsedTupleQuery) parsedQuery).getTupleExpr().getBindingNames();
 
@@ -242,7 +241,8 @@ public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 		}
 	}
 
-	protected Object convertRDFValueToJavaValue(Value input, TypeDescription outputType) {
+	protected Object convertRDFValueToJavaValue(Value input,
+			it.uniroma2.art.semanticturkey.config.customservice.Type outputType) {
 		String outputTypeName = outputType.getName();
 
 		if (outputTypeName.equals("java.lang.String")) {
