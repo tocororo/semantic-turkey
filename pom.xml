@@ -127,10 +127,10 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<module>st-utilities</module>
 		<module>st-core-framework</module>
 		<module>st-codegen-processor</module>
+		<module>st-metadata-registry</module>
 		<module>st-core-services</module>
 		<module>st-console</module>
 		<module>st-builder</module>
-		<module>st-metadata-registry</module>
 	</modules>
 
 	<build>
