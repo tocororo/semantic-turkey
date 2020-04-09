@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,7 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -505,11 +506,13 @@ public class Sheet2RDF extends STServiceAdapter {
 	 * @throws FileNotFoundException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void savePearl(String pearlCode) throws FileNotFoundException{		
+	public void savePearl(String pearlCode) throws IOException {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-		PrintWriter pw = new PrintWriter(ctx.getPearlFile());
-		pw.print(pearlCode);
-		pw.close();
+		OutputStream os = new FileOutputStream(ctx.getPearlFile());
+		BufferedWriter bf = new BufferedWriter(new OutputStreamWriter(os, "utf-8"));
+		bf.write(pearlCode);
+		bf.flush();
+		bf.close();
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
