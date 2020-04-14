@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.errors.ManchesterError;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -33,6 +34,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 /**
  * @author <a href="mailto:turbati@info.uniroma2.it">Andrea Turbati</a>
@@ -187,7 +189,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	public JsonNode checkExpression(String manchExpr) {
 		JsonNodeFactory jf = JsonNodeFactory.instance;
 		ObjectNode respNode = jf.objectNode();
-		List<String> errorMsgList = new ArrayList<>();
+		List<ManchesterError> errorMsgList = new ArrayList<>();
 		boolean isValid = true;
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
@@ -195,19 +197,28 @@ public class ManchesterHandler extends STServiceAdapter {
 		try {
 			ManchesterClassInterface mci = ManchesterSyntaxUtils.parseCompleteExpression(manchExpr, conn.getValueFactory(),
 					prefixToNamespacesMap);
-			//since there were no syntactic exception during the parser, now perfome some semantic one
-			ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList);
+			//since there were no syntactic exception during the parser, now perform the semantic ones
+			Map<String, Integer> resourceToPosMap = new HashMap<>();
+			ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList, resourceToPosMap);
 		} catch (ManchesterParserException e) {
 			isValid = false;
-			errorMsgList.add("Not a valid Manchester Expression");
+			errorMsgList.add(new ManchesterError("Not a valid Manchester Expression"));
 		}
 		ArrayNode detailArray = jf.arrayNode();
 		if(isValid && errorMsgList.isEmpty()){
 			isValid = true;
 		} else {
 			isValid = false;
-			for(String msg : errorMsgList){
-				detailArray.add(msg);
+			for(ManchesterError manchesterError : errorMsgList){
+				ObjectNode errorNode = jf.objectNode();
+				errorNode.set("msg", jf.textNode(manchesterError.getMsg()));
+				errorNode.set("isSemanticError", jf.booleanNode(manchesterError.isSemanticError()));
+				if(manchesterError.isSemanticError()){
+					errorNode.set("iri", jf.textNode(NTriplesUtil.toNTriplesString(manchesterError.getResource())));
+					errorNode.set("qname", jf.textNode(manchesterError.getQname()));
+					errorNode.set("pos", jf.numberNode(manchesterError.getPos()));
+					detailArray.add(errorNode);
+				}
 			}
 		}
 		respNode.set("valid", jf.booleanNode(isValid));

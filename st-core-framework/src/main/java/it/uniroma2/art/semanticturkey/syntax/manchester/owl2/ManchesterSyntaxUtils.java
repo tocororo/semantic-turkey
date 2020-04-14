@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.errors.ManchesterError;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers.ParserDatatypeRestrictionExpression;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers.ParserDescription;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers.ParserLiteralEnumerarionRestrictionExpression;
@@ -94,7 +95,10 @@ public class ManchesterSyntaxUtils {
 		}
 	}
 
-	public static void performSemanticChecks(ManchesterClassInterface mci, RepositoryConnection conn, List<String> errorMsgList){
+	public static void performSemanticChecks(ManchesterClassInterface mci, RepositoryConnection conn,
+			List<ManchesterError> errorMsgList, Map<String, Integer> resourceToPosMap){
+		//resourceToPosMap is a map containing the URI of a resource and its relative position (a count of how may times it appear)
+
 		//calculate the namespace-prefix Map
 		RepositoryResult<Namespace> namespaces = conn.getNamespaces();
 		Map<String, String> namespaceToPrefixMap = new HashMap<>();
@@ -107,92 +111,115 @@ public class ManchesterSyntaxUtils {
 			ManchesterAndClass mca = (ManchesterAndClass) mci;
 			List<ManchesterClassInterface> andMciList = mca.getAndClassList();
 			for(ManchesterClassInterface andMci : andMciList){
-				performSemanticChecks(andMci, conn, errorMsgList);
+				performSemanticChecks(andMci, conn, errorMsgList, resourceToPosMap);
 			}
 		} else if(mci instanceof  ManchesterBaseClass){
 			ManchesterBaseClass mbc = (ManchesterBaseClass) mci;
 			IRI classIRI = mbc.getBaseClass();
-			performClassCheck(classIRI, conn, namespaceToPrefixMap, errorMsgList);
+			addResourceToMapCount(classIRI, resourceToPosMap);
+			performClassCheck(classIRI, conn, namespaceToPrefixMap, errorMsgList, resourceToPosMap.get(classIRI.stringValue()));
 		} else if(mci instanceof ManchesterCardClass){
 			ManchesterCardClass mcc = (ManchesterCardClass) mci;
-			if(mcc.getClassCard()!=null){
-				performSemanticChecks(mcc.getClassCard(), conn, errorMsgList);
-			}
 			IRI prop = mcc.getProp();
-			//TODO  check if it is possibile to understand if the property should be an objectProperty or a datatypePorperty
-			performPropCheck(prop, false, false, conn, namespaceToPrefixMap, errorMsgList);
+			addResourceToMapCount(prop, resourceToPosMap);
+			//TODO  check if it is possible to understand if the property should be an objectProperty or a datatypePorperty
+			performPropCheck(prop, false, false, conn, namespaceToPrefixMap, errorMsgList,
+					resourceToPosMap.get(prop.stringValue()));
+			if(mcc.getClassCard()!=null){
+				performSemanticChecks(mcc.getClassCard(), conn, errorMsgList, resourceToPosMap);
+			}
 		} else if(mci instanceof ManchesterDataConjunction){
 			ManchesterDataConjunction mdc = (ManchesterDataConjunction) mci;
 			List<ManchesterClassInterface> dataPrimaryList = mdc.getDataPrimaryList();
 			for(ManchesterClassInterface dataPrimary : dataPrimaryList){
-				performSemanticChecks(dataPrimary, conn, errorMsgList);
+				performSemanticChecks(dataPrimary, conn, errorMsgList, resourceToPosMap);
 			}
 		} else if(mci instanceof ManchesterDataRange){
 			ManchesterDataRange mdr = (ManchesterDataRange) mci;
 			List<ManchesterClassInterface> dataConjunctionList = mdr.getDataConjunctionList();
 			for(ManchesterClassInterface dataConjunction : dataConjunctionList){
-				performSemanticChecks(dataConjunction, conn, errorMsgList);
+				performSemanticChecks(dataConjunction, conn, errorMsgList, resourceToPosMap);
 			}
 		} else if(mci instanceof  ManchesterDatatypeRestriction){
 			ManchesterDatatypeRestriction mdr = (ManchesterDatatypeRestriction) mci;
 			ManchesterClassInterface datatype = mdr.getDatatypeMCI();
-			performSemanticChecks(datatype, conn, errorMsgList);
+			performSemanticChecks(datatype, conn, errorMsgList, resourceToPosMap);
 		} else if(mci instanceof  ManchesterLiteralListClass){
 			//Do nothing, since it is just a list of Literal
 		} else if(mci instanceof ManchesterNotClass){
 			ManchesterNotClass mnc = (ManchesterNotClass) mci;
-			performSemanticChecks(mnc, conn, errorMsgList);
+			performSemanticChecks(mnc, conn, errorMsgList, resourceToPosMap);
 		} else if(mci instanceof  ManchesterOneOfClass){
 			ManchesterOneOfClass mooc = (ManchesterOneOfClass) mci;
 			List<IRI> instanceList = mooc.getOneOfList();
 			for(IRI instance : instanceList){
-				performInstanceCheck(instance, conn, namespaceToPrefixMap, errorMsgList);
+				addResourceToMapCount(instance, resourceToPosMap);
+				performInstanceCheck(instance, conn, namespaceToPrefixMap, errorMsgList, resourceToPosMap.get(instance.stringValue()));
 			}
 		} else if(mci instanceof ManchesterOnlyClass){
 			ManchesterOnlyClass moc = (ManchesterOnlyClass) mci;
 			IRI prop = moc.getOnlyProp();
+			addResourceToMapCount(prop, resourceToPosMap);
 			//TODO  check if it is possibile to understand if the property should be an objectProperty or a datatypePorperty
-			performPropCheck(prop, false, false, conn, namespaceToPrefixMap, errorMsgList);
+			performPropCheck(prop, false, false, conn, namespaceToPrefixMap, errorMsgList,
+					resourceToPosMap.get(prop.stringValue()));
 			ManchesterClassInterface onlyClass = moc.getOnlyClass();
-			performSemanticChecks(onlyClass, conn, errorMsgList);
+			performSemanticChecks(onlyClass, conn, errorMsgList, resourceToPosMap);
 		} else if (mci instanceof  ManchesterOrClass){
 			ManchesterOrClass moc = (ManchesterOrClass) mci;
 			List<ManchesterClassInterface> orMciList = moc.getOrClassList();
 			for(ManchesterClassInterface orMci : orMciList){
-				performSemanticChecks(orMci, conn, errorMsgList);
+				performSemanticChecks(orMci, conn, errorMsgList, resourceToPosMap);
 			}
 		} else if(mci instanceof ManchesterSelfClass){
 			ManchesterSelfClass msc = (ManchesterSelfClass) mci;
 			IRI prop = msc.getProp();
-			performPropCheck(prop, true, false, conn, namespaceToPrefixMap, errorMsgList);
+			addResourceToMapCount(prop, resourceToPosMap);
+			performPropCheck(prop, true, false, conn, namespaceToPrefixMap, errorMsgList,
+					resourceToPosMap.get(prop.stringValue()));
 		} else if(mci instanceof  ManchesterSomeClass){
 			ManchesterSomeClass msc = (ManchesterSomeClass) mci;
 			IRI prop = msc.getSomeProp();
+			addResourceToMapCount(prop, resourceToPosMap);
 			//TODO  check if it is possibile to understand if the property should be an objectProperty or a datatypePorperty
-			performPropCheck(prop, false, false, conn, namespaceToPrefixMap, errorMsgList);
+			performPropCheck(prop, false, false, conn, namespaceToPrefixMap, errorMsgList,
+					resourceToPosMap.get(prop.stringValue()));
 			ManchesterClassInterface someClass = msc.getSomeClass();
-			performSemanticChecks(someClass, conn, errorMsgList);
+			performSemanticChecks(someClass, conn, errorMsgList, resourceToPosMap);
 		} else if(mci instanceof ManchesterValueClass){
 			ManchesterValueClass mvc = (ManchesterValueClass) mci;
 			IRI prop = mvc.getProp();
+			addResourceToMapCount(prop, resourceToPosMap);
 			Value value = mvc.getValue();
 			boolean isObjProp;
 			if(value instanceof  IRI){
 				isObjProp=true;
-				performInstanceCheck((IRI) value, conn, namespaceToPrefixMap, errorMsgList);
-
+				addResourceToMapCount((IRI)value, resourceToPosMap);
+				performInstanceCheck((IRI) value, conn, namespaceToPrefixMap, errorMsgList,
+						resourceToPosMap.get(value.stringValue()));
 			} else {
 				isObjProp = false;
 				//no check, since it is a literal
 			}
-			performPropCheck(prop, isObjProp, !isObjProp, conn, namespaceToPrefixMap, errorMsgList);
+			performPropCheck(prop, isObjProp, !isObjProp, conn, namespaceToPrefixMap, errorMsgList,
+					resourceToPosMap.get(prop.stringValue()));
 		} else {
 			//This cannot happen
 		}
 
 	}
 
-	private static void performPropCheck(IRI propIRI, boolean mustBeObjProp, boolean mustBeDataProp, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<String> errorMsgList) {
+	private static void addResourceToMapCount(IRI resource, Map<String, Integer> resourceToPosMap){
+		String resourceString = resource.stringValue();
+		if(!resourceToPosMap.containsKey(resourceString)){
+			resourceToPosMap.put(resourceString, 0);
+		} else {
+			resourceToPosMap.put(resourceString, resourceToPosMap.get(resourceString)+1);
+		}
+	}
+
+	private static void performPropCheck(IRI propIRI, boolean mustBeObjProp, boolean mustBeDataProp, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap,
+			List<ManchesterError> errorMsgList, int pos) {
 		String propType = "rdf:Property";
 		if(mustBeDataProp){
 			propType = "owl:DatatypeProperty";
@@ -218,12 +245,13 @@ public class ManchesterSyntaxUtils {
 		}
 		String errorMsg = ErrorMessageOrEmpty(qnameOrIRI, exists, rightType, msg);
 		if(!errorMsg.isEmpty()){
-			errorMsgList.add(errorMsg);
+			errorMsgList.add(new ManchesterError(errorMsg, propIRI, qnameOrIRI, pos));
 		}
 
 	}
 
-	private static void performClassCheck(IRI classIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<String> errorMsgList){
+	private static void performClassCheck(IRI classIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<ManchesterError> errorMsgList,
+			int pos){
 		String qnameOrIRI = namespaceToPrefixMap.getOrDefault(classIRI.getNamespace(), classIRI.getNamespace())+classIRI.getLocalName();
 		String msg = qnameOrIRI + " should be a class";
 		List<IRI> typeList = getTypes(classIRI, conn);
@@ -240,11 +268,12 @@ public class ManchesterSyntaxUtils {
 		}
 		String errorMsg = ErrorMessageOrEmpty(qnameOrIRI, exists, rightType, msg);
 		if(!errorMsg.isEmpty()){
-			errorMsgList.add(errorMsg);
+			errorMsgList.add(new ManchesterError(errorMsg, classIRI, qnameOrIRI, pos));
 		}
 	}
 
-	private static void performInstanceCheck(IRI instanceIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<String> errorMsgList){
+	private static void performInstanceCheck(IRI instanceIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<ManchesterError> errorMsgList,
+			int pos){
 		String qnameOrIRI = namespaceToPrefixMap.getOrDefault(instanceIRI.getNamespace(), instanceIRI.getNamespace())+instanceIRI.getLocalName();
 		String msg = qnameOrIRI + " should be an instance";
 		List<IRI> typeOfTypeList = getTypesOfTypes(instanceIRI, conn);
@@ -260,7 +289,7 @@ public class ManchesterSyntaxUtils {
 		}
 		String errorMsg = ErrorMessageOrEmpty(qnameOrIRI, exists, rightType, msg);
 		if(!errorMsg.isEmpty()){
-			errorMsgList.add(errorMsg);
+			errorMsgList.add(new ManchesterError(errorMsg, instanceIRI, qnameOrIRI, pos));
 		}
 	}
 
