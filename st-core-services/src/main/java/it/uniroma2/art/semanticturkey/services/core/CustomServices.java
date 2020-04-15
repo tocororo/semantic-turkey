@@ -180,4 +180,14 @@ public class CustomServices extends STServiceAdapter {
 		}
 
 	}
+
+	/**
+	 * Reloads the custom service defined by the configuration identified by the given <em>id</em>.
+	 * 
+	 * @param id
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void reloadCustomService(String id) {
+		customServiceMapping.registerCustomService(id);
+	}
 }

@@ -129,7 +129,6 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	@PostConstruct
 	public void init() throws NoSuchConfigurationManager {
 		initializeFromStoredCustomServices();
-		delegateMapping.afterPropertiesSet();
 	}
 
 	public void initializeFromStoredCustomServices() throws NoSuchConfigurationManager {
@@ -446,6 +445,12 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 	@Override
 	protected Object getHandlerInternal(HttpServletRequest request) throws Exception {
-		return delegateMapping.getHandlerInternal(request);
+		Lock rlock = lock.readLock();
+		rlock.lock();
+		try {
+			return delegateMapping.getHandlerInternal(request);
+		} finally {
+			rlock.unlock();
+		}
 	}
 }
