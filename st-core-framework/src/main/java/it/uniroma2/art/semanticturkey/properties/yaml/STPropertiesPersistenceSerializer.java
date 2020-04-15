@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
+import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 
@@ -35,7 +36,9 @@ public class STPropertiesPersistenceSerializer extends StdSerializer<STPropertie
 		try {
 			gen.writeStartObject();
 
-//			gen.writeStringField("@type", value.getClass().getName());
+			if (value instanceof Configuration) {
+				gen.writeStringField("@type", value.getClass().getName());
+			}
 
 			Collection<String> props = value.getProperties();
 

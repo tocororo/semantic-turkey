@@ -28,6 +28,7 @@ public class Operation implements Configuration {
 	public List<Parameter> parameters;
 
 	@STProperty(description = "The type of the value returned by this operations", displayName = "Return type")
+	@Required
 	public Type returns;
 	
 	@STProperty(description = "The capabilities required for executing this operation", displayName = "Authorization")

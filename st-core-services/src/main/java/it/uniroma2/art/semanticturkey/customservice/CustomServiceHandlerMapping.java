@@ -1,13 +1,18 @@
 package it.uniroma2.art.semanticturkey.customservice;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -35,8 +40,10 @@ import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
+import com.google.common.collect.Lists;
 import com.google.common.base.MoreObjects;
 
+import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.config.customservice.CustomService;
 import it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefinitionStore;
@@ -91,13 +98,17 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	@Autowired
 	private ConfigurableListableBeanFactory context;
 
-	private ConcurrentHashMap<String, Object> customServiceHandlers = new ConcurrentHashMap<>();
+	static class DelegateRequestMappingHandlerMapping extends RequestMappingHandlerMapping {
 
-	class DelegateRequestMappingHandlerMapping extends RequestMappingHandlerMapping {
+		private List<Object> handlers;
+
+		public DelegateRequestMappingHandlerMapping(List<Object> handlers) {
+			this.handlers = handlers;
+		}
 
 		protected void initHandlerMethods() {
 
-			for (Object h : customServiceHandlers.values()) {
+			for (Object h : this.handlers) {
 				detectHandlerMethods(h);
 			}
 
@@ -111,27 +122,86 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 	};
 
-	private DelegateRequestMappingHandlerMapping delegateMapping = new DelegateRequestMappingHandlerMapping();
+	private ReadWriteLock lock = new ReentrantReadWriteLock();
+	private DelegateRequestMappingHandlerMapping delegateMapping;
+	private Map<String, Object> customServiceHandlers = new HashMap<>();
 
 	@PostConstruct
 	public void init() throws NoSuchConfigurationManager {
-		registerStoredCustomServices();
+		initializeFromStoredCustomServices();
 		delegateMapping.afterPropertiesSet();
 	}
 
-	protected void registerStoredCustomServices() throws NoSuchConfigurationManager {
-		CustomServiceDefinitionStore cs = (CustomServiceDefinitionStore) exptManager
-				.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
+	public void initializeFromStoredCustomServices() throws NoSuchConfigurationManager {
+		Lock wlock = lock.writeLock();
+		wlock.lock();
+		try {
+			CustomServiceDefinitionStore cs = (CustomServiceDefinitionStore) exptManager
+					.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
 
-		for (String customServiceCfgID : cs.getSystemConfigurationIdentifiers()) {
-			try {
-				CustomService customServiceCfg = cs.getSystemConfiguration(customServiceCfgID);
-				registerCustomService(customServiceCfg);
-			} catch (Exception e) {
-				e.printStackTrace(); // store the exception somewhere to enable inspection
+			for (String customServiceCfgID : cs.getSystemConfigurationIdentifiers()) {
+				try {
+					CustomService customServiceCfg = cs.getSystemConfiguration(customServiceCfgID);
+					Object handler = buildCustomServiceHandler(customServiceCfgID, customServiceCfg);
+					customServiceHandlers.put(customServiceCfgID, handler);
+				} catch (Exception e) {
+					e.printStackTrace(); // store the exception somewhere to enable inspection
+				}
 			}
-		}
 
+			setDelegateMappingInternal();
+		} finally {
+			wlock.unlock();
+		}
+	}
+
+	public void registerCustomService(String customServiceCfgID) {
+		Lock wlock = lock.writeLock();
+		wlock.lock();
+		try {
+			CustomServiceDefinitionStore cs = (CustomServiceDefinitionStore) exptManager
+					.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
+
+			CustomService customServiceCfg;
+			try {
+				customServiceCfg = cs.getSystemConfiguration(customServiceCfgID);
+			} catch (ConfigurationNotFoundException e) {
+				// swallow exception
+				return;
+			}
+			Object handler = buildCustomServiceHandler(customServiceCfgID, customServiceCfg);
+
+			customServiceHandlers.put(customServiceCfgID, handler);
+			setDelegateMappingInternal();
+		} catch (NoSuchConfigurationManager | IOException | WrongPropertiesException
+				| STPropertyAccessException | InstantiationException | IllegalAccessException
+				| SchemaException | IllegalArgumentException | NoSuchExtensionException
+				| InvalidConfigurationException e) {
+			e.printStackTrace();
+		} finally {
+			wlock.unlock();
+		}
+	}
+
+	public void unregisterCustomService(String customServiceCfgID) {
+		Lock wlock = lock.writeLock();
+		wlock.lock();
+		try {
+			Object removedMapping = customServiceHandlers.remove(customServiceCfgID);
+			if (removedMapping != null) {
+				setDelegateMappingInternal();
+			}
+		} finally {
+			wlock.unlock();
+		}
+	}
+
+	// this method should be invoked after acquiring the write lock
+	protected void setDelegateMappingInternal() {
+		// defensive copy of the argument list
+		delegateMapping = new DelegateRequestMappingHandlerMapping(
+				Lists.newArrayList(customServiceHandlers.values()));
+		delegateMapping.afterPropertiesSet();
 	}
 
 	/*
@@ -159,7 +229,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 			"^\\s*(?<area>[a-z]+)\\(((?<subjfun>@typeof\\(#(?<subjfunpar>[a-z]+)\\))|(?<subjlit>[a-z]+))(\\s*,\\s*(?<scope>\\w+))?\\)(\\s*,\\s*\\{\\s*(?<userkey>[a-z]+)\\s*:\\s*((?<userlit>\\w+)|(?<userfun>(@langOf\\(#(?<userfunpar>[a-z]+)\\))))\\})?\\s*,\\s*(?<crudv>[CRUDV])\\s*$",
 			Pattern.CASE_INSENSITIVE);
 
-	private void registerCustomService(CustomService customServiceCfg)
+	private Object buildCustomServiceHandler(String cfgID, CustomService customServiceCfg)
 			throws InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
 			NoSuchExtensionException, WrongPropertiesException, STPropertyAccessException,
 			InvalidConfigurationException {
@@ -180,10 +250,10 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		for (Operation operationDefinition : operationDefinitions) {
 
 			CustomServiceBackend customServiceBackend = exptManager.instantiateExtension(
-					CustomServiceBackend.class, new PluginSpecification(SPARQLCustomServiceBackend.class.getName(),
-							null, null, STPropertiesManager.storeSTPropertiesToObjectNode(operationDefinition, true)));
-			InvocationHandler invocationHandler = customServiceBackend
-					.createInvocationHandler();
+					CustomServiceBackend.class,
+					new PluginSpecification(SPARQLCustomServiceBackend.class.getName(), null, null,
+							STPropertiesManager.storeSTPropertiesToObjectNode(operationDefinition, true)));
+			InvocationHandler invocationHandler = customServiceBackend.createInvocationHandler();
 			boolean isWrite = customServiceBackend.isWrite();
 
 			TypeDefinition returnTypeDefinition = generateTypeDefinitionFromSchema(
@@ -200,7 +270,9 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 			Annotatable<Object> parameterBuilder = null;
 
-			for (Parameter parameterDefinition : operationDefinition.parameters) {
+			List<Parameter> parameters = Optional.ofNullable(operationDefinition.parameters)
+					.orElse(Collections.emptyList());
+			for (Parameter parameterDefinition : parameters) {
 				parameterBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder).withParameter(
 						generateTypeDefinitionFromSchema(parameterDefinition.type), parameterDefinition.name);
 			}
@@ -225,8 +297,9 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		for (Operation operationDefinition : operationDefinitions) {
 
 			CustomServiceBackend customServiceBackend = exptManager.instantiateExtension(
-					CustomServiceBackend.class, new PluginSpecification(SPARQLCustomServiceBackend.class.getName(),
-							null, null, STPropertiesManager.storeSTPropertiesToObjectNode(operationDefinition, true)));
+					CustomServiceBackend.class,
+					new PluginSpecification(SPARQLCustomServiceBackend.class.getName(), null, null,
+							STPropertiesManager.storeSTPropertiesToObjectNode(operationDefinition, true)));
 			boolean isWrite = customServiceBackend.isWrite();
 
 			TypeDefinition returnTypeDefinition = generateTypeDefinitionFromSchema(
@@ -245,7 +318,9 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 			Annotatable<Object> parameterBuilder = null;
 
-			for (Parameter parameterDefinition : operationDefinition.parameters) {
+			List<Parameter> parameters = Optional.ofNullable(operationDefinition.parameters)
+					.orElse(Collections.emptyList());
+			for (Parameter parameterDefinition : parameters) {
 				parameterBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder)
 						.withParameter(generateTypeDefinitionFromSchema(parameterDefinition.type),
 								parameterDefinition.name)
@@ -333,11 +408,10 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		// build a controller object
 		Object controller = controllerClass.newInstance();
 
-		customServiceHandlers.put(customServiceCfg.name, controller);
+		return controller;
 	}
 
-	protected TypeDefinition generateTypeDefinitionFromSchema(Type typeDescription)
-			throws SchemaException {
+	protected TypeDefinition generateTypeDefinitionFromSchema(Type typeDescription) throws SchemaException {
 		if ("AnnotatedValue".equals(typeDescription.getName())) {
 			return net.bytebuddy.description.type.TypeDescription.Generic.Builder
 					.parameterizedType(AnnotatedValue.class, Value.class).build();
