@@ -225,12 +225,14 @@ public class UpdateRoutines {
 	private static void alignFrom7To71()
 			throws STPropertyUpdateException, UnsupportedRDFormatException, IOException {
 		logger.debug(
-				"Version 7.1 added alignment.remote.port to the system settings and changed the namespace assocaited with the metadata registry");
+				"Version 7.1 added alignment.remote.port to the system settings and changed the namespace associated with the metadata registry");
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ALIGNMENT_REMOTE_PORT, "7575");
-		replaceNamespaceDefinition(
-				new SimpleNamespace("mdreg", "http://semanticturkey.uniroma2.it/ns/mdreg#"),
-				new SimpleNamespace("mdr", "http://semanticturkey.uniroma2.it/ns/mdr#"),
-				new File(Config.getDataDir(), "metadataRegistry/catalog.ttl"));
+		File catalogFile = new File(Config.getDataDir(), "metadataRegistry/catalog.ttl");
+		if (catalogFile.exists()) {
+			replaceNamespaceDefinition(
+					new SimpleNamespace("mdreg", "http://semanticturkey.uniroma2.it/ns/mdreg#"),
+					new SimpleNamespace("mdr", "http://semanticturkey.uniroma2.it/ns/mdr#"), catalogFile);
+		}
 	}
 
 	private static void replaceNamespaceDefinition(SimpleNamespace oldNS, SimpleNamespace newNS,
