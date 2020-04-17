@@ -24,20 +24,52 @@
 /*
  * Contributor(s): Armando Stellato stellato@info.uniroma2.it
  */
-package it.uniroma2.art.semanticturkey.exceptions;
+package it.uniroma2.art.semanticturkey.exceptions.manchester;
 
 
+import it.uniroma2.art.semanticturkey.exceptions.IncompatibleResourceException;
+
+import java.util.List;
+
+/**
+ * @author Andrea Turbati
+ *
+ */
 public class ManchesterSyntaxException extends IncompatibleResourceException {
 
+	private String msg;
+	private int pos;
+	private String offendingTerm;
+	private List<String> expectedTokenList;
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 6319220572009520791L;
 
-	//TODO decide for a better signature
-	public ManchesterSyntaxException(String text) {
-		super(text);
+
+	public ManchesterSyntaxException(String msg, int pos, String offendingTerm, List<String> expectedTokenList) {
+		super(msg);
+		this.msg = msg;
+		this.pos = pos;
+		this.offendingTerm = offendingTerm;
+		this.expectedTokenList = expectedTokenList;
+	}
+
+	public String getMsg() {
+		return msg;
+	}
+
+	public int getPos() {
+		return pos;
+	}
+
+	public String getOffendingTerm() {
+		return offendingTerm;
+	}
+
+	public List<String> getExpectedTokenList() {
+		return expectedTokenList;
 	}
 
 }

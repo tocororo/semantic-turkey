@@ -24,19 +24,30 @@
 /*
  * Contributor(s): Armando Stellato stellato@info.uniroma2.it
  */
-package it.uniroma2.art.semanticturkey.exceptions;
+package it.uniroma2.art.semanticturkey.exceptions.manchester;
 
-public class ManchesterSyntaxRuntimeException extends RuntimeException {
 
+import it.uniroma2.art.semanticturkey.exceptions.IncompatibleResourceException;
+
+/**
+ * @author Andrea Turbati
+ *
+ */
+public class ManchesterPrefixNotDefinedException extends IncompatibleResourceException {
+
+	private String prefix;
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 6319220572009520791L;
 
-	//TODO decide for a better signature
-	public ManchesterSyntaxRuntimeException(String text) {
-		super(text);
+	public ManchesterPrefixNotDefinedException(String msg, String prefix) {
+		super(msg);
+		this.prefix = prefix;
 	}
 
+	public String getPrefix() {
+		return prefix;
+	}
 }

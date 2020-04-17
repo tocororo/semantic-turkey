@@ -9,6 +9,8 @@ import java.util.Set;
 
 import javax.validation.constraints.Size;
 
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -62,7 +64,7 @@ import it.uniroma2.art.semanticturkey.datarange.DataRangeDataOneOf;
 import it.uniroma2.art.semanticturkey.datarange.ParseDataRange;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
-import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -931,7 +933,9 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
-	public void addPropertyChainAxiom(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, @Size(min=2) List<String> chainedProperties, @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyChainAxiom>") IRI linkingPredicate) throws ManchesterParserException {
+	public void addPropertyChainAxiom(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, @Size(min=2) List<String> chainedProperties,
+			@Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyChainAxiom>") IRI linkingPredicate) throws ManchesterParserException,
+			ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
 		
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
 
@@ -979,7 +983,9 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'U')")
-	public void updatePropertyChainAxiom(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, Resource replacedChain, @Size(min=2) List<String> chainedProperties, @Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyChainAxiom>") IRI linkingPredicate) throws ManchesterParserException {
+	public void updatePropertyChainAxiom(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, Resource replacedChain, @Size(min=2) List<String> chainedProperties,
+			@Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyChainAxiom>") IRI linkingPredicate)
+			throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
 		removePropertyChainAxiom(property, replacedChain, linkingPredicate);
 		addPropertyChainAxiom(property, chainedProperties, linkingPredicate);
 	}

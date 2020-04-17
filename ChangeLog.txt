@@ -19,6 +19,7 @@ date: dd/mm/yyyy
   * added support in CustomForm for new Pearl annotations
   * updated dependency on Sheet2RDF 4.0.1
   * updated dependency on CODA 1.7.0
+  * updated to ANTLRv4 4.8
 
 version 7.0
 date: 06/02/2020

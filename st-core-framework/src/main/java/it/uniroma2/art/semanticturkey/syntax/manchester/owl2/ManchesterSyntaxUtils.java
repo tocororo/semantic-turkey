@@ -5,7 +5,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.errors.ManchesterError;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedRuntimeException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxRuntimeException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ThrowingErrorListenerLexer;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ThrowingErrorListenerParser;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.errors.ManchesterGenericError;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.errors.ManchesterSemanticError;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers.ParserDatatypeRestrictionExpression;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers.ParserDescription;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers.ParserLiteralEnumerarionRestrictionExpression;
@@ -28,8 +35,8 @@ import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
-import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
-import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserRuntimeException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserRuntimeException;
 import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface.PossType;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionContext;
@@ -62,17 +69,20 @@ public class ManchesterSyntaxUtils {
 	}
 
 	public static ManchesterClassInterface parseCompleteExpression(String mancExp, ValueFactory valueFactory,
-			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException {
+			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException,
+			ManchesterPrefixNotDefinedException, ManchesterSyntaxException {
 		// Get our lexer
-		// ManchesterOWL2SyntaxParserLexer lexer = new
-		// ManchesterOWL2SyntaxParserLexer(CharStreams.fromString(mancExp));
 		BailSimpleLexer lexer = new BailSimpleLexer(CharStreams.fromString(mancExp));
+		lexer.removeErrorListeners();
+		lexer.addErrorListener(ThrowingErrorListenerLexer.INSTANCE);
 		// Get a list of matched tokens
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 		// Pass the tokens to the parser
 		ManchesterOWL2SyntaxParserParser parser = new ManchesterOWL2SyntaxParserParser(tokens);
 		// set the error handler that does not try to recover from error, it just throw exception
 		parser.setErrorHandler(new BailErrorStrategy());
+		parser.removeErrorListeners();
+		parser.addErrorListener(ThrowingErrorListenerParser.INSTANCE);
 		try {
 			DescriptionContext descriptionContext = parser.description();
 
@@ -84,19 +94,21 @@ public class ManchesterSyntaxUtils {
 
 			if (mci instanceof ManchesterBaseClass) {
 				throw new ManchesterParserException(
-						"The expression " + mancExp + " cannot be composed of a " + "single IRI/QName");
+						"The expression " + mancExp + " cannot be composed of a " + "single IRI/QName", 0, mancExp, null);
 			}
 
 			return mci;
-		} catch (ManchesterParserRuntimeException e) {
-			throw new ManchesterParserException(e);
-		} catch (StringIndexOutOfBoundsException e) {
-			throw new ManchesterParserException(e);
+		} catch (ManchesterPrefixNotDefinedRuntimeException e) {
+			throw new ManchesterPrefixNotDefinedException(e.getMessage(), e.getPrefix());
+		} catch(ManchesterSyntaxRuntimeException e) {
+			throw  new ManchesterSyntaxException(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+		}catch (ManchesterParserRuntimeException e) {
+			throw new ManchesterParserException(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
 		}
 	}
 
 	public static void performSemanticChecks(ManchesterClassInterface mci, RepositoryConnection conn,
-			List<ManchesterError> errorMsgList, Map<String, Integer> resourceToPosMap){
+			List<ManchesterGenericError> errorMsgList, Map<String, Integer> resourceToPosMap){
 		//resourceToPosMap is a map containing the URI of a resource and its relative position (a count of how may times it appear)
 
 		//calculate the namespace-prefix Map
@@ -219,7 +231,7 @@ public class ManchesterSyntaxUtils {
 	}
 
 	private static void performPropCheck(IRI propIRI, boolean mustBeObjProp, boolean mustBeDataProp, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap,
-			List<ManchesterError> errorMsgList, int pos) {
+			List<ManchesterGenericError> errorMsgList, int pos) {
 		String propType = "rdf:Property";
 		if(mustBeDataProp){
 			propType = "owl:DatatypeProperty";
@@ -245,12 +257,12 @@ public class ManchesterSyntaxUtils {
 		}
 		String errorMsg = ErrorMessageOrEmpty(qnameOrIRI, exists, rightType, msg);
 		if(!errorMsg.isEmpty()){
-			errorMsgList.add(new ManchesterError(errorMsg, propIRI, qnameOrIRI, pos));
+			errorMsgList.add(new ManchesterSemanticError(errorMsg, propIRI, qnameOrIRI, pos));
 		}
 
 	}
 
-	private static void performClassCheck(IRI classIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<ManchesterError> errorMsgList,
+	private static void performClassCheck(IRI classIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<ManchesterGenericError> errorMsgList,
 			int pos){
 		String qnameOrIRI = namespaceToPrefixMap.getOrDefault(classIRI.getNamespace(), classIRI.getNamespace())+classIRI.getLocalName();
 		String msg = qnameOrIRI + " should be a class";
@@ -268,11 +280,11 @@ public class ManchesterSyntaxUtils {
 		}
 		String errorMsg = ErrorMessageOrEmpty(qnameOrIRI, exists, rightType, msg);
 		if(!errorMsg.isEmpty()){
-			errorMsgList.add(new ManchesterError(errorMsg, classIRI, qnameOrIRI, pos));
+			errorMsgList.add(new ManchesterSemanticError(errorMsg, classIRI, qnameOrIRI, pos));
 		}
 	}
 
-	private static void performInstanceCheck(IRI instanceIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<ManchesterError> errorMsgList,
+	private static void performInstanceCheck(IRI instanceIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<ManchesterGenericError> errorMsgList,
 			int pos){
 		String qnameOrIRI = namespaceToPrefixMap.getOrDefault(instanceIRI.getNamespace(), instanceIRI.getNamespace())+instanceIRI.getLocalName();
 		String msg = qnameOrIRI + " should be an instance";
@@ -289,7 +301,7 @@ public class ManchesterSyntaxUtils {
 		}
 		String errorMsg = ErrorMessageOrEmpty(qnameOrIRI, exists, rightType, msg);
 		if(!errorMsg.isEmpty()){
-			errorMsgList.add(new ManchesterError(errorMsg, instanceIRI, qnameOrIRI, pos));
+			errorMsgList.add(new ManchesterSemanticError(errorMsg, instanceIRI, qnameOrIRI, pos));
 		}
 	}
 
@@ -351,17 +363,20 @@ public class ManchesterSyntaxUtils {
 
 	public static ObjectPropertyExpression parseObjectPropertyExpression(String objectPropertyExpression,
 			ValueFactory valueFactory, Map<String, String> prefixToNamespacesMap)
-			throws ManchesterParserException {
+			throws ManchesterParserException, ManchesterPrefixNotDefinedException, ManchesterSyntaxException {
 		// Get our lexer
-		// ManchesterOWL2SyntaxParserLexer lexer = new
-		// ManchesterOWL2SyntaxParserLexer(CharStreams.fromString(mancExp));
 		BailSimpleLexer lexer = new BailSimpleLexer(CharStreams.fromString(objectPropertyExpression));
+		lexer.removeErrorListeners();
+		lexer.addErrorListener(ThrowingErrorListenerLexer.INSTANCE);
 		// Get a list of matched tokens
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 		// Pass the tokens to the parser
 		ManchesterOWL2SyntaxParserParser parser = new ManchesterOWL2SyntaxParserParser(tokens);
 		// set the error handler that does not try to recover from error, it just throw exception
 		parser.setErrorHandler(new BailErrorStrategy());
+		parser.removeErrorListeners();
+		parser.addErrorListener(ThrowingErrorListenerParser.INSTANCE);
+
 		try {
 			ObjectPropertyExpressionContext objectPropertyExpressionContext = parser
 					.objectPropertyExpression();
@@ -372,24 +387,30 @@ public class ManchesterSyntaxUtils {
 					prefixToNamespacesMap);
 			walker.walk(parserOpe, objectPropertyExpressionContext);
 			return parserOpe.getObjectPropertyExpression();
-		} catch (ManchesterParserRuntimeException e) {
-			throw new ManchesterParserException(e);
+		} catch (ManchesterPrefixNotDefinedRuntimeException e) {
+			throw new ManchesterPrefixNotDefinedException(e.getMessage(), e.getPrefix());
+		} catch(ManchesterSyntaxRuntimeException e) {
+			throw  new ManchesterSyntaxException(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+		}catch (ManchesterParserRuntimeException e) {
+			throw new ManchesterParserException(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
 		}
 
 	}
 
 	public static ManchesterClassInterface parseDatatypeRestrictionExpression(String mancExp, ValueFactory valueFactory,
-			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException {
+			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException, ManchesterPrefixNotDefinedException, ManchesterSyntaxException {
 		// Get our lexer
-		// ManchesterOWL2SyntaxParserLexer lexer = new
-		// ManchesterOWL2SyntaxParserLexer(CharStreams.fromString(mancExp));
 		BailSimpleLexer lexer = new BailSimpleLexer(CharStreams.fromString(mancExp));
+		lexer.removeErrorListeners();
+		lexer.addErrorListener(ThrowingErrorListenerLexer.INSTANCE);
 		// Get a list of matched tokens
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 		// Pass the tokens to the parser
 		ManchesterOWL2SyntaxParserParser parser = new ManchesterOWL2SyntaxParserParser(tokens);
 		// set the error handler that does not try to recover from error, it just throw exception
 		parser.setErrorHandler(new BailErrorStrategy());
+		parser.removeErrorListeners();
+		parser.addErrorListener(ThrowingErrorListenerParser.INSTANCE);
 		try {
 			DatatypeRestrictionContext datatypeRestrictionContext = parser.datatypeRestriction();
 
@@ -401,29 +422,34 @@ public class ManchesterSyntaxUtils {
 
 			if (mci instanceof ManchesterBaseClass) {
 				throw new ManchesterParserException(
-						"The expression " + mancExp + " cannot be composed of a " + "single IRI/QName");
+						"The expression " + mancExp + " cannot be composed of a " + "single IRI/QName", 0, mancExp, null);
 			}
 
 			return mci;
-		} catch (ManchesterParserRuntimeException e) {
-			throw new ManchesterParserException(e);
-		} catch (StringIndexOutOfBoundsException e) {
-			throw new ManchesterParserException(e);
+		} catch (ManchesterPrefixNotDefinedRuntimeException e) {
+			throw new ManchesterPrefixNotDefinedException(e.getMessage(), e.getPrefix());
+		} catch(ManchesterSyntaxRuntimeException e) {
+			throw  new ManchesterSyntaxException(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+		}catch (ManchesterParserRuntimeException e) {
+			throw new ManchesterParserException(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
 		}
 	}
 
 	public static ManchesterClassInterface parseLiteralEnumerationExpression(String mancExp, ValueFactory valueFactory,
-			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException {
+			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException,
+			ManchesterPrefixNotDefinedException, ManchesterSyntaxException {
 		// Get our lexer
-		// ManchesterOWL2SyntaxParserLexer lexer = new
-		// ManchesterOWL2SyntaxParserLexer(CharStreams.fromString(mancExp));
 		BailSimpleLexer lexer = new BailSimpleLexer(CharStreams.fromString(mancExp));
+		lexer.removeErrorListeners();
+		lexer.addErrorListener(ThrowingErrorListenerLexer.INSTANCE);
 		// Get a list of matched tokens
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 		// Pass the tokens to the parser
 		ManchesterOWL2SyntaxParserParser parser = new ManchesterOWL2SyntaxParserParser(tokens);
 		// set the error handler that does not try to recover from error, it just throw exception
 		parser.setErrorHandler(new BailErrorStrategy());
+		parser.removeErrorListeners();
+		parser.addErrorListener(ThrowingErrorListenerParser.INSTANCE);
 		try {
 			LiteralListContext literalListContext = parser.literalList();
 
@@ -435,14 +461,16 @@ public class ManchesterSyntaxUtils {
 
 			if (mci instanceof ManchesterBaseClass) {
 				throw new ManchesterParserException(
-						"The expression " + mancExp + " cannot be composed of a " + "single IRI/QName");
+						"The expression " + mancExp + " cannot be composed of a " + "single IRI/QName", 0, mancExp, null);
 			}
 
 			return mci;
-		} catch (ManchesterParserRuntimeException e) {
-			throw new ManchesterParserException(e);
-		} catch (StringIndexOutOfBoundsException e) {
-			throw new ManchesterParserException(e);
+		} catch (ManchesterPrefixNotDefinedRuntimeException e) {
+			throw new ManchesterPrefixNotDefinedException(e.getMessage(), e.getPrefix());
+		} catch(ManchesterSyntaxRuntimeException e) {
+			throw  new ManchesterSyntaxException(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+		}catch (ManchesterParserRuntimeException e) {
+			throw new ManchesterParserException(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
 		}
 	}
 
@@ -1220,7 +1248,7 @@ public class ManchesterSyntaxUtils {
 		}
 
 		public void recover(LexerNoViableAltException e) {
-			throw new ManchesterParserRuntimeException(e);
+			//throw new ManchesterParserRuntimeException(e);
 		}
 
 	}

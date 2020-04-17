@@ -21,36 +21,47 @@
   *
   */
 
-package it.uniroma2.art.semanticturkey.exceptions;
+package it.uniroma2.art.semanticturkey.exceptions.manchester;
 
-/**
+ import java.util.List;
+
+ /**
  * @author Andrea Turbati
  *
  */
-public class ManchesterParserRuntimeException extends RuntimeException {
+public class ManchesterParserException extends Exception {
 
-    /**
+     private String msg;
+     private int pos;
+     private String offendingTerm;
+     private List<String> expectedTokenList;
+
+     /**
 	 * 
 	 */
 	private static final long serialVersionUID = 4759454918851129781L;
 
-	public ManchesterParserRuntimeException() {
-        // TODO Auto-generated constructor stub
-    }
+     public ManchesterParserException(String msg, int pos, String offendingTerm, List<String> expectedTokenList) {
+         super(msg);
+         this.msg = msg;
+         this.pos = pos;
+         this.offendingTerm = offendingTerm;
+         this.expectedTokenList = expectedTokenList;
+     }
 
-    public ManchesterParserRuntimeException(String message) {
-        super(message);
-        // TODO Auto-generated constructor stub
-    }
+     public String getMsg() {
+         return msg;
+     }
 
-    public ManchesterParserRuntimeException(Throwable cause) {
-        super(cause);
-        // TODO Auto-generated constructor stub
-    }
+     public int getPos() {
+         return pos;
+     }
 
-    public ManchesterParserRuntimeException(String message, Throwable cause) {
-        super(message, cause);
-        // TODO Auto-generated constructor stub
-    }
+     public String getOffendingTerm() {
+         return offendingTerm;
+     }
 
+     public List<String> getExpectedTokenList() {
+         return expectedTokenList;
+     }
 }

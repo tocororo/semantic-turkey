@@ -8,6 +8,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -44,7 +46,7 @@ import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
-import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -490,7 +492,7 @@ public class Classes extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
 	public void addIntersectionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
-			List<String> clsDescriptions) throws ManchesterParserException {
+			List<String> clsDescriptions) throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
 				.getNSPrefixMappings(false);
@@ -526,7 +528,7 @@ public class Classes extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
 	public void addUnionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
-			List<String> clsDescriptions) throws ManchesterParserException {
+			List<String> clsDescriptions) throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
 				.getNSPrefixMappings(false);
@@ -582,8 +584,8 @@ public class Classes extends STServiceAdapter {
 	}	
 	
 	private void addCollectionBasedClassAxiom(IRI cls, IRI axiomProp, List<String> clsDescriptions, 
-			Model modelAdditions, RepositoryConnection repoConnection, Map<String, String> prefixToNamespacesMap) 
-					throws ManchesterParserException{
+			Model modelAdditions, RepositoryConnection repoConnection, Map<String, String> prefixToNamespacesMap)
+			throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
 		List<Resource> resourceList = new ArrayList<>();
 		if(clsDescriptions == null || clsDescriptions.size() == 0){
 			throw new IllegalArgumentException("the list of expression cannot be empty");

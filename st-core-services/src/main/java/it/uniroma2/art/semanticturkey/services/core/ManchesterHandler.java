@@ -10,8 +10,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.errors.ManchesterError;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.errors.ManchesterGenericError;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.errors.ManchesterSemanticError;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.errors.ManchesterSyntacticError;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -23,7 +27,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -189,7 +193,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	public JsonNode checkExpression(String manchExpr) {
 		JsonNodeFactory jf = JsonNodeFactory.instance;
 		ObjectNode respNode = jf.objectNode();
-		List<ManchesterError> errorMsgList = new ArrayList<>();
+		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
 		boolean isValid = true;
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
@@ -202,29 +206,63 @@ public class ManchesterHandler extends STServiceAdapter {
 			ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList, resourceToPosMap);
 		} catch (ManchesterParserException e) {
 			isValid = false;
-			errorMsgList.add(new ManchesterError("Not a valid Manchester Expression"));
+			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+			errorMsgList.add(manchesterSyntacticError);
+		} catch (ManchesterPrefixNotDefinedException e) {
+			isValid = false;
+			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPrefix(), manchExpr.indexOf(e.getPrefix()));
+			errorMsgList.add(manchesterSyntacticError);
+		} catch (ManchesterSyntaxException e) {
+			isValid = false;
+			ManchesterSyntacticError manchesterSyntacticError;
+			manchesterSyntacticError = new ManchesterSyntacticError(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+			errorMsgList.add(manchesterSyntacticError);
 		}
 		ArrayNode detailArray = jf.arrayNode();
-		if(isValid && errorMsgList.isEmpty()){
-			isValid = true;
-		} else {
+		if(!isValid || !errorMsgList.isEmpty()){
 			isValid = false;
-			for(ManchesterError manchesterError : errorMsgList){
-				ObjectNode errorNode = jf.objectNode();
-				errorNode.set("msg", jf.textNode(manchesterError.getMsg()));
-				errorNode.set("isSemanticError", jf.booleanNode(manchesterError.isSemanticError()));
-				if(manchesterError.isSemanticError()){
-					errorNode.set("iri", jf.textNode(NTriplesUtil.toNTriplesString(manchesterError.getResource())));
-					errorNode.set("qname", jf.textNode(manchesterError.getQname()));
-					errorNode.set("pos", jf.numberNode(manchesterError.getPos()));
-					detailArray.add(errorNode);
-				}
+			for(ManchesterGenericError manchesterGenericError : errorMsgList){
+				detailArray.add(prepareErrorNode(manchesterGenericError));
 			}
 		}
 		respNode.set("valid", jf.booleanNode(isValid));
 		respNode.set("details", detailArray);
 
 		return respNode;
+	}
+
+	private ObjectNode prepareErrorNode(ManchesterGenericError manchesterGenericError) {
+		JsonNodeFactory jf = JsonNodeFactory.instance;
+		ObjectNode errorNode = jf.objectNode();
+		errorNode.set("msg", jf.textNode(manchesterGenericError.getMsg()));
+		errorNode.set("type", jf.textNode(manchesterGenericError.isSemanticError() ? "semantic" : "syntactic"));
+		if(manchesterGenericError.isSemanticError()){
+			ManchesterSemanticError manchesterSemanticError = (ManchesterSemanticError) manchesterGenericError;
+			errorNode.set("iri", jf.textNode(NTriplesUtil.toNTriplesString(manchesterSemanticError.getResource())));
+			errorNode.set("qname", jf.textNode(manchesterSemanticError.getQname()));
+			errorNode.set("occurrence", jf.numberNode(manchesterSemanticError.getPos()));
+
+		} else { //it is a syntactic one
+			ManchesterSyntacticError manchesterSyntacticError = (ManchesterSyntacticError) manchesterGenericError;
+			if(manchesterSyntacticError.getPos()>0) {
+				errorNode.set("occurrence", jf.numberNode(manchesterSyntacticError.getPos()));
+			}
+			if(manchesterSyntacticError.getOffendingTerm()!=null){
+				errorNode.set("offendingTerm", jf.textNode(manchesterSyntacticError.getOffendingTerm()));
+			}
+			if(manchesterSyntacticError.getPrefix()!=null){
+				errorNode.set("prefix", jf.textNode(manchesterSyntacticError.getPrefix()));
+			}
+			ArrayNode expectedTokenArray = jf.arrayNode();
+			if(manchesterSyntacticError.getOffendingTerm()!=null){
+				for(String exptectedToken : manchesterSyntacticError.getExptectedTokenList()){
+					expectedTokenArray.add(jf.textNode(exptectedToken));
+
+				}
+			}
+			errorNode.set("expectedTokens",expectedTokenArray);
+		}
+		return errorNode;
 	}
 
 	/**
@@ -237,7 +275,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	public JsonNode checkDatatypeExpression(String manchExpr) {
 		JsonNodeFactory jf = JsonNodeFactory.instance;
 		ObjectNode respNode = jf.objectNode();
-		List<String> errorMsgList = new ArrayList<>();
+		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
 		boolean isValid = true;
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
@@ -247,15 +285,23 @@ public class ManchesterHandler extends STServiceAdapter {
 					prefixToNamespacesMap);
 		} catch (ManchesterParserException e) {
 			isValid = false;
-			errorMsgList.add("Not a valid Manchester Expression");
+			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+			errorMsgList.add(manchesterSyntacticError);
+		} catch (ManchesterPrefixNotDefinedException e) {
+			isValid = false;
+			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPrefix(), manchExpr.indexOf(e.getPrefix()));
+			errorMsgList.add(manchesterSyntacticError);
+		} catch (ManchesterSyntaxException e) {
+			isValid = false;
+			ManchesterSyntacticError manchesterSyntacticError;
+			manchesterSyntacticError = new ManchesterSyntacticError(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+			errorMsgList.add(manchesterSyntacticError);
 		}
 		ArrayNode detailArray = jf.arrayNode();
-		if(isValid && errorMsgList.isEmpty()){
-			isValid = true;
-		} else {
+		if(!isValid || !errorMsgList.isEmpty()){
 			isValid = false;
-			for(String msg : errorMsgList){
-				detailArray.add(msg);
+			for(ManchesterGenericError manchesterGenericError : errorMsgList){
+				detailArray.add(prepareErrorNode(manchesterGenericError));
 			}
 		}
 		respNode.set("valid", jf.booleanNode(isValid));
@@ -274,7 +320,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	public JsonNode checkLiteralEnumerationExpression(String manchExpr) {
 		JsonNodeFactory jf = JsonNodeFactory.instance;
 		ObjectNode respNode = jf.objectNode();
-		List<String> errorMsgList = new ArrayList<>();
+		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
 		boolean isValid = true;
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
@@ -284,15 +330,23 @@ public class ManchesterHandler extends STServiceAdapter {
 					prefixToNamespacesMap);
 		} catch (ManchesterParserException e) {
 			isValid = false;
-			errorMsgList.add("Not a valid Manchester Expression");
+			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+			errorMsgList.add(manchesterSyntacticError);
+		} catch (ManchesterPrefixNotDefinedException e) {
+			isValid = false;
+			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPrefix(), manchExpr.indexOf(e.getPrefix()));
+			errorMsgList.add(manchesterSyntacticError);
+		} catch (ManchesterSyntaxException e) {
+			isValid = false;
+			ManchesterSyntacticError manchesterSyntacticError;
+			manchesterSyntacticError = new ManchesterSyntacticError(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+			errorMsgList.add(manchesterSyntacticError);
 		}
 		ArrayNode detailArray = jf.arrayNode();
-		if(isValid && errorMsgList.isEmpty()){
-			isValid = true;
-		} else {
+		if(!isValid || !errorMsgList.isEmpty()){
 			isValid = false;
-			for(String msg : errorMsgList){
-				detailArray.add(msg);
+			for(ManchesterGenericError manchesterGenericError : errorMsgList){
+				detailArray.add(prepareErrorNode(manchesterGenericError));
 			}
 		}
 		respNode.set("valid", jf.booleanNode(isValid));
@@ -313,7 +367,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	public JsonNode checkObjectPropertyExpression(String manchExpr) {
 		JsonNodeFactory jf = JsonNodeFactory.instance;
 		ObjectNode respNode = jf.objectNode();
-		List<String> errorMsgList = new ArrayList<>();
+		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
 		boolean isValid = true;
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
@@ -323,15 +377,23 @@ public class ManchesterHandler extends STServiceAdapter {
 					prefixToNamespacesMap);
 		} catch (ManchesterParserException e) {
 			isValid = false;
-			errorMsgList.add("Not a valid Manchester Expression");
+			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+			errorMsgList.add(manchesterSyntacticError);
+		} catch (ManchesterPrefixNotDefinedException e) {
+			isValid = false;
+			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPrefix(), manchExpr.indexOf(e.getPrefix()));
+			errorMsgList.add(manchesterSyntacticError);
+		} catch (ManchesterSyntaxException e) {
+			isValid = false;
+			ManchesterSyntacticError manchesterSyntacticError;
+			manchesterSyntacticError = new ManchesterSyntacticError(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+			errorMsgList.add(manchesterSyntacticError);
 		}
 		ArrayNode detailArray = jf.arrayNode();
-		if(isValid && errorMsgList.isEmpty()){
-			isValid = true;
-		} else {
+		if(!isValid || !errorMsgList.isEmpty()){
 			isValid = false;
-			for(String msg : errorMsgList){
-				detailArray.add(msg);
+			for(ManchesterGenericError manchesterGenericError : errorMsgList){
+				detailArray.add(prepareErrorNode(manchesterGenericError));
 			}
 		}
 		respNode.set("valid", jf.booleanNode(isValid));
@@ -352,11 +414,13 @@ public class ManchesterHandler extends STServiceAdapter {
 	 *            the Manchester expression defying the restriction
 	 * @return the newly created bnode
 	 * @throws ManchesterParserException
+	 * @throws ManchesterSyntaxException
+	 * @throws ManchesterPrefixNotDefinedException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	public AnnotatedValue<BNode> createRestriction(IRI classIri, IRI exprType, String manchExpr)
-			throws ManchesterParserException {
+			throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
 				.getNSPrefixMappings(false);
@@ -422,12 +486,15 @@ public class ManchesterHandler extends STServiceAdapter {
 	 *            the bnode representing the restriction
 	 * @return the same bnode passed in input and used to create the updated restriction
 	 * @throws ManchesterParserException
-	 * @throws NotClassAxiomException
+	 * @throws NoClassDefFoundError
+	 * @throws ManchesterSyntaxException
+	 * @throws ManchesterPrefixNotDefinedException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	public AnnotatedValue<BNode> updateExpression(String newManchExpr, BNode bnode)
-			throws ManchesterParserException, NotClassAxiomException {
+			throws ManchesterParserException, NotClassAxiomException, ManchesterSyntaxException,
+			ManchesterPrefixNotDefinedException {
 		// first of all, parse the new Expression to be sure that it is a valid one
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()

@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers;
 
-import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserRuntimeException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserRuntimeException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedRuntimeException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserBaseListener;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.AtomicContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ClassIRIContext;
@@ -193,7 +194,6 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 	}
 
 	protected ManchesterClassInterface parseIndividualList(IndividualListContext individualListContext) {
-		//System.out.println("parseIndividualList"); // da cancellare
 		List<IndividualContext> individualContextList = individualListContext.individual();
 		ManchesterOneOfClass moc = new ManchesterOneOfClass();
 		for(IndividualContext individualContext : individualContextList){
@@ -290,19 +290,16 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 	
 
 	protected Literal parseLiteral(LiteralContext literalContext) {
-		//System.out.println("parseLiteral"); // da cancellare
 		return getLiteral(literalContext);
 	}
 
 	
 
 	protected Value parseIndividual(IndividualContext individual) {
-		//System.out.println("parseIndividual"); // da cancellare
 		return getIndividual(individual);
 	}
 
 	protected ManchesterClassInterface parseDataPrimary(DataPrimaryContext dataPrimaryContext) {
-		//System.out.println("parseDataPrimary"); // da cancellare
 		boolean hasNot = false;
 		if(dataPrimaryContext.not != null){
 			hasNot = true;
@@ -316,7 +313,6 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 	}
 
 	protected ManchesterClassInterface parseDataAtomic(DataAtomicContext dataAtomicContext) {
-		//System.out.println("parseDataAtomic"); // da cancellare
 		if(dataAtomicContext.datatype() != null){
 			return parseDataType(dataAtomicContext.datatype());
 		} else if(dataAtomicContext.literalList() != null){
@@ -330,7 +326,6 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 	}
 
 	protected ManchesterClassInterface parseLiteralList(LiteralListContext literalListContext) {
-		//System.out.println("parseLiteralList"); // da cancellare
 		List<LiteralContext> literalContextList = literalListContext.literal();
 		List<Literal> literalList = new ArrayList<Literal>();
 		for(LiteralContext literalContext : literalContextList){
@@ -340,7 +335,6 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 	}
 
 	protected ManchesterClassInterface parseDataType(DatatypeContext datatypeContext) {
-		//System.out.println("parseDataType"); // da cancellare
 		if(datatypeContext.datatypeIRI() != null){
 			DatatypeIRIContext datatypeIRIContext = datatypeContext.datatypeIRI();
 			return new ManchesterBaseClass(getIRIFromResource(datatypeIRIContext));
@@ -352,10 +346,8 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 				return new ManchesterBaseClass(XMLSchema.DECIMAL);
 			} else if(abbr.getText().equals("float")){
 				return new ManchesterBaseClass(XMLSchema.FLOAT);
-			} else if(abbr.getText().equals("string")){
+			} else { // == if(abbr.getText().equals("string")){
 				return new ManchesterBaseClass(XMLSchema.STRING);
-			} else{
-				throw new ManchesterParserRuntimeException("The abbreviated type "+abbr.getText()+" is not supported");
 			}
 		}
 	}
@@ -468,7 +460,7 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 		String[] qnameArray = qname.split(":");
 		String namespace = prefixToNamespacesMap.get(qnameArray[0]);
 		if(namespace == null){
-			throw new ManchesterParserRuntimeException("There is no prefix for the namespace: "+qnameArray[0]);
+			throw new ManchesterPrefixNotDefinedRuntimeException(qnameArray[0]);
 		}
 		return valueFactory.createIRI(namespace, qnameArray[1]);
 	}
@@ -513,7 +505,7 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 			}
 			String decimalValue = sign+literalContext.decimalLiteral().intPart.getText()+"."+literalContext.decimalLiteral().decPart.getText();
 			return valueFactory.createLiteral(decimalValue, XMLSchema.DECIMAL);
-		} else if(literalContext.floatingPointLiteral() != null) {
+		} else { // == if(literalContext.floatingPointLiteral() != null) {
 			String sign = "";
 			if(literalContext.floatingPointLiteral().sign != null && literalContext.floatingPointLiteral().sign.getText().equals("-")) {
 				sign = "-";
@@ -534,21 +526,7 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 			//combine the two parts
 			String completeValue = decimalPart+floatPart;
 			return valueFactory.createLiteral(completeValue, XMLSchema.FLOAT);
-		} else {
-			//this should never happen
-			throw new ManchesterParserRuntimeException("The literal  "+literalContext.getText()+" is not supported");
 		}
-
-
-		/*String literalWithNoises = literalContext.string().getText();
-		String label = literalWithNoises.substring(1, literalWithNoises.length()-1);
-		if(literalContext.LANGTAG() != null){
-			return valueFactory.createLiteral(label, literalContext.LANGTAG().getText().substring(1));
-		} else if(literalContext.classIRI() != null){
-			return valueFactory.createLiteral(label, getIRIFromResource(literalContext.classIRI()));
-		} else{
-			return valueFactory.createLiteral(label);
-		}*/
 	}
 	
 	private IRI getIndividual(IndividualContext individualContext) {

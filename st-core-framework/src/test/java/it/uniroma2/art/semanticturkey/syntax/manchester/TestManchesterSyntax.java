@@ -5,7 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.antlr.runtime.RecognitionException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -15,7 +16,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 
-import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
@@ -38,9 +39,7 @@ public class TestManchesterSyntax {
 			
 			//testManchesterSyntax.startWriteTest(conn);
 			
-		} catch (RecognitionException e) {
-			e.printStackTrace();
-		} catch (ManchesterParserException e) {
+		} catch (ManchesterParserException | ManchesterSyntaxException | ManchesterPrefixNotDefinedException e) {
 			e.printStackTrace();
 		}
 
@@ -84,7 +83,7 @@ public class TestManchesterSyntax {
 	}
 
 	private void startReadTest(ValueFactory valueFactory)
-			throws RecognitionException, ManchesterParserException {
+			throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
 
 		ManchesterClassInterface manchesterClassInterface;
 
@@ -115,7 +114,7 @@ public class TestManchesterSyntax {
 
 	
 	
-	private void startWriteTest(RepositoryConnection conn) throws RecognitionException, ManchesterParserException, NotClassAxiomException {
+	private void startWriteTest(RepositoryConnection conn) throws ManchesterParserException, NotClassAxiomException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
 		ManchesterClassInterface manchesterClassInterface;
 
 		Resource[] graphs = new Resource[] { conn.getValueFactory().createIRI("http://maingraph.it") };

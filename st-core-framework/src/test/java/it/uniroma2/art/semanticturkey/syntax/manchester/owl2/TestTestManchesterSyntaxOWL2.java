@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -12,7 +14,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
-import it.uniroma2.art.semanticturkey.exceptions.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
 
 
 public class TestTestManchesterSyntaxOWL2 {
@@ -128,6 +130,12 @@ public class TestTestManchesterSyntaxOWL2 {
 		} catch (ManchesterParserException e) {
 			System.out.println("ERROR CAUGHT");
 			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		} catch (ManchesterPrefixNotDefinedException e) {
+			e.printStackTrace();
+			return null;
+		} catch (ManchesterSyntaxException e) {
 			e.printStackTrace();
 			return null;
 		}
