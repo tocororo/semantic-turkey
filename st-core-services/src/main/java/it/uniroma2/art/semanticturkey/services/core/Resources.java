@@ -78,6 +78,19 @@ public class Resources extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', '{lang: [''' +@auth.langof(#value)+ ''', ''' +@auth.langof(#newValue)+ ''']}', 'U')")
 	public void updateTriple(@Modified Resource subject, IRI property, Value value, Value newValue) {
+		updateTripleImpl(subject, property, value, newValue);
+	}
+
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', lexicalization)', '{lang: [''' +@auth.langof(#value)+ ''', ''' +@auth.langof(#newValue)+ ''']}', 'U')")
+	public void updateLexicalization(@Modified Resource subject, IRI property, Literal value, Literal newValue) {
+		logger.debug("request to update a lexicalization");
+		updateTripleImpl(subject, property, value, newValue);
+	}
+
+	private void updateTripleImpl(Resource subject, IRI property, Value value, Value newValue) {
 		logger.debug("request to update a triple");
 		RepositoryConnection repoConnection = getManagedConnection();
 
