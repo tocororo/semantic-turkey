@@ -1,36 +1,6 @@
 package it.uniroma2.art.semanticturkey.rendering;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Properties;
-
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.SKOS;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.springframework.security.authentication.TestingAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.context.SecurityContextImpl;
-
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-
-import static org.junit.Assert.assertThat;
-
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasProperty;
-
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
@@ -73,10 +43,34 @@ import it.uniroma2.art.semanticturkey.services.STRequest;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
-import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.hamcrest.Matchers;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextImpl;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Properties;
+
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertThat;
 
 public class BaseRenderingEngineTest {
 
@@ -95,7 +89,7 @@ public class BaseRenderingEngineTest {
 	public void testBaseRenderingEngine() throws ClassNotFoundException, InvalidProjectNameException,
 			ProjectInexistentException, ProjectAccessException, ForbiddenProjectAccessException,
 			DuplicatedResourceException, ProjectCreationException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, WrongPropertiesException, ProjectBindingException,
+			UnloadablePluginConfigurationException, WrongPropertiesException,
 			RBACException, UnsupportedModelException, UnsupportedLexicalizationModelException,
 			ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException,
 			IOException, ReservedPropertyUpdateException, ProjectUpdateException {
@@ -162,6 +156,11 @@ public class BaseRenderingEngineTest {
 
 				@Override
 				public String getVersion() {
+					return null;
+				}
+
+				@Override
+				public String getLanguages() {
 					return null;
 				}
 
@@ -254,7 +253,7 @@ public class BaseRenderingEngineTest {
 			throws ClassNotFoundException, InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
 			ProjectCreationException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, WrongPropertiesException, ProjectBindingException,
+			UnloadablePluginConfigurationException, WrongPropertiesException,
 			RBACException, UnsupportedModelException, UnsupportedLexicalizationModelException,
 			ProjectInconsistentException, InvalidConfigurationException, STPropertyAccessException,
 			IOException, ReservedPropertyUpdateException, ProjectUpdateException {
@@ -317,6 +316,11 @@ public class BaseRenderingEngineTest {
 
 				@Override
 				public String getVersion() {
+					return null;
+				}
+
+				@Override
+				public String getLanguages() {
 					return null;
 				}
 

@@ -32,6 +32,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	private static final String HTTP_PARAM_WGRAPH = HTTP_PARAM_PREFIX + "wgraph";
 	private static final String HTTP_PARAM_RGRAPHS = HTTP_PARAM_PREFIX + "rgraphs";
 	private static final String HTTP_PARAM_TOKEN = HTTP_PARAM_PREFIX + "token";
+	private static final String HTTP_PARAM_LANGUAGES = HTTP_PARAM_PREFIX + "langs";
 	private static final String HTTP_PARAM_VERSION = HTTP_PARAM_PREFIX + "version";
 
 	private static final String HTTP_ARG_DEFAULT_GRAPH = "DEFAULT";
@@ -204,6 +205,11 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 	@Override
 	public String getVersion() {
 		return request.getParameter(HTTP_PARAM_VERSION);
+	}
+
+	@Override
+	public String getLanguages() {
+		return request.getParameter(HTTP_PARAM_LANGUAGES);
 	}
 
 	@Override

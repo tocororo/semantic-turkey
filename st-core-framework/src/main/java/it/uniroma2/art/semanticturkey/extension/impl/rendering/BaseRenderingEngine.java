@@ -1,25 +1,27 @@
 package it.uniroma2.art.semanticturkey.extension.impl.rendering;
 
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.annotation.Nullable;
-
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.impls.LiteralText;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.impls.NestedTemplateComponent;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.impls.Template;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.impls.TemplateComponent;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.impls.VariableComponent;
+import it.uniroma2.art.semanticturkey.extension.settings.PUSettingsManager;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElement;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
@@ -39,28 +41,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.TreeMultimap;
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
-import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
-import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
-import it.uniroma2.art.semanticturkey.extension.impl.rendering.impls.LiteralText;
-import it.uniroma2.art.semanticturkey.extension.impl.rendering.impls.NestedTemplateComponent;
-import it.uniroma2.art.semanticturkey.extension.impl.rendering.impls.Template;
-import it.uniroma2.art.semanticturkey.extension.impl.rendering.impls.TemplateComponent;
-import it.uniroma2.art.semanticturkey.extension.impl.rendering.impls.VariableComponent;
-import it.uniroma2.art.semanticturkey.extension.settings.PUSettingsManager;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
-import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElement;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
-import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 public abstract class BaseRenderingEngine implements RenderingEngine {
 
@@ -91,7 +89,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 				throw new IllegalArgumentException("Not a valid ValueStatus: " + charAt);
 			}
 		}
-	};
+	}
 
 	public BaseRenderingEngine(PUSettingsManager<? extends BaseRenderingEnginePUSettings> puSettingsManager) {
 		this.fallbackToTerm = true;
@@ -103,17 +101,20 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	 * of languages is significative, since it may determine the order of labels displayed by concrete
 	 * rendering engines.
 	 * 
-	 * @param currentProject
+	 * @param context
 	 * @return
 	 */
-	private List<String> computeLanguages(Project currentProject) {
-		String languagesStringRep;
-		try {
-			languagesStringRep = exptManager.getRenderingEngine().getProjectSettings(currentProject,
-					UsersManager.getLoggedUser()).languages;
-		} catch (STPropertyAccessException e) {
-			logger.debug("Could not access property: " + STPropertiesManager.PREF_LANGUAGES, e);
-			languagesStringRep = "*";
+	private List<String> computeLanguages(STServiceContext context) {
+		String languagesStringRep = context.getLanguages();
+		if (languagesStringRep == null) {
+			try {
+				Project currentProject = context.getProject();
+				languagesStringRep = exptManager.getRenderingEngine().getProjectSettings(currentProject,
+						UsersManager.getLoggedUser()).languages;
+			} catch (STPropertyAccessException e) {
+				logger.debug("Could not access property: " + STPropertiesManager.PREF_LANGUAGES, e);
+				languagesStringRep = "*";
+			}
 		}
 
 		if (languagesStringRep.isEmpty() || languagesStringRep.equals("*")) {
@@ -124,11 +125,13 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern(Project currentProject) {
+	public GraphPattern getGraphPattern(STServiceContext context) {
+		Project currentProject = context.getProject();
+
 		StringBuilder gp = new StringBuilder();
 		getGraphPatternInternal(gp);
 
-		List<String> acceptedLanguges = computeLanguages(currentProject);
+		List<String> acceptedLanguges = computeLanguages(context);
 
 		if (!acceptedLanguges.isEmpty()) {
 			gp.append(String.format(" FILTER(LANG(?labelInternal) IN (%s))", acceptedLanguges.stream()
@@ -265,7 +268,8 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable) {
+		Project currentProject = context.getProject();
 
 		Repository rep = currentProject.getRepository();
 
@@ -284,7 +288,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 		// note: there might be a race condition between this invocation and the generation of the graph
 		// pattern
-		List<String> acceptedLanguges = computeLanguages(currentProject);
+		List<String> acceptedLanguges = computeLanguages(context);
 		@Nullable
 		Template template;
 		boolean isValidationEnabled;

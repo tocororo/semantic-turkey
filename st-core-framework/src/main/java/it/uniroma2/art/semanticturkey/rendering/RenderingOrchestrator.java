@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.rendering;
 import java.util.List;
 import java.util.Map;
 
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -73,8 +74,8 @@ public class RenderingOrchestrator implements RenderingEngine {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern(Project currentProject) {
-		return baseRenderingEngine.getGraphPattern(currentProject);
+	public GraphPattern getGraphPattern(STServiceContext context) {
+		return baseRenderingEngine.getGraphPattern(context);
 	}
 
 	@Override
@@ -83,8 +84,8 @@ public class RenderingOrchestrator implements RenderingEngine {
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project project, List<BindingSet> resultTable) {
-		return baseRenderingEngine.processBindings(project, resultTable);
+	public Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable) {
+		return baseRenderingEngine.processBindings(context, resultTable);
 	}
 
 	@Override

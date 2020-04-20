@@ -67,6 +67,11 @@ public class SimpleSTServiceContext implements STServiceContext{
 	}
 
 	@Override
+	public String getLanguages() {
+		return null;
+	}
+
+	@Override
 	public boolean hasContextParameter(String parameter) {
 		return false;
 	}

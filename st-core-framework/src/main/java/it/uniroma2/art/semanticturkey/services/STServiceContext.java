@@ -32,6 +32,8 @@ public interface STServiceContext {
 	String getSessionToken();
 	
 	String getVersion();
+
+	String getLanguages();
 	
 	boolean hasContextParameter(String parameter);
 	String getContextParameter(String string);

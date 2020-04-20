@@ -1,15 +1,38 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import static java.util.stream.Collectors.joining;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
+import it.uniroma2.art.semanticturkey.customform.CustomForm;
+import it.uniroma2.art.semanticturkey.customform.CustomFormException;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
+import it.uniroma2.art.semanticturkey.customform.StandardForm;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.annotations.Created;
+import it.uniroma2.art.semanticturkey.services.annotations.Modified;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface;
+import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -35,38 +58,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
-import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
-import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
-import it.uniroma2.art.semanticturkey.customform.CustomForm;
-import it.uniroma2.art.semanticturkey.customform.CustomFormException;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
-import it.uniroma2.art.semanticturkey.customform.StandardForm;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.CODAException;
-import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.Created;
-import it.uniroma2.art.semanticturkey.services.annotations.Modified;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
-import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
-import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
-import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
-import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * This class provides services for manipulating OWL/RDFS classes.
@@ -293,8 +291,7 @@ public class Classes extends STServiceAdapter {
 			"?s a " + NTriplesUtil.toNTriplesString(cls) + " \n" + 
 			"}";
 		TupleQueryResult result = getManagedConnection().prepareTupleQuery(query).evaluate();
-		int instCount = ((Literal) result.next().getValue("count")).intValue();
-		return instCount;
+		return ((Literal) result.next().getValue("count")).intValue();
 	}
 	
 	
@@ -305,7 +302,7 @@ public class Classes extends STServiceAdapter {
 			@LocallyDefined IRI superClass,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2000/01/rdf-schema#Class") IRI classType,
 			@Optional CustomFormValue customFormValue)
-					throws ProjectInconsistentException, CODAException, CustomFormException {
+					throws CODAException, CustomFormException {
 		
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -376,7 +373,7 @@ public class Classes extends STServiceAdapter {
 				+ "		{ ?cls ?p2 ?o2 . }												\n"
 				+ "	}																	\n"
 				+ "}";
-		repoConnection.prepareUpdate(query).execute();;
+		repoConnection.prepareUpdate(query).execute();
 	}
 	
 	
@@ -385,7 +382,7 @@ public class Classes extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(individual)', 'C')")
 	public AnnotatedValue<IRI> createInstance(@NotLocallyDefined IRI newInstance, @LocallyDefined IRI cls,
 			@Optional CustomFormValue customFormValue)
-					throws ProjectInconsistentException, CODAException, CustomFormException {
+					throws CODAException, CustomFormException {
 		
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -510,7 +507,7 @@ public class Classes extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
 	public void removeIntersectionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
-			@LocallyDefined BNode collectionBNode) throws ManchesterParserException {
+			@LocallyDefined BNode collectionBNode) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		removeCollectionBasedClassAxiom(cls, OWL.INTERSECTIONOF, collectionBNode, modelRemovals,
@@ -546,7 +543,7 @@ public class Classes extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
 	public void removeUnionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
-			@LocallyDefined BNode collectionBNode) throws ManchesterParserException {
+			@LocallyDefined BNode collectionBNode) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		removeCollectionBasedClassAxiom(cls, OWL.UNIONOF, collectionBNode, modelRemovals, repoConnection);
@@ -561,7 +558,7 @@ public class Classes extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
 	public void addOneOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
-			List<IRI> individuals) throws ManchesterParserException {
+			List<IRI> individuals) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		createAndAddList(cls, OWL.ONEOF, individuals, modelAdditions, repoConnection);
@@ -576,7 +573,7 @@ public class Classes extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'D')")
 	public void removeOneOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
-			@LocallyDefined BNode collectionBNode) throws ManchesterParserException {
+			@LocallyDefined BNode collectionBNode) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelRemovals = new LinkedHashModel();
 		removeCollectionBasedClassAxiom(cls, OWL.ONEOF, collectionBNode, modelRemovals, repoConnection);
@@ -640,8 +637,7 @@ public class Classes extends STServiceAdapter {
 	}
 	
 	private void removeCollectionBasedClassAxiom(IRI cls, IRI prop, BNode collectionBNode, 
-		Model modelRemovals, RepositoryConnection repoConnection) 
-			throws ManchesterParserException{
+		Model modelRemovals, RepositoryConnection repoConnection) {
 		//iterate over the list, using its first element, collectionBNode, to get all the elements to 
 		// remove them
 		Resource elemInList = collectionBNode;
@@ -695,15 +691,15 @@ class ClassesMoreProcessor implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern(Project currentProject) {
+	public GraphPattern getGraphPattern(STServiceContext context) {
 		return graphPattern;
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable) {
 		return null;
 	}
-};
+}
 
 class ClassesNumInstProcessor implements QueryBuilderProcessor {
 
@@ -727,15 +723,15 @@ class ClassesNumInstProcessor implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern(Project currentProject) {
+	public GraphPattern getGraphPattern(STServiceContext context) {
 		return graphPattern;
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable) {
 		return null;
 	}
-};
+}
 
 class FixedRoleProcessor implements QueryBuilderProcessor {
 
@@ -759,12 +755,12 @@ class FixedRoleProcessor implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern(Project currentProject) {
+	public GraphPattern getGraphPattern(STServiceContext context) {
 		return graphPattern;
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable) {
 		return null;
 	}
-};
+}

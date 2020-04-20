@@ -1,9 +1,12 @@
 package it.uniroma2.art.semanticturkey.data.role;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
+import it.uniroma2.art.lime.model.vocabulary.LIME;
+import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -17,13 +20,9 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
-import it.uniroma2.art.lime.model.vocabulary.LIME;
-import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
-import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
-import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 
@@ -44,7 +43,7 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern(Project currentProject) {
+	public GraphPattern getGraphPattern(STServiceContext context) {
 		return GraphPatternBuilder.create().prefix("rdf", RDF.NAMESPACE).prefix("rdfs", RDFS.NAMESPACE)
 				.prefix("owl", OWL.NAMESPACE).prefix("skos", SKOS.NAMESPACE)
 				.prefix("ontolex", ONTOLEX.NAMESPACE).prefix("lime", LIME.NAMESPACE)
@@ -79,7 +78,7 @@ public class RoleRecognitionOrchestrator implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project project, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable) {
 		return null;
 	}
 

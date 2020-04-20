@@ -1,10 +1,12 @@
 package it.uniroma2.art.semanticturkey.services.support;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
@@ -12,12 +14,10 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.BindingSet;
 
-import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
-import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
-import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A {@link QueryBuilderProcessor} computing the QName of resources that are IRIs. It uses the prefix mappings
@@ -30,7 +30,7 @@ import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 public class QNameQueryBuilderProcessor implements QueryBuilderProcessor {
 
 	@Override
-	public GraphPattern getGraphPattern(Project currentProject) {
+	public GraphPattern getGraphPattern(STServiceContext context) {
 		return GraphPatternBuilder.create()
 				.projection(Collections.singletonList(ProjectionElementBuilder.variable("dummy"))).pattern("")
 				.graphPattern();
@@ -42,10 +42,11 @@ public class QNameQueryBuilderProcessor implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable) {
 		Map<Value, Literal> rv = new HashMap<>();
 
 		try {
+			Project currentProject = context.getProject();
 			Map<String, String> prefix2ns = currentProject.getNewOntologyManager().getNSPrefixMappings(false);
 
 			Map<String, String> ns2prefix = new HashMap<>();

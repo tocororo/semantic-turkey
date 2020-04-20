@@ -22,29 +22,59 @@
  */
 package it.uniroma2.art.semanticturkey.services.core;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.reducing;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.annotation.Nullable;
-
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
+import it.uniroma2.art.lime.model.vocabulary.LIME;
+import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.maple.orchestration.AssessmentException;
+import it.uniroma2.art.maple.orchestration.MediationFramework;
+import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
+import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
+import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
+import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
+import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.METADATAREGISTRY;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
+import it.uniroma2.art.semanticturkey.rendering.AbstractLabelBasedRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.rendering.BaseRenderingEngine;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexiconRenderer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceSection;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsumerProvider;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
+import it.uniroma2.art.semanticturkey.services.support.QueryResultsProcessors;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.utilities.ErrorRecoveringValueFactory;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.http.client.SPARQLProtocolSession;
@@ -85,60 +115,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import it.uniroma2.art.lime.model.vocabulary.LIME;
-import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
-import it.uniroma2.art.maple.orchestration.AssessmentException;
-import it.uniroma2.art.maple.orchestration.MediationFramework;
-import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
-import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
-import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
-import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
-import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
-import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryBackend;
-import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.METADATAREGISTRY;
-import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
-import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
-import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
-import it.uniroma2.art.semanticturkey.rendering.AbstractLabelBasedRenderingEngineConfiguration;
-import it.uniroma2.art.semanticturkey.rendering.BaseRenderingEngine;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
-import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
-import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexiconRenderer;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceSection;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsumerProvider;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
-import it.uniroma2.art.semanticturkey.services.support.QueryResultsProcessors;
-import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
-import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
-import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
-import it.uniroma2.art.semanticturkey.utilities.ErrorRecoveringValueFactory;
-import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
+import static java.util.stream.Collectors.*;
 
 /**
  * This service produces a view showing the details of a resource. This service operates uniformly (as much as
@@ -306,7 +297,7 @@ public class ResourceView extends STServiceAdapter {
 	@Read
 	public List<AnnotatedValue<IRI>> getLexicalizationProperties(@Optional Resource resource,
 			@Optional ResourcePosition resourcePosition)
-			throws ProjectAccessException, ProjectInconsistentException {
+			throws ProjectAccessException {
 		if (resourcePosition == null) {
 			resourcePosition = resource != null
 					? resourceLocator.locateResource(getProject(), getRepository(), resource)
@@ -355,7 +346,7 @@ public class ResourceView extends STServiceAdapter {
 
 	// TODO place this method into a better place
 	public static List<IRI> getLexicalizationPropertiesHelper(Resource resource,
-			ResourcePosition resourcePosition) throws ProjectInconsistentException {
+			ResourcePosition resourcePosition) {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			Project hostingProject = ((LocalResourcePosition) resourcePosition).getProject();
 			if (hostingProject.getLexicalizationModel().equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
@@ -513,8 +504,7 @@ public class ResourceView extends STServiceAdapter {
 		 */
 		protected Model retrievePredicateInformation(RepositoryConnection conn,
 				ResourcePosition resourcePosition, Set<IRI> resourcePredicates, Set<IRI> specialProperties,
-				Map<Resource, Map<String, Value>> resource2attributes, Model statements)
-				throws ProjectAccessException {
+				Map<Resource, Map<String, Value>> resource2attributes, Model statements) {
 
 			SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
@@ -593,8 +583,7 @@ public class ResourceView extends STServiceAdapter {
 		protected SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformationFromConnection(
 				RepositoryConnection conn, Model statements, RenderingEngine renderingEngine,
 				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
-				Set<IRI> resourcePredicates, boolean ignorePropertyExclusions, boolean useGroupBy)
-				throws ProjectAccessException {
+				Set<IRI> resourcePredicates, boolean ignorePropertyExclusions, boolean useGroupBy) {
 			String propertyExclusionFilterWithVarPredicate = getPropertyExclusionFilter(resourcePosition,
 					"predicate", ignorePropertyExclusions);
 
@@ -776,8 +765,7 @@ public class ResourceView extends STServiceAdapter {
 		 */
 		protected SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformationFromStatements(
 				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
-				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
-				throws ProjectAccessException {
+				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions) {
 			Repository repo = new SailRepository(new MemoryStore());
 			repo.initialize();
 			try (RepositoryConnection conn = repo.getConnection()) {
@@ -819,7 +807,7 @@ public class ResourceView extends STServiceAdapter {
 		@Override
 		public Model retrieveStatements(ResourcePosition resourcePosition, Resource resource,
 				boolean includeInferred, boolean ignorePropertyExclusions, MutableLong excludedObjectsCount)
-				throws ProjectAccessException, RDF4JException, IOException {
+				throws ProjectAccessException, RDF4JException {
 			LocalResourcePosition localResourcePosition = (LocalResourcePosition) resourcePosition;
 			RepositoryConnection managedConnection = acquireManagedConnectionToProject(getProject(),
 					resourceHoldingProject);
@@ -937,7 +925,7 @@ public class ResourceView extends STServiceAdapter {
 		@Override
 		public Model retrieveStatements(ResourcePosition resourcePosition, Resource resource,
 				boolean includeInferred, boolean ignorePropertyExclusions, MutableLong excludedObjectsCount)
-				throws ProjectAccessException, RDF4JException, IOException {
+				throws RDF4JException {
 			Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint.stringValue());
 			sparqlRepository.initialize();
 			try {
@@ -1034,7 +1022,7 @@ public class ResourceView extends STServiceAdapter {
 		public SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
 				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
 				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
-				throws ProjectAccessException, AssessmentException {
+				throws AssessmentException {
 			Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint.stringValue());
 			sparqlRepository.initialize();
 			try (RepositoryConnection conn = sparqlRepository.getConnection()) {
@@ -1063,7 +1051,7 @@ public class ResourceView extends STServiceAdapter {
 		@Override
 		public Model retrieveStatements(ResourcePosition resourcePosition, Resource resource,
 				boolean includeInferred, boolean ignorePropertyExclusions, MutableLong excludedObjectsCount)
-				throws ProjectAccessException, RDF4JException, IOException {
+				throws RDF4JException, IOException {
 			Model retrievedStatements = new LinkedHashModel();
 			RDFLoader rdfLoader = RDF4JUtilities.createRobustRDFLoader();
 			StatementCollector statementCollector = new StatementCollector(retrievedStatements);
@@ -1083,8 +1071,7 @@ public class ResourceView extends STServiceAdapter {
 		@Override
 		public SubjectAndObjectsInfos retrieveSubjectAndObjectsAddtionalInformation(
 				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
-				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
-				throws ProjectAccessException {
+				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions) {
 			return super.retrieveSubjectAndObjectsAddtionalInformationFromStatements(resourcePosition,
 					resource, includeInferred, statements, resourcePredicates, ignorePropertyExclusions);
 		}
@@ -1097,7 +1084,7 @@ class XLabelLiteralFormQueryProcessor implements QueryBuilderProcessor {
 	public static final QueryBuilderProcessor INSTANCE = new XLabelLiteralFormQueryProcessor();
 
 	@Override
-	public GraphPattern getGraphPattern(Project currentProject) {
+	public GraphPattern getGraphPattern(STServiceContext context) {
 		return GraphPatternBuilder.create().prefix("skosxl", SKOSXL.NAMESPACE)
 				.pattern("?resource skosxl:literalForm ?literalForm . FILTER(isLITERAL(?literalForm))")
 				.projection(ProjectionElementBuilder.variable("literalForm")).graphPattern();
@@ -1109,7 +1096,7 @@ class XLabelLiteralFormQueryProcessor implements QueryBuilderProcessor {
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable) {
 		return resultTable.stream().filter(bs -> bs.getValue("literalForm") != null).collect(
 				groupingBy(bs -> bs.getValue("resource"), mapping(bs -> (Literal) bs.getValue("literalForm"),
 						reducing(null, (v1, v2) -> v1 != null ? v1 : v2))));

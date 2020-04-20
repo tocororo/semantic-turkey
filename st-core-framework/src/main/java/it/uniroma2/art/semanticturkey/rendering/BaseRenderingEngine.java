@@ -1,23 +1,31 @@
 package it.uniroma2.art.semanticturkey.rendering;
 
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.VariableDefinition;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.impls.Template;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.OntoLexLemonRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.RDFSRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSXLRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElement;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -35,32 +43,23 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.TreeMultimap;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
-import it.uniroma2.art.semanticturkey.extension.impl.rendering.VariableDefinition;
-import it.uniroma2.art.semanticturkey.extension.impl.rendering.impls.Template;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngine;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngine;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngine;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.OntoLexLemonRenderingEngineConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.RDFSRenderingEngineConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSRenderingEngineConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSXLRenderingEngineConfiguration;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
-import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElement;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
-import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 public abstract class BaseRenderingEngine implements RenderingEngine {
 	private static final Logger logger = LoggerFactory.getLogger(BaseRenderingEngine.class);
@@ -85,7 +84,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 				throw new IllegalArgumentException("Not a valid ValueStatus: " + charAt);
 			}
 		}
-	};
+	}
 
 	private AbstractLabelBasedRenderingEngineConfiguration config;
 	protected String languages;
@@ -141,18 +140,18 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	 * of languages is significative, since it may determine the order of labels displayed by concrete
 	 * rendering engines.
 	 * 
-	 * @param currentProject
+	 * @param context
 	 * @return
 	 */
-	private List<String> computeLanguages(Project currentProject) {
+	private List<String> computeLanguages(STServiceContext context) {
 		StringBuffer sb = new StringBuffer();
 		Matcher m = propPattern.matcher(languages);
-		String languagesPropValue = null;
+		String languagesPropValue = context.getLanguages();
 		while (m.find()) {
 			if (languagesPropValue == null) {
 				try {
 					languagesPropValue = STPropertiesManager.getPUSetting(STPropertiesManager.PREF_LANGUAGES,
-							currentProject, UsersManager.getLoggedUser(), RenderingEngine.class.getName());
+							context.getProject(), UsersManager.getLoggedUser(), RenderingEngine.class.getName());
 				} catch (STPropertyAccessException e) {
 					logger.debug("Could not access property: " + STPropertiesManager.PREF_LANGUAGES, e);
 				}
@@ -173,11 +172,14 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	}
 
 	@Override
-	public GraphPattern getGraphPattern(Project currentProject) {
+	public GraphPattern getGraphPattern(STServiceContext context) {
+
+		Project currentProject = context.getProject();
+
 		StringBuilder gp = new StringBuilder();
 		getGraphPatternInternal(gp);
 
-		List<String> acceptedLanguges = computeLanguages(currentProject);
+		List<String> acceptedLanguges = computeLanguages(context);
 
 		if (!acceptedLanguges.isEmpty()) {
 			gp.append(String.format(" FILTER(LANG(?labelInternal) IN (%s))", acceptedLanguges.stream()
@@ -307,8 +309,10 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	}
 
 	@Override
-	public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
+	public Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable) {
 
+		Project currentProject = context.getProject();
+		
 		Repository rep = currentProject.getRepository();
 
 		HashMap<String, String> ns2prefix = new HashMap<>();
@@ -326,7 +330,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 		// note: there might be a race condition between this invocation and the generation of the graph
 		// pattern
-		List<String> acceptedLanguges = computeLanguages(currentProject);
+		List<String> acceptedLanguges = computeLanguages(context);
 		boolean isValidationEnabled = !Boolean.TRUE.equals(config.ignoreValidation)
 				&& currentProject.isValidationEnabled();
 

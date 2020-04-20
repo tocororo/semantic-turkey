@@ -1,16 +1,13 @@
 package it.uniroma2.art.semanticturkey.services.support;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.joining;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STRequest;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
@@ -29,22 +26,18 @@ import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.joining;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
-
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasProperty;
-
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STRequest;
-import it.uniroma2.art.semanticturkey.services.STServiceContext;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
-import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
-import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 
 /**
  * Test cases for {@link QueryBuilder}
@@ -62,7 +55,7 @@ public class QueryBuilderTest {
 		@Override
 		public String getContextParameter(String string) {
 			return null;			
-		};
+		}
 
 		@Override
 		public Resource getWGraph() {
@@ -71,6 +64,11 @@ public class QueryBuilderTest {
 
 		@Override
 		public String getVersion() {
+			return null;
+		}
+
+		@Override
+		public String getLanguages() {
 			return null;
 		}
 
@@ -124,7 +122,7 @@ public class QueryBuilderTest {
 		queryBuilder.process(new QueryBuilderProcessor() {
 
 			@Override
-			public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
+			public Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable) {
 				return null;
 			}
 
@@ -134,7 +132,7 @@ public class QueryBuilderTest {
 			}
 
 			@Override
-			public GraphPattern getGraphPattern(Project currentProject) {
+			public GraphPattern getGraphPattern(STServiceContext context) {
 				return GraphPatternBuilder.create().prefix(RDFS.NS).pattern("?resource rdfs:label ?label")
 						.projection(Collections.singletonList(ProjectionElementBuilder.variable("label")))
 						.graphPattern();
@@ -198,7 +196,7 @@ public class QueryBuilderTest {
 		queryBuilder.process(new QueryBuilderProcessor() {
 
 			@Override
-			public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
+			public Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable) {
 				return resultTable.stream().collect(groupingBy((BindingSet bs) -> bs.getValue("resource"),
 						Collectors.collectingAndThen(Collectors.toList(), list -> SimpleValueFactory
 								.getInstance()
@@ -213,7 +211,7 @@ public class QueryBuilderTest {
 			}
 
 			@Override
-			public GraphPattern getGraphPattern(Project currentProject) {
+			public GraphPattern getGraphPattern(STServiceContext context) {
 				return GraphPatternBuilder.create().prefix(RDFS.NS).pattern("?resource rdfs:label ?label")
 						.projection(Collections.singletonList(ProjectionElementBuilder.variable("label")))
 						.graphPattern();
@@ -270,7 +268,7 @@ public class QueryBuilderTest {
 		queryBuilder.process(new QueryBuilderProcessor() {
 
 			@Override
-			public Map<Value, Literal> processBindings(Project currentProject, List<BindingSet> resultTable) {
+			public Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable) {
 				return resultTable.stream()
 						.collect(Collectors.toMap(bs -> bs.getValue(getBindingVariable()),
 								bs -> (Literal) SimpleValueFactory.getInstance()
@@ -284,7 +282,7 @@ public class QueryBuilderTest {
 			}
 
 			@Override
-			public GraphPattern getGraphPattern(Project currentProject) {
+			public GraphPattern getGraphPattern(STServiceContext context) {
 				return GraphPatternBuilder.create().prefix(RDFS.NS).prefix(SKOS.NS).pattern(
 						"?resource rdfs:label ?labelInternal . OPTIONAL { ?resource skos:notation ?notationInternal }")
 						.projection(
