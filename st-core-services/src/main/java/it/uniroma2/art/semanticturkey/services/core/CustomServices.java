@@ -1,10 +1,8 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -12,22 +10,24 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Lists;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.config.customservice.CustomService;
 import it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefinitionStore;
-import it.uniroma2.art.semanticturkey.config.customservice.Operation;
+import it.uniroma2.art.semanticturkey.customservice.CustomServiceException;
 import it.uniroma2.art.semanticturkey.customservice.CustomServiceHandlerMapping;
+import it.uniroma2.art.semanticturkey.customservice.DuplicateIdException;
+import it.uniroma2.art.semanticturkey.customservice.DuplicateName;
+import it.uniroma2.art.semanticturkey.customservice.SchemaException;
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.extpts.customservice.CustomServiceBackend;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
-import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -52,9 +52,7 @@ public class CustomServices extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	public Collection<String> getCustomServiceIdentifiers() throws NoSuchConfigurationManager {
-		CustomServiceDefinitionStore cm = (CustomServiceDefinitionStore) exptManager
-				.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
-		return cm.getSystemConfigurationIdentifiers();
+		return customServiceMapping.getCustomServiceIdentifiers();
 	}
 
 	/**
@@ -73,16 +71,21 @@ public class CustomServices extends STServiceAdapter {
 	 * @throws STPropertyUpdateException
 	 * @throws WrongPropertiesException
 	 * @throws IOException
+	 * @throws InvalidConfigurationException
+	 * @throws NoSuchExtensionException
+	 * @throws IllegalArgumentException
+	 * @throws SchemaException
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
+	 * @throws CustomServiceException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void createCustomService(String id, ObjectNode definition)
 			throws NoSuchConfigurationManager, ConfigurationNotFoundException, IOException,
-			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException {
-		CustomServiceDefinitionStore cm = (CustomServiceDefinitionStore) exptManager
-				.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
-		exptManager.storeConfiguration(CustomServiceDefinitionStore.class.getName(),
-				new Reference(null, null, id), definition);
-		customServiceMapping.registerCustomService(id);
+			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException,
+			InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
+			NoSuchExtensionException, InvalidConfigurationException, CustomServiceException {
+		customServiceMapping.registerCustomService(id, definition, false);
 	}
 
 	/**
@@ -99,10 +102,7 @@ public class CustomServices extends STServiceAdapter {
 	@STServiceOperation
 	public CustomService getCustomService(String id) throws NoSuchConfigurationManager, IOException,
 			ConfigurationNotFoundException, WrongPropertiesException, STPropertyAccessException {
-		CustomServiceDefinitionStore cm = (CustomServiceDefinitionStore) exptManager
-				.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
-
-		return cm.getSystemConfiguration(id);
+		return customServiceMapping.getCustomService(id);
 	}
 
 	/**
@@ -120,36 +120,31 @@ public class CustomServices extends STServiceAdapter {
 	 * @throws STPropertyUpdateException
 	 * @throws WrongPropertiesException
 	 * @throws IOException
+	 * @throws InvalidConfigurationException
+	 * @throws NoSuchExtensionException
+	 * @throws IllegalArgumentException
+	 * @throws SchemaException
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
+	 * @throws CustomServiceException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void updateCustomService(String id, ObjectNode definition)
 			throws NoSuchConfigurationManager, ConfigurationNotFoundException, IOException,
-			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException {
-		String componentID = CustomServiceDefinitionStore.class.getName();
-		Reference cfgRef = new Reference(null, null, id);
-
-		CustomServiceDefinitionStore cm = (CustomServiceDefinitionStore) exptManager
-				.getConfigurationManager(componentID);
-
-		// read just to check that a previous configuration exists
-		exptManager.getConfiguration(componentID, cfgRef);
-		exptManager.storeConfiguration(componentID, cfgRef, definition);
-		customServiceMapping.registerCustomService(id);
+			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException,
+			InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
+			NoSuchExtensionException, InvalidConfigurationException, CustomServiceException {
+		customServiceMapping.registerCustomService(id, definition, true);
 	}
 
 	/**
 	 * Deletes a custom service given the <em>id</em> of its associated configuration file
 	 * 
 	 * @param id
-	 * @throws NoSuchConfigurationManager
 	 * @throws ConfigurationNotFoundException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void deleteCustomService(String id)
-			throws NoSuchConfigurationManager, ConfigurationNotFoundException {
-		CustomServiceDefinitionStore cm = (CustomServiceDefinitionStore) exptManager
-				.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
-		cm.deleteSystemConfiguration(id);
+	public void deleteCustomService(String id) throws ConfigurationNotFoundException {
 		customServiceMapping.unregisterCustomService(id);
 	}
 
@@ -178,29 +173,22 @@ public class CustomServices extends STServiceAdapter {
 	 * @throws WrongPropertiesException
 	 * @throws STPropertyUpdateException
 	 * @throws STPropertyAccessException
+	 * @throws InvalidConfigurationException
+	 * @throws NoSuchExtensionException
+	 * @throws IllegalArgumentException
+	 * @throws SchemaException
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
+	 * @throws CustomServiceException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void addOperationToCustomService(String id, ObjectNode operationDefinition)
 			throws NoSuchConfigurationManager, ConfigurationNotFoundException, IOException,
-			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException {
-		Operation op = STPropertiesManager.loadSTPropertiesFromObjectNode(Operation.class, true,
-				operationDefinition);
+			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException,
+			InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
+			NoSuchExtensionException, InvalidConfigurationException, CustomServiceException {
 
-		CustomServiceDefinitionStore cm = (CustomServiceDefinitionStore) exptManager
-				.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
-		CustomService customService = cm.getSystemConfiguration(id);
-
-		List<Operation> oldOps = customService.operations;
-		if (oldOps != null) {
-			customService.operations = new ArrayList<>(oldOps.size() + 1);
-			customService.operations.addAll(oldOps);
-			customService.operations.add(op);
-		} else {
-			customService.operations = Lists.newArrayList(op);
-		}
-
-		cm.storeSystemConfiguration(id, customService);
-		customServiceMapping.registerCustomService(id);
+		customServiceMapping.addOperationToCustomeService(id, operationDefinition);
 	}
 
 	/**
@@ -219,29 +207,22 @@ public class CustomServices extends STServiceAdapter {
 	 * @throws WrongPropertiesException
 	 * @throws STPropertyUpdateException
 	 * @throws STPropertyAccessException
+	 * @throws InvalidConfigurationException
+	 * @throws NoSuchExtensionException
+	 * @throws IllegalArgumentException
+	 * @throws SchemaException
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
+	 * @throws CustomServiceException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void updateOperationInCustomService(String id, ObjectNode operationDefinition,
 			@Optional String oldOperationName)
 			throws NoSuchConfigurationManager, ConfigurationNotFoundException, IOException,
-			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException {
-		Operation op = STPropertiesManager.loadSTPropertiesFromObjectNode(Operation.class, true,
-				operationDefinition);
-
-		CustomServiceDefinitionStore cm = (CustomServiceDefinitionStore) exptManager
-				.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
-		CustomService customService = cm.getSystemConfiguration(id);
-
-		List<Operation> oldOps = customService.operations;
-		String op2replace = oldOperationName != null ? oldOperationName : op.name;
-
-		if (oldOps != null) {
-			customService.operations = customService.operations.stream()
-					.map(eop -> Objects.equals(eop.name, op2replace) ? op : eop).collect(Collectors.toList());
-		}
-
-		cm.storeSystemConfiguration(id, customService);
-		customServiceMapping.registerCustomService(id);
+			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException,
+			InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
+			NoSuchExtensionException, InvalidConfigurationException, CustomServiceException {
+		customServiceMapping.udpateOperationInCustomeService(id, operationDefinition, oldOperationName);
 	}
 
 	/**
@@ -255,33 +236,46 @@ public class CustomServices extends STServiceAdapter {
 	 * @throws ConfigurationNotFoundException
 	 * @throws IOException
 	 * @throws STPropertyUpdateException
+	 * @throws InvalidConfigurationException
+	 * @throws NoSuchExtensionException
+	 * @throws IllegalArgumentException
+	 * @throws SchemaException
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
+	 * @throws CustomServiceException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void removeOperationFromCustomService(String id, String operationName)
 			throws NoSuchConfigurationManager, IOException, ConfigurationNotFoundException,
-			WrongPropertiesException, STPropertyAccessException, STPropertyUpdateException {
-		CustomServiceDefinitionStore cm = (CustomServiceDefinitionStore) exptManager
-				.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
-		CustomService customService = cm.getSystemConfiguration(id);
-
-		List<Operation> oldOps = customService.operations;
-		if (oldOps != null) {
-			customService.operations = oldOps.stream().filter(op -> !Objects.equals(operationName, op.name))
-					.collect(Collectors.toList());
-
-			cm.storeSystemConfiguration(id, customService);
-			customServiceMapping.registerCustomService(id);
-		}
-
+			WrongPropertiesException, STPropertyAccessException, STPropertyUpdateException,
+			InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
+			NoSuchExtensionException, InvalidConfigurationException, CustomServiceException {
+		customServiceMapping.removeOperationFromCustomeService(id, operationName);
 	}
 
 	/**
 	 * Reloads the custom service defined by the configuration identified by the given <em>id</em>.
 	 * 
 	 * @param id
+	 * @throws ConfigurationNotFoundException
+	 * @throws InvalidConfigurationException
+	 * @throws STPropertyUpdateException
+	 * @throws WrongPropertiesException
+	 * @throws IOException
+	 * @throws STPropertyAccessException
+	 * @throws DuplicateIdException
+	 * @throws NoSuchExtensionException
+	 * @throws IllegalArgumentException
+	 * @throws SchemaException
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
+	 * @throws DuplicateName 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void reloadCustomService(String id) {
+	public void reloadCustomService(String id) throws InstantiationException, IllegalAccessException,
+			SchemaException, IllegalArgumentException, NoSuchExtensionException, DuplicateIdException,
+			STPropertyAccessException, IOException, WrongPropertiesException, STPropertyUpdateException,
+			InvalidConfigurationException, ConfigurationNotFoundException, DuplicateName {
 		customServiceMapping.registerCustomService(id);
 	}
 

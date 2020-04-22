@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.config.customservice;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,5 +30,13 @@ public class Type {
 
 	public List<Type> getTypeArguments() {
 		return typeArguments;
+	}
+
+	@Override
+	public String toString() {
+		if (typeArguments == null || typeArguments.isEmpty()) {
+			return name;
+		}
+		return typeArguments.stream().map(Object::toString).collect(Collectors.joining(",", name + "<", ">"));
 	}
 }

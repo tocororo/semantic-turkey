@@ -4,6 +4,7 @@ import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 
 /**
  * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
@@ -20,7 +21,7 @@ public interface ConfigurableExtensionFactory<EXTTYPE extends Extension, CONFIGT
 	 * @param conf
 	 * @return
 	 */
-	EXTTYPE createInstance(CONFIGTYPE conf);
+	EXTTYPE createInstance(CONFIGTYPE conf) throws InvalidConfigurationException;
 	
 	
 	/**

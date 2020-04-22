@@ -43,6 +43,8 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sparql.query.QueryStringUtil;
 
+import com.google.common.collect.ImmutableSet;
+
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.extension.extpts.customservice.CustomServiceBackend;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -59,6 +61,8 @@ import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
  */
 public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 
+	public static final Set<String> SUPPORTED_TYPES = ImmutableSet.copyOf(new String[] { "boolean", "integer",
+			"short", "long", "float", "double", "java.lang.String", "IRI", "BNode", "Resource", "Literal", "RDFValue" });
 	private SPARQLOperation conf;
 
 	public SPARQLCustomServiceBackend(SPARQLOperation conf) {
@@ -209,6 +213,9 @@ public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 								convertJavaValueToRDFValue(args[i], genericParameterTypes[i], vf));
 					}
 				}
+
+				// automatically binds the working graph
+				bindingSet.addBinding("workingGraph", stServiceContext.getWGraph());
 
 				return handler.apply(stServiceContext, bindingSet);
 			}

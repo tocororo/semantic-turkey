@@ -2,13 +2,19 @@ package it.uniroma2.art.semanticturkey.customservice;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -20,10 +26,15 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -40,8 +51,11 @@ import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
-import com.google.common.collect.Lists;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
@@ -50,14 +64,15 @@ import it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefiniti
 import it.uniroma2.art.semanticturkey.config.customservice.Operation;
 import it.uniroma2.art.semanticturkey.config.customservice.Parameter;
 import it.uniroma2.art.semanticturkey.config.customservice.Type;
+import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.extpts.customservice.CustomServiceBackend;
-import it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql.SPARQLCustomServiceBackend;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.Response;
@@ -86,6 +101,8 @@ import net.bytebuddy.implementation.InvocationHandlerAdapter;
  *
  */
 public class CustomServiceHandlerMapping extends AbstractHandlerMapping implements Ordered {
+
+	private static final Logger logger = LoggerFactory.getLogger(CustomServiceHandlerMapping.class);
 
 	public static final String CUSTOM_SERVICES_URL_PREFIX = "it.uniroma2.art.semanticturkey/st-custom-services/";
 
@@ -125,6 +142,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	private ReadWriteLock lock = new ReentrantReadWriteLock();
 	private DelegateRequestMappingHandlerMapping delegateMapping;
 	private Map<String, Object> customServiceHandlers = new HashMap<>();
+	private Multimap<String, String> customServiceNames2IDs = HashMultimap.create();
 
 	@PostConstruct
 	public void init() throws NoSuchConfigurationManager {
@@ -138,13 +156,31 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 			CustomServiceDefinitionStore cs = (CustomServiceDefinitionStore) exptManager
 					.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
 
+			// temporary multimap to spot conflicting services
+			customServiceNames2IDs = HashMultimap.create();
+
 			for (String customServiceCfgID : cs.getSystemConfigurationIdentifiers()) {
 				try {
 					CustomService customServiceCfg = cs.getSystemConfiguration(customServiceCfgID);
 					Object handler = buildCustomServiceHandler(customServiceCfgID, customServiceCfg);
 					customServiceHandlers.put(customServiceCfgID, handler);
+					customServiceNames2IDs.put(customServiceCfg.name, customServiceCfgID);
 				} catch (Exception e) {
-					e.printStackTrace(); // store the exception somewhere to enable inspection
+					logger.error(" exception occurred when parsing the custom service: " + customServiceCfgID,
+							e);
+				}
+			}
+
+			Iterator<Entry<String, Collection<String>>> it = customServiceNames2IDs.asMap().entrySet()
+					.iterator();
+			while (it.hasNext()) {
+				Entry<String, Collection<String>> serviceName2IDs = it.next();
+				String serviceName = serviceName2IDs.getKey();
+				Collection<String> serviceIDs = serviceName2IDs.getValue();
+
+				if (serviceIDs.size() > 1) {
+					logger.error("Custom services {} use the same service name {}. Not loaded.", serviceIDs,
+							serviceName);
 				}
 			}
 
@@ -154,42 +190,250 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		}
 	}
 
-	public void registerCustomService(String customServiceCfgID) {
+	public Collection<String> getCustomServiceIdentifiers() {
+		CustomServiceDefinitionStore cs;
+		try {
+			cs = (CustomServiceDefinitionStore) exptManager
+					.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
+		} catch (NoSuchConfigurationManager e) {
+			throw new IllegalStateException("Unable to find the configuration manager for custom services",
+					e);
+		}
+		return cs.getSystemConfigurationIdentifiers();
+	}
+
+	public CustomService getCustomService(String id) throws IOException, ConfigurationNotFoundException,
+			WrongPropertiesException, STPropertyAccessException {
+		CustomServiceDefinitionStore cs;
+		try {
+			cs = (CustomServiceDefinitionStore) exptManager
+					.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
+		} catch (NoSuchConfigurationManager e) {
+			throw new IllegalStateException("Unable to find the configuration manager for custom services",
+					e);
+		}
+		return cs.getSystemConfiguration(id);
+	}
+
+	public void registerCustomService(String customServiceCfgID)
+			throws DuplicateIdException, STPropertyAccessException, IOException, WrongPropertiesException,
+			STPropertyUpdateException, InstantiationException, IllegalAccessException, SchemaException,
+			IllegalArgumentException, NoSuchExtensionException, InvalidConfigurationException,
+			ConfigurationNotFoundException, DuplicateName {
 		Lock wlock = lock.writeLock();
 		wlock.lock();
 		try {
 			CustomServiceDefinitionStore cs = (CustomServiceDefinitionStore) exptManager
 					.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
+			CustomService customServiceCfg = cs.getSystemConfiguration(customServiceCfgID);
 
-			CustomService customServiceCfg;
-			try {
-				customServiceCfg = cs.getSystemConfiguration(customServiceCfgID);
-			} catch (ConfigurationNotFoundException e) {
-				// swallow exception
-				return;
-			}
+			// build
 			Object handler = buildCustomServiceHandler(customServiceCfgID, customServiceCfg);
 
+			// checks uniqueness of custom service name
+			Collection<String> conflictingCustomServiceIDs = customServiceNames2IDs.get(customServiceCfg.name)
+					.stream().filter(id -> !id.equals(customServiceCfgID)).collect(Collectors.toList());
+			if (!conflictingCustomServiceIDs.isEmpty()) {
+				throw new DuplicateName("the custom service '" + customServiceCfgID
+						+ "' uses the service name '" + customServiceCfg.name
+						+ "' already used by the custom service " + conflictingCustomServiceIDs);
+			}
+
+			// then, finalize the registration (which is unlikely to fail)
 			customServiceHandlers.put(customServiceCfgID, handler);
 			setDelegateMappingInternal();
-		} catch (NoSuchConfigurationManager | IOException | WrongPropertiesException
-				| STPropertyAccessException | InstantiationException | IllegalAccessException
-				| SchemaException | IllegalArgumentException | NoSuchExtensionException
-				| InvalidConfigurationException e) {
-			e.printStackTrace();
+		} catch (NoSuchConfigurationManager e) {
+			throw new IllegalStateException("Unable to find the configuration manager for custom services",
+					e);
 		} finally {
 			wlock.unlock();
 		}
 	}
 
-	public void unregisterCustomService(String customServiceCfgID) {
+	public void registerCustomService(String customServiceCfgID, ObjectNode customServiceDefinitiondefinition,
+			boolean overwrite) throws STPropertyAccessException, IOException, WrongPropertiesException,
+			STPropertyUpdateException, InstantiationException, IllegalAccessException, SchemaException,
+			IllegalArgumentException, NoSuchExtensionException, InvalidConfigurationException,
+			CustomServiceException {
+
+		// parses the JSON object into an actual Configuration object
+		CustomService customServiceCfg = STPropertiesManager
+				.loadSTPropertiesFromObjectNode(CustomService.class, true, customServiceDefinitiondefinition);
+
+		registerCustomService(customServiceCfgID, customServiceCfg, overwrite);
+	}
+
+	public void registerCustomService(String customServiceCfgID, CustomService customServiceCfg,
+			boolean overwrite) throws DuplicateIdException, STPropertyAccessException, IOException,
+			WrongPropertiesException, STPropertyUpdateException, InstantiationException,
+			IllegalAccessException, SchemaException, IllegalArgumentException, NoSuchExtensionException,
+			InvalidConfigurationException, CustomServiceException {
 		Lock wlock = lock.writeLock();
 		wlock.lock();
 		try {
+			CustomServiceDefinitionStore cs = (CustomServiceDefinitionStore) exptManager
+					.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
+			// raises an exception if a custom service with the same configuration id exists and overwriting
+			// is disabled
+			if (!overwrite && cs.getSystemConfigurationIdentifiers().contains(customServiceCfgID)) {
+				throw new DuplicateIdException(
+						"A CustomService definition with id '" + customServiceCfgID + "' already exists");
+			}
+
+			// build
+			Object handler = buildCustomServiceHandler(customServiceCfgID, customServiceCfg);
+
+			// checks uniqueness of custom service name
+			Collection<String> conflictingCustomServiceIDs = customServiceNames2IDs.get(customServiceCfg.name)
+					.stream().filter(id -> !id.equals(customServiceCfgID)).collect(Collectors.toList());
+			if (!conflictingCustomServiceIDs.isEmpty()) {
+				throw new DuplicateName("the custom service '" + customServiceCfgID
+						+ "' uses the service name '" + customServiceCfg.name
+						+ "' already used by the custom service " + conflictingCustomServiceIDs);
+			}
+
+			// first, try to store the configuration
+			cs.storeSystemConfiguration(customServiceCfgID, customServiceCfg);
+
+			// then, finalize the registration (which is unlikely to fail)
+			customServiceHandlers.put(customServiceCfgID, handler);
+			customServiceNames2IDs.put(customServiceCfg.name, customServiceCfgID);
+
+			setDelegateMappingInternal();
+		} catch (NoSuchConfigurationManager e) {
+			throw new IllegalStateException("Unable to find the configuration manager for custom services",
+					e);
+		} finally {
+			wlock.unlock();
+		}
+	}
+
+	public void unregisterCustomService(String customServiceCfgID) throws ConfigurationNotFoundException {
+		Lock wlock = lock.writeLock();
+		wlock.lock();
+		try {
+			CustomServiceDefinitionStore cs;
+			try {
+				cs = (CustomServiceDefinitionStore) exptManager
+						.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
+			} catch (NoSuchConfigurationManager e) {
+				throw new IllegalStateException(
+						"Unable to find the configuration manager for custom services", e);
+			}
+			cs.deleteSystemConfiguration(customServiceCfgID);
+
 			Object removedMapping = customServiceHandlers.remove(customServiceCfgID);
+			customServiceNames2IDs.values().remove(customServiceCfgID);
+
 			if (removedMapping != null) {
 				setDelegateMappingInternal();
 			}
+		} finally {
+			wlock.unlock();
+		}
+	}
+
+	public void addOperationToCustomeService(String id, ObjectNode operationDefinition)
+			throws STPropertyAccessException, IOException, ConfigurationNotFoundException,
+			WrongPropertiesException, InstantiationException, IllegalAccessException, SchemaException,
+			IllegalArgumentException, NoSuchExtensionException, STPropertyUpdateException,
+			InvalidConfigurationException, CustomServiceException {
+		Lock wlock = lock.writeLock();
+		wlock.lock();
+		try {
+
+			Operation op = STPropertiesManager.loadSTPropertiesFromObjectNode(Operation.class, true,
+					operationDefinition);
+
+			CustomServiceDefinitionStore cs;
+			try {
+				cs = (CustomServiceDefinitionStore) exptManager
+						.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
+			} catch (NoSuchConfigurationManager e) {
+				throw new IllegalStateException(
+						"Unable to find the configuration manager for custom services", e);
+			}
+
+			CustomService customService = cs.getSystemConfiguration(id);
+
+			List<Operation> oldOps = customService.operations;
+			if (oldOps != null) {
+				customService.operations = new ArrayList<>(oldOps.size() + 1);
+				customService.operations.addAll(oldOps);
+				customService.operations.add(op);
+			} else {
+				customService.operations = Lists.newArrayList(op);
+			}
+
+			registerCustomService(id, customService, true);
+		} finally {
+			wlock.unlock();
+		}
+	}
+
+	public void udpateOperationInCustomeService(String id, ObjectNode operationDefinition,
+			String oldOperationName) throws STPropertyAccessException, IOException,
+			ConfigurationNotFoundException, WrongPropertiesException, InstantiationException,
+			IllegalAccessException, SchemaException, IllegalArgumentException, NoSuchExtensionException,
+			STPropertyUpdateException, InvalidConfigurationException, CustomServiceException {
+		Lock wlock = lock.writeLock();
+		wlock.lock();
+		try {
+
+			Operation op = STPropertiesManager.loadSTPropertiesFromObjectNode(Operation.class, true,
+					operationDefinition);
+
+			CustomServiceDefinitionStore cs;
+			try {
+				cs = (CustomServiceDefinitionStore) exptManager
+						.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
+			} catch (NoSuchConfigurationManager e) {
+				throw new IllegalStateException(
+						"Unable to find the configuration manager for custom services", e);
+			}
+
+			CustomService customService = cs.getSystemConfiguration(id);
+			String op2replace = oldOperationName != null ? oldOperationName : op.name;
+
+			if (customService.operations != null) {
+				customService.operations = customService.operations.stream()
+						.map(eop -> Objects.equals(eop.name, op2replace) ? op : eop)
+						.collect(Collectors.toList());
+			}
+
+			registerCustomService(id, customService, true);
+		} finally {
+			wlock.unlock();
+		}
+	}
+
+	public void removeOperationFromCustomeService(String id, String operationName)
+			throws STPropertyAccessException, IOException, ConfigurationNotFoundException,
+			WrongPropertiesException, InstantiationException, IllegalAccessException, SchemaException,
+			IllegalArgumentException, NoSuchExtensionException, STPropertyUpdateException,
+			InvalidConfigurationException, CustomServiceException {
+		Lock wlock = lock.writeLock();
+		wlock.lock();
+		try {
+			CustomServiceDefinitionStore cs;
+			try {
+				cs = (CustomServiceDefinitionStore) exptManager
+						.getConfigurationManager(CustomServiceDefinitionStore.class.getName());
+			} catch (NoSuchConfigurationManager e) {
+				throw new IllegalStateException(
+						"Unable to find the configuration manager for custom services", e);
+			}
+
+			CustomService customService = cs.getSystemConfiguration(id);
+
+			List<Operation> oldOps = customService.operations;
+			if (oldOps != null) {
+				customService.operations = customService.operations.stream()
+						.filter(eop -> !Objects.equals(eop.name, operationName)).collect(Collectors.toList());
+
+			}
+
+			registerCustomService(id, customService, true);
 		} finally {
 			wlock.unlock();
 		}
@@ -208,7 +452,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	 * Pattern for the recognition of authorizations.
 	 * These are the named capturing group:
 	 * - "area": matches the area (restricted to letters)
-	 * - "subjfun": matches the subject as a function invocation; "subjfunpar" is the parameter
+	 * - "subjfun": optionally, matches the subject as a function invocation; "subjfunpar" is the parameter
 	 * - "subjlit": matches the subject as a a literal (exclusive with the previous)
 	 * - "scope": optionally, matches the scope as a literal (restricted to letters)
 	 * - "userkey": optionally, matches a key in the userResponsibility structure (restricted to letters)
@@ -225,7 +469,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	 * @formatter:on
 	 */
 	private Pattern AUTHORIZATION_PATTERN = Pattern.compile(
-			"^\\s*(?<area>[a-z]+)\\(((?<subjfun>@typeof\\(#(?<subjfunpar>[a-z]+)\\))|(?<subjlit>[a-z]+))(\\s*,\\s*(?<scope>\\w+))?\\)(\\s*,\\s*\\{\\s*(?<userkey>[a-z]+)\\s*:\\s*((?<userlit>\\w+)|(?<userfun>(@langOf\\(#(?<userfunpar>[a-z]+)\\))))\\})?\\s*,\\s*(?<crudv>[CRUDV])\\s*$",
+			"^\\s*(?<area>[a-z]+)(?<subj>\\(((?<subjfun>@typeof\\(#(?<subjfunpar>[a-z]+)\\))|(?<subjlit>[a-z]+))(\\s*,\\s*(?<scope>\\w+))?\\))?(\\s*,\\s*\\{\\s*(?<userkey>[a-z]+)\\s*:\\s*((?<userlit>\\w+)|(?<userfun>(@langOf\\(#(?<userfunpar>[a-z]+)\\))))\\})?\\s*,\\s*(?<crudv>[CRUDV])\\s*$",
 			Pattern.CASE_INSENSITIVE);
 
 	private Object buildCustomServiceHandler(String cfgID, CustomService customServiceCfg)
@@ -246,12 +490,12 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 				.defineField("stServiceContext", STServiceContext.class, Modifier.PUBLIC)
 				.annotateField(AnnotationDescription.Builder.ofType(Autowired.class).build());
 
+		List<Pair<Operation, CustomServiceBackend>> backends = new ArrayList<>(operationDefinitions.size());
 		for (Operation operationDefinition : operationDefinitions) {
 
-			CustomServiceBackend customServiceBackend = exptManager.instantiateExtension(
-					CustomServiceBackend.class,
-					new PluginSpecification(SPARQLCustomServiceBackend.class.getName(), null, null,
-							STPropertiesManager.storeSTPropertiesToObjectNode(operationDefinition, true)));
+			CustomServiceBackend customServiceBackend = buildExtension(operationDefinition);
+			backends.add(ImmutablePair.of(operationDefinition, customServiceBackend));
+
 			InvocationHandler invocationHandler = customServiceBackend.createInvocationHandler();
 			boolean isWrite = customServiceBackend.isWrite();
 
@@ -293,13 +537,12 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		controllerClassBuilder = controllerClassBuilder
 				.annotateType(AnnotationDescription.Builder.ofType(Controller.class).build());
 
-		for (Operation operationDefinition : operationDefinitions) {
+		for (Pair<Operation, CustomServiceBackend> confAndBackend : backends) {
 
-			CustomServiceBackend customServiceBackend = exptManager.instantiateExtension(
-					CustomServiceBackend.class,
-					new PluginSpecification(SPARQLCustomServiceBackend.class.getName(), null, null,
-							STPropertiesManager.storeSTPropertiesToObjectNode(operationDefinition, true)));
-			boolean isWrite = customServiceBackend.isWrite();
+			Operation operationDefinition = confAndBackend.getLeft();
+			CustomServiceBackend backend = confAndBackend.getRight();
+
+			boolean isWrite = backend.isWrite();
 
 			TypeDefinition returnTypeDefinition = generateTypeDefinitionFromSchema(
 					operationDefinition.returns);
@@ -330,7 +573,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 			String preauthorizeValue;
 
-			if (operationDefinition.authorization != null) {
+			if (StringUtils.isNoneBlank(operationDefinition.authorization)) {
 				Matcher m = AUTHORIZATION_PATTERN.matcher(operationDefinition.authorization);
 				if (!m.find()) {
 					throw new RuntimeException("Invalid authorization string");
@@ -340,18 +583,21 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 				sb.append("@auth.isAuthorized(");
 				sb.append("'");
 				sb.append(m.group("area"));
-				if (m.group("subjlit") != null) {
-					sb.append(m.group("subjlit"));
-				} else {
-					sb.append("' +");
-					sb.append("@auth." + m.group("subjfun").substring(1)); // removes leading @
-					sb.append("+ '");
+				if (m.group("subj") != null) {
+					sb.append("(");
+					if (m.group("subjlit") != null) {
+						sb.append(m.group("subjlit"));
+					} else {
+						sb.append("' +");
+						sb.append("@auth." + m.group("subjfun").substring(1)); // removes leading @
+						sb.append("+ '");
+					}
+					if (m.group("scope") != null) {
+						sb.append(", ").append(m.group("scope"));
+					}
+					sb.append(")");
+					sb.append("'");
 				}
-				if (m.group("scope") != null) {
-					sb.append(", ").append(m.group("scope"));
-				}
-				sb.append(")");
-				sb.append("'");
 				if (m.group("userkey") != null) {
 					sb.append(", '{" + m.group("userkey") + ": ");
 					if (m.group("userlit") != null) {
@@ -362,7 +608,20 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 					}
 					sb.append("}'");
 				}
-				sb.append(", '").append(m.group("crudv")).append("'");
+				String crudv = m.group("crudv");
+				if (isWrite) {
+					if (!crudv.chars().allMatch(c -> c == 'C' || c == 'U' || c == 'D')) {
+						throw new IllegalArgumentException(
+								"Invalid CRUD operations associated with a write service operation");
+					}
+				} else {
+					if (!Objects.equals(crudv, "R")) {
+						throw new IllegalArgumentException(
+								"Invalid CRUD operations associated with a read service operation");
+					}
+				}
+
+				sb.append(", '").append(crudv).append("'");
 				sb.append(")");
 				preauthorizeValue = sb.toString();
 			} else {
@@ -376,7 +635,13 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 							Method m = Arrays.stream(service.getClass().getMethods())
 									.filter(method2 -> method2.getName().equals(operationDefinition.name))
 									.findAny().get();
-							Object out = m.invoke(service, args);
+							Object out;
+							try {
+								out = m.invoke(service, args);
+							} catch (InvocationTargetException e) {
+								throw e.getCause();
+							}
+
 							if (isWrite) {
 								return new HttpEntity<>(ServletUtilities.getService()
 										.createReplyResponse(operationDefinition.name, RepliesStatus.ok,
@@ -408,6 +673,26 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		Object controller = controllerClass.newInstance();
 
 		return controller;
+	}
+
+	protected CustomServiceBackend buildExtension(Operation operationDefinition)
+			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
+			STPropertyAccessException, InvalidConfigurationException {
+		@SuppressWarnings("unchecked")
+		ConfigurableExtensionFactory<?, Operation> extensionFactory = exptManager
+				.getExtensions(CustomServiceBackend.class.getName()).stream()
+				.filter(ConfigurableExtensionFactory.class::isInstance)
+				.map(ConfigurableExtensionFactory.class::cast)
+				.filter(f -> f.getConfigurations().stream().anyMatch(
+						c -> c.getClass().getName().equals(operationDefinition.getClass().getName())))
+				.findAny()
+				.orElseThrow(() -> new IllegalArgumentException(
+						"Unable to to find an extension for the configuration class "
+								+ operationDefinition.getClass().getName()));
+
+		return exptManager.instantiateExtension(CustomServiceBackend.class,
+				new PluginSpecification(extensionFactory.getId(), null, null,
+						STPropertiesManager.storeSTPropertiesToObjectNode(operationDefinition, true)));
 	}
 
 	protected TypeDefinition generateTypeDefinitionFromSchema(Type typeDescription) throws SchemaException {
@@ -453,4 +738,15 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 			rlock.unlock();
 		}
 	}
+
+	public boolean isMapped(String id) {
+		Lock rlock = lock.readLock();
+		rlock.lock();
+		try {
+			return customServiceHandlers.containsKey(id);
+		} finally {
+			rlock.unlock();
+		}
+	}
+
 }
