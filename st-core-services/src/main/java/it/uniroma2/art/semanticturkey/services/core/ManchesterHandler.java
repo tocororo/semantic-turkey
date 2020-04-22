@@ -248,13 +248,13 @@ public class ManchesterHandler extends STServiceAdapter {
 				errorNode.set("occurrence", jf.numberNode(manchesterSyntacticError.getPos()));
 			}
 			if(manchesterSyntacticError.getOffendingTerm()!=null){
-				errorNode.set("offendingTerm", jf.textNode(manchesterSyntacticError.getOffendingTerm()));
+				errorNode.set("offendingTerm", jf.textNode(sanitizeOffendiongTerm(manchesterSyntacticError.getOffendingTerm())));
 			}
 			if(manchesterSyntacticError.getPrefix()!=null){
 				errorNode.set("prefix", jf.textNode(manchesterSyntacticError.getPrefix()));
 			}
 			ArrayNode expectedTokenArray = jf.arrayNode();
-			if(manchesterSyntacticError.getOffendingTerm()!=null){
+			if(manchesterSyntacticError.getExptectedTokenList()!=null){
 				for(String exptectedToken : manchesterSyntacticError.getExptectedTokenList()){
 					expectedTokenArray.add(jf.textNode(exptectedToken));
 
@@ -263,6 +263,15 @@ public class ManchesterHandler extends STServiceAdapter {
 			errorNode.set("expectedTokens",expectedTokenArray);
 		}
 		return errorNode;
+	}
+
+	private String sanitizeOffendiongTerm(String text){
+		String result = text.trim();
+		if(result.length()>1 && (result.endsWith("(") || result.endsWith("{") || result.endsWith(")") || result.endsWith("}"))){
+			result = result.substring(0, result.length()-1);
+		}
+
+		return result;
 	}
 
 	/**
