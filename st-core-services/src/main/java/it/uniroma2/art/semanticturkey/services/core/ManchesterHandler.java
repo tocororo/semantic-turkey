@@ -203,7 +203,7 @@ public class ManchesterHandler extends STServiceAdapter {
 					prefixToNamespacesMap);
 			//since there were no syntactic exception during the parser, now perform the semantic ones
 			Map<String, Integer> resourceToPosMap = new HashMap<>();
-			ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList, resourceToPosMap);
+			ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList, resourceToPosMap, true, manchExpr);
 		} catch (ManchesterParserException e) {
 			isValid = false;
 			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
@@ -244,7 +244,7 @@ public class ManchesterHandler extends STServiceAdapter {
 
 		} else { //it is a syntactic one
 			ManchesterSyntacticError manchesterSyntacticError = (ManchesterSyntacticError) manchesterGenericError;
-			if(manchesterSyntacticError.getPos()>0) {
+			if(manchesterSyntacticError.getPos()>=0) {
 				errorNode.set("occurrence", jf.numberNode(manchesterSyntacticError.getPos()));
 			}
 			if(manchesterSyntacticError.getOffendingTerm()!=null){
