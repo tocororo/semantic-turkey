@@ -92,10 +92,10 @@ public class ManchesterSyntaxUtils {
 			walker.walk(parserDescription, descriptionContext);
 			ManchesterClassInterface mci = parserDescription.getManchesterClass();
 
-			/*if (mci instanceof ManchesterBaseClass) {
+			if (mci instanceof ManchesterBaseClass) {
 				throw new ManchesterParserException(
 						"The expression " + mancExp + " cannot be composed of a " + "single IRI/QName", 0, mancExp, null);
-			}*/
+			}
 
 			return mci;
 		} catch (ManchesterPrefixNotDefinedRuntimeException e) {
@@ -108,7 +108,7 @@ public class ManchesterSyntaxUtils {
 	}
 
 	public static void performSemanticChecks(ManchesterClassInterface mci, RepositoryConnection conn,
-			List<ManchesterGenericError> errorMsgList, Map<String, Integer> resourceToPosMap, boolean isFirst, String manchExpr){
+			List<ManchesterGenericError> errorMsgList, Map<String, Integer> resourceToPosMap){
 		//resourceToPosMap is a map containing the URI of a resource and its relative position (a count of how may times it appear)
 
 		//calculate the namespace-prefix Map
@@ -123,20 +123,13 @@ public class ManchesterSyntaxUtils {
 			ManchesterAndClass mca = (ManchesterAndClass) mci;
 			List<ManchesterClassInterface> andMciList = mca.getAndClassList();
 			for(ManchesterClassInterface andMci : andMciList){
-				performSemanticChecks(andMci, conn, errorMsgList, resourceToPosMap, false, manchExpr);
+				performSemanticChecks(andMci, conn, errorMsgList, resourceToPosMap);
 			}
 		} else if(mci instanceof  ManchesterBaseClass){
 			ManchesterBaseClass mbc = (ManchesterBaseClass) mci;
 			IRI classIRI = mbc.getBaseClass();
 			addResourceToMapCount(classIRI, resourceToPosMap);
-			boolean noError = performClassCheck(classIRI, conn, namespaceToPrefixMap, errorMsgList, resourceToPosMap.get(classIRI.stringValue()));
-			if(noError && isFirst){
-				//it is a class, but, since it is the first (and only) element, it cannot be just a class, so add an error in the erroMsgList
-				String qnameOrIRI = namespaceToPrefixMap.getOrDefault(classIRI.getNamespace(), classIRI.getNamespace())+classIRI.getLocalName();
-				String errorMsg = "The expression " + manchExpr + " cannot be composed of a " + "single IRI/QName";
-				ManchesterSemanticError manchesterSemanticError = new ManchesterSemanticError(errorMsg, classIRI, qnameOrIRI, 0);
-				errorMsgList.add(manchesterSemanticError);
-			}
+			performClassCheck(classIRI, conn, namespaceToPrefixMap, errorMsgList, resourceToPosMap.get(classIRI.stringValue()));
 		} else if(mci instanceof ManchesterCardClass){
 			ManchesterCardClass mcc = (ManchesterCardClass) mci;
 			IRI prop = mcc.getProp();
@@ -145,29 +138,29 @@ public class ManchesterSyntaxUtils {
 			performPropCheck(prop, false, false, conn, namespaceToPrefixMap, errorMsgList,
 					resourceToPosMap.get(prop.stringValue()));
 			if(mcc.getClassCard()!=null){
-				performSemanticChecks(mcc.getClassCard(), conn, errorMsgList, resourceToPosMap, false, manchExpr);
+				performSemanticChecks(mcc.getClassCard(), conn, errorMsgList, resourceToPosMap);
 			}
 		} else if(mci instanceof ManchesterDataConjunction){
 			ManchesterDataConjunction mdc = (ManchesterDataConjunction) mci;
 			List<ManchesterClassInterface> dataPrimaryList = mdc.getDataPrimaryList();
 			for(ManchesterClassInterface dataPrimary : dataPrimaryList){
-				performSemanticChecks(dataPrimary, conn, errorMsgList, resourceToPosMap, false, manchExpr);
+				performSemanticChecks(dataPrimary, conn, errorMsgList, resourceToPosMap);
 			}
 		} else if(mci instanceof ManchesterDataRange){
 			ManchesterDataRange mdr = (ManchesterDataRange) mci;
 			List<ManchesterClassInterface> dataConjunctionList = mdr.getDataConjunctionList();
 			for(ManchesterClassInterface dataConjunction : dataConjunctionList){
-				performSemanticChecks(dataConjunction, conn, errorMsgList, resourceToPosMap, false, manchExpr);
+				performSemanticChecks(dataConjunction, conn, errorMsgList, resourceToPosMap);
 			}
 		} else if(mci instanceof  ManchesterDatatypeRestriction){
 			ManchesterDatatypeRestriction mdr = (ManchesterDatatypeRestriction) mci;
 			ManchesterClassInterface datatype = mdr.getDatatypeMCI();
-			performSemanticChecks(datatype, conn, errorMsgList, resourceToPosMap, false, manchExpr);
+			performSemanticChecks(datatype, conn, errorMsgList, resourceToPosMap);
 		} else if(mci instanceof  ManchesterLiteralListClass){
 			//Do nothing, since it is just a list of Literal
 		} else if(mci instanceof ManchesterNotClass){
 			ManchesterNotClass mnc = (ManchesterNotClass) mci;
-			performSemanticChecks(mnc, conn, errorMsgList, resourceToPosMap, false, manchExpr);
+			performSemanticChecks(mnc, conn, errorMsgList, resourceToPosMap);
 		} else if(mci instanceof  ManchesterOneOfClass){
 			ManchesterOneOfClass mooc = (ManchesterOneOfClass) mci;
 			List<IRI> instanceList = mooc.getOneOfList();
@@ -183,12 +176,12 @@ public class ManchesterSyntaxUtils {
 			performPropCheck(prop, false, false, conn, namespaceToPrefixMap, errorMsgList,
 					resourceToPosMap.get(prop.stringValue()));
 			ManchesterClassInterface onlyClass = moc.getOnlyClass();
-			performSemanticChecks(onlyClass, conn, errorMsgList, resourceToPosMap, false, manchExpr);
+			performSemanticChecks(onlyClass, conn, errorMsgList, resourceToPosMap);
 		} else if (mci instanceof  ManchesterOrClass){
 			ManchesterOrClass moc = (ManchesterOrClass) mci;
 			List<ManchesterClassInterface> orMciList = moc.getOrClassList();
 			for(ManchesterClassInterface orMci : orMciList){
-				performSemanticChecks(orMci, conn, errorMsgList, resourceToPosMap, false, manchExpr);
+				performSemanticChecks(orMci, conn, errorMsgList, resourceToPosMap);
 			}
 		} else if(mci instanceof ManchesterSelfClass){
 			ManchesterSelfClass msc = (ManchesterSelfClass) mci;
@@ -204,7 +197,7 @@ public class ManchesterSyntaxUtils {
 			performPropCheck(prop, false, false, conn, namespaceToPrefixMap, errorMsgList,
 					resourceToPosMap.get(prop.stringValue()));
 			ManchesterClassInterface someClass = msc.getSomeClass();
-			performSemanticChecks(someClass, conn, errorMsgList, resourceToPosMap, false, manchExpr);
+			performSemanticChecks(someClass, conn, errorMsgList, resourceToPosMap);
 		} else if(mci instanceof ManchesterValueClass){
 			ManchesterValueClass mvc = (ManchesterValueClass) mci;
 			IRI prop = mvc.getProp();
@@ -269,7 +262,7 @@ public class ManchesterSyntaxUtils {
 
 	}
 
-	private static boolean performClassCheck(IRI classIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<ManchesterGenericError> errorMsgList,
+	private static void performClassCheck(IRI classIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<ManchesterGenericError> errorMsgList,
 			int pos){
 		String qnameOrIRI = namespaceToPrefixMap.getOrDefault(classIRI.getNamespace(), classIRI.getNamespace())+classIRI.getLocalName();
 		String msg = qnameOrIRI + " should be a class";
@@ -288,9 +281,7 @@ public class ManchesterSyntaxUtils {
 		String errorMsg = ErrorMessageOrEmpty(qnameOrIRI, exists, rightType, msg);
 		if(!errorMsg.isEmpty()){
 			errorMsgList.add(new ManchesterSemanticError(errorMsg, classIRI, qnameOrIRI, pos));
-			return false;
 		}
-		return true;
 	}
 
 	private static void performInstanceCheck(IRI instanceIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<ManchesterGenericError> errorMsgList,
@@ -429,10 +420,10 @@ public class ManchesterSyntaxUtils {
 			walker.walk(parserDescription, datatypeRestrictionContext);
 			ManchesterClassInterface mci = parserDescription.getManchesterClass();
 
-			/*if (mci instanceof ManchesterBaseClass) {
+			if (mci instanceof ManchesterBaseClass) {
 				throw new ManchesterParserException(
 						"The expression " + mancExp + " cannot be composed of a " + "single IRI/QName", 0, mancExp, null);
-			}*/
+			}
 
 			return mci;
 		} catch (ManchesterPrefixNotDefinedRuntimeException e) {
@@ -468,10 +459,10 @@ public class ManchesterSyntaxUtils {
 			walker.walk(parserDescription, literalListContext);
 			ManchesterClassInterface mci = parserDescription.getManchesterClass();
 
-			/*if (mci instanceof ManchesterBaseClass) {
+			if (mci instanceof ManchesterBaseClass) {
 				throw new ManchesterParserException(
 						"The expression " + mancExp + " cannot be composed of a " + "single IRI/QName", 0, mancExp, null);
-			}*/
+			}
 
 			return mci;
 		} catch (ManchesterPrefixNotDefinedRuntimeException e) {
