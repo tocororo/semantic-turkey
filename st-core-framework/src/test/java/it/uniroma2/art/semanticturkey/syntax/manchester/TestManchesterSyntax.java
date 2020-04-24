@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntacticException;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -39,7 +39,7 @@ public class TestManchesterSyntax {
 			
 			//testManchesterSyntax.startWriteTest(conn);
 			
-		} catch (ManchesterParserException | ManchesterSyntaxException | ManchesterPrefixNotDefinedException e) {
+		} catch (ManchesterParserException | ManchesterSyntacticException | ManchesterPrefixNotDefinedException e) {
 			e.printStackTrace();
 		}
 
@@ -83,7 +83,7 @@ public class TestManchesterSyntax {
 	}
 
 	private void startReadTest(ValueFactory valueFactory)
-			throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
+			throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
 
 		ManchesterClassInterface manchesterClassInterface;
 
@@ -114,7 +114,7 @@ public class TestManchesterSyntax {
 
 	
 	
-	private void startWriteTest(RepositoryConnection conn) throws ManchesterParserException, NotClassAxiomException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
+	private void startWriteTest(RepositoryConnection conn) throws ManchesterParserException, NotClassAxiomException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
 		ManchesterClassInterface manchesterClassInterface;
 
 		Resource[] graphs = new Resource[] { conn.getValueFactory().createIRI("http://maingraph.it") };
