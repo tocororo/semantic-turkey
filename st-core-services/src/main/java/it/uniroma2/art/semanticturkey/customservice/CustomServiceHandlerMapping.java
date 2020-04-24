@@ -54,6 +54,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
@@ -469,7 +470,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	 * @formatter:on
 	 */
 	private Pattern AUTHORIZATION_PATTERN = Pattern.compile(
-			"^\\s*(?<area>[a-z]+)(?<subj>\\(((?<subjfun>@typeof\\(#(?<subjfunpar>[a-z]+)\\))|(?<subjlit>[a-z]+))(\\s*,\\s*(?<scope>\\w+))?\\))?(\\s*,\\s*\\{\\s*(?<userkey>[a-z]+)\\s*:\\s*((?<userlit>\\w+)|(?<userfun>(@langOf\\(#(?<userfunpar>[a-z]+)\\))))\\})?\\s*,\\s*(?<crudv>[CRUDV])\\s*$",
+			"^\\s*(?<area>[a-z]+)(?<subj>\\(((?<subjfun>@typeof\\(\\s*#(?<subjfunpar>[a-z]+)\\s*\\))|(?<subjlit>[a-z]+))(\\s*,\\s*(?<scope>\\w+))?\\))?(\\s*,\\s*\\{\\s*(?<userkey>[a-z]+)\\s*:\\s*((?<userlit>\\w+)|(?<userfun>(@langof\\(\\s*#(?<userfunpar>[a-z]+)\\s*\\))))\\s*\\})?\\s*,\\s*(?<crudv>[CRUDV])\\s*$",
 			Pattern.CASE_INSENSITIVE);
 
 	private Object buildCustomServiceHandler(String cfgID, CustomService customServiceCfg)
@@ -749,4 +750,8 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		}
 	}
 
+	public Object getHandler(String serviceName) {
+		String id = Iterables.getFirst(customServiceNames2IDs.get(serviceName), null);
+		return id != null ? customServiceHandlers.get(id) : null;
+	}
 }
