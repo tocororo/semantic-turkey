@@ -592,4 +592,12 @@
 	</osgi:service>
 
 
+	<!-- Publishes the InvokableReporterStore -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporterStore" />
+	</osgi:service>
+
+
 </beans>
