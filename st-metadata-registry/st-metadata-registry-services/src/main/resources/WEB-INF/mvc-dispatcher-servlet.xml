@@ -22,7 +22,7 @@
 		</mvc:interceptor>
 	</mvc:interceptors>
 
-	<context:component-scan base-package="it.uniroma2.art.semanticturkey.mdr.services,it.uniroma2.art.semanticturkey.mdr.mvc">
+	<context:component-scan base-package="it.uniroma2.art.semanticturkey.mdr.services,it.uniroma2.art.semanticturkey.mvc">
 	</context:component-scan>
 
 	<!--A ValidatorFactory whose products (Validators) support dependency injection 
