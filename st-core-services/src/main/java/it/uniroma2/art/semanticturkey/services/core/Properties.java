@@ -22,7 +22,7 @@ import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntacticException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -928,7 +928,7 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'C')")
 	public void addPropertyChainAxiom(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, @Size(min=2) List<String> chainedProperties,
 			@Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyChainAxiom>") IRI linkingPredicate) throws ManchesterParserException,
-			ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
+            ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
 		
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
 
@@ -978,7 +978,7 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(property, taxonomy)', 'U')")
 	public void updatePropertyChainAxiom(@LocallyDefined @Modified(role = RDFResourceRole.property) IRI property, Resource replacedChain, @Size(min=2) List<String> chainedProperties,
 			@Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyChainAxiom>") IRI linkingPredicate)
-			throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
+			throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
 		removePropertyChainAxiom(property, replacedChain, linkingPredicate);
 		addPropertyChainAxiom(property, chainedProperties, linkingPredicate);
 	}

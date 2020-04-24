@@ -5,7 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntacticException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ObjectPropertyExpression;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.hamcrest.Matchers;
@@ -20,7 +20,7 @@ import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserExce
 public class TestObjectPropertyExpression {
 
 	@Test
-	public void testNamedProperty() throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
+	public void testNamedProperty() throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
 		Map<String, String> prefixToNamespacesMap = new HashMap<>();
 		ObjectPropertyExpression ope = ManchesterSyntaxUtils.parseObjectPropertyExpression(
 				"<http://test.it/prop1>", SimpleValueFactory.getInstance(), prefixToNamespacesMap);
@@ -37,7 +37,7 @@ public class TestObjectPropertyExpression {
 	}
 
 	@Test
-	public void testQNamedProperty() throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
+	public void testQNamedProperty() throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
 		Map<String, String> prefixToNamespacesMap = new HashMap<>();
 		prefixToNamespacesMap.put("test", "http://test.it/");
 		ObjectPropertyExpression ope = ManchesterSyntaxUtils.parseObjectPropertyExpression("test:prop1",
@@ -55,7 +55,7 @@ public class TestObjectPropertyExpression {
 	}
 	
 	@Test
-	public void testNamedInverseProperty() throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
+	public void testNamedInverseProperty() throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
 		Map<String, String> prefixToNamespacesMap = new HashMap<>();
 		ObjectPropertyExpression ope = ManchesterSyntaxUtils.parseObjectPropertyExpression(
 				"inverse <http://test.it/prop1>", SimpleValueFactory.getInstance(), prefixToNamespacesMap);
@@ -77,7 +77,7 @@ public class TestObjectPropertyExpression {
 	}
 
 	@Test
-	public void testQNamedInverseProperty() throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
+	public void testQNamedInverseProperty() throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
 		Map<String, String> prefixToNamespacesMap = new HashMap<>();
 		prefixToNamespacesMap.put("test", "http://test.it/");
 		ObjectPropertyExpression ope = ManchesterSyntaxUtils.parseObjectPropertyExpression("INVERSE test:prop1",

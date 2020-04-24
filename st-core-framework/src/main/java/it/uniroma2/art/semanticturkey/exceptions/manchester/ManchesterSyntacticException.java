@@ -35,7 +35,7 @@ import java.util.List;
  * @author Andrea Turbati
  *
  */
-public class ManchesterSyntaxException extends IncompatibleResourceException {
+public class ManchesterSyntacticException extends IncompatibleResourceException {
 
 	private String msg;
 	private int pos;
@@ -48,7 +48,7 @@ public class ManchesterSyntaxException extends IncompatibleResourceException {
 	private static final long serialVersionUID = 6319220572009520791L;
 
 
-	public ManchesterSyntaxException(String msg, int pos, String offendingTerm, List<String> expectedTokenList) {
+	public ManchesterSyntacticException(String msg, int pos, String offendingTerm, List<String> expectedTokenList) {
 		super(msg);
 		this.msg = msg;
 		this.pos = pos;
