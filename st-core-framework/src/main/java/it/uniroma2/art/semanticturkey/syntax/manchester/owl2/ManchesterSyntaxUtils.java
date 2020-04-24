@@ -7,7 +7,7 @@ import java.util.Map;
 
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedRuntimeException;
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntacticException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxRuntimeException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ThrowingErrorListenerLexer;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ThrowingErrorListenerParser;
@@ -70,7 +70,7 @@ public class ManchesterSyntaxUtils {
 
 	public static ManchesterClassInterface parseCompleteExpression(String mancExp, ValueFactory valueFactory,
 			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException,
-			ManchesterPrefixNotDefinedException, ManchesterSyntacticException {
+			ManchesterPrefixNotDefinedException, ManchesterSyntaxException {
 		// Get our lexer
 		BailSimpleLexer lexer = new BailSimpleLexer(CharStreams.fromString(mancExp));
 		lexer.removeErrorListeners();
@@ -101,7 +101,7 @@ public class ManchesterSyntaxUtils {
 		} catch (ManchesterPrefixNotDefinedRuntimeException e) {
 			throw new ManchesterPrefixNotDefinedException(e.getMessage(), e.getPrefix());
 		} catch(ManchesterSyntaxRuntimeException e) {
-			throw  new ManchesterSyntacticException(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+			throw  new ManchesterSyntaxException(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
 		}catch (ManchesterParserRuntimeException e) {
 			throw new ManchesterParserException(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
 		}
@@ -372,7 +372,7 @@ public class ManchesterSyntaxUtils {
 
 	public static ObjectPropertyExpression parseObjectPropertyExpression(String objectPropertyExpression,
 			ValueFactory valueFactory, Map<String, String> prefixToNamespacesMap)
-			throws ManchesterParserException, ManchesterPrefixNotDefinedException, ManchesterSyntacticException {
+			throws ManchesterParserException, ManchesterPrefixNotDefinedException, ManchesterSyntaxException {
 		// Get our lexer
 		BailSimpleLexer lexer = new BailSimpleLexer(CharStreams.fromString(objectPropertyExpression));
 		lexer.removeErrorListeners();
@@ -399,7 +399,7 @@ public class ManchesterSyntaxUtils {
 		} catch (ManchesterPrefixNotDefinedRuntimeException e) {
 			throw new ManchesterPrefixNotDefinedException(e.getMessage(), e.getPrefix());
 		} catch(ManchesterSyntaxRuntimeException e) {
-			throw  new ManchesterSyntacticException(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+			throw  new ManchesterSyntaxException(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
 		}catch (ManchesterParserRuntimeException e) {
 			throw new ManchesterParserException(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
 		}
@@ -407,7 +407,7 @@ public class ManchesterSyntaxUtils {
 	}
 
 	public static ManchesterClassInterface parseDatatypeRestrictionExpression(String mancExp, ValueFactory valueFactory,
-			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException, ManchesterPrefixNotDefinedException, ManchesterSyntacticException {
+			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException, ManchesterPrefixNotDefinedException, ManchesterSyntaxException {
 		// Get our lexer
 		BailSimpleLexer lexer = new BailSimpleLexer(CharStreams.fromString(mancExp));
 		lexer.removeErrorListeners();
@@ -438,7 +438,7 @@ public class ManchesterSyntaxUtils {
 		} catch (ManchesterPrefixNotDefinedRuntimeException e) {
 			throw new ManchesterPrefixNotDefinedException(e.getMessage(), e.getPrefix());
 		} catch(ManchesterSyntaxRuntimeException e) {
-			throw  new ManchesterSyntacticException(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+			throw  new ManchesterSyntaxException(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
 		}catch (ManchesterParserRuntimeException e) {
 			throw new ManchesterParserException(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
 		}
@@ -446,7 +446,7 @@ public class ManchesterSyntaxUtils {
 
 	public static ManchesterClassInterface parseLiteralEnumerationExpression(String mancExp, ValueFactory valueFactory,
 			Map<String, String> prefixToNamespacesMap) throws ManchesterParserException,
-			ManchesterPrefixNotDefinedException, ManchesterSyntacticException {
+			ManchesterPrefixNotDefinedException, ManchesterSyntaxException {
 		// Get our lexer
 		BailSimpleLexer lexer = new BailSimpleLexer(CharStreams.fromString(mancExp));
 		lexer.removeErrorListeners();
@@ -477,7 +477,7 @@ public class ManchesterSyntaxUtils {
 		} catch (ManchesterPrefixNotDefinedRuntimeException e) {
 			throw new ManchesterPrefixNotDefinedException(e.getMessage(), e.getPrefix());
 		} catch(ManchesterSyntaxRuntimeException e) {
-			throw  new ManchesterSyntacticException(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
+			throw  new ManchesterSyntaxException(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
 		}catch (ManchesterParserRuntimeException e) {
 			throw new ManchesterParserException(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
 		}

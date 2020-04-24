@@ -13,7 +13,7 @@ import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntacticException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -489,7 +489,7 @@ public class Classes extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
 	public void addIntersectionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
-			List<String> clsDescriptions) throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
+			List<String> clsDescriptions) throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
 				.getNSPrefixMappings(false);
@@ -525,7 +525,7 @@ public class Classes extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'C')")
 	public void addUnionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
-			List<String> clsDescriptions) throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
+			List<String> clsDescriptions) throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
 				.getNSPrefixMappings(false);
@@ -582,7 +582,7 @@ public class Classes extends STServiceAdapter {
 	
 	private void addCollectionBasedClassAxiom(IRI cls, IRI axiomProp, List<String> clsDescriptions, 
 			Model modelAdditions, RepositoryConnection repoConnection, Map<String, String> prefixToNamespacesMap)
-			throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
+			throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
 		List<Resource> resourceList = new ArrayList<>();
 		if(clsDescriptions == null || clsDescriptions.size() == 0){
 			throw new IllegalArgumentException("the list of expression cannot be empty");

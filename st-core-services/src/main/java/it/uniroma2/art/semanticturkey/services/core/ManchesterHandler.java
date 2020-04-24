@@ -11,8 +11,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSemanticException;
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntacticException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.errors.ManchesterGenericError;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.errors.ManchesterSemanticError;
@@ -213,7 +212,7 @@ public class ManchesterHandler extends STServiceAdapter {
 			isValid = false;
 			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPrefix(), manchExpr.indexOf(e.getPrefix()));
 			errorMsgList.add(manchesterSyntacticError);
-		} catch (ManchesterSyntacticException e) {
+		} catch (ManchesterSyntaxException e) {
 			isValid = false;
 			ManchesterSyntacticError manchesterSyntacticError;
 			manchesterSyntacticError = new ManchesterSyntacticError(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
@@ -301,7 +300,7 @@ public class ManchesterHandler extends STServiceAdapter {
 			isValid = false;
 			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPrefix(), manchExpr.indexOf(e.getPrefix()));
 			errorMsgList.add(manchesterSyntacticError);
-		} catch (ManchesterSyntacticException e) {
+		} catch (ManchesterSyntaxException e) {
 			isValid = false;
 			ManchesterSyntacticError manchesterSyntacticError;
 			manchesterSyntacticError = new ManchesterSyntacticError(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
@@ -346,7 +345,7 @@ public class ManchesterHandler extends STServiceAdapter {
 			isValid = false;
 			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPrefix(), manchExpr.indexOf(e.getPrefix()));
 			errorMsgList.add(manchesterSyntacticError);
-		} catch (ManchesterSyntacticException e) {
+		} catch (ManchesterSyntaxException e) {
 			isValid = false;
 			ManchesterSyntacticError manchesterSyntacticError;
 			manchesterSyntacticError = new ManchesterSyntacticError(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
@@ -393,7 +392,7 @@ public class ManchesterHandler extends STServiceAdapter {
 			isValid = false;
 			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPrefix(), manchExpr.indexOf(e.getPrefix()));
 			errorMsgList.add(manchesterSyntacticError);
-		} catch (ManchesterSyntacticException e) {
+		} catch (ManchesterSyntaxException e) {
 			isValid = false;
 			ManchesterSyntacticError manchesterSyntacticError;
 			manchesterSyntacticError = new ManchesterSyntacticError(e.getMsg(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());
@@ -424,40 +423,18 @@ public class ManchesterHandler extends STServiceAdapter {
 	 *            the Manchester expression defying the restriction
 	 * @return the newly created bnode
 	 * @throws ManchesterParserException
-	 * @throws ManchesterSyntacticException
+	 * @throws ManchesterSyntaxException
 	 * @throws ManchesterPrefixNotDefinedException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	public AnnotatedValue<BNode> createRestriction(IRI classIri, IRI exprType, String manchExpr)
-			throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException,
-			ManchesterSemanticException {
+			throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
 				.getNSPrefixMappings(false);
 		ManchesterClassInterface mci = ManchesterSyntaxUtils.parseCompleteExpression(manchExpr,
 				conn.getValueFactory(), prefixToNamespacesMap);
-
-		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
-		Map<String, Integer> resourceToPosMap = new HashMap<>();
-		ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList, resourceToPosMap, true, manchExpr);
-		if(!errorMsgList.isEmpty()){
-			//there is at least one error, so throw an exception
-			// (at the moment only the first exception is thrown)
-			//TODO check how all exceptions can be thrown
-			ManchesterGenericError manchesterGenericError = errorMsgList.get(0);
-			if(manchesterGenericError.isSemanticError()){
-				//it is a semantic exception
-				ManchesterSemanticError mse = (ManchesterSemanticError) manchesterGenericError;
-				throw  new ManchesterSemanticException(mse.getMsg(), mse.getPos(), mse.getQname(), mse.getResource());
-			} else {
-				//it is a syntactic exception
-				ManchesterSyntacticError mse = (ManchesterSyntacticError) manchesterGenericError;
-				throw  new ManchesterSyntacticException(mse.getMsg(), mse.getPos(), mse.getOffendingTerm(),
-						mse.getExptectedTokenList());
-			}
-
-		}
 
 		List<Statement> statList = new ArrayList<>();
 		// it is possible to cast the Resource to a BNode, because the input mci should have a bnode as
@@ -468,7 +445,7 @@ public class ManchesterHandler extends STServiceAdapter {
 		conn.add(statList, getWorkingGraph());
 
 		// add the subClass o equivalentClass property between the main ClassURI and the new BNode
-		// TODO decide whether to check that exprType is either owl:equivalentClass or rdfs:subClassOf
+		// TODO decide whether to check that expreType is either owl:equivalentClassand or rdfs:subClassOf
 		conn.add(conn.getValueFactory().createStatement(classIri, exprType, newBnode), getWorkingGraph());
 
 		AnnotatedValue<BNode> annBNode = new AnnotatedValue<BNode>(newBnode);
@@ -519,41 +496,20 @@ public class ManchesterHandler extends STServiceAdapter {
 	 * @return the same bnode passed in input and used to create the updated restriction
 	 * @throws ManchesterParserException
 	 * @throws NoClassDefFoundError
-	 * @throws ManchesterSyntacticException
+	 * @throws ManchesterSyntaxException
 	 * @throws ManchesterPrefixNotDefinedException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	public AnnotatedValue<BNode> updateExpression(String newManchExpr, BNode bnode)
-			throws ManchesterParserException, NotClassAxiomException, ManchesterSyntacticException,
-			ManchesterPrefixNotDefinedException, ManchesterSemanticException {
+			throws ManchesterParserException, NotClassAxiomException, ManchesterSyntaxException,
+			ManchesterPrefixNotDefinedException {
 		// first of all, parse the new Expression to be sure that it is a valid one
 		RepositoryConnection conn = getManagedConnection();
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
 				.getNSPrefixMappings(false);
 		ManchesterClassInterface mci = ManchesterSyntaxUtils.parseCompleteExpression(newManchExpr,
 				conn.getValueFactory(), prefixToNamespacesMap);
-
-		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
-		Map<String, Integer> resourceToPosMap = new HashMap<>();
-		ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList, resourceToPosMap, true, newManchExpr);
-		if(!errorMsgList.isEmpty()){
-			//there is at least one error, so throw an exception
-			// (at the moment only the first exception is thrown)
-			//TODO check how all exceptions can be thrown
-			ManchesterGenericError manchesterGenericError = errorMsgList.get(0);
-			if(manchesterGenericError.isSemanticError()){
-				//it is a semantic exception
-				ManchesterSemanticError mse = (ManchesterSemanticError) manchesterGenericError;
-				throw  new ManchesterSemanticException(mse.getMsg(), mse.getPos(), mse.getQname(), mse.getResource());
-			} else {
-				//it is a syntactic exception
-				ManchesterSyntacticError mse = (ManchesterSyntacticError) manchesterGenericError;
-				throw  new ManchesterSyntacticException(mse.getMsg(), mse.getPos(), mse.getOffendingTerm(),
-						mse.getExptectedTokenList());
-			}
-
-		}
 
 		// now remove the old triples
 		List<Statement> statList = new ArrayList<>();

@@ -12,7 +12,7 @@ import it.uniroma2.art.semanticturkey.datarange.DatatypeRestrictionDescription;
 import it.uniroma2.art.semanticturkey.datarange.ParseDataRange;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntacticException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Created;
@@ -334,7 +334,7 @@ public class Datatypes extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(datatype)', 'C')")
 	public void setDatatypeManchesterRestriction(
 			@LocallyDefined @Modified(role = RDFResourceRole.dataRange) IRI datatype, String manchExpr)
-			throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
+			throws ManchesterParserException, ManchesterSyntaxException, ManchesterPrefixNotDefinedException {
 		RepositoryConnection conn = getManagedConnection();
 		deleteDatatypeRestrictionImpl(conn, datatype); //delete the previous
 		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
