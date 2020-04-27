@@ -114,10 +114,9 @@ public class SPARQLCustomServiceBackendFactory implements ExtensionFactory<SPARQ
 				if (listItem.getTypeArguments() != null && listItem.getTypeArguments().iterator().hasNext()) {
 					unwrappedType = listItem.getTypeArguments().iterator().next();
 
-					if (!ImmutableSet.of("RDFValue", "Resource", "BNode", "IRI", "Literal")
-							.contains(unwrappedType.getName())) {
-						validationExceptionMessageBuilder
-								.append("Illegal argument type of AnnotatedValue. It should be an RDF type: "
+					if (!ImmutableSet.of("Resource", "BNode", "IRI").contains(unwrappedType.getName())) {
+						validationExceptionMessageBuilder.append(
+								"Illegal argument type of AnnotatedValue. It should be an RDF resource type: "
 										+ unwrappedType + ".\n");
 					}
 				} else {
