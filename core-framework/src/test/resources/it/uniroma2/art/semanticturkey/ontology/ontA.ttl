@@ -1,0 +1,3 @@
+<http://example.org/A> a owl:Ontology ;
+	owl:imports <http://example.org/B>
+	.

@@ -1,0 +1,15 @@
+<TestCase>
+	<BaseURI>http://exampple.org/</BaseURI>
+	<Graphs>
+		<Graph>http://example.org/</Graph>
+	</Graphs>
+	<FactoryID>it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTranformerFactory</FactoryID>
+	<Config>
+		<ConfigType>it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTransformerConfiguration</ConfigType>
+		<Params>
+			<resource>&lt;http://example.org/aConcept&gt;</resource>
+			<property>&lt;http://www.w3.org/2004/02/skos/core#prefLabel&gt;</property>
+			<value>"A CONCEPT"@en</value>
+		</Params>
+	</Config>
+</TestCase>

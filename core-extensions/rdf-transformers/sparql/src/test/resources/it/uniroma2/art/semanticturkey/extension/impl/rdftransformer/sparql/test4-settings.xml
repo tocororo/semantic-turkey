@@ -1,0 +1,27 @@
+<TestCase>
+	<BaseURI>http://exampple.org/</BaseURI>
+	<Graphs>
+		<Graph>http://example.org/</Graph>
+		<Graph>http://another-example.org/</Graph>
+	</Graphs>
+	<FactoryID>it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerFactory</FactoryID>
+	<Config>
+		<ConfigType>it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerConfiguration</ConfigType>
+		<Params>
+			<sliced>true</sliced>
+			<filter>
+			<![CDATA[
+			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+			PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+			
+			INSERT {
+				?subj rdfs:label ?label .
+			}
+			WHERE {
+				?subj skos:prefLabel ?label .
+			}			
+			]]>
+			</filter>
+		</Params>
+	</Config>
+</TestCase>

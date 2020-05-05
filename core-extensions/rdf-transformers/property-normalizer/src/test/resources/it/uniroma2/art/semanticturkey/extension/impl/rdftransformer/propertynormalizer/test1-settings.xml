@@ -1,0 +1,18 @@
+<TestCase>
+	<BaseURI>http://exampple.org/</BaseURI>
+	<Graphs>
+		<Graph>http://example.org/</Graph>
+	</Graphs>
+	<FactoryID>it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.propertynormalizer.PropertyNormalizerTransformerFactory</FactoryID>
+	<Config>
+		<ConfigType>it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.propertynormalizer.PropertyNormalizerTransformerConfiguration</ConfigType>
+<YAMLConfig>
+<![CDATA[
+normalizingProperty: <http://www.w3.org/2004/02/skos/core#prefLabel>
+propertiesBeingNormalized:
+- <http://example.org/myPrefLabel>
+- <http://example.org/anotherPrefLabelOfMine>
+]]>
+</YAMLConfig>
+	</Config>
+</TestCase>

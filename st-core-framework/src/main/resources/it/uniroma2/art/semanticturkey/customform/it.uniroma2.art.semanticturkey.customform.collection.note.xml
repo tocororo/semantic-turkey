@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<formCollection id="it.uniroma2.art.semanticturkey.customform.collection.note"
-	suggestions="http://www.w3.org/2004/02/skos/core#note,http://www.w3.org/2004/02/skos/core#changeNote,http://www.w3.org/2004/02/skos/core#definition,http://www.w3.org/2004/02/skos/core#editorialNote,http://www.w3.org/2004/02/skos/core#example,http://www.w3.org/2004/02/skos/core#historyNote,http://www.w3.org/2004/02/skos/core#scopeNote">
-	<form id="it.uniroma2.art.semanticturkey.customform.form.reifiednote"/>
-</formCollection>

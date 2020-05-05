@@ -1,0 +1,89 @@
+@prefix : <http://example.org/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix skosxl: <http://www.w3.org/2008/05/skos-xl#> .
+
+# put here the expected output of the filter
+
+graph <http://test.it/> {
+	:aConcept2
+		a skos:Concept ;
+		skosxl:prefLabel :aConcept2_prefxlLabel1en ;
+		skosxl:prefLabel :aConcept2_prefxlLabel1it ;
+		skos:prefLabel "a concept"@en ;
+		skos:prefLabel "un concetto"@it 
+		.
+	
+	:aConcept2_prefxlLabel1en a skosxl:Label ;
+		skosxl:literalForm "a concept"@en
+		.
+		
+	:aConcept2_prefxlLabel1it a skosxl:Label ;
+		skosxl:literalForm "un concetto"@it
+		.
+	
+		
+	:anotherConcept2
+		a skos:Concept ;
+		skosxl:prefLabel :anotherConcept2_prefxlLabel1en ;
+		skosxl:prefLabel :anotherConcept2_prefxlLabel1it ;
+		skos:prefLabel "another concept"@en;
+		skos:prefLabel "un altro concetto"@it
+		.
+		
+	:anotherConcept2_prefxlLabel1en a skosxl:Label ;
+		skosxl:literalForm "another concept"@en
+		.
+		
+	:anotherConcept2_prefxlLabel1it a skosxl:Label ;
+		skosxl:literalForm "un altro concetto"@it
+		.
+}
+
+
+
+graph <http://example.org/> {
+	:aConcept
+		a skos:Concept ;
+		skosxl:prefLabel :aConcept_prefxlLabel1en ;
+		skosxl:prefLabel :aConcept_prefxlLabel1it 
+		.
+	
+	:aConcept_prefxlLabel1en a skosxl:Label ;
+		skosxl:literalForm "a concept"@en
+		.
+		
+	:aConcept_prefxlLabel1it a skosxl:Label ;
+		skosxl:literalForm "un concetto"@it
+		.
+		
+		
+	:anotherConcept
+		a skos:Concept ;
+		skosxl:prefLabel :anotherConcept_prefxlLabel1en ;
+		skosxl:prefLabel :anotherConcept_prefxlLabel1it 
+		.
+	
+	:anotherConcept_prefxlLabel1en a skosxl:Label ;
+		skosxl:literalForm "another concept"@en
+		.
+		
+	:anotherConcept_prefxlLabel1it a skosxl:Label ;
+		skosxl:literalForm "un altro concetto"@it
+		.		
+}
+
+:aConcept_noGraph
+		a skos:Concept ;
+		skosxl:prefLabel :aConcept_noGraph_prefxlLabel1en ;
+		skosxl:prefLabel :aConcept_noGraph_prefxlLabel1it 
+		.
+
+
+:aConcept_noGraph_prefxlLabel1en a skosxl:Label ;
+		skosxl:literalForm "a concept outside graphs"@en
+		.
+		
+:aConcept_noGraph_prefxlLabel1it a skosxl:Label ;
+		skosxl:literalForm "un concetto fuori dai grafi"@it
+		.
+	

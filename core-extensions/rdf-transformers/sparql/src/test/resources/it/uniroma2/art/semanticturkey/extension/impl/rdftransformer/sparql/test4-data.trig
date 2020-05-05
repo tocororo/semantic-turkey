@@ -1,0 +1,21 @@
+@prefix : <http://example.org/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+graph <http://example.org/> {
+	:aConcept
+		a skos:Concept ;
+		skos:prefLabel "a concept"@en
+		.
+}
+
+graph <http://another-example.org/> {
+	:anotherControlConcept
+		a skos:Concept ;
+		skos:prefLabel "another control concept"@en
+		.
+}
+
+:aControlConcept
+	a skos:Concept ;
+	skos:prefLabel "a control concept"@en
+	.

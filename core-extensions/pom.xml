@@ -1,0 +1,25 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>it.uniroma2.art.semanticturkey</groupId>
+    <artifactId>semanticturkey</artifactId>
+    <version>7.1-SNAPSHOT</version>
+  </parent>
+  <artifactId>st-core-extensions</artifactId>
+  <packaging>pom</packaging>
+  <modules>
+  	<module>collaboration-backends</module>
+  	<module>custom-service-backends</module>
+  	<module>dataset-catalog-connectors</module>
+  	<module>dataset-metadata-exporters</module>
+  	<module>deployers</module>
+  	<module>loaders</module>
+  	<module>rdf-lifters</module>
+  	<module>rdf-transformers</module>
+  	<module>reformatting-exporters</module>
+  	<module>rendering-engines</module>
+  	<module>repository-impl-configurers</module>
+  	<module>search-strategies</module>
+  	<module>uri-generators</module>
+  </modules>
+</project>

@@ -3,7 +3,10 @@ date: dd/mm/yyyy
   * change the namespace of the vocabulary used by the metadata registry
   * partial modularization of the platform. The following parts were moved to dedicated modules:
     - metadata registry
+    - implementations of the extension points
     - utilities
+  * added support for cross-bundle session management, necessary to support authentication and authorization
+    across bundles (while allowing for new service-level extensions)
   * added custom services with an implementation based on SPARQL
   * added the prefix resolution in all Search services
   * added SHACL to PEARL
