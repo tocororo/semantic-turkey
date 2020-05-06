@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>it.uniroma2.art.semanticturkey</groupId>
 		<artifactId>st-uri-generators</artifactId>
-		<version>7.1-SNAPSHOT</version>
+		<version>8.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>st-native-template-based-uri-generator</artifactId>
 	<packaging>bundle</packaging>
