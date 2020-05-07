@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import it.uniroma2.art.semanticturkey.search.SearchMode;
+import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
@@ -24,8 +26,6 @@ import org.slf4j.LoggerFactory;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.extension.impl.search.regex.RegexSearchStrategy;
 import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.search.SearchMode;
-import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
@@ -119,7 +119,7 @@ public class AdvancedSearch {
 	
 	//@formatter:off
 	public List<AnnotatedValue<Resource>> searchResources(Literal label, String[] rolesArray, 
-			List<SearchMode> searchModeList, RepositoryConnection conn, IRI targetLexMod, 
+			List<SearchMode> searchModeList, RepositoryConnection conn, IRI targetLexMod,
 			InWhatToSearch inWhatToSearch, WhatToShow whatToShow) {
 		List<AnnotatedValue<Resource>> annotateResList = new ArrayList<>();
 		ServiceForSearches serviceForSearches = new ServiceForSearches();

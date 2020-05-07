@@ -160,9 +160,9 @@ public class GlobalSearch extends STServiceAdapter {
 					
 					//first get all the LexicalConcept (or Ontology Entity) connected to the LexicalEntry that are 
 					// then connected to the form (the Literal). Take also the LexicalEntry and store them in a List.
-					// Then get just the LexicalEntry and index only those not present in the List constructued in 
+					// Then get just the LexicalEntry and index only those not present in the List constructed in
 					// the first query 
-					
+
 					//construct the complex path from a resource to a LexicalEntry
 					String directResToLexicalEntry = NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
 							"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
@@ -567,14 +567,25 @@ public class GlobalSearch extends STServiceAdapter {
 	 * 
 	 * @param searchString
 	 * @param langs
+	 * @param maxResults the maximun number of results to have (0 means no limit)
+	 * @param searchInLocalName true to search in the local name of resources as well (cannot be set to true while caseSensitive is true as well)
+	 * @param caseSensitive true to perform a case sensitive search (cannot be set to true while searchInLocalName is true as well)
+	 *
 	 * @throws Exception
 	 */
 	@STServiceOperation
 	// TODO decide the @PreAuthorize
 	public JsonNode search(String searchString, @Optional List<String> langs,
-			@Optional(defaultValue = "0") int maxResults, 
-			@Optional(defaultValue="false") boolean searchInLocalName) throws Exception {
-		
+			@Optional(defaultValue = "0") int maxResults,
+			@Optional(defaultValue="false") boolean searchInLocalName,
+			@Optional(defaultValue="false") boolean caseSensitive) throws Exception {
+
+		if(caseSensitive && searchInLocalName) {
+			throw new IllegalArgumentException("searchInLocalName and caseSensitive cannot be bot true");
+		}
+
+		String searchStringLC = searchString.toLowerCase();
+
 		// classloader magic
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
@@ -583,14 +594,14 @@ public class GlobalSearch extends STServiceAdapter {
 			Builder builderBooleanGlobal = new BooleanQuery.Builder();
 			Map<String, String> nameValueSearchMap = new HashMap<String, String>();
 			
-			nameValueSearchMap.put("matchedValue", searchString);
+			nameValueSearchMap.put("matchedValue", searchStringLC);
 			
 			// TODO decide what to do for the mode
 			/*if (searchMode.equals(SearchMode.exact)) {
-//				 nameValueSearchMap.put("label", "\"" + searchString + "\"");
-				nameValueSearchMap.put("label", searchString);
+//				 nameValueSearchMap.put("label", "\"" + searchStringLC + "\"");
+				nameValueSearchMap.put("label", searchStringLC);
 			} else if (searchMode.equals(SearchMode.startsWith)) {
-//				 nameValueSearchMap.put("label", "\"" + searchString + "*\"");
+//				 nameValueSearchMap.put("label", "\"" + searchStringLC + "*\"");
 				nameValueSearchMap.put("label", searchString + "*");
 			} else {
 				// this should not happen
@@ -658,8 +669,8 @@ public class GlobalSearch extends STServiceAdapter {
 			IndexSearcher searcher = createSearcher();
 			TopDocs hits = searcher.search(booleanQuery, maxResults);
 
-			//combine the answer from lucene
-			Map<String, List<ResourceWithLabel>> resToStructMap = combineResoruces(hits, searcher);
+			//combine the answers from lucene
+			Map<String, List<ResourceWithLabel>> resToStructMap = combineResources(hits, searcher, caseSensitive, searchString);
 
 			//prepare the JSON response
 			return prepareResponse(resToStructMap);
@@ -671,7 +682,7 @@ public class GlobalSearch extends STServiceAdapter {
 	
 	
 
-	private Map<String, List<ResourceWithLabel>> combineResoruces(TopDocs hits, IndexSearcher searcher) 
+	private Map<String, List<ResourceWithLabel>> combineResources(TopDocs hits, IndexSearcher searcher, boolean caseSensitive, String searchString)
 			throws IOException {
 		Map<String, List<ResourceWithLabel>> resToStructMap = new HashMap<>();
 		for(ScoreDoc sd : hits.scoreDocs) {
@@ -686,7 +697,14 @@ public class GlobalSearch extends STServiceAdapter {
 			String repId = doc.get("repId");
 			String type = doc.get("type");
 			String role = doc.get("role");
-			
+
+			if(caseSensitive) {
+				if(!matchedValue.contains(searchString)){
+					//since the search is case sensitive and the matched values does not contains the case sensitive searchString, skip this result
+					continue;
+				}
+			}
+
 			String resource_repId = resource+"_"+repId;
 			if(!resToStructMap.containsKey(resource_repId)) {
 				resToStructMap.put(resource_repId,  new ArrayList<>());
