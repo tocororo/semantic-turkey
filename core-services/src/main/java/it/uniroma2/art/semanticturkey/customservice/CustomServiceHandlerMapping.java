@@ -51,6 +51,7 @@ import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.HashMultimap;
@@ -343,8 +344,8 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		wlock.lock();
 		try {
 
-			Operation op = STPropertiesManager.loadSTPropertiesFromObjectNode(Operation.class, true,
-					operationDefinition);
+			ObjectMapper mapper = STPropertiesManager.createObjectMapper(exptManager);
+			Operation op = mapper.treeToValue(operationDefinition, Operation.class);
 
 			CustomServiceDefinitionStore cs;
 			try {
@@ -381,8 +382,8 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		wlock.lock();
 		try {
 
-			Operation op = STPropertiesManager.loadSTPropertiesFromObjectNode(Operation.class, true,
-					operationDefinition);
+			ObjectMapper mapper = STPropertiesManager.createObjectMapper(exptManager);
+			Operation op = mapper.treeToValue(operationDefinition, Operation.class);
 
 			CustomServiceDefinitionStore cs;
 			try {
