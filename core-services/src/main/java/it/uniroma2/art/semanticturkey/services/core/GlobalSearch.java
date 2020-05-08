@@ -690,6 +690,7 @@ public class GlobalSearch extends STServiceAdapter {
 	 * @param searchLangs the list of languages where to search the input term. Optional
 	 * @param transLangs the languages for the translations
 	 * @param caseSensitive true to perform a case sensitive search. Optional, default value is false
+	 * @param debug true to return more information
 	 * @return
 	 * @throws Exception
 	 */
@@ -697,7 +698,8 @@ public class GlobalSearch extends STServiceAdapter {
 	// TODO decide the @PreAuthorize
 	public JsonNode translation(String searchString, @Optional List<String> searchLangs,
 			List<String> transLangs,
-			@Optional(defaultValue="false") boolean caseSensitive) throws Exception {
+			@Optional(defaultValue="false") boolean caseSensitive,
+			@Optional(defaultValue="false") boolean debug) throws Exception {
 
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode response = jsonFactory.arrayNode();
@@ -788,7 +790,7 @@ public class GlobalSearch extends STServiceAdapter {
 				searcher = createSearcher();
 				hits = searcher.search(booleanQuery, MAX_RESULTS);
 				List<ResourceWithLabel> resToStructForTransList = combineResourcesForTranslation(hits, searcher);
-				prepareResponseForAlignment(response, resourceWithLabel, resToStructForTransList, jsonFactory );
+				prepareResponseForAlignment(response, resourceWithLabel, resToStructForTransList, jsonFactory, debug);
 			}
 
 
@@ -895,8 +897,12 @@ public class GlobalSearch extends STServiceAdapter {
 	}
 
 	private void prepareResponseForAlignment(ArrayNode jsonNode, ResourceWithLabel resourceWithLabel,
-			List<ResourceWithLabel> resToStructList, JsonNodeFactory jsonFactory){
+			List<ResourceWithLabel> resToStructList, JsonNodeFactory jsonFactory, boolean debug){
 
+		if(resToStructList.isEmpty() && !debug){
+			//no translations were found and we are not in debug, so do not add anything
+			return;
+		}
 		//create the result element for the search
 		ObjectNode jsonSingleResultForTranlation = jsonFactory.objectNode();
 		jsonNode.add(jsonSingleResultForTranlation);
@@ -923,6 +929,7 @@ public class GlobalSearch extends STServiceAdapter {
 			translationNode.set("matchedValue", jsonFactory.textNode(resTranlation.getMatchedValue() ));
 			translationNode.set("predicate", jsonFactory.textNode(resTranlation.getPredicate() ));
 			translationNode.set("type", jsonFactory.textNode(resTranlation.getType() ));
+			translationNode.set("lang", jsonFactory.textNode(resTranlation.getLang() ));
 			translationArray.add(translationNode);
 		}
 		jsonSingleResultForTranlation.set("translations", translationArray);
