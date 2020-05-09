@@ -57,13 +57,13 @@ import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.sparql.SPARQLUtilities;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.tx.STServiceAspect;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
-import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
  * Base class of Semantic Turkey services.
@@ -263,7 +263,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 					List<CODATriple> insertTriples = updates.getInsertTriples();
 					if (!insertTriples.isEmpty()) {
 						Resource graphEntry = detectGraphEntry(insertTriples);
-						VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(graphEntry); // set
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(graphEntry); // set
 																												// created
 																												// for
 																												// versioning

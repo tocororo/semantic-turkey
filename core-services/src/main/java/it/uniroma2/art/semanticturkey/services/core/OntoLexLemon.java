@@ -84,11 +84,11 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexiconRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
-import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
  * This class provides services for manipulating data based on the W3C OntoLex-Lemon Model.
@@ -136,7 +136,7 @@ public class OntoLexLemon extends STServiceAdapter {
 			newLexiconIRI = newLexicon;
 		}
 
-		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newLexiconIRI,
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newLexiconIRI,
 				RDFResourceRole.limeLexicon); // set created for versioning
 
 		modelAdditions.add(newLexiconIRI, RDF.TYPE, LIME.LEXICON);
@@ -415,7 +415,7 @@ public class OntoLexLemon extends STServiceAdapter {
 			triples2Delete.stream().filter(st -> props.contains(st.getPredicate())).map(Statement::getSubject)
 					.forEach(res -> {
 						if (!res.equals(lexicon)) {
-							VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(res);
+							ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(res);
 						}
 					});
 		} else { // no update of timestamps -> perform a delete update
@@ -494,7 +494,7 @@ public class OntoLexLemon extends STServiceAdapter {
 			newLexicalEntryIRI = newLexicalEntry;
 		}
 
-		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newLexicalEntryIRI,
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newLexicalEntryIRI,
 				RDFResourceRole.ontolexLexicalEntry); // set created for versioning
 
 		IRI canonicalFormIRI = generateFormIRI(newLexicalEntryIRI, canonicalForm, ONTOLEX.CANONICAL_FORM);
@@ -508,7 +508,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		modelAdditions.add(canonicalFormIRI, RDF.TYPE, ONTOLEX.FORM);
 		modelAdditions.add(canonicalFormIRI, ONTOLEX.WRITTEN_REP, canonicalForm);
 
-		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(canonicalFormIRI,
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(canonicalFormIRI,
 				RDFResourceRole.ontolexForm); // set created for versioning
 
 		// enrich with custom form
@@ -889,7 +889,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		logger.debug("Properties that should cause the update of the modification date: {}", props);
 
 		triples2Delete.stream().filter(st -> props.contains(st.getPredicate())).map(Statement::getSubject)
-				.forEach(res -> VersioningMetadataSupport.currentVersioningMetadata()
+				.forEach(res -> ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
 						.addModifiedResource(res));
 	}
 
@@ -1348,7 +1348,7 @@ public class OntoLexLemon extends STServiceAdapter {
 			newFormIRI = newForm;
 		}
 
-		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newFormIRI,
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newFormIRI,
 				RDFResourceRole.ontolexForm); // set created for versioning
 
 		modelAdditions.add(newFormIRI, RDF.TYPE, ONTOLEX.FORM);
@@ -1356,7 +1356,7 @@ public class OntoLexLemon extends STServiceAdapter {
 
 		modelAdditions.add(lexicalEntry, property, newFormIRI);
 
-		VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
 				RDFResourceRole.ontolexLexicalEntry);
 
 		if (replaces) {
@@ -1570,14 +1570,14 @@ public class OntoLexLemon extends STServiceAdapter {
 
 			if (lexicalEntryLocallyDefined) {
 				modelAdditions.add(lexicalEntry, ONTOLEX.DENOTES, reference);
-				VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
 						RDFResourceRole.ontolexLexicalEntry);
 				tripleAdded = true;
 			}
 
 			if (referenceLocallyDefined) {
 				modelAdditions.add(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, getWorkingGraph());
-				VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
 				tripleAdded = true;
 			}
 
@@ -1590,7 +1590,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		if (createSense) {
 			IRI lexicalSenseIRI = generateLexicalSenseIRI(lexicalEntry, reference);
 
-			VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(lexicalSenseIRI,
+			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(lexicalSenseIRI,
 					RDFResourceRole.ontolexLexicalSense);
 
 			modelAdditions.add(lexicalSenseIRI, RDF.TYPE, lexicalSenseCls);
@@ -1599,13 +1599,13 @@ public class OntoLexLemon extends STServiceAdapter {
 
 			if (lexicalEntryLocallyDefined) {
 				modelAdditions.add(lexicalEntry, ONTOLEX.SENSE, lexicalSenseIRI);
-				VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
 						RDFResourceRole.ontolexLexicalEntry);
 			}
 
 			if (referenceLocallyDefined) {
 				modelAdditions.add(reference, ONTOLEX.IS_REFERENCE_OF, lexicalSenseIRI);
-				VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
 			}
 			// enrich with custom form
 			if (customFormValue != null) {
@@ -1640,13 +1640,13 @@ public class OntoLexLemon extends STServiceAdapter {
 		if (conn.hasStatement(lexicalEntry, ONTOLEX.DENOTES, reference, false, getWorkingGraph())) {
 			tripleRemoved = true;
 			conn.remove(lexicalEntry, ONTOLEX.DENOTES, reference, getWorkingGraph());
-			VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry);
+			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry);
 		}
 
 		if (conn.hasStatement(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, false, getWorkingGraph())) {
 			tripleRemoved = true;
 			conn.remove(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, getWorkingGraph());
-			VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
 		}
 
 		if (!tripleRemoved) {
@@ -1678,7 +1678,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		for (Resource lexicalEntry : lexicalEntries) {
 			if (conn.hasStatement(lexicalEntry, ONTOLEX.SENSE, lexicalSense, false, getWorkingGraph())) {
 				conn.remove(lexicalEntry, ONTOLEX.SENSE, lexicalSense, getWorkingGraph());
-				VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
 						RDFResourceRole.ontolexLexicalEntry);
 			}
 		}
@@ -1687,7 +1687,7 @@ public class OntoLexLemon extends STServiceAdapter {
 			if (conn.hasStatement(reference, ONTOLEX.IS_REFERENCE_OF, lexicalSense, false,
 					getWorkingGraph())) {
 				conn.remove(reference, ONTOLEX.IS_REFERENCE_OF, lexicalSense, getWorkingGraph());
-				VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
 			}
 		}
 
@@ -1700,14 +1700,14 @@ public class OntoLexLemon extends STServiceAdapter {
 					if (conn.hasStatement(lexicalEntry, ONTOLEX.DENOTES, reference, false,
 							getWorkingGraph())) {
 						conn.remove(lexicalEntry, ONTOLEX.DENOTES, reference, getWorkingGraph());
-						VersioningMetadataSupport.currentVersioningMetadata()
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
 								.addModifiedResource(lexicalEntry);
 					}
 
 					if (conn.hasStatement(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, false,
 							getWorkingGraph())) {
 						conn.remove(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, getWorkingGraph());
-						VersioningMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
 					}
 				}
 			}

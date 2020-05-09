@@ -81,7 +81,7 @@
 	</bean>
 
 	<bean
-		class="it.uniroma2.art.semanticturkey.versioning.VersioningMetadataPostProcessor">
+		class="it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataPostProcessor">
 		<property name="proxyTargetClass" value="true"></property>
 		<property name="order" value="251" />
 	</bean>
@@ -123,6 +123,10 @@
 	<bean
 		class="it.uniroma2.art.semanticturkey.coda.converters.STSpecificRandomIDGenerator"
 		id="stSpecificRandomIDGenerator" />
+
+	<!-- Enables event propagation across application contexts -->
+	<bean
+		class="it.uniroma2.art.semanticturkey.event.support.CrossContextPropagationEventListener" />
 
 	<bean
 		class="it.uniroma2.art.semanticturkey.customservice.CustomServiceHandlerMapping"

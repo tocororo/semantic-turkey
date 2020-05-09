@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:aop="http://www.springframework.org/schema/aop"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
-	xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:tx="http://www.springframework.org/schema/tx"
 	xmlns:security="http://www.springframework.org/schema/security"
 	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd 
 	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
@@ -12,8 +15,10 @@
     http://www.springframework.org/schema/util  http://www.springframework.org/schema/util/spring-util-3.1.xsd http://www.springframework.org/schema/tx  http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
     http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.1.xsd">
 
-	<mvc:annotation-driven conversion-service="conversionService" />
-	<mvc:resources mapping="/WEB-INF/pages/**" location="/WEB-INF/pages/" />
+	<mvc:annotation-driven
+		conversion-service="conversionService" />
+	<mvc:resources mapping="/WEB-INF/pages/**"
+		location="/WEB-INF/pages/" />
 	<mvc:interceptors>
 		<mvc:interceptor>
 			<mvc:mapping path="/**" />
@@ -22,7 +27,8 @@
 		</mvc:interceptor>
 	</mvc:interceptors>
 
-	<context:component-scan base-package="it.uniroma2.art.semanticturkey.mdr.services,it.uniroma2.art.semanticturkey.mvc">
+	<context:component-scan
+		base-package="it.uniroma2.art.semanticturkey.mdr.services,it.uniroma2.art.semanticturkey.mvc">
 	</context:component-scan>
 
 	<!--A ValidatorFactory whose products (Validators) support dependency injection 
@@ -43,19 +49,21 @@
 		<property name="proxyTargetClass" value="true"></property>
 		<property name="order" value="90" />
 	</bean>
-	
+
 	<bean
 		class="it.uniroma2.art.semanticturkey.user.SchemesOwnershipPostProcessor">
 		<property name="proxyTargetClass" value="true"></property>
 		<property name="order" value="95" />
 	</bean>
 
-	<bean id="stServiceAspect" class="it.uniroma2.art.semanticturkey.tx.STServiceAspect">
+	<bean id="stServiceAspect"
+		class="it.uniroma2.art.semanticturkey.tx.STServiceAspect">
 		<property name="order" value="100" />
 	</bean>
 	<aop:aspectj-autoproxy proxy-target-class="true" />
-	<tx:annotation-driven transaction-manager="transactionManager"
-		proxy-target-class="true" order="200" />
+	<tx:annotation-driven
+		transaction-manager="transactionManager" proxy-target-class="true"
+		order="200" />
 
 	<bean id="transactionManager"
 		class="it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManagerFactoryBean"
@@ -70,7 +78,7 @@
 	</bean>
 
 	<bean
-		class="it.uniroma2.art.semanticturkey.versioning.VersioningMetadataPostProcessor">
+		class="it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataPostProcessor">
 		<property name="proxyTargetClass" value="true"></property>
 		<property name="order" value="251" />
 	</bean>
@@ -87,6 +95,9 @@
 		<property name="order" value="253" />
 	</bean>
 
+	<!-- Enables event propagation across application contexts -->
+	<bean
+		class="it.uniroma2.art.semanticturkey.event.support.CrossContextPropagationEventListener" />
 
 	<bean
 		class="org.springframework.validation.beanvalidation.MethodValidationPostProcessor">
@@ -107,7 +118,7 @@
 	<!-- Retrieves coda osgi factory -->
 
 	<!-- <aop:aspectj-autoproxy proxy-target-class="true"/> -->
-	
+
 	<!-- Enable @PreAuthorize and @PostAuthorize annotation for securing methods -->
 	<security:global-method-security
 		pre-post-annotations="enabled" />

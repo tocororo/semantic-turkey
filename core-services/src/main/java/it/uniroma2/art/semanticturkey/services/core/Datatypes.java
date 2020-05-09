@@ -16,6 +16,7 @@ import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntacticE
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Created;
+import it.uniroma2.art.semanticturkey.services.annotations.Deleted;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -178,8 +179,7 @@ public class Datatypes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(datatype)', 'D')")
-	public void deleteDatatype(@LocallyDefined @Created(role = RDFResourceRole.dataRange) IRI datatype) {
-
+	public void deleteDatatype(@LocallyDefined @Deleted(role=RDFResourceRole.dataRange) IRI datatype) {
 		RepositoryConnection conn = getManagedConnection();
 		conn.remove(datatype, null, null, getWorkingGraph());
 		conn.remove((Resource) null, null, datatype, getWorkingGraph());

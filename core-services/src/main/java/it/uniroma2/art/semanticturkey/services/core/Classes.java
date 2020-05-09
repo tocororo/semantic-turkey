@@ -18,6 +18,7 @@ import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Created;
+import it.uniroma2.art.semanticturkey.services.annotations.Deleted;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
@@ -25,6 +26,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
@@ -32,7 +34,7 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface;
-import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
+
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -338,7 +340,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls)', 'D')")
-	public void deleteClass(@LocallyDefined IRI cls) throws DeniedOperationException {
+	public void deleteClass(@LocallyDefined @Deleted IRI cls) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		
 		//first check if the class has any subClasses or instances
@@ -418,7 +420,7 @@ public class Classes extends STServiceAdapter {
 		}
 		annotatedValue.setAttribute("explicit", true);
 		
-		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newInstance,
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newInstance,
 				RDFResourceRole.valueOf(annotatedValue.getAttributes().get("role").stringValue()));
 		
 		return annotatedValue; 
@@ -431,7 +433,7 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(individual)', 'D')")
-	public void deleteInstance(@LocallyDefined IRI instance) {
+	public void deleteInstance(@LocallyDefined @Deleted IRI instance) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		String query = 
 				// @formatter:off

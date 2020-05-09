@@ -17,12 +17,23 @@
 	<context:component-scan
 		base-package="it.uniroma2.art.semanticturkey" />
 
+	<!-- Enables event propagation across application contexts -->
+	<bean
+		class="it.uniroma2.art.semanticturkey.event.support.CrossContextPropagationEventListener" />
+
+	<!-- Enables annotation based event listeners -->
+	<bean
+		class="it.uniroma2.art.semanticturkey.event.annotation.EventListenerAnnotationBeanPostProcessor" />
+
 	<!-- Registers the it.uniroma2.art.semanticturkey.repository.config.ReadOnlyRepositoryWrapperFactory -->
 	<bean
 		class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
 		<property name="staticMethod"
 			value="it.uniroma2.art.semanticturkey.repository.config.ReadOnlyRepositoryWrapperFactory.registerFactory" />
 	</bean>
+
+	<bean id="updateCustomFormInvoker"
+		class="it.uniroma2.art.semanticturkey.versioning.UpdateCustomFormInvoker" />
 
 	<!-- Imports the MAPALE façade -->
 	<osgi:reference id="mediationFramework"
@@ -161,49 +172,49 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGeneratorExtensionPoint" />
 	</osgi:service>
-	
+
 	<!-- Publishes the RenderingEngine extension point -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngineExtensionPoint" />
 	</osgi:service>
-	
+
 	<!-- Publishes the RDFTransformer extension point -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformerExtensionPoint" />
 	</osgi:service>
-	
+
 	<!-- Publishes the CollaborationBackend extension point -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendExtensionPoint" />
 	</osgi:service>
-	
+
 	<!-- Publishes the DatasetMetadataExporter extension point -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterExtensionPoint" />
 	</osgi:service>
-	
+
 	<!-- Publishes the RepositoryImplConfigurer extension point -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurerExtensionPoint" />
 	</osgi:service>
-	
+
 	<!-- Publishes the SearchStrategy extension point -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategyExtensionPoint" />
 	</osgi:service>
-	
+
 	<!-- Publishes the SPARQLStore -->
 
 	<osgi:service auto-export="interfaces">
@@ -266,7 +277,7 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.deployer.DeployerExtensionPoint" />
 	</osgi:service>
-	
+
 	<!-- Publishes the StreamSourcedDeployer extension point -->
 
 	<osgi:service auto-export="interfaces">
@@ -287,14 +298,14 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingExporterExtensionPoint" />
 	</osgi:service>
-	
+
 	<!-- Publishes the RDFLifter extension point -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
 			class="it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.RDFLifterExtensionPoint" />
 	</osgi:service>
-	
+
 	<!-- Publishes the Loader extension point -->
 
 	<osgi:service auto-export="interfaces">

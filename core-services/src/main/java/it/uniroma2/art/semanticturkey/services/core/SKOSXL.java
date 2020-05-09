@@ -44,7 +44,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation;
 import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation.Facets;
-import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
 
 /**
  * This class provides services for manipulating SKOSXL constructs.
@@ -245,7 +245,7 @@ public class SKOSXL extends STServiceAdapter {
 			xlabel = repoConnection.getValueFactory().createBNode();
 		} else{
 			xlabel = generateXLabelIRI(concept, literal, org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL);
-			VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(xlabel,
+			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(xlabel,
 					RDFResourceRole.xLabel); // set created for versioning
 		}
 		if (labelCls == null) {
@@ -287,7 +287,7 @@ public class SKOSXL extends STServiceAdapter {
 			xlabel = repoConnection.getValueFactory().createBNode();
 		} else{
 			xlabel = generateXLabelIRI(concept, literal, org.eclipse.rdf4j.model.vocabulary.SKOSXL.HIDDEN_LABEL);
-			VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(xlabel,
+			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(xlabel,
 					RDFResourceRole.xLabel); // set created for versioning
 		}
 		if (labelCls == null) {
@@ -405,7 +405,7 @@ public class SKOSXL extends STServiceAdapter {
 				xlabel = repoConnection.getValueFactory().createBNode();
 			} else{
 				xlabel = generateXLabelIRI(concept, literal, org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL);
-				VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(xlabel,
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(xlabel,
 						RDFResourceRole.xLabel); // set created for versioning
 			}
 			

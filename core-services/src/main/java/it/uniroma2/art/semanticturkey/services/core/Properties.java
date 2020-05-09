@@ -27,6 +27,7 @@ import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Created;
+import it.uniroma2.art.semanticturkey.services.annotations.Deleted;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
@@ -34,6 +35,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
@@ -41,7 +43,7 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ObjectPropertyExpression;
-import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
+
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -758,7 +760,7 @@ public class Properties extends STServiceAdapter {
 		}
 		annotatedValue.setAttribute("explicit", true);
 
-		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newProperty,
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newProperty,
 				RDFResourceRole.valueOf(annotatedValue.getAttributes().get("role").stringValue()));
 
 		return annotatedValue;
@@ -773,7 +775,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'D')")
-	public void deleteProperty(@LocallyDefined IRI property) throws DeniedOperationException {
+	public void deleteProperty(@LocallyDefined @Deleted IRI property) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 
 		// first check if the property has any sub property

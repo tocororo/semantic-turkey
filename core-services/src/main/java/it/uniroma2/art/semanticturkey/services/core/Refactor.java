@@ -58,9 +58,9 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Selection;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
 import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
 import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
-import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
  * This class provides services to convert SKOS to SKOSXL data and SKOSXL to SKOS.
@@ -656,7 +656,7 @@ public class Refactor extends STServiceAdapter  {
 			newConceptIRI = newConcept;
 		}
 		
-		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newConceptIRI,
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newConceptIRI,
 				RDFResourceRole.concept); // set created for versioning
 		
 		//add the new concept (just generated using the passed xLabel or the IRI passed by the user) 

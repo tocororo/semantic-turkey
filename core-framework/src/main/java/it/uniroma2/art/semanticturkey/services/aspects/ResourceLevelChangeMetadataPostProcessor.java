@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.versioning;
+package it.uniroma2.art.semanticturkey.services.aspects;
 
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.AbstractAdvisingBeanPostProcessor;
@@ -16,25 +16,25 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 
 /**
  * A convenient {@link BeanPostProcessor} implementation that advises eligible beans (i.e. Semantic Turkey
- * services) in order to manage versioning-relevant metadata.
+ * services) in order to manage resource-level change metadata.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  *
  */
 @SuppressWarnings("serial")
-public class VersioningMetadataPostProcessor extends AbstractAdvisingBeanPostProcessor
+public class ResourceLevelChangeMetadataPostProcessor extends AbstractAdvisingBeanPostProcessor
 		implements ApplicationContextAware, InitializingBean {
 	private ApplicationContext applicationContext;
 
-	public VersioningMetadataPostProcessor() {
+	public ResourceLevelChangeMetadataPostProcessor() {
 	}
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		Pointcut pointcut = new ComposablePointcut(new STServiceOperationPointcut())
 				.intersection(new AnnotationMethodMatcher(Write.class));
-		VersioningMetadataInterceptor advice = applicationContext.getAutowireCapableBeanFactory()
-				.createBean(VersioningMetadataInterceptor.class);
+		ResourceLevelChangeMetadataInterceptor advice = applicationContext.getAutowireCapableBeanFactory()
+				.createBean(ResourceLevelChangeMetadataInterceptor.class);
 		this.advisor = new DefaultPointcutAdvisor(pointcut, advice);
 	}
 

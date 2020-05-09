@@ -107,6 +107,7 @@
 							it.uniroma2.art.semanticturkey.validation,
 							it.uniroma2.art.semanticturkey.versioning,
 							it.uniroma2.art.semanticturkey.search,
+							it.uniroma2.art.semanticturkey.event.support,
 							org.springframework.aop,
 							org.springframework.aop.scope,
 							org.springframework.aop.framework,

@@ -168,6 +168,7 @@
 						<Import-Package>
 							it.uniroma2.art.coda.osgi.bundle,
 							it.uniroma2.art.semanticturkey,
+							it.uniroma2.art.semanticturkey.event.support,
 							it.uniroma2.art.semanticturkey.history,
 							it.uniroma2.art.semanticturkey.exceptions,
 							it.uniroma2.art.semanticturkey.ontology,

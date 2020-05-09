@@ -349,7 +349,12 @@
 			<artifactId>mail</artifactId>
 			<version>1.4.4</version>
 		</dependency>
-
+		<dependency>
+			<groupId>net.bytebuddy</groupId>
+			<artifactId>byte-buddy</artifactId>
+			<version>1.8.3</version>
+			<scope>compile</scope>
+		</dependency>
 		<dependency>
 			<groupId>it.uniroma2.art.sheet2rdf</groupId>
 			<artifactId>sheet2rdf-osgi-bundle</artifactId>

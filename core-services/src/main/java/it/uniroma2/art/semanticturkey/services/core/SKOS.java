@@ -71,13 +71,13 @@ import it.uniroma2.art.semanticturkey.services.annotations.Selection;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation;
 import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation.Facets;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
-import it.uniroma2.art.semanticturkey.versioning.VersioningMetadataSupport;
 
 /**
  * This class provides services for manipulating SKOS constructs.
@@ -590,7 +590,7 @@ public class SKOS extends STServiceAdapter {
 			newConceptIRI = newConcept;
 		}
 		
-		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newConceptIRI,
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newConceptIRI,
 				RDFResourceRole.concept); // set created for versioning
 		
 		IRI conceptClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT;
@@ -605,7 +605,7 @@ public class SKOS extends STServiceAdapter {
 			xLabelIRI = createLabelUsingLexicalizationModel(newConceptIRI, label, modelAdditions, checkExistingAltLabel,
 					true, conceptSchemes);
 			if (xLabelIRI != null) {
-				VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(xLabelIRI,
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(xLabelIRI,
 						RDFResourceRole.xLabel); // set created for versioning
 			}
 		}
@@ -659,7 +659,7 @@ public class SKOS extends STServiceAdapter {
 			newSchemeIRI = newScheme;
 		}
 		
-		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newSchemeIRI,
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newSchemeIRI,
 				RDFResourceRole.conceptScheme); // set created for versioning
 		
 		IRI schemeClass = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT_SCHEME;
@@ -673,7 +673,7 @@ public class SKOS extends STServiceAdapter {
 			xLabelIRI = createLabelUsingLexicalizationModel(newSchemeIRI, label, modelAdditions, 
 					checkExistingAltLabel, true, null);
 			if (xLabelIRI != null) {
-				VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(xLabelIRI,
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(xLabelIRI,
 						RDFResourceRole.xLabel); // set created for versioning
 			}
 		}
@@ -1421,7 +1421,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(conceptScheme)', 'D')")
-	public void deleteConceptScheme(@LocallyDefined @SchemeAssignment IRI scheme) {
+	public void deleteConceptScheme(@LocallyDefined @SchemeAssignment @Deleted IRI scheme) {
 		String query = 
 				"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>					\n"
 				+ "DELETE {																\n"
@@ -1563,7 +1563,7 @@ public class SKOS extends STServiceAdapter {
 			newCollectionRes = newCollection;
 		}
 		
-		VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(newCollectionRes,
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newCollectionRes,
 				RDFResourceRole.skosCollection); // set created for versioning
 		
 		IRI collectionClass = collectionType;
@@ -1598,7 +1598,7 @@ public class SKOS extends STServiceAdapter {
 			xLabelIRI = createLabelUsingLexicalizationModel(newCollectionRes, label, modelAdditions,
 					checkExistingAltLabel, true, null);
 			if (xLabelIRI != null) {
-				VersioningMetadataSupport.currentVersioningMetadata().addCreatedResource(xLabelIRI,
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(xLabelIRI,
 						RDFResourceRole.xLabel); // set created for versioning
 			}
 		}
@@ -1667,7 +1667,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'D')")
-	public void deleteCollection(@LocallyDefined Resource collection) throws DeniedOperationException{
+	public void deleteCollection(@LocallyDefined @Deleted Resource collection) throws DeniedOperationException{
 		
 		RepositoryConnection repConn = getManagedConnection();
 		String query = "ASK {?resource <http://www.w3.org/2004/02/skos/core#member> ?member ."
@@ -1760,7 +1760,7 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'D')")
-	public void deleteOrderedCollection(@LocallyDefined Resource collection) throws DeniedOperationException{
+	public void deleteOrderedCollection(@LocallyDefined @Deleted Resource collection) throws DeniedOperationException{
 		
 		RepositoryConnection repConn = getManagedConnection();
 		String query = "ASK {?resource <http://www.w3.org/2004/02/skos/core#memberList> ?memberList . "
