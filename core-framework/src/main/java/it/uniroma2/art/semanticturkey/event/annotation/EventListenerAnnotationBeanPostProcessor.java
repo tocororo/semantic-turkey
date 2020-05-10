@@ -1,16 +1,12 @@
 package it.uniroma2.art.semanticturkey.event.annotation;
 
 import java.lang.annotation.Annotation;
-import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.reflect.ConstructorUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.springframework.aop.framework.AopProxyUtils;
@@ -19,18 +15,19 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.event.ApplicationEventMulticaster;
+import org.springframework.context.event.SmartApplicationListener;
 import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.core.Ordered;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 import it.uniroma2.art.semanticturkey.event.Event;
 import it.uniroma2.art.semanticturkey.event.annotation.TransactionalEventListener.Phase;
-import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.description.type.TypeDescription;
 
 /**
  * A {@link BeanPostProcessor} that registers {@link EventListener}s bound to bean methods annotated with
@@ -126,10 +123,43 @@ public class EventListenerAnnotationBeanPostProcessor
 
 	}
 
-	private ApplicationContext applicationContext;
+	public static class GenericListenerDecorator implements SmartApplicationListener {
 
-	private Map<Type, WeakReference<Class<?>>> eventListenerClazzes = new HashMap<>();
-	private Map<Type, WeakReference<Class<?>>> transactionalEventListenerClazzes = new HashMap<>();
+		private Type eventType;
+		@SuppressWarnings("rawtypes")
+		private ApplicationListener delegateListener;
+
+		public GenericListenerDecorator(Type eventType,
+				@SuppressWarnings("rawtypes") ApplicationListener delegateListener) {
+			this.eventType = eventType;
+			this.delegateListener = delegateListener;
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public void onApplicationEvent(ApplicationEvent event) {
+			delegateListener.onApplicationEvent(event);
+		}
+
+		@Override
+		public int getOrder() {
+			return delegateListener instanceof Ordered ? ((Ordered) delegateListener).getOrder()
+					: Ordered.LOWEST_PRECEDENCE;
+		}
+
+		@Override
+		public boolean supportsEventType(Class<? extends ApplicationEvent> eventType) {
+			return TypeUtils.isAssignable(eventType, this.eventType);
+		}
+
+		@Override
+		public boolean supportsSourceType(Class<?> sourceType) {
+			return true;
+		}
+
+	}
+
+	private ConfigurableApplicationContext applicationContext;
 
 	private Multimap<String, ApplicationListener<?>> bean2listeners = HashMultimap.create();
 
@@ -140,18 +170,16 @@ public class EventListenerAnnotationBeanPostProcessor
 
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-		processBeanInternal(bean, beanName, EventListener.class, eventListenerClazzes,
-				MethodInvocationEventListener.class);
+		processBeanInternal(bean, beanName, EventListener.class, MethodInvocationEventListener.class);
 		processBeanInternal(bean, beanName, TransactionalEventListener.class,
-				transactionalEventListenerClazzes, MethodInvocationTransactionalEventListener.class);
+				MethodInvocationTransactionalEventListener.class);
 
 		return bean;
 
 	}
 
 	protected void processBeanInternal(Object bean, String beanName,
-			Class<? extends Annotation> annotationType,
-			Map<Type, WeakReference<Class<?>>> eventListenerClazzes2, Class<?> eventHandlerGenericClass) {
+			Class<? extends Annotation> annotationType, Class<?> eventHandlerGenericClass) {
 		Class<?> targetClass = AopProxyUtils.ultimateTargetClass(bean);
 
 		List<Method> candidateEventListenerMethods = MethodUtils.getMethodsListWithAnnotation(targetClass,
@@ -159,44 +187,21 @@ public class EventListenerAnnotationBeanPostProcessor
 
 		candidateEventListenerMethods = filterCandidates(candidateEventListenerMethods);
 
-		for (Method m : candidateEventListenerMethods) {
-			Type eventType = m.getGenericParameterTypes()[0];
+		for (Method method : candidateEventListenerMethods) {
+			Type eventType = method.getGenericParameterTypes()[0];
 
-			Class<?> clazz = null;
-			if (eventListenerClazzes2.containsKey(eventType)) {
-				clazz = eventListenerClazzes2.get(eventType).get();
+			it.uniroma2.art.semanticturkey.event.EventListener<?> delegateEventListener;
+			if (annotationType == TransactionalEventListener.class) {
+				delegateEventListener = new MethodInvocationTransactionalEventListener<>(applicationContext,
+						beanName, method, method.getAnnotation(TransactionalEventListener.class).phase());
+			} else {
+				delegateEventListener = new MethodInvocationEventListener<>(applicationContext, beanName,
+						method);
 			}
 
-			if (clazz == null) {
-				clazz = new ByteBuddy()
-						.subclass(TypeDescription.Generic.Builder
-								.parameterizedType(eventHandlerGenericClass, eventType).build())
-						.make().load(EventListenerAnnotationBeanPostProcessor.class.getClassLoader())
-						.getLoaded();
-
-				eventListenerClazzes2.put(eventType, new WeakReference<>(clazz));
-			}
-
-			try {
-				ApplicationListener<?> listener = (ApplicationListener<?>) ConstructorUtils.invokeConstructor(
-						clazz, computeMethodInvocationConstructorArgumnets(applicationContext, beanName, m,
-								annotationType));
-				((ConfigurableApplicationContext) applicationContext).addApplicationListener(listener);
-			} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException
-					| InstantiationException e) {
-				e.printStackTrace();
-			}
-
-		}
-	}
-
-	private Object[] computeMethodInvocationConstructorArgumnets(ApplicationContext applicationContext,
-			String beanName, Method method, Class<?> annotationType) {
-		if (annotationType == TransactionalEventListener.class) {
-			return new Object[] { applicationContext, beanName, method,
-					method.getAnnotation(TransactionalEventListener.class).phase() };
-		} else {
-			return new Object[] { applicationContext, beanName, method };
+			GenericListenerDecorator eventListener = new GenericListenerDecorator(eventType,
+					delegateEventListener);
+			applicationContext.addApplicationListener(eventListener);
 		}
 	}
 
@@ -221,7 +226,7 @@ public class EventListenerAnnotationBeanPostProcessor
 
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		this.applicationContext = applicationContext;
+		this.applicationContext = (ConfigurableApplicationContext) applicationContext;
 	}
 
 }
