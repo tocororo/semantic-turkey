@@ -1,5 +1,6 @@
 version 8.0
 date: dd/mm/yyyy
+  * added a new service that uses Lucene indexes to perform translations
   * introduced a new event bus (e.g. for resource-level changes)
   * change the namespace of the vocabulary used by the metadata registry
   * partial modularization of the platform. The following parts were moved to dedicated modules:

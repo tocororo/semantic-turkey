@@ -60,7 +60,7 @@ import java.util.Set;
 public class GlobalSearch extends STServiceAdapter {
 
 	protected static Logger logger = LoggerFactory.getLogger(GlobalSearch.class);
-	
+
 	private final String lucDirName = "luceneIndex";
 
 	private final String LEXICALIZATION = "lexicalization";
@@ -110,13 +110,13 @@ public class GlobalSearch extends STServiceAdapter {
 				if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) { //SKOS-XL
 					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang" 
-							+ "\nWHERE{" 
+							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang"
+							+ "\nWHERE{"
 							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) +"{"
-							+ "\n?xlabel skosxl:literalForm ?matchedValue ." 
+							+ "\n?xlabel skosxl:literalForm ?matchedValue ."
 							+ "\nFILTER(isLiteral(?matchedValue)) "
 							+ "\nBIND(lang(?matchedValue) AS ?lang)"
-							+ "\n?resource ?predicate ?xlabel ." 
+							+ "\n?resource ?predicate ?xlabel ."
 							+ "\nFILTER(isIRI(?resource)) "
 							+ "\n?resource a ?resourceType ."
 							+ "\n}"
@@ -127,13 +127,13 @@ public class GlobalSearch extends STServiceAdapter {
 					String labelsProp = "( skos:prefLabel, skos:altLabel, skos:hiddenLabel )";
 					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang" 
-							+ "\nWHERE{" 
+							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang"
+							+ "\nWHERE{"
 							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
-							+ "\n?resource ?predicate ?matchedValue ." 
+							+ "\n?resource ?predicate ?matchedValue ."
 							+ "\nFILTER(isLiteral(?matchedValue)) "
 							+ "\nBIND(lang(?matchedValue) AS ?lang)"
-							+ "\nFILTER( ?predicate IN "+labelsProp+")" 
+							+ "\nFILTER( ?predicate IN "+labelsProp+")"
 							+ "\nFILTER(isIRI(?resource)) "
 							+ "\n?resource a ?resourceType ."
 							+ "\n}"
@@ -145,13 +145,13 @@ public class GlobalSearch extends STServiceAdapter {
 					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
 							+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang" 
-							+ "\nWHERE{" 
+							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang"
+							+ "\nWHERE{"
 							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
-							+ "\n?resource ?predicate ?matchedValue ." 
+							+ "\n?resource ?predicate ?matchedValue ."
 							+ "\nFILTER(isLiteral(?matchedValue)) "
 							+ "\nBIND(lang(?matchedValue) AS ?lang)"
-							+ "\nFILTER( ?predicate IN "+labelsProp+")" 
+							+ "\nFILTER( ?predicate IN "+labelsProp+")"
 							+ "\nFILTER(isIRI(?resource)) "
 							+ "\n?resource a ?resourceType ."
 							+ "\n}"
@@ -160,7 +160,7 @@ public class GlobalSearch extends STServiceAdapter {
 					addDirectlyToIndex(query, conn, writer, LEXICALIZATION, resTypeToRoleMap);
 				} else { //ONTOLEX
 					//see for more details https://www.w3.org/2016/05/ontolex/#core
-					
+
 					//first get all the LexicalConcept (or Ontology Entity) connected to the LexicalEntry that are 
 					// then connected to the form (the Literal). Take also the LexicalEntry and store them in a List.
 					// Then get just the LexicalEntry and index only those not present in the List constructed in
@@ -178,21 +178,21 @@ public class GlobalSearch extends STServiceAdapter {
 							"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
 							"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
 					String allResToLexicalEntry = " ("+directResToLexicalEntry+"|"+doubleStepResToLexicalEntry+") ";
-					
+
 					String canonicalFormOrOtherForm = " ("+NTriplesUtil.toNTriplesString(ONTOLEX.CANONICAL_FORM)
 								+" | "+NTriplesUtil.toNTriplesString(ONTOLEX.OTHER_FORM)+") ";
-					
+
 					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
 							+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang ?lexicalEntry" 
-							+ "\nWHERE{" 
+							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang ?lexicalEntry"
+							+ "\nWHERE{"
 							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
-							+ "\n?lexicalEntry a "+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+ "." 
+							+ "\n?lexicalEntry a "+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+ "."
 							+ "\n?resource"+allResToLexicalEntry+"?lexicalEntry ."
-							+ "\n?lexicalEntry "+canonicalFormOrOtherForm+" ?ontoForm ." 
-							+ "\n?lexicalEntry ?predicate ?ontoForm ." 
-							+ "\n?ontoForm "+NTriplesUtil.toNTriplesString(ONTOLEX.WRITTEN_REP)+" ?matchedValue ." 
+							+ "\n?lexicalEntry "+canonicalFormOrOtherForm+" ?ontoForm ."
+							+ "\n?lexicalEntry ?predicate ?ontoForm ."
+							+ "\n?ontoForm "+NTriplesUtil.toNTriplesString(ONTOLEX.WRITTEN_REP)+" ?matchedValue ."
 							+ "\nFILTER(isLiteral(?matchedValue)) "
 							+ "\nBIND(lang(?matchedValue) AS ?lang)"
 							+ "\nFILTER(isIRI(?resource)) "
@@ -214,17 +214,17 @@ public class GlobalSearch extends STServiceAdapter {
 							String predicate = bindingSet.getValue("predicate").stringValue();
 							String matchedValue = bindingSet.getValue("matchedValue").stringValue();
 							String lang = bindingSet.getValue("lang").stringValue();
-							String repId = getProject().getName(); 
+							String repId = getProject().getName();
 							String role = getRoleFromResType(resourceType, resTypeToRoleMap);
 							String type = LEXICALIZATION;
-							
+
 							String resourceIRI_repId = resourceIRI+"_"+repId;
 							String lexEntryIRI_repId = lexEntryIRI+"_"+repId;
 
 							if(!lexEntryInInConceptSet.contains(lexEntryIRI_repId)) {
 								lexEntryInInConceptSet.add(lexEntryIRI_repId);
 							}
-							
+
 							if(lexConceptToLexEntryMap.containsKey(resourceIRI_repId)) {
 								if(lexConceptToLexEntryMap.get(resourceIRI_repId).contains(lexEntryIRI_repId)) {
 									//the couple resourceIRI and lexEntryIRI has already been processed for this repId
@@ -235,26 +235,26 @@ public class GlobalSearch extends STServiceAdapter {
 								lexConceptToLexEntryMap.put(resourceIRI_repId, new ArrayList<>());
 							}
 							lexConceptToLexEntryMap.get(resourceIRI_repId).add(lexEntryIRI_repId);
-							
+
 							//now add to the index the current element 
 							writer.addDocument(addResourceWithLabel(
-									new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang, 
+									new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang,
 											matchedValue, predicate, repId, type, role)));
 						}
 					}
-					
+
 					//now create a SPARQL query to get all LexicalEntry and check those not already found in the 
 					//previous query
 					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
 							+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang" 
-							+ "\nWHERE{" 
+							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang"
+							+ "\nWHERE{"
 							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
-							+ "\n?resource a "+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+ "." 
-							+ "\n?resource "+canonicalFormOrOtherForm+" ?ontoForm ." 
-							+ "\n?resource ?predicate ?ontoForm ." 
-							+ "\n?ontoForm "+NTriplesUtil.toNTriplesString(ONTOLEX.WRITTEN_REP)+" ?matchedValue ." 
+							+ "\n?resource a "+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+ "."
+							+ "\n?resource "+canonicalFormOrOtherForm+" ?ontoForm ."
+							+ "\n?resource ?predicate ?ontoForm ."
+							+ "\n?ontoForm "+NTriplesUtil.toNTriplesString(ONTOLEX.WRITTEN_REP)+" ?matchedValue ."
 							+ "\nFILTER(isLiteral(?matchedValue)) "
 							+ "\nBIND(lang(?matchedValue) AS ?lang)"
 							+ "\nFILTER(isIRI(?resource)) "
@@ -276,9 +276,9 @@ public class GlobalSearch extends STServiceAdapter {
 							String repId = getProject().getName();
 							String role = getRoleFromResType(resourceType, resTypeToRoleMap);
 							String type = LEXICALIZATION;
-							
+
 							String resourceIRI_repId = resourceIRI+"_"+repId;
-							
+
 							if(lexEntryInInConceptSet.contains(resourceIRI_repId)) {
 								//this LexicalEntry has already being process during the previously query, so just 
 								// skip it
@@ -286,14 +286,14 @@ public class GlobalSearch extends STServiceAdapter {
 							}
 							//now add to the index the current element (the LexicalEntry)
 							writer.addDocument(addResourceWithLabel(
-									new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang, 
+									new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang,
 											matchedValue, predicate, repId, type, role)));
 						}
 					}
 				}
 				//@formatter:on
-				
-				
+
+
 				//Prepare the query for the skos:note (and all the subproperties)
 				IRI modelType = getProject().getModel();
 				if(modelType.equals(Project.SKOS_MODEL) || modelType.equals(Project.ONTOLEXLEMON_MODEL)) {
@@ -303,7 +303,7 @@ public class GlobalSearch extends STServiceAdapter {
 							+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
 							+ "\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
 							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang"
-							+ "\nWHERE{" 
+							+ "\nWHERE{"
 							//do a subquery to get all the subproperties of skos:note 
 							+ "\n{SELECT ?predicate "
 							+ "\nWHERE{ "
@@ -327,12 +327,12 @@ public class GlobalSearch extends STServiceAdapter {
 							+ "\nBIND(lang(?matchedValue) AS ?lang)"
 							+ "\n?resource a ?resourceType ."
 							+ "\n}"
-							
+
 							+ "\n}"
 							+ "\n}";
 					//@formatter:on
 					logger.debug("query = "+query);
-					
+
 					//add to the index the result of the query
 					addDirectlyToIndex(query, conn, writer, NOTE, resTypeToRoleMap);
 				}
@@ -343,7 +343,7 @@ public class GlobalSearch extends STServiceAdapter {
 		}
 	}
 
-	private void addDirectlyToIndex(String query, RepositoryConnection conn, IndexWriter writer, String type, 
+	private void addDirectlyToIndex(String query, RepositoryConnection conn, IndexWriter writer, String type,
 			Map<String, String> resTypeToRoleMap) throws IOException {
 		logger.debug("query = "+query);
 		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
@@ -369,14 +369,14 @@ public class GlobalSearch extends STServiceAdapter {
 
 
 				writer.addDocument(addResourceWithLabel(
-						new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang, 
+						new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang,
 								matchedValue, predicate, repId, type, role)));
 			}
 		}
-		
+
 	}
-	
-	
+
+
 	private Map<String, String> computeAllRoles(RepositoryConnection conn){
 		Map<String, String> resTypeToRoleMap = new HashMap<>();
 		//based on computeRole in it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator 
@@ -385,12 +385,12 @@ public class GlobalSearch extends STServiceAdapter {
 				+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
 				+ "\nPREFIX owl: <http://www.w3.org/2002/07/owl#>"
 				+ "\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#> "
-				+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " 
+				+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> "
 				+ "\nPREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#> "
 				+ "\nPREFIX lime: <http://www.w3.org/ns/lemon/lime#>"
 				+ "\nSELECT ?type ?role "
 				+ "\nWHERE { "
-				
+
 				+ "\n{"
 				+ "\n?type rdfs:subClassOf* skos:Concept ."
 				+ "\nBIND(\"concept\" AS ?role) "
@@ -474,13 +474,13 @@ public class GlobalSearch extends STServiceAdapter {
 				+ "\nBIND(\"ontolexLexicalEntry\" AS ?role) "
 				+ "\n}"
 				+ "\nUNION"
-				
+
 				+ "\n{"
 				+ "\n?type rdfs:subClassOf* lime:Lexicon ."
 				+ "\nBIND(\"limeLexicon\" AS ?role) "
 				+ "\n}"
 				+ "\nUNION"
-				
+
 				+ "\n{"
 				+ "\n?type rdfs:subClassOf* ontolex:LexicalSense."
 				+ "\nBIND(\"ontolexLexicalSense\" AS ?role) "
@@ -495,7 +495,7 @@ public class GlobalSearch extends STServiceAdapter {
 				+ "\n}"
 				;
 		//@formatter:on
-		
+
 		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
 		try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
 			while (tupleQueryResult.hasNext()) {
@@ -505,10 +505,10 @@ public class GlobalSearch extends STServiceAdapter {
 				resTypeToRoleMap.put(type, role);
 			}
 		}
-				
+
 		return resTypeToRoleMap;
 	}
-	
+
 	private String getRoleFromResType(String resType, Map<String, String> resTypeToRoleMap) {
 		if(resTypeToRoleMap.containsKey(resType)) {
 			return resTypeToRoleMap.get(resType);
@@ -518,7 +518,7 @@ public class GlobalSearch extends STServiceAdapter {
 
 	/**
 	 * Remove from the Lucene index all the information of the current project
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -530,7 +530,7 @@ public class GlobalSearch extends STServiceAdapter {
 		try {
 			Directory directory = FSDirectory.open(getLuceneDir().toPath());
 			try (IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new SimpleAnalyzer()))) {
-				
+
 				Builder builderBoolean = new BooleanQuery.Builder();
 				builderBoolean.add(new TermQuery(new Term("repId", projectName)), Occur.MUST);
 
@@ -540,10 +540,10 @@ public class GlobalSearch extends STServiceAdapter {
 			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
 		}
 	}
-	
+
 	/**
 	 * Remove from the Lucene index all the information about all projects
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -556,9 +556,9 @@ public class GlobalSearch extends STServiceAdapter {
 			Directory directory = FSDirectory.open(getLuceneDir().toPath());
 			try (IndexWriter writer = new IndexWriter(directory,
 					new IndexWriterConfig(new SimpleAnalyzer()))) {
-				
+
 				writer.deleteAll();
-				
+
 			}
 		} finally {
 			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
@@ -567,7 +567,7 @@ public class GlobalSearch extends STServiceAdapter {
 
 	/**
 	 * Search in the Lucene index all resources/project matching the input string
-	 * 
+	 *
 	 * @param searchString
 	 * @param langs
 	 * @param maxResults the maximun number of results to have (0 means no limit)
@@ -596,9 +596,9 @@ public class GlobalSearch extends STServiceAdapter {
 
 			Builder builderBooleanGlobal = new BooleanQuery.Builder();
 			Map<String, String> nameValueSearchMap = new HashMap<String, String>();
-			
+
 			nameValueSearchMap.put("matchedValue", searchStringLC);
-			
+
 			// TODO decide what to do for the mode
 			/*if (searchMode.equals(SearchMode.exact)) {
 //				 nameValueSearchMap.put("label", "\"" + searchStringLC + "\"");
@@ -611,7 +611,7 @@ public class GlobalSearch extends STServiceAdapter {
 				throw new IllegalArgumentException("searchMode should be " + SearchMode.exact + " or "
 						+ SearchMode.startsWith + ", no other values are accepted");
 			}*/
-		
+
 			if(langs!=null && langs.size()>0) {
 				String langString = "";
 				for(String lang : langs) {
@@ -713,6 +713,9 @@ public class GlobalSearch extends STServiceAdapter {
 			Builder builderBooleanGlobal = new BooleanQuery.Builder();
 			Map<String, String> nameValueSearchMap = new HashMap<String, String>();
 
+			//search only in the LEXICALIZATION
+			nameValueSearchMap.put("type", LEXICALIZATION);
+
 			nameValueSearchMap.put("matchedValue", searchStringLC);
 
 			if(searchLangs!=null && searchLangs.size()>0) {
@@ -746,6 +749,10 @@ public class GlobalSearch extends STServiceAdapter {
 						builderTemp.add(new Term(name, singleValue), count++);
 					}
 					query  = builderTemp.build();
+				} else if(name.equals("type")){
+					Builder builderBoolean = new BooleanQuery.Builder(); //
+					builderBoolean.add(new TermQuery(new Term("type", LEXICALIZATION)), Occur.MUST);
+					query = builderBoolean.build();
 				}
 
 				builderBooleanGlobal.add(query, Occur.MUST);
@@ -759,20 +766,42 @@ public class GlobalSearch extends STServiceAdapter {
 			//combine the answers from lucene
 			Map<String, List<ResourceWithLabel>> resToStructMap = combineResourcesForSearch(hits, searcher, caseSensitive, searchString);
 
-			//for every resource in the resToStructMap perform a query to get all lexicalizations in the specified transLangs
+			//for every resource in the resToStructMap perform a query to get first all lexicalizations for the retrieve resource in the matched language and then
+			// all lexicalizations in the specified transLangs
 			for(String key : resToStructMap.keySet()){
 				//get only the first value of the List, since in such list they are all about the same resource
 				ResourceWithLabel resourceWithLabel = resToStructMap.get(key).get(0);
 				String resource = resourceWithLabel.getResource();
 				String repId = resourceWithLabel.getRepId();
+				String lang = resourceWithLabel.getLang();
 
-
+				//get lexicalizations
 				Builder builderBoolean = new BooleanQuery.Builder();
 				Query query;
 				//add the desired language for the translation
-				Builder builderLangBoolean = new BooleanQuery.Builder();
-				for(String lang : transLangs) {
-					builderLangBoolean.add(new TermQuery(new Term("lang", lang)), Occur.SHOULD);
+				builderBoolean.add(new TermQuery(new Term("lang", lang)), Occur.MUST);
+				//add the resource
+				builderBoolean.add(new TermQuery(new Term("resource", resource)), Occur.MUST);
+
+				//add the repId
+				builderBoolean.add(new TermQuery(new Term("repId", repId)), Occur.MUST);
+
+				//add the fact that is should be only lexicalization
+				builderBoolean.add(new TermQuery(new Term("type", LEXICALIZATION)), Occur.MUST);
+
+				booleanQuery = builderBoolean.build();
+
+				searcher = createSearcher();
+				hits = searcher.search(booleanQuery, MAX_RESULTS);
+				List<ResourceWithLabel> resToStructForLexisList = combineResourcesForTranslation(hits, searcher);
+
+
+				//get translations
+				builderBoolean = new BooleanQuery.Builder();
+				//add the desired language for the translation
+				Builder builderLangBoolean = new Builder();
+				for(String tranLang : transLangs) {
+					builderLangBoolean.add(new TermQuery(new Term("lang", tranLang)), Occur.SHOULD);
 				}
 				query = builderLangBoolean.build();
 				builderBoolean.add(query, Occur.MUST);
@@ -790,7 +819,8 @@ public class GlobalSearch extends STServiceAdapter {
 				searcher = createSearcher();
 				hits = searcher.search(booleanQuery, MAX_RESULTS);
 				List<ResourceWithLabel> resToStructForTransList = combineResourcesForTranslation(hits, searcher);
-				prepareResponseForAlignment(response, resourceWithLabel, resToStructForTransList, jsonFactory, debug);
+				prepareResponseForAlignment(response, resourceWithLabel, resToStructForLexisList,
+						resToStructForTransList, jsonFactory, debug, transLangs);
 			}
 
 
@@ -800,15 +830,15 @@ public class GlobalSearch extends STServiceAdapter {
 
 		return response;
 	}
-	
-	
+
+
 
 	private Map<String, List<ResourceWithLabel>> combineResourcesForSearch(TopDocs hits, IndexSearcher searcher, boolean caseSensitive, String searchString)
 			throws IOException {
 		Map<String, List<ResourceWithLabel>> resToStructMap = new HashMap<>();
 		for(ScoreDoc sd : hits.scoreDocs) {
 			Document doc = searcher.doc(sd.doc);
-			
+
 			String resource = doc.get("resource");
 			String resourceLocalName = doc.get("resourceLocalName");
 			String resourceType = doc.get("resourceType");
@@ -858,29 +888,29 @@ public class GlobalSearch extends STServiceAdapter {
 		}
 		return resToStructList;
 	}
-	
+
 	private JsonNode prepareResponseForSearch(Map<String, List<ResourceWithLabel>> resToStructMap) {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode jsonExternalArray = jsonFactory.arrayNode();
 		for(String resouce_repId : resToStructMap.keySet() ) {
 			List<ResourceWithLabel> resourceWithLabelList = resToStructMap.get(resouce_repId);
-			
+
 			ResourceWithLabel resourceWithLabelFirst = resourceWithLabelList.get(0);
-			
+
 			ObjectNode jsonResource = jsonFactory.objectNode();
 			jsonResource.set("resource", jsonFactory.textNode(resourceWithLabelFirst.getResource()));
 			jsonResource.set("resourceLocalName", jsonFactory.textNode(resourceWithLabelFirst.getResourceLocalName()));
 			jsonResource.set("resourceType", jsonFactory.textNode(resourceWithLabelFirst.getResourceType()));
 			jsonResource.set("role", jsonFactory.textNode(resourceWithLabelFirst.getRole()));
-			
+
 			ObjectNode repoNode = jsonFactory.objectNode();
 			String repoId = resourceWithLabelFirst.getRepId();
 			repoNode.set("id", jsonFactory.textNode(repoId));
 			repoNode.set("open", jsonFactory.booleanNode(ProjectManager.isOpen(repoId)));
 			jsonResource.set("repository", repoNode);
-			
+
 			jsonExternalArray.add(jsonResource);
-			
+
 			ArrayNode jsonIntenalArray = jsonFactory.arrayNode();
 			for(ResourceWithLabel resourceWithLabel : resourceWithLabelList) {
 				ObjectNode json = jsonFactory.objectNode();
@@ -891,15 +921,15 @@ public class GlobalSearch extends STServiceAdapter {
 				jsonIntenalArray.add(json);
 			}
 			jsonResource.set("details", jsonIntenalArray);
-			
+
 		}
 		return jsonExternalArray;
 	}
 
-	private void prepareResponseForAlignment(ArrayNode jsonNode, ResourceWithLabel resourceWithLabel,
-			List<ResourceWithLabel> resToStructList, JsonNodeFactory jsonFactory, boolean debug){
+	private void prepareResponseForAlignment(ArrayNode jsonNode, ResourceWithLabel resourceWithLabel, List<ResourceWithLabel> resToStructLexiList,
+			List<ResourceWithLabel> resToStructTransList, JsonNodeFactory jsonFactory, boolean debug, List<String> transLangs){
 
-		if(resToStructList.isEmpty() && !debug){
+		if(resToStructTransList.isEmpty() && !debug){
 			//no translations were found and we are not in debug, so do not add anything
 			return;
 		}
@@ -922,17 +952,40 @@ public class GlobalSearch extends STServiceAdapter {
 		jsonSingleResultForTranlation.set("predicate", jsonFactory.textNode(resourceWithLabel.getPredicate()));
 		jsonSingleResultForTranlation.set("type", jsonFactory.textNode(resourceWithLabel.getType()));
 
-		ArrayNode translationArray = jsonFactory.arrayNode();
-		//now add all the translations
-		for(ResourceWithLabel resTranlation : resToStructList){
+		//add all lexicalixations in a the given language
+		ArrayNode lexicalizationArray = jsonFactory.arrayNode();
+		for(ResourceWithLabel resTranlation : resToStructLexiList){
 			ObjectNode translationNode = jsonFactory.objectNode();
 			translationNode.set("matchedValue", jsonFactory.textNode(resTranlation.getMatchedValue() ));
 			translationNode.set("predicate", jsonFactory.textNode(resTranlation.getPredicate() ));
 			translationNode.set("type", jsonFactory.textNode(resTranlation.getType() ));
 			translationNode.set("lang", jsonFactory.textNode(resTranlation.getLang() ));
-			translationArray.add(translationNode);
+			lexicalizationArray.add(translationNode);
 		}
-		jsonSingleResultForTranlation.set("translations", translationArray);
+		jsonSingleResultForTranlation.set("lexicalizations", lexicalizationArray);
+
+		//add all the translations (grouped by transLangs values)
+		ArrayNode translationExternalArray = jsonFactory.arrayNode();
+		for(String lang : transLangs) {
+			ObjectNode langAndTranslationsNode = jsonFactory.objectNode();
+			langAndTranslationsNode.set("lang", jsonFactory.textNode(lang));
+			ArrayNode translationInternalArray = jsonFactory.arrayNode();
+			for (ResourceWithLabel resTranlation : resToStructTransList) {
+				//check that language of resTranlation is the same as lang
+				if(!resTranlation.getLang().toLowerCase().equals(lang.toLowerCase())){
+					//different language, so do nothing
+					continue;
+				}
+				ObjectNode translationNode = jsonFactory.objectNode();
+				translationNode.set("matchedValue", jsonFactory.textNode(resTranlation.getMatchedValue()));
+				translationNode.set("predicate", jsonFactory.textNode(resTranlation.getPredicate()));
+				translationNode.set("type", jsonFactory.textNode(resTranlation.getType()));
+				translationInternalArray.add(translationNode);
+			}
+			langAndTranslationsNode.set("translations", translationInternalArray);
+			translationExternalArray.add(langAndTranslationsNode);
+		}
+		jsonSingleResultForTranlation.set("translations", translationExternalArray);
 	}
 	
 	private IndexSearcher createSearcher() throws IOException {
