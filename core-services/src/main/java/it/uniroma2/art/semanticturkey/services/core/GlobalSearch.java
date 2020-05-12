@@ -66,6 +66,17 @@ public class GlobalSearch extends STServiceAdapter {
 	private final String LEXICALIZATION = "lexicalization";
 	private final String NOTE = "note";
 
+	private final String INDEX_RESOURCE = "resource";
+	private final String INDEX_RESOURCE_LOCAL_NAME = "resourceLocalName";
+	private final String INDEX_RESOURCE_TYPE = "resourceType";
+	private final String INDEX_LANG = "lang";
+	private final String INDEX_VALUE = "value";
+	private final String INDEX_PREDICATE = "predicate";
+	private final String INDEX_REPO_ID = "repoId";
+	private final String INDEX_TYPE = "type";
+	private final String INDEX_ROLE = "resource";
+
+
 	private final int MAX_RESULTS = 100;
 
 	// private static String CLASS_ROLE = "class";
@@ -110,12 +121,12 @@ public class GlobalSearch extends STServiceAdapter {
 				if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) { //SKOS-XL
 					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang"
+							+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
 							+ "\nWHERE{"
 							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) +"{"
-							+ "\n?xlabel skosxl:literalForm ?matchedValue ."
-							+ "\nFILTER(isLiteral(?matchedValue)) "
-							+ "\nBIND(lang(?matchedValue) AS ?lang)"
+							+ "\n?xlabel skosxl:literalForm ?value ."
+							+ "\nFILTER(isLiteral(?value)) "
+							+ "\nBIND(lang(?value) AS ?lang)"
 							+ "\n?resource ?predicate ?xlabel ."
 							+ "\nFILTER(isIRI(?resource)) "
 							+ "\n?resource a ?resourceType ."
@@ -127,12 +138,12 @@ public class GlobalSearch extends STServiceAdapter {
 					String labelsProp = "( skos:prefLabel, skos:altLabel, skos:hiddenLabel )";
 					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang"
+							+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
 							+ "\nWHERE{"
 							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
-							+ "\n?resource ?predicate ?matchedValue ."
-							+ "\nFILTER(isLiteral(?matchedValue)) "
-							+ "\nBIND(lang(?matchedValue) AS ?lang)"
+							+ "\n?resource ?predicate ?value ."
+							+ "\nFILTER(isLiteral(?value)) "
+							+ "\nBIND(lang(?value) AS ?lang)"
 							+ "\nFILTER( ?predicate IN "+labelsProp+")"
 							+ "\nFILTER(isIRI(?resource)) "
 							+ "\n?resource a ?resourceType ."
@@ -145,12 +156,12 @@ public class GlobalSearch extends STServiceAdapter {
 					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
 							+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang"
+							+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
 							+ "\nWHERE{"
 							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
-							+ "\n?resource ?predicate ?matchedValue ."
-							+ "\nFILTER(isLiteral(?matchedValue)) "
-							+ "\nBIND(lang(?matchedValue) AS ?lang)"
+							+ "\n?resource ?predicate ?value ."
+							+ "\nFILTER(isLiteral(?value)) "
+							+ "\nBIND(lang(?value) AS ?lang)"
 							+ "\nFILTER( ?predicate IN "+labelsProp+")"
 							+ "\nFILTER(isIRI(?resource)) "
 							+ "\n?resource a ?resourceType ."
@@ -185,16 +196,16 @@ public class GlobalSearch extends STServiceAdapter {
 					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
 							+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang ?lexicalEntry"
+							+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang ?lexicalEntry"
 							+ "\nWHERE{"
 							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
 							+ "\n?lexicalEntry a "+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+ "."
 							+ "\n?resource"+allResToLexicalEntry+"?lexicalEntry ."
 							+ "\n?lexicalEntry "+canonicalFormOrOtherForm+" ?ontoForm ."
 							+ "\n?lexicalEntry ?predicate ?ontoForm ."
-							+ "\n?ontoForm "+NTriplesUtil.toNTriplesString(ONTOLEX.WRITTEN_REP)+" ?matchedValue ."
-							+ "\nFILTER(isLiteral(?matchedValue)) "
-							+ "\nBIND(lang(?matchedValue) AS ?lang)"
+							+ "\n?ontoForm "+NTriplesUtil.toNTriplesString(ONTOLEX.WRITTEN_REP)+" ?value ."
+							+ "\nFILTER(isLiteral(?value)) "
+							+ "\nBIND(lang(?value) AS ?lang)"
 							+ "\nFILTER(isIRI(?resource)) "
 							+ "\n?resource a ?resourceType ."
 							+ "\n}"
@@ -212,7 +223,7 @@ public class GlobalSearch extends STServiceAdapter {
 							String lexEntryIRI = bindingSet.getValue("lexicalEntry").stringValue();
 							String resourceType = bindingSet.getValue("resourceType").stringValue();
 							String predicate = bindingSet.getValue("predicate").stringValue();
-							String matchedValue = bindingSet.getValue("matchedValue").stringValue();
+							String value = bindingSet.getValue("value").stringValue();
 							String lang = bindingSet.getValue("lang").stringValue();
 							String repId = getProject().getName();
 							String role = getRoleFromResType(resourceType, resTypeToRoleMap);
@@ -239,7 +250,7 @@ public class GlobalSearch extends STServiceAdapter {
 							//now add to the index the current element 
 							writer.addDocument(addResourceWithLabel(
 									new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang,
-											matchedValue, predicate, repId, type, role)));
+											value, predicate, repId, type, role)));
 						}
 					}
 
@@ -248,15 +259,15 @@ public class GlobalSearch extends STServiceAdapter {
 					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
 							+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang"
+							+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
 							+ "\nWHERE{"
 							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
 							+ "\n?resource a "+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+ "."
 							+ "\n?resource "+canonicalFormOrOtherForm+" ?ontoForm ."
 							+ "\n?resource ?predicate ?ontoForm ."
-							+ "\n?ontoForm "+NTriplesUtil.toNTriplesString(ONTOLEX.WRITTEN_REP)+" ?matchedValue ."
-							+ "\nFILTER(isLiteral(?matchedValue)) "
-							+ "\nBIND(lang(?matchedValue) AS ?lang)"
+							+ "\n?ontoForm "+NTriplesUtil.toNTriplesString(ONTOLEX.WRITTEN_REP)+" ?value ."
+							+ "\nFILTER(isLiteral(?value)) "
+							+ "\nBIND(lang(?value) AS ?lang)"
 							+ "\nFILTER(isIRI(?resource)) "
 							+ "\n?resource a ?resourceType ."
 							+ "\n}"
@@ -271,7 +282,7 @@ public class GlobalSearch extends STServiceAdapter {
 							String resourceLocalName = ((IRI)resource).getLocalName();
 							String resourceType = bindingSet.getValue("resourceType").stringValue();
 							String predicate = bindingSet.getValue("predicate").stringValue();
-							String matchedValue = bindingSet.getValue("matchedValue").stringValue();
+							String value = bindingSet.getValue("value").stringValue();
 							String lang = bindingSet.getValue("lang").stringValue();
 							String repId = getProject().getName();
 							String role = getRoleFromResType(resourceType, resTypeToRoleMap);
@@ -287,7 +298,7 @@ public class GlobalSearch extends STServiceAdapter {
 							//now add to the index the current element (the LexicalEntry)
 							writer.addDocument(addResourceWithLabel(
 									new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang,
-											matchedValue, predicate, repId, type, role)));
+											value, predicate, repId, type, role)));
 						}
 					}
 				}
@@ -302,7 +313,7 @@ public class GlobalSearch extends STServiceAdapter {
 							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
 							+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
 							+ "\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?matchedValue ?lang"
+							+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
 							+ "\nWHERE{"
 							//do a subquery to get all the subproperties of skos:note 
 							+ "\n{SELECT ?predicate "
@@ -312,19 +323,19 @@ public class GlobalSearch extends STServiceAdapter {
 							//get both the plain notes and the reified one (consider only the property rdf:value)
 							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
 							+ "\n{"
-							+ "\n?resource ?predicate ?matchedValue ."
-							+ "\nFILTER(isLiteral(?matchedValue)) "
+							+ "\n?resource ?predicate ?value ."
+							+ "\nFILTER(isLiteral(?value)) "
 							+ "\nFILTER(isIRI(?resource)) "
-							+ "\nBIND(lang(?matchedValue) AS ?lang)"
+							+ "\nBIND(lang(?value) AS ?lang)"
 							+ "\n?resource a ?resourceType ."
 							+ "\n}"
 							+ "\nUNION"
 							+ "\n{"
 							+ "\n?resource ?predicate ?note ."
-							+ "\n?note rdf:value ?matchedValue ."
-							+ "\nFILTER(isLiteral(?matchedValue)) "
+							+ "\n?note rdf:value ?value ."
+							+ "\nFILTER(isLiteral(?value)) "
 							+ "\nFILTER(isIRI(?resource)) "
-							+ "\nBIND(lang(?matchedValue) AS ?lang)"
+							+ "\nBIND(lang(?value) AS ?lang)"
 							+ "\n?resource a ?resourceType ."
 							+ "\n}"
 
@@ -355,7 +366,7 @@ public class GlobalSearch extends STServiceAdapter {
 				String resourceLocalName = ((IRI)resource).getLocalName();
 				String resourceType = bindingSet.getValue("resourceType").stringValue();
 				String predicate = bindingSet.getValue("predicate").stringValue();
-				String matchedValue = bindingSet.getValue("matchedValue").stringValue();
+				String value = bindingSet.getValue("value").stringValue();
 				String lang = bindingSet.getValue("lang").stringValue();
 				String repId = getProject().getName();
 				String role = getRoleFromResType(resourceType, resTypeToRoleMap);
@@ -370,7 +381,7 @@ public class GlobalSearch extends STServiceAdapter {
 
 				writer.addDocument(addResourceWithLabel(
 						new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang,
-								matchedValue, predicate, repId, type, role)));
+								value, predicate, repId, type, role)));
 			}
 		}
 
@@ -597,7 +608,7 @@ public class GlobalSearch extends STServiceAdapter {
 			Builder builderBooleanGlobal = new BooleanQuery.Builder();
 			Map<String, String> nameValueSearchMap = new HashMap<String, String>();
 
-			nameValueSearchMap.put("matchedValue", searchStringLC);
+			nameValueSearchMap.put(INDEX_VALUE, searchStringLC);
 
 			// TODO decide what to do for the mode
 			/*if (searchMode.equals(SearchMode.exact)) {
@@ -617,7 +628,7 @@ public class GlobalSearch extends STServiceAdapter {
 				for(String lang : langs) {
 					langString+=lang+" ";
 				}
-				nameValueSearchMap.put("lang", langString.trim());
+				nameValueSearchMap.put(INDEX_LANG, langString.trim());
 			}
 
 			//search for the resources matching the searchString (and inputLangs, if specified)
@@ -625,14 +636,14 @@ public class GlobalSearch extends STServiceAdapter {
 				Query query = null;
 				String value = nameValueSearchMap.get(name);
 				//behave differently according to the field used for the search
-				if(name.equals("lang")) {
+				if(name.equals(INDEX_LANG)) {
 					Builder builderBoolean = new BooleanQuery.Builder(); //  (0, BooleanClause.Occur.SHOULD);
 					String[] valueArray = value.split(" ");
 					for(String lang : valueArray) {
 						builderBoolean.add(new TermQuery(new Term(name, lang)), Occur.SHOULD);
 					}
 					query = builderBoolean.build();
-				} else if(name.equals("matchedValue")) {
+				} else if(name.equals(INDEX_VALUE)) {
 					//split the value into single words
 					String[] valueArray = value.split(" ");
 					int count;
@@ -648,7 +659,7 @@ public class GlobalSearch extends STServiceAdapter {
 						count = 0;
 						builderTemp = new PhraseQuery.Builder();
 						for(String singleValue: valueArray) {
-							builderTemp.add(new Term("resourceLocalName", singleValue), count++);
+							builderTemp.add(new Term(INDEX_RESOURCE_LOCAL_NAME, singleValue), count++);
 						}
 						Query queryLocalName = builderTemp.build();
 						//combine the query for label and the one for localName
@@ -714,16 +725,16 @@ public class GlobalSearch extends STServiceAdapter {
 			Map<String, String> nameValueSearchMap = new HashMap<String, String>();
 
 			//search only in the LEXICALIZATION
-			nameValueSearchMap.put("type", LEXICALIZATION);
+			nameValueSearchMap.put(INDEX_TYPE, LEXICALIZATION);
 
-			nameValueSearchMap.put("matchedValue", searchStringLC);
+			nameValueSearchMap.put(INDEX_VALUE, searchStringLC);
 
 			if(searchLangs!=null && searchLangs.size()>0) {
 				String langString = "";
 				for(String lang : searchLangs) {
 					langString+=lang+" ";
 				}
-				nameValueSearchMap.put("lang", langString.trim());
+				nameValueSearchMap.put(INDEX_LANG, langString.trim());
 			}
 
 			//search for the resources matching the searchString (and inputLangs, if specified)
@@ -731,14 +742,14 @@ public class GlobalSearch extends STServiceAdapter {
 				Query query = null;
 				String value = nameValueSearchMap.get(name);
 				//behave differently according to the field used for the search
-				if(name.equals("lang")) {
+				if(name.equals(INDEX_LANG)) {
 					Builder builderBoolean = new BooleanQuery.Builder(); //  (0, BooleanClause.Occur.SHOULD);
 					String[] valueArray = value.split(" ");
 					for(String lang : valueArray) {
 						builderBoolean.add(new TermQuery(new Term(name, lang)), Occur.SHOULD);
 					}
 					query = builderBoolean.build();
-				} else if(name.equals("matchedValue")) {
+				} else if(name.equals(INDEX_VALUE)) {
 					//split the value into single words
 					String[] valueArray = value.split(" ");
 					int count;
@@ -749,9 +760,9 @@ public class GlobalSearch extends STServiceAdapter {
 						builderTemp.add(new Term(name, singleValue), count++);
 					}
 					query  = builderTemp.build();
-				} else if(name.equals("type")){
+				} else if(name.equals(INDEX_TYPE)){
 					Builder builderBoolean = new BooleanQuery.Builder(); //
-					builderBoolean.add(new TermQuery(new Term("type", LEXICALIZATION)), Occur.MUST);
+					builderBoolean.add(new TermQuery(new Term(name, LEXICALIZATION)), Occur.MUST);
 					query = builderBoolean.build();
 				}
 
@@ -766,61 +777,71 @@ public class GlobalSearch extends STServiceAdapter {
 			//combine the answers from lucene
 			Map<String, List<ResourceWithLabel>> resToStructMap = combineResourcesForSearch(hits, searcher, caseSensitive, searchString);
 
-			//for every resource in the resToStructMap perform a query to get first all lexicalizations for the retrieve resource in the matched language and then
-			// all lexicalizations in the specified transLangs
+			//for every resource in the resToStructMap perform a query to get first all descriptions for the retrieve resource in the matched language and then
+			// all translations in the specified transLangs
 			for(String key : resToStructMap.keySet()){
 				//get only the first value of the List, since in such list they are all about the same resource
-				ResourceWithLabel resourceWithLabel = resToStructMap.get(key).get(0);
+				List<ResourceWithLabel> resToStructForMatchList = resToStructMap.get(key);
+				ResourceWithLabel resourceWithLabel = resToStructForMatchList.get(0);
 				String resource = resourceWithLabel.getResource();
 				String repId = resourceWithLabel.getRepId();
-				String lang = resourceWithLabel.getLang();
+				//String lang = resourceWithLabel.getLang();
 
-				//get lexicalizations
+
+				//get descriptions
 				Builder builderBoolean = new BooleanQuery.Builder();
 				Query query;
+
 				//add the desired language for the translation
-				builderBoolean.add(new TermQuery(new Term("lang", lang)), Occur.MUST);
+				Builder builderLangBoolean = new Builder();
+				for(String searchLang : searchLangs) {
+					builderLangBoolean.add(new TermQuery(new Term(INDEX_LANG, searchLang)), Occur.SHOULD);
+				}
+				query = builderLangBoolean.build();
+				builderBoolean.add(query, Occur.MUST);
+
 				//add the resource
-				builderBoolean.add(new TermQuery(new Term("resource", resource)), Occur.MUST);
+				builderBoolean.add(new TermQuery(new Term(INDEX_RESOURCE, resource)), Occur.MUST);
 
 				//add the repId
-				builderBoolean.add(new TermQuery(new Term("repId", repId)), Occur.MUST);
+				builderBoolean.add(new TermQuery(new Term(INDEX_REPO_ID, repId)), Occur.MUST);
 
 				//add the fact that is should be only lexicalization
-				builderBoolean.add(new TermQuery(new Term("type", LEXICALIZATION)), Occur.MUST);
+				//builderBoolean.add(new TermQuery(new Term(INDEX_TYPE, LEXICALIZATION)), Occur.MUST);
 
 				booleanQuery = builderBoolean.build();
 
 				searcher = createSearcher();
 				hits = searcher.search(booleanQuery, MAX_RESULTS);
-				List<ResourceWithLabel> resToStructForLexisList = combineResourcesForTranslation(hits, searcher);
+				List<ResourceWithLabel> resToStructForDescList = combineResourcesForTranslation(hits, searcher);
 
 
 				//get translations
 				builderBoolean = new BooleanQuery.Builder();
 				//add the desired language for the translation
-				Builder builderLangBoolean = new Builder();
+				builderLangBoolean = new Builder();
 				for(String tranLang : transLangs) {
-					builderLangBoolean.add(new TermQuery(new Term("lang", tranLang)), Occur.SHOULD);
+					builderLangBoolean.add(new TermQuery(new Term(INDEX_LANG, tranLang)), Occur.SHOULD);
 				}
 				query = builderLangBoolean.build();
 				builderBoolean.add(query, Occur.MUST);
+
 				//add the resource
-				builderBoolean.add(new TermQuery(new Term("resource", resource)), Occur.MUST);
+				builderBoolean.add(new TermQuery(new Term(INDEX_RESOURCE, resource)), Occur.MUST);
 
 				//add the repId
-				builderBoolean.add(new TermQuery(new Term("repId", repId)), Occur.MUST);
+				builderBoolean.add(new TermQuery(new Term(INDEX_REPO_ID, repId)), Occur.MUST);
 
 				//add the fact that is should be only lexicalization
-				builderBoolean.add(new TermQuery(new Term("type", LEXICALIZATION)), Occur.MUST);
+				//builderBoolean.add(new TermQuery(new Term(INDEX_TYPE, LEXICALIZATION)), Occur.MUST);
 
 				booleanQuery = builderBoolean.build();
 
 				searcher = createSearcher();
 				hits = searcher.search(booleanQuery, MAX_RESULTS);
 				List<ResourceWithLabel> resToStructForTransList = combineResourcesForTranslation(hits, searcher);
-				prepareResponseForAlignment(response, resourceWithLabel, resToStructForLexisList,
-						resToStructForTransList, jsonFactory, debug, transLangs);
+				prepareResponseForAlignment(response, resToStructForMatchList, resToStructForDescList,
+						resToStructForTransList, jsonFactory, debug, searchLangs, transLangs);
 			}
 
 
@@ -839,18 +860,18 @@ public class GlobalSearch extends STServiceAdapter {
 		for(ScoreDoc sd : hits.scoreDocs) {
 			Document doc = searcher.doc(sd.doc);
 
-			String resource = doc.get("resource");
-			String resourceLocalName = doc.get("resourceLocalName");
-			String resourceType = doc.get("resourceType");
-			String lang = doc.get("lang");
-			String matchedValue = doc.get("matchedValue");
-			String predicate = doc.get("predicate");
-			String repId = doc.get("repId");
-			String type = doc.get("type");
-			String role = doc.get("role");
+			String resource = doc.get(INDEX_RESOURCE);
+			String resourceLocalName = doc.get(INDEX_RESOURCE_LOCAL_NAME);
+			String resourceType = doc.get(INDEX_RESOURCE_TYPE);
+			String lang = doc.get(INDEX_LANG);
+			String value = doc.get(INDEX_VALUE);
+			String predicate = doc.get(INDEX_PREDICATE);
+			String repId = doc.get(INDEX_REPO_ID);
+			String type = doc.get(INDEX_TYPE);
+			String role = doc.get(INDEX_ROLE);
 
 			if(caseSensitive) {
-				if(!matchedValue.contains(searchString)){
+				if(!value.contains(searchString)){
 					//since the search is case sensitive and the matched values does not contains the case sensitive searchString, skip this result
 					continue;
 				}
@@ -861,7 +882,7 @@ public class GlobalSearch extends STServiceAdapter {
 				resToStructMap.put(resource_repId,  new ArrayList<>());
 			}
 			ResourceWithLabel resourceWithLabel = new ResourceWithLabel(resource, resourceLocalName, resourceType,
-					lang, matchedValue, predicate, repId, type, role);
+					lang, value, predicate, repId, type, role);
 			resToStructMap.get(resource_repId).add(resourceWithLabel);
 		}
 		return resToStructMap;
@@ -872,18 +893,18 @@ public class GlobalSearch extends STServiceAdapter {
 		for(ScoreDoc sd : hits.scoreDocs) {
 			Document doc = searcher.doc(sd.doc);
 
-			String resource = doc.get("resource");
-			String resourceLocalName = doc.get("resourceLocalName");
-			String resourceType = doc.get("resourceType");
-			String lang = doc.get("lang");
-			String matchedValue = doc.get("matchedValue");
-			String predicate = doc.get("predicate");
-			String repId = doc.get("repId");
-			String type = doc.get("type");
-			String role = doc.get("role");
+			String resource = doc.get(INDEX_RESOURCE);
+			String resourceLocalName = doc.get(INDEX_RESOURCE_LOCAL_NAME);
+			String resourceType = doc.get(INDEX_RESOURCE_TYPE);
+			String lang = doc.get(INDEX_LANG);
+			String value = doc.get(INDEX_VALUE);
+			String predicate = doc.get(INDEX_PREDICATE);
+			String repId = doc.get(INDEX_REPO_ID);
+			String type = doc.get(INDEX_TYPE);
+			String role = doc.get(INDEX_ROLE);
 
 			ResourceWithLabel resourceWithLabel = new ResourceWithLabel(resource, resourceLocalName, resourceType,
-					lang, matchedValue, predicate, repId, type, role);
+					lang, value, predicate, repId, type, role);
 			resToStructList.add(resourceWithLabel);
 		}
 		return resToStructList;
@@ -926,13 +947,15 @@ public class GlobalSearch extends STServiceAdapter {
 		return jsonExternalArray;
 	}
 
-	private void prepareResponseForAlignment(ArrayNode jsonNode, ResourceWithLabel resourceWithLabel, List<ResourceWithLabel> resToStructLexiList,
-			List<ResourceWithLabel> resToStructTransList, JsonNodeFactory jsonFactory, boolean debug, List<String> transLangs){
+	private void prepareResponseForAlignment(ArrayNode jsonNode, List<ResourceWithLabel> resToStructMatchList, List<ResourceWithLabel> resToStructDescList,
+			List<ResourceWithLabel> resToStructTransList, JsonNodeFactory jsonFactory, boolean debug, List<String> searchLangList, List<String> transLangList){
 
 		if(resToStructTransList.isEmpty() && !debug){
 			//no translations were found and we are not in debug, so do not add anything
 			return;
 		}
+		//get the first matched resource to get some element they all have in common
+		ResourceWithLabel resourceWithLabel = resToStructMatchList.get(0);
 		//create the result element for the search
 		ObjectNode jsonSingleResultForTranlation = jsonFactory.objectNode();
 		jsonNode.add(jsonSingleResultForTranlation);
@@ -947,26 +970,64 @@ public class GlobalSearch extends STServiceAdapter {
 		repoNode.set("open", jsonFactory.booleanNode(ProjectManager.isOpen(repoId)));
 		jsonSingleResultForTranlation.set("repository", repoNode);
 
-		jsonSingleResultForTranlation.set("matchedValue", jsonFactory.textNode(resourceWithLabel.getMatchedValue()));
-		jsonSingleResultForTranlation.set("lang", jsonFactory.textNode(resourceWithLabel.getLang()));
-		jsonSingleResultForTranlation.set("predicate", jsonFactory.textNode(resourceWithLabel.getPredicate()));
-		jsonSingleResultForTranlation.set("type", jsonFactory.textNode(resourceWithLabel.getType()));
+		//jsonSingleResultForTranlation.set("matchedValue", jsonFactory.textNode(resourceWithLabel.getMatchedValue()));
+		//jsonSingleResultForTranlation.set("lang", jsonFactory.textNode(resourceWithLabel.getLang()));
+		//jsonSingleResultForTranlation.set("predicate", jsonFactory.textNode(resourceWithLabel.getPredicate()));
+		//jsonSingleResultForTranlation.set("type", jsonFactory.textNode(resourceWithLabel.getType()));
+
+
+		//add all matched values
+		ArrayNode matchedExternalArray = jsonFactory.arrayNode();
+		for(String lang : searchLangList) {
+			ObjectNode langAndMatchedNode = jsonFactory.objectNode();
+			langAndMatchedNode.set("lang", jsonFactory.textNode(lang));
+			ArrayNode matchedInternalArray = jsonFactory.arrayNode();
+			for (ResourceWithLabel resMatched : resToStructMatchList) {
+				//check that language of resMatched is the same as lang
+				if(!resMatched.getLang().toLowerCase().equals(lang.toLowerCase())){
+					//different language, so do nothing
+					continue;
+				}
+				ObjectNode matchedNode = jsonFactory.objectNode();
+				matchedNode.set("value", jsonFactory.textNode(resMatched.getMatchedValue()));
+				matchedNode.set("predicate", jsonFactory.textNode(resMatched.getPredicate()));
+				matchedNode.set("type", jsonFactory.textNode(resMatched.getType()));
+				matchedInternalArray.add(matchedNode);
+			}
+			langAndMatchedNode.set("matches", matchedInternalArray);
+			matchedExternalArray.add(langAndMatchedNode);
+		}
+		jsonSingleResultForTranlation.set("matches", matchedExternalArray);
+
 
 		//add all lexicalixations in a the given language
-		ArrayNode lexicalizationArray = jsonFactory.arrayNode();
-		for(ResourceWithLabel resTranlation : resToStructLexiList){
-			ObjectNode translationNode = jsonFactory.objectNode();
-			translationNode.set("matchedValue", jsonFactory.textNode(resTranlation.getMatchedValue() ));
-			translationNode.set("predicate", jsonFactory.textNode(resTranlation.getPredicate() ));
-			translationNode.set("type", jsonFactory.textNode(resTranlation.getType() ));
-			translationNode.set("lang", jsonFactory.textNode(resTranlation.getLang() ));
-			lexicalizationArray.add(translationNode);
+
+		ArrayNode descriptionExternalArray = jsonFactory.arrayNode();
+		for(String lang : searchLangList) {
+			ObjectNode langAndDescriptionsNode = jsonFactory.objectNode();
+			langAndDescriptionsNode.set("lang", jsonFactory.textNode(lang));
+			ArrayNode DescriptionInternalArray = jsonFactory.arrayNode();
+			for (ResourceWithLabel resDescription : resToStructDescList) {
+				//check that language of resDescription is the same as lang
+				if(!resDescription.getLang().toLowerCase().equals(lang.toLowerCase())){
+					//different language, so do nothing
+					continue;
+				}
+				ObjectNode translationNode = jsonFactory.objectNode();
+				translationNode.set("value", jsonFactory.textNode(resDescription.getMatchedValue()));
+				translationNode.set("predicate", jsonFactory.textNode(resDescription.getPredicate()));
+				translationNode.set("type", jsonFactory.textNode(resDescription.getType()));
+				DescriptionInternalArray.add(translationNode);
+			}
+			langAndDescriptionsNode.set("descriptions", DescriptionInternalArray);
+			descriptionExternalArray.add(langAndDescriptionsNode);
 		}
-		jsonSingleResultForTranlation.set("lexicalizations", lexicalizationArray);
+		jsonSingleResultForTranlation.set("descriptions", descriptionExternalArray);
+
 
 		//add all the translations (grouped by transLangs values)
 		ArrayNode translationExternalArray = jsonFactory.arrayNode();
-		for(String lang : transLangs) {
+		for(String lang : transLangList) {
 			ObjectNode langAndTranslationsNode = jsonFactory.objectNode();
 			langAndTranslationsNode.set("lang", jsonFactory.textNode(lang));
 			ArrayNode translationInternalArray = jsonFactory.arrayNode();
@@ -1017,15 +1078,15 @@ public class GlobalSearch extends STServiceAdapter {
 		*/
 		//@formatter:on
 		
-		doc.add(new StringField("resource", resourceWithLabel.getResource(), Field.Store.YES));
-		doc.add(new StringField("resourceLocalName", resourceWithLabel.getResourceLocalName(), Field.Store.YES));
-		doc.add(new StringField("resourceType", resourceWithLabel.getResourceType(), Field.Store.YES));
-		doc.add(new StringField("lang", resourceWithLabel.getLang(), Field.Store.YES));
-		doc.add(new TextField("matchedValue", resourceWithLabel.getMatchedValue(), Field.Store.YES));
-		doc.add(new StringField("predicate", resourceWithLabel.getPredicate(), Field.Store.YES));
-		doc.add(new StringField("repId", resourceWithLabel.getRepId(), Field.Store.YES));
-		doc.add(new StringField("type", resourceWithLabel.getType(), Field.Store.YES));
-		doc.add(new StringField("role", resourceWithLabel.getRole(), Field.Store.YES));
+		doc.add(new StringField(INDEX_RESOURCE, resourceWithLabel.getResource(), Field.Store.YES));
+		doc.add(new StringField(INDEX_RESOURCE_LOCAL_NAME, resourceWithLabel.getResourceLocalName(), Field.Store.YES));
+		doc.add(new StringField(INDEX_RESOURCE_TYPE, resourceWithLabel.getResourceType(), Field.Store.YES));
+		doc.add(new StringField(INDEX_LANG, resourceWithLabel.getLang(), Field.Store.YES));
+		doc.add(new TextField(INDEX_VALUE, resourceWithLabel.getMatchedValue(), Field.Store.YES));
+		doc.add(new StringField(INDEX_PREDICATE, resourceWithLabel.getPredicate(), Field.Store.YES));
+		doc.add(new StringField(INDEX_REPO_ID, resourceWithLabel.getRepId(), Field.Store.YES));
+		doc.add(new StringField(INDEX_TYPE, resourceWithLabel.getType(), Field.Store.YES));
+		doc.add(new StringField(INDEX_ROLE, resourceWithLabel.getRole(), Field.Store.YES));
 		
 		return doc;
 	}
