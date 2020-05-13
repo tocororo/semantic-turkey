@@ -935,7 +935,7 @@ public class GlobalSearch extends STServiceAdapter {
 			ArrayNode jsonIntenalArray = jsonFactory.arrayNode();
 			for(ResourceWithLabel resourceWithLabel : resourceWithLabelList) {
 				ObjectNode json = jsonFactory.objectNode();
-				json.set("matchedValue", jsonFactory.textNode(resourceWithLabel.getMatchedValue()));
+				json.set("matchedValue", jsonFactory.textNode(resourceWithLabel.getValue()));
 				json.set("lang", jsonFactory.textNode(resourceWithLabel.getLang()));
 				json.set("predicate", jsonFactory.textNode(resourceWithLabel.getPredicate()));
 				json.set("type", jsonFactory.textNode(resourceWithLabel.getType()));
@@ -989,12 +989,12 @@ public class GlobalSearch extends STServiceAdapter {
 					continue;
 				}
 				ObjectNode matchedNode = jsonFactory.objectNode();
-				matchedNode.set("value", jsonFactory.textNode(resMatched.getMatchedValue()));
+				matchedNode.set("value", jsonFactory.textNode(resMatched.getValue()));
 				matchedNode.set("predicate", jsonFactory.textNode(resMatched.getPredicate()));
 				matchedNode.set("type", jsonFactory.textNode(resMatched.getType()));
 				matchedInternalArray.add(matchedNode);
 			}
-			langAndMatchedNode.set("matches", matchedInternalArray);
+			langAndMatchedNode.set("values", matchedInternalArray);
 			matchedExternalArray.add(langAndMatchedNode);
 		}
 		jsonSingleResultForTranlation.set("matches", matchedExternalArray);
@@ -1014,12 +1014,12 @@ public class GlobalSearch extends STServiceAdapter {
 					continue;
 				}
 				ObjectNode translationNode = jsonFactory.objectNode();
-				translationNode.set("value", jsonFactory.textNode(resDescription.getMatchedValue()));
+				translationNode.set("value", jsonFactory.textNode(resDescription.getValue()));
 				translationNode.set("predicate", jsonFactory.textNode(resDescription.getPredicate()));
 				translationNode.set("type", jsonFactory.textNode(resDescription.getType()));
 				DescriptionInternalArray.add(translationNode);
 			}
-			langAndDescriptionsNode.set("descriptions", DescriptionInternalArray);
+			langAndDescriptionsNode.set("values", DescriptionInternalArray);
 			descriptionExternalArray.add(langAndDescriptionsNode);
 		}
 		jsonSingleResultForTranlation.set("descriptions", descriptionExternalArray);
@@ -1038,12 +1038,12 @@ public class GlobalSearch extends STServiceAdapter {
 					continue;
 				}
 				ObjectNode translationNode = jsonFactory.objectNode();
-				translationNode.set("matchedValue", jsonFactory.textNode(resTranlation.getMatchedValue()));
+				translationNode.set("vale", jsonFactory.textNode(resTranlation.getValue()));
 				translationNode.set("predicate", jsonFactory.textNode(resTranlation.getPredicate()));
 				translationNode.set("type", jsonFactory.textNode(resTranlation.getType()));
 				translationInternalArray.add(translationNode);
 			}
-			langAndTranslationsNode.set("translations", translationInternalArray);
+			langAndTranslationsNode.set("values", translationInternalArray);
 			translationExternalArray.add(langAndTranslationsNode);
 		}
 		jsonSingleResultForTranlation.set("translations", translationExternalArray);
@@ -1082,7 +1082,7 @@ public class GlobalSearch extends STServiceAdapter {
 		doc.add(new StringField(INDEX_RESOURCE_LOCAL_NAME, resourceWithLabel.getResourceLocalName(), Field.Store.YES));
 		doc.add(new StringField(INDEX_RESOURCE_TYPE, resourceWithLabel.getResourceType(), Field.Store.YES));
 		doc.add(new StringField(INDEX_LANG, resourceWithLabel.getLang(), Field.Store.YES));
-		doc.add(new TextField(INDEX_VALUE, resourceWithLabel.getMatchedValue(), Field.Store.YES));
+		doc.add(new TextField(INDEX_VALUE, resourceWithLabel.getValue(), Field.Store.YES));
 		doc.add(new StringField(INDEX_PREDICATE, resourceWithLabel.getPredicate(), Field.Store.YES));
 		doc.add(new StringField(INDEX_REPO_ID, resourceWithLabel.getRepId(), Field.Store.YES));
 		doc.add(new StringField(INDEX_TYPE, resourceWithLabel.getType(), Field.Store.YES));
@@ -1096,19 +1096,19 @@ public class GlobalSearch extends STServiceAdapter {
 		private String resourceLocalName;
 		private String resourceType;
 		private String lang;
-		private String matchedValue;
+		private String value; // previously was matchedValue
 		private String predicate;
 		private String repId;
 		private String type; // it should be LEXICALIZATION or NOTE
 		private String role;
 		
 		public ResourceWithLabel(String resource, String resourceLocalName, String resourceType, String lang, 
-				String matchedValue, String predicate, String repId, String type, String role) {
+				String value, String predicate, String repId, String type, String role) {
 			this.resource = resource;
 			this.resourceLocalName = resourceLocalName;
 			this.resourceType = resourceType;
 			this.lang = lang;
-			this.matchedValue = matchedValue;
+			this.value = value;
 			this.predicate = predicate;
 			this.repId = repId;
 			this.type = type;
@@ -1131,8 +1131,8 @@ public class GlobalSearch extends STServiceAdapter {
 			return lang;
 		}
 
-		public String getMatchedValue() {
-			return matchedValue;
+		public String getValue() {
+			return value;
 		}
 
 		public String getPredicate() {
