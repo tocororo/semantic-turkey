@@ -177,7 +177,7 @@ public class SKOS extends STServiceAdapter {
 					//preparePropPathForHierarchicalForQuery(broaderProp, narrowerProp, "?resource", 
 					//		"?aNarrowerConcept", getManagedConnection(), false, includeSubProperties) +		 "\n" +	
 					combinePathWithVarOrIri("?resource", "?aNarrowerConcept", broaderNarrowerPath, false)+"\n" +
-					"\n?aNarrowerConcept a/rdfs:subClassOf* skos:Concept ." +
+					"\n?aNarrowerConcept a ?o ." +
 					"}																					  \n" +
 					//prepareHierarchicalPartForQueryPart1(broaderProp , narrowerProp, "?resource", 
 					//		"?aNarrowerConcept", false, includeSubProperties) +
@@ -226,40 +226,32 @@ public class SKOS extends STServiceAdapter {
 		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse,
 				getManagedConnection(), includeSubProperties);
 
-		String query;
+		String query =
+				"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>		\n" +
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>		\n" +
+				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>	\n" +
+				"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>		\n" +
+				"PREFIX owl: <http://www.w3.org/2002/07/owl#>				\n";
 		if (schemes != null && !schemes.isEmpty()) {
-			query =
+			query +=
 					// @formatter:off
-					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
-					"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
-					"\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-					"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
-					"\nPREFIX owl: <http://www.w3.org/2002/07/owl#>	" +
-					"\n " +
-					"\nSELECT (count(DISTINCT ?resource) as ?count) WHERE { " +
-					"\n?conceptSubClass rdfs:subClassOf* skos:Concept . " +
-					"\n?resource rdf:type ?conceptSubClass . " +
-					filterAndOrScheme(schemeFilter, schemes, "?resource", "?scheme", "?subPropInScheme1", false)+
-					"\n}";
+					"SELECT (count(DISTINCT ?resource) as ?count) WHERE {		\n" +
+					"	?conceptSubClass rdfs:subClassOf* skos:Concept .		\n" +
+					"	?resource rdf:type ?conceptSubClass .					\n" +
+					filterAndOrScheme(schemeFilter, schemes, "?resource", "?scheme", "?subPropInScheme1", false) +
+					"}";
 			// @formatter:on
 		} else {
-			query =
+			query +=
 					// @formatter:off
-					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                               \n" +
-					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                              \n" +
-					" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>                         \n" +
-					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                          		\n" +
-					" PREFIX owl: <http://www.w3.org/2002/07/owl#>										\n" +
-					"																					\n" +
-					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
-					" SELECT (count(DISTINCT ?resource) as ?count) WHERE {										\n" +
-					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                              \n" +
-					"     ?resource rdf:type ?conceptSubClass .                                         \n" +
-					" FILTER NOT EXISTS { 																\n"+
-					combinePathWithVarOrIri("?resource", "?aNarrowerConcept", broaderNarrowerPath, false)+"\n" +
-					"?aNarrowerConcept a/rdfs:subClassOf* skos:Concept .\n" +
-					"}																					  \n" +
-					" }";
+					"SELECT (count(DISTINCT ?resource) as ?count) WHERE {									\n" +
+					"	?conceptSubClass rdfs:subClassOf* skos:Concept .									\n" +
+					"	?resource rdf:type ?conceptSubClass .												\n" +
+					"	FILTER NOT EXISTS {																	\n"+
+					combinePathWithVarOrIri("?resource", "?aNarrowerConcept", broaderNarrowerPath, false)+"	\n" +
+					"		?aNarrowerConcept a ?o .														\n" +
+					"	}																					\n" +
+					"}";
 					// @formatter:on
 		}
 		TupleQueryResult result = getManagedConnection().prepareTupleQuery(query).evaluate();
