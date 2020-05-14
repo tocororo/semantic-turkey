@@ -14,7 +14,7 @@
 		<!-- Pax WAR -->
 		<feature prerequisite="true" dependency="false">pax-war</feature>
 
-		<!-- Note: coda usese uimafit which uses spring 3.1.X... check if it is 
+		<!-- Note: coda uses uimafit which uses spring 3.1.X... check if it is 
 			possible to use just one version -->
 		<feature version="[3.2,4)" dependency="true">spring</feature>
 		<feature version="[3.2,4)" dependency="true">spring-web</feature>
@@ -22,6 +22,9 @@
 		<feature version="[1.2.1,2)" dependency="true">spring-dm</feature>
 		<feature version="[1.2.1,2)" dependency="true">spring-dm-web</feature>
 		<feature version="[3.1,4)" dependency="true">spring-security</feature>
+		
+		<bundle dependency="true">mvn:org.springframework.security/spring-security-cas/${spring-security.version}</bundle>
+		<bundle dependency="true">wrap:mvn:org.jasig.cas.client/cas-client-core/${cas.client.version}$Export-Package=*;version=&quot;${cas.client.version}&quot;</bundle>
 
 		<!-- These bundles provide optional dependencies for spring-web, in order 
 			to support multipart resolver. It's important that these bundles are installed 

@@ -232,6 +232,12 @@
 							org.apache.commons.io,
 							org.antlr.runtime.*,
 							it.uniroma2.art.semanticturkey.http.session,
+							<!-- These imports are for spring-security-cas -->
+							org.jasig.cas.client.validation,
+							org.springframework.security.cas,
+							org.springframework.security.cas.authentication,  
+							org.springframework.security.cas.web,  
+							org.springframework.security.core.userdetails, 
 							*;resolution:=optional
 						</Import-Package>
 						<DynamicImport-Package>*</DynamicImport-Package>
