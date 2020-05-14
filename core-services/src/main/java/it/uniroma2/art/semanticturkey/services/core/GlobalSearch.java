@@ -707,10 +707,18 @@ public class GlobalSearch extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	// TODO decide the @PreAuthorize
-	public JsonNode translation(String searchString, @Optional List<String> searchLangs,
+	public JsonNode translation(String searchString, List<String> searchLangs,
 			List<String> transLangs,
 			@Optional(defaultValue="false") boolean caseSensitive,
 			@Optional(defaultValue="false") boolean debug) throws Exception {
+
+		if(searchLangs.isEmpty()){
+			throw new IllegalArgumentException("searchLangs cannot be empty");
+		}
+
+		if(transLangs.isEmpty()){
+			throw new IllegalArgumentException("transLangs cannot be empty");
+		}
 
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode response = jsonFactory.arrayNode();
@@ -970,83 +978,54 @@ public class GlobalSearch extends STServiceAdapter {
 		repoNode.set("open", jsonFactory.booleanNode(ProjectManager.isOpen(repoId)));
 		jsonSingleResultForTranlation.set("repository", repoNode);
 
-		//jsonSingleResultForTranlation.set("matchedValue", jsonFactory.textNode(resourceWithLabel.getMatchedValue()));
-		//jsonSingleResultForTranlation.set("lang", jsonFactory.textNode(resourceWithLabel.getLang()));
-		//jsonSingleResultForTranlation.set("predicate", jsonFactory.textNode(resourceWithLabel.getPredicate()));
-		//jsonSingleResultForTranlation.set("type", jsonFactory.textNode(resourceWithLabel.getType()));
-
-
-		//add all matched values
-		ArrayNode matchedExternalArray = jsonFactory.arrayNode();
-		for(String lang : searchLangList) {
-			ObjectNode langAndMatchedNode = jsonFactory.objectNode();
-			langAndMatchedNode.set("lang", jsonFactory.textNode(lang));
-			ArrayNode matchedInternalArray = jsonFactory.arrayNode();
-			for (ResourceWithLabel resMatched : resToStructMatchList) {
-				//check that language of resMatched is the same as lang
-				if(!resMatched.getLang().toLowerCase().equals(lang.toLowerCase())){
-					//different language, so do nothing
-					continue;
-				}
-				ObjectNode matchedNode = jsonFactory.objectNode();
-				matchedNode.set("value", jsonFactory.textNode(resMatched.getValue()));
-				matchedNode.set("predicate", jsonFactory.textNode(resMatched.getPredicate()));
-				matchedNode.set("type", jsonFactory.textNode(resMatched.getType()));
-				matchedInternalArray.add(matchedNode);
-			}
-			langAndMatchedNode.set("values", matchedInternalArray);
-			matchedExternalArray.add(langAndMatchedNode);
-		}
+		//add all matched values (grouped by searchLangList)
+		ArrayNode matchedExternalArray = createArrayFromResourceWithLabelList(searchLangList, resToStructMatchList,
+				jsonFactory);
 		jsonSingleResultForTranlation.set("matches", matchedExternalArray);
 
 
-		//add all lexicalixations in a the given language
 
-		ArrayNode descriptionExternalArray = jsonFactory.arrayNode();
-		for(String lang : searchLangList) {
-			ObjectNode langAndDescriptionsNode = jsonFactory.objectNode();
-			langAndDescriptionsNode.set("lang", jsonFactory.textNode(lang));
-			ArrayNode DescriptionInternalArray = jsonFactory.arrayNode();
-			for (ResourceWithLabel resDescription : resToStructDescList) {
-				//check that language of resDescription is the same as lang
-				if(!resDescription.getLang().toLowerCase().equals(lang.toLowerCase())){
-					//different language, so do nothing
-					continue;
-				}
-				ObjectNode translationNode = jsonFactory.objectNode();
-				translationNode.set("value", jsonFactory.textNode(resDescription.getValue()));
-				translationNode.set("predicate", jsonFactory.textNode(resDescription.getPredicate()));
-				translationNode.set("type", jsonFactory.textNode(resDescription.getType()));
-				DescriptionInternalArray.add(translationNode);
-			}
-			langAndDescriptionsNode.set("values", DescriptionInternalArray);
-			descriptionExternalArray.add(langAndDescriptionsNode);
-		}
+		//add all descriptions in a the given language (grouped by searchLangList)
+		ArrayNode descriptionExternalArray = createArrayFromResourceWithLabelList(searchLangList, resToStructDescList,
+				jsonFactory);
 		jsonSingleResultForTranlation.set("descriptions", descriptionExternalArray);
 
 
 		//add all the translations (grouped by transLangs values)
-		ArrayNode translationExternalArray = jsonFactory.arrayNode();
-		for(String lang : transLangList) {
-			ObjectNode langAndTranslationsNode = jsonFactory.objectNode();
-			langAndTranslationsNode.set("lang", jsonFactory.textNode(lang));
-			ArrayNode translationInternalArray = jsonFactory.arrayNode();
-			for (ResourceWithLabel resTranlation : resToStructTransList) {
-				//check that language of resTranlation is the same as lang
-				if(!resTranlation.getLang().toLowerCase().equals(lang.toLowerCase())){
+		ArrayNode translationExternalArray = createArrayFromResourceWithLabelList(transLangList, resToStructTransList,
+				jsonFactory);
+		jsonSingleResultForTranlation.set("translations", translationExternalArray);
+	}
+
+	private ArrayNode createArrayFromResourceWithLabelList(List<String> langList,
+			List<ResourceWithLabel> resToStructList,
+			JsonNodeFactory jsonFactory){
+		ArrayNode externalArray = jsonFactory.arrayNode();
+		for(String lang : langList) {
+			ObjectNode langAndMatchedNode = jsonFactory.objectNode();
+			langAndMatchedNode.set("lang", jsonFactory.textNode(lang));
+			ArrayNode internalArray = jsonFactory.arrayNode();
+			for (ResourceWithLabel resourceWithLabel : resToStructList) {
+				//check that language of resMatched is the same as lang
+				if(!resourceWithLabel.getLang().toLowerCase().equals(lang.toLowerCase())){
 					//different language, so do nothing
 					continue;
 				}
-				ObjectNode translationNode = jsonFactory.objectNode();
-				translationNode.set("vale", jsonFactory.textNode(resTranlation.getValue()));
-				translationNode.set("predicate", jsonFactory.textNode(resTranlation.getPredicate()));
-				translationNode.set("type", jsonFactory.textNode(resTranlation.getType()));
-				translationInternalArray.add(translationNode);
+				ObjectNode objectNode = createObjectNodeForArray(resourceWithLabel, jsonFactory);
+				internalArray.add(objectNode);
 			}
-			langAndTranslationsNode.set("values", translationInternalArray);
-			translationExternalArray.add(langAndTranslationsNode);
+			langAndMatchedNode.set("values", internalArray);
+			externalArray.add(langAndMatchedNode);
 		}
-		jsonSingleResultForTranlation.set("translations", translationExternalArray);
+		return externalArray;
+	}
+
+	private ObjectNode createObjectNodeForArray(ResourceWithLabel resourceWithLabel, JsonNodeFactory jsonFactory){
+		ObjectNode objectNode = jsonFactory.objectNode();
+		objectNode.set("value", jsonFactory.textNode(resourceWithLabel.getValue()));
+		objectNode.set("predicate", jsonFactory.textNode(resourceWithLabel.getPredicate()));
+		objectNode.set("type", jsonFactory.textNode(resourceWithLabel.getType()));
+		return objectNode;
 	}
 	
 	private IndexSearcher createSearcher() throws IOException {
