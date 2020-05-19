@@ -526,7 +526,31 @@ public class Projects extends STServiceAdapter {
 	}
 
 	/**
-	 * 
+	 * Update the AccessLevel of the current project
+	 * @param consumerName
+	 * @param accessLevel
+	 *            if not provided revoke any access level assigned from the project to the consumer
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws ProjectUpdateException
+	 * @throws ReservedPropertyUpdateException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
+	public void updateAccessLevel(String consumerName, @Optional AccessLevel accessLevel)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ProjectUpdateException, ReservedPropertyUpdateException {
+		Project project = getProject();
+		if (accessLevel != null) {
+			project.getACL().grantAccess(ProjectManager.getProjectDescription(consumerName), accessLevel);
+		} else {
+			project.getACL().revokeAccess(ProjectManager.getProjectDescription(consumerName));
+		}
+	}
+
+	/**
+	 *
 	 * @param projectName
 	 * @param consumerName
 	 * @param accessLevel
@@ -539,7 +563,7 @@ public class Projects extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void updateAccessLevel(String projectName, String consumerName, @Optional AccessLevel accessLevel)
+	public void updateProjectAccessLevel(String projectName, String consumerName, @Optional AccessLevel accessLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ProjectUpdateException, ReservedPropertyUpdateException {
 		Project project = ProjectManager.getProject(projectName, true);
@@ -548,6 +572,45 @@ public class Projects extends STServiceAdapter {
 		} else {
 			project.getACL().revokeAccess(ProjectManager.getProjectDescription(consumerName));
 		}
+	}
+
+	/**
+	 * Updates the lock level of the accessed project
+	 *
+	 * @param projectName
+	 * @param lockLevel
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws ProjectUpdateException
+	 * @throws ReservedPropertyUpdateException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
+	public void updateLockLevel(String projectName, LockLevel lockLevel)
+			throws ProjectUpdateException, ReservedPropertyUpdateException {
+		Project project = getProject();
+		project.getACL().setLockableWithLevel(lockLevel);
+	}
+
+	/**
+	 * Updates the lock level of the project with the given <code>projectName</code>
+	 *
+	 * @param projectName
+	 * @param lockLevel
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws ProjectUpdateException
+	 * @throws ReservedPropertyUpdateException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void updateProjectLockLevel(String projectName, LockLevel lockLevel)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ProjectUpdateException, ReservedPropertyUpdateException {
+		Project project = ProjectManager.getProject(projectName, true);
+		project.getACL().setLockableWithLevel(lockLevel);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -670,26 +733,6 @@ public class Projects extends STServiceAdapter {
 		File projectFile = File.createTempFile("prefix", "suffix");
 		importPackage.transferTo(projectFile);
 		ProjectManager.importProject(projectFile, newProjectName);
-	}
-
-	/**
-	 * Updates the lock level of the project with the given <code>projectName</code>
-	 * 
-	 * @param projectName
-	 * @param lockLevel
-	 * @throws InvalidProjectNameException
-	 * @throws ProjectInexistentException
-	 * @throws ProjectAccessException
-	 * @throws ProjectUpdateException
-	 * @throws ReservedPropertyUpdateException
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAdmin()")
-	public void updateLockLevel(String projectName, LockLevel lockLevel)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ProjectUpdateException, ReservedPropertyUpdateException {
-		Project project = ProjectManager.getProject(projectName, true);
-		project.getACL().setLockableWithLevel(lockLevel);
 	}
 
 	/**
