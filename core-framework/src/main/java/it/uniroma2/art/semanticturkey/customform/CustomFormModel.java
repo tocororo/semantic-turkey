@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.customform;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.rdf4j.model.IRI;
@@ -252,7 +251,7 @@ public class CustomFormModel {
 		if (getCustomFormById(id) != null) {
 			throw new DuplicateIdException("A FormCollection with id '" + id + "' already exists in project " + project.getName());
 		}
-		CustomForm form = null;
+		CustomForm form;
 		if (type.equalsIgnoreCase(CustomForm.Types.node.toString())) {
 			form = new CustomFormNode(id, name, description, ref);
 		} else {
@@ -292,16 +291,10 @@ public class CustomFormModel {
 	
 	/**
 	 * Removes a {@link FormCollection} from the configuration and its file from file-system
-	 * @param formCollId
+	 * @param formColl
 	 */
 	public void deleteFormCollection(FormCollection formColl) {
-		Iterator<FormCollection> itFc = formCollections.iterator();
-		while (itFc.hasNext()) {
-			FormCollection fc = itFc.next();
-			if (fc.getId().equals(formColl.getId())) {
-				itFc.remove();
-			}
-		}
+		formCollections.removeIf(fc -> fc.getId().equals(formColl.getId()));
 		// delete the file
 		File[] formCollFiles = CustomFormManager.getFormCollectionsFolder(project).listFiles();
 		for (File f : formCollFiles) {// search for the formCollection file with the given id/name
@@ -333,14 +326,8 @@ public class CustomFormModel {
 	 * @param deleteEmptyColl if true deletes FormCollection that are left empty after the deletion
 	 */
 	public void deleteCustomForm(CustomForm customForm, boolean deleteEmptyColl) {
-		
-		Iterator<CustomForm> itCf = customForms.iterator();
-		while (itCf.hasNext()) {
-			CustomForm cf = itCf.next();
-			if (cf.getId().equals(customForm.getId())) {
-				itCf.remove();
-			}
-		}
+
+		customForms.removeIf(cf -> cf.getId().equals(customForm.getId()));
 		
 		// delete the CF file
 		File[] cfFiles = CustomFormManager.getFormsFolder(project).listFiles();
@@ -392,9 +379,9 @@ public class CustomFormModel {
 	 */
 	private void initializeProjectCFBasicHierarchy(CustomFormModel systemCFModel) {
 		//creates folders
-		CustomFormManager.getCustomFormsFolder(project).mkdir();
-		CustomFormManager.getFormCollectionsFolder(project).mkdir();
-		CustomFormManager.getFormsFolder(project).mkdir();
+//		CustomFormManager.getCustomFormsFolder(project).mkdir();
+//		CustomFormManager.getFormCollectionsFolder(project).mkdir();
+//		CustomFormManager.getFormsFolder(project).mkdir();
 
 		//initialize customForms, formCollections and cfConfig
 		customForms = new ArrayList<>();
@@ -404,7 +391,7 @@ public class CustomFormModel {
 		// ...and save it
 		cfConfig.save(new File(CustomFormManager.getCustomFormsFolder(project), CustomFormsConfig.CUSTOM_FORMS_CONFIG_FILENAME));
 	}
-	
+
 	@Override
 	public String toString() {
 		String projName = project == null ? "SYSTEM" : project.getName(); 
