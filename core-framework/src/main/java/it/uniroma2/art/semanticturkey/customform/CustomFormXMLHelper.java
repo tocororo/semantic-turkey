@@ -116,25 +116,27 @@ public class CustomFormXMLHelper {
 	 */
 	public static Collection<CustomForm> loadProjectCustomForms(Project project, Collection<CustomForm> systemCustomForms, 
 			Collection<BrokenCFStructure> brokenCFS) {
-		File formsFolder = CustomFormManager.getFormsFolder(project);
 		logger.debug("Loading CustomForms.");
 		Collection<CustomForm> customForms = new ArrayList<>();
+		File formsFolder = CustomFormManager.getFormsFolder(project);
 		File[] formFiles = formsFolder.listFiles();
-		for (File f : formFiles) {
-			logger.debug("Loading CustomForm file " + f.getPath());
-			try {
-				CustomForm cf = parseAndCreateCustomForm(f);
-				cf.setLevel(CustomFormLevel.project);
-				//check existence of CustomForm with the same ID in the same project
-				if (retrieveCustomForm(customForms, cf.getId(), CustomFormLevel.project) != null) {
-					brokenCFS.add(new BrokenCFStructure(cf.getId(), CustomForm.class.getSimpleName(),
-							CustomFormLevel.project, f, "A CustomForm with the same ID already exists in the project"));
-				} else {
-					customForms.add(cf);
+		if (formFiles != null) {
+			for (File f : formFiles) {
+				logger.debug("Loading CustomForm file " + f.getPath());
+				try {
+					CustomForm cf = parseAndCreateCustomForm(f);
+					cf.setLevel(CustomFormLevel.project);
+					//check existence of CustomForm with the same ID in the same project
+					if (retrieveCustomForm(customForms, cf.getId(), CustomFormLevel.project) != null) {
+						brokenCFS.add(new BrokenCFStructure(cf.getId(), CustomForm.class.getSimpleName(),
+								CustomFormLevel.project, f, "A CustomForm with the same ID already exists in the project"));
+					} else {
+						customForms.add(cf);
+					}
+				} catch (CustomFormParseException e) {
+					brokenCFS.add(new BrokenCFStructure("Not Determined", CustomForm.class.getSimpleName(),
+							CustomFormLevel.project, f, "Failed parsing XML file: " + e.getMessage()));
 				}
-			} catch (CustomFormParseException e) {
-				brokenCFS.add(new BrokenCFStructure("Not Determined", CustomForm.class.getSimpleName(),
-						CustomFormLevel.project, f, "Failed parsing XML file: " + e.getMessage()));
 			}
 		}
 		return customForms;
@@ -171,30 +173,32 @@ public class CustomFormXMLHelper {
 	private static Collection<FormCollection> loadFormCollections(Project project, Collection<CustomForm> customForms,
 			Collection<BrokenCFStructure> brokenCFS) {
 		CustomFormLevel formCollectionLevel = project == null ? CustomFormLevel.system : CustomFormLevel.project;
-		File formCollFolder = CustomFormManager.getFormCollectionsFolder(project);
 		logger.debug("Loading FormCollections.");
 		Collection<FormCollection> formCollections = new ArrayList<>();
+		File formCollFolder = CustomFormManager.getFormCollectionsFolder(project);
 		File[] formCollFiles = formCollFolder.listFiles();
-		for (File f : formCollFiles) {
-			logger.debug("Loading FormCollection file " + f.getPath());
-			try {
-				FormCollection fc = parseAndCreateFormCollection(f, customForms, formCollectionLevel, brokenCFS);
-				fc.setLevel(formCollectionLevel);
-				//check existence of FormCollection with the same ID at system/project level
-				if (retrieveFormCollection(formCollections, fc.getId(), formCollectionLevel) != null) {
-					if (formCollectionLevel == CustomFormLevel.system) {
-						brokenCFS.add(new BrokenCFStructure(fc.getId(), FormCollection.class.getSimpleName(),
-								formCollectionLevel, f, "A FormCollection with the same ID already exists at system level"));
+		if (formCollFiles != null) {
+			for (File f : formCollFiles) {
+				logger.debug("Loading FormCollection file " + f.getPath());
+				try {
+					FormCollection fc = parseAndCreateFormCollection(f, customForms, formCollectionLevel, brokenCFS);
+					fc.setLevel(formCollectionLevel);
+					//check existence of FormCollection with the same ID at system/project level
+					if (retrieveFormCollection(formCollections, fc.getId(), formCollectionLevel) != null) {
+						if (formCollectionLevel == CustomFormLevel.system) {
+							brokenCFS.add(new BrokenCFStructure(fc.getId(), FormCollection.class.getSimpleName(),
+									formCollectionLevel, f, "A FormCollection with the same ID already exists at system level"));
+						} else {
+							brokenCFS.add(new BrokenCFStructure(fc.getId(), FormCollection.class.getSimpleName(),
+									formCollectionLevel, f, "A FormCollection with the same ID already exists in the project"));
+						}
 					} else {
-						brokenCFS.add(new BrokenCFStructure(fc.getId(), FormCollection.class.getSimpleName(),
-								formCollectionLevel, f, "A FormCollection with the same ID already exists in the project"));
+						formCollections.add(fc);
 					}
-				} else {
-					formCollections.add(fc);
+				} catch (CustomFormParseException e) {
+					brokenCFS.add(new BrokenCFStructure("Not Determined", FormCollection.class.getSimpleName(),
+							formCollectionLevel, f, "Failed parsing XML file: " + e.getMessage()));
 				}
-			} catch (CustomFormParseException e) {
-				brokenCFS.add(new BrokenCFStructure("Not Determined", FormCollection.class.getSimpleName(),
-						formCollectionLevel, f, "Failed parsing XML file: " + e.getMessage()));
 			}
 		}
 		return formCollections;
@@ -217,7 +221,7 @@ public class CustomFormXMLHelper {
 	public static FormCollection parseAndCreateFormCollection(File fcFile, Collection<CustomForm> customForms,
 			CustomFormLevel level, Collection<BrokenCFStructure> brokenCFS) throws CustomFormParseException {
 		try {
-			String id = "";
+			String id;
 			ArrayList<CustomForm> forms = new ArrayList<>();
 	
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -308,11 +312,11 @@ public class CustomFormXMLHelper {
 	 */
 	public static CustomForm parseAndCreateCustomForm(File cfFile) throws CustomFormParseException {
 		try {
-			String id = "";
-			String name = "";
+			String id;
+			String name;
 			String description = "";
 			String ref = "";
-			String type = "";
+			String type;
 			List<IRI> showPropChain = new ArrayList<>();
 			
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -372,16 +376,15 @@ public class CustomFormXMLHelper {
 					if (showPropChainString != null && !showPropChainString.isEmpty()) {
 						String[] splittedChain = showPropChainString.split(",");
 						SimpleValueFactory valueFactory = SimpleValueFactory.getInstance();
-						for (int i = 0; i < splittedChain.length; i++) {
-							showPropChain.add(valueFactory.createIRI(splittedChain[i]));
+						for (String s : splittedChain) {
+							showPropChain.add(valueFactory.createIRI(s));
 						}
 					}
 				}
 			}
 			
 			if (type.equals(CustomForm.Types.graph.toString())){
-				CustomFormGraph cre = new CustomFormGraph(id, name, description, ref, showPropChain);
-				return cre;
+				return new CustomFormGraph(id, name, description, ref, showPropChain);
 			} else if (type.equals(CustomForm.Types.node.toString())){
 				return new CustomFormNode(id, name, description, ref);
 			} else {
@@ -493,6 +496,10 @@ public class CustomFormXMLHelper {
 	 * ========================================= */
 	
 	public static void serializeCustomFormsConfig(CustomFormsConfig config, File file) {
+		File cfFolder = file.getParentFile();
+		if (!cfFolder.exists()) {
+			cfFolder.mkdirs();
+		}
 		try {
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
@@ -530,6 +537,10 @@ public class CustomFormXMLHelper {
 	}
 	
 	public static void serializeFormCollection(FormCollection formCollection, File file) {
+		File collectionsFolder = file.getParentFile();
+		if (!collectionsFolder.exists()) {
+			collectionsFolder.mkdirs();
+		}
 		try {
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
@@ -574,6 +585,10 @@ public class CustomFormXMLHelper {
 	}
 	
 	public static void serializeCustomForm(CustomForm customForm, File file) {
+		File formsFolder = file.getParentFile();
+		if (!formsFolder.exists()) {
+			formsFolder.mkdirs();
+		}
 		if (customForm.isTypeGraph()) {
 			serializeCustomFormGraph(customForm.asCustomFormGraph(), file);
 		} else {

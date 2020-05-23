@@ -1,11 +1,10 @@
 package it.uniroma2.art.semanticturkey.customform;
 
+import org.eclipse.rdf4j.model.IRI;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-
-import org.eclipse.rdf4j.model.IRI;
 
 /**
  * Collection of {@link FormsMapping}. This class represent a model in memory of <code>customFormsConfig.xml</code>
@@ -20,6 +19,10 @@ public class CustomFormsConfig {
 	
 	public CustomFormsConfig(Collection<FormsMapping> mappings) {
 		this.mappings = new ArrayList<>(mappings);
+	}
+
+	public CustomFormsConfig() {
+		this(new ArrayList<>());
 	}
 	
 	/**
@@ -57,7 +60,7 @@ public class CustomFormsConfig {
 	
 	/**
 	 * Adds a {@link FormsMapping} to the configuration
-	 * @param crConfEntry
+	 * @param formMapping
 	 */
 	public void addFormsMapping(FormsMapping formMapping){
 		mappings.add(formMapping);
@@ -68,27 +71,15 @@ public class CustomFormsConfig {
 	 * @param resource
 	 */
 	public void removeMappingOfResource(IRI resource){
-		Iterator<FormsMapping> it = mappings.iterator();
-		while (it.hasNext()){
-			FormsMapping mapping = it.next();
-			if (mapping.getResource().equals(resource.stringValue())){
-				it.remove();
-			}
-		}
+		mappings.removeIf(mapping -> mapping.getResource().equals(resource.stringValue()));
 	}
 	
 	/**
 	 * Remove resource-FormCollection pair with the given FormCollection ID
-	 * @param formCollectionID
+	 * @param formColl
 	 */
 	public void removeMappingOfFormCollection(FormCollection formColl){
-		Iterator<FormsMapping> it = mappings.iterator();
-		while (it.hasNext()){
-			FormsMapping mapping = it.next();
-			if (mapping.getFormCollection().getId().equals(formColl.getId())){
-				it.remove();
-			}
-		}
+		mappings.removeIf(mapping -> mapping.getFormCollection().getId().equals(formColl.getId()));
 	}
 	
 	/**
