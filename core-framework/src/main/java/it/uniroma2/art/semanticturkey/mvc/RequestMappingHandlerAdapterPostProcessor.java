@@ -51,6 +51,10 @@ public class RequestMappingHandlerAdapterPostProcessor implements BeanPostProces
 	private ObjectMapper objectMapper;
 
 	public RequestMappingHandlerAdapterPostProcessor() {
+		this.objectMapper = createObjectMapper();
+	}
+
+	public static ObjectMapper createObjectMapper() {
 		SimpleModule customTypeHandlers = new SimpleModule();
 		customTypeHandlers.addDeserializer(Value.class, new RDF4JValueDeserializer());
 		customTypeHandlers.addDeserializer(Resource.class, new RDF4JResourceDeserializer());
@@ -65,9 +69,8 @@ public class RequestMappingHandlerAdapterPostProcessor implements BeanPostProces
 		newObjectMapper.registerModule(customTypeHandlers);
 		newObjectMapper.registerModule(new Jdk8Module());
 		newObjectMapper.registerModule(new JavaTimeModule());
-		
-		this.objectMapper = newObjectMapper;
-
+	
+		return newObjectMapper;
 	}
 
 	@Autowired

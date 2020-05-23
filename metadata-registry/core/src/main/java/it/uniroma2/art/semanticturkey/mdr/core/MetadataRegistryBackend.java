@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -174,6 +175,14 @@ public interface MetadataRegistryBackend {
 	Collection<CatalogRecord> getCatalogRecords();
 
 	/**
+	 * Returns a catalog record
+	 * 
+	 * @param catalogRecord
+	 * @return
+	 */
+	CatalogRecord getCatalogRecord(IRI catalogRecord) throws NoSuchCatalogRecordException;
+
+	/**
 	 * Returns the metadata associated with the given dataset
 	 * 
 	 * @param dataset
@@ -240,8 +249,40 @@ public interface MetadataRegistryBackend {
 	 */
 	void discoverLexicalizationSets(IRI dataset) throws AssessmentException, MetadataRegistryWritingException;
 
+	/**
+	 * Returns the lexicalization model of the given {@code dataset} given its embedded lexicalization sets
+	 * 
+	 * @param dataset
+	 * @return
+	 * @throws AssessmentException
+	 */
+	Optional<IRI> getComputedLexicalizationModel(IRI dataset) throws AssessmentException;
+
+	/**
+	 * Returns a connection to the underlying RDF repository
+	 * 
+	 * @return
+	 */
 	RepositoryConnection getConnection();
 
+	/**
+	 * Returns an RDF description of the given dataset
+	 * 
+	 * @param dataset
+	 * @return
+	 */
 	Model extractProfile(IRI dataset);
+
+	/**
+	 * Initializes the metadata registry.
+	 * 
+	 * @throws MetadataRegistryIntializationException
+	 */
+	void initialize() throws MetadataRegistryIntializationException;
+
+	/**
+	 * Releases the resources consumed by the metadata registry
+	 */
+	void destroy();
 
 }

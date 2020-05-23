@@ -6,6 +6,7 @@ import java.io.StringWriter;
 import java.util.List;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
@@ -13,6 +14,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.VOID;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
@@ -46,6 +48,7 @@ import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
+import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
@@ -56,7 +59,6 @@ import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesChecker;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
-import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
@@ -134,6 +136,13 @@ public class MAPLE extends STServiceAdapter {
 					metadataConnection.add(datasetIRI, VOID.SPARQL_ENDPOINT, sparqlEndpoint);
 				}
 
+				metadataConnection.add(datasetIRI, DCTERMS.TITLE, vf.createLiteral(project.getName()));
+
+				String description = project.getDescription();
+				if (StringUtils.isNoneBlank(description)) {
+					metadataConnection.add(datasetIRI, DCTERMS.DESCRIPTION, vf.createLiteral(description));
+				}
+
 				StringWriter stringWriter = new StringWriter();
 				RDFWriter rdfWriter = Rio.createWriter(RDFFormat.TURTLE, stringWriter);
 				metadataConnection.export(rdfWriter);
@@ -205,7 +214,7 @@ public class MAPLE extends STServiceAdapter {
 
 		IRI leftDatasetIRI = metadataRegistryBackend.findDatasetForProject(leftDataset);
 		IRI rightDatasetIRI = metadataRegistryBackend.findDatasetForProject(rightDataset);
-		
+
 		try (RepositoryConnection metadataConn = metadataRegistryBackend.getConnection()) {
 			return mediationFramework.profileProblem(metadataConn, leftDatasetIRI, rightDatasetIRI);
 		}

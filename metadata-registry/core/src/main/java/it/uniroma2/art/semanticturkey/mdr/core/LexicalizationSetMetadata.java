@@ -8,11 +8,15 @@ import javax.annotation.Nullable;
 
 import org.eclipse.rdf4j.model.IRI;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.MoreObjects;
 
 import it.uniroma2.art.semanticturkey.utilities.IRI2StringConverter;
 import it.uniroma2.art.semanticturkey.utilities.Optional2StringConverter;
+import it.uniroma2.art.semanticturkey.utilities.String2IRIConverter;
 
 /**
  * Metadata describing a lexicalization set.
@@ -31,10 +35,18 @@ public class LexicalizationSetMetadata {
 	private final Optional<BigDecimal> percentage;
 	private final Optional<BigDecimal> avgNumOfLexicalizations;
 
-	public LexicalizationSetMetadata(IRI identity, IRI referenceDataset, @Nullable IRI lexiconDataset,
-			IRI lexicalizationModel, String language, @Nullable BigInteger references,
-			@Nullable BigInteger lexicalEntries, @Nullable BigInteger lexicalizations,
-			@Nullable BigDecimal percentage, @Nullable BigDecimal avgNumOfLexicalizations) {
+	@JsonCreator
+	public LexicalizationSetMetadata(
+			@JsonProperty("identity") @JsonDeserialize(converter = String2IRIConverter.class) IRI identity,
+			@JsonProperty("referenceDataset") @JsonDeserialize(converter = String2IRIConverter.class) IRI referenceDataset,
+			@JsonProperty("lexiconDataset") @JsonDeserialize(converter = String2IRIConverter.class) @Nullable IRI lexiconDataset,
+			@JsonProperty("lexicalizationModel") @JsonDeserialize(converter = String2IRIConverter.class) IRI lexicalizationModel,
+			@JsonProperty("language") String language,
+			@JsonProperty("references") @Nullable BigInteger references,
+			@JsonProperty("lexicalEntries") @Nullable BigInteger lexicalEntries,
+			@JsonProperty("lexicalizations") @Nullable BigInteger lexicalizations,
+			@JsonProperty("percentage") @Nullable BigDecimal percentage,
+			@JsonProperty("avgNumOfLexicalizations") @Nullable BigDecimal avgNumOfLexicalizations) {
 		this.identity = identity;
 		this.referenceDataset = referenceDataset;
 		this.lexiconDataset = Optional.ofNullable(lexiconDataset);

@@ -68,6 +68,7 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.MapBindingSet;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
+import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -106,6 +107,7 @@ import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryCreationException
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryIntializationException;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryStateException;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryWritingException;
+import it.uniroma2.art.semanticturkey.mdr.core.NoSuchCatalogRecordException;
 import it.uniroma2.art.semanticturkey.mdr.core.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.METADATAREGISTRY;
 import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
@@ -157,14 +159,32 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 	}
 
+	@PostConstruct
+	@Override
+	public void initialize() throws MetadataRegistryIntializationException {
+		metadataRegistry = createRepository();
+		initializeRepository();
+	}
+
 	/**
-	 * Initializes the metadata registry.
+	 * Creates the RDF4J {@link Repository} used to manage the RDF content of the metadata registry. By
+	 * default, it creates a non-persistent in-memory repository (note that actual persistence as an RDF file
+	 * is managed by {@link #saveToFile()}). Override this method to use a different repository
+	 * implementation.
 	 * 
+	 * @return
+	 */
+	protected SailRepository createRepository() {
+		return new SailRepository(new MemoryStore());
+	}
+
+	/**
+	 * Initializes the RDF4J {@link Repository} used to managed the RDF content of the metadata registry.
+	 * 
+	 * @throws RepositoryException
 	 * @throws MetadataRegistryIntializationException
 	 */
-	@PostConstruct
-	public void initialize() throws MetadataRegistryIntializationException {
-		metadataRegistry = new SailRepository(new MemoryStore());
+	protected void initializeRepository() throws RepositoryException, MetadataRegistryIntializationException {
 		metadataRegistry.init();
 
 		try (RepositoryConnection conn = metadataRegistry.getConnection()) {
@@ -187,17 +207,21 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 	}
 
-	/**
-	 * Releases the resources consumed by the metadata registry
-	 */
 	@PreDestroy
+	@Override
 	public void destroy() {
 		if (metadataRegistry != null) {
 			metadataRegistry.shutDown();
 		}
 	}
 
-	private void saveToFile() throws MetadataRegistryWritingException {
+	/**
+	 * Saves the content of the (default graph of the) metadata registry to {@link #catalogFile}. Override
+	 * this to method to change the persistence strategy.
+	 * 
+	 * @throws MetadataRegistryWritingException
+	 */
+	protected void saveToFile() throws MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
 			RDFWriterFactory rdfWriterFactory = RDFWriterRegistry.getInstance().get(CATALOG_FORMAT)
 					.orElseThrow(() -> new IllegalStateException(
@@ -859,6 +883,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" 	?dataset dcterms:title ?datasetTitle .                                            \n" +
 				"   }                                                                                 \n" +
 				"   OPTIONAL {                                                                        \n" +
+				" 	?dataset dcterms:description ?datasetDescription .                                \n" +
+				"   }                                                                                 \n" +
+				"   OPTIONAL {                                                                        \n" +
 				" 	?dataset mdreg:dereferenciationSystem ?datasetDereferenciationSystem .            \n" +
 				"   }                                                                                 \n" +
 				"   OPTIONAL {                                                                        \n" +
@@ -936,6 +963,12 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 									.collect(toList())))
 					.collect(toList());
 		}
+	}
+
+	@Override
+	public CatalogRecord getCatalogRecord(IRI catalogRecord) throws NoSuchCatalogRecordException {
+		return getCatalogRecords().stream().filter(r -> catalogRecord.equals(r.getIdentity())).findAny()
+				.orElseThrow(() -> new NoSuchCatalogRecordException(catalogRecord));
 	}
 
 	@Override
@@ -1134,6 +1167,10 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				wrapWithOptional.apply("datasetTitle",
 				" 	  ?dataset dcterms:title ?datasetTitle .                                         \n"
 				) +
+				wrapWithOptional.apply("datasetDescription",
+				" 	  ?dataset dcterms:description ?datasetDescription .                             \n"
+				) +
+
 				wrapWithOptional.apply("datasetDereferenciationSystem",
 				" 	?dataset mdreg:dereferenciationSystem ?datasetDereferenciationSystem .            \n"
 				) + 
@@ -1306,7 +1343,6 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		return null;
 	}
 
-
 	protected DatasetMetadata bindingset2datasetmetadata(BindingSet bs) {
 		IRI dataset = (IRI) bs.getValue("dataset");
 
@@ -1316,6 +1352,11 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		@Nullable
 		String title = Optional.ofNullable(bs.getValue("datasetTitleT")).map(Value::stringValue)
 				.filter(s -> !s.isEmpty()).orElse(null);
+
+		@Nullable
+		String description = Optional.ofNullable(bs.getValue("datasetDescriptionT")).map(Value::stringValue)
+				.filter(s -> !s.isEmpty()).orElse(null);
+
 		@Nullable
 		IRI dereferenciationSystem = Optional.ofNullable(bs.getValue("datasetDereferenciationSystemT"))
 				.filter(s -> !s.stringValue().isEmpty()).map(IRI.class::cast).orElse(null);
@@ -1354,8 +1395,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		String versionInfo = Optional.ofNullable(bs.getValue("datasetVersionInfoT")).map(Value::stringValue)
 				.orElse(null);
 
-		return new DatasetMetadata(dataset, uriSpace, title, dereferenciationSystem, sparqlEndpointMetadata,
-				versionInfo);
+		return new DatasetMetadata(dataset, uriSpace, title, description, dereferenciationSystem,
+				sparqlEndpointMetadata, versionInfo);
 	}
 
 	protected Pair<DatasetMetadata, Model> discoverDatasetMetadataInternal(IRI iri)
@@ -1396,6 +1437,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			logger.debug("Reference to VoID dataset: {}", voidDataset);
 
 			Literal datasetTitle = null;
+			Literal datasetDescription = null;
 			IRI datasetSPARQLEndpoint = null;
 			String datasetUriSpace = null;
 
@@ -1505,6 +1547,15 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 						datasetTitle = Models.getPropertyLiteral(voidStatements, voidDataset, DC.TITLE)
 								.orElse(datasetTitle);
 					}
+					datasetDescription = Models
+							.getPropertyLiteral(voidStatements, voidDataset, DCTERMS.DESCRIPTION)
+							.orElse(datasetTitle);
+					if (datasetDescription == null) {
+						datasetDescription = Models
+								.getPropertyLiteral(voidStatements, voidDataset, DC.DESCRIPTION)
+								.orElse(datasetDescription);
+					}
+
 					datasetSPARQLEndpoint = Models
 							.getPropertyIRI(voidStatements, voidDataset, VOID.SPARQL_ENDPOINT)
 							.orElse(datasetSPARQLEndpoint);
@@ -1579,6 +1630,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			if (datasetUriSpace != null) {
 				return ImmutablePair.of(new DatasetMetadata(voidDataset, datasetUriSpace,
 						datasetTitle != null ? datasetTitle.stringValue() : null,
+						datasetDescription != null ? datasetDescription.stringValue() : null,
 						METADATAREGISTRY.getDereferenciationSystem(datasetDeferenceable).orElse(null),
 						datasetSPARQLEndpoint != null
 								? new DatasetMetadata.SPARQLEndpointMedatadata(datasetSPARQLEndpoint,
@@ -1711,6 +1763,14 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 
 		saveToFile();
+	}
+
+	@Override
+	public synchronized Optional<IRI> getComputedLexicalizationModel(IRI dataset) throws AssessmentException {
+		try (RepositoryConnection metadataConn = metadataRegistry.getConnection()) {
+			Model profile = extractProfile(dataset);
+			return mediationFramework.assessLexicalizationModel(dataset, profile);
+		}
 	}
 
 	@Override

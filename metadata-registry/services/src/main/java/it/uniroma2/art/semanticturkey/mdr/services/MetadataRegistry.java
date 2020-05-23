@@ -26,6 +26,7 @@ import it.uniroma2.art.semanticturkey.mdr.core.LinksetMetadata;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataDiscoveryException;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryStateException;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryWritingException;
+import it.uniroma2.art.semanticturkey.mdr.core.NoSuchCatalogRecordException;
 import it.uniroma2.art.semanticturkey.mdr.core.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -221,13 +222,25 @@ public class MetadataRegistry extends STServiceAdapter {
 	}
 
 	/**
+	 * Returns a catalog record
+	 * 
+	 * @throws NoSuchCatalogRecordException
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+	public CatalogRecord getCatalogRecord(IRI catalogRecord) throws NoSuchCatalogRecordException {
+		return metadataRegistryBackend.getCatalogRecord(catalogRecord);
+	}
+
+	/**
 	 * Returns metadata about a given dataset
 	 * 
 	 * @throws MetadataRegistryStateException
 	 * @throws NoSuchDatasetMetadataException
 	 */
 	@STServiceOperation
-//	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')") //project wide service, could be invoked without a ctx_project, so without capabililties
+	// @PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')") //project wide service, could be
+	// invoked without a ctx_project, so without capabililties
 	public DatasetMetadata getDatasetMetadata(IRI dataset)
 			throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		return metadataRegistryBackend.getDatasetMetadata(dataset);
@@ -295,7 +308,8 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-//	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')") //project wide service, could be invoked without a ctx_project, so without capabililties
+	// @PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')") //project wide service, could be
+	// invoked without a ctx_project, so without capabililties
 	public Collection<LinksetMetadata> getEmbeddedLinksets(IRI dataset,
 			@Optional(defaultValue = "0") long treshold, @Optional(defaultValue = "false") boolean coalesce) {
 		return metadataRegistryBackend.getEmbeddedLinksets(dataset, treshold, coalesce);
@@ -315,6 +329,19 @@ public class MetadataRegistry extends STServiceAdapter {
 	public void assessLexicalizationModel(IRI dataset)
 			throws AssessmentException, MetadataRegistryWritingException {
 		metadataRegistryBackend.discoverLexicalizationSets(dataset);
+	}
+
+	/**
+	 * Get lexicalization model
+	 * 
+	 * @param dataset
+	 * @return the lexicalization model or <code>null</code> if it can't be determined
+	 */
+	@STServiceOperation(method = RequestMethod.GET)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+	public IRI getComputedLexicalizationModel(IRI dataset)
+			throws AssessmentException, MetadataRegistryWritingException {
+		return metadataRegistryBackend.getComputedLexicalizationModel(dataset).orElse(null);
 	}
 
 	/**
@@ -384,7 +411,8 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-//	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')") //project wide service, could be invoked without a ctx_project, so without capabililties
+	// @PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')") //project wide service, could be
+	// invoked without a ctx_project, so without capabililties
 	public Map<String, AnnotatedValue<IRI>> findDatasetForProjects(List<Project> projects) {
 		Map<String, AnnotatedValue<IRI>> rv = new HashMap<>(projects.size());
 		for (Project proj : projects) {

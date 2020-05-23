@@ -11,5 +11,6 @@
   	<module>euodp</module>
   	<module>lod-cloud</module>
   	<module>lov</module>
+  	<module>pmki</module>
   </modules>
 </project>
