@@ -1,5 +1,8 @@
 version 8.0
 date: dd/mm/yyyy
+  * no-lexicon mode in OntoLex lexical entries view
+  * possibility to manipulate the choices made by MAPLE
+  * PMKI catalog connector
   * added a new service that uses Lucene indexes to perform translations
   * introduced a new event bus (e.g. for resource-level changes)
   * change the namespace of the vocabulary used by the metadata registry
@@ -10,6 +13,7 @@ date: dd/mm/yyyy
   * added support for cross-bundle session management, necessary to support authentication and authorization
     across bundles (while allowing for new service-level extensions)
   * added custom services with an implementation based on SPARQL
+  * added invokable reporters based on custom services
   * added the prefix resolution in all Search services
   * added SHACL to PEARL
   * add a sail for trivial reasoning (based on symmetric / inverse properties)

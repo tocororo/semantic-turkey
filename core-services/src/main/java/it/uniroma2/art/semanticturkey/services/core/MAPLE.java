@@ -38,6 +38,7 @@ import it.uniroma2.art.lime.profiler.LIMEProfiler;
 import it.uniroma2.art.lime.profiler.ProfilerException;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
+import it.uniroma2.art.maple.orchestration.ProfilerOptions;
 import it.uniroma2.art.maple.orchestration.ProfilingException;
 import it.uniroma2.art.maple.problem.TaskReport;
 import it.uniroma2.art.maple.problem.ResourceLexicalizationSet;
@@ -61,6 +62,8 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -188,15 +191,16 @@ public class MAPLE extends STServiceAdapter {
 	 * 
 	 * @param sourceDataset
 	 * @param targetDataset
+	 * @param options
 	 * @return
 	 * @throws ProfilingException
 	 */
 	@STServiceOperation
-	public TaskReport profileMatchingProblem(IRI sourceDataset, IRI targetDataset)
+	public TaskReport profileMatchingProblem(IRI sourceDataset, IRI targetDataset, @JsonSerialized @Optional(defaultValue="{}") ProfilerOptions options)
 			throws ProfilingException {
 
 		try (RepositoryConnection metadataConn = metadataRegistryBackend.getConnection()) {
-			return mediationFramework.profileProblem(metadataConn, sourceDataset, targetDataset);
+			return mediationFramework.profileProblem(metadataConn, sourceDataset, targetDataset, options);
 		}
 	}
 
