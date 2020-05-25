@@ -662,7 +662,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getLexicalEntriesByAlphabeticIndex(
-			@Length(min = 1) String index, IRI lexicon) {
+			@Length(min = 1) String index, @Optional IRI lexicon) {
 		QueryBuilder qb = createQueryBuilder(
 		// @formatter:off
 			" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					        \n" +
@@ -674,7 +674,7 @@ public class OntoLexLemon extends STServiceAdapter {
 			" prefix lime: <http://www.w3.org/ns/lemon/lime#>                                   \n" +
             "                                                                                   \n" +
 			" SELECT ?resource " + generateNatureSPARQLSelectPart() +" WHERE {                  \n" +
-			"   ?lexicon lime:entry ?resource .                                                 \n" +
+			(lexicon != null ? "   ?lexicon lime:entry ?resource . \n" : "") +
 			"   ?resource ontolex:canonicalForm [                                               \n" +
 			"     ontolex:writtenRep ?cf                                                        \n" +
 			"   ]                                                                               \n" +
@@ -686,7 +686,9 @@ public class OntoLexLemon extends STServiceAdapter {
 			" GROUP BY ?resource                                                                \n"
 			// @formatter:on
 		);
-		qb.setBinding("lexicon", lexicon);
+		if (lexicon != null) {
+			qb.setBinding("lexicon", lexicon);
+		}
 		qb.processQName();
 		qb.process(LexicalEntryRenderer.INSTANCE, "resource", "attr_show");
 		return qb.runQuery();
@@ -695,7 +697,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'R')")
-	public Integer countLexicalEntriesByAlphabeticIndex(@Length(min = 1) String index, IRI lexicon) {
+	public Integer countLexicalEntriesByAlphabeticIndex(@Length(min = 1) String index, @Optional IRI lexicon) {
 		String query =
 				// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					        \n" +
@@ -706,8 +708,8 @@ public class OntoLexLemon extends STServiceAdapter {
 				" prefix ontolex: <http://www.w3.org/ns/lemon/ontolex#>                             \n" +
 				" prefix lime: <http://www.w3.org/ns/lemon/lime#>                                   \n" +
 				"                                                                                   \n" +
-				" SELECT (count(distinct ?resource) as ?count) WHERE {			                  \n" +
-				"   ?lexicon lime:entry ?resource .                                                 \n" +
+				" SELECT (count(distinct ?resource) as ?count) WHERE {			                    \n" +
+				(lexicon != null ? "   ?lexicon lime:entry ?resource . \n" : "") +
 				"   ?resource ontolex:canonicalForm [                                               \n" +
 				"     ontolex:writtenRep ?cf                                                        \n" +
 				"   ]                                                                               \n" +
