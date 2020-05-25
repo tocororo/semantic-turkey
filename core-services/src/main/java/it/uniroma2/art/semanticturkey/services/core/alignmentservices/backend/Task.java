@@ -6,7 +6,6 @@ import org.eclipse.rdf4j.model.IRI;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.utilities.IRI2StringConverter;
 import it.uniroma2.art.semanticturkey.utilities.String2IRIConverter;
@@ -24,7 +23,7 @@ public class Task {
 	private OffsetDateTime submissionTime;
 	private OffsetDateTime endTime;
 	private int progress;
-	private ObjectNode reason;
+	private ReasonInfo reason;
 
 	public String getId() {
 		return id;
@@ -90,11 +89,11 @@ public class Task {
 		this.progress = progress;
 	}
 
-	public ObjectNode getReason() {
+	public ReasonInfo getReason() {
 		return reason;
 	}
 
-	public void setReason(ObjectNode reason) {
+	public void setReason(ReasonInfo reason) {
 		this.reason = reason;
 	}
 

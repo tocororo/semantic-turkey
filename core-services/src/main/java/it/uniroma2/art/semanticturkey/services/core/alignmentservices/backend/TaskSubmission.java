@@ -2,19 +2,19 @@ package it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import it.uniroma2.art.maple.problem.MatchingProblem;
+import it.uniroma2.art.maple.problem.TaskReport;
 
 public class TaskSubmission {
-	private MatchingProblem taskReport;
+	private TaskReport taskReport;
 	private ObjectNode systemConfiguration;
 	private String matcher;
 	private ObjectNode matcherConfiguration;
 
-	public MatchingProblem getTaskReport() {
+	public TaskReport getTaskReport() {
 		return taskReport;
 	}
 
-	public void setTaskReport(MatchingProblem taskReport) {
+	public void setTaskReport(TaskReport taskReport) {
 		this.taskReport = taskReport;
 	}
 

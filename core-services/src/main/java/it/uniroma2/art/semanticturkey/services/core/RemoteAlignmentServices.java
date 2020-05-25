@@ -40,7 +40,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableMap;
 
 import it.uniroma2.art.maple.problem.Dataset;
-import it.uniroma2.art.maple.problem.MatchingProblem;
+import it.uniroma2.art.maple.problem.TaskReport;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel;
 import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
@@ -59,6 +59,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.alignmentservices.AlignmentServiceException;
 import it.uniroma2.art.semanticturkey.services.core.alignmentservices.DatasetInfo;
+import it.uniroma2.art.semanticturkey.services.core.alignmentservices.ReasonInfo;
 import it.uniroma2.art.semanticturkey.services.core.alignmentservices.TaskDTO;
 import it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.Task;
 import it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.TaskSubmission;
@@ -169,6 +170,14 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			taskDTO.setLeftDataset(leftDatasetInfo);
 			taskDTO.setRightDataset(rightDatasetInfo);
 			taskDTO.setStatus(matchingStatus.getStatus());
+			it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.ReasonInfo backendReason = matchingStatus
+					.getReason();
+			if (backendReason != null) {
+				ReasonInfo reasonInfo = new ReasonInfo();
+				reasonInfo.setMessage(backendReason.getMessage());
+				taskDTO.setReason(reasonInfo);
+			}
+			taskDTO.setProgress(matchingStatus.getProgress());
 			if (matchingStatus.getStartTime() != null) {
 				taskDTO.setStartTime(Date.from(matchingStatus.getStartTime().toInstant()));
 			}
@@ -268,7 +277,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public String createTask(@JsonSerialized MatchingProblem matchingProblem)
+	public String createTask(@JsonSerialized TaskReport matchingProblem)
 			throws IOException, AlignmentServiceException {
 
 		//// integrity checks

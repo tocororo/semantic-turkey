@@ -1,7 +1,8 @@
 package it.uniroma2.art.semanticturkey.services.core.alignmentservices;
 
-import java.net.URL;
 import java.util.Date;
+
+import org.apache.felix.bundlerepository.impl.ReasonImpl;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonFormat.Shape;
@@ -10,8 +11,9 @@ public class TaskDTO {
 	private String id;
 	private DatasetInfo leftDataset;
 	private DatasetInfo rightDataset;
-	private URL engine;
 	private String status;
+	private ReasonInfo reason;
+	private Integer progress;
 	@JsonFormat(shape = Shape.STRING, pattern = "EEE MMM dd HH:mm:ss Z yyyy", locale = "us")
 	private Date startTime;
 	@JsonFormat(shape = Shape.STRING, pattern = "EEE MMM dd HH:mm:ss Z yyyy", locale = "us")
@@ -41,14 +43,6 @@ public class TaskDTO {
 		this.rightDataset = rightDataset;
 	}
 
-	public URL getEngine() {
-		return engine;
-	}
-
-	public void setEngine(URL engine) {
-		this.engine = engine;
-	}
-
 	public String getStatus() {
 		return status;
 	}
@@ -56,7 +50,23 @@ public class TaskDTO {
 	public void setStatus(String status) {
 		this.status = status;
 	}
+	
+	public ReasonInfo getReason() {
+		return reason;
+	}
+	
+	public void setReason(ReasonInfo reason) {
+		this.reason = reason;
+	}
 
+	public Integer getProgress() {
+		return progress;
+	}
+	
+	public void setProgress(Integer progress) {
+		this.progress = progress;
+	}
+	
 	public Date getStartTime() {
 		return startTime;
 	}
