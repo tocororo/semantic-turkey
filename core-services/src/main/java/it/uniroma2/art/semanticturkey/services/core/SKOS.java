@@ -921,7 +921,8 @@ public class SKOS extends STServiceAdapter {
 				newTopConceptList.add(rootConcept);
 			}
 		} else {
-			//since the topConcept is not passed, get all the concepts, which will be add to the desired 
+			//since the topConcept is not passed (at the moment this is not possibile, since the parameter rootConcept is not optional),
+			// get all the concepts, which will be add to the desired
 			// scheme and that do not have any broader concept
 			// @formatter:off
 			String query = " PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
@@ -1018,16 +1019,19 @@ public class SKOS extends STServiceAdapter {
 		}
 		updateQuery+= "\n} }" +
 					"\nWHERE{" +
-                    "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph())+" {" +
-                    "\n?concept rdf:type ?conceptSubClass ." +
-					"\n?conceptSubClass rdfs:subClassOf* skos:Concept .";
+					"\n?conceptSubClass rdfs:subClassOf* skos:Concept ."; // this has to be outside the GRAPH since the classes subClassOF skos:Concept
+					// could be defined not only in the working graph (same as rdfs:subPropertyOf* skos:inScheme )
+		if(filterSchemes!=null && filterSchemes.size()>0) {
+			updateQuery += "\n?subPropInScheme rdfs:subPropertyOf* skos:inScheme .";
+		}
+		updateQuery+="\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph())+" {" +
+                    "\n?concept rdf:type ?conceptSubClass ." ;
 		if(rootConcept!=null) {
 			updateQuery += combinePathWithVarOrIri("?concept", rootConcept, broaderNarrowerPath, true);
 		}
 		if(filterSchemes!=null && filterSchemes.size()>0) {
-			updateQuery+="\n?subPropInScheme rdfs:subPropertyOf* skos:inScheme ." +
-					"\n?concept ?subPropInScheme ?scheme ." +
-					"FILTER (";
+			updateQuery+="\n?concept ?subPropInScheme ?scheme ." +
+					"\nFILTER (";
 			boolean first=true;
 			for(IRI filterScheme : filterSchemes){
 				if(!first){
