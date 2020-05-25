@@ -91,7 +91,7 @@
 
 	<global-method-security pre-post-annotations="enabled"/>
 
-	<context:component-scan base-package="it.uniroma2.art.semanticturkey.security" />
+	<context:annotation-config/>
 
 	<beans:bean
 		class="it.uniroma2.art.semanticturkey.services.http.STServiceHTTPContext" />
@@ -171,5 +171,10 @@
 
 	<beans:bean id='bCryptPasswordEncoder'
 		class='org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder' />
+
+	<beans:bean id='accessControlManager'
+		class='it.uniroma2.art.semanticturkey.security.AccessControlManager' />
+	<beans:bean id='auth'
+		class='it.uniroma2.art.semanticturkey.security.STAuthorizationEvaluator' />
 
 </beans:beans>

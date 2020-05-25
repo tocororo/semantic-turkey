@@ -10,18 +10,15 @@ import it.uniroma2.art.semanticturkey.user.UsersGroupsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 
-@Component
 public class AccessControlManager {
 	
 	@PostConstruct
 	public void init() throws RDFParseException, RepositoryException,
 			IOException, ProjectAccessException, RBACException, STPropertyAccessException {
-		
 		//init users manager so it loads users and roles from ST data
 		UsersManager.loadUsers();
 		

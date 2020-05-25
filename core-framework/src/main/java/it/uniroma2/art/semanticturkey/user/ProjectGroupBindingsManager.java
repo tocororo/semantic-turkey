@@ -144,12 +144,7 @@ public class ProjectGroupBindingsManager {
 	 * @throws IOException 
 	 */
 	public static void deletePGBindingsOfProject(String projectName) throws IOException {
-		Iterator<ProjectGroupBinding> itPGB = pgBindingList.iterator();
-		while (itPGB.hasNext()) {
-			if (itPGB.next().getProject().getName().equals(projectName)) {
-				itPGB.remove();
-			}
-		}
+		pgBindingList.removeIf(projectGroupBinding -> projectGroupBinding.getProject().getName().equals(projectName));
 		//delete folder about the project's bindings
 		FileUtils.deleteDirectory(getProjBindingsFolder(projectName));
 	}
@@ -160,7 +155,7 @@ public class ProjectGroupBindingsManager {
 	 * @throws ProjectAccessException 
 	 * @throws IOException 
 	 */
-	public static void createPGBindingsOfGroup(UsersGroup group) throws ProjectAccessException, ProjectBindingException {
+	public static void createPGBindingsOfGroup(UsersGroup group) throws ProjectAccessException {
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		//for each project creates the binding with the given group
 		for (AbstractProject abstrProj : projects) {
@@ -176,12 +171,7 @@ public class ProjectGroupBindingsManager {
 	 * @throws IOException 
 	 */
 	public static void deletePGBindingsOfGroup(UsersGroup group) throws IOException {
-		Iterator<ProjectGroupBinding> itPGB = pgBindingList.iterator();
-		while (itPGB.hasNext()) {
-			if (itPGB.next().getGroup().getIRI().equals(group.getIRI())) {
-				itPGB.remove();
-			}
-		}
+		pgBindingList.removeIf(projectGroupBinding -> projectGroupBinding.getGroup().getIRI().equals(group.getIRI()));
 		//delete folders about the group's bindings
 		for (File userBindingFolder : getGroupBindingsFolders(group)) {
 			FileUtils.deleteDirectory(userBindingFolder);
@@ -271,7 +261,7 @@ public class ProjectGroupBindingsManager {
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static boolean hasUserOwnershipOfSchemes(STUser user, Project project, List<IRI> schemes, boolean or) throws STPropertyAccessException {
+	public static boolean hasUserOwnershipOfSchemes(STUser user, Project project, List<IRI> schemes, boolean or) {
 		if (user.isAdmin()) {
 			return true;
 		}

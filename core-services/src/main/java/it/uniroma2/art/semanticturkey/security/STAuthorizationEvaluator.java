@@ -1,31 +1,10 @@
 package it.uniroma2.art.semanticturkey.security;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.json.JSONException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
+import alice.tuprolog.InvalidTheoryException;
+import alice.tuprolog.MalformedGoalException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import alice.tuprolog.InvalidTheoryException;
-import alice.tuprolog.MalformedGoalException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.SpecialValue;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
@@ -53,13 +32,30 @@ import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.json.JSONException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * http://stackoverflow.com/a/14904130/5805661
  * 
  * @author Tiziano
  */
-@Component("auth")
 public class STAuthorizationEvaluator {
 	
 	private static Logger logger = LoggerFactory.getLogger(STAuthorizationEvaluator.class);
@@ -319,8 +315,7 @@ public class STAuthorizationEvaluator {
 			qb.processRole();
 			Collection<AnnotatedValue<Resource>> res = qb.runQuery();
 			Value role = res.iterator().next().getAttributes().get("role");
-			RDFResourceRole roleEnum = RDFResourceRole.valueOf(role.stringValue());
-			return roleEnum;
+			return RDFResourceRole.valueOf(role.stringValue());
 		} finally {
 			RDF4JRepositoryUtils.releaseConnection(repoConn, repo);
 		}

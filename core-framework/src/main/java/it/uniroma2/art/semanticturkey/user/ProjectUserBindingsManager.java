@@ -15,15 +15,14 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.stream.Collectors;
 
 public class ProjectUserBindingsManager {
-	
+
 	private static final String PU_BINDING_DETAILS_FILE_NAME = "binding.ttl";
 	
 	private static Collection<ProjectUserBinding> puBindingList;
-	
+
 	/**
 	 * Loads all the bindings into the repository
 	 * Protected since the load should be done just once by AccessControlManager during its initialization
@@ -60,14 +59,14 @@ public class ProjectUserBindingsManager {
 		//add to the list all the PUB loaded into the repo
 		puBindingList.addAll(repoHelper.listPUBindings());
 		repoHelper.shutDownRepository();
-		
+
 		//For debug
 //		System.out.println("Project-User Bindings");
 //		for (ProjectUserBinding pub : puBindingList) {
 //			System.out.println(pub);
 //		}
 	}
-	
+
 	/**
 	 * Returns all the project-user bindings
 	 * @return
@@ -143,12 +142,7 @@ public class ProjectUserBindingsManager {
 	 * @throws IOException 
 	 */
 	public static void deletePUBindingsOfProject(String projectName) throws IOException {
-		Iterator<ProjectUserBinding> itPUB = puBindingList.iterator();
-		while (itPUB.hasNext()) {
-			if (itPUB.next().getProject().getName().equals(projectName)) {
-				itPUB.remove();
-			}
-		}
+		puBindingList.removeIf(projectUserBinding -> projectUserBinding.getProject().getName().equals(projectName));
 		//delete folder about the project's bindings
 		FileUtils.deleteDirectory(getProjBindingsFolder(projectName));
 	}
@@ -177,12 +171,7 @@ public class ProjectUserBindingsManager {
 	 * @throws IOException 
 	 */
 	public static void deletePUBindingsOfUser(STUser user) throws IOException {
-		Iterator<ProjectUserBinding> itPUB = puBindingList.iterator();
-		while (itPUB.hasNext()) {
-			if (itPUB.next().getUser().getIRI().equals(user.getIRI())) {
-				itPUB.remove();
-			}
-		}
+		puBindingList.removeIf(projectUserBinding -> projectUserBinding.getUser().getIRI().equals(user.getIRI()));
 		//delete folders about the user's bindings
 		for (File userBindingFolder : getUserBindingsFolders(user)) {
 			FileUtils.deleteDirectory(userBindingFolder);
