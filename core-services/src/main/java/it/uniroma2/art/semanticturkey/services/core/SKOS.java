@@ -1122,6 +1122,7 @@ public class SKOS extends STServiceAdapter {
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		// first check if the orderedCollection as any element (check SKOS.MEMBERLIST)
+		fixOrderedCollectionIfHasNoMemberList(collection, repoConnection);
 		Resource list = getFirstElemOfOrderedCollection(collection, repoConnection);
 		if (!list.equals(RDF.NIL)) {
 			boolean found = hasElementInList(list, element, repoConnection);
@@ -1186,6 +1187,7 @@ public class SKOS extends STServiceAdapter {
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 
+		fixOrderedCollectionIfHasNoMemberList(collection, repoConnection);
 		Resource list = getFirstElemOfOrderedCollection(collection, repoConnection);
 		if (list.equals(RDF.NIL)) {
 			// the ordered collection is empty, so create a list, having just one element, the input one
@@ -1216,9 +1218,25 @@ public class SKOS extends STServiceAdapter {
 	
 	protected Resource getFirstElemOfOrderedCollection(Resource collection, RepositoryConnection repoConnection){
 		Resource[] graphs = getUserNamedGraphs();
-		try(RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(collection, 
+		try(RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(collection,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, null, false, graphs)){
 			return (Resource) repositoryResult.next().getObject();
+		}
+	}
+
+	protected void fixOrderedCollectionIfHasNoMemberList(Resource collection, RepositoryConnection repoConnection){
+		//check if it exists the SKOS.MEMBER_LIST, otherwise, add the <collection> skos:memberlist rdf:nil
+		Resource[] graphs = getUserNamedGraphs();
+		try(RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(collection,
+				org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, null, false, graphs)){
+			if(repositoryResult.hasNext()){
+				// no need to do anything
+			} else {
+				Model modelAdditions = new LinkedHashModel();
+				modelAdditions.add(repoConnection.getValueFactory().createStatement(
+						collection, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER_LIST, RDF.NIL));
+				repoConnection.add(modelAdditions, getWorkingGraph());
+			}
 		}
 	}
 	
