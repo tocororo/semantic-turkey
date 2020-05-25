@@ -40,7 +40,7 @@ import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.maple.orchestration.ProfilerOptions;
 import it.uniroma2.art.maple.orchestration.ProfilingException;
-import it.uniroma2.art.maple.problem.TaskReport;
+import it.uniroma2.art.maple.problem.RefinableTaskReport;
 import it.uniroma2.art.maple.problem.ResourceLexicalizationSet;
 import it.uniroma2.art.maple.problem.SingleResourceMatchingProblem;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
@@ -196,7 +196,7 @@ public class MAPLE extends STServiceAdapter {
 	 * @throws ProfilingException
 	 */
 	@STServiceOperation
-	public TaskReport profileMatchingProblem(IRI sourceDataset, IRI targetDataset, @JsonSerialized @Optional(defaultValue="{}") ProfilerOptions options)
+	public RefinableTaskReport profileMatchingProblem(IRI sourceDataset, IRI targetDataset, @JsonSerialized @Optional(defaultValue="{}") ProfilerOptions options)
 			throws ProfilingException {
 
 		try (RepositoryConnection metadataConn = metadataRegistryBackend.getConnection()) {
@@ -213,7 +213,7 @@ public class MAPLE extends STServiceAdapter {
 	 * @throws ProfilingException
 	 */
 	@STServiceOperation
-	public TaskReport profileMatchingProblemBetweenProjects(Project leftDataset, Project rightDataset)
+	public RefinableTaskReport profileMatchingProblemBetweenProjects(Project leftDataset, Project rightDataset)
 			throws ProfilingException {
 
 		IRI leftDatasetIRI = metadataRegistryBackend.findDatasetForProject(leftDataset);

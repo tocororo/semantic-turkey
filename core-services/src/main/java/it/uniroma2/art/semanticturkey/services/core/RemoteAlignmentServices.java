@@ -40,6 +40,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableMap;
 
 import it.uniroma2.art.maple.problem.Dataset;
+import it.uniroma2.art.maple.problem.RefinableTaskReport;
 import it.uniroma2.art.maple.problem.TaskReport;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel;
