@@ -718,7 +718,9 @@ public class OntoLexLemon extends STServiceAdapter {
 						null, null, false, false) +
 				" }";
 				// @formatter:on
-		query = query.replace("?lexicon", NTriplesUtil.toNTriplesString(lexicon));
+		if (lexicon != null) {
+			query = query.replace("?lexicon", NTriplesUtil.toNTriplesString(lexicon));
+		}
 		TupleQueryResult result = getManagedConnection().prepareTupleQuery(query).evaluate();
 		return ((Literal) result.next().getValue("count")).intValue();
 	}
@@ -1738,7 +1740,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	/**
 	 * Generates a new URI for an ontolex:LexicalEntry, optionally given its accompanying canonicalForm and
 	 * the lexicon it was attached to. The actual generation of the URI is delegated to
-	 * {@link #generateURI(String, Map)}, which in turn invokes the current binding for the extension point
+	 * {@link #generateIRI(String, Map)}, which in turn invokes the current binding for the extension point
 	 * {@link URIGenerator}. In the end, the <i>URI generator</i> will be provided with the following:
 	 * <ul>
 	 * <li><code>lexicon</code> as the <code>xRole</code></li>
@@ -1765,7 +1767,7 @@ public class OntoLexLemon extends STServiceAdapter {
 
 	/**
 	 * Generates a new URI for a lime:Lexicon, optionally given its accompanying title. The actual generation
-	 * of the URI is delegated to {@link #generateURI(String, Map)}, which in turn invokes the current binding
+	 * of the URI is delegated to {@link #generateIRI(String, Map)}, which in turn invokes the current binding
 	 * for the extension point {@link URIGenerator}. In the end, the <i>URI generator</i> will be provided
 	 * with the following:
 	 * <ul>
@@ -1789,7 +1791,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	/**
 	 * Generates a new URI for an ontolex:Form, given its written representation, the lexical entry it is
 	 * attached to and the property used for the binding. The actual generation of the URI is delegated to
-	 * {@link #generateURI(String, Map)}, which in turn invokes the current binding for the extension point
+	 * {@link #generateIRI(String, Map)}, which in turn invokes the current binding for the extension point
 	 * {@link URIGenerator}. In the end, the <i>URI generator</i> will be provided with the following:
 	 * <ul>
 	 * <li><code>lexicalEntry</code> as the <code>xRole</code></li>
@@ -1820,7 +1822,7 @@ public class OntoLexLemon extends STServiceAdapter {
 
 	/**
 	 * Generates a new URI for an ontolex:LexicalSense, given its lexical entry and reference. The actual
-	 * generation of the URI is delegated to {@link #generateURI(String, Map)}, which in turn invokes the
+	 * generation of the URI is delegated to {@link #generateIRI(String, Map)}, which in turn invokes the
 	 * current binding for the extension point {@link URIGenerator}. In the end, the <i>URI generator</i> will
 	 * be provided with the following:
 	 * <ul>
