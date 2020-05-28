@@ -196,7 +196,8 @@ public class MAPLE extends STServiceAdapter {
 	 * @throws ProfilingException
 	 */
 	@STServiceOperation
-	public RefinableTaskReport profileMatchingProblem(IRI sourceDataset, IRI targetDataset, @JsonSerialized @Optional(defaultValue="{}") ProfilerOptions options)
+	public RefinableTaskReport profileMatchingProblem(IRI sourceDataset, IRI targetDataset,
+			@JsonSerialized @Optional(defaultValue = "{}") ProfilerOptions options)
 			throws ProfilingException {
 
 		try (RepositoryConnection metadataConn = metadataRegistryBackend.getConnection()) {
@@ -213,7 +214,8 @@ public class MAPLE extends STServiceAdapter {
 	 * @throws ProfilingException
 	 */
 	@STServiceOperation
-	public RefinableTaskReport profileMatchingProblemBetweenProjects(Project leftDataset, Project rightDataset)
+	public RefinableTaskReport profileMatchingProblemBetweenProjects(Project leftDataset,
+			Project rightDataset, @JsonSerialized @Optional(defaultValue = "{}") ProfilerOptions options)
 			throws ProfilingException {
 
 		IRI leftDatasetIRI = metadataRegistryBackend.findDatasetForProject(leftDataset);
