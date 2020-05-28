@@ -320,8 +320,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void deleteTask(String id) throws IOException, AlignmentServiceException {
-		restTemplate.delete(getAlignmentServiceEndpoint() + "tasks/{id}", HttpMethod.DELETE,
-				ImmutableMap.of("id", id));
+		restTemplate.delete(getAlignmentServiceEndpoint() + "tasks/{id}", ImmutableMap.of("id", id));
 	}
 
 	private String getAlignmentServiceEndpoint() {
