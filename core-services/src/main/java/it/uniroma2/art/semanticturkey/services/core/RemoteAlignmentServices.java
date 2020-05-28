@@ -178,7 +178,9 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 				reasonInfo.setMessage(backendReason.getMessage());
 				taskDTO.setReason(reasonInfo);
 			}
-			taskDTO.setProgress(matchingStatus.getProgress());
+			if ("running".equals(matchingStatus.getStatus())) {
+				taskDTO.setProgress(matchingStatus.getProgress());
+			}
 			if (matchingStatus.getStartTime() != null) {
 				taskDTO.setStartTime(Date.from(matchingStatus.getStartTime().toInstant()));
 			}
