@@ -1,12 +1,16 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview;
 
-import com.google.common.collect.Sets;
-import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
-import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toMap;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -22,16 +26,24 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import com.google.common.collect.Sets;
 
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toMap;
+import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
+import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 
 public abstract class AbstractStatementConsumer implements StatementConsumer {
+
+	public static enum ShowInterpretation {
+		id, // identifier (i.e. qname, Bnode or IRI)
+		ope, // object property expression
+		descr, // description
+		list, // a list (non necessarly a manchester expression, since the elements may be rendered)
+		rendering_or_id // output of the rendering engine falling back to id
+	}
 
 	public static final String UNKNOWN_OWL_AXIOM = "unknown OWL axiom";
 
@@ -71,8 +83,19 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 				.computeTripleScopeFromGraphs(Sets.filter(graphs, Objects::nonNull), workingGraph);
 	}
 
-	public static String computeShow(Resource resource, Map<Resource, Map<String, Value>> resource2attributes,
-			Model statements, boolean useRenderingEngine) {
+	/**
+	 * Returns the value of the show and, optionally, an indication of the meaning of the show (e.g.
+	 * Manchester class expression).
+	 * 
+	 * @param resource
+	 * @param resource2attributes
+	 * @param statements
+	 * @param useRenderingEngine
+	 * @return
+	 */
+	public static Pair<String, ShowInterpretation> computeShow(Resource resource,
+			Map<Resource, Map<String, Value>> resource2attributes, Model statements,
+			boolean useRenderingEngine) {
 		Map<String, String> namespaceToprefixMap = statements.getNamespaces().stream()
 				.collect(toMap(Namespace::getName, Namespace::getPrefix, (v1, v2) -> v1 != null ? v1 : v2));
 		if (resource instanceof BNode) {
@@ -94,25 +117,30 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 					// there was a problem parsing the expression, so report it
 					expr = UNKNOWN_OWL_AXIOM;
 				}
-				return expr;
+				return ImmutablePair.of(expr, ShowInterpretation.descr);
 			} else if (statements.contains(resource, RDF.TYPE, RDF.LIST)
 					|| statements.contains(resource, RDF.FIRST, null)
 					|| statements.contains(resource, RDF.REST, null)) {
 				ArrayList<Value> values = RDFCollections.asValues(statements, resource, new ArrayList<>());
 
-				return values.stream().map(v -> {
+				String listExpression = values.stream().map(v -> {
 					if (v instanceof Resource) {
-						return computeShow((Resource) v, resource2attributes, statements, useRenderingEngine);
+						return computeShow((Resource) v, resource2attributes, statements, useRenderingEngine)
+								.getLeft();
 					} else {
 						return NTriplesUtil.toNTriplesString(v);
 					}
 				}).collect(joining(", ", "[", "]"));
+				return ImmutablePair.of(listExpression, ShowInterpretation.list);
 			} else if (statements.contains(resource, OWL.INVERSEOF, null)) {
 				Resource inverseProp = Models.getPropertyResource(statements, resource, OWL.INVERSEOF)
 						.orElse(null);
 
-				return "INVERSE "
-						+ computeShow(inverseProp, resource2attributes, statements, useRenderingEngine);
+				// returns an object property expression. Rendering is disabled as in case of class
+				// expressions
+				String objectPropertyExpression = "INVERSE "
+						+ computeShow(inverseProp, resource2attributes, statements, false).getLeft();
+				return ImmutablePair.of(objectPropertyExpression, ShowInterpretation.ope);
 			}
 		} else if (useRenderingEngine) {
 			Map<String, Value> resourceAttributes = resource2attributes.get(resource);
@@ -120,14 +148,14 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 			if (resourceAttributes != null) {
 				Value show = resourceAttributes.get("show");
 				if (show != null) {
-					return show.stringValue();
+					return ImmutablePair.of(show.stringValue(), ShowInterpretation.rendering_or_id);
 				}
 			}
 		}
 
 		Map<String, String> ns2prefixMap = statements.getNamespaces().stream()
 				.collect(toMap(Namespace::getName, Namespace::getPrefix, (v1, v2) -> v1 != null ? v1 : v2));
-		return computeDefaultShow(resource, ns2prefixMap);
+		return ImmutablePair.of(computeDefaultShow(resource, ns2prefixMap), ShowInterpretation.id);
 
 	}
 
@@ -188,8 +216,12 @@ public abstract class AbstractStatementConsumer implements StatementConsumer {
 				}
 			}
 		}
-		annotatedResource.setAttribute("show",
-				computeShow(resource, resource2attributes, statements, useRenderingEngine));
+		Pair<String, ShowInterpretation> computedShow = computeShow(resource, resource2attributes, statements,
+				useRenderingEngine);
+		annotatedResource.setAttribute("show", computedShow.getLeft());
+		if (resource instanceof BNode) {
+			annotatedResource.setAttribute("show_interpretation", computedShow.getRight().toString());
+		}
 	}
 
 	public static <T extends Resource> void addRole(AnnotatedValue<T> annotatedResource,

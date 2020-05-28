@@ -1,5 +1,6 @@
 version 8.0
 date: dd/mm/yyyy
+  * add an indication of how to intepret the show of blank nodes in the resource view
   * no-lexicon mode in OntoLex lexical entries view
   * possibility to manipulate the choices made by MAPLE
   * PMKI catalog connector
