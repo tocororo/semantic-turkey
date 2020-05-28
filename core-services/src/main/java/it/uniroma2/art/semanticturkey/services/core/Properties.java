@@ -109,8 +109,7 @@ public class Properties extends STServiceAdapter {
 	public Collection<AnnotatedValue<Resource>> getTopProperties() {
 		logger.debug("request to get all the top properties");
 
-		QueryBuilder qb;
-		qb = createQueryBuilder(
+		String query =
 		// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
@@ -119,23 +118,36 @@ public class Properties extends STServiceAdapter {
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
                 "																			\n" +
 				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {			\n" +
+
+				"   ?resource 	rdf:type 	?type .											\n" +
+				" {SELECT ?type 															\n" +
+				"  WHERE{																	\n" +
+				"   ?type rdfs:subClassOf*  rdf:Property .	 								\n" +
+				" }}																		\n" +
+
+
+				/*
 				" 	{ ?resource 	rdf:type rdf:Property .}								\n" +
 				"	UNION																	\n" +
-				" 	{ ?resource 	rdf:type owl:ObjectProperty .}							\n" +
+				" 	{ ?resource 	rdf:type ?type . 										\n" +
+				"   ?type rdfs:subClassOf*  owl:ObjectProperty .} 							\n" +
 				"	UNION																	\n" +
 				" 	{ ?resource 	rdf:type owl:DatatypeProperty .}						\n" +
 				"	UNION																	\n" +
 				" 	{ ?resource 	rdf:type owl:AnnotationProperty .}						\n" +
 				"	UNION																	\n" +
 				" 	{ ?resource 	rdf:type owl:OntologyProperty .}						\n" +
+				*/
+
 				"	FILTER (NOT EXISTS{ ?resource rdfs:subPropertyOf ?superProp .			\n" +
 				"	?superProp a ?superType})												\n" +
 				"	FILTER(isIRI(?resource))												\n" +
 				generateNatureSPARQLWherePart("?resource") +
 				" }																			\n" +
-				" GROUP BY ?resource														\n"
+				" GROUP BY ?resource														\n";
 				// @formatter:on
-		);
+
+		QueryBuilder qb = createQueryBuilder(query);
 
 		// OLD VERSION
 		/*qb = createQueryBuilder(

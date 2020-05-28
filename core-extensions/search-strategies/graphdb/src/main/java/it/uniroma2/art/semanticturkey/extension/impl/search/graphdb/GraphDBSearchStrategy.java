@@ -442,17 +442,21 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			}
 		}
 		if(useURI){
-			String searchStringForUri = searchString;
-			//the part related to the URI. Since the indexes are not able to indexing URI, a standard regex is
-			// used
-			//check if searchString represents a qname and searchMode is SearchMode.startsWith.
-			// In this case, try to expand it via the prefixMap
+			String searchStringForUri;
 			if(searchMode.equals(SearchMode.startsWith) ) {
-				searchString = ServiceForSearches.getUriStartFromQname(searchString, prefixToNamespaceMap);
+				//the part related to the URI. Since the indexes are not able to indexing URI, a standard regex is
+				// used
+				//check if searchString represents a qname and searchMode is SearchMode.startsWith.
+				// In this case, try to expand it via the prefixMap
+				searchStringForUri = ServiceForSearches.escapeStringForRegexInSPARQL(
+						ServiceForSearches.getUriStartFromQname(searchString, prefixToNamespaceMap));
+			} else {
+				searchStringForUri = ServiceForSearches.escapeStringForRegexInSPARQL(searchString);
 			}
 			query+="\n{"+
 					"\n?resource a ?type . " + // otherwise the filter may not be computed
 					searchModePrepareQueryNoIndexes("?resource", searchStringForUri, searchMode) +
+
 					"\n}";
 			if(useLexicalizations) {
 				query+="\nUNION";
@@ -563,7 +567,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	 * @param includeLocales
 	 * @return
 	 */
-	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode, 
+	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode,
 			String indexToUse, List<String> langs, boolean includeLocales, boolean forLocalName){
 		String query ="";
 		
@@ -683,17 +687,22 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		String query ="";
 		
 		if(searchMode == SearchMode.startsWith){
-			query="\nFILTER regex(str("+variable+"), '^"+value+"', 'i')";
+			query="\nFILTER regex(str("+variable+"), '^"+value+"', 'i')" +
+					"\nBIND('startsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.endsWith){
-			query="\nFILTER regex(str("+variable+"), '"+value+"$', 'i')";
+			query="\nFILTER regex(str("+variable+"), '"+value+"$', 'i')" +
+					"\nBIND('endsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.contains){
-			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')";
+			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')" +
+					"\nBIND('contains' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.fuzzy){
 			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", false);
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
-			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')";
+			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')" +
+					"\nBIND('fuzzy' AS ?attr_matchMode)";
 		} else { // searchMode.equals(exact)
-			query="\nFILTER regex(str("+variable+"), '^"+value+"$', 'i')";
+			query="\nFILTER regex(str("+variable+"), '^"+value+"$', 'i')" +
+					"\nBIND('exact' AS ?attr_matchMode)";
 		}
 		
 		return query;

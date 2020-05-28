@@ -96,8 +96,8 @@ public class ServiceForSearches {
 		// @formatter:off
 		if(isClassWanted){
 			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
-					"\nFILTER("+varType+" = <"+OWL.CLASS.stringValue()+"> || " +
-							varType+" = <"+RDFS.CLASS.stringValue()+"> )" +
+					"\nFILTER("+varType+" = "+NTriplesUtil.toNTriplesString(OWL.CLASS)+" || " +
+							varType+" = "+NTriplesUtil.toNTriplesString(RDFS.CLASS)+" )" +
 					"\n}";
 			
 			otherWanted = true;
@@ -107,17 +107,23 @@ public class ServiceForSearches {
 				filterQuery += "\nUNION ";
 			}
 			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
+					"\n"+varType + " "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "+NTriplesUtil.toNTriplesString(RDF.PROPERTY)+" . " +
+					"\n}";
+
+			/*filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
 					"\nFILTER("+varType+ " = <"+RDF.PROPERTY.stringValue()+"> || "+
 					varType+" = <"+OWL.OBJECTPROPERTY.stringValue()+"> || "+
 					varType+" = <"+OWL.DATATYPEPROPERTY.stringValue()+"> || "+
 					varType+" = <"+OWL.ANNOTATIONPROPERTY.stringValue()+"> || " +
 					varType+" = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )"+
 					"\n}";
+			*/
+
 			otherWanted = true;
 		}
 		if(isConceptWanted){
-			String schemeOrTopConcept="(<"+SKOS.IN_SCHEME.stringValue()+">|<"+SKOS.TOP_CONCEPT_OF+">|"
-					+ "^<"+SKOS.HAS_TOP_CONCEPT+">)";
+			String schemeOrTopConcept="("+NTriplesUtil.toNTriplesString(SKOS.IN_SCHEME)+"|"+NTriplesUtil.toNTriplesString(SKOS.TOP_CONCEPT_OF)+"|"
+					+ "^"+NTriplesUtil.toNTriplesString(SKOS.HAS_TOP_CONCEPT)+")";
 			
 			if(otherWanted){
 				filterQuery += "\nUNION ";
@@ -482,7 +488,7 @@ public class ServiceForSearches {
 		//if(searchMode != SearchMode.startsWith && searchMode != SearchMode.contains && 
 		//		searchMode != SearchMode.exact && searchMode != SearchMode.endsWith){
 		if(!searchStringCanBeNull  && searchMode == null) {
-			String msg = "the serch mode should be one of: "+ SearchMode.startsWith +", "+
+			String msg = "the search mode should be one of: "+ SearchMode.startsWith +", "+
 					SearchMode.contains +", "+ SearchMode.endsWith +", "+ SearchMode.exact +
 					" or "+SearchMode.fuzzy;
 			//TODO change the exception (previously was a fail)

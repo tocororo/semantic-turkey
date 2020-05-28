@@ -403,11 +403,13 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		
 		//check if the request want to search in the complete URI
 		if(useURI){
-			String searchStringForUri = searchString;
+			String searchStringForUri;
 			//check if searchString represents a qname and searchMode is SearchMode.startsWith.
 			// In this case, try to expand it via the prefixMap
 			if(searchMode.equals(SearchMode.startsWith) ) {
-				searchString = ServiceForSearches.getUriStartFromQname(searchString, prefixToNamespaceMap);
+				searchStringForUri = ServiceForSearches.getUriStartFromQname(searchString, prefixToNamespaceMap);
+			} else {
+				searchStringForUri = searchString;
 			}
 
 			query+="\n{" +
