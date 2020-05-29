@@ -21,9 +21,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.properties.Language;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesUtils;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
@@ -199,8 +197,8 @@ public class Administration extends STServiceAdapter {
 	 * @throws STPropertyAccessException 
 	 */
 	@STServiceOperation
-	public JsonNode getProjectUserBinding(String projectName, String email) throws JSONException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, STPropertyAccessException, UserException {
+	public JsonNode getProjectUserBinding(String projectName, String email) throws InvalidProjectNameException,
+			ProjectInexistentException, ProjectAccessException, UserException {
 		STUser user = UsersManager.getUser(email);
 		Project project = ProjectManager.getProjectDescription(projectName);
 		ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
@@ -216,22 +214,10 @@ public class Administration extends STServiceAdapter {
 		ArrayNode languagesArrayNode = jsonFactory.arrayNode();
 		
 		Collection<String> boundLangs = puBinding.getLanguages();
-		/* special case:
-		 * the administrator as default has no languages, but he should have permission to use all the langs,
-		 * so if in its project-user binding there is no language assigned, assign all the language of the project
-		 */
-		if (boundLangs.isEmpty() && user.isAdmin()) {
-			Collection<Language> projectLangs = STPropertiesUtils.parseLanguages(
-					STPropertiesManager.getProjectSetting(STPropertiesManager.SETTING_PROJ_LANGUAGES, project));
-			for (Language l : projectLangs) {
-				languagesArrayNode.add(l.getTag());
-			}
-		} else {
-			for (String lang: boundLangs) {
-				languagesArrayNode.add(lang);
-			}
+		for (String lang: boundLangs) {
+			languagesArrayNode.add(lang);
 		}
-		
+
 		bindingNode.set("languages", languagesArrayNode);
 		
 		if (puBinding.getGroup() != null) {
