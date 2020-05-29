@@ -1563,7 +1563,8 @@ public class SKOS extends STServiceAdapter {
 			throw new DeniedOperationException(
 					"concept: " + concept.stringValue() + " has narrower concepts; delete them before");
 		}
-		
+
+		//this query removes also all skosxl:prefLabel, skosxl:altLabel, skosxl:hiddenLabel (after the UNION)
 		query = 
 				"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>					\n"
 				+ "DELETE {																\n"
@@ -1584,10 +1585,10 @@ public class SKOS extends STServiceAdapter {
 				
 				+ "		{ "
 				+ "			?concept ?p2 ?o2 . 											\n"
-				+ "			FILTER(?p2 = 												\n"
-				+ NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL) + " || 				  " 
-				+ NTriplesUtil.toNTriplesString(SKOSXL.ALT_LABEL) + " || 				  "
-				+ NTriplesUtil.toNTriplesString(SKOSXL.HIDDEN_LABEL) + ")				  "
+				+ "			FILTER( "
+				+ "?p2 =" +NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL) + " || "
+				+ "?p2 =" +NTriplesUtil.toNTriplesString(SKOSXL.ALT_LABEL) + " ||  "
+				+ "?p2 =" +NTriplesUtil.toNTriplesString(SKOSXL.HIDDEN_LABEL) + ")		\n"
 				+ "			?o2 ?p3 ?o3 .												\n"
 				+ "			?s4 ?p4 ?o2 .												\n"
 				+ "		}																\n"
