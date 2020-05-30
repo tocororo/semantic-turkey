@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.project;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
@@ -23,10 +24,11 @@ public class ProjectInfo {
 	private final Map<String, String> facets;
 	private final String description;
 	
-	public ProjectInfo(String name, boolean open, String baseURI, String defaultNamespace,
-			String model, String lexicalizationModel, boolean historyEnabled, boolean validationEnabled, 
-			boolean shaclEnabled, Map<String,String> facets, AccessResponse accessible,
-			RepositoryLocation repositoryLocation, ProjectStatus status, String description) {
+	@JsonCreator
+	public ProjectInfo(@JsonProperty("name") String name, @JsonProperty("open") boolean open, @JsonProperty("baseURI") String baseURI, @JsonProperty("defaultNamespace") String defaultNamespace,
+			@JsonProperty("model") String model, @JsonProperty("lexicalizationModel") String lexicalizationModel, @JsonProperty("historyEnabled") boolean historyEnabled, @JsonProperty("validationEnabled") boolean validationEnabled, 
+			@JsonProperty("shaclEnabled") boolean shaclEnabled, @JsonProperty("facets") Map<String,String> facets, @JsonProperty("accessible") AccessResponse accessible,
+			@JsonProperty("repositoryLocation") RepositoryLocation repositoryLocation, @JsonProperty("status") ProjectStatus status, @JsonProperty("description") String description) {
 		this.name = name;
 		this.open = open;
 		this.baseURI = baseURI;

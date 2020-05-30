@@ -20,12 +20,7 @@ public class PMKIConnectorConfiguration implements Configuration {
 	@Required
 	public String apiBaseURL;
 
-	@STProperty(description = "Username used to log in into the platform", displayName = "Username")
-	@Required
-	public String email;
-
-	@STProperty(description = "Password used to log in into the platform", displayName = "Password")
-	@Required
-	public String password;
+	@STProperty(description = "The base URL of the frontend of a PMKI instance", displayName = "Frontend Base URL")
+	public String frontendBaseURL;
 
 }

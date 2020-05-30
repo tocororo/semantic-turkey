@@ -1,5 +1,8 @@
 package it.uniroma2.art.semanticturkey.project;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class ProjectStatus {
 	
 	public enum Status {
@@ -13,7 +16,8 @@ public class ProjectStatus {
 		this(status, null);
 	}
 	
-	public ProjectStatus(Status status, String message) {
+	@JsonCreator
+	public ProjectStatus(@JsonProperty("status") Status status, @JsonProperty("message") String message) {
 		this.status = status;
 		this.message = message;
 	}

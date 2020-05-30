@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
@@ -30,7 +32,7 @@ public class DatasetCatalogs extends STServiceAdapter {
 	/**
 	 * Searched a dataset in the connected catalog matching the given criteria
 	 * 
-	 * @param connectorConfigReference
+	 * @param connectorSpec
 	 * @param query
 	 * @param facets
 	 * @param page
@@ -43,12 +45,13 @@ public class DatasetCatalogs extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation
-	public SearchResultsPage<DatasetSearchResult> searchDataset(String connectorId, String query,
+	public SearchResultsPage<DatasetSearchResult> searchDataset(PluginSpecification connectorSpec,
+			@Optional @JsonSerialized ObjectNode connectorConfig, String query,
 			@Optional(defaultValue = "{}") @JsonSerialized Map<String, List<String>> facets,
 			@Optional(defaultValue = "1") int page) throws WrongPropertiesException,
 			STPropertyAccessException, InvalidConfigurationException, IOException {
-		DatasetCatalogConnector metadataRepositoryConnector = exptManager.instantiateExtension(
-				DatasetCatalogConnector.class, new PluginSpecification(connectorId, null, null, null));
+		DatasetCatalogConnector metadataRepositoryConnector = exptManager
+				.instantiateExtension(DatasetCatalogConnector.class, connectorSpec);
 
 		return metadataRepositoryConnector.searchDataset(query, facets, page);
 	}
@@ -56,7 +59,7 @@ public class DatasetCatalogs extends STServiceAdapter {
 	/**
 	 * Returns the description of a given dataset provided by the connected catalog
 	 * 
-	 * @param connectorId
+	 * @param connectorSpec
 	 * @param datasetId
 	 * @return
 	 * @throws IllegalArgumentException
@@ -67,13 +70,13 @@ public class DatasetCatalogs extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation
-	public DatasetDescription describeDataset(String connectorId, String datasetId)
+	public DatasetDescription describeDataset(PluginSpecification connectorSpec,
+			@Optional @JsonSerialized ObjectNode connectorConfig, String datasetId)
 			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
 			STPropertyAccessException, InvalidConfigurationException, IOException {
-		DatasetCatalogConnector metadataRepositoryConnector = exptManager.instantiateExtension(
-				DatasetCatalogConnector.class, new PluginSpecification(connectorId, null, null, null));
+		DatasetCatalogConnector metadataRepositoryConnector = exptManager
+				.instantiateExtension(DatasetCatalogConnector.class, connectorSpec);
 		return metadataRepositoryConnector.describeDataset(datasetId);
 	}
 
-	
 }

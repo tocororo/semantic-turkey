@@ -163,6 +163,16 @@ public class Export extends STServiceAdapter {
 				includeInferred, outputFormat, force, deployerSpec, reformattingExporterSpec);
 	}
 
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	public void dataDump(HttpServletResponse oRes, @Optional(defaultValue = "Turtle") RDFFormat format)
+			throws Exception {
+		exportHelper(exptManager, stServiceContext, oRes, getManagedConnection(),
+				new IRI[] { (IRI) getWorkingGraph() }, new TransformationPipeline(new TransformationStep[0]),
+				false, format.getName(), true, null, null);
+	}
+
 	public static void exportHelper(ExtensionPointManager exptManager, STServiceContext stServiceContext,
 			HttpServletResponse oRes, RepositoryConnection sourceRepositoryConnection, IRI[] graphs,
 			TransformationPipeline filteringPipeline, boolean includeInferred, String outputFormat,

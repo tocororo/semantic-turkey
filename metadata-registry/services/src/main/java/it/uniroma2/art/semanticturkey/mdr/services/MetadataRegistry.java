@@ -7,11 +7,19 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.ObjectUtils.Null;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+
+import com.google.common.base.MoreObjects;
+import com.google.common.collect.Maps;
 
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
@@ -419,6 +427,26 @@ public class MetadataRegistry extends STServiceAdapter {
 			IRI dataset = metadataRegistryBackend.findDatasetForProject(proj);
 			if (dataset != null) {
 				rv.put(proj.getName(), new AnnotatedValue<>(dataset));
+			}
+		}
+		return rv;
+	}
+
+	/**
+	 * Returns the datasets associated with the given projects, if any.
+	 * 
+	 * @param projects
+	 * @return
+	 */
+	@STServiceOperation
+	// @PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')") //project wide service, could be
+	// invoked without a ctx_project, so without capabililties
+	public Map<IRI, String> findProjectForDatasets(List<IRI> datasets) {
+		Map<IRI, String> rv = new HashMap<>();
+		for (IRI dataset : datasets) {
+			Project p = metadataRegistryBackend.findProjectForDataset(dataset);
+			if (p != null) {
+				rv.put(dataset, p.getName());
 			}
 		}
 		return rv;

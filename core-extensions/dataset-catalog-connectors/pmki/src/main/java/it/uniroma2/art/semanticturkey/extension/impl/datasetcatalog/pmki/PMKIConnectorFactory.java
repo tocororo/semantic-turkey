@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
-import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
+import it.uniroma2.art.semanticturkey.extension.PUScopedConfigurableComponent;
 
 /**
  * Factory for the instantiation of {@link PMKIConnector}.
@@ -13,7 +13,7 @@ import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
  */
 public class PMKIConnectorFactory
 		implements ConfigurableExtensionFactory<PMKIConnector, PMKIConnectorConfiguration>,
-		NonConfigurableExtensionFactory<PMKIConnector> {
+		PUScopedConfigurableComponent<PMKIConnectorConfiguration> {
 
 	@Override
 	public String getName() {
@@ -23,16 +23,6 @@ public class PMKIConnectorFactory
 	@Override
 	public String getDescription() {
 		return "A connector for the Public Multilingual Knowledge Infrastructure (PMKI)";
-	}
-
-	@Override
-	public PMKIConnector createInstance() {
-		PMKIConnectorConfiguration conf = new PMKIConnectorConfiguration();
-		// predefined credentials for local instances
-		conf.email = "admin@vocbench.com";
-		conf.password = "admin";
-		conf.apiBaseURL = "http://localhost:1979/semanticturkey/";
-		return new PMKIConnector(conf);
 	}
 
 	@Override

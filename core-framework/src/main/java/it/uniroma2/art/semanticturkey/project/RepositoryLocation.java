@@ -5,16 +5,22 @@ import java.net.URL;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RepositoryLocation {
-	
+
 	public enum Location {
 		local, remote
 	}
-	
+
 	private Location location;
 	private URL serverURL;
 
-	public RepositoryLocation(@Nullable URL serverURL) {
+	@JsonCreator
+	public RepositoryLocation(@JsonProperty("serverURL") @Nullable URL serverURL) {
 		this.serverURL = serverURL;
 		this.location = (serverURL == null) ? Location.local : Location.remote;
 	}
@@ -31,7 +37,7 @@ public class RepositoryLocation {
 
 	@Override
 	public String toString() {
-		return location + ((location == Location.remote) ? ":" + serverURL : ""); 
+		return location + ((location == Location.remote) ? ":" + serverURL : "");
 	}
 
 	public static RepositoryLocation fromString(String serialized) {
@@ -59,7 +65,7 @@ public class RepositoryLocation {
 	public Location getLocation() {
 		return location;
 	}
-	
+
 	public URL getServerURL() {
 		return serverURL;
 	}

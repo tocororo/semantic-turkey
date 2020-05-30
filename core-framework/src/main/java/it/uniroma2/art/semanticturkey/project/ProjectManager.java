@@ -71,6 +71,9 @@ import org.eclipse.rdf4j.sail.shacl.config.ShaclSailConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
@@ -745,12 +748,13 @@ public class ProjectManager {
 		private String msg;
 		private boolean affirmative;
 
-		AccessResponse(boolean affirmative, String msg) {
+		@JsonCreator
+		public AccessResponse(@JsonProperty("affirmative") boolean affirmative, @JsonProperty("msg") String msg) {
 			this.affirmative = affirmative;
 			this.msg = msg;
 		}
 
-		AccessResponse(boolean affirmative) {
+		public AccessResponse(boolean affirmative) {
 			this.affirmative = affirmative;
 		}
 

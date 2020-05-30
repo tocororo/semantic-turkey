@@ -1133,7 +1133,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"PREFIX void: <http://rdfs.org/ns/void#>                                              \n" +
 				"PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdr#>                          \n" +
 				"PREFIX owl: <http://www.w3.org/2002/07/owl#>                                         \n" +
-				"SELECT ?dataset (MIN(?datasetUriSpace) as ?datasetUriSpaceT) (MIN(?datasetTitle) as ?datasetTitleT) \n" +
+				"SELECT ?dataset (MIN(?datasetUriSpace) as ?datasetUriSpaceT) (MIN(?datasetTitle) as ?datasetTitleT) (MIN(?datasetDescription) as ?datasetDescriptionT) \n" +
 			    "       (MIN(?datasetDereferenciationSystem) as ?datasetDereferenciationSystemT) \n" +
 				"       (GROUP_CONCAT(CONCAT(STR(?datasetSPARQLEndpoint), \"|_|\", COALESCE(STR(?datasetSPARQLEndpointLimitation), \"-\")); separator=\"|_|\") as ?datasetSPARQLEndpointT) \n" +
 				"       (MIN(?datasetVersionInfo) as ?datasetVersionInfoT) \n" +
