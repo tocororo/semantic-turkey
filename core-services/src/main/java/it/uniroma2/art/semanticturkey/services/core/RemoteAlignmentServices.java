@@ -94,7 +94,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	}
 
 	/**
-	 * Return the list of tasks managed by GENOMA. Tasks that terminated successfully have status
+	 * Return the list of tasks managed by a remote alignment service. Tasks that terminated successfully have status
 	 * {@code "Completed"} and an {@code "endTime"}. Currently, the service filters out any task that involves
 	 * a closed project.
 	 * 
