@@ -1,5 +1,7 @@
 version 8.0
 date: dd/mm/yyyy
+  * new API for the programmatic creation of STProperties
+  * on-the-fly generation of STProperties from JSON Schemas
   * changed the directory where indexes for the global search are stored 
   * allow for configurable dataset catalog connectors
   * add an indication of how to interpret the show of blank nodes in the resource view

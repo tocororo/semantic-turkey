@@ -117,6 +117,10 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 
 					gen.writeEndArray();
 				}
+				
+				List<Annotation> constraints = selectConstraints(value.getAnnotations(prop));
+				appendConstraints(constraints, gen, provider);
+				
 				Object parValue = value.getPropertyValue(prop);
 				if (parValue != null) {
 					// Serializes property values using the ObjectMapper specific for STProperties

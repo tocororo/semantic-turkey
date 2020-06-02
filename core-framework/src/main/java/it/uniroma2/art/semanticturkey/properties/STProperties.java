@@ -4,11 +4,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Optional;
@@ -117,23 +117,7 @@ public interface STProperties {
 		Field prop = null;
 		try {
 			prop = this.getClass().getField(id);
-
-			// System.out.println("generic type for Prop: " + prop.getGenericType());
-
-			if ((value.getClass() == String.class) && (prop.getGenericType() != String.class)) {
-				value = convertToPropertValue(prop.getGenericType(), value);
-			}
-
-			it.uniroma2.art.semanticturkey.properties.Enumeration enumeration = prop
-					.getAnnotation(it.uniroma2.art.semanticturkey.properties.Enumeration.class);
-
-			if (enumeration != null) {
-				Object tempValue = value;
-
-				Arrays.stream(enumeration.value()).filter(v -> v.equals(tempValue.toString())).findAny()
-						.orElseThrow(() -> new IllegalArgumentException("Value \"" + tempValue.toString()
-								+ "\" is not assignable to property \"" + id + "\""));
-			}
+			value = checkAndConvertPropertyValue(id, value, getPropertyType(id));
 			prop.set(this, value);
 		} catch (SecurityException e) {
 			throw new WrongPropertiesException(e);
@@ -143,7 +127,26 @@ public interface STProperties {
 			throw new WrongPropertiesException(e);
 		} catch (IllegalAccessException e) {
 			throw new WrongPropertiesException(e);
+		} catch (PropertyNotFoundException e) {
+			throw new WrongPropertiesException(e);
 		}
+	}
+
+	default Object checkAndConvertPropertyValue(String id, Object value, Type propType)
+			throws IllegalArgumentException, PropertyNotFoundException {
+		if ((value.getClass() == String.class) && (propType != String.class)) {
+			value = convertToPropertValue(propType, value);
+		}
+
+		Optional<Collection<String>> enumeration = getEnumeration(id);
+		if (enumeration.isPresent()) {
+			Object tempValue = value;
+
+			enumeration.get().stream().filter(v -> v.equals(tempValue.toString())).findAny()
+					.orElseThrow(() -> new IllegalArgumentException("Value \"" + tempValue.toString()
+							+ "\" is not assignable to property \"" + id + "\""));
+		}
+		return value;
 	}
 
 	/**
@@ -325,10 +328,11 @@ public interface STProperties {
 			value = Integer.parseInt((String) value);
 		else if (type == Double.class || type == double.class)
 			value = Double.parseDouble((String) value);
-		else if(TypeUtils.isAssignable(type, Value.class)) {
-			value = NTriplesUtil.parseValue((String)value, SimpleValueFactory.getInstance());
-			if (!((Class<?>)type).isInstance(value)) {
-				throw new IllegalArgumentException("The provided value \"" + value + "\" is not a serialization of an RDF4J " + ((Class<?>)type).getSimpleName());
+		else if (TypeUtils.isAssignable(type, Value.class)) {
+			value = NTriplesUtil.parseValue((String) value, SimpleValueFactory.getInstance());
+			if (!((Class<?>) type).isInstance(value)) {
+				throw new IllegalArgumentException("The provided value \"" + value
+						+ "\" is not a serialization of an RDF4J " + ((Class<?>) type).getSimpleName());
 			}
 
 		}
@@ -384,6 +388,22 @@ public interface STProperties {
 					.map(ann -> Lists.newArrayList(ann.value()));
 		} catch (NoSuchFieldException | SecurityException e) {
 			return Optional.empty();
+		}
+	}
+
+	/**
+	 * Returns the annotations (if any) associated with the property with given {@code id}.
+	 * 
+	 * @param id
+	 * @return
+	 * @throws PropertyNotFoundException
+	 */
+	default Annotation[] getAnnotations(String id) throws PropertyNotFoundException {
+		getPropertyDescription(id); // just used to check the existence of the property
+		try {
+			return this.getClass().getField(id).getAnnotations();
+		} catch (NoSuchFieldException | SecurityException e) {
+			throw new PropertyNotFoundException(e);
 		}
 	}
 }

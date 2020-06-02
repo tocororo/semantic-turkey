@@ -109,6 +109,7 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<commons-lang3.version>3.8.1</commons-lang3.version>
 		<byte-buddy.version>1.8.3</byte-buddy.version>
 		<jackson.version>2.9.9</jackson.version>
+		<everit.json.schema.version>1.5.1</everit.json.schema.version>
 	</properties>
 
 	<scm>

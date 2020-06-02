@@ -73,6 +73,13 @@
 		<!-- Byte-Buddy -->
 		<bundle dependency="true">mvn:net.bytebuddy/byte-buddy/${byte-buddy.version}</bundle>
 		
+		<!-- Everit JSON Schema and its dependencies -->
+		<bundle dependency="true">mvn:org.everit.json/org.everit.json.schema/1.5.1</bundle>
+		<bundle dependency="true">mvn:com.google.guava/guava/19.0</bundle>
+		<bundle dependency="true">mvn:commons-validator/commons-validator/1.5.1</bundle>
+		<bundle dependency="true">mvn:commons-digester/commons-digester/1.8.1</bundle>
+		<bundle dependency="true">mvn:org.json/json/20160810</bundle>
+		
 		<!-- Console -->
 		<configfile finalname="/lib/st-console-${project.version}.jar"
 			override="false">

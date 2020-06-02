@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft/2019-09/schema#",
+  "type": "object",
+  "title": "TestProp",
+  "properties":
+    {
+      "booleanProp": {
+        "type": "boolean",
+        "title": "boolean property",
+        "description": "This is a boolean property"
+      },
+      "stringProp": {
+        "type": "string",
+        "title": "string property",
+        "description": "This is a string property",
+        "minLength": 1,
+        "maxLength": 5,
+        "pattern": "a*"
+      },
+      "integerProp": {
+        "type": "integer",
+        "title": "integer property",
+        "description": "This is an integer property",
+        "minimum": 1,
+        "maximum": 5
+      },
+      "objectProp": {
+        "type": "object",
+        "title": "object property",
+        "description": "this is an object property"
+      },
+      "setProp": {
+        "type": "array",
+        "title": "set property",
+        "description": "this is a set property",
+        "items": {
+        	"type": "string"
+        },
+        "uniqueItems": true
+      },
+      "listProp": {
+        "type": "array",
+        "title": "list property",
+        "description": "this is a list property",
+        "items": {
+        	"type": "string"
+        },
+        "uniqueItems": false
+      }     
+    },
+  "required": [ "stringProp"]
+}
