@@ -61,7 +61,9 @@ public class GlobalSearch extends STServiceAdapter {
 
 	protected static Logger logger = LoggerFactory.getLogger(GlobalSearch.class);
 
-	private final String lucDirName = "luceneIndex";
+	private final String indexMainDir = "index";
+
+	private final String lucDirName = "globalContentIndex";
 
 	private final String LEXICALIZATION = "lexicalization";
 	private final String NOTE = "note";

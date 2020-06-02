@@ -1,5 +1,6 @@
 version 8.0
 date: dd/mm/yyyy
+  * changed the directory where indexes for the global search are stored 
   * allow for configurable dataset catalog connectors
   * add an indication of how to interpret the show of blank nodes in the resource view
   * no-lexicon mode in OntoLex lexical entries view
