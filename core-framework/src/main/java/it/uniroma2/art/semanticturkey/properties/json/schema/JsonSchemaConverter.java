@@ -41,6 +41,8 @@ import com.google.common.collect.ImmutableMap;
 import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties;
 import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties.AnnotatedTypeBuilder;
 import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties.PropertyDefinition;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 
 /**
  * Converters a JSON schema to a {@link RuntimeSTProperties}. This converter supports the following keywords:
@@ -58,11 +60,18 @@ import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties.PropertyDef
  * <li>uniqueItems</li>
  * <li>title</li>
  * <li>description</li>
+ * <li>default</l>
  * </ul>
  * 
  * <p>
  * The underlying JSON Schema parser is updated to draft v7; however, we encourage to only use keywords that
  * didn't have backward incompatible changes into subsequent specs.
+ * </p>
+ * <p>
+ * The underlying library looses the order of property declarations: we fixed this problem by joining with the
+ * represented obtained through Jackson. Another limitation of the library is the lack of support for default
+ * values, which we implemented separately.
+ * </p>
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  *
@@ -71,6 +80,8 @@ public class JsonSchemaConverter {
 	public RuntimeSTProperties convert(Reader reader) throws ConversionException {
 		try {
 			ObjectMapper objectMapper = new ObjectMapper();
+			ObjectMapper stPropertiesObjectMapper = STPropertiesManager.createObjectMapper();
+
 			JsonNode jacksonSchemaNode = objectMapper.readTree(reader);
 			JSONObject schemaJson = new JSONObject(
 					new JSONTokener(objectMapper.writeValueAsString(jacksonSchemaNode)));
@@ -92,7 +103,8 @@ public class JsonSchemaConverter {
 
 			Set<String> requiredProps = new HashSet<>(objectSchema.getRequiredProperties());
 
-			List<String> sortedFields = Optional.ofNullable(jacksonSchemaNode.get("properties"))
+			JsonNode jacksonPropertiesNode = jacksonSchemaNode.get("properties");
+			List<String> sortedFields = Optional.ofNullable(jacksonPropertiesNode)
 					.map(n -> Iterators.asList(n.fieldNames())).orElse(Collections.emptyList());
 
 			Map<String, Schema> propertySchemas = Optional.ofNullable(objectSchema.getPropertySchemas())
@@ -104,7 +116,7 @@ public class JsonSchemaConverter {
 					continue;
 
 				PropertyDefinition stPropDef;
-				
+
 				if (propSchema instanceof EnumSchema) {
 					EnumSchema enumSchema = (EnumSchema) propSchema;
 					Set<Object> possibleValues = enumSchema.getPossibleValues();
@@ -113,26 +125,38 @@ public class JsonSchemaConverter {
 						throw new ConversionException("Enumeration with some non string constant");
 					}
 
-					stPropDef = new PropertyDefinition(
-							Optional.ofNullable(propSchema.getTitle()).orElse(""),
+					stPropDef = new PropertyDefinition(Optional.ofNullable(propSchema.getTitle()).orElse(""),
 							Optional.ofNullable(propSchema.getDescription()).orElse(""),
-							requiredProps.contains(propName), new AnnotatedTypeBuilder().withType(String.class).build());
+							requiredProps.contains(propName),
+							new AnnotatedTypeBuilder().withType(String.class).build());
 					stPropDef.setEnumeration(possibleValues.toArray(new String[possibleValues.size()]));
 
 				} else {
 					Pair<AnnotatedType, List<Pair<Class<? extends Annotation>, Map<String, Object>>>> fieldTypeAndAnnotations = convertSchemaToAnnotatedTypeAndFieldConstraints(
 							propSchema);
-					stPropDef = new PropertyDefinition(
-							Optional.ofNullable(propSchema.getTitle()).orElse(""),
+					stPropDef = new PropertyDefinition(Optional.ofNullable(propSchema.getTitle()).orElse(""),
 							Optional.ofNullable(propSchema.getDescription()).orElse(""),
 							requiredProps.contains(propName), fieldTypeAndAnnotations.getLeft());
 
 					fieldTypeAndAnnotations.getRight()
 							.forEach(p -> stPropDef.addAnnotation(p.getLeft(), p.getRight()));
 				}
-				
+
 				stProps.addProperty(propName, stPropDef);
 
+				ObjectNode jacksonPropNode = (ObjectNode) jacksonPropertiesNode.get(propName);
+				JsonNode defaultJsonValue = jacksonPropNode.get("default");
+
+				if (defaultJsonValue != null && !defaultJsonValue.isNull()) {
+					Object defaultValue = stPropertiesObjectMapper
+							.readValue(objectMapper.treeAsTokens(defaultJsonValue), objectMapper
+									.getTypeFactory().constructType(stPropDef.getAnnotatedType().getType()));
+					try {
+						stProps.setPropertyValue(propName, defaultValue);
+					} catch (WrongPropertiesException e) {
+						throw new ConversionException(e);
+					}
+				}
 			}
 
 			return stProps;

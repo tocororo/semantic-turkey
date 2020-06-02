@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.reflect.TypeUtils;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.reflect.AbstractInvocationHandler;
@@ -297,7 +298,7 @@ public class RuntimeSTProperties implements STProperties {
 	}
 
 	public void addProperty(String id, PropertyDefinition def) {
-		properties.put(id, Pair.of(def, null));
+		properties.put(id, MutablePair.of(def, null));
 	}
 
 	public void removeProperty(String id) {

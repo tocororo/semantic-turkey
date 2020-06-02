@@ -15,7 +15,8 @@
         "description": "This is a string property",
         "minLength": 1,
         "maxLength": 5,
-        "pattern": "a*"
+        "pattern": "[\\w\\s]+",
+        "default": "hello world"
       },
       "integerProp": {
         "type": "integer",

@@ -50,9 +50,9 @@ public class JsonSchemaConverterTest {
 
 		@STProperty(displayName = "string property", description = "This is a string property")
 		@Size(min = 1, max = 5)
-		@Pattern(regexp = "a*")
+		@Pattern(regexp = "[\\w\\s]+")
 		@Required
-		public String stringProp;
+		public String stringProp = "hello world";
 
 		@STProperty(displayName = "integer property", description = "This is an integer property")
 		@Min(1)
@@ -69,7 +69,7 @@ public class JsonSchemaConverterTest {
 		public List<String> listProp;
 
 		@STProperty(displayName = "menu property", description = "this is a menu property")
-		@Enumeration({"A", "B"})
+		@Enumeration({ "A", "B" })
 		public String menuProp;
 
 	};
