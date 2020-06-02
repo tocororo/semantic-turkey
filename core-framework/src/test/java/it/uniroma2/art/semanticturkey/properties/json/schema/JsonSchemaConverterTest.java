@@ -10,7 +10,6 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
-import org.hibernate.validator.constraints.Length;
 import org.json.JSONException;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,8 +49,8 @@ public class JsonSchemaConverterTest {
 		public Boolean booleanProp;
 
 		@STProperty(displayName = "string property", description = "This is a string property")
-		@Size(min=1, max=5)
-		@Pattern(regexp="a*")
+		@Size(min = 1, max = 5)
+		@Pattern(regexp = "a*")
 		@Required
 		public String stringProp;
 
@@ -65,9 +64,13 @@ public class JsonSchemaConverterTest {
 
 		@STProperty(displayName = "set property", description = "this is a set property")
 		public Set<String> setProp;
-		
+
 		@STProperty(displayName = "list property", description = "this is a list property")
 		public List<String> listProp;
+
+		@STProperty(displayName = "menu property", description = "this is a menu property")
+		@Enumeration({"A", "B"})
+		public String menuProp;
 
 	};
 
@@ -79,7 +82,7 @@ public class JsonSchemaConverterTest {
 				this.getClass().getResourceAsStream("schema1.json"), StandardCharsets.UTF_8));
 
 		JsonNode actualTree = objectMapper.valueToTree(actualProps);
-		
+
 		JsonNode expectedTree = objectMapper.valueToTree(new ExpectedProperties1());
 		((ObjectNode) expectedTree).put("@type", RuntimeSTProperties.class.getName());
 

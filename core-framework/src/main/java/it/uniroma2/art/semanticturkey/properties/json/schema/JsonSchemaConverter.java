@@ -22,6 +22,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.util.iterators.Iterators;
 import org.everit.json.schema.ArraySchema;
 import org.everit.json.schema.BooleanSchema;
+import org.everit.json.schema.EnumSchema;
 import org.everit.json.schema.NumberSchema;
 import org.everit.json.schema.ObjectSchema;
 import org.everit.json.schema.Schema;
@@ -45,6 +46,7 @@ import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties.PropertyDef
  * Converters a JSON schema to a {@link RuntimeSTProperties}. This converter supports the following keywords:
  * <ul>
  * <li>type</li>
+ * <li>enum</li>
  * <li>properties</li>
  * <li>required</li>
  * <li>minLength</li>
@@ -57,6 +59,10 @@ import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties.PropertyDef
  * <li>title</li>
  * <li>description</li>
  * </ul>
+ * 
+ * <p>
+ * The underlying JSON Schema parser is updated to draft v7; however, we encourage to only use keywords that
+ * didn't have backward incompatible changes into subsequent specs.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  *
@@ -97,16 +103,36 @@ public class JsonSchemaConverter {
 				if (propSchema == null)
 					continue;
 
-				Pair<AnnotatedType, List<Pair<Class<? extends Annotation>, Map<String, Object>>>> fieldTypeAndAnnotations = convertSchemaToAnnotatedTypeAndFieldConstraints(
-						propSchema);
-				PropertyDefinition stPropDef = new PropertyDefinition(
-						Optional.ofNullable(propSchema.getTitle()).orElse(""),
-						Optional.ofNullable(propSchema.getDescription()).orElse(""),
-						requiredProps.contains(propName), fieldTypeAndAnnotations.getLeft());
+				PropertyDefinition stPropDef;
+				
+				if (propSchema instanceof EnumSchema) {
+					EnumSchema enumSchema = (EnumSchema) propSchema;
+					Set<Object> possibleValues = enumSchema.getPossibleValues();
 
-				fieldTypeAndAnnotations.getRight()
-						.forEach(p -> stPropDef.addAnnotation(p.getLeft(), p.getRight()));
+					if (!possibleValues.stream().allMatch(String.class::isInstance)) {
+						throw new ConversionException("Enumeration with some non string constant");
+					}
+
+					stPropDef = new PropertyDefinition(
+							Optional.ofNullable(propSchema.getTitle()).orElse(""),
+							Optional.ofNullable(propSchema.getDescription()).orElse(""),
+							requiredProps.contains(propName), new AnnotatedTypeBuilder().withType(String.class).build());
+					stPropDef.setEnumeration(possibleValues.toArray(new String[possibleValues.size()]));
+
+				} else {
+					Pair<AnnotatedType, List<Pair<Class<? extends Annotation>, Map<String, Object>>>> fieldTypeAndAnnotations = convertSchemaToAnnotatedTypeAndFieldConstraints(
+							propSchema);
+					stPropDef = new PropertyDefinition(
+							Optional.ofNullable(propSchema.getTitle()).orElse(""),
+							Optional.ofNullable(propSchema.getDescription()).orElse(""),
+							requiredProps.contains(propName), fieldTypeAndAnnotations.getLeft());
+
+					fieldTypeAndAnnotations.getRight()
+							.forEach(p -> stPropDef.addAnnotation(p.getLeft(), p.getRight()));
+				}
+				
 				stProps.addProperty(propName, stPropDef);
+
 			}
 
 			return stProps;

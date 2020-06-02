@@ -46,7 +46,13 @@
         	"type": "string"
         },
         "uniqueItems": false
+      },
+      "menuProp": {
+        "title": "menu property",
+        "description": "this is a menu property",
+        "enum": ["A", "B"]
       }     
+       
     },
   "required": [ "stringProp"]
 }
