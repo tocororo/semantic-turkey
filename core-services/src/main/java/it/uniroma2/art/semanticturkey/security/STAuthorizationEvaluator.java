@@ -217,7 +217,9 @@ public class STAuthorizationEvaluator {
 				//in order to be authorized, all the languages must be among the project languages 
 				//and the languages assigned to the user
 				for (String l : langs) {
-					if (!assignedLangs.contains(l) || !projLangTags.contains(l)) {
+					boolean isAssigned = assignedLangs.stream().anyMatch(l::equalsIgnoreCase);
+					boolean isInProject = projLangTags.stream().anyMatch(l::equalsIgnoreCase);
+					if (!isAssigned || !isInProject) {
 						logger.debug("language proficiency '" + l + "' not authorized");
 						authorized = false;
 					}
