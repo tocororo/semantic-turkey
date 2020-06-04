@@ -639,22 +639,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		//if at least one language is specified, then filter the results of the label having such language
-		if(langs!=null && langs.size()>0) {
-			boolean first=true;
-			query+="\nFILTER(";
-			for(String lang : langs) {
-				if(!first) {
-					query+=" || ";
-				}
-				first=false;
-				if(includeLocales) {
-					query+="regex(lang("+variable+"), '^"+lang+"')";
-				} else {
-					query+="lang("+variable+")="+"'"+lang+"'";
-				}
-			}
-			query+=")";
-		}
+		query += ServiceForSearches.prepareLangFilter(langs, variable, includeLocales);
 		
 		return query;
 	}

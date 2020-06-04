@@ -1047,5 +1047,28 @@ public class ServiceForSearches {
 		return qnameToCheck;
 	}
 
+	public static String prepareLangFilter( List <String> langs, String variable, boolean includeLocales){
+		//if at least one language is specified, then filter the results of the label having such language
+		String query="";
+		if(langs!=null && langs.size()>0) {
+			boolean first=true;
+			query+="\nFILTER(";
+			for(String lang : langs) {
+				if(!first) {
+					query+=" || ";
+				}
+				first=false;
+				if(includeLocales) {
+					query+="regex(lang("+variable+"), '^"+lang+"','i')";
+				} else {
+					query+="regex(lang("+variable+"), '^"+lang+"$','i')";
+				}
+			}
+			query+=")";
+		}
+		return query;
+
+	}
+
 }
 

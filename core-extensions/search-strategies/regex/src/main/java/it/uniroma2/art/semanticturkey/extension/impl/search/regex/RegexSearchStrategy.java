@@ -360,29 +360,14 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		}
 		
 		//if at least one language is specified, then filter the results of the label having such language
-		if(langs!=null && langs.size()>0) {
-			boolean first=true;
-			query+="\nFILTER(";
-			for(String lang : langs) {
-				if(!first) {
-					query+=" || ";
-				}
-				first=false;
-				if(includeLocales) {
-					query+="regex(lang("+variable+"), '^"+lang+"')";
-				} else {
-					query+="lang("+variable+")="+"'"+lang+"'";
-				}
-			}
-			query+=")";
-		}
+		query += ServiceForSearches.prepareLangFilter(langs, variable, includeLocales);
 
 		return query;
 	}
 	
 	private String prepareQueryforResourceUsingSearchString(String searchString, SearchMode searchMode,
 			boolean useLexicalizations,
-			boolean useLocalName, boolean useURI, boolean useNotes, List<String> langs, 
+			boolean useLocalName, boolean useURI, boolean useNotes, List<String> langs,
 			boolean includeLocales,  IRI lexModel, boolean searchInRDFSLabel, boolean searchInSKOSLabel, 
 			boolean searchInSKOSXLLabel, boolean searchInOntolex, boolean includeResToLexicalEntry,
 			Map<String, String> prefixToNamespaceMap) {
