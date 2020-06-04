@@ -80,6 +80,21 @@
 		<bundle dependency="true">mvn:commons-digester/commons-digester/1.8.1</bundle>
 		<bundle dependency="true">mvn:org.json/json/20160810</bundle>
 		
+		<!-- JMustache -->
+		<bundle dependency="true">mvn:com.samskivert/jmustache/${jmustache.version}</bundle>
+		
+		<!-- jsoup -->
+		<bundle dependency="true">mvn:org.jsoup/jsoup/${jsoup.version}</bundle>
+		
+		<!-- openhtmltopdf and its dependencies -->
+		<bundle dependency="true">mvn:org.apache.pdfbox/fontbox/${fontbox.version}</bundle>
+		<bundle dependency="true">mvn:org.apache.pdfbox/pdfbox/${fontbox.version}</bundle>
+		<bundle dependency="true">mvn:org.apache.pdfbox/xmpbox/${fontbox.version}</bundle>
+		<bundle dependency="true">wrap:mvn:com.openhtmltopdf/openhtmltopdf-core/${openhtml.version}</bundle>
+		<bundle dependency="true">wrap:mvn:com.openhtmltopdf/openhtmltopdf-pdfbox/${openhtml.version}</bundle>
+		<bundle dependency="true">wrap:mvn:com.openhtmltopdf/openhtmltopdf-slf4j/${openhtml.version}</bundle>
+		<bundle dependency="true">wrap:mvn:de.rototor.pdfbox/graphics2d/0.25</bundle>
+		
 		<!-- Console -->
 		<configfile finalname="/lib/st-console-${project.version}.jar"
 			override="false">

@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.config.invokablereporter;
 
-import java.util.List;
+import java.util.Map;
 
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
@@ -22,7 +22,15 @@ public class ServiceInvocation implements STProperties {
 	public String operation;
 
 	@STProperty(displayName = "Arguments", description = "the arguments passed to the invoked service operation")
-	@Required
-	public List<String> arguments;
+	public Map<String, String> arguments;
+
+	@STProperty(description = "The label of this section", displayName = "Label")
+	public String label;
+
+	@STProperty(description = "A description of this section", displayName = "Description")
+	public String description;
+
+	@STProperty(description = "A template for rendering an individual section. The template must conform to Mustache templating language.", displayName = "Template")
+	public String template;
 
 }

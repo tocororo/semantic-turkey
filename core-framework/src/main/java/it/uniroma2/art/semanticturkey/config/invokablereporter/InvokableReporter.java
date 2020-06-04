@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.config.invokablereporter;
 import java.util.List;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.properties.Enumeration;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
@@ -18,6 +19,7 @@ public class InvokableReporter implements Configuration {
 	public String getShortName() {
 		return "Custom Service";
 	}
+	
 
 	@STProperty(description = "The label of this invokable reporter", displayName = "Label")
 	@Required
@@ -27,6 +29,20 @@ public class InvokableReporter implements Configuration {
 	public String description;
 
 	@STProperty(description = "The invocations of custom services that make up this invokable reporter", displayName = "Service invocations")
-	public List<ServiceInvocation> serviceInvocations;
+	public List<ServiceInvocation> sections;
+
+	@STProperty(description = "Template language", displayName = "Template language")
+	@Enumeration({"Mustache"})
+	@Required
+	public String templateLanguage = "Mustache";
+
+	@STProperty(description = "A template for rendering the report that takes all results as input. The template must conform to Mustache templating language.", displayName = "Template")
+	@Required
+	public String template;
+	
+	@STProperty(description = "The mimetype of the generated rendering", displayName = "mime")
+	@Required
+	public String mimeType;
+
 
 }
