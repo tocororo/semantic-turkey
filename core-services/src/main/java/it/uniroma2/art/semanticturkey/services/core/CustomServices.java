@@ -58,6 +58,19 @@ public class CustomServices extends STServiceAdapter {
 	}
 
 	/**
+	 * Returns the <code>id</code> of a custom service given its service name (i.e. the one occurring in the
+	 * associated HTTP endpoint).
+	 * 
+	 * @param name
+	 * @return
+	 */
+	@PreAuthorize("@auth.isAuthorized('customService(service)', 'R')")
+	@STServiceOperation
+	public String getCustomServiceId(String name) {
+		return customServiceMapping.getServiceId(name);
+	}
+
+	/**
 	 * Creates a custom service given its <em>definition</em> and the <em>id</em> of the configuration file
 	 * used for persisting the definition.
 	 * <p>
@@ -279,7 +292,7 @@ public class CustomServices extends STServiceAdapter {
 	 * @throws SchemaException
 	 * @throws IllegalAccessException
 	 * @throws InstantiationException
-	 * @throws DuplicateName 
+	 * @throws DuplicateName
 	 */
 	@PreAuthorize("@auth.isAuthorized('customService(service)', 'R')")
 	@STServiceOperation(method = RequestMethod.POST)

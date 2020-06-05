@@ -752,7 +752,11 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	}
 
 	public Object getHandler(String serviceName) {
-		String id = Iterables.getFirst(customServiceNames2IDs.get(serviceName), null);
+		String id = getServiceId(serviceName);
 		return id != null ? customServiceHandlers.get(id) : null;
+	}
+
+	public String getServiceId(String serviceName) {
+		return Iterables.getFirst(customServiceNames2IDs.get(serviceName), null);
 	}
 }
