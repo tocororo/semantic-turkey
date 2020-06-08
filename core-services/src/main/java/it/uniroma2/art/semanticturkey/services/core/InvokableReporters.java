@@ -279,7 +279,7 @@ public class InvokableReporters extends STServiceAdapter {
 			throw new IndexOutOfBoundsException();
 		}
 
-		invokableReporter.sections.add(index, sectObj);
+		invokableReporter.sections.set(index, sectObj);
 
 		cm.storeConfiguration(ref, invokableReporter);
 	}
