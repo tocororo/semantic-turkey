@@ -26,6 +26,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import it.uniroma2.art.semanticturkey.json.PairSerializer;
 import it.uniroma2.art.semanticturkey.json.TripleSerializer;
+import it.uniroma2.art.semanticturkey.json.TupleQueryResultSerializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JBNodeDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JIRIDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JLiteralDeserializer;
@@ -64,7 +65,7 @@ public class RequestMappingHandlerAdapterPostProcessor implements BeanPostProces
 		customTypeHandlers.addSerializer(Value.class, new RDF4JValueSerializer());
 		customTypeHandlers.addSerializer(new PairSerializer());
 		customTypeHandlers.addSerializer(new TripleSerializer());
-
+		customTypeHandlers.addSerializer(new TupleQueryResultSerializer());
 		ObjectMapper newObjectMapper = new ObjectMapper();
 		newObjectMapper.registerModule(customTypeHandlers);
 		newObjectMapper.registerModule(new Jdk8Module());

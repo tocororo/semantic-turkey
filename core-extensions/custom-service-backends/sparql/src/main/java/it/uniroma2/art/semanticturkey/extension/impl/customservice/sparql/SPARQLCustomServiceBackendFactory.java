@@ -82,62 +82,81 @@ public class SPARQLCustomServiceBackendFactory implements ExtensionFactory<SPARQ
 				validationExceptionMessageBuilder.append("return type not compatible with boolean queries: ")
 						.append(conf.returns.toString()).append(".\n");
 			}
-		} else if (parsedQuery instanceof ParsedTupleQuery) { // tuple queries must return a List of items
-			if (!Objects.equals("List", conf.returns.getName())) {
-				validationExceptionMessageBuilder
-						.append("return type not compatible with select queries, which require a List: ")
-						.append(conf.returns.toString()).append(".\n");
-			}
-
-			if (conf.returns.getTypeArguments() == null || conf.returns.getTypeArguments().size() != 1) {
-				validationExceptionMessageBuilder.append("List may only have one type argument")
-						.append(conf.returns.toString()).append(".\n");
-			}
-
-			Type listItem = conf.returns.getTypeArguments().iterator().next();
-
-			Set<String> bindingNames = ((ParsedTupleQuery) parsedQuery).getTupleExpr().getBindingNames();
-
-			Type unwrappedType; // the list item, or the type of annotated value
-			if (Objects.equals(listItem.getName(), "AnnotatedValue")) { // if returning an AnnotatedValue, the
-																		// query can return additional attr_
-																		// variables
-				List<String> variablesOtherThanAttributes = bindingNames.stream()
-						.filter(n -> !n.startsWith("attr_")).collect(Collectors.toList());
-
-				if (variablesOtherThanAttributes.size() != 1) {
-					validationExceptionMessageBuilder
-							.append("The SELECT query returns more than one varible or attr_ variables:")
-							.append(bindingNames).append(".\n");
+		} else if (parsedQuery instanceof ParsedTupleQuery) { // tuple queries must return a List of items or
+																// a tuplequeryresult or a scalar
+			if (Objects.equals("List", conf.returns.getName())) {
+				if (conf.returns.getTypeArguments() == null || conf.returns.getTypeArguments().size() != 1) {
+					validationExceptionMessageBuilder.append("List may only have one type argument")
+							.append(conf.returns.toString()).append(".\n");
 				}
 
-				if (listItem.getTypeArguments() != null && listItem.getTypeArguments().iterator().hasNext()) {
-					unwrappedType = listItem.getTypeArguments().iterator().next();
+				Type listItem = conf.returns.getTypeArguments().iterator().next();
 
-					if (!ImmutableSet.of("Resource", "BNode", "IRI").contains(unwrappedType.getName())) {
-						validationExceptionMessageBuilder.append(
-								"Illegal argument type of AnnotatedValue. It should be an RDF resource type: "
-										+ unwrappedType + ".\n");
+				Set<String> bindingNames = ((ParsedTupleQuery) parsedQuery).getTupleExpr().getBindingNames();
+
+				Type unwrappedType; // the list item, or the type of annotated value
+				if (Objects.equals(listItem.getName(), "AnnotatedValue")) { // if returning an AnnotatedValue,
+																			// the
+																			// query can return additional
+																			// attr_
+																			// variables
+					List<String> variablesOtherThanAttributes = bindingNames.stream()
+							.filter(n -> !n.startsWith("attr_")).collect(Collectors.toList());
+
+					if (variablesOtherThanAttributes.size() != 1) {
+						validationExceptionMessageBuilder
+								.append("The SELECT query returns more than one varible or attr_ variables:")
+								.append(bindingNames).append(".\n");
 					}
-				} else {
-					validationExceptionMessageBuilder.append("AnnotatedValue requires a type argument.\n");
-					unwrappedType = null;
-				}
-			} else { // otherwise, the query may only return one variable
-				if (bindingNames.size() != 1) {
-					validationExceptionMessageBuilder.append("The SELECT query returns more than one varible")
-							.append(bindingNames).append(".\n");
+
+					if (listItem.getTypeArguments() != null
+							&& listItem.getTypeArguments().iterator().hasNext()) {
+						unwrappedType = listItem.getTypeArguments().iterator().next();
+
+						if (!ImmutableSet.of("Resource", "BNode", "IRI").contains(unwrappedType.getName())) {
+							validationExceptionMessageBuilder.append(
+									"Illegal argument type of AnnotatedValue. It should be an RDF resource type: "
+											+ unwrappedType + ".\n");
+						}
+					} else {
+						validationExceptionMessageBuilder
+								.append("AnnotatedValue requires a type argument.\n");
+						unwrappedType = null;
+					}
+				} else { // otherwise, the query may only return one variable
+					if (bindingNames.size() != 1) {
+						validationExceptionMessageBuilder
+								.append("The SELECT query returns more than one varible").append(bindingNames)
+								.append(".\n");
+					}
+
+					unwrappedType = listItem;
 				}
 
-				unwrappedType = listItem;
-			}
+				if (unwrappedType == null
+						|| !SPARQLCustomServiceBackend.SUPPORTED_TYPES.contains(unwrappedType.getName())) {
+					validationExceptionMessageBuilder.append("Unsupported type for returned items: ")
+							.append(unwrappedType).append(".\n");
+				}
+			} else if (Objects.equals("TupleQueryResult", conf.returns.getName())) {
+				if (conf.returns.getTypeArguments() != null && conf.returns.getTypeArguments().size() != 0) {
+					validationExceptionMessageBuilder
+							.append("Tuple query rusults may not have any type argument")
+							.append(conf.returns.toString()).append(".\n");
+				}
+			} else if (SPARQLCustomServiceBackend.SUPPORTED_TYPES.contains(conf.returns.getName())) {
+				if (conf.returns.getTypeArguments() != null && conf.returns.getTypeArguments().size() != 0) {
+					validationExceptionMessageBuilder
+							.append("This type shouldn't have type arguments")
+							.append(conf.returns.toString()).append(".\n");
+				}
+			} else {
+				validationExceptionMessageBuilder.append(
+						"return type not compatible with select queries, which require a List, a tuple query result or a scalar: ")
+						.append(conf.returns.toString()).append(".\n");
 
-			if (unwrappedType == null
-					|| !SPARQLCustomServiceBackend.SUPPORTED_TYPES.contains(unwrappedType.getName())) {
-				validationExceptionMessageBuilder.append("Unsupported type for returned items: ")
-						.append(unwrappedType).append(".\n");
 			}
-		} else if (parsedQuery instanceof ParsedUpdate) { // updates must return void
+		} else if (parsedQuery instanceof ParsedUpdate)	{ // updates must return void
 			if (!Objects.equals("void", conf.returns.getName())) {
 				validationExceptionMessageBuilder.append("return type not compatible with updates: ")
 						.append(conf.returns.toString()).append(".\n");

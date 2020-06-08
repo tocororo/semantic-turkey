@@ -33,6 +33,7 @@ import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -706,6 +707,17 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		} else if ("boolean".equals(typeDescription.getName())) {
 			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(Boolean.class)
 					.build();
+		} else if ("integer".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(Integer.class)
+					.build();
+		} else if ("long".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(Long.class).build();
+		} else if ("float".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(Float.class)
+					.build();
+		} else if ("double".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(Double.class)
+					.build();
 		} else if ("List".equals(typeDescription.getName())) {
 			return net.bytebuddy.description.type.TypeDescription.Generic.Builder
 					.parameterizedType(TypeDefinition.Sort.describe(List.class).asErasure(),
@@ -723,6 +735,9 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		} else if ("RDFValue".equals(typeDescription.getName())) {
 			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(Value.class)
 					.build();
+		} else if ("TupleQueryResult".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.Generic.Builder
+					.rawType(TupleQueryResult.class).build();
 		} else if ("void".equals(typeDescription.getName())) {
 			return net.bytebuddy.description.type.TypeDescription.VOID;
 		} else {

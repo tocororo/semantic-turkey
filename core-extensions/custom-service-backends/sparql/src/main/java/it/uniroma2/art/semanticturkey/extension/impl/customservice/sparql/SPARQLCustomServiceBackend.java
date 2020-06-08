@@ -32,6 +32,7 @@ import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.impl.IteratingTupleQueryResult;
 import org.eclipse.rdf4j.query.impl.MapBindingSet;
 import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
 import org.eclipse.rdf4j.query.parser.ParsedOperation;
@@ -61,8 +62,9 @@ import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
  */
 public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 
-	public static final Set<String> SUPPORTED_TYPES = ImmutableSet.copyOf(new String[] { "boolean", "integer",
-			"short", "long", "float", "double", "java.lang.String", "IRI", "BNode", "Resource", "Literal", "RDFValue" });
+	public static final Set<String> SUPPORTED_TYPES = ImmutableSet
+			.copyOf(new String[] { "boolean", "integer", "short", "long", "float", "double",
+					"java.lang.String", "IRI", "BNode", "Resource", "Literal", "RDFValue" });
 	private SPARQLOperation conf;
 
 	public SPARQLCustomServiceBackend(SPARQLOperation conf) {
@@ -92,80 +94,113 @@ public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 				return query.evaluate();
 			};
 		} else if (parsedQuery instanceof ParsedTupleQuery) {
-			if (!"List".equals(returnedTypeDescription.getName())) {
-				throw new IllegalStateException(
-						"SELECT queries only allowed in operations that return a List");
-			}
+			Set<String> queryBindingNames = ((ParsedTupleQuery) parsedQuery).getTupleExpr().getBindingNames();
 
-			List<it.uniroma2.art.semanticturkey.config.customservice.Type> typeArgs = returnedTypeDescription
-					.getTypeArguments();
+			if ("List".equals(returnedTypeDescription.getName())) {
+				List<it.uniroma2.art.semanticturkey.config.customservice.Type> typeArgs = returnedTypeDescription
+						.getTypeArguments();
 
-			if (typeArgs == null || typeArgs.size() != 1) {
-				throw new IllegalArgumentException("A List return type requires exactly one type argument");
-			}
-
-			it.uniroma2.art.semanticturkey.config.customservice.Type elementType = typeArgs.iterator().next();
-
-			Set<String> bindingNames = ((ParsedTupleQuery) parsedQuery).getTupleExpr().getBindingNames();
-
-			if ("AnnotatedValue".equals(elementType.getName())) {
-				List<String> variablesOtherThanAttributes = bindingNames.stream()
-						.filter(n -> !n.startsWith("attr_")).collect(Collectors.toList());
-
-				if (variablesOtherThanAttributes.size() != 1) {
+				if (typeArgs == null || typeArgs.size() != 1) {
 					throw new IllegalArgumentException(
-							"Requires exactly one return variable other than attributes");
+							"A List return type requires exactly one type argument");
 				}
 
-				String resourceVariableName = variablesOtherThanAttributes.iterator().next();
+				it.uniroma2.art.semanticturkey.config.customservice.Type elementType = typeArgs.iterator()
+						.next();
 
+				if ("AnnotatedValue".equals(elementType.getName())) {
+					List<String> variablesOtherThanAttributes = queryBindingNames.stream()
+							.filter(n -> !n.startsWith("attr_")).collect(Collectors.toList());
+
+					if (variablesOtherThanAttributes.size() != 1) {
+						throw new IllegalArgumentException(
+								"Requires exactly one return variable other than attributes");
+					}
+
+					String resourceVariableName = variablesOtherThanAttributes.iterator().next();
+
+					handler = (stServiceContext, bindingSet) -> {
+						Repository repo = STServiceContextUtils.getRepostory(stServiceContext);
+						RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repo, false);
+
+						String queryStringWithoutProlog = QueryParserUtil
+								.removeSPARQLQueryProlog(queryString);
+						String queryProlog = queryString.substring(0,
+								queryString.indexOf(queryStringWithoutProlog));
+
+						// skos, owl, skosxl, rdfs, rdf
+
+						StringBuilder newQueryPrologBuilder = new StringBuilder(queryProlog);
+
+						// add prefixes required by the nature computation pattern
+						for (Namespace ns : Arrays.asList(SKOS.NS,
+								org.eclipse.rdf4j.model.vocabulary.SKOSXL.NS, RDF.NS, RDFS.NS, OWL.NS)) {
+							if (queryProlog.indexOf(ns.getPrefix() + ":") == -1) {
+								newQueryPrologBuilder.append("prefix " + ns.getPrefix() + ":");
+								RenderUtils.toSPARQL(SimpleValueFactory.getInstance().createIRI(ns.getName()),
+										newQueryPrologBuilder);
+								newQueryPrologBuilder.append("\n");
+							}
+						}
+
+						String groundQueryStringWithoutProlog = QueryStringUtil
+								.getTupleQueryString(queryStringWithoutProlog, bindingSet);
+
+						QueryBuilder qb = new QueryBuilder(stServiceContext,
+								newQueryPrologBuilder.toString() + "\nSELECT DISTINCT ?"
+										+ resourceVariableName + " "
+										+ NatureRecognitionOrchestrator.getNatureSPARQLSelectPart()
+										+ " WHERE {{" + groundQueryStringWithoutProlog + "}\n"
+										+ NatureRecognitionOrchestrator
+												.getNatureSPARQLWherePart(resourceVariableName)
+										+ "} GROUP BY ?" + resourceVariableName + " ");
+						qb.setResourceVariable(resourceVariableName);
+						qb.processRendering();
+						qb.processQName();
+
+						return qb.runQuery();
+
+					};
+
+				} else {
+					if (queryBindingNames.size() != 1) {
+						throw new IllegalArgumentException("Requires exactly one retured variable");
+					}
+
+					String bindingName = queryBindingNames.iterator().next();
+
+					handler = (stServiceContext, bindingSet) -> {
+						Repository repo = STServiceContextUtils.getRepostory(stServiceContext);
+						RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repo, false);
+
+						TupleQuery query = conn.prepareTupleQuery(queryString);
+						bindingSet.forEach(b -> query.setBinding(b.getName(), b.getValue()));
+						return QueryResults.stream(query.evaluate()).map(
+								bs -> this.convertRDFValueToJavaValue(bs.getValue(bindingName), elementType))
+								.collect(Collectors.toList());
+					};
+				}
+			} else if ("TupleQueryResult".equals(returnedTypeDescription.getName())) {
 				handler = (stServiceContext, bindingSet) -> {
 					Repository repo = STServiceContextUtils.getRepostory(stServiceContext);
 					RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repo, false);
 
-					String queryStringWithoutProlog = QueryParserUtil.removeSPARQLQueryProlog(queryString);
-					String queryProlog = queryString.substring(0,
-							queryString.indexOf(queryStringWithoutProlog));
+					TupleQuery query = conn.prepareTupleQuery(queryString);
+					bindingSet.forEach(b -> query.setBinding(b.getName(), b.getValue()));
 
-					// skos, owl, skosxl, rdfs, rdf
-
-					StringBuilder newQueryPrologBuilder = new StringBuilder(queryProlog);
-
-					// add prefixes required by the nature computation pattern
-					for (Namespace ns : Arrays.asList(SKOS.NS, org.eclipse.rdf4j.model.vocabulary.SKOSXL.NS,
-							RDF.NS, RDFS.NS, OWL.NS)) {
-						if (queryProlog.indexOf(ns.getPrefix() + ":") == -1) {
-							newQueryPrologBuilder.append("prefix " + ns.getPrefix() + ":");
-							RenderUtils.toSPARQL(SimpleValueFactory.getInstance().createIRI(ns.getName()),
-									newQueryPrologBuilder);
-							newQueryPrologBuilder.append("\n");
-						}
+					List<String> bindingNames;
+					List<BindingSet> bindingSets;
+					try (TupleQueryResult queryresult = query.evaluate()) {
+						bindingNames = queryresult.getBindingNames();
+						bindingSets = QueryResults.asList(queryresult);
 					}
 
-					String groundQueryStringWithoutProlog = QueryStringUtil
-							.getTupleQueryString(queryStringWithoutProlog, bindingSet);
-
-					QueryBuilder qb = new QueryBuilder(stServiceContext,
-							newQueryPrologBuilder.toString() + "\nSELECT DISTINCT ?" + resourceVariableName
-									+ " " + NatureRecognitionOrchestrator.getNatureSPARQLSelectPart()
-									+ " WHERE {{" + groundQueryStringWithoutProlog + "}\n"
-									+ NatureRecognitionOrchestrator
-											.getNatureSPARQLWherePart(resourceVariableName)
-									+ "} GROUP BY ?" + resourceVariableName + " ");
-					qb.setResourceVariable(resourceVariableName);
-					qb.processRendering();
-					qb.processQName();
-
-					return qb.runQuery();
-
+					return new IteratingTupleQueryResult(bindingNames, bindingSets);
 				};
-
-			} else {
-				if (bindingNames.size() != 1) {
+			} else { // assumes single scalar
+				if (queryBindingNames.size() != 1) {
 					throw new IllegalArgumentException("Requires exactly one retured variable");
 				}
-
-				String bindingName = bindingNames.iterator().next();
 
 				handler = (stServiceContext, bindingSet) -> {
 					Repository repo = STServiceContextUtils.getRepostory(stServiceContext);
@@ -173,12 +208,15 @@ public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 
 					TupleQuery query = conn.prepareTupleQuery(queryString);
 					bindingSet.forEach(b -> query.setBinding(b.getName(), b.getValue()));
-					return QueryResults.stream(query.evaluate())
-							.map(bs -> this.convertRDFValueToJavaValue(bs.getValue(bindingName), elementType))
-							.collect(Collectors.toList());
-				};
-			}
 
+					try (TupleQueryResult queryresult = query.evaluate()) {
+						Value rdfValue = QueryResults.singleResult(queryresult)
+								.getValue(queryBindingNames.iterator().next());
+						return convertRDFValueToJavaValue(rdfValue, returnedTypeDescription);
+					}
+				};
+
+			}
 		} else if (parsedQuery instanceof ParsedUpdate) {
 			handler = (stServiceContext, bindingSet) -> {
 				Repository repo = STServiceContextUtils.getRepostory(stServiceContext);
@@ -268,7 +306,7 @@ public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 			return Literals.getFloatValue(input, 0);
 		} else if (outputTypeName.equals("double")) {
 			return Literals.getDoubleValue(input, 0);
-		} else if (outputTypeName.equals("int")) {
+		} else if (outputTypeName.equals("integer")) {
 			return Literals.getIntValue(input, 0);
 		} else if (outputTypeName.equals("long")) {
 			return Literals.getLongValue(input, 0);

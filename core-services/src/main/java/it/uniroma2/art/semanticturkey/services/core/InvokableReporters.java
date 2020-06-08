@@ -353,7 +353,7 @@ public class InvokableReporters extends STServiceAdapter {
 		if (includeTemplate) {
 			report.template = reporter.template;
 		}
-		ObjectMapper objectMapper = STPropertiesManager.createObjectMapper();
+		ObjectMapper argumentObjectMapper = STPropertiesManager.createObjectMapper();
 
 		if (reporter.sections != null && reporter.sections.size() > 0) {
 			report.sections = new ArrayList<>(reporter.sections.size());
@@ -424,8 +424,9 @@ public class InvokableReporters extends STServiceAdapter {
 								}
 								String actualParam = actualParameters.get(paramName);
 
-								Object convertedParam = objectMapper.readValue(new StringReader(actualParam),
-										objectMapper.constructType(formalParam));
+								Object convertedParam = argumentObjectMapper.readValue(
+										new StringReader(actualParam),
+										argumentObjectMapper.constructType(formalParam));
 								convertedArgs[i++] = convertedParam;
 
 							}
@@ -461,6 +462,8 @@ public class InvokableReporters extends STServiceAdapter {
 			}
 
 			if (render) {
+				ObjectMapper responseObjectMapper = RequestMappingHandlerAdapterPostProcessor.createObjectMapper();
+
 				Iterator<Section> reportSectionIt = report.sections.iterator();
 				Iterator<ServiceInvocation> reporterSectionIt = reporter.sections.iterator();
 
@@ -472,14 +475,15 @@ public class InvokableReporters extends STServiceAdapter {
 					String template = reporterSection.template;
 					if (render && template != null) {
 						Object adaptedSection = JacksonCustomContext
-								.adaptJsonNode(objectMapper.valueToTree(reportSection));
+								.adaptJsonNode(responseObjectMapper.valueToTree(reportSection));
 						String rendering = mustacheCompiler.compile(template).execute(adaptedSection);
 						reportSection.rendering = rendering;
 					}
 				}
 
 				String template = reporter.template;
-				Object adaptedReport = JacksonCustomContext.adaptJsonNode(objectMapper.valueToTree(report));
+				Object adaptedReport = JacksonCustomContext
+						.adaptJsonNode(responseObjectMapper.valueToTree(report));
 
 				String rendering = mustacheCompiler.compile(template).execute(adaptedReport);
 				report.rendering = rendering;
@@ -604,6 +608,10 @@ public class InvokableReporters extends STServiceAdapter {
 				return JacksonCustomContext.adaptJsonNode(node.get(name));
 			}
 
+			@Override
+			public String toString() {
+				return node.toString();
+			}
 		}
 
 		private static class ArrayAdaptor implements Iterable<Object> {
@@ -619,6 +627,10 @@ public class InvokableReporters extends STServiceAdapter {
 				return Iterators.transform(node.elements(), JacksonCustomContext::adaptJsonNode);
 			}
 
+			@Override
+			public String toString() {
+				return node.toString();
+			}
 		}
 
 		private static class NodeAdaptor {
@@ -636,7 +648,7 @@ public class InvokableReporters extends STServiceAdapter {
 		}
 
 		public static Object adaptJsonNode(JsonNode node) {
-			if (node == null) {
+			if (node == null || node.isNull()) {
 				return null;
 			} else if (node.isArray()) {
 				return new ArrayAdaptor((ArrayNode) node);
