@@ -33,7 +33,7 @@
 	</bean>
 
 	<bean id="updateCustomFormInvoker"
-		class="it.uniroma2.art.semanticturkey.versioning.UpdateCustomFormInvoker" />
+		class="it.uniroma2.art.semanticturkey.versioning.ResourceMetadataManager" />
 
 	<!-- Imports the MAPALE façade -->
 	<osgi:reference id="mediationFramework"

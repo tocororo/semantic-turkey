@@ -1,8 +1,11 @@
 package it.uniroma2.art.semanticturkey.event.support;
 
+import java.util.Set;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.apache.commons.collections4.SetUtils;
 import org.osgi.framework.BundleContext;
 import org.osgi.util.tracker.ServiceTracker;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +15,8 @@ import org.springframework.context.ApplicationListener;
 import it.uniroma2.art.semanticturkey.event.Event;
 
 /**
- * An {@link ApplicationListener} that listens for {@link EventListenerTest} objects and propagates them to other
- * {@link ApplicationEventPublisher}s.
+ * An {@link ApplicationListener} that listens for {@link EventListenerTest} objects and propagates them to
+ * other {@link ApplicationEventPublisher}s.
  * 
  * @author Manuel
  *
@@ -25,10 +28,10 @@ public class CrossContextPropagationEventListener implements ApplicationListener
 
 	private ServiceTracker serviceTracker;
 
-	private ThreadLocal<Event> currentEventHolder;
+	private static ThreadLocal<Set<Event>> alreadyPropagatedHolder;
 
 	public CrossContextPropagationEventListener() {
-		currentEventHolder = ThreadLocal.withInitial(() -> null);
+		alreadyPropagatedHolder = ThreadLocal.withInitial(() -> SetUtils.newIdentityHashSet());
 	}
 
 	@PostConstruct
@@ -46,12 +49,13 @@ public class CrossContextPropagationEventListener implements ApplicationListener
 
 	@Override
 	public void onApplicationEvent(Event event) {
-		Event currentEvent = currentEventHolder.get();
+		Set<Event> alreadyPropagated = alreadyPropagatedHolder.get();
 
-		if (event == currentEvent)
-			return; // avoid infinite loop
+		if (alreadyPropagated.contains(event)) {
+			return; // avoids repeated propagation
+		}
 
-		currentEventHolder.set(event);
+		alreadyPropagated.add(event);
 		try {
 			Object[] eventPublishers = serviceTracker.getServices();
 
@@ -59,7 +63,7 @@ public class CrossContextPropagationEventListener implements ApplicationListener
 				((ApplicationEventPublisher) pub).publishEvent(event);
 			}
 		} finally {
-			currentEventHolder.set(currentEvent); // currentEvent should be null initially
+			alreadyPropagated.remove(event);
 		}
 	}
 }

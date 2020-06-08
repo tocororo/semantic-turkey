@@ -78,7 +78,7 @@
 	</bean>
 
 	<bean
-		class="it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataPostProcessor">
+		class="it.uniroma2.art.semanticturkey.services.aspects.ResourceLifecycleEventPublisherPostProcessor">
 		<property name="proxyTargetClass" value="true"></property>
 		<property name="order" value="251" />
 	</bean>

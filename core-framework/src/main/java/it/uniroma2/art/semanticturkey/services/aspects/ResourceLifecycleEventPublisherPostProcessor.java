@@ -16,25 +16,25 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 
 /**
  * A convenient {@link BeanPostProcessor} implementation that advises eligible beans (i.e. Semantic Turkey
- * services) in order to manage resource-level change metadata.
+ * services) in order to publish events related to the lifecycle of resources.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  *
  */
 @SuppressWarnings("serial")
-public class ResourceLevelChangeMetadataPostProcessor extends AbstractAdvisingBeanPostProcessor
+public class ResourceLifecycleEventPublisherPostProcessor extends AbstractAdvisingBeanPostProcessor
 		implements ApplicationContextAware, InitializingBean {
 	private ApplicationContext applicationContext;
 
-	public ResourceLevelChangeMetadataPostProcessor() {
+	public ResourceLifecycleEventPublisherPostProcessor() {
 	}
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		Pointcut pointcut = new ComposablePointcut(new STServiceOperationPointcut())
 				.intersection(new AnnotationMethodMatcher(Write.class));
-		ResourceLevelChangeMetadataInterceptor advice = applicationContext.getAutowireCapableBeanFactory()
-				.createBean(ResourceLevelChangeMetadataInterceptor.class);
+		ResourceLifecycleEventPublisherInterceptor advice = applicationContext.getAutowireCapableBeanFactory()
+				.createBean(ResourceLifecycleEventPublisherInterceptor.class);
 		this.advisor = new DefaultPointcutAdvisor(pointcut, advice);
 	}
 
