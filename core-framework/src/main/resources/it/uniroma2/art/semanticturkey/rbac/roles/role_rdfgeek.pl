@@ -2,3 +2,8 @@
 
 capability(rdf,"CRUDV").
 capability(sys(metadataRegistry), "R").
+
+capability(invokableReporter(reporter), "CRUD").
+capability(invokableReporter(reporter,_), "CRUD").
+capability(customService(service), "CRUD").
+capability(customService(service,_), "CRUD").

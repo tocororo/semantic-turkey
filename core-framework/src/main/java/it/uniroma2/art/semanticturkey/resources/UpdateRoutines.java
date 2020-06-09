@@ -35,6 +35,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
+import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -113,8 +114,8 @@ public class UpdateRoutines {
 			if (stDataVersionNumber.compareTo(new VersionNumber(7, 0, 0)) < 0) {
 				alignFrom6To7();
 			}
-			if (stDataVersionNumber.compareTo(new VersionNumber(7, 1, 0)) < 0) {
-				alignFrom7To71();
+			if (stDataVersionNumber.compareTo(new VersionNumber(8, 0, 0)) < 0) {
+				alignFrom7To8();
 			}
 			Config.setSTDataVersionNumber(stVersionNumber);
 		}
@@ -124,10 +125,8 @@ public class UpdateRoutines {
 	private static void alignFromPreviousTo3() throws IOException {
 		logger.debug("Version 3.0.0 added capabilities to some roles");
 		// In doubt, update all roles
-		Role[] roles = { RBACManager.DefaultRole.LEXICOGRAPHER, RBACManager.DefaultRole.MAPPER,
-				RBACManager.DefaultRole.ONTOLOGIST, RBACManager.DefaultRole.PROJECTMANAGER,
-				RBACManager.DefaultRole.RDF_GEEK, RBACManager.DefaultRole.THESAURUS_EDITOR,
-				RBACManager.DefaultRole.VALIDATOR };
+		Role[] roles = { DefaultRole.LEXICOGRAPHER, DefaultRole.MAPPER, DefaultRole.ONTOLOGIST,
+				DefaultRole.PROJECTMANAGER, DefaultRole.RDF_GEEK, DefaultRole.THESAURUS_EDITOR, DefaultRole.VALIDATOR };
 		updateRoles(roles);
 
 		logger.debug("Version 3.0.0 added new properties to the default project preferences");
@@ -188,7 +187,7 @@ public class UpdateRoutines {
 		}
 
 		logger.debug("Version 4.0.0 added lurker role and added a capability to projectmanager");
-		Role[] roles = { RBACManager.DefaultRole.LURKER, RBACManager.DefaultRole.PROJECTMANAGER, };
+		Role[] roles = { DefaultRole.LURKER, DefaultRole.PROJECTMANAGER, };
 		updateRoles(roles);
 
 		logger.debug("Version 4.0.0 added groups and pg_bindings folders");
@@ -197,9 +196,8 @@ public class UpdateRoutines {
 
 	private static void alignFrom4To5() throws IOException {
 		logger.debug("Version 5.0.0 added a capability to some roles");
-		Role[] roles = { RBACManager.DefaultRole.LEXICOGRAPHER, RBACManager.DefaultRole.MAPPER,
-				RBACManager.DefaultRole.ONTOLOGIST, RBACManager.DefaultRole.PROJECTMANAGER,
-				RBACManager.DefaultRole.RDF_GEEK, RBACManager.DefaultRole.THESAURUS_EDITOR };
+		Role[] roles = { DefaultRole.LEXICOGRAPHER, DefaultRole.MAPPER, DefaultRole.ONTOLOGIST,
+				DefaultRole.PROJECTMANAGER, DefaultRole.RDF_GEEK, DefaultRole.THESAURUS_EDITOR };
 		updateRoles(roles);
 
 		logger.debug("Version 5.0.0 removed a property from the default project preferences");
@@ -222,10 +220,10 @@ public class UpdateRoutines {
 		updatePUSettingsSystemDefaults(STPropertiesManager.CORE_PLUGIN_ID);
 	}
 
-	private static void alignFrom7To71()
+	private static void alignFrom7To8()
 			throws STPropertyUpdateException, UnsupportedRDFormatException, IOException {
-		logger.debug(
-				"Version 7.1 added alignment.remote.port to the system settings and changed the namespace associated with the metadata registry");
+		logger.debug("Version 8.0 added alignment.remote.port to the system settings and changed the namespace " +
+				"associated with the metadata registry");
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ALIGNMENT_REMOTE_PORT, "7575");
 		File catalogFile = new File(Config.getDataDir(), "metadataRegistry/catalog.ttl");
 		if (catalogFile.exists()) {
@@ -233,6 +231,11 @@ public class UpdateRoutines {
 					new SimpleNamespace("mdreg", "http://semanticturkey.uniroma2.it/ns/mdreg#"),
 					new SimpleNamespace("mdr", "http://semanticturkey.uniroma2.it/ns/mdr#"), catalogFile);
 		}
+
+		logger.debug("Version 8.0 added capabilities about customService and invokableReporter");
+		Role[] roles = { DefaultRole.LEXICOGRAPHER, DefaultRole.LURKER, DefaultRole.MAPPER, DefaultRole.ONTOLOGIST,
+				DefaultRole.PROJECTMANAGER, DefaultRole.RDF_GEEK, DefaultRole.THESAURUS_EDITOR, DefaultRole.VALIDATOR };
+		updateRoles(roles);
 	}
 
 	private static void replaceNamespaceDefinition(SimpleNamespace oldNS, SimpleNamespace newNS,
