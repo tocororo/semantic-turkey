@@ -26,6 +26,18 @@
  */
 package it.uniroma2.art.semanticturkey.resources;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.UUID;
+
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefinitionStore;
+import it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporterStore;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
@@ -34,12 +46,6 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.UUID;
 
 /**
  * @author Armando Stellato
@@ -133,11 +139,10 @@ public class Resources {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
-	 * Initializes the SemanticTurkeyData directory according the dataDir property set in 
-	 * it.uniroma2.art.semanticturkey.cfg
-	 * Then initializes also all the subfolders in the ST data dir
+	 * Initializes the SemanticTurkeyData directory according the dataDir property set in
+	 * it.uniroma2.art.semanticturkey.cfg Then initializes also all the subfolders in the ST data dir
 	 */
 	public static void initSemTurkeyDataDir() {
 		File dataDir = Config.getDataDir();
@@ -146,7 +151,7 @@ public class Resources {
 		else
 			stDataDirectory = new File(getExtensionPath(), dataDir.getPath());
 		logger.debug("st data directory: " + getSemTurkeyDataDir());
-		
+
 		ontTempDir = new File(stDataDirectory, _ontTempDirLocalName);
 		ontMirrorDirDefaultLocation = new File(stDataDirectory, _ontMirrorDirDefaultLocationLocalName);
 		ontologiesMirrorFile = new File(stDataDirectory, _ontMirrorFileName);
@@ -158,7 +163,7 @@ public class Resources {
 		projectGroupBindingsDir = new File(stDataDirectory, _projectGroupBindingsDirName);
 		docsDir = new File(systemDir, _docsDirName);
 	}
-	
+
 	public static File getSemTurkeyDataDir() {
 		return stDataDirectory;
 	}
@@ -224,7 +229,7 @@ public class Resources {
 	public static File getProjectGroupBindingsDir() {
 		return projectGroupBindingsDir;
 	}
-	
+
 	public static File getDocsDir() {
 		return docsDir;
 	}
@@ -268,7 +273,8 @@ public class Resources {
 			initializeCustomFormFileStructure();
 			initializeRoles();
 			initializeSystemProperties();
-
+			initializePredefinedCustomServices();
+			initializePredefinedInvokableReporters();
 		} else {
 			throw new STInitializationException("Unable to create the main data folder");
 		}
@@ -391,4 +397,41 @@ public class Resources {
 		}
 	}
 
+	private static void initializePredefinedCustomServices() throws STInitializationException {
+		try {
+			File configFolder = STPropertiesManager
+					.getSystemPropertyFolder(CustomServiceDefinitionStore.class.getName());
+			FileUtils.forceMkdir(configFolder);
+			for (String configName : Arrays.asList(
+					"it.uniroma2.art.semanticturkey.customservice.OntoLexLemonReport.cfg",
+					"it.uniroma2.art.semanticturkey.customservice.OWLReport.cfg",
+					"it.uniroma2.art.semanticturkey.customservice.SKOSReport.cfg")) {
+				try (InputStream is = Resources.class.getResourceAsStream(
+						"/it/uniroma2/art/semanticturkey/config/customservice/" + configName)) {
+					FileUtils.copyInputStreamToFile(is, new File(configFolder, configName));
+				}
+			}
+		} catch (IOException e) {
+			throw new STInitializationException(e);
+		}
+	}
+
+	private static void initializePredefinedInvokableReporters() throws STInitializationException {
+		try {
+			File configFolder = STPropertiesManager
+					.getSystemPropertyFolder(InvokableReporterStore.class.getName());
+			FileUtils.forceMkdir(configFolder);
+			for (String configName : Arrays.asList(
+					"it.uniroma2.art.semanticturkey.invokablereporter.OntoLexLemonReport.cfg",
+					"it.uniroma2.art.semanticturkey.invokablereporter.OWLReport.cfg",
+					"it.uniroma2.art.semanticturkey.invokablereporter.SKOSReport.cfg")) {
+				try (InputStream is = Resources.class.getResourceAsStream(
+						"/it/uniroma2/art/semanticturkey/config/invokablereporter/" + configName)) {
+					FileUtils.copyInputStreamToFile(is, new File(configFolder, configName));
+				}
+			}
+		} catch (IOException e) {
+			throw new STInitializationException(e);
+		}
+	}
 }

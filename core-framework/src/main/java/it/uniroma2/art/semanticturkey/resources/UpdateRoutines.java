@@ -33,9 +33,13 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
+
+import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -54,6 +58,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
+import it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefinitionStore;
+import it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporterStore;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
@@ -126,7 +132,8 @@ public class UpdateRoutines {
 		logger.debug("Version 3.0.0 added capabilities to some roles");
 		// In doubt, update all roles
 		Role[] roles = { DefaultRole.LEXICOGRAPHER, DefaultRole.MAPPER, DefaultRole.ONTOLOGIST,
-				DefaultRole.PROJECTMANAGER, DefaultRole.RDF_GEEK, DefaultRole.THESAURUS_EDITOR, DefaultRole.VALIDATOR };
+				DefaultRole.PROJECTMANAGER, DefaultRole.RDF_GEEK, DefaultRole.THESAURUS_EDITOR,
+				DefaultRole.VALIDATOR };
 		updateRoles(roles);
 
 		logger.debug("Version 3.0.0 added new properties to the default project preferences");
@@ -222,8 +229,9 @@ public class UpdateRoutines {
 
 	private static void alignFrom7To8()
 			throws STPropertyUpdateException, UnsupportedRDFormatException, IOException {
-		logger.debug("Version 8.0 added alignment.remote.port to the system settings and changed the namespace " +
-				"associated with the metadata registry");
+		logger.debug(
+				"Version 8.0 added alignment.remote.port to the system settings and changed the namespace "
+						+ "associated with the metadata registry");
 		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ALIGNMENT_REMOTE_PORT, "7575");
 		File catalogFile = new File(Config.getDataDir(), "metadataRegistry/catalog.ttl");
 		if (catalogFile.exists()) {
@@ -233,9 +241,44 @@ public class UpdateRoutines {
 		}
 
 		logger.debug("Version 8.0 added capabilities about customService and invokableReporter");
-		Role[] roles = { DefaultRole.LEXICOGRAPHER, DefaultRole.LURKER, DefaultRole.MAPPER, DefaultRole.ONTOLOGIST,
-				DefaultRole.PROJECTMANAGER, DefaultRole.RDF_GEEK, DefaultRole.THESAURUS_EDITOR, DefaultRole.VALIDATOR };
+		Role[] roles = { DefaultRole.LEXICOGRAPHER, DefaultRole.LURKER, DefaultRole.MAPPER,
+				DefaultRole.ONTOLOGIST, DefaultRole.PROJECTMANAGER, DefaultRole.RDF_GEEK,
+				DefaultRole.THESAURUS_EDITOR, DefaultRole.VALIDATOR };
 		updateRoles(roles);
+
+		logger.debug("Version 8.0 added predefined custom services and invokable reporters");
+		updateCustomServices("it.uniroma2.art.semanticturkey.customservice.OntoLexLemonReport",
+				"it.uniroma2.art.semanticturkey.customservice.OWLReport",
+				"it.uniroma2.art.semanticturkey.customservice.SKOSReport");
+		updateInvokableReporters("it.uniroma2.art.semanticturkey.invokablereporter.OntoLexLemonReport",
+				"it.uniroma2.art.semanticturkey.invokablereporter.OWLReport",
+				"it.uniroma2.art.semanticturkey.invokablereporter.SKOSReport");
+
+	}
+
+	private static void updateCustomServices(String... serviceID) throws IOException {
+		File configFolder = STPropertiesManager
+				.getSystemPropertyFolder(CustomServiceDefinitionStore.class.getName());
+		FileUtils.forceMkdir(configFolder);
+		for (String configName : Arrays.stream(serviceID).map(s -> s + ".cfg").collect(Collectors.toList())) {
+			try (InputStream is = UpdateRoutines.class.getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/config/customservice/" + configName)) {
+				FileUtils.copyInputStreamToFile(is, new File(configFolder, configName));
+			}
+		}
+	}
+
+	private static void updateInvokableReporters(String... reporterID) throws IOException {
+		File configFolder = STPropertiesManager
+				.getSystemPropertyFolder(InvokableReporterStore.class.getName());
+		FileUtils.forceMkdir(configFolder);
+		for (String configName : Arrays.stream(reporterID).map(s -> s + ".cfg")
+				.collect(Collectors.toList())) {
+			try (InputStream is = UpdateRoutines.class.getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/config/invokablereporter/" + configName)) {
+				FileUtils.copyInputStreamToFile(is, new File(configFolder, configName));
+			}
+		}
 	}
 
 	private static void replaceNamespaceDefinition(SimpleNamespace oldNS, SimpleNamespace newNS,
@@ -253,7 +296,7 @@ public class UpdateRoutines {
 				parser.setRDFHandler(new RDFHandler() {
 
 					boolean nsAlreadyProcessed = false;
-					
+
 					@Override
 					public void startRDF() throws RDFHandlerException {
 						nsAlreadyProcessed = false;

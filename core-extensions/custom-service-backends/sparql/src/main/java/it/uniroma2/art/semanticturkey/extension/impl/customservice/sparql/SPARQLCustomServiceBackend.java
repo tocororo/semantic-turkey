@@ -111,6 +111,8 @@ public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 				if ("AnnotatedValue".equals(elementType.getName())) {
 					List<String> variablesOtherThanAttributes = queryBindingNames.stream()
 							.filter(n -> !n.startsWith("attr_")).collect(Collectors.toList());
+					List<String> attributeVariables = queryBindingNames.stream()
+							.filter(n -> n.startsWith("attr_")).collect(Collectors.toList());
 
 					if (variablesOtherThanAttributes.size() != 1) {
 						throw new IllegalArgumentException(
@@ -149,11 +151,16 @@ public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 						QueryBuilder qb = new QueryBuilder(stServiceContext,
 								newQueryPrologBuilder.toString() + "\nSELECT DISTINCT ?"
 										+ resourceVariableName + " "
-										+ NatureRecognitionOrchestrator.getNatureSPARQLSelectPart()
+										+ (!attributeVariables.isEmpty() ? " " + attributeVariables.stream()
+												.map(v -> "?" + v).collect(Collectors.joining(" ")) : "")
+										+ " " + NatureRecognitionOrchestrator.getNatureSPARQLSelectPart()
 										+ " WHERE {{" + groundQueryStringWithoutProlog + "}\n"
 										+ NatureRecognitionOrchestrator
 												.getNatureSPARQLWherePart(resourceVariableName)
-										+ "} GROUP BY ?" + resourceVariableName + " ");
+										+ "} GROUP BY ?" + resourceVariableName
+										+ (!attributeVariables.isEmpty() ? " " + attributeVariables.stream()
+												.map(v -> "?" + v).collect(Collectors.joining(" ")) : "")
+										+ " ");
 						qb.setResourceVariable(resourceVariableName);
 						qb.processRendering();
 						qb.processQName();
