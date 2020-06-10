@@ -509,7 +509,7 @@ public class SHACL extends STServiceAdapter {
 				sb.append("\n");
 			}
 			if(propInfo.getSh_class()!=null){
-				//the Annotation Range is neede
+				//the Annotation Range is needed
 				sb.append("\t\t"+ANN_RANGE+"("+getQName(propInfo.getSh_class(), prefixToNamespaceMap)+")");
 				sb.append("\n");
 			}

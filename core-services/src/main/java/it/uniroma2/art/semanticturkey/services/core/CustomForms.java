@@ -12,10 +12,21 @@ import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
+import it.uniroma2.art.coda.pearl.model.GraphElement;
+import it.uniroma2.art.coda.pearl.model.GraphStruct;
+import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
+import it.uniroma2.art.coda.pearl.model.PlaceholderStruct;
+import it.uniroma2.art.coda.pearl.model.ProjectionRule;
+import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
 import it.uniroma2.art.coda.pearl.model.annotation.Annotation;
+import it.uniroma2.art.coda.pearl.model.annotation.AnnotationDefinition;
 import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueDouble;
 import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueInteger;
 import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueInterface;
+import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueIri;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemPlaceholder;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemUri;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
 import it.uniroma2.art.coda.pearl.parser.antlr4.AntlrParserRuntimeException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.semanticturkey.customform.BrokenCFStructure;
@@ -52,6 +63,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.URIUtil;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.GraphQueryResult;
@@ -66,12 +78,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
+import sun.java2d.pipe.SpanShapeRenderer;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -87,6 +104,11 @@ import java.util.stream.Collectors;
 public class CustomForms extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(CustomForms.class);
+
+	private final String ANN_DEF_PATH = "/it/uniroma2/art/semanticturkey/customform/annDef.pr";
+
+	//Annotations
+	private final String ANN_RANGE = "Range";
 
 	@Autowired
 	private CustomFormManager cfManager;
@@ -753,7 +775,7 @@ public class CustomForms extends STServiceAdapter {
 	}
 
 	/**
-	 * Returns the serialization of the CurtomForm with the given id
+	 * Returns the serialization of the CustomForm with the given id
 	 * 
 	 * @param id
 	 * @return
@@ -781,12 +803,12 @@ public class CustomForms extends STServiceAdapter {
 			return customFormNode;
 		} else {
 			throw new CustomFormException(
-					"CurtomForm with id " + id + " not found in project " + getProject().getName());
+					"CustomForm with id " + id + " not found in project " + getProject().getName());
 		}
 	}
 
 	/**
-	 * Returns a serialization representing the form of the CurtomForm with the given id
+	 * Returns a serialization representing the form of the CustomForm with the given id
 	 * 
 	 * @param id
 	 * @return
@@ -1296,5 +1318,154 @@ public class CustomForms extends STServiceAdapter {
 		}
 		return bcfArrayNode;
 	}
+
+	// ===================================================
+
+	/**
+	 * Update the PEARL part of a Custom Form according to some inferences by adding the needed annotations
+	 * @param cfId the id of the Custom Form tu update
+	 * @param prId the Optional Id of the Projection Rule in the Custom Form to update. If no id is specified, then all
+	 *                Projection Rules are analyzed
+	 * @param save set to true to save the updated PEARL in the desired Custom Form
+	 * @param showPropChain
+	 * @return
+	 * @throws CustomFormException
+	 * @throws PRParserException
+	 * @throws IOException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('cform(form)', 'U')")
+	@Read
+	public JsonNode updateCustomFormWithAnnotations(String cfId, @Optional String prId,
+			@Optional(defaultValue = "true") boolean save, @Optional List<IRI> showPropChain) throws CustomFormException,
+			PRParserException, IOException {
+		CustomForm cf = cfManager.getCustomForm(getProject(), cfId); // at project level
+		if (cf != null) {
+
+			String ref = cf.getRef();
+
+			RepositoryConnection repoConnection = getManagedConnection();
+			CODACore codaCore = getInitializedCodaCore(repoConnection);
+			codaCore.initialize(repoConnection);
+
+			InputStream annDefStream = CustomFormGraph.class.getResourceAsStream(ANN_DEF_PATH);
+
+			InputStream refStream = new ByteArrayInputStream(ref.getBytes());
+
+			List<InputStream> inputStreamList = new ArrayList<>();
+			inputStreamList.add(annDefStream);
+			inputStreamList.add(refStream);
+
+			codaCore.setAllProjectionRulelModelFromInputStreamList(inputStreamList);
+
+			ProjectionRulesModel projectionRulesModel = codaCore.getProjRuleModel();
+
+			List<String> annDefToExludeList = new ArrayList<>();
+			annDefToExludeList.add("Memoized");
+			annDefToExludeList.add("Confidence");
+			annDefToExludeList.addAll(getAnnotationsDefFromFile(ANN_DEF_PATH));
+
+			for(String currPrId : projectionRulesModel.getProjRule().keySet()){
+				if(prId!=null && !prId.isEmpty() && !prId.equals(currPrId)){
+					//this rule should not be analized
+					continue;
+				}
+				ProjectionRule projectionRule = projectionRulesModel.getProjRuleFromId(currPrId);
+				//add the annotations to the PEARL model
+				addAnnRange(projectionRule, projectionRulesModel);
+			}
+
+			String modelAsString = projectionRulesModel.getModelAsString(annDefToExludeList);
+
+			if(save){
+				//update the PEARL
+				cfManager.updateCustomForm(getProject(), cf, cf.getName(),
+						cf.getDescription(), modelAsString, showPropChain);
+			}
+
+			JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+
+			ObjectNode customFormNode = jsonFactory.objectNode();
+			customFormNode.set("id", jsonFactory.textNode(cf.getId()));
+			customFormNode.set("name", jsonFactory.textNode(cf.getName()));
+			customFormNode.set("type", jsonFactory.textNode(cf.getType()));
+			customFormNode.set("description", jsonFactory.textNode(cf.getDescription()));
+			customFormNode.set("ref", jsonFactory.textNode(modelAsString));
+
+			return customFormNode;
+
+
+		} else {
+			throw new CustomFormException(
+					"CustomForm with id " + cfId + " not found in project " + getProject().getName());
+		}
+
+	}
+
+	private List<String> getAnnotationsDefFromFile(java.lang.String filePath) throws IOException {
+		List<java.lang.String> annDefList = new ArrayList<>();
+
+		InputStream inputStream = CustomFormGraph.class.getClassLoader().getResourceAsStream(filePath);
+
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+			java.lang.String line;
+			while ((line = br.readLine()) != null) {
+				if (line.trim().startsWith("Annotation")) {
+					java.lang.String annName = line.trim().split(" ")[1];
+					if (annName.endsWith("{")) {
+						annName = annName.substring(0, annName.length() - 1);
+
+					}
+					annDefList.add(annName);
+				}
+			}
+		}
+		return annDefList;
+	}
+
+	private void addAnnRange(ProjectionRule projectionRule, ProjectionRulesModel projectionRulesModel) {
+		AnnotationDefinition rangeAnnDef = projectionRulesModel.getAnnotationDefinition(ANN_RANGE);
+
+		Collection<GraphElement> graphElemList = projectionRule.getInsertGraphList();
+		//check if in the graph, there is any triple of the form "PLACEHOLDER a CLASS", and in that case, add the annotation
+		//@Range, in the placeholder definition, saying that the placeholder should be an instance of CLASS.
+		//search only in non-Optional graphs
+		for(GraphElement graphElement : graphElemList){
+			if(graphElement instanceof OptionalGraphStruct){
+				continue;
+			}
+			GraphStruct graphStruct = (GraphStruct) graphElement;
+			if(graphStruct.getPredicate().getValueAsString().equals(NTriplesUtil.toNTriplesString(RDF.TYPE))){
+				//check if the subject is a placeholder
+				GraphSingleElement graphSingleElement = graphStruct.getSubject();
+				if(graphSingleElement instanceof GraphSingleElemPlaceholder){
+					String plchName = graphSingleElement.getValueAsString().substring(1);
+					//now search for the placeholder definition
+					PlaceholderStruct placeholderStruct = projectionRule.getPlaceholderMap().get(plchName);
+					GraphSingleElement obj = graphStruct.getObject();
+					IRI classIri = null;
+					if(obj instanceof GraphSingleElemUri){
+						classIri = SimpleValueFactory.getInstance().createIRI(((GraphSingleElemUri) obj).getURI());
+					}
+					//iterate over the annotation to check if there already the annotation ANN_RANGE
+					for(Annotation annotation : placeholderStruct.getAnnotationList()){
+						if(annotation.getName().equals(ANN_RANGE)){
+							//there is already a value for the annotation ANN_RANGE, so don't had a new value
+							classIri = null;
+						}
+					}
+					if(classIri!=null){
+						//add the new annotation
+						Annotation newAnnotaiton = new Annotation(ANN_RANGE, rangeAnnDef);
+						List<ParamValueInterface> paramValueInterfaceList = new ArrayList<>();
+						paramValueInterfaceList.add(new ParamValueIri(classIri));
+						newAnnotaiton.addParams("value", paramValueInterfaceList);
+						placeholderStruct.getAnnotationList().add(newAnnotaiton);
+					}
+				}
+			}
+		}
+	}
+
 
 }
