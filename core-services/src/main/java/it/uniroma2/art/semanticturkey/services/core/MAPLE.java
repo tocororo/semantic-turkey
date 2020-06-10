@@ -40,9 +40,9 @@ import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.maple.orchestration.ProfilerOptions;
 import it.uniroma2.art.maple.orchestration.ProfilingException;
-import it.uniroma2.art.maple.problem.RefinableTaskReport;
-import it.uniroma2.art.maple.problem.ResourceLexicalizationSet;
-import it.uniroma2.art.maple.problem.SingleResourceMatchingProblem;
+import it.uniroma2.art.maple.scenario.AlignmentScenario;
+import it.uniroma2.art.maple.scenario.ResourceLexicalizationSet;
+import it.uniroma2.art.maple.scenario.SingleResourceMatchingProblem;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
@@ -196,12 +196,12 @@ public class MAPLE extends STServiceAdapter {
 	 * @throws ProfilingException
 	 */
 	@STServiceOperation
-	public RefinableTaskReport profileMatchingProblem(IRI sourceDataset, IRI targetDataset,
+	public AlignmentScenario profileMatchingProblem(IRI sourceDataset, IRI targetDataset,
 			@JsonSerialized @Optional(defaultValue = "{}") ProfilerOptions options)
 			throws ProfilingException {
 
 		try (RepositoryConnection metadataConn = metadataRegistryBackend.getConnection()) {
-			return mediationFramework.profileProblem(metadataConn, sourceDataset, targetDataset, options);
+			return mediationFramework.profileAlignmentScenario(metadataConn, sourceDataset, targetDataset, options);
 		}
 	}
 
@@ -214,7 +214,7 @@ public class MAPLE extends STServiceAdapter {
 	 * @throws ProfilingException
 	 */
 	@STServiceOperation
-	public RefinableTaskReport profileMatchingProblemBetweenProjects(Project leftDataset,
+	public AlignmentScenario profileMatchingProblemBetweenProjects(Project leftDataset,
 			Project rightDataset, @JsonSerialized @Optional(defaultValue = "{}") ProfilerOptions options)
 			throws ProfilingException {
 
@@ -222,7 +222,7 @@ public class MAPLE extends STServiceAdapter {
 		IRI rightDatasetIRI = metadataRegistryBackend.findDatasetForProject(rightDataset);
 
 		try (RepositoryConnection metadataConn = metadataRegistryBackend.getConnection()) {
-			return mediationFramework.profileProblem(metadataConn, leftDatasetIRI, rightDatasetIRI);
+			return mediationFramework.profileAlignmentScenario(metadataConn, leftDatasetIRI, rightDatasetIRI);
 		}
 	}
 

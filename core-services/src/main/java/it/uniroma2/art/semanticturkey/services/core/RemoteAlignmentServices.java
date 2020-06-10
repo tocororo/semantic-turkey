@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -25,23 +26,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResponseExtractor;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableMap;
 
-import it.uniroma2.art.maple.problem.Dataset;
-import it.uniroma2.art.maple.problem.RefinableTaskReport;
-import it.uniroma2.art.maple.problem.TaskReport;
+import it.uniroma2.art.maple.scenario.Dataset;
+import it.uniroma2.art.maple.scenario.ScenarioDefinition;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel;
 import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
@@ -51,6 +57,8 @@ import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.json.schema.ConversionException;
+import it.uniroma2.art.semanticturkey.properties.json.schema.JsonSchemaConverter;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -58,12 +66,17 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.alignmentservices.AlignmentPlan;
 import it.uniroma2.art.semanticturkey.services.core.alignmentservices.AlignmentServiceException;
 import it.uniroma2.art.semanticturkey.services.core.alignmentservices.DatasetInfo;
+import it.uniroma2.art.semanticturkey.services.core.alignmentservices.MatcherDTO;
 import it.uniroma2.art.semanticturkey.services.core.alignmentservices.ReasonInfo;
+import it.uniroma2.art.semanticturkey.services.core.alignmentservices.ServiceMetadataDTO;
+import it.uniroma2.art.semanticturkey.services.core.alignmentservices.SettingsDTO;
 import it.uniroma2.art.semanticturkey.services.core.alignmentservices.TaskDTO;
+import it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.Matcher;
+import it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.ServiceMetadata;
 import it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.Task;
-import it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.TaskSubmission;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 
 /**
@@ -94,9 +107,91 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	}
 
 	/**
-	 * Return the list of tasks managed by a remote alignment service. Tasks that terminated successfully have status
-	 * {@code "Completed"} and an {@code "endTime"}. Currently, the service filters out any task that involves
-	 * a closed project.
+	 * Pings the alignment service to obtian its metadata, which may include <em>system-level settings</em>
+	 * (schema). This operation can also be used to eagerly determine whether the configured alignment service
+	 * is up and running.
+	 * 
+	 * @return
+	 * @throws AlignmentServiceException
+	 */
+	@STServiceOperation
+	public ServiceMetadataDTO getServiceMetadata() throws AlignmentServiceException {
+		try {
+			ServiceMetadata serviceMetadata = restTemplate.getForObject(getAlignmentServiceEndpoint(),
+					ServiceMetadata.class);
+			ServiceMetadataDTO serviceMetadataDTO = new ServiceMetadataDTO();
+			serviceMetadataDTO.service = serviceMetadata.service;
+			serviceMetadataDTO.version = serviceMetadata.version;
+			serviceMetadataDTO.status = serviceMetadata.status;
+			serviceMetadataDTO.specs = serviceMetadata.specs;
+			serviceMetadataDTO.contact = serviceMetadata.contact;
+			serviceMetadataDTO.documentation = serviceMetadata.documentation;
+			ObjectNode originalSchema = serviceMetadata.settings;
+			if (originalSchema != null) {
+				SettingsDTO settingsDTO = new SettingsDTO();
+				settingsDTO.originalSchema = originalSchema;
+
+				try {
+					settingsDTO.stProperties = new JsonSchemaConverter().convert(originalSchema);
+				} catch (ConversionException e) {
+					settingsDTO.conversionException = e.getClass() + ":" + e.getCause();
+				}
+				serviceMetadataDTO.settings = settingsDTO;
+			}
+
+			return serviceMetadataDTO;
+		} catch (RestClientException e) {
+			throw new AlignmentServiceException(e.getClass().getName() + ":" + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Pings the alignment service to obtian its metadata, which may include <em>system-level settings</em>
+	 * (schema). This operation can also be used to eagerly determine whether the configured alignment service
+	 * is up and running.
+	 * 
+	 * @return
+	 * @throws AlignmentServiceException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public List<MatcherDTO> searchMatchers(@JsonSerialized ScenarioDefinition scenarioDefinition)
+			throws AlignmentServiceException {
+		try {
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_JSON);
+			headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+			HttpEntity<ScenarioDefinition> httpEntity = new HttpEntity<>(scenarioDefinition, headers);
+			List<Matcher> matcher = restTemplate.exchange(getAlignmentServiceEndpoint() + "matchers/search",
+					HttpMethod.POST, httpEntity, new ParameterizedTypeReference<List<Matcher>>() {
+					}).getBody();
+			return matcher.stream().map(m -> {
+				MatcherDTO matcherDTO = new MatcherDTO();
+				matcherDTO.id = m.id;
+				matcherDTO.description = m.description;
+				ObjectNode originalSchema = m.settings;
+				if (originalSchema != null) {
+					SettingsDTO settingsDTO = new SettingsDTO();
+					settingsDTO.originalSchema = originalSchema;
+
+					try {
+						settingsDTO.stProperties = new JsonSchemaConverter().convert(originalSchema);
+					} catch (ConversionException e) {
+						settingsDTO.conversionException = e.getClass() + ":" + e.getCause();
+					}
+					matcherDTO.settings = settingsDTO;
+				}
+
+				return matcherDTO;
+			}).collect(Collectors.toList());
+		} catch (RestClientException e) {
+			throw new AlignmentServiceException(e.getClass().getName() + ":" + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Return the list of tasks managed by a remote alignment service. Tasks that terminated successfully have
+	 * status {@code "Completed"} and an {@code "endTime"}. Currently, the service filters out any task that
+	 * involves a closed project.
 	 * 
 	 * @param leftDataset
 	 *            left dataset
@@ -280,25 +375,27 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public String createTask(@JsonSerialized TaskReport matchingProblem)
+	public String createTask(@JsonSerialized AlignmentPlan alignmentPlan)
 			throws IOException, AlignmentServiceException {
 
 		//// integrity checks
 
+		ScenarioDefinition scenarioDefinition = alignmentPlan.getScenarioDefinition();
+
 		// Left dataset has a SPARQL endpoint
-		Dataset leftDataset = matchingProblem.getLeftDataset();
+		Dataset leftDataset = scenarioDefinition.getLeftDataset();
 		if (!leftDataset.getSparqlEndpoint().isPresent()) {
 			throw new AlignmentServiceException("Missing SPARQL endpoint for the left dataset");
 		}
 
 		// Right dataset has a SPARQL endpoint
-		Dataset rightDataset = matchingProblem.getRightDataset();
+		Dataset rightDataset = scenarioDefinition.getRightDataset();
 		if (!rightDataset.getSparqlEndpoint().isPresent()) {
 			throw new AlignmentServiceException("Missing SPARQL endpoint for the right dataset");
 		}
 
 		// Every support dataset has a SPARQL endpoint
-		for (Dataset supportDataset : matchingProblem.getSupportDatasets()) {
+		for (Dataset supportDataset : scenarioDefinition.getSupportDatasets()) {
 			if (!supportDataset.getSparqlEndpoint().isPresent()) {
 				throw new AlignmentServiceException("Missing SPARQL endpoint on the support dataset "
 						+ NTriplesUtil.toNTriplesString(supportDataset.getId()));
@@ -309,13 +406,11 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
 		/// End of integrity checks
 
-		if (matchingProblem.getPairings().isEmpty()) {
+		if (scenarioDefinition.getPairings().isEmpty()) {
 			throw new AlignmentServiceException("No pairing of lexicalization set");
 		}
 
-		TaskSubmission taskSubmission = new TaskSubmission();
-		taskSubmission.setTaskReport(matchingProblem);
-		Task task = restTemplate.postForObject(getAlignmentServiceEndpoint() + "tasks", taskSubmission,
+		Task task = restTemplate.postForObject(getAlignmentServiceEndpoint() + "tasks", alignmentPlan,
 				Task.class);
 		return task.getId();
 	}

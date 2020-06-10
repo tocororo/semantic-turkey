@@ -130,7 +130,7 @@ public class JacksonMethodArgumentResolver implements HandlerMethodArgumentResol
 				return objectMapper.readValue(new StringReader((String) value),
 						objectMapper.getTypeFactory().constructType(requiredType));
 			} catch (IOException e) {
-				throw new TypeMismatchException(value, TypeUtils.getRawType(requiredType, null));
+				throw new TypeMismatchException(value, TypeUtils.getRawType(requiredType, null), e);
 			}
 		}
 

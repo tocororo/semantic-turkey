@@ -142,7 +142,7 @@
 							org.springframework.osgi.context,
 							org.springframework.osgi.service.exporter,
 							it.uniroma2.art.maple.orchestration.model,
-							it.uniroma2.art.maple.problem,
+							it.uniroma2.art.maple.scenario,
 							org.springframework.web.accept,
 							org.springframework.web.servlet.handler,
 							javax.servlet.http,

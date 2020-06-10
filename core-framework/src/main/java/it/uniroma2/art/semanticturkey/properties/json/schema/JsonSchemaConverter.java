@@ -33,6 +33,9 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.springframework.web.util.HtmlUtils;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -77,12 +80,21 @@ import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
  *
  */
 public class JsonSchemaConverter {
+	private ObjectMapper objectMapper = new ObjectMapper();
+
 	public RuntimeSTProperties convert(Reader reader) throws ConversionException {
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
+			JsonNode jacksonSchemaNode = objectMapper.readTree(reader);
+			return convert(jacksonSchemaNode);
+		} catch (IOException e) {
+			throw new ConversionException(e);
+		}
+	}
+
+	public RuntimeSTProperties convert(JsonNode jacksonSchemaNode) throws ConversionException {
+		try {
 			ObjectMapper stPropertiesObjectMapper = STPropertiesManager.createObjectMapper();
 
-			JsonNode jacksonSchemaNode = objectMapper.readTree(reader);
 			JSONObject schemaJson = new JSONObject(
 					new JSONTokener(objectMapper.writeValueAsString(jacksonSchemaNode)));
 			Schema schema = SchemaLoader.load(schemaJson);
@@ -163,6 +175,7 @@ public class JsonSchemaConverter {
 		} catch (JSONException | IOException e) {
 			throw new ConversionException(e);
 		}
+
 	}
 
 	public Pair<AnnotatedType, List<Pair<Class<? extends Annotation>, Map<String, Object>>>> convertSchemaToAnnotatedTypeAndFieldConstraints(
