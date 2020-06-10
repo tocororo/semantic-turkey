@@ -362,4 +362,13 @@
 			class="it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporterStore" />
 	</osgi:service>
 
+	<!-- Publishes the stores about ResourceMetadata -->
+
+	<osgi:service auto-export="interfaces">
+		<bean class="it.uniroma2.art.semanticturkey.config.resourceMetadata.ResourceMetadataPatternStore" />
+	</osgi:service>
+	<osgi:service auto-export="interfaces">
+		<bean class="it.uniroma2.art.semanticturkey.config.resourceMetadata.ResourceMetadataAssociationStore" />
+	</osgi:service>
+
 </beans>

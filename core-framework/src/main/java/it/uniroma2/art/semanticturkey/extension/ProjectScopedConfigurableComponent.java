@@ -23,7 +23,7 @@ import it.uniroma2.art.semanticturkey.resources.Scope;
  */
 public interface ProjectScopedConfigurableComponent<CONFTYPE extends Configuration>
 		extends ConfigurableComponent<CONFTYPE>, ScopedComponent, ProjectConfigurationManager<CONFTYPE>,
-		UserConfigurationManager<CONFTYPE> {
+		SystemConfigurationManager<CONFTYPE> {
 
 	@Override
 	default Scope getScope() {
