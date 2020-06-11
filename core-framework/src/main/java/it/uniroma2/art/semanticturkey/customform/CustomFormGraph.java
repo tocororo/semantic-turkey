@@ -614,7 +614,7 @@ public class CustomFormGraph extends CustomForm {
 					// add feature only for that featurePath that start with userPrompt/ or stdForm/
 					if (featurePath.startsWith(USER_PROMPT_FEATURE_NAME + "/")) {
 						String prompt = featurePath.substring(USER_PROMPT_FEATURE_NAME.length() + 1);
-						if (placeHolderStruct.getAnnotationList().stream().anyMatch(a -> a.getName().equals("List"))) {
+						if (placeHolderStruct.getAnnotationList().stream().anyMatch(a -> a.getName().equals("Collection"))) {
 							userPromptType.addFeature(prompt, "", CAS.TYPE_NAME_STRING_ARRAY);
 						} else {
 							userPromptType.addFeature(prompt, "", CAS.TYPE_NAME_STRING);
