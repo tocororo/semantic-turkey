@@ -30,7 +30,6 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDF4J;
-import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.GraphQueryResult;
 import org.eclipse.rdf4j.query.TupleQueryResult;
@@ -93,7 +92,7 @@ public class SHACL extends STServiceAdapter {
 
 
 	//Annotations
-	private static final String ANN_LIST = "@List";
+	private static final String ANN_COLLECTION = "@Collection";
 	private static final String ANN_RANGE = "@Range";
 	private static final String ANN_OBJECTONEOF = "@ObjectOneOf";
 	private static final String ANN_DATAONEOF = "@DataOneOf";
@@ -502,14 +501,14 @@ public class SHACL extends STServiceAdapter {
 				continue;
 			}
 			if(propInfo.getMinCount()!=-1 || propInfo.getMaxCount()!=-1){
-				//the Annotation List is needed
+				//the Annotation ANN_COLLECTION is needed
 				String min = propInfo.getMinCount()!=-1 ? "min="+propInfo.getMinCount() : "";
 				String max = propInfo.getMaxCount()!=-1 ? "max="+propInfo.getMaxCount() : "";
-				sb.append("\t\t"+ANN_LIST+"("+min+ (!min.isEmpty() && !max.isEmpty() ? ", " : "") + max+")");
+				sb.append("\t\t"+ ANN_COLLECTION +"("+min+ (!min.isEmpty() && !max.isEmpty() ? ", " : "") + max+")");
 				sb.append("\n");
 			}
 			if(propInfo.getSh_class()!=null){
-				//the Annotation Range is needed
+				//the Annotation ANN_RANGE is needed
 				sb.append("\t\t"+ANN_RANGE+"("+getQName(propInfo.getSh_class(), prefixToNamespaceMap)+")");
 				sb.append("\n");
 			}

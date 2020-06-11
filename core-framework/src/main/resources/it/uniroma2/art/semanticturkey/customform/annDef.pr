@@ -44,7 +44,7 @@ Annotation Foreign {
 @Retained
 @Description("It allows for prompting more values for the same element. 0 for min means it is not necessary to fill the form widget. 0 for max means there’s no restriction on the number of values to create")
 @Target(node)
-Annotation List {
+Annotation Collection {
     Int min() default 0;
     Int max() default 0;
 }
