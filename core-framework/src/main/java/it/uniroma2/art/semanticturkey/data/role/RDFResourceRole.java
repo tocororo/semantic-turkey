@@ -115,6 +115,10 @@ public enum RDFResourceRole {
 		if (subsumer == skosCollection && subsumee == skosOrderedCollection) {
 			return true;
 		}
+		
+		if (subsumer == cls && subsumee == dataRange) {
+			return true;
+		}
 
 		return false;
 	}
@@ -124,11 +128,11 @@ public enum RDFResourceRole {
 	}
 
 	public static boolean isClass(RDFResourceRole role) {
-		return ((role == cls) || (role == dataRange));
+		return subsumes(cls, role);
 	}
 
 	public static boolean isSkosCollection(RDFResourceRole role) {
-		return ((role == skosCollection) || (role == skosOrderedCollection));
+		return subsumes(skosCollection, role);
 	}
 
 }
