@@ -24,6 +24,8 @@ import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueDouble;
 import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueInteger;
 import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueInterface;
 import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueIri;
+import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueLiteral;
+import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueString;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemPlaceholder;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemUri;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
@@ -109,6 +111,15 @@ public class CustomForms extends STServiceAdapter {
 
 	//Annotations
 	private final String ANN_RANGE = "Range";
+	private final String ANN_RANGELIST = "RangeList";
+	private final String ANN_ROLE = "Role";
+	private final String ANN_DATAONEOF = "DataOneOf";
+	private final String ANN_OBJECTONEOF = "ObjectOneOf";
+	private final String ANN_LIST = "List";
+
+
+
+
 
 	@Autowired
 	private CustomFormManager cfManager;
@@ -1327,7 +1338,6 @@ public class CustomForms extends STServiceAdapter {
 	 * @param prId the Optional Id of the Projection Rule in the Custom Form to update. If no id is specified, then all
 	 *                Projection Rules are analyzed
 	 * @param save set to true to save the updated PEARL in the desired Custom Form
-	 * @param showPropChain
 	 * @return
 	 * @throws CustomFormException
 	 * @throws PRParserException
@@ -1337,7 +1347,7 @@ public class CustomForms extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('cform(form)', 'U')")
 	@Read
 	public JsonNode updateCustomFormWithAnnotations(String cfId, @Optional String prId,
-			@Optional(defaultValue = "true") boolean save, @Optional List<IRI> showPropChain) throws CustomFormException,
+			@Optional(defaultValue = "true") boolean save) throws CustomFormException,
 			PRParserException, IOException {
 		CustomForm cf = cfManager.getCustomForm(getProject(), cfId); // at project level
 		if (cf != null) {
@@ -1372,13 +1382,19 @@ public class CustomForms extends STServiceAdapter {
 				}
 				ProjectionRule projectionRule = projectionRulesModel.getProjRuleFromId(currPrId);
 				//add the annotations to the PEARL model
-				addAnnRange(projectionRule, projectionRulesModel);
+				addAnnRangeOrRole(projectionRule, projectionRulesModel, getManagedConnection());
+				addAnnOneOf(projectionRule, projectionRulesModel, getManagedConnection());
+				addAnnListMax(projectionRule, projectionRulesModel, getManagedConnection());
 			}
 
 			String modelAsString = projectionRulesModel.getModelAsString(annDefToExludeList);
 
 			if(save){
 				//update the PEARL
+				List<IRI> showPropChain = null;
+				if(cf instanceof CustomFormGraph) {
+					showPropChain = ((CustomFormGraph) cf).getShowPropertyChain();
+				}
 				cfManager.updateCustomForm(getProject(), cf, cf.getName(),
 						cf.getDescription(), modelAsString, showPropChain);
 			}
@@ -1402,6 +1418,7 @@ public class CustomForms extends STServiceAdapter {
 
 	}
 
+
 	private List<String> getAnnotationsDefFromFile(java.lang.String filePath) throws IOException {
 		List<java.lang.String> annDefList = new ArrayList<>();
 
@@ -1423,46 +1440,350 @@ public class CustomForms extends STServiceAdapter {
 		return annDefList;
 	}
 
-	private void addAnnRange(ProjectionRule projectionRule, ProjectionRulesModel projectionRulesModel) {
+	private void addAnnRangeOrRole(ProjectionRule projectionRule, ProjectionRulesModel projectionRulesModel, RepositoryConnection managedConnection) {
 		AnnotationDefinition rangeAnnDef = projectionRulesModel.getAnnotationDefinition(ANN_RANGE);
+		AnnotationDefinition rangeListAnnDef = projectionRulesModel.getAnnotationDefinition(ANN_RANGELIST);
+		AnnotationDefinition roleAnnDef = projectionRulesModel.getAnnotationDefinition(ANN_ROLE);
 
-		Collection<GraphElement> graphElemList = projectionRule.getInsertGraphList();
-		//check if in the graph, there is any triple of the form "PLACEHOLDER a CLASS", and in that case, add the annotation
-		//@Range, in the placeholder definition, saying that the placeholder should be an instance of CLASS.
-		//search only in non-Optional graphs
-		for(GraphElement graphElement : graphElemList){
-			if(graphElement instanceof OptionalGraphStruct){
+		//iterate over each placeholder, if such placeholder is an IRI and does not already have ANN_RANGE or ANN_RANGELIST then
+		//check if in the graph section there are any triples of the type  "PLACEHOLDER a CLASS"
+		for(String plcName : projectionRule.getPlaceholderMap().keySet()){
+			PlaceholderStruct placeholderStruct = projectionRule.getPlaceholderMap().get(plcName);
+			if(!placeholderStruct.getRDFType().equals("uri")){
+				//it not a placeholder hosting a URI, so just skip it
 				continue;
 			}
-			GraphStruct graphStruct = (GraphStruct) graphElement;
-			if(graphStruct.getPredicate().getValueAsString().equals(NTriplesUtil.toNTriplesString(RDF.TYPE))){
-				//check if the subject is a placeholder
-				GraphSingleElement graphSingleElement = graphStruct.getSubject();
-				if(graphSingleElement instanceof GraphSingleElemPlaceholder){
-					String plchName = graphSingleElement.getValueAsString().substring(1);
-					//now search for the placeholder definition
-					PlaceholderStruct placeholderStruct = projectionRule.getPlaceholderMap().get(plchName);
+			//check if it alreay has the annotation ANN_RANGE or ANN_RANGELIST
+			boolean skipAnnRangeAndRangeList = false;
+			boolean skipAnnRole = false;
+			for(Annotation annotation : placeholderStruct.getAnnotationList()){
+				if(annotation.getName().equals(ANN_RANGE) || annotation.getName().equals(ANN_RANGELIST)){
+					skipAnnRangeAndRangeList = true;
+				}
+				if(annotation.getName().equals(ANN_ROLE) ){
+					skipAnnRole = true;
+				}
+			}
+			//if both skipAnnRangeAndRangeList and skipAnnRole are true, just skip this placeholder
+			if(skipAnnRangeAndRangeList && skipAnnRole ){
+				continue;
+			}
+
+			List<IRI> classIriList = new ArrayList<>();
+			List<String> roleList = new ArrayList<>();
+			//now iterate over the triples in the graph section to search for "PLACEHOLDER a CLASS" for this placeholder
+			Collection<GraphElement> graphElemList = projectionRule.getInsertGraphList();
+			for(GraphElement graphElement : graphElemList){
+				if(graphElement instanceof OptionalGraphStruct){
+					continue;
+				}
+				GraphStruct graphStruct = (GraphStruct) graphElement;
+				GraphSingleElement subj = graphStruct.getSubject();
+				if(!(subj instanceof  GraphSingleElemPlaceholder) || !subj.getValueAsString().substring(1).equals(plcName)){
+					//the subject of this triples is either not a placeholder or it is a different placeholder, so skip this triple
+					continue;
+				}
+				if(graphStruct.getPredicate().getValueAsString().equals(NTriplesUtil.toNTriplesString(RDF.TYPE))){
 					GraphSingleElement obj = graphStruct.getObject();
-					IRI classIri = null;
-					if(obj instanceof GraphSingleElemUri){
-						classIri = SimpleValueFactory.getInstance().createIRI(((GraphSingleElemUri) obj).getURI());
-					}
-					//iterate over the annotation to check if there already the annotation ANN_RANGE
-					for(Annotation annotation : placeholderStruct.getAnnotationList()){
-						if(annotation.getName().equals(ANN_RANGE)){
-							//there is already a value for the annotation ANN_RANGE, so don't had a new value
-							classIri = null;
+					if(obj instanceof GraphSingleElemUri) {
+						//check if obj is a resource representing a specific role (only if skipAnnRole is false)
+						List<String> roleListTemp = skipAnnRole ? new ArrayList<>() : getRoleFromIri(((GraphSingleElemUri) obj).getURI(), managedConnection);
+						if(roleListTemp.isEmpty()) {
+							//it not a role, so add it to the classIriList
+							if(!skipAnnRangeAndRangeList) {
+								classIriList.add(SimpleValueFactory.getInstance().createIRI(((GraphSingleElemUri) obj).getURI()));
+							}
+						} else {
+							//it is a role, so add it to roleList
+							roleList.addAll(roleListTemp);
 						}
 					}
-					if(classIri!=null){
-						//add the new annotation
-						Annotation newAnnotaiton = new Annotation(ANN_RANGE, rangeAnnDef);
-						List<ParamValueInterface> paramValueInterfaceList = new ArrayList<>();
-						paramValueInterfaceList.add(new ParamValueIri(classIri));
-						newAnnotaiton.addParams("value", paramValueInterfaceList);
-						placeholderStruct.getAnnotationList().add(newAnnotaiton);
+				}
+			}
+			//add the ANN_RANGE or ANN_RANGELIST
+			if(classIriList.size() == 1){
+				//user ANN_RANGE
+				//add the new annotation
+				Annotation newAnnotaiton = new Annotation(ANN_RANGE, rangeAnnDef);
+				List<ParamValueInterface> paramValueInterfaceList = new ArrayList<>();
+				paramValueInterfaceList.add(new ParamValueIri(classIriList.get(0)));
+				newAnnotaiton.addParams("value", paramValueInterfaceList);
+				placeholderStruct.getAnnotationList().add(newAnnotaiton);
+			} else if(classIriList.size()>1){
+				//there are more than one value, so use ANN_RAGELIST
+				Annotation newAnnotaiton = new Annotation(ANN_RANGELIST, rangeListAnnDef);
+				List<ParamValueInterface> paramValueInterfaceList = new ArrayList<>();
+				for (IRI classIri : classIriList) {
+					paramValueInterfaceList.add(new ParamValueIri(classIri));
+				}
+				newAnnotaiton.addParams("value", paramValueInterfaceList);
+				placeholderStruct.getAnnotationList().add(newAnnotaiton);
+			}
+
+			//add the ANN_ROLE
+			if(roleList.size()>0){
+				//there are more than one value, so use ANN_RAGELIST
+				Annotation newAnnotaiton = new Annotation(ANN_ROLE, roleAnnDef);
+				List<ParamValueInterface> paramValueInterfaceList = new ArrayList<>();
+				for (String role : roleList) {
+					paramValueInterfaceList.add(new ParamValueString(role));
+				}
+				newAnnotaiton.addParams("value", paramValueInterfaceList);
+				placeholderStruct.getAnnotationList().add(newAnnotaiton);
+			}
+		}
+	}
+
+	private List<String> getRoleFromIri(String uri, RepositoryConnection managedConnection) {
+		List<String> roleList = new ArrayList<>();
+
+		String query =
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n"
+				+"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+				+"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n"
+				+"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>\n"
+				+"PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
+				+"SELECT ?rt \n"
+				+ "WHERE {\n"
+				+ "<"+uri+"> rdfs:subClassOf* $st .\n";
+
+		//part taken from NatureRecognitionOrchestrator
+		query += " BIND(" + "IF(!BOUND(?st), \"" + RDFResourceRole.individual + "\","
+				+ "IF(?st = <http://www.w3.org/ns/lemon/lime#Lexicon>, \"" + RDFResourceRole.limeLexicon
+				+ "\"," + "IF(?st = <http://www.w3.org/ns/lemon/ontolex#LexicalEntry>, \""
+				+ RDFResourceRole.ontolexLexicalEntry + "\","
+				+ "IF(?st = <http://www.w3.org/ns/lemon/ontolex#Form>, \"" + RDFResourceRole.ontolexForm
+				+ "\"," + "IF(?st = <http://www.w3.org/ns/lemon/ontolex#LexicalSense>, \""
+				+ RDFResourceRole.ontolexLexicalSense + "\"," + "IF(?st = skos:Concept, \""
+				+ RDFResourceRole.concept + "\"," + "IF(?st = skos:ConceptScheme, \""
+				+ RDFResourceRole.conceptScheme + "\"," + "IF(?st = skos:Collection, \""
+				+ RDFResourceRole.skosCollection + "\"," + "IF(?st = skos:OrderedCollection, \""
+				+ RDFResourceRole.skosOrderedCollection + "\"," + "IF(?st = skosxl:Label, \""
+				+ RDFResourceRole.xLabel + "\"," + "IF(?st = rdf:Property, \"" + RDFResourceRole.property
+				+ "\"," + "IF(?st = owl:ObjectProperty, \"" + RDFResourceRole.objectProperty + "\","
+				+ "IF(?st = owl:DatatypeProperty, \"" + RDFResourceRole.datatypeProperty + "\","
+				+ "IF(?st = owl:AnnotationProperty, \"" + RDFResourceRole.annotationProperty + "\","
+				+ "IF(?st = owl:OntologyProperty, \"" + RDFResourceRole.ontologyProperty + "\","
+				+ "IF(?st = owl:Ontology, \"" + RDFResourceRole.ontology + "\"," + "IF(?st = rdfs:Class, \""
+				+ RDFResourceRole.cls + "\"," + "IF(?st = rdfs:Datatype, \"" + RDFResourceRole.dataRange
+				+ "\"," + "\"" + RDFResourceRole.individual + "\"" + ")))))))))))))))))) as ?rt) \n"
+				+ "}";
+
+		TupleQuery tupleQuery  = managedConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		try(TupleQueryResult queryResult = tupleQuery.evaluate()){
+			while(queryResult.hasNext()){
+				String role = queryResult.next().getValue("rt").stringValue();
+				if(!roleList.contains(role) && !role.equals(RDFResourceRole.individual.name())){
+					roleList.add(role);
+				}
+			}
+		}
+		return roleList;
+	}
+
+
+
+	private void addAnnOneOf(ProjectionRule projectionRule, ProjectionRulesModel projectionRulesModel, RepositoryConnection managedConnection) {
+		AnnotationDefinition objectOneOfAnnDef = projectionRulesModel.getAnnotationDefinition(ANN_OBJECTONEOF);
+		AnnotationDefinition dataOneOfAnnDef = projectionRulesModel.getAnnotationDefinition(ANN_DATAONEOF);
+
+		//iterate over each placeholder, if such placeholder is an IRI and does not already have ANN_DATAONEOF or ANN_OBJECTONEOF then
+		//check if in the graph section there are any triples of the type  "SUBJ PROP PLACEHOLDER" and in the repository
+		// there is :
+		// PROP rdf:range OBJ
+		// OBJ owl:oneOf LIST
+
+		for(String plcName : projectionRule.getPlaceholderMap().keySet()) {
+			PlaceholderStruct placeholderStruct = projectionRule.getPlaceholderMap().get(plcName);
+			if (!placeholderStruct.getRDFType().equals("uri")) {
+				//it not a placeholder hosting a URI, so just skip it
+				continue;
+			}
+			boolean skipAnnDataOneOf = false;
+			boolean skipAnnObjectOneOf = false;
+			for (Annotation annotation : placeholderStruct.getAnnotationList()) {
+				if (annotation.getName().equals(ANN_DATAONEOF)) {
+					skipAnnDataOneOf = true;
+				}
+				if (annotation.getName().equals(ANN_OBJECTONEOF)) {
+					skipAnnObjectOneOf = true;
+				}
+			}
+
+			List<Value> oneOfList = new ArrayList<>();
+			//now iterate over the triples in the graph section to search for "SUBJ PROP PLACEHOLDER"  for this placeholder
+			Collection<GraphElement> graphElemList = projectionRule.getInsertGraphList();
+			for (GraphElement graphElement : graphElemList) {
+				if (graphElement instanceof OptionalGraphStruct) {
+					continue;
+				}
+				GraphStruct graphStruct = (GraphStruct) graphElement;
+				GraphSingleElement obj = graphStruct.getObject();
+				if (!(obj instanceof GraphSingleElemPlaceholder) || !obj.getValueAsString().substring(1).equals(plcName)) {
+					//the object of this triples is either not a placeholder or it is a different placeholder, so skip this triple
+					continue;
+				}
+				//do not consider the case where PROP is RDF.TYPE
+				if (!graphStruct.getPredicate().getValueAsString().equals(NTriplesUtil.toNTriplesString(RDF.TYPE))) {
+					GraphSingleElement pred = graphStruct.getPredicate();
+					if (pred instanceof GraphSingleElemUri) {
+						oneOfList.addAll(getOneOfListFromPred(((GraphSingleElemUri) pred).getURI(), managedConnection));
 					}
 				}
+			}
+			//if oneOfList is not empty, check if all its element are URI or Literal and, if their relative skip is not true,
+			// create the appropriate annotation
+			if(oneOfList.isEmpty()){
+				//list is empty, nothing to do
+				continue;
+			}
+			boolean allUri = true, allLiteral = true;
+			for(Value value : oneOfList){
+				if(value instanceof IRI){
+					allLiteral = false;
+				} else if(value instanceof Literal) {
+					allUri = false;
+				} else {
+					allLiteral = false;
+					allUri = false;
+				}
+			}
+			if(allUri && !skipAnnObjectOneOf) {
+				Annotation newAnnotaiton = new Annotation(ANN_OBJECTONEOF, objectOneOfAnnDef);
+				List<ParamValueInterface> paramValueInterfaceList = new ArrayList<>();
+				for (Value value : oneOfList) {
+					paramValueInterfaceList.add(new ParamValueIri(((IRI)value)));
+				}
+				newAnnotaiton.addParams("value", paramValueInterfaceList);
+				placeholderStruct.getAnnotationList().add(newAnnotaiton);
+			} else if (allLiteral && !skipAnnDataOneOf) {
+				Annotation newAnnotaiton = new Annotation(ANN_DATAONEOF, dataOneOfAnnDef);
+				List<ParamValueInterface> paramValueInterfaceList = new ArrayList<>();
+				for (Value value : oneOfList) {
+					paramValueInterfaceList.add(new ParamValueLiteral(((Literal)value)));
+				}
+				newAnnotaiton.addParams("value", paramValueInterfaceList);
+				placeholderStruct.getAnnotationList().add(newAnnotaiton);
+			}
+		}
+	}
+
+	private Collection<Value> getOneOfListFromPred(String uri, RepositoryConnection managedConnection) {
+		//search for:
+		// URI rdf:range OBJ
+		// OBJ owl:oneOf LIST
+		List<Value> oneOfList = new ArrayList<>();
+		String query =
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n"
+				+ "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+				+ "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n"
+				+ "PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>\n"
+				+ "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
+				+ "SELECT ?value \n"
+				+ "WHERE {\n"
+				+ "<"+uri+"> rdfs:range ?obj .\n"
+				+ "?obj owl:oneOf ?list .\n"
+				+ "?list rdf:rest*/rdf:first ?value .\n"
+				+"}";
+		TupleQuery tupleQuery  = managedConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		try(TupleQueryResult queryResult = tupleQuery.evaluate()){
+			while(queryResult.hasNext()){
+				Value value = queryResult.next().getValue("value");
+				if(!oneOfList.contains(value)){
+					oneOfList.add(value);
+				}
+			}
+		}
+
+		return oneOfList;
+	}
+
+	private void addAnnListMax(ProjectionRule projectionRule, ProjectionRulesModel projectionRulesModel, RepositoryConnection managedConnection) {
+		AnnotationDefinition listAnnDef = projectionRulesModel.getAnnotationDefinition(ANN_LIST);
+
+		//iterate over each placeholder, if such placeholder is an IRI and does not already have ANN_LIST then
+		//check if in the graph section there are any triples of the type  "SUBJ PROP PLACEHOLDER" and in the repository
+		// there is :
+		// PROP a owl:FunctionalProperty
+
+		for(String plcName : projectionRule.getPlaceholderMap().keySet()) {
+			PlaceholderStruct placeholderStruct = projectionRule.getPlaceholderMap().get(plcName);
+			if (!placeholderStruct.getRDFType().equals("uri")) {
+				//it not a placeholder hosting a URI, so just skip it
+				continue;
+			}
+			boolean skipAnnList = false;
+			for (Annotation annotation : placeholderStruct.getAnnotationList()) {
+				if (annotation.getName().equals(ANN_LIST)) {
+					skipAnnList = true;
+				}
+			}
+
+			if(skipAnnList){
+				continue;
+			}
+			boolean isPropFunct = false;
+
+			//now iterate over the triples in the graph section to search for "SUBJ PROP PLACEHOLDER"  for this placeholder
+			Collection<GraphElement> graphElemList = projectionRule.getInsertGraphList();
+			for (GraphElement graphElement : graphElemList) {
+				if (graphElement instanceof OptionalGraphStruct) {
+					continue;
+				}
+				GraphStruct graphStruct = (GraphStruct) graphElement;
+				GraphSingleElement obj = graphStruct.getObject();
+				if (!(obj instanceof GraphSingleElemPlaceholder) || !obj.getValueAsString().substring(1).equals(plcName)) {
+					//the object of this triples is either not a placeholder or it is a different placeholder, so skip this triple
+					continue;
+				}
+				//do not consider the case where PROP is RDF.TYPE
+				if (!graphStruct.getPredicate().getValueAsString().equals(NTriplesUtil.toNTriplesString(RDF.TYPE))) {
+					GraphSingleElement pred = graphStruct.getPredicate();
+					if (pred instanceof GraphSingleElemUri) {
+						if(isPropFunct(((GraphSingleElemUri) pred).getURI(), managedConnection)){
+							isPropFunct = true;
+						}
+
+						;
+					}
+				}
+			}
+			// create the appropriate annotation, if isPropFunct is true
+			if(isPropFunct) {
+				Annotation newAnnotaiton = new Annotation(ANN_LIST, listAnnDef);
+				List<ParamValueInterface> paramValueInterfaceList = new ArrayList<>();
+				paramValueInterfaceList.add(new ParamValueInteger(1));
+				newAnnotaiton.addParams("max", paramValueInterfaceList);
+				placeholderStruct.getAnnotationList().add(newAnnotaiton);
+			}
+		}
+	}
+
+	private boolean isPropFunct(String uri, RepositoryConnection managedConnection) {
+		//search for:
+		// URI rdf:range OBJ
+		// OBJ owl:oneOf LIST
+		String query =
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n"
+						+ "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+						+ "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n"
+						+ "PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>\n"
+						+ "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
+						+ "SELECT ?type \n"
+						+ "WHERE {\n"
+						+ "<"+uri+"> a owl:FunctionalProperty .\n"
+						+ "<"+uri+"> a ?type .\n"
+						+"} \n" +
+						"LIMIT 1";
+		TupleQuery tupleQuery  = managedConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		try(TupleQueryResult queryResult = tupleQuery.evaluate()){
+			if(queryResult.hasNext()){
+				return true;
+			} else{
+				return false;
 			}
 		}
 	}
