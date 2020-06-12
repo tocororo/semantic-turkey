@@ -1,51 +1,5 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import javax.servlet.http.HttpServletResponse;
-
-import it.uniroma2.art.coda.provisioning.ConverterContractDescription;
-import it.uniroma2.art.coda.structures.CODATriple;
-import org.apache.commons.io.IOUtils;
-import org.apache.uima.UIMAException;
-import org.apache.uima.jcas.JCas;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.query.MalformedQueryException;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
-import org.eclipse.rdf4j.query.UnsupportedQueryLanguageException;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.multipart.MultipartFile;
-import org.w3c.dom.DOMException;
-
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -54,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.DependencyException;
@@ -75,6 +28,8 @@ import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemPlaceholder;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
 import it.uniroma2.art.coda.pearl.parser.PearlParserAntlr4;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
+import it.uniroma2.art.coda.provisioning.ConverterContractDescription;
+import it.uniroma2.art.coda.structures.CODATriple;
 import it.uniroma2.art.coda.structures.SuggOntologyCoda;
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration;
@@ -107,6 +62,48 @@ import it.uniroma2.art.sheet2rdf.sheet.SheetManager;
 import it.uniroma2.art.sheet2rdf.sheet.SheetManagerFactory;
 import it.uniroma2.art.sheet2rdf.utils.FsNamingStrategy;
 import it.uniroma2.art.sheet2rdf.utils.S2RDFUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.uima.UIMAException;
+import org.apache.uima.jcas.JCas;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.query.MalformedQueryException;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
+import org.eclipse.rdf4j.query.UnsupportedQueryLanguageException;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.DOMException;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 @STService
 public class Sheet2RDF extends STServiceAdapter {
@@ -509,32 +506,12 @@ public class Sheet2RDF extends STServiceAdapter {
 	public void savePearl(String pearlCode) throws IOException {
 		S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
 		OutputStream os = new FileOutputStream(ctx.getPearlFile());
-		BufferedWriter bf = new BufferedWriter(new OutputStreamWriter(os, "utf-8"));
+		BufferedWriter bf = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
 		bf.write(pearlCode);
 		bf.flush();
 		bf.close();
 	}
 	
-	@STServiceOperation(method = RequestMethod.POST)
-	public JsonNode validatePearl(String pearlCode, @Optional(defaultValue = "true")  boolean rulesShouldExists){
-		InputStream pearlStream = new ByteArrayInputStream(pearlCode.getBytes(StandardCharsets.UTF_8));
-		//PearlParser pearlParser = new PearlParser("", "");
-		ParserPR pearlParser = new PearlParserAntlr4("", "");
-		JsonNodeFactory jf = JsonNodeFactory.instance;
-		ObjectNode respNode = jf.objectNode();
-		boolean pearlValid;
-		String details = null;
-		try {
-			pearlParser.parsePearlDocument(pearlStream, rulesShouldExists);
-			pearlValid = true;
-		} catch (PRParserException e) {
-			pearlValid = false;
-			details = e.getErrorAsString();
-		}
-		respNode.set("valid", jf.booleanNode(pearlValid));
-		respNode.set("details", jf.textNode(details));
-		return respNode;
-	}
 	/**
 	 * It validated the PEARL rule and returns the used prefixes in the graph section
 	 */

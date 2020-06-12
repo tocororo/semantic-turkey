@@ -1,9 +1,17 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import it.uniroma2.art.coda.exception.parserexception.PRParserException;
+import it.uniroma2.art.coda.interfaces.ParserPR;
+import it.uniroma2.art.coda.pearl.parser.PearlParserAntlr4;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +90,26 @@ public class CODA extends STServiceAdapter {
 				shutDownCodaCore(codaCore);
 			}
 		}
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	public JsonNode validatePearl(String pearlCode, @Optional(defaultValue = "true")  boolean rulesShouldExists){
+		InputStream pearlStream = new ByteArrayInputStream(pearlCode.getBytes(StandardCharsets.UTF_8));
+		ParserPR pearlParser = new PearlParserAntlr4("", "");
+		JsonNodeFactory jf = JsonNodeFactory.instance;
+		ObjectNode respNode = jf.objectNode();
+		boolean pearlValid;
+		String details = null;
+		try {
+			pearlParser.parsePearlDocument(pearlStream, rulesShouldExists);
+			pearlValid = true;
+		} catch (PRParserException e) {
+			pearlValid = false;
+			details = e.getErrorAsString();
+		}
+		respNode.set("valid", jf.booleanNode(pearlValid));
+		respNode.set("details", jf.textNode(details));
+		return respNode;
 	}
 
 }

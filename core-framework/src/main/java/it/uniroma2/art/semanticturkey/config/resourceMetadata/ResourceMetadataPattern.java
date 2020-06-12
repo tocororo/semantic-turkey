@@ -11,14 +11,6 @@ public class ResourceMetadataPattern implements Configuration {
 		return "Stored Resource Metadata Pattern";
 	}
 
-	@STProperty(description = "Identifier of this ResourceMetadataPattern", displayName = "Id")
-	@Required
-	public String id;
-
-	@STProperty(description = "A human friendly name of this ResourceMetadataPattern", displayName = "Name")
-	@Required
-	public String name;
-
 	@STProperty(description = "A description of this ResourceMetadataPattern", displayName = "Description")
 	public String description;
 

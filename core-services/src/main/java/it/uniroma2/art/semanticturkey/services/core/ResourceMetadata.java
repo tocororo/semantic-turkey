@@ -1,6 +1,9 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.config.resourceMetadata.ResourceMetadataAssociation;
@@ -53,17 +56,26 @@ public class ResourceMetadata extends STServiceAdapter {
 	/* ====== Mappings ====== */
 
 	@STServiceOperation()
-	public List<ResourceMetadataAssociation> listAssociations() throws NoSuchConfigurationManager, STPropertyAccessException,
+	public JsonNode listAssociations() throws NoSuchConfigurationManager, STPropertyAccessException,
 			WrongPropertiesException, ConfigurationNotFoundException, IOException {
+
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ArrayNode associationJsonArray = jsonFactory.arrayNode();
+
 		ResourceMetadataAssociationStore cm = getResourceMetadataAssociationStore();
 		//this service could be invoked also when no project is accessed (e.g. when creating a project)
 		Project proj = (stServiceContext.hasContextParameter("project")) ? getProject() : null;
 		Collection<Reference> references = cm.getConfigurationReferences(proj, UsersManager.getLoggedUser());
 		List<ResourceMetadataAssociation> associations = new ArrayList<>();
 		for (Reference ref : references) {
-			associations.add(cm.getConfiguration(ref));
+			ResourceMetadataAssociation association = cm.getConfiguration(ref);
+			ObjectNode associationNode = jsonFactory.objectNode();
+			associationNode.put("ref", ref.getRelativeReference());
+			associationNode.put("role", association.role.toString());
+			associationNode.put("patternRef", association.patternReference);
+			associationJsonArray.add(associationNode);
 		}
-		return associations;
+		return associationJsonArray;
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -100,6 +112,13 @@ public class ResourceMetadata extends STServiceAdapter {
 		//this service could be invoked also when no project is accessed (e.g. when creating a project)
 		Project proj = (stServiceContext.hasContextParameter("project")) ? getProject() : null;
 		return cm.getConfigurationReferences(proj, UsersManager.getLoggedUser());
+	}
+
+	@STServiceOperation
+	public ResourceMetadataPattern getPattern(String reference) throws NoSuchConfigurationManager,
+			STPropertyAccessException, WrongPropertiesException, ConfigurationNotFoundException, IOException {
+		Reference ref = parseReference(reference);
+		return getResourceMetadataPatternStore().getConfiguration(ref);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)

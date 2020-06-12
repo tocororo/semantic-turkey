@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -49,6 +50,12 @@ public class Reference {
 		return identifier;
 	}
 
+	@JsonIgnore
+	public String getRelativeReference() {
+		return Scope.computeScope(this.project.orElse(null), this.user.orElse(null)).getSerializationCode() + ":"
+				+ this.identifier;
+	}
+
 	public static Collection<Reference> liftIdentifiers(@Nullable Project project, @Nullable STUser user,
 			Collection<String> identifiers) {
 		return identifiers.stream().map(identifier -> new Reference(project, user, identifier))
@@ -75,9 +82,7 @@ public class Reference {
 			gen.writeStringField("user", value.user.map(STUser::getUsername).orElse(null));
 			gen.writeStringField("project", value.project.map(Project::getName).orElse(null));
 			gen.writeStringField("identifier", value.identifier);
-			gen.writeStringField("relativeReference",
-					Scope.computeScope(value.project.orElse(null), value.user.orElse(null)).getSerializationCode() + ":"
-							+ value.identifier);
+			gen.writeStringField("relativeReference", value.getRelativeReference());
 			gen.writeEndObject();
 		}
 
