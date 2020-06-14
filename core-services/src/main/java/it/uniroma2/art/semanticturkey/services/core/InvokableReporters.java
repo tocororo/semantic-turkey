@@ -96,6 +96,18 @@ public class InvokableReporters extends STServiceAdapter {
 	}
 
 	/**
+	 * Returns a form for the definition of a new invokable reporter.
+	 * 
+	 * @return
+	 * @throws NoSuchConfigurationManager
+	 */
+	@PreAuthorize("@auth.isAuthorized('invokableReporter(reporter)', 'R')")
+	@STServiceOperation
+	public InvokableReporter getInvokableReporterForm() {
+		return new InvokableReporter();
+	}
+
+	/**
 	 * Returns the <em>scope</em>s on which invokable reporters can be defined.
 	 * 
 	 * @return
@@ -335,6 +347,7 @@ public class InvokableReporters extends STServiceAdapter {
 	 * @throws InvocationTargetException
 	 * @throws InvokableReporterException
 	 */
+	@PreAuthorize("true") // actual authorization is done when invoking the underlying custom services
 	@STServiceOperation
 	public Report compileReport(String reporterReference,
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "true") boolean render,
@@ -462,7 +475,8 @@ public class InvokableReporters extends STServiceAdapter {
 			}
 
 			if (render) {
-				ObjectMapper responseObjectMapper = RequestMappingHandlerAdapterPostProcessor.createObjectMapper();
+				ObjectMapper responseObjectMapper = RequestMappingHandlerAdapterPostProcessor
+						.createObjectMapper();
 
 				Iterator<Section> reportSectionIt = report.sections.iterator();
 				Iterator<ServiceInvocation> reporterSectionIt = reporter.sections.iterator();
@@ -512,6 +526,7 @@ public class InvokableReporters extends STServiceAdapter {
 	 * @throws InvocationTargetException
 	 * @throws InvokableReporterException
 	 */
+	@PreAuthorize("true") // actual authorization is done when invoking the underlying custom services
 	@STServiceOperation
 	public void compileAndDownloadReport(HttpServletResponse response, String reporterReference,
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional String targetMimeType)

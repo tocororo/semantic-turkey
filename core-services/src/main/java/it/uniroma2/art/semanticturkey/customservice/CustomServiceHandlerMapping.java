@@ -502,6 +502,8 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 			InvocationHandler invocationHandler = customServiceBackend.createInvocationHandler();
 			boolean isWrite = customServiceBackend.isWrite();
 
+			String preauthorizeValue = computeAuthorizationString(operationDefinition, isWrite);
+
 			TypeDefinition returnTypeDefinition = generateTypeDefinitionFromSchema(
 					operationDefinition.returns);
 
@@ -526,7 +528,9 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 					.intercept(InvocationHandlerAdapter.of(invocationHandler))
 					.annotateMethod(AnnotationDescription.Builder.ofType(STServiceOperation.class)
 							.define("method", isWrite ? RequestMethod.POST : RequestMethod.GET).build(),
-							AnnotationDescription.Builder.ofType(isWrite ? Write.class : Read.class).build());
+							AnnotationDescription.Builder.ofType(isWrite ? Write.class : Read.class).build(),
+							AnnotationDescription.Builder.ofType(PreAuthorize.class)
+									.define("value", preauthorizeValue).build());
 		}
 
 		Class<?> serviceClass = serviceClassBuilder.make().load(getClass().getClassLoader()).getLoaded();
@@ -574,62 +578,6 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 								.define("required", parameterDefinition.required).build());
 			}
 
-			String preauthorizeValue;
-
-			if (StringUtils.isNoneBlank(operationDefinition.authorization)) {
-				Matcher m = AUTHORIZATION_PATTERN.matcher(operationDefinition.authorization);
-				if (!m.find()) {
-					throw new RuntimeException("Invalid authorization string");
-				}
-
-				StringBuilder sb = new StringBuilder();
-				sb.append("@auth.isAuthorized(");
-				sb.append("'");
-				sb.append(m.group("area"));
-				if (m.group("subj") != null) {
-					sb.append("(");
-					if (m.group("subjlit") != null) {
-						sb.append(m.group("subjlit"));
-					} else {
-						sb.append("' +");
-						sb.append("@auth." + m.group("subjfun").substring(1)); // removes leading @
-						sb.append("+ '");
-					}
-					if (m.group("scope") != null) {
-						sb.append(", ").append(m.group("scope"));
-					}
-					sb.append(")");
-					sb.append("'");
-				}
-				if (m.group("userkey") != null) {
-					sb.append(", '{" + m.group("userkey") + ": ");
-					if (m.group("userlit") != null) {
-						sb.append("''").append(m.group("userlit")).append("''");
-					} else {
-						sb.append("'''").append(" + @auth." + m.group("userfun").substring(1))
-								.append(" + '''");
-					}
-					sb.append("}'");
-				}
-				String crudv = m.group("crudv");
-				if (isWrite) {
-					if (!crudv.chars().allMatch(c -> c == 'C' || c == 'U' || c == 'D')) {
-						throw new IllegalArgumentException(
-								"Invalid CRUD operations associated with a write service operation");
-					}
-				} else {
-					if (!Objects.equals(crudv, "R")) {
-						throw new IllegalArgumentException(
-								"Invalid CRUD operations associated with a read service operation");
-					}
-				}
-
-				sb.append(", '").append(crudv).append("'");
-				sb.append(")");
-				preauthorizeValue = sb.toString();
-			} else {
-				preauthorizeValue = "@auth.isAuthorized(true)";
-			}
 			controllerClassBuilder = MoreObjects.firstNonNull(parameterBuilder, methodBuilder)
 					.intercept(InvocationHandlerAdapter.of(new InvocationHandler() {
 
@@ -664,18 +612,77 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 									isWrite ? org.springframework.web.bind.annotation.RequestMethod.POST
 											: org.springframework.web.bind.annotation.RequestMethod.GET)
 							.defineArray("produces", "application/json;charset=UTF-8").build())
-					.annotateMethod(AnnotationDescription.Builder.ofType(ResponseBody.class).build(),
-							AnnotationDescription.Builder.ofType(PreAuthorize.class)
-									.define("value", preauthorizeValue).build());
+					.annotateMethod(AnnotationDescription.Builder.ofType(ResponseBody.class).build());
 		}
 
 		Class<? extends Object> controllerClass = controllerClassBuilder.make()
 				.load(getClass().getClassLoader()).getLoaded();
 
-		// build a controller object
-		Object controller = controllerClass.newInstance();
+		Object controller = context.createBean(controllerClass, AutowireCapableBeanFactory.AUTOWIRE_BY_TYPE,
+				true);
 
 		return controller;
+	}
+
+	protected String computeAuthorizationString(Operation operationDefinition, boolean isWrite)
+			throws RuntimeException, IllegalArgumentException {
+		String preauthorizeValue;
+
+		if (StringUtils.isNoneBlank(operationDefinition.authorization)) {
+			Matcher m = AUTHORIZATION_PATTERN.matcher(operationDefinition.authorization);
+			if (!m.find()) {
+				throw new RuntimeException("Invalid authorization string");
+			}
+
+			StringBuilder sb = new StringBuilder();
+			sb.append("@auth.isAuthorized(");
+			sb.append("'");
+			sb.append(m.group("area"));
+			if (m.group("subj") != null) {
+				sb.append("(");
+				if (m.group("subjlit") != null) {
+					sb.append(m.group("subjlit"));
+				} else {
+					sb.append("' +");
+					sb.append("@auth." + m.group("subjfun").substring(1)); // removes leading @
+					sb.append("+ '");
+				}
+				if (m.group("scope") != null) {
+					sb.append(", ").append(m.group("scope"));
+				}
+				sb.append(")");
+				sb.append("'");
+			}
+			if (m.group("userkey") != null) {
+				sb.append(", '{" + m.group("userkey") + ": ");
+				if (m.group("userlit") != null) {
+					sb.append("''").append(m.group("userlit")).append("''");
+				} else {
+					sb.append("'''").append(" + @auth." + m.group("userfun").substring(1)).append(" + '''");
+				}
+				sb.append("}'");
+			}
+			String crudv = m.group("crudv");
+			if (isWrite) {
+				if (!crudv.chars().allMatch(c -> c == 'C' || c == 'U' || c == 'D')) {
+					throw new IllegalArgumentException(
+							"Invalid CRUD operations associated with a write service operation");
+				}
+			} else {
+				if (!Objects.equals(crudv, "R")) {
+					throw new IllegalArgumentException(
+							"Invalid CRUD operations associated with a read service operation");
+				}
+			}
+
+			sb.append(", '").append(crudv).append("'");
+			sb.append(")");
+			preauthorizeValue = sb.toString();
+		} else {
+			preauthorizeValue = "@auth.isAuthorized(true)";
+		}
+
+		return preauthorizeValue;
 	}
 
 	protected CustomServiceBackend buildExtension(Operation operationDefinition)
