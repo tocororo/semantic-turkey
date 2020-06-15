@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.config.resourceMetadata;
+package it.uniroma2.art.semanticturkey.config.resourcemetadata;
 
 import it.uniroma2.art.semanticturkey.extension.ProjectScopedConfigurableComponent;
 

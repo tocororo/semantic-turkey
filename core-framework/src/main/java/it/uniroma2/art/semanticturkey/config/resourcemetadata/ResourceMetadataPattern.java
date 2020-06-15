@@ -1,7 +1,6 @@
-package it.uniroma2.art.semanticturkey.config.resourceMetadata;
+package it.uniroma2.art.semanticturkey.config.resourcemetadata;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
-import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 public class ResourceMetadataPattern implements Configuration {

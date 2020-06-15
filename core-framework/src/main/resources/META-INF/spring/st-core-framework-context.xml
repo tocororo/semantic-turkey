@@ -386,11 +386,11 @@
 
 	<osgi:service auto-export="interfaces">
 		<bean
-			class="it.uniroma2.art.semanticturkey.config.resourceMetadata.ResourceMetadataPatternStore" />
+			class="it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataPatternStore" />
 	</osgi:service>
 	<osgi:service auto-export="interfaces">
 		<bean
-			class="it.uniroma2.art.semanticturkey.config.resourceMetadata.ResourceMetadataAssociationStore" />
+			class="it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociationStore" />
 	</osgi:service>
 
 	<!-- Publishes the stores about Remote Alignment Services -->
