@@ -260,8 +260,9 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 			CustomServiceException {
 
 		// parses the JSON object into an actual Configuration object
-		CustomService customServiceCfg = STPropertiesManager
-				.loadSTPropertiesFromObjectNode(CustomService.class, true, customServiceDefinitiondefinition);
+		ObjectMapper mapper = STPropertiesManager.createObjectMapper(exptManager);
+		CustomService customServiceCfg = STPropertiesManager.loadSTPropertiesFromObjectNode(
+				CustomService.class, true, customServiceDefinitiondefinition, mapper);
 
 		registerCustomService(customServiceCfgID, customServiceCfg, overwrite);
 	}
