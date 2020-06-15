@@ -651,8 +651,8 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 					sb.append(", ").append(m.group("scope"));
 				}
 				sb.append(")");
-				sb.append("'");
 			}
+			sb.append("'");
 			if (m.group("userkey") != null) {
 				sb.append(", '{" + m.group("userkey") + ": ");
 				if (m.group("userlit") != null) {
