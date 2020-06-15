@@ -15,9 +15,13 @@ import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 public interface UserSettingsManager<T extends Settings> extends SettingsManager {
 
 	default T getUserSettings(STUser user) throws STPropertyAccessException {
+		return getUserSettings(user, false);
+	}
+
+	default T getUserSettings(STUser user, boolean explicit) throws STPropertyAccessException {
 		return STPropertiesManager.getUserSettings(
 				ReflectionUtilities.getInterfaceArgumentTypeAsClass(getClass(), UserSettingsManager.class, 0),
-				user, getId());
+				user, getId(), explicit);
 	}
 
 	default void storeUserSettings(STUser user, T settings) throws STPropertyUpdateException {

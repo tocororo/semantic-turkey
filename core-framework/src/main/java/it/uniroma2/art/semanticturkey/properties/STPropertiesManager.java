@@ -165,10 +165,19 @@ public class STPropertiesManager {
 	 */
 	public static <T extends STProperties> T getPUSettings(Class<T> valueType, Project project, STUser user,
 			String pluginID) throws STPropertyAccessException {
+		return getPUSettings(valueType, project, user, pluginID, false);
+	}
+
+	public static <T extends STProperties> T getPUSettings(Class<T> valueType, Project project, STUser user,
+			String pluginID, boolean explicit) throws STPropertyAccessException {
 		File defaultPropFile = getPUSettingsProjectDefaultsFile(project, pluginID);
 		File propFile = getPUSettingsFile(project, user, pluginID);
 
-		return loadSTPropertiesFromYAMLFiles(valueType, false, defaultPropFile, propFile);
+		if (explicit) {
+			return loadSTPropertiesFromYAMLFiles(valueType, false, propFile);
+		} else {
+			return loadSTPropertiesFromYAMLFiles(valueType, false, defaultPropFile, propFile);
+		}
 	}
 
 	/**
@@ -610,9 +619,19 @@ public class STPropertiesManager {
 
 	public static <T extends STProperties> T getUserSettings(Class<T> valueType, STUser user, String pluginID)
 			throws STPropertyAccessException {
+		return getUserSettings(valueType, user, pluginID, false);
+	}
+
+	public static <T extends STProperties> T getUserSettings(Class<T> valueType, STUser user, String pluginID,
+			boolean explicit) throws STPropertyAccessException {
 		File propFile = getUserSettingsFile(user, pluginID);
 		File defaultPropFile = getUserSettingsDefaultsFile(pluginID);
-		return loadSTPropertiesFromYAMLFiles(valueType, false, defaultPropFile, propFile);
+
+		if (explicit) {
+			return loadSTPropertiesFromYAMLFiles(valueType, false, propFile);
+		} else {
+			return loadSTPropertiesFromYAMLFiles(valueType, false, defaultPropFile, propFile);
+		}
 	}
 
 	/**
@@ -657,7 +676,7 @@ public class STPropertiesManager {
 	public static ObjectMapper createObjectMapper() {
 		return createObjectMapper(null);
 	}
-	
+
 	public static ObjectMapper createObjectMapper(ExtensionPointManager exptManager) {
 		YAMLFactory fact = new YAMLFactory();
 		fact.enable(YAMLGenerator.Feature.MINIMIZE_QUOTES);
@@ -938,10 +957,34 @@ public class STPropertiesManager {
 	 */
 	public static <T extends STProperties> T getProjectSettings(Class<T> valueType, Project project,
 			String pluginID) throws STPropertyAccessException {
+		return getProjectSettings(valueType, project, pluginID, false);
+	}
+
+	/**
+	 * Returns the project settings about a plugin. The returned settings are (in descending order of
+	 * priority):
+	 * <ul>
+	 * <li>the values stored in the project-settings for the plugin</li>
+	 * <li>the default values stored at the system level</li>
+	 * <li>the default value hard-wired in the provided {@link STProperties} object</li>
+	 * </ul>
+	 * 
+	 * @param valueType
+	 * @param project
+	 * @param pluginID
+	 * @param explicit
+	 * @throws STPropertyAccessException
+	 */
+	public static <T extends STProperties> T getProjectSettings(Class<T> valueType, Project project,
+			String pluginID, boolean explicit) throws STPropertyAccessException {
 		File defaultPropFile = getProjectSettingsDefaultsFile(pluginID);
 		File propFile = getProjectSettingsFile(project, pluginID);
 
-		return loadSTPropertiesFromYAMLFiles(valueType, false, defaultPropFile, propFile);
+		if (explicit) {
+			return loadSTPropertiesFromYAMLFiles(valueType, false, propFile);
+		} else {
+			return loadSTPropertiesFromYAMLFiles(valueType, false, defaultPropFile, propFile);
+		}
 	}
 
 	/**
@@ -1075,6 +1118,32 @@ public class STPropertiesManager {
 			setProperty(properties, propName, propValue);
 			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+
+	/**
+	 * Sets the value of a default project setting at system level.
+	 * 
+	 * @param settings
+	 * @param project
+	 * @param pluginID
+	 * @param allowIncompletePropValueSet
+	 */
+	public static void setProjectSettingsDefault(STProperties settings, String pluginID,
+			boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
+		try {
+			if (!allowIncompletePropValueSet) {
+				STPropertiesChecker settingsChecker = STPropertiesChecker
+						.getModelConfigurationChecker(settings);
+				if (!settingsChecker.isValid()) {
+					throw new STPropertyUpdateException(
+							"Settings not valid: " + settingsChecker.getErrorMessage());
+				}
+			}
+			File settingsFile = getProjectSettingsDefaultsFile(pluginID);
+			storeSTPropertiesInYAML(settings, settingsFile, false);
+		} catch (IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}

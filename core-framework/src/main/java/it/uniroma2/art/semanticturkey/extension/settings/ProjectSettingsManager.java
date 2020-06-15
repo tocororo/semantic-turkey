@@ -15,8 +15,13 @@ import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 public interface ProjectSettingsManager<T extends Settings> extends SettingsManager {
 
 	default T getProjectSettings(Project project /* , String identifier */) throws STPropertyAccessException {
+		return getProjectSettings(project, false);
+	}
+
+	default T getProjectSettings(Project project, boolean explicit) throws STPropertyAccessException {
 		return STPropertiesManager.getProjectSettings(ReflectionUtilities.getInterfaceArgumentTypeAsClass(
-				getClass(), ProjectSettingsManager.class, 0), project, getId());
+				getClass(), ProjectSettingsManager.class, 0), project, getId(), explicit);
+
 	}
 
 	default void storeProjectSettings(Project project, T settings) throws STPropertyUpdateException {

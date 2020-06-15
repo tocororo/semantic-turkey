@@ -36,15 +36,20 @@ public interface SettingsManager extends IdentifiableComponent {
 	}
 
 	default Settings getSettings(Project project, STUser user, Scope scope) throws STPropertyAccessException {
+		return this.getSettings(project, user, scope, false);
+	}
+
+	default Settings getSettings(Project project, STUser user, Scope scope, boolean explicit)
+			throws STPropertyAccessException {
 		switch (scope) {
 		case SYSTEM:
-			return ((SystemSettingsManager<?>) this).getSystemSettings();
+			return ((SystemSettingsManager<?>) this).getSystemSettings(explicit);
 		case PROJECT:
-			return ((ProjectSettingsManager<?>) this).getProjectSettings(project);
+			return ((ProjectSettingsManager<?>) this).getProjectSettings(project, explicit);
 		case USER:
-			return ((UserSettingsManager<?>) this).getUserSettings(user);
+			return ((UserSettingsManager<?>) this).getUserSettings(user, explicit);
 		case PROJECT_USER:
-			return ((PUSettingsManager<?>) this).getProjectSettings(project, user);
+			return ((PUSettingsManager<?>) this).getProjectSettings(project, user, explicit);
 		default:
 			throw new IllegalArgumentException("Unrecognized scope: " + scope); // it should not happen
 		}

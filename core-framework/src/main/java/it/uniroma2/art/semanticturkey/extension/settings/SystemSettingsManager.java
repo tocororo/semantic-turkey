@@ -23,4 +23,8 @@ public interface SystemSettingsManager<T extends Settings> extends SettingsManag
 		STPropertiesManager.setSystemSettings(settings, getId(), true);
 	}
 
+	default T getSystemSettings(boolean explicit) throws STPropertyAccessException {
+		return getSystemSettings();
+	}
+
 }

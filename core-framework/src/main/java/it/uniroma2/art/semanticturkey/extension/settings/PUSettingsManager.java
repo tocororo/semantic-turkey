@@ -21,6 +21,14 @@ public interface PUSettingsManager<T extends Settings> extends SettingsManager {
 				project, user, getId());
 	}
 
+	default T getProjectSettings(Project project, STUser user, boolean explicit)
+			throws STPropertyAccessException {
+		return STPropertiesManager.getPUSettings(
+				ReflectionUtilities.getInterfaceArgumentTypeAsClass(getClass(), PUSettingsManager.class, 0),
+				project, user, getId(), explicit);
+	}
+
+	
 	default void storeProjectSettings(Project project, STUser user, T settings)
 			throws STPropertyUpdateException {
 		STPropertiesManager.setPUSettings(settings, project, user, getId(), true);

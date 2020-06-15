@@ -44,7 +44,8 @@
 
 	<bean id="resourceChangeNotificationManager"
 		class="it.uniroma2.art.semanticturkey.notification.ResourceChangeNotificationManager" />
-	<osgi:service ref="resourceChangeNotificationManager" interface="it.uniroma2.art.semanticturkey.notification.ResourceChangeNotificationManager"></osgi:service>
+	<osgi:service ref="resourceChangeNotificationManager"
+		interface="it.uniroma2.art.semanticturkey.notification.ResourceChangeNotificationManager"></osgi:service>
 
 	<!-- Imports the MAPALE façade -->
 	<osgi:reference id="mediationFramework"
@@ -266,7 +267,8 @@
 	<bean id="notificationSystemSettingsManager"
 		class="it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettingsManager" />
 
-	<osgi:service auto-export="interfaces" ref="notificationSystemSettingsManager" />
+	<osgi:service auto-export="interfaces"
+		ref="notificationSystemSettingsManager" />
 
 	<!-- Publishes the ContributionStore -->
 
@@ -391,4 +393,14 @@
 			class="it.uniroma2.art.semanticturkey.config.resourceMetadata.ResourceMetadataAssociationStore" />
 	</osgi:service>
 
+	<!-- Publishes the stores about Remote Alignment Services -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.config.alignmentservices.RemoteAlignmentServicesStore" />
+	</osgi:service>
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.settings.alignmentservices.RemoteAlignmentServiceProjectSettingsManager" />
+	</osgi:service>
 </beans>

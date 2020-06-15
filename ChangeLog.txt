@@ -1,5 +1,6 @@
 version 8.0
 date: dd/mm/yyyy
+  * allow to configure remote alignment service URL
   * automatic update of the PEARL part of a Custom Form with inferred annoations
   * new API for the programmatic creation of STProperties
   * on-the-fly generation of STProperties from JSON Schemas

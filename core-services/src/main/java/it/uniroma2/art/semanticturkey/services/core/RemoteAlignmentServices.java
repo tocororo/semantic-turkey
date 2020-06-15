@@ -3,17 +3,24 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URL;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -34,7 +41,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestClientException;
@@ -50,6 +56,12 @@ import it.uniroma2.art.maple.scenario.Dataset;
 import it.uniroma2.art.maple.scenario.ScenarioDefinition;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel;
+import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
+import it.uniroma2.art.semanticturkey.config.alignmentservices.RemoteAlignmentServiceConfiguration;
+import it.uniroma2.art.semanticturkey.config.alignmentservices.RemoteAlignmentServicesStore;
+import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
+import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
@@ -57,6 +69,8 @@ import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.properties.json.schema.ConversionException;
 import it.uniroma2.art.semanticturkey.properties.json.schema.JsonSchemaConverter;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -77,6 +91,8 @@ import it.uniroma2.art.semanticturkey.services.core.alignmentservices.TaskDTO;
 import it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.Matcher;
 import it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.ServiceMetadata;
 import it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.Task;
+import it.uniroma2.art.semanticturkey.settings.alignmentservices.RemoteAlignmentServiceProjectSettings;
+import it.uniroma2.art.semanticturkey.settings.alignmentservices.RemoteAlignmentServiceProjectSettingsManager;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 
 /**
@@ -103,7 +119,6 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 				objectMapper.registerModule(new JavaTimeModule());
 			}
 		}
-
 	}
 
 	/**
@@ -117,7 +132,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	@STServiceOperation
 	public ServiceMetadataDTO getServiceMetadata() throws AlignmentServiceException {
 		try {
-			ServiceMetadata serviceMetadata = restTemplate.getForObject(getAlignmentServiceEndpoint(),
+			RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
+			ServiceMetadata serviceMetadata = restTemplate.getForObject(endpoint.serverURL.toString(),
 					ServiceMetadata.class);
 			ServiceMetadataDTO serviceMetadataDTO = new ServiceMetadataDTO();
 			serviceMetadataDTO.service = serviceMetadata.service;
@@ -161,7 +177,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 			headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
 			HttpEntity<ScenarioDefinition> httpEntity = new HttpEntity<>(scenarioDefinition, headers);
-			List<Matcher> matcher = restTemplate.exchange(getAlignmentServiceEndpoint() + "matchers/search",
+			RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
+			List<Matcher> matcher = restTemplate.exchange(endpoint.serverURL + "matchers/search",
 					HttpMethod.POST, httpEntity, new ParameterizedTypeReference<List<Matcher>>() {
 					}).getBody();
 			return matcher.stream().map(m -> {
@@ -222,7 +239,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			rightDatasetIRI = null;
 		}
 
-		ResponseEntity<List<Task>> response = restTemplate.exchange(getAlignmentServiceEndpoint() + "tasks",
+		RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
+		ResponseEntity<List<Task>> response = restTemplate.exchange(endpoint.serverURL + "tasks",
 				HttpMethod.GET, null, new ParameterizedTypeReference<List<Task>>() {
 				});
 
@@ -297,8 +315,9 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			return null;
 
 		};
-		restTemplate.execute(getAlignmentServiceEndpoint() + "tasks/{id}/alignment", HttpMethod.GET,
-				requestCallback, responseExtractor, ImmutableMap.of("id", taskId));
+		RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
+		restTemplate.execute(endpoint.serverURL + "tasks/{id}/alignment", HttpMethod.GET, requestCallback,
+				responseExtractor, ImmutableMap.of("id", taskId));
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -313,8 +332,9 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			FileUtils.copyInputStreamToFile(response.getBody(), inputServerFile);
 			return null;
 		};
-		restTemplate.execute(getAlignmentServiceEndpoint() + "tasks/{id}/alignment", HttpMethod.GET,
-				requestCallback, responseExtractor, ImmutableMap.of("id", taskId));
+		RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
+		restTemplate.execute(endpoint.serverURL + "tasks/{id}/alignment", HttpMethod.GET, requestCallback,
+				responseExtractor, ImmutableMap.of("id", taskId));
 
 		// creating model for loading alignment
 		AlignmentModel alignModel = new AlignmentModel();
@@ -410,27 +430,205 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			throw new AlignmentServiceException("No pairing of lexicalization set");
 		}
 
-		Task task = restTemplate.postForObject(getAlignmentServiceEndpoint() + "tasks", alignmentPlan,
-				Task.class);
+		RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
+		Task task = restTemplate.postForObject(endpoint.serverURL + "tasks", alignmentPlan, Task.class);
 		return task.getId();
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void deleteTask(String id) throws IOException, AlignmentServiceException {
-		restTemplate.delete(getAlignmentServiceEndpoint() + "tasks/{id}", ImmutableMap.of("id", id));
+		RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
+		restTemplate.delete(endpoint.serverURL + "tasks/{id}", ImmutableMap.of("id", id));
 	}
 
-	private String getAlignmentServiceEndpoint() {
-		String alignmentPort = null;
+	/**
+	 * Gets the configured remote alignment services.
+	 * 
+	 * @return
+	 * @throws IOException
+	 * @throws ConfigurationNotFoundException
+	 * @throws WrongPropertiesException
+	 * @throws STPropertyAccessException
+	 * @throws NoSuchConfigurationManager
+	 */
+	@PreAuthorize("@auth.isAdmin() || pm")
+	@STServiceOperation
+	public Map<String, RemoteAlignmentServiceConfiguration> getRemoteAlignmentServices()
+			throws IOException, ConfigurationNotFoundException, WrongPropertiesException,
+			STPropertyAccessException, NoSuchConfigurationManager {
+		RemoteAlignmentServicesStore cm = (RemoteAlignmentServicesStore) exptManager
+				.getConfigurationManager(RemoteAlignmentServicesStore.class.getName());
+		Map<String, RemoteAlignmentServiceConfiguration> configurations = new TreeMap<>();
+
+		for (String id : cm.getSystemConfigurationIdentifiers()) {
+			RemoteAlignmentServiceConfiguration config = cm.getSystemConfiguration(id);
+			configurations.put(id, config);
+		}
+
+		return configurations;
+	}
+
+	/**
+	 * Adds a configuration for a remote alignment service. Optionally, the configuration can be set as
+	 * default, if it is the first.
+	 * 
+	 * @param id
+	 * @param serverURL
+	 * @param username
+	 * @param password
+	 * @param defaultIfFirst
+	 * @throws IOException
+	 * @throws WrongPropertiesException
+	 * @throws STPropertyUpdateException
+	 * @throws NoSuchConfigurationManager
+	 * @throws DuplicatedResourceException
+	 */
+	@PreAuthorize("@auth.isAdmin()")
+	@STServiceOperation(method = RequestMethod.POST)
+	public synchronized void addRemoteAlignmentService(String id, URL serverURL, @Optional String username,
+			@Optional String password, @Optional(defaultValue = "true") boolean defaultIfFirst)
+			throws IOException, WrongPropertiesException, STPropertyUpdateException,
+			NoSuchConfigurationManager, DuplicatedResourceException {
+		RemoteAlignmentServicesStore cm = (RemoteAlignmentServicesStore) exptManager
+				.getConfigurationManager(RemoteAlignmentServicesStore.class.getName());
+		Collection<String> existingIds = cm.getSystemConfigurationIdentifiers();
+		if (existingIds.contains(id)) {
+			throw new DuplicatedResourceException(
+					"A configuration with this identifier already exists: " + id);
+		}
+
+		RemoteAlignmentServiceConfiguration config = new RemoteAlignmentServiceConfiguration();
+		config.serverURL = serverURL;
+		config.username = username;
+		config.password = password;
+
+		cm.storeSystemConfiguration(id, config);
+
+		if (existingIds.size() == 0) {
+			RemoteAlignmentServiceProjectSettings defaultSettings = new RemoteAlignmentServiceProjectSettings();
+			defaultSettings.configID = id;
+			STPropertiesManager.setProjectSettingsDefault(defaultSettings,
+					RemoteAlignmentServiceProjectSettingsManager.class.getName(), false);
+		}
+	}
+
+	/**
+	 * Deletes the configuration of a remote alignment service. This operation can break existing references
+	 * from projects.
+	 * 
+	 * @param id
+	 * @throws ConfigurationNotFoundException
+	 * @throws NoSuchConfigurationManager
+	 */
+	@PreAuthorize("@auth.isAdmin()")
+	@STServiceOperation(method = RequestMethod.POST)
+	public synchronized void deleteRemoteAlignmentService(String id)
+			throws ConfigurationNotFoundException, NoSuchConfigurationManager {
+		RemoteAlignmentServicesStore cm = (RemoteAlignmentServicesStore) exptManager
+				.getConfigurationManager(RemoteAlignmentServicesStore.class.getName());
+		cm.deleteSystemConfiguration(id);
+	}
+
+	/**
+	 * Associates the project to an alignment service configuration (given its <code>id</code>), possibly
+	 * overriding an existing default service.
+	 * 
+	 * @param id
+	 * @throws ConfigurationNotFoundException
+	 * @throws NoSuchSettingsManager
+	 * @throws STPropertyUpdateException
+	 */
+	@PreAuthorize("@auth.isAuthorized('pm(project, alignmentService)', 'C')")
+	@STServiceOperation(method = RequestMethod.POST)
+	public synchronized void setAlignmentServiceForProject(String id)
+			throws NoSuchSettingsManager, STPropertyUpdateException {
+		RemoteAlignmentServiceProjectSettingsManager sm = (RemoteAlignmentServiceProjectSettingsManager) exptManager
+				.getSettingsManager(RemoteAlignmentServiceProjectSettingsManager.class.getName());
+		RemoteAlignmentServiceProjectSettings settings = new RemoteAlignmentServiceProjectSettings();
+		settings.configID = id;
+		sm.storeProjectSettings(getProject(), settings);
+	}
+
+	/**
+	 * Returns the alignment service associated with the project. The service returns a pair consisting of a
+	 * configuration reference and a boolean flag telling whether or not it is explicit. If no service is
+	 * configured, the returned value is <code>null</code>.
+	 * 
+	 * @return
+	 * @throws STPropertyAccessException
+	 * @throws NoSuchSettingsManager
+	 * 
+	 */
+	@PreAuthorize("@auth.isAuthorized('pm(project, alignmentService)', 'R')")
+	@STServiceOperation
+	public synchronized @Nullable Pair<String, Boolean> getAlignmentServiceForProject()
+			throws STPropertyAccessException, NoSuchSettingsManager {
+		RemoteAlignmentServiceProjectSettingsManager sm = (RemoteAlignmentServiceProjectSettingsManager) exptManager
+				.getSettingsManager(RemoteAlignmentServiceProjectSettingsManager.class.getName());
+		RemoteAlignmentServiceProjectSettings explicitSettings = sm.getProjectSettings(getProject(), true);
+
+		if (explicitSettings.configID != null) {
+			return ImmutablePair.of(explicitSettings.configID, true);
+		}
+
+		RemoteAlignmentServiceProjectSettings implicitSettings = sm.getProjectSettings(getProject(), false);
+
+		if (implicitSettings.configID != null) {
+			return ImmutablePair.of(implicitSettings.configID, false);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Disassociates the project from an alignment service configuration (given its <code>id</code>), leaving
+	 * in place any default service defined by the administrator.
+	 * 
+	 * @throws NoSuchSettingsManager
+	 * @throws STPropertyUpdateException
+	 */
+	@PreAuthorize("@auth.isAuthorized('pm(project, alignmentService)', 'D')")
+	@STServiceOperation(method = RequestMethod.POST)
+	public synchronized void removeAlignmentServiceForProject()
+			throws NoSuchSettingsManager, STPropertyUpdateException {
+		RemoteAlignmentServiceProjectSettingsManager sm = (RemoteAlignmentServiceProjectSettingsManager) exptManager
+				.getSettingsManager(RemoteAlignmentServiceProjectSettingsManager.class.getName());
+		RemoteAlignmentServiceProjectSettings settings = new RemoteAlignmentServiceProjectSettings();
+		settings.configID = null;
+		sm.storeProjectSettings(getProject(), settings);
+	}
+
+	private RemoteAlignmentServiceConfiguration getAlignmentServiceEndpoint() {
+		RemoteAlignmentServiceProjectSettingsManager sm;
 		try {
-			alignmentPort = STPropertiesManager
-					.getSystemSetting(STPropertiesManager.SETTING_ALIGNMENT_REMOTE_PORT);
+			sm = (RemoteAlignmentServiceProjectSettingsManager) exptManager
+					.getSettingsManager(RemoteAlignmentServiceProjectSettingsManager.class.getName());
+		} catch (NoSuchSettingsManager e) {
+			throw new IllegalStateException("Unexpected exception", e);
+		}
+		RemoteAlignmentServiceProjectSettings settings;
+		try {
+			settings = sm.getProjectSettings(getProject());
 		} catch (STPropertyAccessException e) {
-			e.printStackTrace();
+			throw new IllegalStateException("Unexpected exception", e);
 		}
-		if (alignmentPort == null) {
-			alignmentPort = "7575";
+		if (settings.configID == null) {
+			throw new IllegalStateException("No alignement service configured");
 		}
-		return "http://localhost:" + alignmentPort + "/";
+
+		RemoteAlignmentServicesStore cm;
+		try {
+			cm = (RemoteAlignmentServicesStore) exptManager
+					.getConfigurationManager(RemoteAlignmentServicesStore.class.getName());
+		} catch (NoSuchConfigurationManager e) {
+			throw new IllegalStateException("Unexpected exception", e);
+		}
+		try {
+			return cm.getSystemConfiguration(settings.configID);
+		} catch (IOException | ConfigurationNotFoundException | WrongPropertiesException
+				| STPropertyAccessException e) {
+			throw new IllegalStateException(
+					"Unable to retrieve the alignment service configuration: " + settings.configID, e);
+		}
 	}
 }
