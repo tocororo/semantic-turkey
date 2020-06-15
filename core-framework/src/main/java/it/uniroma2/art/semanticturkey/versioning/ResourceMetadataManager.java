@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
+import it.uniroma2.art.semanticturkey.event.annotation.EventListener;
 import it.uniroma2.art.semanticturkey.event.annotation.TransactionalEventListener;
 import it.uniroma2.art.semanticturkey.event.annotation.TransactionalEventListener.Phase;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -107,17 +108,15 @@ public class ResourceMetadataManager {
 	}
 
 	/**
-	 * Manages metadata about a resource that was created. This listener is executed before the current
-	 * transaction is committed, so that it can manipulate metadata within the same transaction that delete a
-	 * resource. Deleting a resource implies that every statement about it is deleted from the repository;
-	 * therefore, it is not possible to add metadata, such as the deletion date/time, because the subject
-	 * resource no longer exists after the successful completion of the transaction. However, it might be
-	 * necessary to explicitly delete metadata, in particular, when there are 2nd-level resources.
+	 * Manages metadata about a resource that was created. This listener (which is not transactional) is
+	 * executed Immediately as the event is first published. Indeed, deletions are published before they
+	 * actually occur, because otherwise all 1st level statements of the deleted resource would have been
+	 * removed from the repository.
 	 * 
 	 * @param event
 	 */
-	@TransactionalEventListener(phase = Phase.beforeCommit)
-	public void onDeletions(ResourceDeleted event) {
+	@EventListener
+	public void onDeletion(ResourceDeleted event) {
 		System.out.println("Deleted: " + event.getResource());
 	}
 

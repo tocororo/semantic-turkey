@@ -114,6 +114,7 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<jsoup.version>1.13.1</jsoup.version>
 		<openhtml.version>1.0.3</openhtml.version>
 		<fontbox.version>2.0.19</fontbox.version>
+		<cron-utils.version>9.0.2</cron-utils.version>
 	</properties>
 
 	<scm>

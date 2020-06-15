@@ -47,6 +47,15 @@
 							javax.servlet.http,
 							it.uniroma2.art.coda.converters.impl;implementation=true,
 							!org.apache.xerces.*,
+							<!-- for task scheduling -->
+							org.springframework.scheduling,
+							org.springframework.scheduling.annotation,
+							org.springframework.scheduling.concurrent,
+							org.springframework.scheduling.config,
+							<!-- for cgligb proxies -->
+							org.springframework.cglib.proxy,
+							org.springframework.cglib.core,
+							org.springframework.cglib.reflect,
 							*
 						</Import-Package>
 
@@ -374,6 +383,11 @@
 			<groupId>org.everit.json</groupId>
 			<artifactId>org.everit.json.schema</artifactId>
 			<version>${everit.json.schema.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.cronutils</groupId>
+			<artifactId>cron-utils</artifactId>
+			<version>${cron-utils.version}</version>
 		</dependency>
 	</dependencies>
 </project>

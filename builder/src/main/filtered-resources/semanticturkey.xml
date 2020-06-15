@@ -95,6 +95,9 @@
 		<bundle dependency="true">wrap:mvn:com.openhtmltopdf/openhtmltopdf-slf4j/${openhtml.version}</bundle>
 		<bundle dependency="true">wrap:mvn:de.rototor.pdfbox/graphics2d/0.25</bundle>
 		
+		<!-- cron-utils -->
+		<bundle dependency="true">wrap:mvn:com.cronutils/cron-utils/${cron-utils.version}</bundle>
+		
 		<!-- Console -->
 		<configfile finalname="/lib/st-console-${project.version}.jar"
 			override="false">

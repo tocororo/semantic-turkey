@@ -67,6 +67,13 @@ public class ResourceLifecycleEventPublisherInterceptor implements MethodInterce
 
 		Object rv;
 		try {
+
+			// deletions are published before the actually occur
+			for (ImmutablePair<Resource, RDFResourceRole> pair : versioningMetadata.getDeletedResources()) {
+				applicationContext.publishEvent(new ResourceDeleted(pair.getLeft(), pair.getRight(),
+						stServiceContext.getWGraph(), repository, project));
+			}
+
 			rv = invocation.proceed();
 
 			for (ImmutablePair<Resource, RDFResourceRole> pair : versioningMetadata.getCreatedResources()) {
@@ -76,11 +83,6 @@ public class ResourceLifecycleEventPublisherInterceptor implements MethodInterce
 
 			for (ImmutablePair<Resource, RDFResourceRole> pair : versioningMetadata.getModifiedResources()) {
 				applicationContext.publishEvent(new ResourceModified(pair.getLeft(), pair.getRight(),
-						stServiceContext.getWGraph(), repository, project));
-			}
-
-			for (ImmutablePair<Resource, RDFResourceRole> pair : versioningMetadata.getDeletedResources()) {
-				applicationContext.publishEvent(new ResourceDeleted(pair.getLeft(), pair.getRight(),
 						stServiceContext.getWGraph(), repository, project));
 			}
 
