@@ -19,7 +19,6 @@ import it.uniroma2.art.semanticturkey.config.customservice.CustomService;
 import it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefinitionStore;
 import it.uniroma2.art.semanticturkey.customservice.CustomServiceException;
 import it.uniroma2.art.semanticturkey.customservice.CustomServiceHandlerMapping;
-import it.uniroma2.art.semanticturkey.customservice.DuplicateIdException;
 import it.uniroma2.art.semanticturkey.customservice.DuplicateName;
 import it.uniroma2.art.semanticturkey.customservice.SchemaException;
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
@@ -49,11 +48,10 @@ public class CustomServices extends STServiceAdapter {
 	 * 
 	 * @see CustomServiceDefinitionStore
 	 * @return
-	 * @throws NoSuchConfigurationManager
 	 */
 	@PreAuthorize("@auth.isAuthorized('customService(service)', 'R')")
 	@STServiceOperation
-	public Collection<String> getCustomServiceIdentifiers() throws NoSuchConfigurationManager {
+	public Collection<String> getCustomServiceIdentifiers() {
 		return customServiceMapping.getCustomServiceIdentifiers();
 	}
 
@@ -81,7 +79,6 @@ public class CustomServices extends STServiceAdapter {
 	 * @param id
 	 * @param definition
 	 * @throws NoSuchConfigurationManager
-	 * @throws ConfigurationNotFoundException
 	 * @throws STPropertyAccessException
 	 * @throws STPropertyUpdateException
 	 * @throws WrongPropertiesException
@@ -97,7 +94,7 @@ public class CustomServices extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('customService(service)', 'C')")
 	@STServiceOperation(method = RequestMethod.POST)
 	public void createCustomService(String id, ObjectNode definition)
-			throws NoSuchConfigurationManager, ConfigurationNotFoundException, IOException,
+			throws IOException,
 			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException,
 			InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
 			NoSuchExtensionException, InvalidConfigurationException, CustomServiceException {
@@ -109,16 +106,11 @@ public class CustomServices extends STServiceAdapter {
 	 * 
 	 * @param id
 	 * @return
-	 * @throws NoSuchConfigurationManager
 	 * @throws STPropertyAccessException
-	 * @throws WrongPropertiesException
-	 * @throws ConfigurationNotFoundException
-	 * @throws IOException
 	 */
 	@PreAuthorize("@auth.isAuthorized('customService(service)', 'R')")
 	@STServiceOperation
-	public CustomService getCustomService(String id) throws NoSuchConfigurationManager, IOException,
-			ConfigurationNotFoundException, WrongPropertiesException, STPropertyAccessException {
+	public CustomService getCustomService(String id) throws STPropertyAccessException {
 		return customServiceMapping.getCustomService(id);
 	}
 
@@ -131,8 +123,6 @@ public class CustomServices extends STServiceAdapter {
 	 * 
 	 * @param id
 	 * @param definition
-	 * @throws NoSuchConfigurationManager
-	 * @throws ConfigurationNotFoundException
 	 * @throws STPropertyAccessException
 	 * @throws STPropertyUpdateException
 	 * @throws WrongPropertiesException
@@ -148,7 +138,7 @@ public class CustomServices extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('customService(service)', 'U')")
 	@STServiceOperation(method = RequestMethod.POST)
 	public void updateCustomService(String id, ObjectNode definition)
-			throws NoSuchConfigurationManager, ConfigurationNotFoundException, IOException,
+			throws IOException,
 			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException,
 			InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
 			NoSuchExtensionException, InvalidConfigurationException, CustomServiceException {
@@ -170,9 +160,7 @@ public class CustomServices extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('customService(service)', 'R')")
 	@SuppressWarnings("unchecked")
 	@STServiceOperation
-	public List<Configuration> getOperationForms()
-			throws NoSuchConfigurationManager, ConfigurationNotFoundException, IOException,
-			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException {
+	public List<Configuration> getOperationForms() {
 		return (List<Configuration>) exptManager.getExtensions(CustomServiceBackend.class.getName()).stream()
 				.filter(ConfigurableExtensionFactory.class::isInstance)
 				.map(ConfigurableExtensionFactory.class::cast).flatMap(f -> f.getConfigurations().stream())
@@ -187,8 +175,6 @@ public class CustomServices extends STServiceAdapter {
 	 * 
 	 * @param id
 	 * @param operationDefinition
-	 * @throws NoSuchConfigurationManager
-	 * @throws ConfigurationNotFoundException
 	 * @throws IOException
 	 * @throws WrongPropertiesException
 	 * @throws STPropertyUpdateException
@@ -204,7 +190,7 @@ public class CustomServices extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('customService(service, operation)', 'C')")
 	@STServiceOperation(method = RequestMethod.POST)
 	public void addOperationToCustomService(String id, ObjectNode operationDefinition)
-			throws NoSuchConfigurationManager, ConfigurationNotFoundException, IOException,
+			throws IOException,
 			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException,
 			InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
 			NoSuchExtensionException, InvalidConfigurationException, CustomServiceException {
@@ -223,7 +209,6 @@ public class CustomServices extends STServiceAdapter {
 	 * @param operationDefinition
 	 * @param oldOperationName
 	 * @throws NoSuchConfigurationManager
-	 * @throws ConfigurationNotFoundException
 	 * @throws IOException
 	 * @throws WrongPropertiesException
 	 * @throws STPropertyUpdateException
@@ -240,7 +225,7 @@ public class CustomServices extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	public void updateOperationInCustomService(String id, ObjectNode operationDefinition,
 			@Optional String oldOperationName)
-			throws NoSuchConfigurationManager, ConfigurationNotFoundException, IOException,
+			throws IOException,
 			WrongPropertiesException, STPropertyUpdateException, STPropertyAccessException,
 			InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
 			NoSuchExtensionException, InvalidConfigurationException, CustomServiceException {
@@ -252,10 +237,8 @@ public class CustomServices extends STServiceAdapter {
 	 * 
 	 * @param id
 	 * @param operationName
-	 * @throws NoSuchConfigurationManager
 	 * @throws STPropertyAccessException
 	 * @throws WrongPropertiesException
-	 * @throws ConfigurationNotFoundException
 	 * @throws IOException
 	 * @throws STPropertyUpdateException
 	 * @throws InvalidConfigurationException
@@ -269,7 +252,7 @@ public class CustomServices extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('customService(service, operation)', 'D')")
 	@STServiceOperation(method = RequestMethod.POST)
 	public void removeOperationFromCustomService(String id, String operationName)
-			throws NoSuchConfigurationManager, IOException, ConfigurationNotFoundException,
+			throws IOException,
 			WrongPropertiesException, STPropertyAccessException, STPropertyUpdateException,
 			InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
 			NoSuchExtensionException, InvalidConfigurationException, CustomServiceException {
@@ -280,13 +263,10 @@ public class CustomServices extends STServiceAdapter {
 	 * Reloads the custom service defined by the configuration identified by the given <em>id</em>.
 	 * 
 	 * @param id
-	 * @throws ConfigurationNotFoundException
 	 * @throws InvalidConfigurationException
 	 * @throws STPropertyUpdateException
 	 * @throws WrongPropertiesException
-	 * @throws IOException
 	 * @throws STPropertyAccessException
-	 * @throws DuplicateIdException
 	 * @throws NoSuchExtensionException
 	 * @throws IllegalArgumentException
 	 * @throws SchemaException
@@ -297,9 +277,9 @@ public class CustomServices extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('customService(service)', 'R')")
 	@STServiceOperation(method = RequestMethod.POST)
 	public void reloadCustomService(String id) throws InstantiationException, IllegalAccessException,
-			SchemaException, IllegalArgumentException, NoSuchExtensionException, DuplicateIdException,
-			STPropertyAccessException, IOException, WrongPropertiesException, STPropertyUpdateException,
-			InvalidConfigurationException, ConfigurationNotFoundException, DuplicateName {
+			SchemaException, IllegalArgumentException, NoSuchExtensionException,
+			STPropertyAccessException, WrongPropertiesException,
+			InvalidConfigurationException, DuplicateName {
 		customServiceMapping.registerCustomService(id);
 	}
 

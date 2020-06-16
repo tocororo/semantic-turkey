@@ -396,7 +396,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public String createTask(@JsonSerialized AlignmentPlan alignmentPlan)
-			throws IOException, AlignmentServiceException {
+			throws AlignmentServiceException {
 
 		//// integrity checks
 
@@ -436,7 +436,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void deleteTask(String id) throws IOException, AlignmentServiceException {
+	public void deleteTask(String id) {
 		RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
 		restTemplate.delete(endpoint.serverURL + "tasks/{id}", ImmutableMap.of("id", id));
 	}
@@ -454,8 +454,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin() || pm")
 	@STServiceOperation
 	public Map<String, RemoteAlignmentServiceConfiguration> getRemoteAlignmentServices()
-			throws IOException, ConfigurationNotFoundException, WrongPropertiesException,
-			STPropertyAccessException, NoSuchConfigurationManager {
+			throws STPropertyAccessException, NoSuchConfigurationManager {
 		RemoteAlignmentServicesStore cm = (RemoteAlignmentServicesStore) exptManager
 				.getConfigurationManager(RemoteAlignmentServicesStore.class.getName());
 		Map<String, RemoteAlignmentServiceConfiguration> configurations = new TreeMap<>();
@@ -625,8 +624,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 		}
 		try {
 			return cm.getSystemConfiguration(settings.configID);
-		} catch (IOException | ConfigurationNotFoundException | WrongPropertiesException
-				| STPropertyAccessException e) {
+		} catch (STPropertyAccessException e) {
 			throw new IllegalStateException(
 					"Unable to retrieve the alignment service configuration: " + settings.configID, e);
 		}

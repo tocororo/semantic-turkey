@@ -24,8 +24,7 @@ public interface UserConfigurationManager<CONFTYPE extends Configuration>
 		return ConfigurationSupport.listConfigurationIdentifiers(folder);
 	}
 
-	default CONFTYPE getUserConfiguration(STUser user, String identifier) throws IOException,
-			ConfigurationNotFoundException, WrongPropertiesException, STPropertyAccessException {
+	default CONFTYPE getUserConfiguration(STUser user, String identifier) throws STPropertyAccessException {
 		return ConfigurationSupport.loadConfiguration(this,
 				ConfigurationSupport.getConfigurationFolder(this, user), identifier);
 	}

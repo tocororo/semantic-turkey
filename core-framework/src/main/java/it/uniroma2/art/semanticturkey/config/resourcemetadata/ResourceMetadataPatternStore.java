@@ -1,7 +1,6 @@
 package it.uniroma2.art.semanticturkey.config.resourcemetadata;
 
 import it.uniroma2.art.semanticturkey.extension.ProjectScopedConfigurableComponent;
-import it.uniroma2.art.sheet2rdf.cfg.GraphApplicationConfigurationLoader;
 import org.apache.poi.util.IOUtils;
 
 import java.io.File;
@@ -9,7 +8,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 
@@ -21,7 +19,7 @@ public class ResourceMetadataPatternStore implements ProjectScopedConfigurableCo
 	}
 
 	public List<String> getFactoryConfigurations() {
-		return Arrays.asList("resource");
+		return Arrays.asList("DublinCore metadata");
 	}
 
 

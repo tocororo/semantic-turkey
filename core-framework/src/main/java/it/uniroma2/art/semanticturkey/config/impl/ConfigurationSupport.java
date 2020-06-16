@@ -68,8 +68,7 @@ public abstract class ConfigurationSupport {
 
 	public static <CONFTYPE extends Configuration> CONFTYPE loadConfiguration(
 			ConfigurationManager<CONFTYPE> configurationManager, File folder, String identifier)
-			throws IOException, ConfigurationNotFoundException, WrongPropertiesException,
-			STPropertyAccessException {
+			throws STPropertyAccessException {
 		File configFile = new File(folder, configurationFilename(identifier));
 
 		Class<CONFTYPE> configBaseClass = ReflectionUtilities.getInterfaceArgumentTypeAsClass(

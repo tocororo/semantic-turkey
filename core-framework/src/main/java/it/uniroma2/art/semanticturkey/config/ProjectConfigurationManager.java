@@ -25,8 +25,7 @@ public interface ProjectConfigurationManager<CONFTYPE extends Configuration>
 	}
 
 	default CONFTYPE getProjectConfiguration(Project project, String identifier)
-			throws IOException, ConfigurationNotFoundException, WrongPropertiesException,
-			STPropertyAccessException {
+			throws STPropertyAccessException {
 		return ConfigurationSupport.loadConfiguration(this,
 				ConfigurationSupport.getConfigurationFolder(this, project), identifier);
 	}

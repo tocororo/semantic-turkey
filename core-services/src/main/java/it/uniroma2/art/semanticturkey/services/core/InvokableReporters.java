@@ -147,7 +147,7 @@ public class InvokableReporters extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('invokableReporter(reporter)', 'R')")
 	@STServiceOperation
 	public InvokableReporter getInvokableReporter(String reference) throws NoSuchConfigurationManager,
-			IOException, ConfigurationNotFoundException, WrongPropertiesException, STPropertyAccessException {
+			STPropertyAccessException {
 		InvokableReporterStore cm = getInvokableReporterStore();
 		return cm.getConfiguration(parseReference(reference));
 	}
@@ -220,7 +220,6 @@ public class InvokableReporters extends STServiceAdapter {
 	 * @param index
 	 * @throws NoSuchConfigurationManager
 	 * @throws IOException
-	 * @throws ConfigurationNotFoundException
 	 * @throws WrongPropertiesException
 	 * @throws STPropertyAccessException
 	 * @throws STPropertyUpdateException
@@ -229,7 +228,7 @@ public class InvokableReporters extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	public void addSectionToReporter(String reference, @JsonSerialized ObjectNode section,
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "-1") int index)
-			throws NoSuchConfigurationManager, IOException, ConfigurationNotFoundException,
+			throws NoSuchConfigurationManager, IOException,
 			WrongPropertiesException, STPropertyAccessException, STPropertyUpdateException {
 		ObjectMapper mapper = STPropertiesManager.createObjectMapper(exptManager);
 		ServiceInvocation sectObj = mapper.treeToValue(section, ServiceInvocation.class);
@@ -269,7 +268,6 @@ public class InvokableReporters extends STServiceAdapter {
 	 * @param index
 	 * @throws NoSuchConfigurationManager
 	 * @throws IOException
-	 * @throws ConfigurationNotFoundException
 	 * @throws WrongPropertiesException
 	 * @throws STPropertyAccessException
 	 * @throws STPropertyUpdateException
@@ -277,7 +275,7 @@ public class InvokableReporters extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('invokableReporter(reporter, section)', 'U')")
 	@STServiceOperation(method = RequestMethod.POST)
 	public void updateSectionInReporter(String reference, @JsonSerialized ObjectNode section, int index)
-			throws NoSuchConfigurationManager, IOException, ConfigurationNotFoundException,
+			throws NoSuchConfigurationManager, IOException,
 			WrongPropertiesException, STPropertyAccessException, STPropertyUpdateException {
 		ObjectMapper mapper = STPropertiesManager.createObjectMapper(exptManager);
 		ServiceInvocation sectObj = mapper.treeToValue(section, ServiceInvocation.class);
@@ -304,7 +302,6 @@ public class InvokableReporters extends STServiceAdapter {
 	 * @param index
 	 * @throws NoSuchConfigurationManager
 	 * @throws IOException
-	 * @throws ConfigurationNotFoundException
 	 * @throws WrongPropertiesException
 	 * @throws STPropertyAccessException
 	 * @throws STPropertyUpdateException
@@ -312,7 +309,7 @@ public class InvokableReporters extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('invokableReporter(reporter,section)', 'D')")
 	@STServiceOperation(method = RequestMethod.POST)
 	public void removeSectionFromReporter(String reference, int index)
-			throws NoSuchConfigurationManager, IOException, ConfigurationNotFoundException,
+			throws NoSuchConfigurationManager, IOException,
 			WrongPropertiesException, STPropertyAccessException, STPropertyUpdateException {
 		InvokableReporterStore cm = getInvokableReporterStore();
 
@@ -353,8 +350,8 @@ public class InvokableReporters extends STServiceAdapter {
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "true") boolean render,
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "true") boolean includeTemplate)
 			throws NoSuchConfigurationManager, IOException, ConfigurationNotFoundException,
-			WrongPropertiesException, STPropertyAccessException, IllegalAccessException,
-			IllegalArgumentException, InvocationTargetException, InvokableReporterException {
+			WrongPropertiesException, STPropertyAccessException,
+			IllegalArgumentException, InvokableReporterException {
 		Reference ref = parseReference(reporterReference);
 
 		InvokableReporter reporter = (InvokableReporter) exptManager
@@ -531,8 +528,8 @@ public class InvokableReporters extends STServiceAdapter {
 	public void compileAndDownloadReport(HttpServletResponse response, String reporterReference,
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional String targetMimeType)
 			throws NoSuchConfigurationManager, IOException, ConfigurationNotFoundException,
-			WrongPropertiesException, STPropertyAccessException, IllegalAccessException,
-			IllegalArgumentException, InvocationTargetException, InvokableReporterException {
+			WrongPropertiesException, STPropertyAccessException,
+			IllegalArgumentException, InvokableReporterException {
 		Report report = compileReport(reporterReference, true, true);
 		String reportMimeType = report.mimeType;
 		String rendering = report.rendering != null ? report.rendering : "";

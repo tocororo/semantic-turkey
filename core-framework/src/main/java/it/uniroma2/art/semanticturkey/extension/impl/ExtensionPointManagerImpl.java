@@ -247,8 +247,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 
 	@Override
 	public Configuration getConfiguration(String componentIdentifier, Reference reference)
-			throws IOException, ConfigurationNotFoundException, WrongPropertiesException,
-			NoSuchConfigurationManager, STPropertyAccessException {
+			throws NoSuchConfigurationManager, STPropertyAccessException {
 		return getConfigurationManager(componentIdentifier).getConfiguration(reference);
 	}
 
@@ -334,7 +333,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	@Override
 	public <T extends Extension> T instantiateExtension(Class<T> targetInterface, PluginSpecification spec)
 			throws IllegalArgumentException, InvalidConfigurationException, NoSuchExtensionException,
-			WrongPropertiesException, STPropertyAccessException {
+			STPropertyAccessException {
 		@SuppressWarnings("unchecked")
 		ExtensionFactory<?> extFactory = this.getExtension(spec.getFactoryId());
 		if (!targetInterface.isAssignableFrom(extFactory.getExtensionType())) {

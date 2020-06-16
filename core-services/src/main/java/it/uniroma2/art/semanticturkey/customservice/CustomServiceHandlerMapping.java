@@ -205,8 +205,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		return cs.getSystemConfigurationIdentifiers();
 	}
 
-	public CustomService getCustomService(String id) throws IOException, ConfigurationNotFoundException,
-			WrongPropertiesException, STPropertyAccessException {
+	public CustomService getCustomService(String id) throws STPropertyAccessException {
 		CustomServiceDefinitionStore cs;
 		try {
 			cs = (CustomServiceDefinitionStore) exptManager
@@ -219,10 +218,10 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	}
 
 	public void registerCustomService(String customServiceCfgID)
-			throws DuplicateIdException, STPropertyAccessException, IOException, WrongPropertiesException,
-			STPropertyUpdateException, InstantiationException, IllegalAccessException, SchemaException,
+			throws STPropertyAccessException, WrongPropertiesException,
+			InstantiationException, IllegalAccessException, SchemaException,
 			IllegalArgumentException, NoSuchExtensionException, InvalidConfigurationException,
-			ConfigurationNotFoundException, DuplicateName {
+			DuplicateName {
 		Lock wlock = lock.writeLock();
 		wlock.lock();
 		try {
@@ -268,7 +267,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	}
 
 	public void registerCustomService(String customServiceCfgID, CustomService customServiceCfg,
-			boolean overwrite) throws DuplicateIdException, STPropertyAccessException, IOException,
+			boolean overwrite) throws STPropertyAccessException, IOException,
 			WrongPropertiesException, STPropertyUpdateException, InstantiationException,
 			IllegalAccessException, SchemaException, IllegalArgumentException, NoSuchExtensionException,
 			InvalidConfigurationException, CustomServiceException {
@@ -338,10 +337,9 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	}
 
 	public void addOperationToCustomeService(String id, ObjectNode operationDefinition)
-			throws STPropertyAccessException, IOException, ConfigurationNotFoundException,
-			WrongPropertiesException, InstantiationException, IllegalAccessException, SchemaException,
-			IllegalArgumentException, NoSuchExtensionException, STPropertyUpdateException,
-			InvalidConfigurationException, CustomServiceException {
+			throws STPropertyAccessException, IOException, WrongPropertiesException, InstantiationException,
+			IllegalAccessException, SchemaException, IllegalArgumentException, NoSuchExtensionException,
+			STPropertyUpdateException, InvalidConfigurationException, CustomServiceException {
 		Lock wlock = lock.writeLock();
 		wlock.lock();
 		try {
@@ -377,7 +375,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 	public void udpateOperationInCustomeService(String id, ObjectNode operationDefinition,
 			String oldOperationName) throws STPropertyAccessException, IOException,
-			ConfigurationNotFoundException, WrongPropertiesException, InstantiationException,
+			WrongPropertiesException, InstantiationException,
 			IllegalAccessException, SchemaException, IllegalArgumentException, NoSuchExtensionException,
 			STPropertyUpdateException, InvalidConfigurationException, CustomServiceException {
 		Lock wlock = lock.writeLock();
@@ -412,7 +410,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	}
 
 	public void removeOperationFromCustomeService(String id, String operationName)
-			throws STPropertyAccessException, IOException, ConfigurationNotFoundException,
+			throws STPropertyAccessException, IOException,
 			WrongPropertiesException, InstantiationException, IllegalAccessException, SchemaException,
 			IllegalArgumentException, NoSuchExtensionException, STPropertyUpdateException,
 			InvalidConfigurationException, CustomServiceException {
@@ -477,7 +475,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 			Pattern.CASE_INSENSITIVE);
 
 	private Object buildCustomServiceHandler(String cfgID, CustomService customServiceCfg)
-			throws InstantiationException, IllegalAccessException, SchemaException, IllegalArgumentException,
+			throws SchemaException, IllegalArgumentException,
 			NoSuchExtensionException, WrongPropertiesException, STPropertyAccessException,
 			InvalidConfigurationException {
 		// mimicking ordinary ST service, we have to build i) a Spring MVC controller, and ii) an @STService
@@ -626,7 +624,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	}
 
 	protected String computeAuthorizationString(Operation operationDefinition, boolean isWrite)
-			throws RuntimeException, IllegalArgumentException {
+			throws RuntimeException {
 		String preauthorizeValue;
 
 		if (StringUtils.isNoneBlank(operationDefinition.authorization)) {

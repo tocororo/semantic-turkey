@@ -27,8 +27,7 @@ public interface SystemConfigurationManager<CONFTYPE extends Configuration>
 		return ConfigurationSupport.listConfigurationIdentifiers(folder);
 	}
 
-	default CONFTYPE getSystemConfiguration(String identifier) throws IOException,
-			ConfigurationNotFoundException, WrongPropertiesException, STPropertyAccessException {
+	default CONFTYPE getSystemConfiguration(String identifier) throws STPropertyAccessException {
 		return ConfigurationSupport.loadConfiguration(this, ConfigurationSupport.getConfigurationFolder(this),
 				identifier);
 	}

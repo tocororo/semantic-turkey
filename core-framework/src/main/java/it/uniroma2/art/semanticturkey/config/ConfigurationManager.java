@@ -62,8 +62,7 @@ public interface ConfigurationManager<CONFTYPE extends Configuration> extends Id
 		return rv;
 	}
 
-	default CONFTYPE getConfiguration(Reference reference) throws IOException, ConfigurationNotFoundException,
-			WrongPropertiesException, STPropertyAccessException {
+	default CONFTYPE getConfiguration(Reference reference) throws STPropertyAccessException {
 		Optional<Project> project = reference.getProject();
 		Optional<STUser> user = reference.getUser();
 		String identifier = reference.getIdentifier();
