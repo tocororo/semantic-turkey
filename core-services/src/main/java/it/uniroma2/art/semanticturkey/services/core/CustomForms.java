@@ -1419,6 +1419,50 @@ public class CustomForms extends STServiceAdapter {
 	}
 
 
+	/**
+	 * Enrich the PEARL according to some inferences by adding the needed annotations
+	 * @param cfPearl the PEARL text to enrich
+	 * @return
+	 * @throws PRParserException
+	 * @throws IOException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Read
+	public String inferPearlAnnotations(String cfPearl) throws PRParserException, IOException {
+		RepositoryConnection repoConnection = getManagedConnection();
+		CODACore codaCore = getInitializedCodaCore(repoConnection);
+		codaCore.initialize(repoConnection);
+
+		InputStream annDefStream = CustomFormGraph.class.getResourceAsStream(ANN_DEF_PATH);
+
+		InputStream refStream = new ByteArrayInputStream(cfPearl.getBytes());
+
+		List<InputStream> inputStreamList = new ArrayList<>();
+		inputStreamList.add(annDefStream);
+		inputStreamList.add(refStream);
+
+		codaCore.setAllProjectionRulelModelFromInputStreamList(inputStreamList);
+
+		ProjectionRulesModel projectionRulesModel = codaCore.getProjRuleModel();
+
+		List<String> annDefToExludeList = new ArrayList<>();
+		annDefToExludeList.add("Memoized");
+		annDefToExludeList.add("Confidence");
+		annDefToExludeList.addAll(getAnnotationsDefFromFile(ANN_DEF_PATH));
+
+		for(String currPrId : projectionRulesModel.getProjRule().keySet()){
+			ProjectionRule projectionRule = projectionRulesModel.getProjRuleFromId(currPrId);
+			//add the annotations to the PEARL model
+			addAnnRangeOrRole(projectionRule, projectionRulesModel, getManagedConnection());
+			addAnnOneOf(projectionRule, projectionRulesModel, getManagedConnection());
+			addAnnListMax(projectionRule, projectionRulesModel, getManagedConnection());
+		}
+
+		String modelAsString = projectionRulesModel.getModelAsString(annDefToExludeList);
+		return modelAsString;
+	}
+
+
 	private List<String> getAnnotationsDefFromFile(java.lang.String filePath) throws IOException {
 		List<java.lang.String> annDefList = new ArrayList<>();
 
