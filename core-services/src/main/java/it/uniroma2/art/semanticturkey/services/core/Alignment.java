@@ -14,6 +14,9 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
+import it.uniroma2.art.semanticturkey.extension.impl.search.regex.RegexSearchStrategy;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
@@ -206,6 +209,10 @@ public class Alignment extends STServiceAdapter {
 			ResourcePosition resourcePosition, String[] rolesArray, @Optional List<SearchMode> searchModeList,
 			Map<String, IRI> langToLexModel) throws NoSuchDatasetMetadataException,
 			MetadataRegistryStateException, IllegalStateException, STPropertyAccessException {
+
+		SearchStrategy regexSearchStrategy = instantiateSearchStrategy(SearchStrategies.REGEX);
+
+
 		logger.debug("starting Alignment.serachResources");
 		//@formatter:off
 		//if not searchModeList is passed, then assume they are contains and fuzzy (since those two contains 
@@ -348,7 +355,8 @@ public class Alignment extends STServiceAdapter {
 			RepositoryConnection conn = sparqlRepository.getConnection();
 			
 			//call the function to obtain the desired list of annotated Resources
-			annValueList = searchResourcesForRemote(labelsList, conn, rolesArray, searchModeList, langToLexModel);
+			annValueList = searchResourcesForRemote(labelsList, conn, rolesArray, searchModeList, langToLexModel,
+					regexSearchStrategy);
 		} else {
 			throw new IllegalArgumentException("Unsupported resource position");
 		}
@@ -359,7 +367,7 @@ public class Alignment extends STServiceAdapter {
 
 	public Collection<AnnotatedValue<Resource>> searchResourcesForRemote(List<Literal> labelsList,
 			RepositoryConnection remoteConn, String[] rolesArray, List<SearchMode> searchModeList,
-			Map<String, IRI> langToLexModel)
+			Map<String, IRI> langToLexModel, SearchStrategy regexSearchStrategy)
 			throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
 
 		// check that the optional targetLexModel has one of the right value
@@ -431,7 +439,7 @@ public class Alignment extends STServiceAdapter {
 
 			// do one search per label
 			List<AnnotatedValue<Resource>> currentAnnValuList = advancedSearch.searchResources(label,
-					rolesArray, searchModeList, remoteConn, targetLexModel, inWhatToSearch, whatToShow);
+					rolesArray, searchModeList, remoteConn, targetLexModel, inWhatToSearch, whatToShow, regexSearchStrategy);
 
 			// analyze the return list and find a way to rank the results
 			// maybe order them according to how may times a resource is returned

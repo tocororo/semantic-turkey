@@ -5,7 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
+import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -120,7 +124,7 @@ public class AdvancedSearch {
 	//@formatter:off
 	public List<AnnotatedValue<Resource>> searchResources(Literal label, String[] rolesArray, 
 			List<SearchMode> searchModeList, RepositoryConnection conn, IRI targetLexMod,
-			InWhatToSearch inWhatToSearch, WhatToShow whatToShow) {
+			InWhatToSearch inWhatToSearch, WhatToShow whatToShow, SearchStrategy regexSearchStrategy) {
 		List<AnnotatedValue<Resource>> annotateResList = new ArrayList<>();
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(label.getLabel(), rolesArray, searchModeList.get(0), false);
@@ -152,7 +156,7 @@ public class AdvancedSearch {
 			List<String> langs = new ArrayList<>();
 			langs.add(label.getLanguage().get());
 			query += prepareQueryforResourceUsingSearchString(varResource, varLabel, label.getLabel(), searchMode, 
-					langs, inWhatToSearch);
+					langs, inWhatToSearch, regexSearchStrategy);
 		}
 		
 		//filter the resource according to its type
@@ -166,8 +170,7 @@ public class AdvancedSearch {
 		
 		
 		logger.debug("query = " + query);
-		//System.out.println("query3 = "+query); // da cancellare
-		
+
 		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
 		tupleQuery.setIncludeInferred(false);
 		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
@@ -244,8 +247,8 @@ public class AdvancedSearch {
 	
 
 	private String prepareQueryforResourceUsingSearchString(String varResource, String varLabel, String inputText,
-			SearchMode searchMode, List<String> langs, InWhatToSearch inWhatToSearch) {
-		
+			SearchMode searchMode, List<String> langs, InWhatToSearch inWhatToSearch, SearchStrategy regexSearchStrategy) {
+
 		//@formatter:of
 		String query="";
 		
@@ -376,7 +379,7 @@ public class AdvancedSearch {
 		
 		
 		query += searchUsingNoIndexes(varLabel, inputText, searchMode, langs, 
-					inWhatToSearch.isSearchIncludingLocales());
+					inWhatToSearch.isSearchIncludingLocales(), regexSearchStrategy);
 		
 		/*if(inWhatToSearch.isSearchInLocalName() || inWhatToSearch.isSearchInURI()){
 			query+="\n}";
@@ -485,11 +488,11 @@ public class AdvancedSearch {
 	
 	
 	private String searchUsingNoIndexes(String varToUse, String searchTerm, SearchMode searchMode, List<String> langs, 
-			boolean includeLocales){
+			boolean includeLocales, SearchStrategy regexSearchStrategy){
 		
-		RegexSearchStrategy regexSearchStrategy = new RegexSearchStrategy();
-		return regexSearchStrategy.searchSpecificModePrepareQuery(varToUse, searchTerm, searchMode, null, langs, 
-				includeLocales);
+		//RegexSearchStrategy regexSearchStrategy = new RegexSearchStrategy();
+		return regexSearchStrategy.searchSpecificModePrepareQuery(varToUse, searchTerm, searchMode, null, langs,
+				includeLocales, false);
 	}
 	
 	private String calculateShow(String varResource, String varSingleShow, WhatToShow whatToShow) {

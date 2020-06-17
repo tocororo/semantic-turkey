@@ -363,6 +363,10 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 		return SearchStrategyUtils.instantiateSearchStrategy(exptManager, searchStrategy);
 	}
 
+	protected SearchStrategy instantiateSearchStrategy(SearchStrategies searchStrategy) {
+		return SearchStrategyUtils.instantiateSearchStrategy(exptManager, searchStrategy);
+	}
+
 	protected Reference parseReference(String relativeReference) {
 		int colonPos = relativeReference.indexOf(":");
 
