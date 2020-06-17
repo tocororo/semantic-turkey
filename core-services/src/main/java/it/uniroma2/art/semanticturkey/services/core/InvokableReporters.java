@@ -464,7 +464,7 @@ public class InvokableReporters extends STServiceAdapter {
 					if (e instanceof Error) {
 						throw (Error) e;
 					} else {
-						throw new InvokableReporterException("An exception was raied on exection of sections["
+						throw new InvokableReporterException("An exception was raied on execution of sections["
 								+ sectionNumber + "]: " + e.getClass().getSimpleName() + ":" + e.getMessage(),
 								e);
 					}

@@ -1,57 +1,10 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Nullable;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.client.RequestCallback;
-import org.springframework.web.client.ResponseExtractor;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableMap;
-
 import it.uniroma2.art.maple.scenario.Dataset;
 import it.uniroma2.art.maple.scenario.ScenarioDefinition;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
@@ -94,6 +47,50 @@ import it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.Ta
 import it.uniroma2.art.semanticturkey.settings.alignmentservices.RemoteAlignmentServiceProjectSettings;
 import it.uniroma2.art.semanticturkey.settings.alignmentservices.RemoteAlignmentServiceProjectSettingsManager;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.client.RequestCallback;
+import org.springframework.web.client.ResponseExtractor;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
+
+import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class provides services for interacting with remote alignment services.
@@ -451,7 +448,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	 * @throws STPropertyAccessException
 	 * @throws NoSuchConfigurationManager
 	 */
-	@PreAuthorize("@auth.isAdmin() || pm")
+	@PreAuthorize("@auth.isAdmin() || @auth.isAuthorized('pm(project, alignmentService)', 'R')")
 	@STServiceOperation
 	public Map<String, RemoteAlignmentServiceConfiguration> getRemoteAlignmentServices()
 			throws STPropertyAccessException, NoSuchConfigurationManager {
@@ -469,13 +466,13 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
 	/**
 	 * Adds a configuration for a remote alignment service. Optionally, the configuration can be set as
-	 * default, if it is the first.
+	 * default (it is automatically set as default if it is the first).
 	 * 
 	 * @param id
 	 * @param serverURL
 	 * @param username
 	 * @param password
-	 * @param defaultIfFirst
+	 * @param asDefault
 	 * @throws IOException
 	 * @throws WrongPropertiesException
 	 * @throws STPropertyUpdateException
@@ -485,7 +482,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	@STServiceOperation(method = RequestMethod.POST)
 	public synchronized void addRemoteAlignmentService(String id, URL serverURL, @Optional String username,
-			@Optional String password, @Optional(defaultValue = "true") boolean defaultIfFirst)
+			@Optional String password, @Optional(defaultValue = "false") boolean asDefault)
 			throws IOException, WrongPropertiesException, STPropertyUpdateException,
 			NoSuchConfigurationManager, DuplicatedResourceException {
 		RemoteAlignmentServicesStore cm = (RemoteAlignmentServicesStore) exptManager
@@ -503,12 +500,43 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
 		cm.storeSystemConfiguration(id, config);
 
-		if (existingIds.size() == 0) {
+		//set the new configuration as default if it is the only one or if it is explicitly asserted
+		if (existingIds.size() == 0 || asDefault) {
 			RemoteAlignmentServiceProjectSettings defaultSettings = new RemoteAlignmentServiceProjectSettings();
 			defaultSettings.configID = id;
 			STPropertiesManager.setProjectSettingsDefault(defaultSettings,
 					RemoteAlignmentServiceProjectSettingsManager.class.getName(), false);
 		}
+	}
+
+	@PreAuthorize("@auth.isAdmin()")
+	@STServiceOperation(method = RequestMethod.POST)
+	public synchronized void updateRemoteAlignmentService(String id, URL serverURL, @Optional String username,
+			@Optional String password, @Optional boolean asDefault)
+			throws IOException, WrongPropertiesException, STPropertyUpdateException,
+			NoSuchConfigurationManager, STPropertyAccessException {
+		RemoteAlignmentServicesStore cm = (RemoteAlignmentServicesStore) exptManager
+				.getConfigurationManager(RemoteAlignmentServicesStore.class.getName());
+		RemoteAlignmentServiceConfiguration config = cm.getSystemConfiguration(id);
+		config.serverURL = serverURL;
+		config.username = username;
+		config.password = password;
+		cm.storeSystemConfiguration(id, config);
+
+		if (asDefault) {
+			RemoteAlignmentServiceProjectSettings defaultSettings = new RemoteAlignmentServiceProjectSettings();
+			defaultSettings.configID = id;
+			STPropertiesManager.setProjectSettingsDefault(defaultSettings,
+					RemoteAlignmentServiceProjectSettingsManager.class.getName(), false);
+		}
+	}
+
+	@STServiceOperation
+	public synchronized String getDefaultRemoteAlignmentServiceId() throws STPropertyAccessException {
+		return STPropertiesManager.getProjectSettingDefault("configID",
+				RemoteAlignmentServiceProjectSettingsManager.class.getName());
+//		return STPropertiesManager.getProjectSettings(RemoteAlignmentServiceProjectSettings.class,
+//				getProject(), RemoteAlignmentServiceProjectSettingsManager.class.getName(), false).configID;
 	}
 
 	/**
