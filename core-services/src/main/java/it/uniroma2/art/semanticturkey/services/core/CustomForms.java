@@ -11,6 +11,7 @@ import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
+import it.uniroma2.art.coda.interfaces.ParserPR;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.model.GraphElement;
 import it.uniroma2.art.coda.pearl.model.GraphStruct;
@@ -29,6 +30,7 @@ import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueString;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemPlaceholder;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemUri;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
+import it.uniroma2.art.coda.pearl.parser.PearlParserAntlr4;
 import it.uniroma2.art.coda.pearl.parser.antlr4.AntlrParserRuntimeException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.semanticturkey.customform.BrokenCFStructure;
@@ -1200,17 +1202,26 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
-	public JsonNode validatePearl(String pearl, String formType) throws CustomFormException {
+	public JsonNode validatePearl(String pearl, String formType) {
+		JsonNodeFactory jf = JsonNodeFactory.instance;
+		ObjectNode respNode = jf.objectNode();
+		boolean pearlValid;
+		String details = null;
+
 		CODACore codaCore = getInitializedCodaCore(getManagedConnection());
 		if (formType.equals(CustomForm.Types.graph.toString())) {
 			try {
-				codaCore.setAllProjectionRulelModelFromInputStreamList(CustomFormGraph.getCombinedPearlStreamList(pearl));
-				// setProjectionRulesModelAndParseIt didn't throw exception, so pearl is valid
-				return JsonNodeFactory.instance.booleanNode(true);
+				//parse the pearl by adding first the PR of the annotations def, then the provided pearl
+				codaCore.addProjectionRuleModel(CustomFormGraph.getAnnotationPearlStream());
+				codaCore.addProjectionRuleModel(new ByteArrayInputStream(pearl.getBytes(StandardCharsets.UTF_8)), true);
+				//if not exception is raised, the pearl is valid
+				pearlValid = true;
 			} catch (PRParserException e) {
-				throw new CustomFormException("Invalid pearl rule: " + e.getErrorAsString());
+				pearlValid = false;
+				details = "Invalid pearl rule: " + e.getErrorAsString();
 			} catch (AntlrParserRuntimeException e) {
-				throw new CustomFormException("Invalid pearl rule: " + e.getMsg());
+				pearlValid = false;
+				details = "Invalid pearl rule: " + e.getMsg();
 			} finally {
 				shutDownCodaCore(codaCore);
 			}
@@ -1218,15 +1229,20 @@ public class CustomForms extends STServiceAdapter {
 			try {
 				codaCore.parseProjectionOperator(pearl, Collections.emptyMap());
 				shutDownCodaCore(codaCore);
-				return JsonNodeFactory.instance.booleanNode(true);
+				pearlValid = true;
 			} catch (PRParserException e) {
-				throw new CustomFormException("Invalid projection operator");
+				pearlValid = false;
+				details = "Invalid projection operator";
 			} catch (AntlrParserRuntimeException e) {
-				throw new CustomFormException("Invalid projection operator: " + e.getMsg());
+				pearlValid = false;
+				details = "Invalid projection operator: " + e.getMsg();
 			} finally {
 				shutDownCodaCore(codaCore);
 			}
 		}
+		respNode.set("valid", jf.booleanNode(pearlValid));
+		respNode.set("details", jf.textNode(details));
+		return respNode;
 	}
 
 	// ============== Forms Mapping ===================

@@ -1,20 +1,28 @@
 package it.uniroma2.art.semanticturkey.customform;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
+import it.uniroma2.art.coda.converters.contracts.ContractConstants;
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.exception.ConverterException;
+import it.uniroma2.art.coda.exception.DependencyException;
+import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
+import it.uniroma2.art.coda.exception.RDFModelNotSetException;
+import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
+import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.pearl.model.ConverterArgumentExpression;
+import it.uniroma2.art.coda.pearl.model.ConverterMention;
+import it.uniroma2.art.coda.pearl.model.ConverterPlaceholderArgument;
 import it.uniroma2.art.coda.pearl.model.ConverterRDFLiteralArgument;
+import it.uniroma2.art.coda.pearl.model.GraphElement;
+import it.uniroma2.art.coda.pearl.model.GraphStruct;
+import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
+import it.uniroma2.art.coda.pearl.model.PlaceholderStruct;
+import it.uniroma2.art.coda.pearl.model.ProjectionRule;
+import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemBNode;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
+import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
+import it.uniroma2.art.coda.structures.SuggOntologyCoda;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import org.apache.uima.UIMAException;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.Feature;
@@ -27,7 +35,6 @@ import org.apache.uima.cas.text.AnnotationIndex;
 import org.apache.uima.fit.factory.JCasFactory;
 import org.apache.uima.fit.factory.TypeSystemDescriptionFactory;
 import org.apache.uima.jcas.JCas;
-import org.apache.uima.jcas.cas.NonEmptyFSList;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.resource.metadata.FeatureDescription;
 import org.apache.uima.resource.metadata.TypeDescription;
@@ -36,27 +43,18 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
-import it.uniroma2.art.coda.converters.contracts.ContractConstants;
-import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.exception.ConverterException;
-import it.uniroma2.art.coda.exception.DependencyException;
-import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
-import it.uniroma2.art.coda.exception.RDFModelNotSetException;
-import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
-import it.uniroma2.art.coda.exception.parserexception.PRParserException;
-import it.uniroma2.art.coda.pearl.model.ConverterMention;
-import it.uniroma2.art.coda.pearl.model.ConverterPlaceholderArgument;
-import it.uniroma2.art.coda.pearl.model.GraphElement;
-import it.uniroma2.art.coda.pearl.model.GraphStruct;
-import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
-import it.uniroma2.art.coda.pearl.model.PlaceholderStruct;
-import it.uniroma2.art.coda.pearl.model.ProjectionRule;
-import it.uniroma2.art.coda.pearl.model.ProjectionRulesModel;
-import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemBNode;
-import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
-import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
-import it.uniroma2.art.coda.structures.SuggOntologyCoda;
-import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CustomFormGraph extends CustomForm {
 
@@ -435,7 +433,6 @@ public class CustomFormGraph extends CustomForm {
 
 			// run coda with the given pearl and the cas just created.
 			//No need to init the projection rule model (already done in createTypeSystemDescription)
-//			codaCore.setAllProjectionRulelModelFromInputStreamList(getCombinedPearlStreamList(getRef()));
 			codaCore.setJCas(jcas);
 			while (codaCore.isAnotherAnnotationPresent()) {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
@@ -643,10 +640,14 @@ public class CustomFormGraph extends CustomForm {
 		return codaCore.setAllProjectionRulelModelFromInputStreamList(pearlList);
 	}
 
-	public static List<InputStream> getCombinedPearlStreamList(String pearlRule) {
-		InputStream annDefStream = CustomFormGraph.class.getResourceAsStream("/it/uniroma2/art/semanticturkey/customform/annDef.pr");
+	private List<InputStream> getCombinedPearlStreamList(String pearlRule) {
+		InputStream annDefStream = getAnnotationPearlStream();
 		InputStream pearlStream = new ByteArrayInputStream(pearlRule.getBytes(StandardCharsets.UTF_8));
 		return Arrays.asList(annDefStream, pearlStream);
+	}
+
+	public static InputStream getAnnotationPearlStream() {
+		return CustomFormGraph.class.getResourceAsStream("/it/uniroma2/art/semanticturkey/customform/annDef.pr");
 	}
 
 	// For debug decomment in createTypeSystemDescription
