@@ -1,10 +1,76 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.URI;
+import java.net.URL;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.http.Header;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.AuthCache;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.protocol.HttpContext;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
+
 import it.uniroma2.art.maple.scenario.Dataset;
 import it.uniroma2.art.maple.scenario.ScenarioDefinition;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
@@ -47,50 +113,6 @@ import it.uniroma2.art.semanticturkey.services.core.alignmentservices.backend.Ta
 import it.uniroma2.art.semanticturkey.settings.alignmentservices.RemoteAlignmentServiceProjectSettings;
 import it.uniroma2.art.semanticturkey.settings.alignmentservices.RemoteAlignmentServiceProjectSettingsManager;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.client.RequestCallback;
-import org.springframework.web.client.ResponseExtractor;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
-
-import javax.annotation.Nullable;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * This class provides services for interacting with remote alignment services.
@@ -106,16 +128,145 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	private STMetadataRegistryBackend metadataRegistryBackend;
 	@Autowired
 	private it.uniroma2.art.semanticturkey.services.core.Alignment alignmentService;
-	private RestTemplate restTemplate;
+
+	private ObjectMapper objectMapper;
+
+	private ClientTemplate clientTemplate;
+
+	private class ClientTemplate {
+		protected <T> T doRequestInternal(ResponseHandler<T> responseHandler, HttpUriRequest httpRequest,
+				Object requestBody) throws AlignmentServiceException {
+			RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
+			try (CloseableHttpClient httpClient = buildHTTPClient(endpoint)) {
+				try (CloseableHttpResponse httpResponse = httpClient.execute(httpRequest,
+						buildContext(endpoint))) {
+					StatusLine statusLine = httpResponse.getStatusLine();
+					if (statusLine.getStatusCode() / 100 != 2) {
+						throw new IOException(
+								statusLine.getStatusCode() + " " + statusLine.getReasonPhrase());
+					}
+
+					return responseHandler.handleResponse(httpResponse);
+				}
+			} catch (Exception e) {
+				if (e instanceof AlignmentServiceException) {
+					throw (AlignmentServiceException) e;
+				} else {
+					throw new AlignmentServiceException(e.getClass().getName() + ":" + e.getMessage(), e);
+				}
+			}
+
+		}
+
+		public <T> T doGET(TypeReference<T> valueType, String path, Map<String, String> uriVariables)
+				throws AlignmentServiceException {
+			RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
+			HttpGet httpRequest = new HttpGet(buildIRI(path, uriVariables, endpoint));
+			httpRequest.setHeader("Accept", "application/json");
+			return doGET(buildEntityDeserializationResponseHandler(valueType), httpRequest);
+		}
+
+		public <T> T doGET(ResponseHandler<T> responseHandler, HttpGet httpRequest)
+				throws AlignmentServiceException {
+			return doRequestInternal(responseHandler, httpRequest, null);
+		}
+
+		public <T> T doPOST(TypeReference<T> valueType, String path, Map<String, String> uriVariables,
+				Object requestBody) throws AlignmentServiceException {
+			return doPOST(buildEntityDeserializationResponseHandler(valueType), path, uriVariables,
+					requestBody);
+		}
+
+		public <T> T doPOST(ResponseHandler<T> responseHandler, String path, Map<String, String> uriVariables,
+				Object requestBody) throws AlignmentServiceException {
+			RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
+			HttpPost httpRequest = new HttpPost(buildIRI(path, uriVariables, endpoint));
+			if (requestBody != null) {
+				String jsonString;
+				try {
+					jsonString = objectMapper.writeValueAsString(requestBody);
+				} catch (JsonProcessingException e) {
+					throw new AlignmentServiceException(e.getMessage());
+				}
+				org.apache.http.HttpEntity entity = new StringEntity(jsonString,
+						ContentType.APPLICATION_JSON);
+				httpRequest.setEntity(entity);
+			}
+			return doRequestInternal(responseHandler, httpRequest, null);
+		}
+
+		public void doDELETE(String path, ImmutableMap<String, String> uriVariables)
+				throws AlignmentServiceException {
+			RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
+			HttpGet httpRequest = new HttpGet(buildIRI(path, uriVariables, endpoint));
+			doRequestInternal(r -> null, httpRequest, null);
+		}
+
+		public URI buildIRI(String path, Map<String, String> uriVariables,
+				RemoteAlignmentServiceConfiguration endpoint) {
+			return UriComponentsBuilder.fromHttpUrl(endpoint.serverURL.toString()).path(path).build(false)
+					.expand(uriVariables).encode().toUri();
+		}
+
+		public CloseableHttpClient buildHTTPClient(RemoteAlignmentServiceConfiguration endpoint) {
+			return HttpClientBuilder.create().build();
+		}
+
+		public HttpContext buildContext(RemoteAlignmentServiceConfiguration endpoint) {
+			HttpClientContext context;
+			if (StringUtils.isNoneBlank(endpoint.username, endpoint.password)) {
+				BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+				credsProvider.setCredentials(AuthScope.ANY,
+						new UsernamePasswordCredentials(endpoint.username, endpoint.password));
+				UriComponents serverIRI = UriComponentsBuilder.fromHttpUrl(endpoint.serverURL.toString())
+						.build();
+
+				HttpHost targetHost = new HttpHost(serverIRI.getHost(),
+						serverIRI.getPort() != -1 ? serverIRI.getPort()
+								: ("https".equalsIgnoreCase(serverIRI.getScheme()) ? 443 : 80),
+						serverIRI.getScheme());
+
+				AuthCache authCache = new BasicAuthCache();
+				authCache.put(targetHost, new BasicScheme());
+
+				context = HttpClientContext.create();
+				context.setCredentialsProvider(credsProvider);
+				context.setAuthCache(authCache);
+			} else {
+				context = null;
+			}
+
+			return context;
+		}
+
+		public <T> ResponseHandler<T> buildEntityDeserializationResponseHandler(TypeReference<T> valueType) {
+			return new ResponseHandler<T>() {
+
+				@Override
+				public T handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
+					org.apache.http.HttpEntity responseEntity = response.getEntity();
+					Header responseContentType = responseEntity.getContentType();
+
+					MediaType responseMediaType = MediaType.parseMediaType(responseContentType.getValue());
+
+					if (!responseMediaType.isCompatibleWith(MediaType.APPLICATION_JSON)) {
+						throw new IOException("Unexpected media type: " + responseMediaType);
+					}
+
+					String responseString = IOUtils.toString(responseEntity.getContent(),
+							MoreObjects.firstNonNull(responseMediaType.getCharSet().name(), "UTF-8"));
+					return objectMapper.readValue(responseString, valueType);
+				}
+			};
+		}
+
+	}
 
 	public RemoteAlignmentServices() {
-		restTemplate = new RestTemplate();
-		for (HttpMessageConverter<?> msgConv : restTemplate.getMessageConverters()) {
-			if (msgConv instanceof MappingJackson2HttpMessageConverter) {
-				ObjectMapper objectMapper = ((MappingJackson2HttpMessageConverter) msgConv).getObjectMapper();
-				objectMapper.registerModule(new JavaTimeModule());
-			}
-		}
+		objectMapper = new ObjectMapper();
+		objectMapper.registerModule(new JavaTimeModule());
+
+		clientTemplate = new ClientTemplate();
 	}
 
 	/**
@@ -128,38 +279,35 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	public ServiceMetadataDTO getServiceMetadata() throws AlignmentServiceException {
-		try {
-			RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
-			ServiceMetadata serviceMetadata = restTemplate.getForObject(endpoint.serverURL.toString(),
-					ServiceMetadata.class);
-			ServiceMetadataDTO serviceMetadataDTO = new ServiceMetadataDTO();
-			serviceMetadataDTO.service = serviceMetadata.service;
-			serviceMetadataDTO.version = serviceMetadata.version;
-			serviceMetadataDTO.status = serviceMetadata.status;
-			serviceMetadataDTO.specs = serviceMetadata.specs;
-			serviceMetadataDTO.contact = serviceMetadata.contact;
-			serviceMetadataDTO.documentation = serviceMetadata.documentation;
-			ObjectNode originalSchema = serviceMetadata.settings;
-			if (originalSchema != null) {
-				SettingsDTO settingsDTO = new SettingsDTO();
-				settingsDTO.originalSchema = originalSchema;
 
-				try {
-					settingsDTO.stProperties = new JsonSchemaConverter().convert(originalSchema);
-				} catch (ConversionException e) {
-					settingsDTO.conversionException = e.getClass() + ":" + e.getCause();
-				}
-				serviceMetadataDTO.settings = settingsDTO;
+		ServiceMetadata serviceMetadata = clientTemplate.doGET(new TypeReference<ServiceMetadata>() {
+		}, "/", Collections.emptyMap());
+		ServiceMetadataDTO serviceMetadataDTO = new ServiceMetadataDTO();
+		serviceMetadataDTO.service = serviceMetadata.service;
+		serviceMetadataDTO.version = serviceMetadata.version;
+		serviceMetadataDTO.status = serviceMetadata.status;
+		serviceMetadataDTO.specs = serviceMetadata.specs;
+		serviceMetadataDTO.contact = serviceMetadata.contact;
+		serviceMetadataDTO.documentation = serviceMetadata.documentation;
+		ObjectNode originalSchema = serviceMetadata.settings;
+		if (originalSchema != null) {
+			SettingsDTO settingsDTO = new SettingsDTO();
+			settingsDTO.originalSchema = originalSchema;
+
+			try {
+				settingsDTO.stProperties = new JsonSchemaConverter().convert(originalSchema);
+			} catch (ConversionException e) {
+				settingsDTO.conversionException = e.getClass() + ":" + e.getCause();
 			}
-
-			return serviceMetadataDTO;
-		} catch (RestClientException e) {
-			throw new AlignmentServiceException(e.getClass().getName() + ":" + e.getMessage(), e);
+			serviceMetadataDTO.settings = settingsDTO;
 		}
+
+		return serviceMetadataDTO;
+
 	}
 
 	/**
-	 * Pings the alignment service to obtian its metadata, which may include <em>system-level settings</em>
+	 * Pings the alignment service to obtain its metadata, which may include <em>system-level settings</em>
 	 * (schema). This operation can also be used to eagerly determine whether the configured alignment service
 	 * is up and running.
 	 * 
@@ -170,14 +318,10 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	public List<MatcherDTO> searchMatchers(@JsonSerialized ScenarioDefinition scenarioDefinition)
 			throws AlignmentServiceException {
 		try {
-			HttpHeaders headers = new HttpHeaders();
-			headers.setContentType(MediaType.APPLICATION_JSON);
-			headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-			HttpEntity<ScenarioDefinition> httpEntity = new HttpEntity<>(scenarioDefinition, headers);
-			RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
-			List<Matcher> matcher = restTemplate.exchange(endpoint.serverURL + "matchers/search",
-					HttpMethod.POST, httpEntity, new ParameterizedTypeReference<List<Matcher>>() {
-					}).getBody();
+
+			List<Matcher> matcher = clientTemplate.doPOST(new TypeReference<List<Matcher>>() {
+			}, "/matchers/search", Collections.emptyMap(), scenarioDefinition);
+
 			return matcher.stream().map(m -> {
 				MatcherDTO matcherDTO = new MatcherDTO();
 				matcherDTO.id = m.id;
@@ -214,10 +358,11 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	 * @param allowReordering
 	 *            left and right datasets may be matched in the reverse order
 	 * @return
+	 * @throws AlignmentServiceException
 	 */
 	@STServiceOperation
 	public List<TaskDTO> listTasks(Project leftDataset, @Optional Project rightDataset,
-			boolean allowReordering) {
+			boolean allowReordering) throws AlignmentServiceException {
 		IRI leftDatasetIRI = metadataRegistryBackend.findDatasetForProject(leftDataset);
 
 		if (leftDatasetIRI == null) {
@@ -236,13 +381,11 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			rightDatasetIRI = null;
 		}
 
-		RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
-		ResponseEntity<List<Task>> response = restTemplate.exchange(endpoint.serverURL + "tasks",
-				HttpMethod.GET, null, new ParameterizedTypeReference<List<Task>>() {
-				});
+		List<Task> response = clientTemplate.doGET(new TypeReference<List<Task>>() {
+		}, "/tasks", Collections.emptyMap());
 
-		return response.getBody().stream().filter(task -> { // filter by matching the provided
-															// datasets
+		return response.stream().filter(task -> { // filter by matching the provided
+													// datasets
 			if (Objects.equals(task.getLeftDataset(), leftDatasetIRI)
 					&& (rightDatasetIRI == null || Objects.equals(task.getRightDataset(), rightDatasetIRI))) {
 				return true;
@@ -302,36 +445,38 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	}
 
 	@STServiceOperation
-	public void downloadAlignment(HttpServletResponse oRes, String taskId) {
-		RequestCallback requestCallback = request -> {
-		};
-		ResponseExtractor<Void> responseExtractor = response -> {
+	public void downloadAlignment(HttpServletResponse oRes, String taskId) throws AlignmentServiceException {
+		ResponseHandler<Void> responseHandler = response -> {
 			oRes.setContentType("application/rdf+xml");
 			oRes.setHeader("Content-Disposition", "attachment); filename=\"" + taskId + ".rdf\"");
-			IOUtils.copy(response.getBody(), oRes.getOutputStream());
+			IOUtils.copy(response.getEntity().getContent(), oRes.getOutputStream());
 			return null;
 
 		};
+
 		RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
-		restTemplate.execute(endpoint.serverURL + "tasks/{id}/alignment", HttpMethod.GET, requestCallback,
-				responseExtractor, ImmutableMap.of("id", taskId));
+		HttpGet httpRequest = new HttpGet(
+				clientTemplate.buildIRI("/tasks/{id}/alignment", ImmutableMap.of("id", taskId), endpoint));
+		httpRequest.setHeader("Accept", "application/rdf+xml");
+		clientTemplate.doGET(responseHandler, httpRequest);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	public JsonNode fetchAlignment(String taskId) throws IOException, AlignmentInitializationException {
-		RequestCallback requestCallback = request -> {
-		};
-
+	public JsonNode fetchAlignment(String taskId)
+			throws IOException, AlignmentInitializationException, AlignmentServiceException {
 		File inputServerFile = File.createTempFile("alignment", taskId + ".rdf");
-		ResponseExtractor<Void> responseExtractor = response -> {
-			FileUtils.copyInputStreamToFile(response.getBody(), inputServerFile);
+		ResponseHandler<Void> responseHandler = response -> {
+			FileUtils.copyInputStreamToFile(response.getEntity().getContent(), inputServerFile);
 			return null;
 		};
+
 		RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
-		restTemplate.execute(endpoint.serverURL + "tasks/{id}/alignment", HttpMethod.GET, requestCallback,
-				responseExtractor, ImmutableMap.of("id", taskId));
+		HttpGet httpRequest = new HttpGet(
+				clientTemplate.buildIRI("/tasks/{id}/alignment", ImmutableMap.of("id", taskId), endpoint));
+		httpRequest.setHeader("Accept", "application/rdf+xml");
+		clientTemplate.doGET(responseHandler, httpRequest);
 
 		// creating model for loading alignment
 		AlignmentModel alignModel = new AlignmentModel();
@@ -392,8 +537,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public String createTask(@JsonSerialized AlignmentPlan alignmentPlan)
-			throws AlignmentServiceException {
+	public String createTask(@JsonSerialized AlignmentPlan alignmentPlan) throws AlignmentServiceException {
 
 		//// integrity checks
 
@@ -427,15 +571,15 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			throw new AlignmentServiceException("No pairing of lexicalization set");
 		}
 
-		RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
-		Task task = restTemplate.postForObject(endpoint.serverURL + "tasks", alignmentPlan, Task.class);
+		Task task = clientTemplate.doPOST(new TypeReference<Task>() {
+		}, "/tasks", Collections.emptyMap(), alignmentPlan);
 		return task.getId();
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void deleteTask(String id) {
-		RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
-		restTemplate.delete(endpoint.serverURL + "tasks/{id}", ImmutableMap.of("id", id));
+	public void deleteTask(String id) throws AlignmentServiceException {
+
+		clientTemplate.doDELETE("/tasks/{id}", ImmutableMap.of("id", id));
 	}
 
 	/**
@@ -500,7 +644,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
 		cm.storeSystemConfiguration(id, config);
 
-		//set the new configuration as default if it is the only one or if it is explicitly asserted
+		// set the new configuration as default if it is the only one or if it is explicitly asserted
 		if (existingIds.size() == 0 || asDefault) {
 			RemoteAlignmentServiceProjectSettings defaultSettings = new RemoteAlignmentServiceProjectSettings();
 			defaultSettings.configID = id;
@@ -535,8 +679,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	public synchronized String getDefaultRemoteAlignmentServiceId() throws STPropertyAccessException {
 		return STPropertiesManager.getProjectSettingDefault("configID",
 				RemoteAlignmentServiceProjectSettingsManager.class.getName());
-//		return STPropertiesManager.getProjectSettings(RemoteAlignmentServiceProjectSettings.class,
-//				getProject(), RemoteAlignmentServiceProjectSettingsManager.class.getName(), false).configID;
+		// return STPropertiesManager.getProjectSettings(RemoteAlignmentServiceProjectSettings.class,
+		// getProject(), RemoteAlignmentServiceProjectSettingsManager.class.getName(), false).configID;
 	}
 
 	/**
