@@ -95,7 +95,7 @@ public class Versions extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(dataset, version)', 'C')")
 	public VersionInfo createVersionDump(@Optional RepositoryAccess repositoryAccess,
 			@Optional String repositoryId,
-			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfigurerConfiguration\"}}") PluginSpecification repoConfigurerSpecification,
+			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfiguration\"}}") PluginSpecification repoConfigurerSpecification,
 			@Optional String backendType, String versionId) throws AlreadyExistingRepositoryException,
 			JsonProcessingException, ProjectUpdateException, ReservedPropertyUpdateException, Exception {
 
