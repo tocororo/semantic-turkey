@@ -1038,8 +1038,15 @@ public class GlobalSearch extends STServiceAdapter {
 
 
 	private File getLuceneDir() {
-		String luceneIndexDirPath = Resources.getSemTurkeyDataDir()+File.separator+lucDirName;
-		File luceneIndexDir = new File(luceneIndexDirPath);
+
+		String mainIndexPath = Resources.getSemTurkeyDataDir()+File.separator+indexMainDir;
+		File mainIndexDir = new File(mainIndexPath);
+		if(!mainIndexDir.exists()){
+			mainIndexDir.mkdir();
+		}
+		//String luceneIndexDirPath = Resources.getSemTurkeyDataDir()+File.separator+lucDirName;
+		//File luceneIndexDir = new File(luceneIndexDirPath);
+		File luceneIndexDir = new File(mainIndexDir, lucDirName);
 		if(!luceneIndexDir.exists()) {
 			luceneIndexDir.mkdir();
 		}
