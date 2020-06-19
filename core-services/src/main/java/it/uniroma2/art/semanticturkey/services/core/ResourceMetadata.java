@@ -26,6 +26,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.versioning.ResourceMetadataManager;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,27 +50,19 @@ public class ResourceMetadata extends STServiceAdapter {
 
 	@Autowired
 	protected ExtensionPointManager exptManager;
-
-	protected ResourceMetadataPatternStore getResourceMetadataPatternStore() throws NoSuchConfigurationManager {
-		return (ResourceMetadataPatternStore) exptManager
-				.getConfigurationManager(ResourceMetadataPatternStore.class.getName());
-	}
-
-	protected ResourceMetadataAssociationStore getResourceMetadataAssociationStore() throws NoSuchConfigurationManager {
-		return (ResourceMetadataAssociationStore) exptManager
-				.getConfigurationManager(ResourceMetadataAssociationStore.class.getName());
-	}
+	@Autowired
+	private ResourceMetadataManager resourceMetadataManager;
 
 	/* ====== Mappings ====== */
 
 	@STServiceOperation()
-	public JsonNode listAssociations() throws NoSuchConfigurationManager, STPropertyAccessException,
-			ConfigurationNotFoundException {
+	public JsonNode listAssociations() throws STPropertyAccessException,
+			ConfigurationNotFoundException, NoSuchConfigurationManager {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode associationJsonArray = jsonFactory.arrayNode();
 
-		ResourceMetadataPatternStore patternStore = getResourceMetadataPatternStore();
-		ResourceMetadataAssociationStore associationStore = getResourceMetadataAssociationStore();
+		ResourceMetadataPatternStore patternStore = resourceMetadataManager.getResourceMetadataPatternStore();
+		ResourceMetadataAssociationStore associationStore = resourceMetadataManager.getResourceMetadataAssociationStore();
 		//this service could be invoked also when no project is accessed (e.g. when creating a project)
 		Project proj = (stServiceContext.hasContextParameter("project")) ? getProject() : null;
 		Collection<Reference> references = associationStore.getConfigurationReferences(proj, UsersManager.getLoggedUser());
@@ -93,16 +86,16 @@ public class ResourceMetadata extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void addAssociation(RDFResourceRole role, String patternReference)
-			throws IOException, NoSuchConfigurationManager, WrongPropertiesException, STPropertyUpdateException,
-			STPropertyAccessException, ConfigurationNotFoundException {
+			throws IOException, WrongPropertiesException, STPropertyUpdateException,
+			STPropertyAccessException, ConfigurationNotFoundException, NoSuchConfigurationManager {
 		//make sure that the same association does not exists
-		ResourceMetadataAssociationStore associationStore = getResourceMetadataAssociationStore();
+		ResourceMetadataAssociationStore associationStore = resourceMetadataManager.getResourceMetadataAssociationStore();
 		if (associationExists(associationStore, role, patternReference)) {
 			throw new IllegalArgumentException("An association between the same role and pattern already exists");
 		}
 
 		//make sure that the pattern exists
-		if (!patternExists(getResourceMetadataPatternStore(), patternReference)) {
+		if (!patternExists(resourceMetadataManager.getResourceMetadataPatternStore(), patternReference)) {
 			throw new ConfigurationNotFoundException("Pattern " + patternReference + " not found");
 		}
 
@@ -120,9 +113,9 @@ public class ResourceMetadata extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void deleteAssociation(String reference) throws NoSuchConfigurationManager, ConfigurationNotFoundException {
+	public void deleteAssociation(String reference) throws ConfigurationNotFoundException, NoSuchConfigurationManager {
 		Reference ref = parseReference(reference);
-		getResourceMetadataAssociationStore().deleteConfiguration(ref);
+		resourceMetadataManager.getResourceMetadataAssociationStore().deleteConfiguration(ref);
 	}
 
 	/* ====== Patterns ====== */
@@ -130,21 +123,22 @@ public class ResourceMetadata extends STServiceAdapter {
 	/**
 	 * Returns the identifiers (configuration relative reference) of the pattern stored
 	 * at project level and those factory provided
+	 *
 	 * @return
 	 * @throws NoSuchConfigurationManager
 	 */
 	@STServiceOperation
 	public Collection<String> getPatternIdentifiers() throws NoSuchConfigurationManager {
 		List<String> patternIDs = new ArrayList<>();
-		ResourceMetadataPatternStore cm = getResourceMetadataPatternStore();
+		ResourceMetadataPatternStore cm = resourceMetadataManager.getResourceMetadataPatternStore();
 		//collects project-level patterns
-		for (Reference ref: cm.getConfigurationReferences(getProject(), UsersManager.getLoggedUser())) {
+		for (Reference ref : cm.getConfigurationReferences(getProject(), UsersManager.getLoggedUser())) {
 			if (ref.getProject().isPresent()) {
 				patternIDs.add(ref.getRelativeReference());
 			}
 		}
 		//collects factory provided patterns
-		for (String factId: cm.getFactoryConfigurations()) {
+		for (String factId : cm.getFactoryConfigurationFileNames()) {
 			patternIDs.add("factory:" + factId);
 		}
 		return patternIDs;
@@ -152,50 +146,48 @@ public class ResourceMetadata extends STServiceAdapter {
 
 	/**
 	 * Shared patterns are those stored as system level
+	 *
 	 * @return
 	 * @throws NoSuchConfigurationManager
 	 */
 	@STServiceOperation
 	public Collection<String> getLibraryPatternIdentifiers() throws NoSuchConfigurationManager {
 		List<String> patternIDs = new ArrayList<>();
-		ResourceMetadataPatternStore store = getResourceMetadataPatternStore();
-		for (Reference ref: store.getConfigurationReferences(null, UsersManager.getLoggedUser())) {
+		ResourceMetadataPatternStore store = resourceMetadataManager.getResourceMetadataPatternStore();
+		for (Reference ref : store.getConfigurationReferences(null, UsersManager.getLoggedUser())) {
 			patternIDs.add(ref.getRelativeReference());
 		}
 		return patternIDs;
 	}
 
 	@STServiceOperation
-	public ResourceMetadataPattern getPattern(String reference) throws NoSuchConfigurationManager,
-			STPropertyAccessException, IOException {
-		ResourceMetadataPatternStore store = getResourceMetadataPatternStore();
-		return getPatternFactoryIncluded(store, reference);
+	public ResourceMetadataPattern getPattern(String reference) throws STPropertyAccessException, IOException, NoSuchConfigurationManager {
+		return resourceMetadataManager.getResourceMetadataPattern(getProject(), reference);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void createPattern(String reference, @JsonSerialized ObjectNode definition)
-			throws IOException, NoSuchConfigurationManager, WrongPropertiesException, STPropertyUpdateException {
+			throws IOException, WrongPropertiesException, STPropertyUpdateException, NoSuchConfigurationManager {
 		ObjectMapper mapper = STPropertiesManager.createObjectMapper(exptManager);
 		ResourceMetadataPattern defObj = mapper.treeToValue(definition, ResourceMetadataPattern.class);
 		Reference ref = parseReference(reference);
-		getResourceMetadataPatternStore().storeConfiguration(ref, defObj);
+		resourceMetadataManager.getResourceMetadataPatternStore().storeConfiguration(ref, defObj);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void updatePattern(String reference, @JsonSerialized ObjectNode definition)
-			throws IOException, NoSuchConfigurationManager, WrongPropertiesException, STPropertyUpdateException {
+			throws IOException, WrongPropertiesException, STPropertyUpdateException, NoSuchConfigurationManager {
 		ObjectMapper mapper = STPropertiesManager.createObjectMapper(exptManager);
 		ResourceMetadataPattern defObj = mapper.treeToValue(definition, ResourceMetadataPattern.class);
 		Reference ref = parseReference(reference);
-		getResourceMetadataPatternStore().storeConfiguration(ref, defObj);
+		resourceMetadataManager.getResourceMetadataPatternStore().storeConfiguration(ref, defObj);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void deletePattern(String reference) throws NoSuchConfigurationManager,
-			ConfigurationNotFoundException, STPropertyAccessException {
+	public void deletePattern(String reference) throws ConfigurationNotFoundException, STPropertyAccessException, NoSuchConfigurationManager {
 		Reference patternRef = parseReference(reference);
 		//first delete the associations referencing this pattern
-		ResourceMetadataAssociationStore associationStore = getResourceMetadataAssociationStore();
+		ResourceMetadataAssociationStore associationStore = resourceMetadataManager.getResourceMetadataAssociationStore();
 		Collection<Reference> associationReferences = associationStore.getConfigurationReferences(getProject(), UsersManager.getLoggedUser());
 		for (Reference ref : associationReferences) {
 			ResourceMetadataAssociation association = associationStore.getConfiguration(ref);
@@ -204,53 +196,51 @@ public class ResourceMetadata extends STServiceAdapter {
 			}
 		}
 		//delete the pattern
-		getResourceMetadataPatternStore().deleteConfiguration(patternRef);
+		resourceMetadataManager.getResourceMetadataPatternStore().deleteConfiguration(patternRef);
 	}
 
 	/**
 	 * Clone a pattern stored at system level (shared) to project level
+	 *
 	 * @param reference the reference of the system level pattern to import
-	 * @param name the name to assign at the imported pattern (at project level)
+	 * @param name      the name to assign at the imported pattern (at project level)
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void importPatternFromLibrary(String reference, String name) throws NoSuchConfigurationManager, STPropertyAccessException,
-			WrongPropertiesException, IOException, STPropertyUpdateException {
+	public void importPatternFromLibrary(String reference, String name) throws STPropertyAccessException,
+			WrongPropertiesException, IOException, STPropertyUpdateException, NoSuchConfigurationManager {
 		Reference patternRef = parseReference(reference);
 		if (patternRef.getProject().isPresent()) {
 			throw new IllegalArgumentException("Cannot import a pattern already stored at project level");
 		}
-		ResourceMetadataPatternStore store = getResourceMetadataPatternStore();
-		//retrieve system level pattern
-		ResourceMetadataPattern pattern = store.getConfiguration(patternRef);
+		ResourceMetadataPattern pattern = resourceMetadataManager.getResourceMetadataPattern(getProject(), reference);
 		//store the same pattern at project level
 		Reference newPatterRef = new Reference(getProject(), null, patternRef.getIdentifier());
-		store.storeConfiguration(newPatterRef, pattern);
+		resourceMetadataManager.getResourceMetadataPatternStore().storeConfiguration(newPatterRef, pattern);
 	}
 
 	/**
 	 * Clone (share) a pattern stored at project level to system level
+	 *
 	 * @param reference the reference of the project level pattern to share
-	 * @param name the name to assign at the shared pattern (at system level)
+	 * @param name      the name to assign at the shared pattern (at system level)
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void storePatternInLibrary(String reference, String name) throws NoSuchConfigurationManager,
-			STPropertyAccessException, WrongPropertiesException, IOException, STPropertyUpdateException {
+	public void storePatternInLibrary(String reference, String name) throws STPropertyAccessException,
+			WrongPropertiesException, IOException, STPropertyUpdateException, NoSuchConfigurationManager {
 		Reference patternRef = parseReference(reference);
 		if (!patternRef.getProject().isPresent()) {
 			throw new IllegalArgumentException("Cannot share a pattern not stored at project level");
 		}
-		ResourceMetadataPatternStore store = getResourceMetadataPatternStore();
 		//retrieve project level pattern
-		ResourceMetadataPattern pattern = store.getConfiguration(patternRef);
+		ResourceMetadataPattern pattern = resourceMetadataManager.getResourceMetadataPattern(getProject(), reference);
 		//store the same pattern at system level
 		Reference newPatterRef = new Reference(null, null, patternRef.getIdentifier());
-		store.storeConfiguration(newPatterRef, pattern);
+		resourceMetadataManager.getResourceMetadataPatternStore().storeConfiguration(newPatterRef, pattern);
 	}
 
 	/**
-	 *
 	 * @param reference relativeReference of the pattern to clone
-	 * @param name name of the new pattern to create
+	 * @param name      name of the new pattern to create
 	 * @throws STPropertyAccessException
 	 * @throws WrongPropertiesException
 	 * @throws IOException
@@ -258,15 +248,14 @@ public class ResourceMetadata extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	public void clonePattern(String reference, String name) throws STPropertyAccessException,
-			WrongPropertiesException, IOException, NoSuchConfigurationManager,
-			STPropertyUpdateException {
-		ResourceMetadataPatternStore store = getResourceMetadataPatternStore();
-		ResourceMetadataPattern pattern = getPatternFactoryIncluded(store, reference);
-		store.storeConfiguration(new Reference(getProject(), null, name), pattern);
+			WrongPropertiesException, IOException, STPropertyUpdateException, NoSuchConfigurationManager {
+		ResourceMetadataPattern pattern = resourceMetadataManager.getResourceMetadataPattern(getProject(), reference);
+		resourceMetadataManager.getResourceMetadataPatternStore().storeConfiguration(new Reference(getProject(), null, name), pattern);
 	}
 
 	/**
 	 * Import and add a new pattern at project level from a loaded file
+	 *
 	 * @param inputFile
 	 * @param name
 	 * @throws IOException
@@ -276,14 +265,14 @@ public class ResourceMetadata extends STServiceAdapter {
 	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void importPattern(MultipartFile inputFile, String name) throws IOException,
-			NoSuchConfigurationManager, STPropertyAccessException, WrongPropertiesException, STPropertyUpdateException {
+	public void importPattern(MultipartFile inputFile, String name) throws IOException, STPropertyAccessException,
+			WrongPropertiesException, STPropertyUpdateException, NoSuchConfigurationManager {
 		File tempServerFile = File.createTempFile("cfImport", inputFile.getOriginalFilename());
 		try {
 			//convert multipart in file
 			inputFile.transferTo(tempServerFile);
 			//load the configuration of the given file (it eventually throws an exception if the content is not valid)
-			ResourceMetadataPatternStore store = getResourceMetadataPatternStore();
+			ResourceMetadataPatternStore store = resourceMetadataManager.getResourceMetadataPatternStore();
 			ResourceMetadataPattern pattern = STPropertiesManager.loadSTPropertiesFromYAMLFiles(
 					ResourceMetadataPattern.class, true, tempServerFile);
 			//store the configuration at project level with the provided name
@@ -295,20 +284,20 @@ public class ResourceMetadata extends STServiceAdapter {
 
 	/**
 	 * Export/Download the pattern file
+	 *
 	 * @param oRes
 	 * @param reference
 	 * @throws CustomFormException
 	 * @throws IOException
 	 */
 	@STServiceOperation
-	public void exportPattern(HttpServletResponse oRes, String reference) throws IOException, NoSuchConfigurationManager,
-			STPropertyAccessException {
-		ResourceMetadataPatternStore store = getResourceMetadataPatternStore();
-		ResourceMetadataPattern pattern = getPatternFactoryIncluded(store, reference);
+	public void exportPattern(HttpServletResponse oRes, String reference) throws IOException,
+			STPropertyAccessException, NoSuchConfigurationManager {
+		ResourceMetadataPattern pattern = resourceMetadataManager.getResourceMetadataPattern(getProject(), reference);
 		File tempServerFile = File.createTempFile("patternExport", ".cfg");
 		try {
 			STPropertiesManager.storeSTPropertiesInYAML(pattern, tempServerFile, true);
-			oRes.setHeader("Content-Disposition", "attachment; filename=" + reference.substring(reference.indexOf(":")+1) + ".cfg");
+			oRes.setHeader("Content-Disposition", "attachment; filename=" + reference.substring(reference.indexOf(":") + 1) + ".cfg");
 			oRes.setContentType("text/plain");
 			oRes.setContentLength((int) tempServerFile.length());
 			try (InputStream is = new FileInputStream(tempServerFile)) {
@@ -320,29 +309,9 @@ public class ResourceMetadata extends STServiceAdapter {
 		}
 	}
 
-	/**
-	 * Returns a pattern looking in pattern store and among those factory-provided
-	 * @param store
-	 * @param reference
-	 * @return
-	 * @throws IOException
-	 * @throws STPropertyAccessException
-	 */
-	private ResourceMetadataPattern getPatternFactoryIncluded(ResourceMetadataPatternStore store, String reference)
-			throws IOException, STPropertyAccessException {
-		if (reference.startsWith("factory")) {
-			String fileName = reference.substring(reference.indexOf(":")+1) + ".cfg";
-			File factConfFile = store.getFactoryConfigurationFile(fileName);
-			return STPropertiesManager.loadSTPropertiesFromYAMLFiles(ResourceMetadataPattern.class, true, factConfFile);
-		} else {
-			Reference ref = parseReference(reference);
-			return store.getConfiguration(ref);
-		}
-	}
-
 	private boolean associationExists(ResourceMetadataAssociationStore store, RDFResourceRole role, String patternRef)
 			throws STPropertyAccessException {
-		for (Reference associationRef: store.getConfigurationReferences(getProject(), null)) {
+		for (Reference associationRef : store.getConfigurationReferences(getProject(), null)) {
 			ResourceMetadataAssociation association = store.getConfiguration(associationRef);
 			if (association.role.equals(role) && association.patternReference.equals(patternRef)) {
 				return true;
@@ -353,9 +322,9 @@ public class ResourceMetadata extends STServiceAdapter {
 
 	private boolean patternExists(ResourceMetadataPatternStore store, String patternRef) {
 		if (patternRef.startsWith("factory")) { //factory provided => check if it is among those stored
-			return store.getFactoryConfigurations().contains(patternRef.substring(patternRef.indexOf(":")+1));
+			return store.getFactoryConfigurationFileNames().contains(patternRef.substring(patternRef.indexOf(":") + 1));
 		} else { //project level => check if exists the reference
-			for (Reference ref: store.getConfigurationReferences(getProject(), null)) {
+			for (Reference ref : store.getConfigurationReferences(getProject(), null)) {
 				if (ref.getRelativeReference().equals(patternRef)) {
 					return true;
 				}

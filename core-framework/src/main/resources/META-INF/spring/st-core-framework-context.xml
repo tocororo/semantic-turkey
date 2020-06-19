@@ -41,6 +41,8 @@
 
 	<bean id="resourceMetadataManager"
 		class="it.uniroma2.art.semanticturkey.versioning.ResourceMetadataManager" />
+	<osgi:service ref="resourceMetadataManager"
+				  interface="it.uniroma2.art.semanticturkey.versioning.ResourceMetadataManager"></osgi:service>
 
 	<bean id="resourceChangeNotificationManager"
 		class="it.uniroma2.art.semanticturkey.notification.ResourceChangeNotificationManager" />

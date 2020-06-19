@@ -42,4 +42,7 @@
 	
 	<osgi:reference id="resourceChangeNotificationManager"
 		interface="it.uniroma2.art.semanticturkey.notification.ResourceChangeNotificationManager" />
+
+	<osgi:reference id="resourceMetadataManager"
+		interface="it.uniroma2.art.semanticturkey.versioning.ResourceMetadataManager" />
 </beans>
