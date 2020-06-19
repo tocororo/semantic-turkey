@@ -143,7 +143,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 					StatusLine statusLine = httpResponse.getStatusLine();
 					if (statusLine.getStatusCode() / 100 != 2) {
 						throw new IOException(
-								statusLine.getStatusCode() + " " + statusLine.getReasonPhrase());
+								statusLine.getStatusCode() + ":" + statusLine.getReasonPhrase());
 					}
 
 					return responseHandler.handleResponse(httpResponse);
@@ -173,14 +173,15 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
 		public <T> T doPOST(TypeReference<T> valueType, String path, Map<String, String> uriVariables,
 				Object requestBody) throws AlignmentServiceException {
-			return doPOST(buildEntityDeserializationResponseHandler(valueType), path, uriVariables,
+			RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
+			HttpPost httpRequest = new HttpPost(buildIRI(path, uriVariables, endpoint));
+			httpRequest.setHeader("Accept", "application/json");
+			return doPOST(buildEntityDeserializationResponseHandler(valueType), httpRequest,
 					requestBody);
 		}
 
-		public <T> T doPOST(ResponseHandler<T> responseHandler, String path, Map<String, String> uriVariables,
+		private <T> T doPOST(ResponseHandler<T> responseHandler, HttpPost httpRequest,
 				Object requestBody) throws AlignmentServiceException {
-			RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
-			HttpPost httpRequest = new HttpPost(buildIRI(path, uriVariables, endpoint));
 			if (requestBody != null) {
 				String jsonString;
 				try {
