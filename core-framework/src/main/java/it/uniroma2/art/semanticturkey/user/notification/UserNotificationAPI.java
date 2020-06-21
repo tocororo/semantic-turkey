@@ -223,6 +223,61 @@ public class UserNotificationAPI {
         return true;
     }
 
+    public boolean removeUser(String user) throws IOException {
+        Document doc = getDocumentFromUser(user);
+        if(doc == null){
+            return false;
+        }
+        try(IndexWriter writer = createIndexWriter()) {
+            writer.deleteDocuments(new Term(USER_FIELD, user));
+        }
+        return true;
+    }
+
+    public boolean removeProjResFromUser(String user, String proj, IRI res) throws IOException {
+        String escapedSeparator = SEPARATOR.replace("|", "\\|");
+        String resNT = NTriplesUtil.toNTriplesString(res);
+        String fieldValueRegex = proj+escapedSeparator+resNT;
+        Document doc = getDocumentFromUser(user);
+        if(doc == null){
+            return false;
+        }
+        try(IndexWriter writer = createIndexWriter()) {
+            Document newDoc = cloneDocumentMinusField(doc, PROJ_RES_FIELD, fieldValueRegex);
+            writer.deleteDocuments(new Term(USER_FIELD, user));
+            writer.addDocument(newDoc);
+        }
+        return true;
+    }
+
+    public boolean removeProjRoleActionFromUser(String user, String proj, Role role, Action action) throws IOException {
+        String escapedSeparator = SEPARATOR.replace("|", "\\|");
+        String fieldValueRegex = proj+escapedSeparator;
+        if(role.equals(Role.any)){
+            fieldValueRegex += ".+"+escapedSeparator;
+        } else {
+            fieldValueRegex += role.name()+escapedSeparator;
+        }
+        if(action.equals(Action.any)){
+            fieldValueRegex += ".+";
+        } else {
+            fieldValueRegex += action.name();
+        }
+
+        Document doc = getDocumentFromUser(user);
+        if(doc == null){
+            return false;
+        }
+        try(IndexWriter writer = createIndexWriter()) {
+            Document newDoc = cloneDocumentMinusField(doc, PROJ_ROLE_ACT_FIELD, fieldValueRegex);
+            writer.deleteDocuments(new Term(USER_FIELD, user));
+            writer.addDocument(newDoc);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
     private Document getDocumentFromUser(String user) throws IOException {
         BooleanQuery.Builder builderBoolean = new BooleanQuery.Builder();
         builderBoolean.add(new TermQuery(new Term(USER_FIELD, user)), BooleanClause.Occur.MUST);
@@ -268,6 +323,16 @@ public class UserNotificationAPI {
         Document doc = new Document();
         for(IndexableField indexableField : inputDoc.getFields()){
             doc.add(new StringField(indexableField.name(), indexableField.stringValue(), Field.Store.YES));
+        }
+        return doc;
+    }
+
+    private Document cloneDocumentMinusField(Document inputDoc, String fieldName, String fieldValueRegex){
+        Document doc = new Document();
+        for(IndexableField indexableField : inputDoc.getFields()){
+            if(!indexableField.name().equals(fieldName) || !indexableField.stringValue().matches(fieldValueRegex)) {
+                doc.add(new StringField(indexableField.name(), indexableField.stringValue(), Field.Store.YES));
+            }
         }
         return doc;
     }

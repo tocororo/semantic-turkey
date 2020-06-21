@@ -48,4 +48,19 @@ public class UserNotification extends STServiceAdapter {
         return String.valueOf(UserNotificationAPI.getInstance().addToUser(user, projId, role, action));
     }
 
+    @STServiceOperation(method = RequestMethod.POST)
+    public String removeUser(String user) throws IOException {
+        return String.valueOf(UserNotificationAPI.getInstance().removeUser(user));
+    }
+
+    @STServiceOperation(method = RequestMethod.POST)
+    public String removeProjResFromUser(String user, String projId, IRI res) throws IOException {
+        return String.valueOf(UserNotificationAPI.getInstance().removeProjResFromUser(user, projId, res));
+    }
+
+    @STServiceOperation(method = RequestMethod.POST)
+    public String removeProjRoleActionFromUser(String user, String projId, UserNotificationAPI.Role role, UserNotificationAPI.Action action) throws IOException {
+        return String.valueOf(UserNotificationAPI.getInstance().removeProjRoleActionFromUser(user, projId, role, action));
+    }
+
 }
