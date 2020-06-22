@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.Function;
 
+import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -157,7 +159,7 @@ public class BaseRenderingEngineTest {
 
 						public String getDescription() {
 							return "";
-						};
+						}
 
 						public SearchStrategy createInstance() {
 							return new SearchStrategy() {
@@ -217,7 +219,7 @@ public class BaseRenderingEngineTest {
 										List<Pair<IRI, List<Value>>> ingoingLinks,
 										SearchStrategy searchStrategy, String baseURI,
 										Map<String, String> prefixToNamespaceMap)
-										throws IllegalStateException, STPropertyAccessException {
+										throws IllegalStateException {
 									throw new UnsupportedOperationException("Not implemented by the stub");
 								}
 
@@ -237,12 +239,12 @@ public class BaseRenderingEngineTest {
 										IRI iri, boolean searchInRDFSLabel, boolean searchInSKOSLabel,
 										boolean searchInSKOSXLLabel, boolean searchInOntolex,
 										Map<String, String> prefixToNamespaceMap)
-										throws IllegalStateException, STPropertyAccessException {
+										throws IllegalStateException {
 									throw new UnsupportedOperationException("Not implemented by the stub");
 								}
 
 							};
-						};
+						}
 					};
 				} else {
 					throw new IllegalArgumentException("Unsupported extension: " + componentID);
@@ -258,7 +260,8 @@ public class BaseRenderingEngineTest {
 			UnloadablePluginConfigurationException, WrongPropertiesException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, ProjectInconsistentException,
 			InvalidConfigurationException, STPropertyAccessException, IOException,
-			ReservedPropertyUpdateException, ProjectUpdateException {
+			ReservedPropertyUpdateException, ProjectUpdateException, STPropertyUpdateException,
+			NoSuchConfigurationManager {
 
 		Properties renderingEngineConfiguration = new Properties();
 		renderingEngineConfiguration.setProperty("template", "(\\(${notation}\\) )?${show}");
@@ -275,7 +278,7 @@ public class BaseRenderingEngineTest {
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
 						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
 						JsonNodeFactory.instance.objectNode()),
-				null, null, new String[] { "resource" }, null, null, null, null, null, null, false, null,
+				null, null, null, null, null, null, null, false, null,
 				false);
 		try {
 			Repository repo = new SailRepository(new MemoryStore());
@@ -400,7 +403,7 @@ public class BaseRenderingEngineTest {
 			UnloadablePluginConfigurationException, WrongPropertiesException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, ProjectInconsistentException,
 			InvalidConfigurationException, STPropertyAccessException, IOException,
-			ReservedPropertyUpdateException, ProjectUpdateException {
+			ReservedPropertyUpdateException, ProjectUpdateException, STPropertyUpdateException, NoSuchConfigurationManager {
 
 		Properties renderingEngineConfiguration = new Properties();
 		renderingEngineConfiguration.setProperty("template", "(\\(${notation}\\) )?${show}");
@@ -417,7 +420,7 @@ public class BaseRenderingEngineTest {
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
 						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
 						JsonNodeFactory.instance.objectNode()),
-				null, null, new String[] { "resource" }, null, null, null, null, null, null, false, null,
+				null, null, null, null, null, null, null, false, null,
 				false);
 		try {
 			STServiceContext stServiceContext = new STServiceContext() {

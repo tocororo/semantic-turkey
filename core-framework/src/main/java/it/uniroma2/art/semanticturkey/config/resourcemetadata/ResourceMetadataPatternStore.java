@@ -13,15 +13,16 @@ import java.util.List;
 
 public class ResourceMetadataPatternStore implements ProjectScopedConfigurableComponent<ResourceMetadataPattern> {
 
-	private List<String> factoryConfigurationFileNames = Arrays.asList("DublinCore metadata");
+	public static String DCT_METADATA_FACTORY_PATTERN_REF = "factory:DublinCore metadata";
+	private List<String> factoryConfigurationReferences = Arrays.asList(DCT_METADATA_FACTORY_PATTERN_REF);
 
 	@Override
 	public String getId() {
 		return ResourceMetadataPatternStore.class.getName();
 	}
 
-	public List<String> getFactoryConfigurationFileNames() {
-		return factoryConfigurationFileNames;
+	public List<String> getFactoryConfigurationReferences() {
+		return factoryConfigurationReferences;
 	}
 
 

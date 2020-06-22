@@ -138,10 +138,18 @@ public class ResourceMetadata extends STServiceAdapter {
 			}
 		}
 		//collects factory provided patterns
-		for (String factId : cm.getFactoryConfigurationFileNames()) {
-			patternIDs.add("factory:" + factId);
-		}
+		patternIDs.addAll(cm.getFactoryConfigurationReferences());
 		return patternIDs;
+	}
+
+	/**
+	 * Returns the reference of the only factory-provided patterns
+	 * @return
+	 * @throws NoSuchConfigurationManager
+	 */
+	@STServiceOperation
+	public Collection<String> getFactoryPatternIdentifiers() throws NoSuchConfigurationManager {
+		return resourceMetadataManager.getResourceMetadataPatternStore().getFactoryConfigurationReferences();
 	}
 
 	/**
@@ -162,7 +170,12 @@ public class ResourceMetadata extends STServiceAdapter {
 
 	@STServiceOperation
 	public ResourceMetadataPattern getPattern(String reference) throws STPropertyAccessException, IOException, NoSuchConfigurationManager {
-		return resourceMetadataManager.getResourceMetadataPattern(getProject(), reference);
+		//this service could be invoked also when no project is accessed (e.g. during project creation)
+		Project project = null;
+		if (stServiceContext.hasContextParameter("project")) {
+			project = getProject();
+		}
+		return resourceMetadataManager.getResourceMetadataPattern(project, reference);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -322,7 +335,7 @@ public class ResourceMetadata extends STServiceAdapter {
 
 	private boolean patternExists(ResourceMetadataPatternStore store, String patternRef) {
 		if (patternRef.startsWith("factory")) { //factory provided => check if it is among those stored
-			return store.getFactoryConfigurationFileNames().contains(patternRef.substring(patternRef.indexOf(":") + 1));
+			return store.getFactoryConfigurationReferences().contains(patternRef);
 		} else { //project level => check if exists the reference
 			for (Reference ref : store.getConfigurationReferences(getProject(), null)) {
 				if (ref.getRelativeReference().equals(patternRef)) {

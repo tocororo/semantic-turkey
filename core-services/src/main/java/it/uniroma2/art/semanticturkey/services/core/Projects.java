@@ -23,6 +23,10 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
 
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.properties.Pair;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
@@ -36,6 +40,7 @@ import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.util.Models;
@@ -160,9 +165,8 @@ public class Projects extends STServiceAdapter {
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfigurerConfiguration\"}}") PluginSpecification supportRepoSailConfigurerSpecification,
 			@Optional String supportBackendType,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory\"}") PluginSpecification uriGeneratorSpecification,
-			@Optional PluginSpecification renderingEngineSpecification, @Optional IRI creationDateProperty,
-			@Optional IRI modificationDateProperty,
-			@Optional(defaultValue = "resource") String[] updateForRoles,
+			@Optional PluginSpecification renderingEngineSpecification,
+			@Optional @JsonSerialized List<Pair<RDFResourceRole, String>> resourceMetadataAssociations,
 			@Optional String preloadedDataFileName, @Optional RDFFormat preloadedDataFormat,
 			@Optional TransitiveImportMethodAllowance transitiveImportAllowance, @Optional String leftDataset,
 			@Optional String rightDataset, @Optional boolean shaclEnabled,
@@ -172,7 +176,8 @@ public class Projects extends STServiceAdapter {
 			ProjectCreationException, ClassNotFoundException, WrongPropertiesException,
 			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, InvalidConfigurationException,
-			STPropertyAccessException, IOException, ReservedPropertyUpdateException, ProjectUpdateException {
+			STPropertyAccessException, IOException, ReservedPropertyUpdateException, ProjectUpdateException,
+			STPropertyUpdateException, NoSuchConfigurationManager {
 
 		List<Object> preloadRelatedArgs = Arrays.asList(preloadedDataFileName, preloadedDataFormat,
 				transitiveImportAllowance);
@@ -215,8 +220,8 @@ public class Projects extends STServiceAdapter {
 					historyEnabled, validationEnabled, blacklistingEnabled, repositoryAccess, coreRepoID,
 					coreRepoSailConfigurerSpecification, coreBackendType, supportRepoID,
 					supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
-					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
-					updateForRoles, preloadedDataFile, preloadedDataFormat, transitiveImportAllowance,
+					renderingEngineSpecification, resourceMetadataAssociations,
+					preloadedDataFile, preloadedDataFormat, transitiveImportAllowance,
 					failedImports, leftDataset, rightDataset, shaclEnabled, shaclSettings, trivialInferenceEnabled);
 			deletePreloadedDataFile = true;
 		} finally {

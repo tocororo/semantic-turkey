@@ -9,11 +9,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
 import javax.mail.MessagingException;
 
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.properties.Pair;
 import org.apache.commons.lang.RandomStringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -285,9 +288,7 @@ public class PMKI extends STServiceAdapter {
 			PluginSpecification renderingEngineSpecification = new PluginSpecification(renderingEngineFactoryID, null, new Properties(), null);
 			renderingEngineSpecification.expandDefaults();
 
-			IRI creationDateProperty = null;
-			IRI modificationDateProperty = null;
-			String[] updateForRoles = new String[]{"resource"};
+			List<Pair<RDFResourceRole, String>> resourceMetadataAssociations = null;
 			File preloadedDataFile = null;
 			RDFFormat preloadedDataFormat = null;
 			TransitiveImportMethodAllowance transitiveImportAllowance = null;
@@ -299,9 +300,8 @@ public class PMKI extends STServiceAdapter {
 					historyEnabled, validationEnabled, blacklistingEnabled, repositoryAccess, coreRepoID,
 					coreRepoSailConfigurerSpecification, coreBackendType, supportRepoID,
 					supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
-					renderingEngineSpecification, creationDateProperty, modificationDateProperty,
-					updateForRoles, preloadedDataFile, preloadedDataFormat, transitiveImportAllowance,
-					failedImports, leftDataset, rightDataset, false, null,false);
+					renderingEngineSpecification, resourceMetadataAssociations, preloadedDataFile, preloadedDataFormat,
+					transitiveImportAllowance, failedImports, leftDataset, rightDataset, false, null,false);
 
 			Reference reference = parseReference(configurationReference);
 

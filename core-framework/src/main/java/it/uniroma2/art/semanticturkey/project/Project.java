@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,7 +44,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -75,7 +73,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
 
@@ -83,7 +80,6 @@ import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingRepositoryException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
@@ -173,8 +169,6 @@ public abstract class Project extends AbstractProject {
 
 	protected String description;
 
-	protected Set<RDFResourceRole> updateForRoles;
-
 	public static final String INFOFILENAME = "project.info";
 
 	public static final String URI_GENERATOR_CONFIG_FILENAME = "urigen.config";
@@ -186,7 +180,6 @@ public abstract class Project extends AbstractProject {
 	public static final String DEF_NS_PROP = "defaultNamespace";
 	public static final String MODEL_PROP = "model";
 	public static final String LEXICALIZATION_MODEL_PROP = "lexicalizationModel";
-	public static final String UPDATE_FOR_ROLES_PROP = "updateForRoles";
 	public static final String PLUGINS_PROP = "plugins";
 
 	public static final String FACETS_PROP = "facets";
@@ -197,9 +190,6 @@ public abstract class Project extends AbstractProject {
 	public static final String BLACKLISTING_ENABLED_PROP = "blacklistingEnabled";
 
 	public static final String DESCRIPTION_PROP = "description";
-
-	public static final String CREATION_DATE_PROP = "creationDate";
-	public static final String MODIFICATION_DATE_PROP = "modificationDate";
 
 	public static final String VERSIONS_PROP = "versions";
 
@@ -313,13 +303,6 @@ public abstract class Project extends AbstractProject {
 				facets = new HashMap<>(); // default empty map
 			}
 
-			String updateForRolesString = MoreObjects
-					.firstNonNull(stp_properties.getProperty(UPDATE_FOR_ROLES_PROP), "resource");
-
-			updateForRoles = Arrays.stream(updateForRolesString.split(",")).map(String::trim)
-					.filter(s -> !s.isEmpty())
-					.map(s -> s.equals("resource") ? RDFResourceRole.undetermined.name() : s)
-					.map(RDFResourceRole::valueOf).collect(Collectors.toSet());
 			acl = new ProjectACL(this);
 			versionManager = new VersionManager(this);
 			defaultRepositoryLocation = Optional.ofNullable(getProperty(DEFAULT_REPOSITORY_LOCATION_PROP))
@@ -1167,17 +1150,6 @@ public abstract class Project extends AbstractProject {
 
 	public RepositoryLocation getDefaultRepositoryLocation() {
 		return defaultRepositoryLocation;
-	}
-
-	/**
-	 * Returns the set of {@link RDFResourceRole}s for which version metadata (i.e. creation/modification
-	 * date) should be updated. The value {@link RDFResourceRole#undetermined} is used to represent any
-	 * "resource", since the latter is not an explicit role.
-	 * 
-	 * @return
-	 */
-	public Set<RDFResourceRole> getUpdateForRoles() {
-		return Collections.unmodifiableSet(updateForRoles);
 	}
 
 	/**

@@ -978,28 +978,13 @@ public class SKOS extends STServiceAdapter {
 		}
 
 		//this part is related to the modified date to be added (in case) to each selected concepts
-		boolean addModifiedDate = false;
 		RDFResourceRole role = RDFResourceRole.concept;
 		//part copied from VersionMetadataInterceptor to check whether the modification date should be added
-		for (RDFResourceRole updatableRole : stServiceContext.getProject().getUpdateForRoles()) {
-			if (RDFResourceRole.subsumes(updatableRole, role, true)) {
-				addModifiedDate = true;
-				break;
-			}
-		}
 		Project project = stServiceContext.getProject();
-		String creationDateProp = project.getProperty(Project.CREATION_DATE_PROP);
-		String modificationDateProp = project.getProperty(Project.MODIFICATION_DATE_PROP);
-		if (creationDateProp == null && modificationDateProp == null) {
-			addModifiedDate = false;
-		}
 		ValueFactory vf = repoConnection.getValueFactory();
 		Literal currentTime = vf.createLiteral(new Date());
 		IRI modificationDatePropIRI = null;
-		if(addModifiedDate) {
-			modificationDatePropIRI = vf.createIRI(modificationDateProp);
-		}
-		
+
 		//prepare the SPARQL UPDATE
 		// @formatter:off
 		String updateQuery =
@@ -1008,15 +993,8 @@ public class SKOS extends STServiceAdapter {
 					"\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  " +
 					"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>  " +
 					"\nPREFIX owl: <http://www.w3.org/2002/07/owl#> " ;
-		if(addModifiedDate) {
-			updateQuery +="\nDELETE {GRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph())+ "" +
-					"\n{?concept "+NTriplesUtil.toNTriplesString(modificationDatePropIRI)+" ?oldModDate .}}";
-		}
 		updateQuery +="\nINSERT {GRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph())+
                     " \n{ ?concept  "+inSchemePropString+ " "+NTriplesUtil.toNTriplesString(scheme)+" . " ;
-		if(addModifiedDate) {
-			updateQuery+= "\n?concept "+NTriplesUtil.toNTriplesString(modificationDatePropIRI)+" "+NTriplesUtil.toNTriplesString(currentTime)+" .";
-		}
 		updateQuery+= "\n} }" +
 					"\nWHERE{" +
 					"\n?conceptSubClass rdfs:subClassOf* skos:Concept ."; // this has to be outside the GRAPH since the classes subClassOF skos:Concept
@@ -1041,9 +1019,6 @@ public class SKOS extends STServiceAdapter {
 				updateQuery+="?scheme="+NTriplesUtil.toNTriplesString(filterScheme);
 			}	
 			updateQuery += ")" ;
-		}
-		if(addModifiedDate) {
-			updateQuery+="\nOPTIONAL{ ?concept "+NTriplesUtil.toNTriplesString(modificationDatePropIRI)+" ?oldModDate .}";
 		}
 		updateQuery +="\n}"+
 				"\n}";

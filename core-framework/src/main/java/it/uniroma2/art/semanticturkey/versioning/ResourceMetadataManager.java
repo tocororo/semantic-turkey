@@ -123,20 +123,6 @@ public class ResourceMetadataManager {
 		} catch (STPropertyAccessException | NoSuchConfigurationManager | IOException e) {
 			e.printStackTrace();
 		}
-
-		// Usually, we expect either one created resource or one modified resource, so
-		// there should be no need of complex buffering techniques
-
-//		ValueFactory vf = conn.getValueFactory();
-//		Literal currentTime = vf.createLiteral(new Date());
-//		String creationDateProp = project.getProperty(Project.CREATION_DATE_PROP);
-//		if (creationDateProp != null) {
-//			IRI creationDatePropIRI = vf.createIRI(creationDateProp);
-//			if (determineNecessityOfMetadata(conn, r, event.getRole(), project)) {
-//				conn.remove(r, creationDatePropIRI, null, workingGraph);
-//				conn.add(r, creationDatePropIRI, currentTime, workingGraph);
-//			}
-//		}
 	}
 
 	/**
@@ -168,20 +154,6 @@ public class ResourceMetadataManager {
 		} catch (STPropertyAccessException | NoSuchConfigurationManager | IOException e) {
 			e.printStackTrace();
 		}
-
-		// Usually, we expect either one created resource or one modified resource, so
-		// there should be no need of complex buffering techniques
-
-//		String modificationDateProp = project.getProperty(Project.MODIFICATION_DATE_PROP);
-//		ValueFactory vf = conn.getValueFactory();
-//		Literal currentTime = vf.createLiteral(new Date());
-//		if (modificationDateProp != null) {
-//			IRI modificationDatePropIRI = vf.createIRI(modificationDateProp);
-//			if (determineNecessityOfMetadata(conn, r, event.getRole(), project)) {
-//				conn.remove(r, modificationDatePropIRI, null, workingGraph);
-//				conn.add(r, modificationDatePropIRI, currentTime, workingGraph);
-//			}
-//		}
 	}
 
 	/**
@@ -215,29 +187,6 @@ public class ResourceMetadataManager {
 			e.printStackTrace();
 		}
 	}
-
-//	private boolean determineNecessityOfMetadata(RepositoryConnection conn, Resource resource,
-//			RDFResourceRole role, Project project) {
-//
-//		logger.debug("Given role: {}", role);
-//
-//		if (role == RDFResourceRole.undetermined) {
-//			role = RDFResourceRole.valueOf(RoleRecognitionOrchestrator.computeRole(resource, conn).name());
-//		}
-//
-//		logger.debug("After computation role: {}", role);
-//
-//		for (RDFResourceRole updatableRole : project.getUpdateForRoles()) {
-//			if (RDFResourceRole.subsumes(updatableRole, role, true)) {
-//				logger.debug("Role {} is subsumed by role {}", role, updatableRole);
-//				return true;
-//			}
-//		}
-//
-//		logger.debug("Do not update");
-//
-//		return false;
-//	}
 
 	public ResourceMetadataPatternStore getResourceMetadataPatternStore() throws NoSuchConfigurationManager {
 		return (ResourceMetadataPatternStore) exptManager
