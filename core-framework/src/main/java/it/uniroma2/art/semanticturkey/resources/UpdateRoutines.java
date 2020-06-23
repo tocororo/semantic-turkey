@@ -105,7 +105,7 @@ public class UpdateRoutines {
 
 	protected static Logger logger = LoggerFactory.getLogger(UpdateRoutines.class);
 
-	public static void startUpdatesCheckAndRepair() throws IOException, STPropertyUpdateException, ProjectAccessException {
+	public static void startUpdatesCheckAndRepair() throws IOException, ProjectAccessException {
 		VersionNumber stVersionNumber = Config.getVersionNumber();
 		VersionNumber stDataVersionNumber = Config.getSTDataVersionNumber();
 		logger.debug("version number of installed Semantic Turkey is: " + stVersionNumber);
@@ -236,11 +236,10 @@ public class UpdateRoutines {
 	}
 
 	private static void alignFrom7To8()
-			throws STPropertyUpdateException, UnsupportedRDFormatException, IOException, ProjectAccessException {
+			throws UnsupportedRDFormatException, IOException, ProjectAccessException {
 		logger.debug(
-				"Version 8.0 added alignment.remote.port to the system settings and changed the namespace "
+				"Version 8.0 changed the namespace "
 						+ "associated with the metadata registry");
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ALIGNMENT_REMOTE_PORT, "7575");
 		File catalogFile = new File(Config.getDataDir(), "metadataRegistry/catalog.ttl");
 		if (catalogFile.exists()) {
 			replaceNamespaceDefinition(
