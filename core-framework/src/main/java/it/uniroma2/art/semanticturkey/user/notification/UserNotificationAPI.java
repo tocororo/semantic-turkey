@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.user.notification;
 
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -46,9 +47,6 @@ public class UserNotificationAPI {
     private int MAX_RESULTS = 200;
 
     public enum Action {any, create, delete, update}
-
-    public enum Role {any, cls, individual, property, ontology, dataRange, concept, conceptScheme, xLabel, skosCollection, skosOrderedCollection, limeLexicon, ontolexLexicalEntry, ontolexForm,
-        ontolexLexicalSense}
 
     public static UserNotificationAPI getInstance() {
         return sharedInsance;
@@ -126,7 +124,7 @@ public class UserNotificationAPI {
         return userList;
     }
 
-    public List<String> searchUserFromProjRoleAction(String proj, Role role, Action action) throws IOException {
+    public List<String> searchUserFromProjRoleAction(String proj, RDFResourceRole role, Action action) throws IOException {
         //role could be null in this case, no restriction is applied for the role
 
         List<String> userList = new ArrayList<>();
@@ -135,7 +133,7 @@ public class UserNotificationAPI {
         //construct the String that will be used during the search
         boolean useWildCard = false;
         String searchString = proj+SEPARATOR;
-        if(role==Role.any){
+        if(role==RDFResourceRole.undetermined){
             searchString += "*"+SEPARATOR;
             useWildCard = true;
         } else {
@@ -197,7 +195,7 @@ public class UserNotificationAPI {
         return true;
     }
 
-    public boolean addToUser(String user, String proj, Role role, Action action) throws IOException {
+    public boolean addToUser(String user, String proj, RDFResourceRole role, Action action) throws IOException {
         String valueToAdd = proj+SEPARATOR+role.name()+SEPARATOR+action.name();
         Document doc = getDocumentFromUser(user);
 
@@ -250,10 +248,10 @@ public class UserNotificationAPI {
         return true;
     }
 
-    public boolean removeProjRoleActionFromUser(String user, String proj, Role role, Action action) throws IOException {
+    public boolean removeProjRoleActionFromUser(String user, String proj, RDFResourceRole role, Action action) throws IOException {
         String escapedSeparator = SEPARATOR.replace("|", "\\|");
         String fieldValueRegex = proj+escapedSeparator;
-        if(role.equals(Role.any)){
+        if(role.equals(RDFResourceRole.undetermined)){
             fieldValueRegex += ".+"+escapedSeparator;
         } else {
             fieldValueRegex += role.name()+escapedSeparator;

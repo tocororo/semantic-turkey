@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -34,7 +35,7 @@ public class UserNotification extends STServiceAdapter {
     }
 
     @STServiceOperation(method = RequestMethod.GET)
-    public List<String> searchUserFromProjRoleAction(String proj, UserNotificationAPI.Role role, UserNotificationAPI.Action action) throws IOException {
+    public List<String> searchUserFromProjRoleAction(String proj, RDFResourceRole role, UserNotificationAPI.Action action) throws IOException {
         return UserNotificationAPI.getInstance().searchUserFromProjRoleAction(proj, role, action);
     }
 
@@ -44,7 +45,7 @@ public class UserNotification extends STServiceAdapter {
     }
 
     @STServiceOperation(method = RequestMethod.POST)
-    public String addToUserWithRole(String user, String projId, UserNotificationAPI.Role role, UserNotificationAPI.Action action) throws IOException {
+    public String addToUserWithRole(String user, String projId, RDFResourceRole role, UserNotificationAPI.Action action) throws IOException {
         return String.valueOf(UserNotificationAPI.getInstance().addToUser(user, projId, role, action));
     }
 
@@ -59,7 +60,7 @@ public class UserNotification extends STServiceAdapter {
     }
 
     @STServiceOperation(method = RequestMethod.POST)
-    public String removeProjRoleActionFromUser(String user, String projId, UserNotificationAPI.Role role, UserNotificationAPI.Action action) throws IOException {
+    public String removeProjRoleActionFromUser(String user, String projId, RDFResourceRole role, UserNotificationAPI.Action action) throws IOException {
         return String.valueOf(UserNotificationAPI.getInstance().removeProjRoleActionFromUser(user, projId, role, action));
     }
 
