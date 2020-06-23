@@ -1,13 +1,15 @@
 capability(rdf,"CRUDV").
 
-capability(rbac,"CRUDV").
+capability(rbac,"CRUD").
 
 % role e (role, capability) can only be given if project-local roles can be defined
 
 capability(pm(project),"RUV").
-capability(pm(project,_),"CRUDV").
+capability(pm(project,_),"CRUD").
 
-capability(cform,"CRUDV").
+capability(pm(resourceMetadata,_),"CRUD").
+
+capability(cform,"CRUD").
 
 capability(um(user),"R").
 

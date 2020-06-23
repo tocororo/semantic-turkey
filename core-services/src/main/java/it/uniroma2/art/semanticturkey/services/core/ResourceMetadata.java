@@ -31,6 +31,7 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -53,9 +54,10 @@ public class ResourceMetadata extends STServiceAdapter {
 	@Autowired
 	private ResourceMetadataManager resourceMetadataManager;
 
-	/* ====== Mappings ====== */
+	/* ====== Associations ====== */
 
 	@STServiceOperation()
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, association)', 'R')")
 	public JsonNode listAssociations() throws STPropertyAccessException,
 			ConfigurationNotFoundException, NoSuchConfigurationManager {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
@@ -85,6 +87,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, association)', 'C')")
 	public void addAssociation(RDFResourceRole role, String patternReference)
 			throws IOException, WrongPropertiesException, STPropertyUpdateException,
 			STPropertyAccessException, ConfigurationNotFoundException, NoSuchConfigurationManager {
@@ -113,6 +116,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, association)', 'D')")
 	public void deleteAssociation(String reference) throws ConfigurationNotFoundException, NoSuchConfigurationManager {
 		Reference ref = parseReference(reference);
 		resourceMetadataManager.getResourceMetadataAssociationStore().deleteConfiguration(ref);
@@ -128,6 +132,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	 * @throws NoSuchConfigurationManager
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, pattern)', 'R')")
 	public Collection<String> getPatternIdentifiers() throws NoSuchConfigurationManager {
 		List<String> patternIDs = new ArrayList<>();
 		ResourceMetadataPatternStore cm = resourceMetadataManager.getResourceMetadataPatternStore();
@@ -148,6 +153,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	 * @throws NoSuchConfigurationManager
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, pattern)', 'R')")
 	public Collection<String> getFactoryPatternIdentifiers() throws NoSuchConfigurationManager {
 		return resourceMetadataManager.getResourceMetadataPatternStore().getFactoryConfigurationReferences();
 	}
@@ -159,6 +165,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	 * @throws NoSuchConfigurationManager
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, pattern)', 'R')")
 	public Collection<String> getLibraryPatternIdentifiers() throws NoSuchConfigurationManager {
 		List<String> patternIDs = new ArrayList<>();
 		ResourceMetadataPatternStore store = resourceMetadataManager.getResourceMetadataPatternStore();
@@ -169,6 +176,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	}
 
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, pattern)', 'R')")
 	public ResourceMetadataPattern getPattern(String reference) throws STPropertyAccessException, IOException, NoSuchConfigurationManager {
 		//this service could be invoked also when no project is accessed (e.g. during project creation)
 		Project project = null;
@@ -179,6 +187,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, pattern)', 'C')")
 	public void createPattern(String reference, @JsonSerialized ObjectNode definition)
 			throws IOException, WrongPropertiesException, STPropertyUpdateException, NoSuchConfigurationManager {
 		ObjectMapper mapper = STPropertiesManager.createObjectMapper(exptManager);
@@ -188,6 +197,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, pattern)', 'U')")
 	public void updatePattern(String reference, @JsonSerialized ObjectNode definition)
 			throws IOException, WrongPropertiesException, STPropertyUpdateException, NoSuchConfigurationManager {
 		ObjectMapper mapper = STPropertiesManager.createObjectMapper(exptManager);
@@ -197,6 +207,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, pattern)', 'D')")
 	public void deletePattern(String reference) throws ConfigurationNotFoundException, STPropertyAccessException, NoSuchConfigurationManager {
 		Reference patternRef = parseReference(reference);
 		//first delete the associations referencing this pattern
@@ -219,6 +230,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	 * @param name      the name to assign at the imported pattern (at project level)
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, pattern)', 'C')")
 	public void importPatternFromLibrary(String reference, String name) throws STPropertyAccessException,
 			WrongPropertiesException, IOException, STPropertyUpdateException, NoSuchConfigurationManager {
 		Reference patternRef = parseReference(reference);
@@ -238,6 +250,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	 * @param name      the name to assign at the shared pattern (at system level)
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, pattern)', 'C')")
 	public void storePatternInLibrary(String reference, String name) throws STPropertyAccessException,
 			WrongPropertiesException, IOException, STPropertyUpdateException, NoSuchConfigurationManager {
 		Reference patternRef = parseReference(reference);
@@ -260,6 +273,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	 * @throws NoSuchConfigurationManager
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, pattern)', 'C')")
 	public void clonePattern(String reference, String name) throws STPropertyAccessException,
 			WrongPropertiesException, IOException, STPropertyUpdateException, NoSuchConfigurationManager {
 		ResourceMetadataPattern pattern = resourceMetadataManager.getResourceMetadataPattern(getProject(), reference);
@@ -278,6 +292,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, pattern)', 'C')")
 	public void importPattern(MultipartFile inputFile, String name) throws IOException, STPropertyAccessException,
 			WrongPropertiesException, STPropertyUpdateException, NoSuchConfigurationManager {
 		File tempServerFile = File.createTempFile("cfImport", inputFile.getOriginalFilename());
@@ -304,6 +319,7 @@ public class ResourceMetadata extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, pattern)', 'R')")
 	public void exportPattern(HttpServletResponse oRes, String reference) throws IOException,
 			STPropertyAccessException, NoSuchConfigurationManager {
 		ResourceMetadataPattern pattern = resourceMetadataManager.getResourceMetadataPattern(getProject(), reference);

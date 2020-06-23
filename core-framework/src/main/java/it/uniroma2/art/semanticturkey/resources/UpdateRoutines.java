@@ -34,9 +34,17 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociationStore;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
 
 import org.apache.commons.io.FileUtils;
@@ -97,7 +105,7 @@ public class UpdateRoutines {
 
 	protected static Logger logger = LoggerFactory.getLogger(UpdateRoutines.class);
 
-	public static void startUpdatesCheckAndRepair() throws IOException, STPropertyUpdateException {
+	public static void startUpdatesCheckAndRepair() throws IOException, STPropertyUpdateException, ProjectAccessException {
 		VersionNumber stVersionNumber = Config.getVersionNumber();
 		VersionNumber stDataVersionNumber = Config.getSTDataVersionNumber();
 		logger.debug("version number of installed Semantic Turkey is: " + stVersionNumber);
@@ -228,7 +236,7 @@ public class UpdateRoutines {
 	}
 
 	private static void alignFrom7To8()
-			throws STPropertyUpdateException, UnsupportedRDFormatException, IOException {
+			throws STPropertyUpdateException, UnsupportedRDFormatException, IOException, ProjectAccessException {
 		logger.debug(
 				"Version 8.0 added alignment.remote.port to the system settings and changed the namespace "
 						+ "associated with the metadata registry");
@@ -240,7 +248,7 @@ public class UpdateRoutines {
 					new SimpleNamespace("mdr", "http://semanticturkey.uniroma2.it/ns/mdr#"), catalogFile);
 		}
 
-		logger.debug("Version 8.0 added capabilities about customService and invokableReporter");
+		logger.debug("Version 8.0 added capabilities about customService, invokableReporter and resourceMetadata");
 		Role[] roles = { DefaultRole.LEXICOGRAPHER, DefaultRole.LURKER, DefaultRole.MAPPER,
 				DefaultRole.ONTOLOGIST, DefaultRole.PROJECTMANAGER, DefaultRole.RDF_GEEK,
 				DefaultRole.THESAURUS_EDITOR, DefaultRole.VALIDATOR };
@@ -253,6 +261,34 @@ public class UpdateRoutines {
 		updateInvokableReporters("it.uniroma2.art.semanticturkey.invokablereporter.OntoLexLemonReport",
 				"it.uniroma2.art.semanticturkey.invokablereporter.OWLReport",
 				"it.uniroma2.art.semanticturkey.invokablereporter.SKOSReport");
+
+		//set the default <undetermined, DublinCore metadata> association if project has
+		//updateForRoles: resource, and DC properties as creation and modification properties
+		logger.debug("Version 8.0 replaced updateForRoles with the resource metadata mechanism");
+
+		Collection<AbstractProject> projects = ProjectManager.listProjects();
+		for (AbstractProject absProj: ProjectManager.listProjects()) {
+			if (absProj instanceof Project) {
+				Project proj = (Project) absProj;
+				Set<RDFResourceRole> updateForRoles = proj.getUpdateForRoles();
+				String modificationDateProp = proj.getProperty(Project.MODIFICATION_DATE_PROP_DEPRECATED);
+				String creationDateProp = proj.getProperty(Project.CREATION_DATE_PROP_DEPRECATED);
+				if (
+					updateForRoles.size() == 1 && updateForRoles.contains(RDFResourceRole.undetermined) &&
+					modificationDateProp != null && modificationDateProp.equals("http://purl.org/dc/terms/modified") &&
+					creationDateProp != null && creationDateProp.equals("http://purl.org/dc/terms/created")
+				) {
+					File configFolder = STPropertiesManager.getProjectPropertyFolder(proj, ResourceMetadataAssociationStore.class.getName());
+					FileUtils.forceMkdir(configFolder);
+					String configName = "default dc association.cfg";
+					try (InputStream is = UpdateRoutines.class.getResourceAsStream(
+							"/it/uniroma2/art/semanticturkey/config/resourcemetadata/" + configName)) {
+						FileUtils.copyInputStreamToFile(is, new File(configFolder, configName));
+					}
+				}
+			}
+		}
+
 
 	}
 

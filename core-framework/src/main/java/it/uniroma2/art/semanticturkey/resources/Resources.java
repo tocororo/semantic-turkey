@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.UUID;
 
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,7 +129,7 @@ public class Resources {
 		} else { // stData exists => check if need to be updated
 			try {
 				UpdateRoutines.startUpdatesCheckAndRepair();
-			} catch (IOException | STPropertyUpdateException e) {
+			} catch (IOException | STPropertyUpdateException | ProjectAccessException e) {
 				throw new STInitializationException(e);
 			}
 		}

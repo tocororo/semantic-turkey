@@ -26,60 +26,15 @@
  */
 package it.uniroma2.art.semanticturkey.project;
 
-import static java.util.stream.Collectors.toSet;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-
-import javax.annotation.Nullable;
-
-import org.apache.commons.lang.mutable.MutableBoolean;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.eclipse.rdf4j.RDF4JException;
-import org.eclipse.rdf4j.http.protocol.Protocol;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.OWL;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.config.RepositoryConfig;
-import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
-import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
-import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
-import org.eclipse.rdf4j.repository.manager.RepositoryManager;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
-
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingRepositoryException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
@@ -120,6 +75,50 @@ import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManager;
 import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
+import org.apache.commons.lang.mutable.MutableBoolean;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.http.protocol.Protocol;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
+import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
+import org.eclipse.rdf4j.repository.manager.RepositoryManager;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
 
 public abstract class Project extends AbstractProject {
 
@@ -254,6 +253,15 @@ public abstract class Project extends AbstractProject {
 	private RepositoryLocation defaultRepositoryLocation;
 	private ExtensionPointManager exptManager;
 
+	/*
+	Stuff about DCT metadata, deprecated from v8.0 in favor of ResourceMetadata,
+	but still used in the update routine 7.0 -> 8.0
+	 */
+	public static final String UPDATE_FOR_ROLES_PROP_DEPRECATED = "updateForRoles";
+	public static final String CREATION_DATE_PROP_DEPRECATED = "creationDate";
+	public static final String MODIFICATION_DATE_PROP_DEPRECATED = "modificationDate";
+	protected Set<RDFResourceRole> updateForRoles;
+
 	/**
 	 * this constructor always assumes that the project folder actually exists. Accessing an already existing
 	 * folder or creating a new one is in charge of the ProjectManager
@@ -301,6 +309,13 @@ public abstract class Project extends AbstractProject {
 				});
 			} else {
 				facets = new HashMap<>(); // default empty map
+			}
+
+			//for the update routine 7 -> 8, we are interested in the sole projects with "resource" as updateForRoles
+			updateForRoles = new HashSet<>();
+			String updateForRolesString = stp_properties.getProperty(UPDATE_FOR_ROLES_PROP_DEPRECATED);
+			if (updateForRolesString != null && updateForRolesString.equals("resource")) {
+				updateForRoles.add(RDFResourceRole.undetermined);
 			}
 
 			acl = new ProjectACL(this);
@@ -1150,6 +1165,10 @@ public abstract class Project extends AbstractProject {
 
 	public RepositoryLocation getDefaultRepositoryLocation() {
 		return defaultRepositoryLocation;
+	}
+
+	public Set<RDFResourceRole> getUpdateForRoles() {
+		return Collections.unmodifiableSet(updateForRoles);
 	}
 
 	/**
