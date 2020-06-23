@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class UserNotificationAPI {
 
@@ -233,7 +234,8 @@ public class UserNotificationAPI {
     }
 
     public boolean removeProjResFromUser(String user, String proj, IRI res) throws IOException {
-        String escapedSeparator = SEPARATOR.replace("|", "\\|");
+        //String escapedSeparator = SEPARATOR.replace("|", "\\|");
+        String escapedSeparator = Pattern.quote(SEPARATOR);
         String resNT = NTriplesUtil.toNTriplesString(res);
         String fieldValueRegex = proj+escapedSeparator+resNT;
         Document doc = getDocumentFromUser(user);
@@ -249,7 +251,8 @@ public class UserNotificationAPI {
     }
 
     public boolean removeProjRoleActionFromUser(String user, String proj, RDFResourceRole role, Action action) throws IOException {
-        String escapedSeparator = SEPARATOR.replace("|", "\\|");
+        //String escapedSeparator = SEPARATOR.replace("|", "\\|");
+        String escapedSeparator = Pattern.quote(SEPARATOR);
         String fieldValueRegex = proj+escapedSeparator;
         if(role.equals(RDFResourceRole.undetermined)){
             fieldValueRegex += ".+"+escapedSeparator;
