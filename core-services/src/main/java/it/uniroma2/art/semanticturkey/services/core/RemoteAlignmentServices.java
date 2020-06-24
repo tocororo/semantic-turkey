@@ -33,6 +33,7 @@ import org.apache.http.client.AuthCache;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -199,7 +200,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 		public void doDELETE(String path, ImmutableMap<String, String> uriVariables)
 				throws AlignmentServiceException {
 			RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
-			HttpGet httpRequest = new HttpGet(buildIRI(path, uriVariables, endpoint));
+			HttpDelete httpRequest = new HttpDelete(buildIRI(path, uriVariables, endpoint));
 			doRequestInternal(r -> null, httpRequest, null);
 		}
 
@@ -579,7 +580,6 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void deleteTask(String id) throws AlignmentServiceException {
-
 		clientTemplate.doDELETE("/tasks/{id}", ImmutableMap.of("id", id));
 	}
 
