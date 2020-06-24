@@ -338,17 +338,21 @@ public class CustomFormModel {
 			}
 		}
 		// remove the entry from the FormCollection(s) that use it
-		Collection<FormCollection> formCollections = getFormCollections();
+		List<FormCollection> emtpyCollections = new ArrayList<>(); //list of collection remained empty after the deletion of the CF
 		for (FormCollection formColl : formCollections) {
 			if (formColl.containsForm(customForm.getId())) {
 				formColl.removeForm(customForm);
 				// if deleteEmptyColl is true and collection is left empty, delete it
 				if (deleteEmptyColl && formColl.getForms().isEmpty()) {
-					deleteFormCollection(formColl);
+					emtpyCollections.add(formColl); //add the collection to those to delete
 				} else { // otherwise save it
 					formColl.save(new File(CustomFormManager.getFormCollectionsFolder(project), formColl.getId() + ".xml"));
 				}
 			}
+		}
+		//now delete the collections remained empty (not done into the previous for in order to prevent ConcurrentModificationException)
+		for (FormCollection fc: emtpyCollections) {
+			deleteFormCollection(fc);
 		}
 	}
 	

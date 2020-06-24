@@ -90,8 +90,6 @@ public class UserNotification extends STServiceAdapter {
         //for each role-action pair, if the notifications are enabled, add the notifications, otherwise remove them
         for (RDFResourceRole role : preferences.keySet()) {
             List<Action> actions = preferences.get(role);
-            System.out.println("role " + role);
-            System.out.println("actions " + actions);
             if (actions.contains(Action.creation)) {
                 notificationApi.addToUser(user, project, role, Action.creation);
             } else {
