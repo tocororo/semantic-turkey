@@ -91,6 +91,8 @@ public class SHACL extends STServiceAdapter {
 	private static final String SH_DATATYPE = SH_NAMESPACE + "datatype";
 
 
+	private static final String FEATPATH_MAIN = "stdForm/resource";
+
 	//Annotations
 	private static final String ANN_COLLECTION = "@Collection";
 	private static final String ANN_RANGE = "@Range";
@@ -489,7 +491,8 @@ public class SHACL extends STServiceAdapter {
 		sb.append("\tnodes = {");
 		sb.append("\n");
 		//write the main element
-		sb.append("\t\t" + classNameInst + "\turi\t" + className + " .");
+		//sb.append("\t\t" + classNameInst + "\turi\t" + className + " .");
+		sb.append("\t\t" + classNameInst + "\turi\t" + FEATPATH_MAIN + " .");
 		sb.append("\n");
 		//iterate over the property
 		for(String prop : propToPropInfoMap.keySet()){
