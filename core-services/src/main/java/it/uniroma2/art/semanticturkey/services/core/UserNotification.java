@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -80,11 +81,33 @@ public class UserNotification extends STServiceAdapter {
      * @param preferences for each role lists the actions for which notifications are enabled
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void storeNotificationPreferences(Map<RDFResourceRole, List<Action>> preferences) {
+    public void storeNotificationPreferences(@JsonSerialized Map<RDFResourceRole, List<Action>> preferences) throws IOException {
         STUser user = UsersManager.getLoggedUser();
         Project project = getProject();
         UserNotificationAPI notificationApi = UserNotificationAPI.getInstance();
-        //TODO wait for an API that store the preference with a single method
+
+        //TODO the following will be replaced when the notification API will provide a method to store the preference with one-shot
+        //for each role-action pair, if the notifications are enabled, add the notifications, otherwise remove them
+        for (RDFResourceRole role : preferences.keySet()) {
+            List<Action> actions = preferences.get(role);
+            System.out.println("role " + role);
+            System.out.println("actions " + actions);
+            if (actions.contains(Action.creation)) {
+                notificationApi.addToUser(user, project, role, Action.creation);
+            } else {
+                notificationApi.removeProjRoleActionFromUser(user, project, role, Action.creation);
+            }
+            if (actions.contains(Action.deletion)) {
+                notificationApi.addToUser(user, project, role, Action.deletion);
+            } else {
+                notificationApi.removeProjRoleActionFromUser(user, project, role, Action.deletion);
+            }
+            if (actions.contains(Action.update)) {
+                notificationApi.addToUser(user, project, role, Action.update);
+            } else {
+                notificationApi.removeProjRoleActionFromUser(user, project, role, Action.update);
+            }
+        }
     }
 
     /**
