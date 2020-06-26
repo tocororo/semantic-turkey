@@ -275,6 +275,26 @@ public class UserNotificationAPI {
 		return true;
 	}
 
+	public void addToUser(STUser user, Project project, Map<RDFResourceRole, List<Action>> preferences) throws IOException {
+		Document doc = getDocumentFromUser(user);
+		if (doc == null) {
+			doc = new Document();
+			doc.add(new StringField(USER_FIELD, user.getIRI().stringValue(), Field.Store.YES));
+		}
+		try (IndexWriter writer = createIndexWriter()) {
+			Document newDoc = cloneDocumentMinusField(doc, PROJ_ROLE_ACT_FIELD);
+			//add the value from the map preferences
+			for (RDFResourceRole role : preferences.keySet()) {
+				for(Action action : preferences.get(role)){
+					String valueToAdd = project.getName() + SEPARATOR + role.name() + SEPARATOR + action.name();
+					newDoc.add(new StringField(PROJ_ROLE_ACT_FIELD, valueToAdd, Field.Store.YES));
+				}
+			}
+			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
+			writer.addDocument(newDoc);
+		}
+	}
+
 	public boolean removeUser(STUser user) throws IOException {
 		Document doc = getDocumentFromUser(user);
 		if (doc == null) {
@@ -385,6 +405,16 @@ public class UserNotificationAPI {
 		Document doc = new Document();
 		for (IndexableField indexableField : inputDoc.getFields()) {
 			if (!indexableField.name().equals(fieldName) || !indexableField.stringValue().matches(fieldValueRegex)) {
+				doc.add(new StringField(indexableField.name(), indexableField.stringValue(), Field.Store.YES));
+			}
+		}
+		return doc;
+	}
+
+	private Document cloneDocumentMinusField(Document inputDoc, String fieldName) {
+		Document doc = new Document();
+		for (IndexableField indexableField : inputDoc.getFields()) {
+			if (!indexableField.name().equals(fieldName)) {
 				doc.add(new StringField(indexableField.name(), indexableField.stringValue(), Field.Store.YES));
 			}
 		}

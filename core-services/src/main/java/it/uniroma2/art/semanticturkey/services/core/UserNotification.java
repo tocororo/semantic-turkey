@@ -86,26 +86,7 @@ public class UserNotification extends STServiceAdapter {
         Project project = getProject();
         UserNotificationAPI notificationApi = UserNotificationAPI.getInstance();
 
-        //TODO the following will be replaced when the notification API will provide a method to store the preference with one-shot
-        //for each role-action pair, if the notifications are enabled, add the notifications, otherwise remove them
-        for (RDFResourceRole role : preferences.keySet()) {
-            List<Action> actions = preferences.get(role);
-            if (actions.contains(Action.creation)) {
-                notificationApi.addToUser(user, project, role, Action.creation);
-            } else {
-                notificationApi.removeProjRoleActionFromUser(user, project, role, Action.creation);
-            }
-            if (actions.contains(Action.deletion)) {
-                notificationApi.addToUser(user, project, role, Action.deletion);
-            } else {
-                notificationApi.removeProjRoleActionFromUser(user, project, role, Action.deletion);
-            }
-            if (actions.contains(Action.update)) {
-                notificationApi.addToUser(user, project, role, Action.update);
-            } else {
-                notificationApi.removeProjRoleActionFromUser(user, project, role, Action.update);
-            }
-        }
+        notificationApi.addToUser(user, project, preferences);
     }
 
     /**
