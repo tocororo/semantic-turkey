@@ -9,14 +9,13 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
-import it.uniroma2.art.semanticturkey.user.notification.UserNotificationAPI;
-import it.uniroma2.art.semanticturkey.user.notification.UserNotificationAPI.Action;
+import it.uniroma2.art.semanticturkey.user.notification.NotificationPreferencesAPI;
+import it.uniroma2.art.semanticturkey.user.notification.NotificationPreferencesAPI.Action;
 import org.eclipse.rdf4j.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +33,7 @@ public class UserNotification extends STServiceAdapter {
      */
     @STServiceOperation(method = RequestMethod.POST)
     public void startWatching(Resource resource) throws IOException {
-        UserNotificationAPI.getInstance().addToUser(UsersManager.getLoggedUser(), getProject(), resource);
+        NotificationPreferencesAPI.getInstance().addToUser(UsersManager.getLoggedUser(), getProject(), resource);
     }
 
     /**
@@ -44,7 +43,7 @@ public class UserNotification extends STServiceAdapter {
      */
     @STServiceOperation(method = RequestMethod.POST)
     public void stopWatching(Resource resource) throws IOException {
-        UserNotificationAPI.getInstance().removeProjResFromUser(UsersManager.getLoggedUser(), getProject(), resource);
+        NotificationPreferencesAPI.getInstance().removeProjResFromUser(UsersManager.getLoggedUser(), getProject(), resource);
     }
 
     /**
@@ -54,7 +53,7 @@ public class UserNotification extends STServiceAdapter {
      */
     @STServiceOperation
     public List<Resource> listWatching() throws IOException {
-        return UserNotificationAPI.getInstance().listResourcesFromUserInProject(getProject(), UsersManager.getLoggedUser());
+        return NotificationPreferencesAPI.getInstance().listResourcesFromUserInProject(getProject(), UsersManager.getLoggedUser());
     }
 
     /**
@@ -65,7 +64,7 @@ public class UserNotification extends STServiceAdapter {
      */
     @STServiceOperation
     public Boolean isWatching(Resource resource) throws IOException {
-        List<Resource> watchedResources = UserNotificationAPI.getInstance().listResourcesFromUserInProject(getProject(), UsersManager.getLoggedUser());
+        List<Resource> watchedResources = NotificationPreferencesAPI.getInstance().listResourcesFromUserInProject(getProject(), UsersManager.getLoggedUser());
         return watchedResources.stream().anyMatch(r -> r.equals(resource));
     }
 
@@ -73,7 +72,7 @@ public class UserNotification extends STServiceAdapter {
 
     @STServiceOperation
     public Map<RDFResourceRole, List<Action>> getNotificationPreferences() throws IOException {
-        return UserNotificationAPI.getInstance().getRoleActionsNotificationPreferences(getProject(), UsersManager.getLoggedUser());
+        return NotificationPreferencesAPI.getInstance().getRoleActionsNotificationPreferences(getProject(), UsersManager.getLoggedUser());
     }
 
     /**
@@ -84,7 +83,7 @@ public class UserNotification extends STServiceAdapter {
     public void storeNotificationPreferences(@JsonSerialized Map<RDFResourceRole, List<Action>> preferences) throws IOException {
         STUser user = UsersManager.getLoggedUser();
         Project project = getProject();
-        UserNotificationAPI notificationApi = UserNotificationAPI.getInstance();
+        NotificationPreferencesAPI notificationApi = NotificationPreferencesAPI.getInstance();
 
         notificationApi.addToUser(user, project, preferences);
     }
@@ -97,11 +96,11 @@ public class UserNotification extends STServiceAdapter {
      */
     @STServiceOperation(method = RequestMethod.POST)
     public void updateNotificationPreferences(RDFResourceRole role, Action action, boolean status) throws IOException {
-        if (!UserNotificationAPI.availableRoles.contains(role)) return;
+        if (!NotificationPreferencesAPI.availableRoles.contains(role)) return;
 
         STUser user = UsersManager.getLoggedUser();
         Project project = getProject();
-        UserNotificationAPI notificationApi = UserNotificationAPI.getInstance();
+        NotificationPreferencesAPI notificationApi = NotificationPreferencesAPI.getInstance();
         if (status) {
             notificationApi.addToUser(user, project, role, action);
         } else {

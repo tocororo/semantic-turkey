@@ -35,16 +35,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-public class UserNotificationAPI {
+public class NotificationPreferencesAPI {
 
-	private static final UserNotificationAPI sharedInsance = new UserNotificationAPI();
+	private static final NotificationPreferencesAPI sharedInsance = new NotificationPreferencesAPI();
 
 	private final String indexMainDirName = "index";
-	private final String luceneDirName = "userNotificationIndex";
+	private final String luceneDirName = "notificationPrefIndex";
 
 	private final String SEPARATOR = "|_|";
 
@@ -64,7 +65,7 @@ public class UserNotificationAPI {
 
 	public enum Action {any, creation, deletion, update}
 
-	public static UserNotificationAPI getInstance() {
+	public static NotificationPreferencesAPI getInstance() {
 		return sharedInsance;
 	}
 
@@ -140,7 +141,7 @@ public class UserNotificationAPI {
 		Query query = builderBoolean.build();
 		IndexSearcher searcher = createSearcher();
 		TopDocs hits = searcher.search(query, MAX_RESULTS);
-		//each user is a single doc, so there shoule be 0 or 1 document in the result
+		//each user is a single doc, so there should be 0 or 1 document in the result
 		for (ScoreDoc sd : hits.scoreDocs) {
 			Document doc = searcher.doc(sd.doc);
 			IndexableField[] indexableFieldArray = doc.getFields(PROJ_ROLE_ACT_FIELD);
@@ -226,13 +227,16 @@ public class UserNotificationAPI {
 	public boolean addToUser(STUser user, Project project, Resource resource) throws IOException {
 		String resNT = NTriplesUtil.toNTriplesString(resource);
 		String valueToAdd = project.getName() + SEPARATOR + resNT;
-		Document doc = getDocumentFromUser(user);
-
-		if (doc == null) {
-			doc = new Document();
+		//Document doc = getDocumentFromUser(user);
+		List<Document> documentList = getDocumentsFromUser(user);
+		if(documentList.isEmpty()){
+			Document doc = new Document();
 			doc.add(new StringField(USER_FIELD, user.getIRI().stringValue(), Field.Store.YES));
-		} else {
-			//check if the value "proj res" is not already present, if not add it, otherweise do not add it
+			documentList.add(doc);
+		}
+		if(documentList.size()==1){
+			//check if the project-resource is already present
+			Document doc = documentList.get(0);
 			IndexableField[] indexableFields = doc.getFields(PROJ_RES_FIELD);
 			for (IndexableField indexableField : indexableFields) {
 				if (valueToAdd.equals(indexableField.stringValue())) {
@@ -241,7 +245,7 @@ public class UserNotificationAPI {
 			}
 		}
 		try (IndexWriter writer = createIndexWriter()) {
-			Document newDoc = cloneDocument(doc);
+			Document newDoc = cloneAndCompactDocuments(documentList);
 			newDoc.add(new StringField(PROJ_RES_FIELD, valueToAdd, Field.Store.YES));
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			writer.addDocument(newDoc);
@@ -251,13 +255,15 @@ public class UserNotificationAPI {
 
 	public boolean addToUser(STUser user, Project project, RDFResourceRole role, Action action) throws IOException {
 		String valueToAdd = project.getName() + SEPARATOR + role.name() + SEPARATOR + action.name();
-		Document doc = getDocumentFromUser(user);
-
-		if (doc == null) {
-			doc = new Document();
+		List <Document> documentList = getDocumentsFromUser(user);
+		if(documentList.isEmpty()){
+			Document doc = new Document();
 			doc.add(new StringField(USER_FIELD, user.getIRI().stringValue(), Field.Store.YES));
-		} else {
-			//check if the value "proj role action" is not already present, if not add it, otherwise do not add it
+			documentList.add(doc);
+		}
+		if(documentList.size()==1){
+			//check if the project-role-action is already present
+			Document doc = documentList.get(0);
 			IndexableField[] indexableFields = doc.getFields(PROJ_ROLE_ACT_FIELD);
 			for (IndexableField indexableField : indexableFields) {
 				if (valueToAdd.equals(indexableField.stringValue())) {
@@ -266,7 +272,7 @@ public class UserNotificationAPI {
 			}
 		}
 		try (IndexWriter writer = createIndexWriter()) {
-			Document newDoc = cloneDocument(doc);
+			Document newDoc = cloneAndCompactDocuments(documentList);
 			newDoc.add(new StringField(PROJ_ROLE_ACT_FIELD, valueToAdd, Field.Store.YES));
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			writer.addDocument(newDoc);
@@ -276,13 +282,14 @@ public class UserNotificationAPI {
 	}
 
 	public void addToUser(STUser user, Project project, Map<RDFResourceRole, List<Action>> preferences) throws IOException {
-		Document doc = getDocumentFromUser(user);
-		if (doc == null) {
-			doc = new Document();
+		List<Document> documentList = getDocumentsFromUser(user);
+		if(documentList.isEmpty()){
+			Document doc = new Document();
 			doc.add(new StringField(USER_FIELD, user.getIRI().stringValue(), Field.Store.YES));
+			documentList.add(doc);
 		}
 		try (IndexWriter writer = createIndexWriter()) {
-			Document newDoc = cloneDocumentMinusField(doc, PROJ_ROLE_ACT_FIELD);
+			Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_ROLE_ACT_FIELD);
 			//add the value from the map preferences
 			for (RDFResourceRole role : preferences.keySet()) {
 				for(Action action : preferences.get(role)){
@@ -296,8 +303,8 @@ public class UserNotificationAPI {
 	}
 
 	public boolean removeUser(STUser user) throws IOException {
-		Document doc = getDocumentFromUser(user);
-		if (doc == null) {
+		List<Document> documentList = getDocumentsFromUser(user);
+		if (documentList.isEmpty()) {
 			return false;
 		}
 		try (IndexWriter writer = createIndexWriter()) {
@@ -307,16 +314,15 @@ public class UserNotificationAPI {
 	}
 
 	public boolean removeProjResFromUser(STUser user, Project project, Resource resource) throws IOException {
-        //String escapedSeparator = SEPARATOR.replace("|", "\\|");
         String escapedSeparator = Pattern.quote(SEPARATOR);
 		String resNT = NTriplesUtil.toNTriplesString(resource);
 		String fieldValueRegex = project.getName() + escapedSeparator + resNT;
-		Document doc = getDocumentFromUser(user);
-		if (doc == null) {
+		List<Document> documentList = getDocumentsFromUser(user);
+		if (documentList.isEmpty()) {
 			return false;
 		}
 		try (IndexWriter writer = createIndexWriter()) {
-			Document newDoc = cloneDocumentMinusField(doc, PROJ_RES_FIELD, fieldValueRegex);
+			Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_RES_FIELD, fieldValueRegex);
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			writer.addDocument(newDoc);
 		}
@@ -338,12 +344,12 @@ public class UserNotificationAPI {
 			fieldValueRegex += action.name();
 		}
 
-		Document doc = getDocumentFromUser(user);
-		if (doc == null) {
+		List<Document> documentList = getDocumentsFromUser(user);
+		if (documentList.isEmpty()) {
 			return false;
 		}
 		try (IndexWriter writer = createIndexWriter()) {
-			Document newDoc = cloneDocumentMinusField(doc, PROJ_ROLE_ACT_FIELD, fieldValueRegex);
+			Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_ROLE_ACT_FIELD, fieldValueRegex);
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			writer.addDocument(newDoc);
 		} catch (IOException e) {
@@ -352,17 +358,19 @@ public class UserNotificationAPI {
 		return true;
 	}
 
-	private Document getDocumentFromUser(STUser user) throws IOException {
+	private List<Document> getDocumentsFromUser(STUser user) throws IOException {
+		//it should be 0 or 1 document, but better to be sure
+		List<Document> documentList = new ArrayList<>();
 		BooleanQuery.Builder builderBoolean = new BooleanQuery.Builder();
 		builderBoolean.add(new TermQuery(new Term(USER_FIELD, user.getIRI().stringValue())), BooleanClause.Occur.MUST);
 		Query query = builderBoolean.build();
 		IndexSearcher searcher = createSearcher();
 		TopDocs hits = searcher.search(query, MAX_RESULTS);
-		//each user is a single doc, so there shoule be 0 or 1 document in the result
-		if (hits.scoreDocs.length > 0) {
-			return searcher.doc(hits.scoreDocs[0].doc);
+		for (ScoreDoc sd : hits.scoreDocs) {
+			Document doc = searcher.doc(sd.doc);
+			documentList.add(doc);
 		}
-		return null;
+		return documentList;
 	}
 
 	private IndexWriter createIndexWriter() throws IOException {
@@ -393,29 +401,80 @@ public class UserNotificationAPI {
 		}
 	}
 
-	private Document cloneDocument(Document inputDoc) {
+	private Document cloneAndCompactDocuments(List<Document> inputDocList) {
+		HashSet<String> projRoleActionSet = new HashSet<>();
+		HashSet<String> projResSet = new HashSet<>();
 		Document doc = new Document();
-		for (IndexableField indexableField : inputDoc.getFields()) {
-			doc.add(new StringField(indexableField.name(), indexableField.stringValue(), Field.Store.YES));
-		}
-		return doc;
-	}
-
-	private Document cloneDocumentMinusField(Document inputDoc, String fieldName, String fieldValueRegex) {
-		Document doc = new Document();
-		for (IndexableField indexableField : inputDoc.getFields()) {
-			if (!indexableField.name().equals(fieldName) || !indexableField.stringValue().matches(fieldValueRegex)) {
-				doc.add(new StringField(indexableField.name(), indexableField.stringValue(), Field.Store.YES));
+		for(Document inputDoc : inputDocList){
+			for(IndexableField indexableField : inputDoc.getFields(PROJ_ROLE_ACT_FIELD)){
+				String value = indexableField.stringValue();
+				if(!projRoleActionSet.contains(value)){
+					projRoleActionSet.add(value);
+					doc.add(new StringField(PROJ_ROLE_ACT_FIELD, indexableField.stringValue(), Field.Store.YES));
+				}
+			}
+			for(IndexableField indexableField : inputDoc.getFields(PROJ_RES_FIELD)){
+				String value = indexableField.stringValue();
+				if(!projResSet.contains(value)){
+					projResSet.add(value);
+					doc.add(new StringField(PROJ_RES_FIELD, indexableField.stringValue(), Field.Store.YES));
+				}
 			}
 		}
 		return doc;
 	}
 
-	private Document cloneDocumentMinusField(Document inputDoc, String fieldName) {
+	private Document cloneAndCompactDocumentMinusField(List<Document> inputDocList, String fieldName, String fieldValueRegex) {
+		HashSet<String> projRoleActionSet = new HashSet<>();
+		HashSet<String> projResSet = new HashSet<>();
 		Document doc = new Document();
-		for (IndexableField indexableField : inputDoc.getFields()) {
-			if (!indexableField.name().equals(fieldName)) {
-				doc.add(new StringField(indexableField.name(), indexableField.stringValue(), Field.Store.YES));
+		for(Document inputDoc : inputDocList){
+			for(IndexableField indexableField : inputDoc.getFields(PROJ_ROLE_ACT_FIELD)){
+				String value = indexableField.stringValue();
+				if(PROJ_ROLE_ACT_FIELD.equals(fieldName) && value.matches(fieldValueRegex)){
+					continue;
+				}
+				if(!projRoleActionSet.contains(value)){
+					projRoleActionSet.add(value);
+					doc.add(new StringField(PROJ_ROLE_ACT_FIELD, indexableField.stringValue(), Field.Store.YES));
+				}
+			}
+			for(IndexableField indexableField : inputDoc.getFields(PROJ_RES_FIELD)){
+				String value = indexableField.stringValue();
+				if(PROJ_RES_FIELD.equals(fieldName) && value.matches(fieldValueRegex)){
+					continue;
+				}
+				if(!projResSet.contains(value)){
+					projResSet.add(value);
+					doc.add(new StringField(PROJ_RES_FIELD, indexableField.stringValue(), Field.Store.YES));
+				}
+			}
+		}
+		return doc;
+	}
+
+	private Document cloneAndCompactDocumentMinusField(List<Document> inputDocList, String fieldName) {
+		HashSet<String> projRoleActionSet = new HashSet<>();
+		HashSet<String> projResSet = new HashSet<>();
+		Document doc = new Document();
+		for(Document inputDoc : inputDocList){
+			if(!PROJ_ROLE_ACT_FIELD.equals(fieldName)) {
+				for (IndexableField indexableField : inputDoc.getFields(PROJ_ROLE_ACT_FIELD)) {
+					String value = indexableField.stringValue();
+					if (!projRoleActionSet.contains(value)) {
+						projRoleActionSet.add(value);
+						doc.add(new StringField(PROJ_ROLE_ACT_FIELD, indexableField.stringValue(), Field.Store.YES));
+					}
+				}
+			}
+			if(!PROJ_RES_FIELD.equals(fieldName)) {
+				for (IndexableField indexableField : inputDoc.getFields(PROJ_RES_FIELD)) {
+					String value = indexableField.stringValue();
+					if (!projResSet.contains(value)) {
+						projResSet.add(value);
+						doc.add(new StringField(PROJ_RES_FIELD, indexableField.stringValue(), Field.Store.YES));
+					}
+				}
 			}
 		}
 		return doc;
