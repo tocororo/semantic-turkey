@@ -185,6 +185,17 @@ public class UserNotificationsAPI {
 		return true;
 	}
 
+	public boolean removeUser(STUser user) throws IOException {
+		List<Document> documentList = getDocumentsFromUser(user);
+		if (documentList.isEmpty()) {
+			return false;
+		}
+		try (IndexWriter writer = createIndexWriter()) {
+			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
+		}
+		return true;
+	}
+
 
 	private List<Document> getDocumentsFromUser(STUser user) throws IOException {
 		//it should be 0 or 1 document, but better to be sure
