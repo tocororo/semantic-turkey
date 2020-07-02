@@ -156,6 +156,7 @@ public class UserNotificationsAPI {
 		}
 		Document newDoc = new Document();
 		newDoc.add(new StringField(USER_FIELD, user.getIRI().stringValue(), Field.Store.YES));
+		//iterate over the retrived documents to get all the values for PROJ_RES_ROLE_ACT_TIMESTAMP_FIELD (and remove the duplicates)
 		for(Document doc : documentList){
 			IndexableField[] indexableFieldArray =doc.getFields(PROJ_RES_ROLE_ACT_TIMESTAMP_FIELD);
 			for (IndexableField indexableField : indexableFieldArray) {
@@ -166,7 +167,7 @@ public class UserNotificationsAPI {
 				}
 			}
 		}
-		//now add the new value (if not alredy present)
+		//now add the new value (if not already present)
 		String proj_res_role_act_timestamp = project.getName()+SEPARATOR+NTriplesUtil.toNTriplesString(resource)+
 				SEPARATOR+role.name()+SEPARATOR+action.name()+SEPARATOR+currentTime();
 		if(!presentValueSet.contains(proj_res_role_act_timestamp)){

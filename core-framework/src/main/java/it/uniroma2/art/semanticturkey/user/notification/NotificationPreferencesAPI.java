@@ -245,7 +245,7 @@ public class NotificationPreferencesAPI {
 			}
 		}
 		try (IndexWriter writer = createIndexWriter()) {
-			Document newDoc = cloneAndCompactDocuments(documentList);
+			Document newDoc = cloneAndCompactDocuments(documentList, user);
 			newDoc.add(new StringField(PROJ_RES_FIELD, valueToAdd, Field.Store.YES));
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			writer.addDocument(newDoc);
@@ -272,7 +272,7 @@ public class NotificationPreferencesAPI {
 			}
 		}
 		try (IndexWriter writer = createIndexWriter()) {
-			Document newDoc = cloneAndCompactDocuments(documentList);
+			Document newDoc = cloneAndCompactDocuments(documentList, user);
 			newDoc.add(new StringField(PROJ_ROLE_ACT_FIELD, valueToAdd, Field.Store.YES));
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			writer.addDocument(newDoc);
@@ -289,7 +289,7 @@ public class NotificationPreferencesAPI {
 			documentList.add(doc);
 		}
 		try (IndexWriter writer = createIndexWriter()) {
-			Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_ROLE_ACT_FIELD);
+			Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_ROLE_ACT_FIELD, user);
 			//add the value from the map preferences
 			for (RDFResourceRole role : preferences.keySet()) {
 				for(Action action : preferences.get(role)){
@@ -322,7 +322,7 @@ public class NotificationPreferencesAPI {
 			return false;
 		}
 		try (IndexWriter writer = createIndexWriter()) {
-			Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_RES_FIELD, fieldValueRegex);
+			Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_RES_FIELD, fieldValueRegex, user);
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			writer.addDocument(newDoc);
 		}
@@ -349,7 +349,7 @@ public class NotificationPreferencesAPI {
 			return false;
 		}
 		try (IndexWriter writer = createIndexWriter()) {
-			Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_ROLE_ACT_FIELD, fieldValueRegex);
+			Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_ROLE_ACT_FIELD, fieldValueRegex, user);
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			writer.addDocument(newDoc);
 		} catch (IOException e) {
@@ -401,10 +401,11 @@ public class NotificationPreferencesAPI {
 		}
 	}
 
-	private Document cloneAndCompactDocuments(List<Document> inputDocList) {
+	private Document cloneAndCompactDocuments(List<Document> inputDocList, STUser user) {
 		HashSet<String> projRoleActionSet = new HashSet<>();
 		HashSet<String> projResSet = new HashSet<>();
 		Document doc = new Document();
+		doc.add(new StringField(USER_FIELD, user.getIRI().stringValue(), Field.Store.YES));
 		for(Document inputDoc : inputDocList){
 			for(IndexableField indexableField : inputDoc.getFields(PROJ_ROLE_ACT_FIELD)){
 				String value = indexableField.stringValue();
@@ -424,10 +425,11 @@ public class NotificationPreferencesAPI {
 		return doc;
 	}
 
-	private Document cloneAndCompactDocumentMinusField(List<Document> inputDocList, String fieldName, String fieldValueRegex) {
+	private Document cloneAndCompactDocumentMinusField(List<Document> inputDocList, String fieldName, String fieldValueRegex, STUser user) {
 		HashSet<String> projRoleActionSet = new HashSet<>();
 		HashSet<String> projResSet = new HashSet<>();
 		Document doc = new Document();
+		doc.add(new StringField(USER_FIELD, user.getIRI().stringValue(), Field.Store.YES));
 		for(Document inputDoc : inputDocList){
 			for(IndexableField indexableField : inputDoc.getFields(PROJ_ROLE_ACT_FIELD)){
 				String value = indexableField.stringValue();
@@ -453,10 +455,11 @@ public class NotificationPreferencesAPI {
 		return doc;
 	}
 
-	private Document cloneAndCompactDocumentMinusField(List<Document> inputDocList, String fieldName) {
+	private Document cloneAndCompactDocumentMinusField(List<Document> inputDocList, String fieldName, STUser user) {
 		HashSet<String> projRoleActionSet = new HashSet<>();
 		HashSet<String> projResSet = new HashSet<>();
 		Document doc = new Document();
+		doc.add(new StringField(USER_FIELD, user.getIRI().stringValue(), Field.Store.YES));
 		for(Document inputDoc : inputDocList){
 			if(!PROJ_ROLE_ACT_FIELD.equals(fieldName)) {
 				for (IndexableField indexableField : inputDoc.getFields(PROJ_ROLE_ACT_FIELD)) {
