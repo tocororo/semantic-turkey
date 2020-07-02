@@ -59,20 +59,20 @@ public class UserNotificationsAPI {
 	}
 
 
-	public List<ProjResRoleActionTimestamp> retrieveNotifications(STUser user) throws IOException {
+	public List<NotificationRecord> retrieveNotifications(STUser user) throws IOException {
 		return searchNotificationsFromUser(user, null);
 	}
 
-	public List<ProjResRoleActionTimestamp> retrieveNotifications(STUser user, Project project) throws IOException {
+	public List<NotificationRecord> retrieveNotifications(STUser user, Project project) throws IOException {
 		return searchNotificationsFromUser(user, project);
 	}
 
-	private List<ProjResRoleActionTimestamp> searchNotificationsFromUser(STUser user, Project project) throws IOException {
+	private List<NotificationRecord> searchNotificationsFromUser(STUser user, Project project) throws IOException {
 		List<Document> documentList = getDocumentsFromUser(user);
 		if(documentList.isEmpty()){
 			return new ArrayList<>();
 		}
-		List<ProjResRoleActionTimestamp> projResRoleActionTimestampList = new ArrayList<>();
+		List<NotificationRecord> notificationRecords = new ArrayList<>();
 		//it should be 0 or 1 document, but better to be sure
 		for(Document doc : documentList){
 			IndexableField[] indexableFieldArray = doc.getFields(PROJ_RES_ROLE_ACT_TIMESTAMP_FIELD);
@@ -90,12 +90,12 @@ public class UserNotificationsAPI {
 				RDFResourceRole role = RDFResourceRole.valueOf(proj_res_role_act_timestampArray[2]);
 				Action action = Action.valueOf(proj_res_role_act_timestampArray[3]);
 				String timestamp = proj_res_role_act_timestampArray[4];
-				ProjResRoleActionTimestamp projResRoleActionTimestamp = new ProjResRoleActionTimestamp(proj, res,
+				NotificationRecord notificationRecord = new NotificationRecord(proj, res,
 						role, action, timestamp);
-				projResRoleActionTimestampList.add(projResRoleActionTimestamp);
+				notificationRecords.add(notificationRecord);
 			}
 		}
-		return projResRoleActionTimestampList;
+		return notificationRecords;
 	}
 
 
@@ -269,39 +269,39 @@ public class UserNotificationsAPI {
 		return currentDateTimeXML.toString();
 	}
 
-	public class ProjResRoleActionTimestamp {
-		private String proj;
-		private String resource;
-		private RDFResourceRole role;
-		private NotificationPreferencesAPI.Action action;
-		private String timestamp;
-
-		public ProjResRoleActionTimestamp(String proj, String resource, RDFResourceRole role, NotificationPreferencesAPI.Action action, String timestamp) {
-			this.proj = proj;
-			this.resource = resource;
-			this.role = role;
-			this.action = action;
-			this.timestamp = timestamp;
-		}
-
-		public String getProj() {
-			return proj;
-		}
-
-		public String getResource() {
-			return resource;
-		}
-
-		public RDFResourceRole getRole() {
-			return role;
-		}
-
-		public NotificationPreferencesAPI.Action getAction() {
-			return action;
-		}
-
-		public String getTimestamp() {
-			return timestamp;
-		}
-	}
+//	public class ProjResRoleActionTimestamp {
+//		private String proj;
+//		private String resource;
+//		private RDFResourceRole role;
+//		private NotificationPreferencesAPI.Action action;
+//		private String timestamp;
+//
+//		public ProjResRoleActionTimestamp(String proj, String resource, RDFResourceRole role, NotificationPreferencesAPI.Action action, String timestamp) {
+//			this.proj = proj;
+//			this.resource = resource;
+//			this.role = role;
+//			this.action = action;
+//			this.timestamp = timestamp;
+//		}
+//
+//		public String getProj() {
+//			return proj;
+//		}
+//
+//		public String getResource() {
+//			return resource;
+//		}
+//
+//		public RDFResourceRole getRole() {
+//			return role;
+//		}
+//
+//		public NotificationPreferencesAPI.Action getAction() {
+//			return action;
+//		}
+//
+//		public String getTimestamp() {
+//			return timestamp;
+//		}
+//	}
 }

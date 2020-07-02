@@ -2,6 +2,8 @@ package it.uniroma2.art.semanticturkey.services.aspects;
 
 import java.util.Optional;
 
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -62,6 +64,7 @@ public class ResourceLifecycleEventPublisherInterceptor implements MethodInterce
 				.ifPresent(p -> versioningMetadata.addDeletedResource(p.getLeft(), p.getRight().role()));
 
 		Project project = stServiceContext.getProject();
+		STUser user = UsersManager.getLoggedUser();
 
 		Repository repository = STServiceContextUtils.getRepostory(stServiceContext);
 
@@ -71,19 +74,19 @@ public class ResourceLifecycleEventPublisherInterceptor implements MethodInterce
 			// deletions are published before the actually occur
 			for (ImmutablePair<Resource, RDFResourceRole> pair : versioningMetadata.getDeletedResources()) {
 				applicationContext.publishEvent(new ResourceDeleted(pair.getLeft(), pair.getRight(),
-						stServiceContext.getWGraph(), repository, project));
+						stServiceContext.getWGraph(), repository, project, user));
 			}
 
 			rv = invocation.proceed();
 
 			for (ImmutablePair<Resource, RDFResourceRole> pair : versioningMetadata.getCreatedResources()) {
 				applicationContext.publishEvent(new ResourceCreated(pair.getLeft(), pair.getRight(),
-						stServiceContext.getWGraph(), repository, project));
+						stServiceContext.getWGraph(), repository, project, user));
 			}
 
 			for (ImmutablePair<Resource, RDFResourceRole> pair : versioningMetadata.getModifiedResources()) {
 				applicationContext.publishEvent(new ResourceModified(pair.getLeft(), pair.getRight(),
-						stServiceContext.getWGraph(), repository, project));
+						stServiceContext.getWGraph(), repository, project, user));
 			}
 
 		} finally {

@@ -8,6 +8,8 @@ import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.user.notification.NotificationPreferencesAPI;
+import it.uniroma2.art.semanticturkey.user.notification.UserNotificationsAPI;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -225,6 +227,9 @@ public class UsersManager {
 		FileUtils.deleteDirectory(getUserFolder(user));
 		// delete the bindings
 		ProjectUserBindingsManager.deletePUBindingsOfUser(user);
+		//delete notification indexes
+		NotificationPreferencesAPI.getInstance().removeUser(user);
+		UserNotificationsAPI.getInstance().removeUser(user);
 	}
 
 	/**

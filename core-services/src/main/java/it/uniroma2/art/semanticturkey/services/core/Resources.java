@@ -360,7 +360,7 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', values)', 'U')")
-	public void updateResourceTriplesDescription(@LocallyDefined Resource resource, String triples, RDFFormat format) throws IOException {
+	public void updateResourceTriplesDescription(@LocallyDefined @Modified Resource resource, String triples, RDFFormat format) throws IOException {
 		RepositoryConnection conn = getManagedConnection();
 
 		InputStream triplesStream = new ByteArrayInputStream(triples.getBytes(StandardCharsets.UTF_8));

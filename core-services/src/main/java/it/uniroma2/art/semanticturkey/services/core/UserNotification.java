@@ -1,5 +1,9 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -11,6 +15,8 @@ import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.user.notification.NotificationPreferencesAPI;
 import it.uniroma2.art.semanticturkey.user.notification.NotificationPreferencesAPI.Action;
+import it.uniroma2.art.semanticturkey.user.notification.NotificationRecord;
+import it.uniroma2.art.semanticturkey.user.notification.UserNotificationsAPI;
 import org.eclipse.rdf4j.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,9 +89,7 @@ public class UserNotification extends STServiceAdapter {
     public void storeNotificationPreferences(@JsonSerialized Map<RDFResourceRole, List<Action>> preferences) throws IOException {
         STUser user = UsersManager.getLoggedUser();
         Project project = getProject();
-        NotificationPreferencesAPI notificationApi = NotificationPreferencesAPI.getInstance();
-
-        notificationApi.addToUser(user, project, preferences);
+        NotificationPreferencesAPI.getInstance().addToUser(user, project, preferences);
     }
 
     /**
@@ -100,14 +104,39 @@ public class UserNotification extends STServiceAdapter {
 
         STUser user = UsersManager.getLoggedUser();
         Project project = getProject();
-        NotificationPreferencesAPI notificationApi = NotificationPreferencesAPI.getInstance();
+        NotificationPreferencesAPI notificationPrefsApi = NotificationPreferencesAPI.getInstance();
         if (status) {
-            notificationApi.addToUser(user, project, role, action);
+            notificationPrefsApi.addToUser(user, project, role, action);
         } else {
-            notificationApi.removeProjRoleActionFromUser(user, project, role, action);
+            notificationPrefsApi.removeProjRoleActionFromUser(user, project, role, action);
         }
     }
 
+
+    /* Actual Notifications */
+
+    @STServiceOperation
+    public JsonNode listNotifications() throws IOException {
+        JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+        ArrayNode notificationsArrayNode = jsonFactory.arrayNode();
+        List<NotificationRecord> notifications = UserNotificationsAPI.getInstance()
+                .retrieveNotifications(UsersManager.getLoggedUser(), getProject());
+        for (NotificationRecord n: notifications) {
+            //filter notifications for the current project
+            ObjectNode notificationNode = jsonFactory.objectNode();
+            notificationNode.put("resource", n.getResource());
+            notificationNode.put("role", n.getRole().toString());
+            notificationNode.put("action", n.getAction().toString());
+            notificationNode.put("timestamp", n.getTimestamp());
+            notificationsArrayNode.add(notificationNode);
+        }
+        return notificationsArrayNode;
+    }
+
+    @STServiceOperation(method = RequestMethod.POST)
+    public void clearNotifications() throws IOException {
+        UserNotificationsAPI.getInstance().clearNotifications(UsersManager.getLoggedUser(), getProject());
+    }
 
 
 //    @STServiceOperation(method = RequestMethod.GET)

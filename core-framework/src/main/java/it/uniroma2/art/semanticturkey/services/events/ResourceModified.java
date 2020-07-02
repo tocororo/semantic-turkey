@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.events;
 
+import it.uniroma2.art.semanticturkey.user.STUser;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.repository.Repository;
 
@@ -15,42 +16,13 @@ import it.uniroma2.art.semanticturkey.project.Project;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  *
  */
-public class ResourceModified extends Event {
+public class ResourceModified extends ResourceEvent {
 
 	private static final long serialVersionUID = 5598632870917194880L;
 
-	private RDFResourceRole role;
-	private Resource wgraph;
-	private Repository repository;
-	private Project project;
-
 	public ResourceModified(Resource resource, RDFResourceRole role, Resource wgraph, Repository repository,
-			Project project) {
-		super(resource);
-		this.role = role;
-		this.wgraph = wgraph;
-		this.repository = repository;
-		this.project = project;
-	}
-
-	public Resource getResource() {
-		return (Resource) getSource();
-	}
-
-	public Resource getWGraph() {
-		return wgraph;
-	}
-
-	public RDFResourceRole getRole() {
-		return role;
-	}
-
-	public Repository getRepository() {
-		return repository;
-	}
-
-	public Project getProject() {
-		return project;
+			Project project, STUser author) {
+		super(resource, role, wgraph, repository, project, author);
 	}
 
 }
