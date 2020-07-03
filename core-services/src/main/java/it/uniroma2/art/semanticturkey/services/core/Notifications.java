@@ -32,6 +32,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettings;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * This class provides access to the capabilities of <a href="http://art.uniroma2.it/maple/">MAPLE</a>
@@ -55,6 +56,7 @@ public class Notifications extends STServiceAdapter {
 	 * @throws STPropertyUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
 	public void scheduleNotificationDigest(
 			@Optional @JsonSerialized @Valid NotificationSystemSettings.CronDefinition schedule)
 			throws STPropertyUpdateException {
