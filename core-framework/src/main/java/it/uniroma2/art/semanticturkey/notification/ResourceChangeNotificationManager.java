@@ -4,7 +4,10 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.email.EmailSender;
 import it.uniroma2.art.semanticturkey.event.annotation.TransactionalEventListener;
 import it.uniroma2.art.semanticturkey.event.annotation.TransactionalEventListener.Phase;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -18,9 +21,10 @@ import it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSe
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.user.notification.NotificationMode;
 import it.uniroma2.art.semanticturkey.user.notification.NotificationPreferencesAPI;
 import it.uniroma2.art.semanticturkey.user.notification.NotificationPreferencesAPI.Action;
-import it.uniroma2.art.semanticturkey.user.notification.NotificationPreferencesMode;
+import it.uniroma2.art.semanticturkey.user.notification.NotificationRecord;
 import it.uniroma2.art.semanticturkey.user.notification.UserNotificationsAPI;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.text.StringEscapeUtils;
@@ -37,7 +41,14 @@ import org.springframework.scheduling.support.CronTrigger;
 import javax.annotation.PostConstruct;
 import javax.mail.MessagingException;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -67,6 +78,8 @@ public class ResourceChangeNotificationManager {
 
 			try {
 				ResourceChangeNotificationManager.this.scheduledNotifications();
+			} catch (STPropertyAccessException | ProjectAccessException | IOException | MessagingException e) {
+				e.printStackTrace();
 			} finally {
 				notificationDigestSending.set(false);
 			}
@@ -100,8 +113,20 @@ public class ResourceChangeNotificationManager {
 		triggerEventNotification(event);
 	}
 
-	public void scheduledNotifications() {
-		System.out.println("Scheduled notifications");
+	public void scheduledNotifications() throws STPropertyAccessException, ProjectAccessException, IOException, MessagingException {
+		//for each user, collects the list of project for which he has set daily digest as notification mode preference
+		Map<STUser, List<Project>> userProjMap = new HashMap<>();
+		for (AbstractProject absProj : ProjectManager.listProjects()) {
+			if (absProj instanceof Project) {
+				Project proj = (Project) absProj;
+				for (STUser user : UsersManager.listUsers()) {
+					if (getUserNotificationMode(proj, user) == NotificationMode.email_daily_digest) {
+						userProjMap.computeIfAbsent(user, u -> new ArrayList<>()).add(proj);
+					}
+				}
+			}
+		}
+		dailyDigest(userProjMap);
 	}
 
 	public synchronized void setNotificationDigestSchedule(NotificationSystemSettings.CronDefinition schedule)
@@ -152,6 +177,88 @@ public class ResourceChangeNotificationManager {
 	}
 
 	/**
+	 * Send a mail notifications report for each user
+	 * @param userProjMap
+	 */
+	private void dailyDigest(Map<STUser, List<Project>> userProjMap) throws IOException, STPropertyAccessException, MessagingException {
+		UserNotificationsAPI notificationApi = UserNotificationsAPI.getInstance();
+		SimpleDateFormat timestampInputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+		SimpleDateFormat timestampOutputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+
+//		for (STUser user : userProjMap.keySet()) {
+//			//for each project collect the notifications to send
+//			Map<Project, List<NotificationRecord>> projNotificationsMap = new HashMap<>();
+//			for (Project project : userProjMap.get(user)) {
+//				List<NotificationRecord> notifications = notificationApi.retrieveNotifications(user, project);
+//				if (!notifications.isEmpty()) {
+//					projNotificationsMap.put(project, notifications);
+//				}
+//			}
+//			//write and send email only if there are notifications
+//			if (projNotificationsMap.isEmpty()) continue;
+//
+//			String content = "";
+//			for (Project project: projNotificationsMap.keySet()) {
+//				content += "<b>Project:</b> <i>" + project.getName() + "</i><br>";
+//				for (NotificationRecord notification: projNotificationsMap.get(project)) {
+//					//try to re-format the timestamp
+//					String formattedTimestamp = notification.getTimestamp(); //by default, formatted as retrieved
+//					try {
+//						Date d = timestampInputFormat.parse(notification.getTimestamp());
+//						formattedTimestamp = timestampOutputFormat.format(d);
+//					} catch (ParseException e) {}
+//					//write content about single notification
+//					content += "<ul>" +
+//							"<li><b>Resource:</b> <i>" + StringEscapeUtils.escapeHtml4(notification.getResource()) + "</i></li>" +
+//							"<li><b>Role:</b> <i>" + notification.getRole() + "</i></li>" +
+//							"<li><b>Action:</b> <i>" + notification.getAction() + "</i></li>" +
+//							"<li><b>Time:</b> <i>" + formattedTimestamp + "</i></li>" +
+//							"</ul>";
+//				}
+//				content += "<br>";
+//				//report compiled, notifications can be cleared
+//				notificationApi.clearNotifications(user, project);
+//			}
+//			content = appendDoNotReplyContent(content);
+//			EmailSender.sendMail(user.getEmail(), "VocBench daily digest notifications", content);
+//		}
+
+		for (STUser user : userProjMap.keySet()) {
+			String content = "";
+			//write mail content for each notification per project
+			for (Project project: userProjMap.get(user)) {
+				content += "<b>Project:</b> <i>" + project.getName() + "</i><br>";
+				List<NotificationRecord> notifications = notificationApi.retrieveNotifications(user, project);
+				if (notifications.isEmpty()) {
+					content += "<div style=\"margin: 1em\"><i>No notifications</i></div>";
+				} else {
+					for (NotificationRecord notification : notifications) {
+						//try to re-format the timestamp
+						String formattedTimestamp = notification.getTimestamp(); //by default, formatted as retrieved
+						try {
+							Date d = timestampInputFormat.parse(notification.getTimestamp());
+							formattedTimestamp = timestampOutputFormat.format(d);
+						} catch (ParseException e) {
+						}
+						//write content about single notification
+						content += "<ul>" +
+								"<li><b>Resource:</b> <i>" + StringEscapeUtils.escapeHtml4(notification.getResource()) + "</i></li>" +
+								"<li><b>Role:</b> <i>" + notification.getRole() + "</i></li>" +
+								"<li><b>Action:</b> <i>" + notification.getAction() + "</i></li>" +
+								"<li><b>Time:</b> <i>" + formattedTimestamp + "</i></li>" +
+								"</ul>";
+					}
+				}
+				content += "<br>";
+				//report compiled, notifications can be cleared
+				notificationApi.clearNotifications(user, project);
+			}
+			content = appendDoNotReplyContent(content);
+			EmailSender.sendMail(user.getEmail(), "VocBench daily digest notifications", content);
+		}
+	}
+
+	/**
 	 * Execute an action (send email or store the notification) according the preference
 	 * set by the users interested to the event.
 	 *
@@ -174,30 +281,23 @@ public class ResourceChangeNotificationManager {
 			- store the notification (for in-app consulting or for daily email digest)
 			- send an email immediately
 			 */
-			String notificationPrefValue = STPropertiesManager.getPUSetting(NOTIFICATION_STATUS_PREF, project, user);
-			if (notificationPrefValue != null && EnumUtils.isValidEnum(NotificationPreferencesMode.class, notificationPrefValue)) {
-				NotificationPreferencesMode mode = NotificationPreferencesMode.valueOf(notificationPrefValue);
-				if (mode == NotificationPreferencesMode.in_app_only || mode == NotificationPreferencesMode.email_daily_digest) {
-					notificationAPI.storeNotification(user, project, resource, role, action); //Store
-				} else if (mode == NotificationPreferencesMode.email_instant) { //Send email and don't store
-					try {
-						String content = "Event notification:" +
-								"<ul>" +
-								"<li><b>Project:</b> <i>" + project.getName() + "</i></li>" +
-								"<li><b>Resource:</b> <i>" + StringEscapeUtils.escapeHtml4(NTriplesUtil.toNTriplesString(resource)) + "</i></li>" +
-								"<li><b>Role:</b> <i>" + role + "</i></li>" +
-								"<li><b>Action:</b> <i>" + action + "</i></li>" +
-								"</ul>" +
-								"<br><br>" +
-								"<i style=\"font-size: 11px;\">" +
-								"This email has been automatically generated since you requested to be notified by VocBench " +
-								"following certain events. Please do not reply." +
-								"</i>";
-						EmailSender.sendMail(user.getEmail(), "VocBench notification", content);
-					} catch (MessagingException e) {
-						//catch exception preventing error response in case email is not configured correctly
-						e.printStackTrace();
-					}
+			NotificationMode notificationMode = getUserNotificationMode(project, user);
+			if (notificationMode == NotificationMode.in_app_only || notificationMode == NotificationMode.email_daily_digest) {
+				notificationAPI.storeNotification(user, project, resource, role, action); //Store
+			} else if (notificationMode == NotificationMode.email_instant) { //Send email and don't store
+				try {
+					String content = "Event notification:" +
+							"<ul>" +
+							"<li><b>Project:</b> <i>" + project.getName() + "</i></li>" +
+							"<li><b>Resource:</b> <i>" + StringEscapeUtils.escapeHtml4(NTriplesUtil.toNTriplesString(resource)) + "</i></li>" +
+							"<li><b>Role:</b> <i>" + role + "</i></li>" +
+							"<li><b>Action:</b> <i>" + action + "</i></li>" +
+							"</ul>";
+					content = appendDoNotReplyContent(content);
+					EmailSender.sendMail(user.getEmail(), "VocBench notification", content);
+				} catch (MessagingException e) {
+					//catch exception preventing error response in case email is not configured correctly
+					e.printStackTrace();
 				}
 			}
 		}
@@ -230,13 +330,39 @@ public class ResourceChangeNotificationManager {
 		for (String iri: userIRIs) {
 			try {
 				//prevent to notify the author itself
-//				if (!iri.equals(event.getAuthor().getIRI().stringValue())) {
+				if (!iri.equals(event.getAuthor().getIRI().stringValue())) {
 					users.add(UsersManager.getUser(vf.createIRI(iri)));
-//				}
+				}
 			} catch (UserException e) {
 				//do nothing, simply ignore user not found
 			}
 		}
 		return users;
+	}
+
+	/**
+	 * Returns the notification mode chosen by a user in a project
+	 * @param project
+	 * @param user
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	private NotificationMode getUserNotificationMode(Project project, STUser user) throws STPropertyAccessException {
+		NotificationMode mode = NotificationMode.no_notifications; //default
+		String notificationPrefValue = STPropertiesManager.getPUSetting(NOTIFICATION_STATUS_PREF, project, user);
+		if (notificationPrefValue != null && EnumUtils.isValidEnum(NotificationMode.class, notificationPrefValue)) {
+			mode = NotificationMode.valueOf(notificationPrefValue);
+		}
+		return mode;
+	}
+
+
+	private String appendDoNotReplyContent(String emailContent) {
+		emailContent += "<br><br>" +
+			"<i style=\"font-size: 11px;\">" +
+			"This email has been automatically generated since you requested to be notified by VocBench " +
+			"following certain events. Please do not reply." +
+			"</i>";
+		return emailContent;
 	}
 }
