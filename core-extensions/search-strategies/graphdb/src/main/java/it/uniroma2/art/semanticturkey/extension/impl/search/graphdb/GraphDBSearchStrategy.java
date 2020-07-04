@@ -276,12 +276,12 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//search in skos:prefLabel and skos:altLabel
 				"\nUNION" +
 				"\n{" +
-				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
+				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+"> | <"+SKOS.HIDDEN_LABEL.stringValue()+">) ?label ."+
 				"\n}" +
 		//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
 				"\nUNION" +
 				"\n{" +
-				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+"> | <"+SKOSXL.HIDDEN_LABEL.stringValue()+">) ?skosxlLabel ." +
 				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
 				"\n}" +
 		//search in dct:title
@@ -500,7 +500,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				}
 				unionNeeded = true;
 				query +="\n{" +
-					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
+					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+"> | <"+SKOS.HIDDEN_LABEL.stringValue()+">) ?label ."+
 					"\n}";
 			}
 
@@ -511,7 +511,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				unionNeeded = true;
 				//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
 				query +="\n{" +
-					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+"> ) ?skosxlLabel ." +
 					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
 					"\n}";
 			}

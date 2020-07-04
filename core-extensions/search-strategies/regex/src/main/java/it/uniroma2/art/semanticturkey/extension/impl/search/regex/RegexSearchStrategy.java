@@ -181,13 +181,13 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//search in skos:prefLabel and skos:altLabel
 				"\nUNION" +
 				"\n{" +
-				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
+				"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+"> | <"+SKOS.HIDDEN_LABEL.stringValue()+">) ?label ."+
 				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
 				"\n}" +
 		//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
 				"\nUNION" +
 				"\n{" +
-				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+				"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+"> | <"+SKOSXL.HIDDEN_LABEL.stringValue()+">) ?skosxlLabel ." +
 				"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
 				searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
 				"\n}"+
@@ -442,7 +442,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				unionNeeded = true;
 				//search in skos:prefLabel and skos:altLabel
 				query+="\n{" +
-					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+">) ?label ."+
+					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+"> | <"+SKOS.HIDDEN_LABEL.stringValue()+">) ?label ."+
 					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
 					"\n}" ;
 			}
@@ -453,7 +453,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				unionNeeded = true;
 				//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
 				query+="\n{" +
-					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+">) ?skosxlLabel ." +
+					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+"> | <"+SKOSXL.HIDDEN_LABEL.stringValue()+">) ?skosxlLabel ." +
 					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
 					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
 					"\n}";
