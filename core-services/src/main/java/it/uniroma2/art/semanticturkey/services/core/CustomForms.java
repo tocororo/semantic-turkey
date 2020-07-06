@@ -11,7 +11,6 @@ import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
-import it.uniroma2.art.coda.interfaces.ParserPR;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.model.GraphElement;
 import it.uniroma2.art.coda.pearl.model.GraphStruct;
@@ -30,9 +29,9 @@ import it.uniroma2.art.coda.pearl.model.annotation.param.ParamValueString;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemPlaceholder;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemUri;
 import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
-import it.uniroma2.art.coda.pearl.parser.PearlParserAntlr4;
 import it.uniroma2.art.coda.pearl.parser.antlr4.AntlrParserRuntimeException;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
+import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.customform.BrokenCFStructure;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
@@ -51,6 +50,7 @@ import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -82,7 +82,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
-import sun.java2d.pipe.SpanShapeRenderer;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
@@ -107,7 +106,7 @@ import java.util.stream.Collectors;
 @STService
 public class CustomForms extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(CustomForms.class);
+	private static final Logger logger = LoggerFactory.getLogger(CustomForms.class);
 
 	private final String ANN_DEF_PATH = "/it/uniroma2/art/semanticturkey/customform/annDef.pr";
 
@@ -348,9 +347,10 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws PRParserException
 	 * @throws RDFModelNotSetException
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public void removeReifiedResource(IRI subject, IRI predicate, IRI resource)
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ')', 'D')")
+	public void removeReifiedResource(@Modified IRI subject, IRI predicate, IRI resource)
 			throws PRParserException {
 
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -394,6 +394,74 @@ public class CustomForms extends STServiceAdapter {
 		update.setIncludeInferred(false);
 		update.execute();
 		shutDownCodaCore(codaCore);
+	}
+
+	/**
+	 * Updates the "show" value of a reified resource expressed through a custom form value.
+	 * @param subject
+	 * @param predicate
+	 * @param reifiedNode
+	 * @param newValue
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ')', 'U')")
+	public void updateReifiedResourceShow(@Modified Resource subject, IRI predicate, Resource reifiedNode, Literal newValue) {
+		RepositoryConnection repoConnection = getManagedConnection();
+		CODACore codaCore = getInitializedCodaCore(repoConnection);
+		CustomFormGraph cfGraph = getCustomFormGraphSeed(getProject(), codaCore, cfManager,
+				repoConnection, reifiedNode, Sets.newHashSet(predicate), false);
+		List<IRI> propChain = cfGraph.getShowPropertyChain();
+		shutDownCodaCore(codaCore);
+
+		//skip if propChain is not defined, anyway this should never happen since this service should be invoked
+		//only when editing the show so it is assumed that a propChain (used to compute the show) exists
+		if (propChain == null || propChain.isEmpty()) return;
+
+		//lastS and lastP represents the subj and pred of the last step in the property chain
+		String query = "DELETE  {						\n"
+				+ "	GRAPH ?g {							\n"
+				+ "		?lastS ?lastP ?oldValue .		\n"
+				+ "	}									\n"
+				+ "}									\n"
+				+ "INSERT {								\n"
+				+ "	GRAPH ?g {							\n"
+				+ "		?lastS ?lastP ?newValue .		\n"
+				+ "	}									\n"
+				+ "}									\n"
+				+ "WHERE {								\n";
+
+
+		//if propChain has only 1 predicate, the last subject is exactly the reified node
+		//and the last predicate is the only one in the chain
+		if (propChain.size() == 1) {
+			query += "	BIND(" + NTriplesUtil.toNTriplesString(reifiedNode) + " AS ?lastS)	\n"
+					+ "	BIND(" + NTriplesUtil.toNTriplesString(propChain.get(0)) + " AS ?lastP)		\n";
+		} else {
+			query += "	GRAPH ?g {	\n";
+			//if propChain has multiple predicates...
+			//first prop of the chain: links the reifiedNode with the rest
+			IRI p = propChain.get(0);
+			query += "		" + NTriplesUtil.toNTriplesString(reifiedNode) + " " + NTriplesUtil.toNTriplesString(p) + " ?o1 .\n";
+			//rest of the property chain
+			for (int i = 1; i < propChain.size(); i++) {
+				p = propChain.get(i);
+				if (i != propChain.size()-1) { //if not the last prop of the chain, just ?obj_i <prop> ?obj_i+1
+					query += "		?o" + i + " " + NTriplesUtil.toNTriplesString(p) + " ?o"+(i+1) + " . \n";
+				} else { //last ?obj_i <prop> ?oldValue, then bind lastS and lastP
+					query += "		?o" + i + " " + NTriplesUtil.toNTriplesString(p) + " ?oldValue . \n"
+							+ "		BIND(?o" + i + " AS ?lastS)	\n"
+							+ "		BIND(" + NTriplesUtil.toNTriplesString(p) + " AS ?lastP)		\n";
+				}
+			}
+			query += "	}\n"; //end of GRAPH
+		}
+		query += "}"; //end of WHERE
+
+		Update update = repoConnection.prepareUpdate(query);
+		update.setBinding("newValue", newValue);
+		update.setBinding("g", getWorkingGraph());
+		update.execute();
 	}
 
 	/**
@@ -493,6 +561,29 @@ public class CustomForms extends STServiceAdapter {
 		shutDownCodaCore(codaCore);
 
 		return JsonNodeFactory.instance.textNode(result);
+	}
+
+	/**
+	 * Returns true if the definitionNode represents a "standard" reified definition, namely
+	 * a reified definition which the literal representation is linked to the definition node
+	 * through the sole rdf:value property
+	 * @param definitionNode
+	 * @param predicate
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	public Boolean isStandardReifiedDefinition(Resource definitionNode,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/2004/02/skos/core#note") IRI predicate) {
+		boolean isStandard;
+		RepositoryConnection repoConnection = getManagedConnection();
+		CODACore codaCore = getInitializedCodaCore(repoConnection);
+		CustomFormGraph cfGraph = getCustomFormGraphSeed(getProject(), codaCore, cfManager,
+				repoConnection, definitionNode, Sets.newHashSet(predicate), false);
+		List<IRI> propChain = cfGraph.getShowPropertyChain();
+		isStandard = (propChain != null && propChain.size() == 1 && propChain.get(0).equals(RDF.VALUE));
+		shutDownCodaCore(codaCore);
+		return isStandard;
 	}
 
 	/*
@@ -1474,8 +1565,7 @@ public class CustomForms extends STServiceAdapter {
 			addAnnListMax(projectionRule, projectionRulesModel, getManagedConnection());
 		}
 
-		String modelAsString = projectionRulesModel.getModelAsString(annDefToExludeList);
-		return modelAsString;
+		return projectionRulesModel.getModelAsString(annDefToExludeList);
 	}
 
 
@@ -1778,6 +1868,7 @@ public class CustomForms extends STServiceAdapter {
 			for (Annotation annotation : placeholderStruct.getAnnotationList()) {
 				if (annotation.getName().equals(ANN_LIST)) {
 					skipAnnList = true;
+					break;
 				}
 			}
 
@@ -1805,8 +1896,6 @@ public class CustomForms extends STServiceAdapter {
 						if(isPropFunct(((GraphSingleElemUri) pred).getURI(), managedConnection)){
 							isPropFunct = true;
 						}
-
-						;
 					}
 				}
 			}
@@ -1840,11 +1929,7 @@ public class CustomForms extends STServiceAdapter {
 		TupleQuery tupleQuery  = managedConnection.prepareTupleQuery(query);
 		tupleQuery.setIncludeInferred(false);
 		try(TupleQueryResult queryResult = tupleQuery.evaluate()){
-			if(queryResult.hasNext()){
-				return true;
-			} else{
-				return false;
-			}
+			return queryResult.hasNext();
 		}
 	}
 
