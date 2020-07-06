@@ -2,13 +2,13 @@ package it.uniroma2.art.semanticturkey.services.aspects;
 
 import java.util.Optional;
 
-import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +16,7 @@ import org.springframework.context.ApplicationContext;
 
 import it.uniroma2.art.semanticturkey.aop.MethodInvocationUtilities;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Created;
@@ -25,6 +26,9 @@ import it.uniroma2.art.semanticturkey.services.events.ResourceCreated;
 import it.uniroma2.art.semanticturkey.services.events.ResourceDeleted;
 import it.uniroma2.art.semanticturkey.services.events.ResourceModified;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 /**
  * An AOP Alliance {@link MethodInterceptor} implementation that manages events about resouce lifecycle
@@ -67,33 +71,59 @@ public class ResourceLifecycleEventPublisherInterceptor implements MethodInterce
 		STUser user = UsersManager.getLoggedUser();
 
 		Repository repository = STServiceContextUtils.getRepostory(stServiceContext);
-
-		Object rv;
+		RepositoryConnection repConn = RDF4JRepositoryUtils.getConnection(repository);
 		try {
+			Object rv;
 
-			// deletions are published before the actually occur
-			for (ImmutablePair<Resource, RDFResourceRole> pair : versioningMetadata.getDeletedResources()) {
-				applicationContext.publishEvent(new ResourceDeleted(pair.getLeft(), pair.getRight(),
-						stServiceContext.getWGraph(), repository, project, user));
+			try {
+
+				// deletions are published before the actually occur
+				for (Pair<Resource, RDFResourceRole> pair : versioningMetadata.getDeletedResources()) {
+					Pair<Resource, RDFResourceRole> enhancedPair = enhanceResourceChangeInfo(repConn, pair);
+					applicationContext
+							.publishEvent(new ResourceDeleted(enhancedPair.getLeft(), enhancedPair.getRight(),
+									stServiceContext.getWGraph(), repository, project, user));
+				}
+
+				rv = invocation.proceed();
+
+				for (Pair<Resource, RDFResourceRole> pair : versioningMetadata.getCreatedResources()) {
+					Pair<Resource, RDFResourceRole> enhancedPair = enhanceResourceChangeInfo(repConn, pair);
+					applicationContext
+							.publishEvent(new ResourceCreated(enhancedPair.getLeft(), enhancedPair.getRight(),
+									stServiceContext.getWGraph(), repository, project, user));
+				}
+
+				for (Pair<Resource, RDFResourceRole> pair : versioningMetadata.getModifiedResources()) {
+					Pair<Resource, RDFResourceRole> enhancedPair = enhanceResourceChangeInfo(repConn, pair);
+					applicationContext.publishEvent(
+							new ResourceModified(enhancedPair.getLeft(), enhancedPair.getRight(),
+									stServiceContext.getWGraph(), repository, project, user));
+				}
+
+			} finally {
+				ResourceLevelChangeMetadataSupport.removeVersioningMetadata();
 			}
 
-			rv = invocation.proceed();
-
-			for (ImmutablePair<Resource, RDFResourceRole> pair : versioningMetadata.getCreatedResources()) {
-				applicationContext.publishEvent(new ResourceCreated(pair.getLeft(), pair.getRight(),
-						stServiceContext.getWGraph(), repository, project, user));
-			}
-
-			for (ImmutablePair<Resource, RDFResourceRole> pair : versioningMetadata.getModifiedResources()) {
-				applicationContext.publishEvent(new ResourceModified(pair.getLeft(), pair.getRight(),
-						stServiceContext.getWGraph(), repository, project, user));
-			}
-
+			return rv;
 		} finally {
-			ResourceLevelChangeMetadataSupport.removeVersioningMetadata();
+			RDF4JRepositoryUtils.releaseConnection(repConn, repository);
 		}
+	}
 
-		return rv;
+	protected Pair<Resource, RDFResourceRole> enhanceResourceChangeInfo(RepositoryConnection repConn,
+			Pair<Resource, RDFResourceRole> pair) {
+		Resource resource = pair.getLeft();
+		RDFResourceRole resourceRole = pair.getRight();
+
+		Pair<Resource, RDFResourceRole> enhancedPair;
+		if (resourceRole == RDFResourceRole.undetermined) {
+			RDFResourceRole computedResourceRole = RoleRecognitionOrchestrator.computeRole(resource, repConn);
+			enhancedPair = ImmutablePair.of(resource, computedResourceRole);
+		} else {
+			enhancedPair = pair;
+		}
+		return enhancedPair;
 	}
 
 }

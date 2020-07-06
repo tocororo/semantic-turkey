@@ -57,7 +57,6 @@
 		<bundle dependency="true">mvn:org.hibernate/hibernate-validator/4.2.0.Final</bundle>
 		<bundle dependency="true">mvn:javax.persistence/javax.persistence-api/2.2</bundle>
 
-		<bundle dependency="true">mvn:com.google.code.findbugs/annotations/${annotations.version}</bundle>
 
 		<bundle dependency="true">wrap:mvn:it.unibo.alice.tuprolog/tuprolog/3.2.1</bundle>
 		<bundle dependency="true">mvn:it.uniroma2.art.lime/lime-model/${lime-api.version}</bundle>
@@ -68,8 +67,16 @@
 		<bundle dependency="true">wrap:mvn:org.json/json/20090211</bundle>
 
 		<bundle dependency="true">mvn:org.apache.commons/commons-lang3/${commons-lang3.version}</bundle>
-		<bundle dependency="true">mvn:javax.annotation/javax.annotation-api/${javax.annotations-api.version}</bundle>
-
+		
+		<!-- The following two bundles are required on Java >= 9 since javax.annotation is no longer exposed by default -->
+		<!--
+			<bundle dependency="true">mvn:javax.annotation/javax.annotation-api/${javax.annotations-api.version}</bundle>
+			<bundle dependency="true">mvn:com.google.code.findbugs/annotations/${annotations.version}</bundle>
+		-->
+		<!-- In fact, because of a split package issue, we should use instead the following bundle merging them -->
+<!-- 		<bundle dependency="true">wrap:mvn:com.guicedee.services/jakarta.annotation-api/1.0.13.0-jre8</bundle> -->
+		
+		
 		<!-- Byte-Buddy -->
 		<bundle dependency="true">mvn:net.bytebuddy/byte-buddy/${byte-buddy.version}</bundle>
 		
