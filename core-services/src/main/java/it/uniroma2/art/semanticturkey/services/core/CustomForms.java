@@ -414,9 +414,12 @@ public class CustomForms extends STServiceAdapter {
 		List<IRI> propChain = cfGraph.getShowPropertyChain();
 		shutDownCodaCore(codaCore);
 
-		//skip if propChain is not defined, anyway this should never happen since this service should be invoked
+		//check if propChain is not defined, anyway this should never happen since this service should be invoked
 		//only when editing the show so it is assumed that a propChain (used to compute the show) exists
-		if (propChain == null || propChain.isEmpty()) return;
+		if (propChain == null || propChain.isEmpty()) {
+			throw new IllegalStateException("Cannot perform the update. No show property chain provided to the  CustomForm ('"
+					+ cfGraph.getId() + "') mapped to the property " + predicate.toString());
+		}
 
 		//lastS and lastP represents the subj and pred of the last step in the property chain
 		String query = "DELETE  {						\n"
@@ -435,8 +438,10 @@ public class CustomForms extends STServiceAdapter {
 		//if propChain has only 1 predicate, the last subject is exactly the reified node
 		//and the last predicate is the only one in the chain
 		if (propChain.size() == 1) {
-			query += "	BIND(" + NTriplesUtil.toNTriplesString(reifiedNode) + " AS ?lastS)	\n"
-					+ "	BIND(" + NTriplesUtil.toNTriplesString(propChain.get(0)) + " AS ?lastP)		\n";
+			IRI prop = propChain.get(0);
+			query += "	" + NTriplesUtil.toNTriplesString(reifiedNode) + " " + NTriplesUtil.toNTriplesString(prop) + " ?oldValue . \n"
+					+ "	BIND(" + NTriplesUtil.toNTriplesString(reifiedNode) + " AS ?lastS)	\n"
+					+ "	BIND(" + NTriplesUtil.toNTriplesString(prop) + " AS ?lastP)		\n";
 		} else {
 			query += "	GRAPH ?g {	\n";
 			//if propChain has multiple predicates...
