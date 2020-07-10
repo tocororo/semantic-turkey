@@ -74,6 +74,8 @@ import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
+import it.uniroma2.art.semanticturkey.vocabulary.SUPPORT;
+
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
@@ -183,11 +185,10 @@ public class ProjectManager {
 	public static void registerProjectEventHandler(ProjectEventHandler handler) {
 		projectEventHandlers.add(handler);
 	}
-	
+
 	public static void unregisterProjectEventHandler(ProjectEventHandler handler) {
 		projectEventHandlers.remove(handler);
 	}
-
 
 	/**
 	 * lists the projects available (stored in the projects directory of Semantic Turkey). If
@@ -751,7 +752,8 @@ public class ProjectManager {
 		private boolean affirmative;
 
 		@JsonCreator
-		public AccessResponse(@JsonProperty("affirmative") boolean affirmative, @JsonProperty("msg") String msg) {
+		public AccessResponse(@JsonProperty("affirmative") boolean affirmative,
+				@JsonProperty("msg") String msg) {
 			this.affirmative = affirmative;
 			this.msg = msg;
 		}
@@ -1249,7 +1251,8 @@ public class ProjectManager {
 			UnloadablePluginConfigurationException, WrongPropertiesException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, ProjectInconsistentException,
 			InvalidConfigurationException, STPropertyAccessException, IOException,
-			ReservedPropertyUpdateException, ProjectUpdateException, STPropertyUpdateException, NoSuchConfigurationManager {
+			ReservedPropertyUpdateException, ProjectUpdateException, STPropertyUpdateException,
+			NoSuchConfigurationManager {
 
 		if (!validationEnabled && blacklistingEnabled) {
 			throw new IllegalArgumentException(
@@ -1304,21 +1307,19 @@ public class ProjectManager {
 					ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(sailImplConfig);
 					changeTrackerSailConfig.setSupportRepositoryID(
 							repositoryAccess.isLocal() ? Project.SUPPORT_REPOSITORY : supportRepoID);
-					changeTrackerSailConfig.setMetadataNS(defaultNamespace + "metadata#");
+					changeTrackerSailConfig
+							.setMetadataNS(SUPPORT.METADATA_NS);
 					changeTrackerSailConfig.setHistoryEnabled(historyEnabled);
 					if (historyEnabled) {
-						changeTrackerSailConfig.setHistoryGraph(
-								SimpleValueFactory.getInstance().createIRI(defaultNamespace + "history"));
+						changeTrackerSailConfig.setHistoryGraph(SUPPORT.HISTORY);
 					}
 					changeTrackerSailConfig.setValidationEnabled(validationEnabled);
 					if (validationEnabled) {
-						changeTrackerSailConfig.setValidationGraph(
-								SimpleValueFactory.getInstance().createIRI(defaultNamespace + "validation"));
+						changeTrackerSailConfig.setValidationGraph(SUPPORT.VALIDATION);
 					}
 					changeTrackerSailConfig.setBlacklistingEnabled(blacklistingEnabled);
 					if (blacklistingEnabled) {
-						changeTrackerSailConfig.setBlacklistGraph(
-								SimpleValueFactory.getInstance().createIRI(defaultNamespace + "blacklist"));
+						changeTrackerSailConfig.setBlacklistGraph(SUPPORT.BLACKLIST);
 					}
 
 					sailImplConfig = changeTrackerSailConfig;
@@ -1492,7 +1493,8 @@ public class ProjectManager {
 					baseURI, defaultNamespace, historyEnabled, validationEnabled, blacklistingEnabled,
 					repositoryAccess, coreRepoID, coreRepositoryConfig, coreBackendType, supportRepoID,
 					supportRepositoryConfig, supportBackendType, uriGeneratorSpecification,
-					renderingEngineSpecification, leftDataset, rightDataset, shaclEnabled, trivialInferenceEnabled);
+					renderingEngineSpecification, leftDataset, rightDataset, shaclEnabled,
+					trivialInferenceEnabled);
 
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 
@@ -1539,7 +1541,7 @@ public class ProjectManager {
 				rightDatasetProject.getACL().grantAccess(projectBeingCreated, AccessLevel.R);
 			}
 
-			//init the resource metadata associations
+			// init the resource metadata associations
 			if (resourceMetadataAssociations != null) {
 				ResourceMetadataAssociationStore associationStore = (ResourceMetadataAssociationStore) exptManager
 						.getConfigurationManager(ResourceMetadataAssociationStore.class.getName());

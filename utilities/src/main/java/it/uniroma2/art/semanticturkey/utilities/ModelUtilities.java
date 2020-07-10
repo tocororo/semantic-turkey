@@ -2,7 +2,6 @@ package it.uniroma2.art.semanticturkey.utilities;
 
 public class ModelUtilities {
 
-	
 	/**
 	 * given namespace <code>namespace</code>, this tries to automatically suggest a prefix for it
 	 * 
@@ -30,7 +29,7 @@ public class ModelUtilities {
 
 		return tempString.substring(lowerCutIndex + 1);
 	}
-	
+
 	/**
 	 * given the baseuri of an ontology, returns the baseuri
 	 * 
@@ -42,5 +41,22 @@ public class ModelUtilities {
 			return baseuri;
 		else
 			return baseuri + "#";
+	}
+
+	/**
+	 * Extends the given namespace {@code ns} with the supplied string {@code ext}.
+	 * 
+	 * @param ns
+	 * @param ext
+	 * @return
+	 */
+	public static String extendNamespace(String ns, String ext) {
+		if (ns.endsWith("#")) {
+			return ns.substring(0, ns.length() - 1) + "/" + ext;
+		} else if (ns.endsWith("/")) {
+			return ns + ext;
+		} else {
+			return ns + "/" + ext;
+		}
 	}
 }
