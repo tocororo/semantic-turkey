@@ -10,6 +10,8 @@ import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.repository.DelegatingRepositoryConnection;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,13 +25,14 @@ import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingRepositoryExcept
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.project.CreateRemote;
 import it.uniroma2.art.semanticturkey.project.ProjectUtils;
 import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
+import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
 import it.uniroma2.art.semanticturkey.project.VersionInfo;
+import it.uniroma2.art.semanticturkey.project.VersionInfo.RepositoryLocation;
+import it.uniroma2.art.semanticturkey.project.VersionInfo.RepositoryStatus;
 import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -50,19 +53,41 @@ public class Versions extends STServiceAdapter {
 
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('rdf(dataset, version)', 'R')")
-	public List<VersionInfo> getVersions(@Optional(defaultValue = "false") boolean setRepositoryStatus)
+	public List<VersionInfo> getVersions(@Optional(defaultValue = "false") boolean setRepositoryStatus,
+			@Optional(defaultValue = "false") boolean setRepositoryLocation)
 			throws JsonParseException, JsonMappingException, IOException {
 		List<VersionInfo> versionInfoList = getProject().getVersionManager().getVersions();
 
-		Set<String> initializedRepositories = getProject().getRepositoryManager()
-				.getInitializedRepositoryIDs();
+		STLocalRepositoryManager repositoryManager = getProject().getRepositoryManager();
+		Set<String> initializedRepositories = repositoryManager.getInitializedRepositoryIDs();
 
-		if (setRepositoryStatus) {
+		if (setRepositoryStatus || setRepositoryLocation) {
 			return versionInfoList.stream().map(versionInfo -> {
 				String repositoryId = versionInfo.getRepositoryId();
-				return versionInfo.newWithRepositoryStatus(initializedRepositories.contains(repositoryId)
-						? VersionInfo.RepositoryStatus.INITIALIZED
-						: VersionInfo.RepositoryStatus.UNITIALIZED);
+				RepositoryStatus repositoryStatus;
+				if (setRepositoryStatus) {
+					repositoryStatus = initializedRepositories.contains(repositoryId)
+							? VersionInfo.RepositoryStatus.INITIALIZED
+							: VersionInfo.RepositoryStatus.UNITIALIZED;
+				} else {
+					repositoryStatus = null;
+				}
+
+				RepositoryLocation repositoryLocation;
+				if (setRepositoryLocation) {
+					RepositoryConfig repositoryConfig = repositoryManager.getRepositoryConfig(repositoryId);
+					if (repositoryConfig == null) {
+						repositoryLocation = RepositoryLocation.NOT_FOUND;
+					} else {
+						repositoryLocation = STLocalRepositoryManager.getUnfoldedRepositoryImplConfig(
+								repositoryConfig) instanceof HTTPRepositoryConfig ? RepositoryLocation.REMOTE
+										: RepositoryLocation.LOCAL;
+					}
+				} else {
+					repositoryLocation = null;
+				}
+
+				return versionInfo.newWithRepositoryInfo(repositoryStatus, repositoryLocation);
 			}).collect(Collectors.toList());
 		}
 
