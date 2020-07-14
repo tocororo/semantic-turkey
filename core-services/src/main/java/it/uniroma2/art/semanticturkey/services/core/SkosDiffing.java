@@ -115,7 +115,7 @@ public class SkosDiffing extends STServiceAdapter {
 
 
 		//prepare the HTTP POST
-		String url = serverHost+serverPort+"/skosDiff/skosDiff/diff/executeDiffTask";
+		String url = serverHost+":"+serverPort+"/skosDiff/skosDiff/diff/executeDiffTask";
 		HttpPost httpPost = new HttpPost(url);
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode objectNode = jsonFactory.objectNode();
@@ -146,7 +146,7 @@ public class SkosDiffing extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.GET)
 	public String getAllTasksInfo() throws IOException {
 		String url;
-		url = serverHost+serverPort+"/skosDiff/skosDiff/diff/tasksInfo";
+		url = serverHost+":"+serverPort+"/skosDiff/skosDiff/diff/tasksInfo";
 
 		//prepare and execute the HTTP GET
 		HttpGet httpGet = new HttpGet(url);
@@ -172,7 +172,7 @@ public class SkosDiffing extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void deleteTask(String taskId) throws IOException {
-		String url = serverHost+serverPort+"/skosDiff/skosDiff/diff/"+taskId;
+		String url = serverHost+":"+serverPort+"/skosDiff/skosDiff/diff/"+taskId;
 		HttpDelete httpDelete = new HttpDelete(url);
 		try (CloseableHttpClient httpClient = HttpClients.createDefault();
 			 CloseableHttpResponse response = httpClient.execute(httpDelete)) {
@@ -181,7 +181,7 @@ public class SkosDiffing extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.GET)
 	public void getTaskResult(HttpServletResponse response, String taskId, ResultType resultType) throws IOException, ParserConfigurationException, TransformerException {
-		String url = serverHost+serverPort+"http://localhost:7576/skosDiff/skosDiff/diff/"+taskId;
+		String url = serverHost+":"+serverPort+"http://localhost:7576/skosDiff/skosDiff/diff/"+taskId;
 
 
 		HttpGet httpGet = new HttpGet(url);
