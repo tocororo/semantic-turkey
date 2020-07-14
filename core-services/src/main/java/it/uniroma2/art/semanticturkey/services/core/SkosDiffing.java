@@ -123,13 +123,14 @@ public class SkosDiffing extends STServiceAdapter {
 		objectNode.set(LEXICALIZATION_TYPE_1, jsonFactory.textNode(rightLexicalizationType));
 		objectNode.set(SPARQL_ENDPOINT_2, jsonFactory.textNode(rightSparqlEndpoint.stringValue()));
 		objectNode.set(LEXICALIZATION_TYPE_2, jsonFactory.textNode(rightLexicalizationType));
+		ArrayNode arrayNode = jsonFactory.arrayNode();
 		if(langList!=null && !langList.isEmpty()){
-			ArrayNode arrayNode = jsonFactory.arrayNode();
 			for (String lang : langList) {
 				arrayNode.add(lang);
 			}
-			objectNode.set(LANG_LIST, arrayNode);
+
 		}
+		objectNode.set(LANG_LIST, arrayNode);
 		String jsonString = objectNode.toString();
 		httpPost.setHeader("Accept", "application/json");
 		org.apache.http.HttpEntity entity = new StringEntity(jsonString,
