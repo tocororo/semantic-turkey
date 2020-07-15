@@ -66,10 +66,15 @@ public class SkosDiffing extends STServiceAdapter {
 	private final String SPARQL_ENDPOINT_2 = "sparqlEndpoint2";
 	private final String LEXICALIZATION_TYPE_1 = "lexicalizationType1";
 	private final String LEXICALIZATION_TYPE_2 = "lexicalizationType2";
+	private final String PROJECT_NAME_1 = "projectName1";
+	private final String PROJECT_NAME_2 = "projectName2";
+	private final String VERSION_REPO_ID_1 = "versionRepoId1";
+	private final String VERSION_REPO_ID_2 = "versionRepoId2";
+
 	private final String LANG_LIST = "langList";
 
-	private final String SKOSXL_LEX_MODE = "skosxl";
-	private final String SKOS_LEX_MODE = "skos";
+	//private final String SKOSXL_LEX_MODE = "skosxl";
+	//private final String SKOS_LEX_MODE = "skos";
 
 	private static final String TEXT_HTML = "text/html";
 	private static final String APPLICATION_PDF = "application/pdf";
@@ -88,11 +93,11 @@ public class SkosDiffing extends STServiceAdapter {
 			throw new IllegalStateException("Missing SPARQL endpoint for the left dataset");
 		}
 		IRI lexModelIRI = leftProject.getLexicalizationModel();
-		String leftLexicalizationType;
+		//String leftLexicalizationType;
 		if(lexModelIRI.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
-			leftLexicalizationType = SKOSXL_LEX_MODE;
+			//leftLexicalizationType = SKOSXL_LEX_MODE;
 		} else if(lexModelIRI.equals(Project.SKOS_LEXICALIZATION_MODEL)){
-			leftLexicalizationType = SKOS_LEX_MODE;
+			//leftLexicalizationType = SKOS_LEX_MODE;
 		} else {
 			throw new IllegalStateException("The only supported lexicalization models are SKOS and SKOSXL, "+lexModelIRI.getLocalName()+" is not supported");
 		}
@@ -104,11 +109,11 @@ public class SkosDiffing extends STServiceAdapter {
 			throw new IllegalStateException("Missing SPARQL endpoint for the right dataset");
 		}
 		lexModelIRI = leftProject.getLexicalizationModel();
-		String rightLexicalizationType;
+		//String rightLexicalizationType;
 		if(lexModelIRI.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
-			rightLexicalizationType = SKOSXL_LEX_MODE;
+			//rightLexicalizationType = SKOSXL_LEX_MODE;
 		} else if(lexModelIRI.equals(Project.SKOS_LEXICALIZATION_MODEL)){
-			rightLexicalizationType = SKOS_LEX_MODE;
+			//rightLexicalizationType = SKOS_LEX_MODE;
 		} else {
 			throw new IllegalStateException("The only supported lexicalization models are SKOS and SKOSXL, "+lexModelIRI.getLocalName()+" is not supported");
 		}
@@ -119,10 +124,25 @@ public class SkosDiffing extends STServiceAdapter {
 		HttpPost httpPost = new HttpPost(url);
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode objectNode = jsonFactory.objectNode();
+
 		objectNode.set(SPARQL_ENDPOINT_1, jsonFactory.textNode(leftSparqlEndpoint.stringValue()));
-		objectNode.set(LEXICALIZATION_TYPE_1, jsonFactory.textNode(rightLexicalizationType));
+		objectNode.set(LEXICALIZATION_TYPE_1, jsonFactory.textNode(leftProject.getLexicalizationModel().stringValue()));
+		objectNode.set(PROJECT_NAME_1, jsonFactory.textNode(leftProjectName));
+		if(leftVersionRepoId==null){
+			objectNode.set(VERSION_REPO_ID_1, null);
+		} else {
+			objectNode.set(VERSION_REPO_ID_1, jsonFactory.textNode(leftVersionRepoId));
+		}
+
 		objectNode.set(SPARQL_ENDPOINT_2, jsonFactory.textNode(rightSparqlEndpoint.stringValue()));
-		objectNode.set(LEXICALIZATION_TYPE_2, jsonFactory.textNode(rightLexicalizationType));
+		objectNode.set(LEXICALIZATION_TYPE_2, jsonFactory.textNode(leftProject.getLexicalizationModel().stringValue()));
+		objectNode.set(PROJECT_NAME_2, jsonFactory.textNode(rightProjectName));
+		if(rightVersionRepoId==null){
+			objectNode.set(VERSION_REPO_ID_2, null);
+		} else {
+			objectNode.set(VERSION_REPO_ID_2, jsonFactory.textNode(rightVersionRepoId));
+		}
+
 		ArrayNode arrayNode = jsonFactory.arrayNode();
 		if(langList!=null && !langList.isEmpty()){
 			for (String lang : langList) {
@@ -145,9 +165,12 @@ public class SkosDiffing extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.GET)
-	public String getAllTasksInfo() throws IOException {
+	public String getAllTasksInfo(@Optional String projectName) throws IOException {
 		String url;
 		url = serverHost+":"+serverPort+"/skosDiff/skosDiff/diff/tasksInfo";
+		if(projectName!=null && !projectName.isEmpty()){
+			url += "?projectName="+projectName;
+		}
 
 		//prepare and execute the HTTP GET
 		HttpGet httpGet = new HttpGet(url);
@@ -182,7 +205,7 @@ public class SkosDiffing extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.GET)
 	public void getTaskResult(HttpServletResponse response, String taskId, ResultType resultType) throws IOException, ParserConfigurationException, TransformerException {
-		String url = serverHost+":"+serverPort+"http://localhost:7576/skosDiff/skosDiff/diff/"+taskId;
+		String url = serverHost+":"+serverPort+"/skosDiff/skosDiff/diff/"+taskId;
 
 
 		HttpGet httpGet = new HttpGet(url);
@@ -440,7 +463,8 @@ public class SkosDiffing extends STServiceAdapter {
 		}
 
 
-		if(diffResultStructure.getLexicalization1().equals(SKOSXL_LEX_MODE) && diffResultStructure.getLexicalization2().equals(SKOSXL_LEX_MODE)) {
+		if(diffResultStructure.getLexicalization1().equals(Project.SKOSXL_LEXICALIZATION_MODEL.stringValue()) &&
+				diffResultStructure.getLexicalization2().equals(Project.SKOSXL_LEXICALIZATION_MODEL.stringValue())) {
 			Element removedLabelsElem = document.createElement("h1");
 			removedLabelsElem.setTextContent("REMOVED LABELS:");
 			bodyElem.appendChild(removedLabelsElem);
