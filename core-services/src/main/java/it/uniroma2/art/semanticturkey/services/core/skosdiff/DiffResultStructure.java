@@ -3,11 +3,11 @@ package it.uniroma2.art.semanticturkey.services.core.skosdiff;
 import java.util.List;
 
 public class DiffResultStructure {
-    private String sparqlEndpoint1;
-    private String sparqlEndpoint2;
+
+    private DatasetInfo leftDataset;
+    private DatasetInfo rightDataset;
+
     private String taskId;
-    private String  lexicalization1;
-    private String lexicalization2;
     private List<String> langList;
 
     private List<ResourceWithLexicalization> removedResources;
@@ -24,14 +24,14 @@ public class DiffResultStructure {
     public DiffResultStructure() {
     }
 
-    public DiffResultStructure(String sparqlEndpoint1, String sparqlEndpoint2, String taskId, String lexicalization1, String lexicalization2, List<String> langList,
+    public DiffResultStructure(String sparqlEndpoint1, String lexicalization1, String projectName1, String versionRepoId1,
+            String sparqlEndpoint2, String lexicalization2, String projectName2, String versionRepoId2,
+            String taskId,  List<String> langList,
             List<ResourceWithLexicalization> removedResources, List<ResourceWithLexicalization> addedResources, List<ChangedResource> changedResources,
             List<LabelWithResAndLitForm> removeLabels, List<LabelWithResAndLitForm> addedLabels, List<ChangedLabel> changedLabels) {
-        this.sparqlEndpoint1 = sparqlEndpoint1;
-        this.sparqlEndpoint2 = sparqlEndpoint2;
+        this.leftDataset = new DatasetInfo(projectName1, versionRepoId1, sparqlEndpoint1, lexicalization1);
+        this.rightDataset = new DatasetInfo(projectName2, versionRepoId2, sparqlEndpoint2, lexicalization2);
         this.taskId = taskId;
-        this.lexicalization1 = lexicalization1;
-        this.lexicalization2 = lexicalization2;
         this.langList = langList;
         this.removedResources = removedResources;
         this.addedResources = addedResources;
@@ -41,24 +41,16 @@ public class DiffResultStructure {
         this.changedLabels = changedLabels;
     }
 
-    public String getSparqlEndpoint1() {
-        return sparqlEndpoint1;
+    public DatasetInfo getLeftDataset() {
+        return leftDataset;
     }
 
-    public String getSparqlEndpoint2() {
-        return sparqlEndpoint2;
+    public DatasetInfo getRightDataset() {
+        return rightDataset;
     }
 
     public String getTaskId() {
         return taskId;
-    }
-
-    public String getLexicalization1() {
-        return lexicalization1;
-    }
-
-    public String getLexicalization2() {
-        return lexicalization2;
     }
 
     public List<String> getLangList() {

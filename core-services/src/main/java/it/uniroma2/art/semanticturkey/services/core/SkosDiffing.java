@@ -15,6 +15,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.skosdiff.ChangedLabel;
 import it.uniroma2.art.semanticturkey.services.core.skosdiff.ChangedResource;
+import it.uniroma2.art.semanticturkey.services.core.skosdiff.DatasetInfo;
 import it.uniroma2.art.semanticturkey.services.core.skosdiff.DiffResultStructure;
 import it.uniroma2.art.semanticturkey.services.core.skosdiff.LabelWithResAndLitForm;
 import it.uniroma2.art.semanticturkey.services.core.skosdiff.ResourceWithLexicalization;
@@ -88,7 +89,6 @@ public class SkosDiffing extends STServiceAdapter {
 
 		Project leftProject = ProjectManager.getProject(leftProjectName);
 		IRI leftSparqlEndpoint = getSparqlEndpoint(leftProject, leftVersionRepoId);
-		System.out.println("leftSparqlEndpoint " + leftSparqlEndpoint);
 		if (leftSparqlEndpoint == null) {
 			throw new IllegalStateException("Missing SPARQL endpoint for the left dataset");
 		}
@@ -104,17 +104,13 @@ public class SkosDiffing extends STServiceAdapter {
 
 		Project rightProject = ProjectManager.getProject(rightProjectName);
 		IRI rightSparqlEndpoint = getSparqlEndpoint(rightProject, rightVersionRepoId);
-		System.out.println("rightSparqlEndpoint " + rightSparqlEndpoint);
 		if (rightSparqlEndpoint == null) {
 			throw new IllegalStateException("Missing SPARQL endpoint for the right dataset");
 		}
 		lexModelIRI = leftProject.getLexicalizationModel();
 		//String rightLexicalizationType;
-		if(lexModelIRI.equals(Project.SKOSXL_LEXICALIZATION_MODEL)){
-			//rightLexicalizationType = SKOSXL_LEX_MODE;
-		} else if(lexModelIRI.equals(Project.SKOS_LEXICALIZATION_MODEL)){
-			//rightLexicalizationType = SKOS_LEX_MODE;
-		} else {
+
+		if(!lexModelIRI.equals(Project.SKOSXL_LEXICALIZATION_MODEL) && !lexModelIRI.equals(Project.SKOS_LEXICALIZATION_MODEL)){
 			throw new IllegalStateException("The only supported lexicalization models are SKOS and SKOSXL, "+lexModelIRI.getLocalName()+" is not supported");
 		}
 
@@ -179,12 +175,8 @@ public class SkosDiffing extends STServiceAdapter {
 			 CloseableHttpResponse response = httpClient.execute(httpGet)) {
 
 			// Get HttpResponse Status
-			System.out.println(response.getStatusLine().toString());
-
 			HttpEntity entity = response.getEntity();
 			Header headers = entity.getContentType();
-			System.out.println(headers);
-
 			if (entity != null) {
 				// return it as a String
 				String result = EntityUtils.toString(entity);
@@ -279,24 +271,47 @@ public class SkosDiffing extends STServiceAdapter {
 		Element bodyElem = document.createElement("body");
 		htmlElem.appendChild(bodyElem);
 
+
 		Element infoElem = document.createElement("h1");
 		infoElem.setTextContent("INFO:");
 		bodyElem.appendChild(infoElem);
-		Element sparqlLeft = document.createElement("div");
-		sparqlLeft.setTextContent("LeftSPARQLEndpoint: "+diffResultStructure.getSparqlEndpoint1());
-		infoElem.appendChild(sparqlLeft);
-		Element lexlLeft = document.createElement("div");
-		lexlLeft.setTextContent("LeftLexicalization: "+diffResultStructure.getLexicalization1());
-		infoElem.appendChild(lexlLeft);
-		Element rightlLeft = document.createElement("div");
-		rightlLeft.setTextContent("RightSPARQLEndpoint: "+diffResultStructure.getSparqlEndpoint2());
-		infoElem.appendChild(rightlLeft);
-		Element lexRight = document.createElement("div");
-		lexRight.setTextContent("RightLexicalization: "+diffResultStructure.getLexicalization2());
-		infoElem.appendChild(lexRight);
 		Element taskId = document.createElement("div");
 		taskId.setTextContent("taskId: "+diffResultStructure.getTaskId());
 		infoElem.appendChild(taskId);
+
+		Element leftDatasetElem = document.createElement("div");
+		leftDatasetElem.setTextContent("LEFT DATASET:");
+		infoElem.appendChild(leftDatasetElem);
+		DatasetInfo leftDataset = diffResultStructure.getLeftDataset();
+		Element projectNameElem = document.createElement("div");
+		projectNameElem.setTextContent("projectName: "+leftDataset.getProjectName());
+		leftDatasetElem.appendChild(projectNameElem);
+		Element versionRepoIdElem = document.createElement("div");
+		versionRepoIdElem.setTextContent("versionRepoId: "+leftDataset.getVersionRepoId());
+		leftDatasetElem.appendChild(versionRepoIdElem);
+		Element sparqlEndpointElem = document.createElement("div");
+		sparqlEndpointElem.setTextContent("sparqlEndpoint: "+leftDataset.getSparqlEndpoint());
+		leftDatasetElem.appendChild(sparqlEndpointElem);
+		Element lexicalizationIRI = document.createElement("div");
+		lexicalizationIRI.setTextContent("lexicalizationIRI: "+leftDataset.getLexicalizationIRI());
+		leftDatasetElem.appendChild(lexicalizationIRI);
+
+		Element rightDatasetElem = document.createElement("div");
+		rightDatasetElem.setTextContent("RIGHT DATASET:");
+		infoElem.appendChild(rightDatasetElem);
+		DatasetInfo rightDataset = diffResultStructure.getLeftDataset();
+		projectNameElem = document.createElement("div");
+		projectNameElem.setTextContent("projectName: "+rightDataset.getProjectName());
+		rightDatasetElem.appendChild(projectNameElem);
+		versionRepoIdElem = document.createElement("div");
+		versionRepoIdElem.setTextContent("versionRepoId: "+rightDataset.getVersionRepoId());
+		rightDatasetElem.appendChild(versionRepoIdElem);
+		sparqlEndpointElem = document.createElement("div");
+		sparqlEndpointElem.setTextContent("sparqlEndpoint: "+rightDataset.getSparqlEndpoint());
+		rightDatasetElem.appendChild(sparqlEndpointElem);
+		lexicalizationIRI = document.createElement("div");
+		lexicalizationIRI.setTextContent("lexicalizationIRI: "+rightDataset.getLexicalizationIRI());
+		rightDatasetElem.appendChild(lexicalizationIRI);
 
 		Element removedResourcesElem = document.createElement("h1");
 		removedResourcesElem.setTextContent("REMOVED RESOURCES:");
@@ -463,8 +478,8 @@ public class SkosDiffing extends STServiceAdapter {
 		}
 
 
-		if(diffResultStructure.getLexicalization1().equals(Project.SKOSXL_LEXICALIZATION_MODEL.stringValue()) &&
-				diffResultStructure.getLexicalization2().equals(Project.SKOSXL_LEXICALIZATION_MODEL.stringValue())) {
+		if(diffResultStructure.getLeftDataset().getLexicalizationIRI().equals(Project.SKOSXL_LEXICALIZATION_MODEL.stringValue()) &&
+				diffResultStructure.getRightDataset().getLexicalizationIRI().equals(Project.SKOSXL_LEXICALIZATION_MODEL.stringValue())) {
 			Element removedLabelsElem = document.createElement("h1");
 			removedLabelsElem.setTextContent("REMOVED LABELS:");
 			bodyElem.appendChild(removedLabelsElem);
@@ -489,7 +504,7 @@ public class SkosDiffing extends STServiceAdapter {
 			for(LabelWithResAndLitForm labelWithResAndLitForm : diffResultStructure.getAddedLabels()){
 				Element addedLabelElem = document.createElement("div");
 				addedLabelElem.setTextContent("Added Label:");
-				removedLabelsElem.appendChild(addedLabelElem);
+				addedLabelsElem.appendChild(addedLabelElem);
 				Element labelElem = document.createElement("div");
 				labelElem.setTextContent("LabelIRI: "+labelWithResAndLitForm.getLabel());
 				addedLabelElem.appendChild(labelElem);
