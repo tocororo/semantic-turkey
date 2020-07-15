@@ -129,7 +129,7 @@ public class SkosDiffing extends STServiceAdapter {
 		objectNode.set(LEXICALIZATION_TYPE_1, jsonFactory.textNode(leftProject.getLexicalizationModel().stringValue()));
 		objectNode.set(PROJECT_NAME_1, jsonFactory.textNode(leftProjectName));
 		if(leftVersionRepoId==null){
-			objectNode.set(VERSION_REPO_ID_1, null);
+			objectNode.set(VERSION_REPO_ID_1, jsonFactory.textNode(""));
 		} else {
 			objectNode.set(VERSION_REPO_ID_1, jsonFactory.textNode(leftVersionRepoId));
 		}
@@ -138,7 +138,7 @@ public class SkosDiffing extends STServiceAdapter {
 		objectNode.set(LEXICALIZATION_TYPE_2, jsonFactory.textNode(leftProject.getLexicalizationModel().stringValue()));
 		objectNode.set(PROJECT_NAME_2, jsonFactory.textNode(rightProjectName));
 		if(rightVersionRepoId==null){
-			objectNode.set(VERSION_REPO_ID_2, null);
+			objectNode.set(VERSION_REPO_ID_2, jsonFactory.textNode(""));
 		} else {
 			objectNode.set(VERSION_REPO_ID_2, jsonFactory.textNode(rightVersionRepoId));
 		}
