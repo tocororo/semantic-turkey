@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -19,6 +21,7 @@ import it.uniroma2.art.semanticturkey.services.core.skosdiff.DatasetInfo;
 import it.uniroma2.art.semanticturkey.services.core.skosdiff.DiffResultStructure;
 import it.uniroma2.art.semanticturkey.services.core.skosdiff.LabelWithResAndLitForm;
 import it.uniroma2.art.semanticturkey.services.core.skosdiff.ResourceWithLexicalization;
+import it.uniroma2.art.semanticturkey.services.core.skosdiff.TaskInfo;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -55,6 +58,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 @STService
@@ -161,7 +165,10 @@ public class SkosDiffing extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.GET)
-	public String getAllTasksInfo(@Optional String projectName) throws IOException {
+	public List<TaskInfo> getAllTasksInfo(@Optional String projectName) throws IOException {
+
+		List<TaskInfo> tasks = new ArrayList<>();
+
 		String url;
 		url = serverHost+":"+serverPort+"/skosDiff/skosDiff/diff/tasksInfo";
 		if(projectName!=null && !projectName.isEmpty()){
@@ -180,10 +187,10 @@ public class SkosDiffing extends STServiceAdapter {
 			if (entity != null) {
 				// return it as a String
 				String result = EntityUtils.toString(entity);
-				return result;
+				tasks = new ObjectMapper().readValue(result, new TypeReference<List<TaskInfo>>(){});
 			}
-			return "";
 		}
+		return tasks;
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
