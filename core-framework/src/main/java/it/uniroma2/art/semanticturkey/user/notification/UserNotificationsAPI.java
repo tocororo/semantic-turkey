@@ -38,11 +38,14 @@ import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 import java.util.regex.Pattern;
 
 public class UserNotificationsAPI {
 
 	private static final UserNotificationsAPI sharedInsance = new UserNotificationsAPI();
+
+	private static Semaphore semaphore = new Semaphore(1);
 
 	private final String indexMainDirName = "index";
 	private final String luceneDirName = "userNotificationIndex";
@@ -99,19 +102,21 @@ public class UserNotificationsAPI {
 	}
 
 
-	public boolean clearNotifications(STUser user) throws IOException {
+	public boolean clearNotifications(STUser user) throws IOException, InterruptedException {
 		List<Document> docList = getDocumentsFromUser(user);
 		if(docList.isEmpty()){
 			return false;
 		}
-		try (IndexWriter writer = createIndexWriter()) {
+		Term term = new Term(USER_FIELD, user.getIRI().stringValue());
+		deleteAndAddDocuments(term, null);
+		/*try (IndexWriter writer = createIndexWriter()) {
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
-		}
+		}*/
 		return true;
 
 	}
 
-	public boolean clearNotifications(STUser user, Project project) throws IOException {
+	public boolean clearNotifications(STUser user, Project project) throws IOException, InterruptedException {
 		List<Document> docList = getDocumentsFromUser(user);
 		if(docList.isEmpty()){
 			return false;
@@ -135,17 +140,23 @@ public class UserNotificationsAPI {
 				}
 			}
 		}
-		try (IndexWriter writer = createIndexWriter()) {
+		Term term = new Term(USER_FIELD, user.getIRI().stringValue());
+		if(!emptyDoc){
+			deleteAndAddDocuments(term, newDoc);
+		} else {
+			deleteAndAddDocuments(term, null);
+		}
+		/*try (IndexWriter writer = createIndexWriter()) {
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			if (!emptyDoc) {
 				writer.addDocument(newDoc);
 			}
-		}
+		}*/
 		return true;
 	}
 
 	public boolean storeNotification(STUser user, Project project, Resource resource,
-			RDFResourceRole role, Action action) throws IOException {
+			RDFResourceRole role, Action action) throws IOException, InterruptedException {
 		boolean updateIndex = false;
 		HashSet<String> presentValueSet = new HashSet<>();
 		List <Document> documentList = getDocumentsFromUser(user);
@@ -176,24 +187,25 @@ public class UserNotificationsAPI {
 		}
 		//if the index should be update, remove the old document(s) and insert the new one
 		if(updateIndex){
-			try (IndexWriter writer = createIndexWriter()) {
+			Term term = new Term(USER_FIELD, user.getIRI().stringValue());
+			deleteAndAddDocuments(term, newDoc);
+			/*try (IndexWriter writer = createIndexWriter()) {
 				if(!documentList.isEmpty()) {
 					writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 				}
 				writer.addDocument(newDoc);
-			}
+			}*/
 		}
 		return true;
 	}
 
-	public boolean removeUser(STUser user) throws IOException {
+	public boolean removeUser(STUser user) throws IOException, InterruptedException {
 		List<Document> documentList = getDocumentsFromUser(user);
 		if (documentList.isEmpty()) {
 			return false;
 		}
-		try (IndexWriter writer = createIndexWriter()) {
-			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
-		}
+		Term term = new Term(USER_FIELD, user.getIRI().stringValue());
+		deleteAndAddDocuments(term, null);
 		return true;
 	}
 
@@ -219,6 +231,21 @@ public class UserNotificationsAPI {
 		IndexWriterConfig config = new IndexWriterConfig(simpleAnalyzer);
 		IndexWriter writer = new IndexWriter(directory, config);
 		return writer;
+	}
+
+	private void deleteAndAddDocuments(Term termForDelete, Document documentToAdd) throws InterruptedException, IOException {
+		//acquire semaphore
+		semaphore.acquire();
+		try (IndexWriter writer = createIndexWriter()) {
+			if(termForDelete != null) {
+				writer.deleteDocuments(termForDelete);
+			}
+			if(documentToAdd != null) {
+				writer.addDocument(documentToAdd);
+			}
+		}
+		//release semaphore
+		semaphore.release();
 	}
 
 	private IndexSearcher createSearcher() throws IOException {

@@ -221,7 +221,7 @@ public class UsersManager {
 	 * @param user
 	 * @throws IOException
 	 */
-	public static void deleteUser(STUser user) throws IOException {
+	public static void deleteUser(STUser user) throws IOException, InterruptedException {
 		userList.remove(user);
 		// delete its folder from server data
 		FileUtils.deleteDirectory(getUserFolder(user));

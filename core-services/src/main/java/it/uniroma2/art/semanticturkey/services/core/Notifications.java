@@ -86,7 +86,7 @@ public class Notifications extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void startWatching(Resource resource) throws IOException {
+	public void startWatching(Resource resource) throws IOException, InterruptedException {
 		NotificationPreferencesAPI.getInstance().addToUser(UsersManager.getLoggedUser(), getProject(), resource);
 	}
 
@@ -96,7 +96,7 @@ public class Notifications extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void stopWatching(Resource resource) throws IOException {
+	public void stopWatching(Resource resource) throws IOException, InterruptedException {
 		NotificationPreferencesAPI.getInstance().removeProjResFromUser(UsersManager.getLoggedUser(), getProject(), resource);
 	}
 
@@ -134,7 +134,7 @@ public class Notifications extends STServiceAdapter {
 	 * @param preferences for each role lists the actions for which notifications are enabled
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void storeNotificationPreferences(@JsonSerialized Map<RDFResourceRole, List<Action>> preferences) throws IOException {
+	public void storeNotificationPreferences(@JsonSerialized Map<RDFResourceRole, List<Action>> preferences) throws IOException, InterruptedException {
 		STUser user = UsersManager.getLoggedUser();
 		Project project = getProject();
 		NotificationPreferencesAPI.getInstance().addToUser(user, project, preferences);
@@ -147,7 +147,7 @@ public class Notifications extends STServiceAdapter {
 	 * @param status
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void updateNotificationPreferences(RDFResourceRole role, Action action, boolean status) throws IOException {
+	public void updateNotificationPreferences(RDFResourceRole role, Action action, boolean status) throws IOException, InterruptedException {
 		if (!NotificationPreferencesAPI.availableRoles.contains(role)) return;
 
 		STUser user = UsersManager.getLoggedUser();
@@ -182,7 +182,7 @@ public class Notifications extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void clearNotifications() throws IOException {
+	public void clearNotifications() throws IOException, InterruptedException {
 		UserNotificationsAPI.getInstance().clearNotifications(UsersManager.getLoggedUser(), getProject());
 	}
 }

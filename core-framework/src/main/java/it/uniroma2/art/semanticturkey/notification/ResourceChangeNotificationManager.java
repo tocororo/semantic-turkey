@@ -78,7 +78,7 @@ public class ResourceChangeNotificationManager {
 
 			try {
 				ResourceChangeNotificationManager.this.scheduledNotifications();
-			} catch (STPropertyAccessException | ProjectAccessException | IOException | MessagingException e) {
+			} catch (STPropertyAccessException | ProjectAccessException | IOException | MessagingException | InterruptedException e) {
 				e.printStackTrace();
 			} finally {
 				notificationDigestSending.set(false);
@@ -94,26 +94,26 @@ public class ResourceChangeNotificationManager {
 
 	@TransactionalEventListener(phase = Phase.afterCommit)
 	@Async
-	public void onCreation(ResourceCreated event) throws IOException, STPropertyAccessException {
+	public void onCreation(ResourceCreated event) throws IOException, STPropertyAccessException, InterruptedException {
 		logger.debug("Send notifications about creation of " + event.getResource());
 		triggerEventNotification(event);
 	}
 
 	@TransactionalEventListener(phase = Phase.afterCommit)
 	@Async
-	public void onUpdate(ResourceModified event) throws IOException, STPropertyAccessException {
+	public void onUpdate(ResourceModified event) throws IOException, STPropertyAccessException, InterruptedException {
 		logger.debug("Send notifications about modification of " + event.getResource());
 		triggerEventNotification(event);
 	}
 
 	@TransactionalEventListener(phase = Phase.afterCommit)
 	@Async
-	public void onDeletion(ResourceDeleted event) throws IOException, STPropertyAccessException {
+	public void onDeletion(ResourceDeleted event) throws IOException, STPropertyAccessException, InterruptedException {
 		logger.debug("Send notifications about deletion of " + event.getResource());
 		triggerEventNotification(event);
 	}
 
-	public void scheduledNotifications() throws STPropertyAccessException, ProjectAccessException, IOException, MessagingException {
+	public void scheduledNotifications() throws STPropertyAccessException, ProjectAccessException, IOException, MessagingException, InterruptedException {
 		//for each user, collects the list of project for which he has set daily digest as notification mode preference
 		Map<STUser, List<Project>> userProjMap = new HashMap<>();
 		for (AbstractProject absProj : ProjectManager.listProjects()) {
@@ -180,7 +180,7 @@ public class ResourceChangeNotificationManager {
 	 * Send a mail notifications report for each user
 	 * @param userProjMap
 	 */
-	private void dailyDigest(Map<STUser, List<Project>> userProjMap) throws IOException, STPropertyAccessException, MessagingException {
+	private void dailyDigest(Map<STUser, List<Project>> userProjMap) throws IOException, STPropertyAccessException, MessagingException, InterruptedException {
 		UserNotificationsAPI notificationApi = UserNotificationsAPI.getInstance();
 		SimpleDateFormat timestampInputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 		SimpleDateFormat timestampOutputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
@@ -266,7 +266,7 @@ public class ResourceChangeNotificationManager {
 	 * @throws IOException
 	 * @throws STPropertyAccessException
 	 */
-	private void triggerEventNotification(ResourceEvent event) throws IOException, STPropertyAccessException {
+	private void triggerEventNotification(ResourceEvent event) throws IOException, STPropertyAccessException, InterruptedException {
 		Project project = event.getProject();
 		Resource resource = event.getResource();
 		RDFResourceRole role = event.getRole();

@@ -1,5 +1,6 @@
 version 8.0
 date: dd/mm/yyyy
+  * skosDiff system (based on a different server to which ST sends the requests)
   * user notification APIs based on Lucene index
   * allow to configure remote alignment service URL
   * automatic update of the PEARL part of a Custom Form with inferred annotations

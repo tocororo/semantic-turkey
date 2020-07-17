@@ -38,11 +38,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 import java.util.regex.Pattern;
 
 public class NotificationPreferencesAPI {
 
 	private static final NotificationPreferencesAPI sharedInsance = new NotificationPreferencesAPI();
+
+	private static Semaphore semaphore = new Semaphore(1);
 
 	private final String indexMainDirName = "index";
 	private final String luceneDirName = "notificationPrefIndex";
@@ -224,7 +227,7 @@ public class NotificationPreferencesAPI {
 		return userList;
 	}
 
-	public boolean addToUser(STUser user, Project project, Resource resource) throws IOException {
+	public boolean addToUser(STUser user, Project project, Resource resource) throws IOException, InterruptedException {
 		String resNT = NTriplesUtil.toNTriplesString(resource);
 		String valueToAdd = project.getName() + SEPARATOR + resNT;
 		//Document doc = getDocumentFromUser(user);
@@ -244,16 +247,23 @@ public class NotificationPreferencesAPI {
 				}
 			}
 		}
+
+		Term term = new Term(USER_FIELD, user.getIRI().stringValue());
+		Document newDoc = cloneAndCompactDocuments(documentList, user);
+		newDoc.add(new StringField(PROJ_RES_FIELD, valueToAdd, Field.Store.YES));
+
+		deleteAndAddDocuments(term, newDoc);
+		/*
 		try (IndexWriter writer = createIndexWriter()) {
 			Document newDoc = cloneAndCompactDocuments(documentList, user);
 			newDoc.add(new StringField(PROJ_RES_FIELD, valueToAdd, Field.Store.YES));
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			writer.addDocument(newDoc);
-		}
+		}*/
 		return true;
 	}
 
-	public boolean addToUser(STUser user, Project project, RDFResourceRole role, Action action) throws IOException {
+	public boolean addToUser(STUser user, Project project, RDFResourceRole role, Action action) throws IOException, InterruptedException {
 		String valueToAdd = project.getName() + SEPARATOR + role.name() + SEPARATOR + action.name();
 		List <Document> documentList = getDocumentsFromUser(user);
 		if(documentList.isEmpty()){
@@ -271,24 +281,45 @@ public class NotificationPreferencesAPI {
 				}
 			}
 		}
+
+		Term term = new Term(USER_FIELD, user.getIRI().stringValue());
+		Document newDoc = cloneAndCompactDocuments(documentList, user);
+		newDoc.add(new StringField(PROJ_ROLE_ACT_FIELD, valueToAdd, Field.Store.YES));
+		deleteAndAddDocuments(term, newDoc);
+
+		/*
 		try (IndexWriter writer = createIndexWriter()) {
 			Document newDoc = cloneAndCompactDocuments(documentList, user);
 			newDoc.add(new StringField(PROJ_ROLE_ACT_FIELD, valueToAdd, Field.Store.YES));
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			writer.addDocument(newDoc);
 		}
+		 */
 
 		return true;
 	}
 
-	public void addToUser(STUser user, Project project, Map<RDFResourceRole, List<Action>> preferences) throws IOException {
+	public void addToUser(STUser user, Project project, Map<RDFResourceRole, List<Action>> preferences) throws IOException, InterruptedException {
 		List<Document> documentList = getDocumentsFromUser(user);
 		if(documentList.isEmpty()){
 			Document doc = new Document();
 			doc.add(new StringField(USER_FIELD, user.getIRI().stringValue(), Field.Store.YES));
 			documentList.add(doc);
 		}
-		try (IndexWriter writer = createIndexWriter()) {
+
+
+		Term term = new Term(USER_FIELD, user.getIRI().stringValue());
+		Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_ROLE_ACT_FIELD, user);
+		//add the value from the map preferences
+		for (RDFResourceRole role : preferences.keySet()) {
+			for(Action action : preferences.get(role)){
+				String valueToAdd = project.getName() + SEPARATOR + role.name() + SEPARATOR + action.name();
+				newDoc.add(new StringField(PROJ_ROLE_ACT_FIELD, valueToAdd, Field.Store.YES));
+			}
+		}
+		deleteAndAddDocuments(term, newDoc);
+
+		/*try (IndexWriter writer = createIndexWriter()) {
 			Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_ROLE_ACT_FIELD, user);
 			//add the value from the map preferences
 			for (RDFResourceRole role : preferences.keySet()) {
@@ -299,21 +330,25 @@ public class NotificationPreferencesAPI {
 			}
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			writer.addDocument(newDoc);
-		}
+		}*/
 	}
 
-	public boolean removeUser(STUser user) throws IOException {
+	public boolean removeUser(STUser user) throws IOException, InterruptedException {
 		List<Document> documentList = getDocumentsFromUser(user);
 		if (documentList.isEmpty()) {
 			return false;
 		}
-		try (IndexWriter writer = createIndexWriter()) {
+
+		Term term = new Term(USER_FIELD, user.getIRI().stringValue());
+		deleteAndAddDocuments(term, null);
+
+		/*try (IndexWriter writer = createIndexWriter()) {
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
-		}
+		}*/
 		return true;
 	}
 
-	public boolean removeProjResFromUser(STUser user, Project project, Resource resource) throws IOException {
+	public boolean removeProjResFromUser(STUser user, Project project, Resource resource) throws IOException, InterruptedException {
         String escapedSeparator = Pattern.quote(SEPARATOR);
 		String resNT = NTriplesUtil.toNTriplesString(resource);
 		String fieldValueRegex = project.getName() + escapedSeparator + resNT;
@@ -321,15 +356,20 @@ public class NotificationPreferencesAPI {
 		if (documentList.isEmpty()) {
 			return false;
 		}
-		try (IndexWriter writer = createIndexWriter()) {
+
+		Term term = new Term(USER_FIELD, user.getIRI().stringValue());
+		Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_RES_FIELD, fieldValueRegex, user);
+		deleteAndAddDocuments(term, newDoc);
+
+		/*try (IndexWriter writer = createIndexWriter()) {
 			Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_RES_FIELD, fieldValueRegex, user);
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			writer.addDocument(newDoc);
-		}
+		}*/
 		return true;
 	}
 
-	public boolean removeProjRoleActionFromUser(STUser user, Project project, RDFResourceRole role, Action action) throws IOException {
+	public boolean removeProjRoleActionFromUser(STUser user, Project project, RDFResourceRole role, Action action) throws IOException, InterruptedException {
         //String escapedSeparator = SEPARATOR.replace("|", "\\|");
         String escapedSeparator = Pattern.quote(SEPARATOR);
 		String fieldValueRegex = project.getName() + escapedSeparator;
@@ -348,13 +388,17 @@ public class NotificationPreferencesAPI {
 		if (documentList.isEmpty()) {
 			return false;
 		}
-		try (IndexWriter writer = createIndexWriter()) {
+
+		Term term = new Term(USER_FIELD, user.getIRI().stringValue());
+		Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_ROLE_ACT_FIELD, fieldValueRegex, user);
+		deleteAndAddDocuments(term, newDoc);
+
+
+		/*try (IndexWriter writer = createIndexWriter()) {
 			Document newDoc = cloneAndCompactDocumentMinusField(documentList, PROJ_ROLE_ACT_FIELD, fieldValueRegex, user);
 			writer.deleteDocuments(new Term(USER_FIELD, user.getIRI().stringValue()));
 			writer.addDocument(newDoc);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		} */
 		return true;
 	}
 
@@ -379,6 +423,21 @@ public class NotificationPreferencesAPI {
 		IndexWriterConfig config = new IndexWriterConfig(simpleAnalyzer);
 		IndexWriter writer = new IndexWriter(directory, config);
 		return writer;
+	}
+
+	private void deleteAndAddDocuments(Term termForDelete, Document documentToAdd) throws InterruptedException, IOException {
+		//acquire semaphore
+		semaphore.acquire();
+		try (IndexWriter writer = createIndexWriter()) {
+			if(termForDelete != null) {
+				writer.deleteDocuments(termForDelete);
+			}
+			if(documentToAdd != null) {
+				writer.addDocument(documentToAdd);
+			}
+		}
+		//release semaphore
+		semaphore.release();
 	}
 
 	private IndexSearcher createSearcher() throws IOException {
