@@ -351,7 +351,7 @@ public class SkosDiffing extends STServiceAdapter {
 			appendUpdatedPropValues(document, changedResUl, changedResource.getLexPropToRemovedLexicalizationListMap(), "Removed lexicalizations:");
 
 			//added lexicalizations
-			appendUpdatedPropValues(document, changedResUl, changedResource.getLexPropToRemovedLexicalizationListMap(), "Added lexicalizations:");
+			appendUpdatedPropValues(document, changedResUl, changedResource.getLexPropToAddedLexicalizationListMap(), "Added lexicalizations:");
 
 			//removed notes
 			appendUpdatedPropValues(document, changedResUl, changedResource.getNotePropToRemovedNoteValueListMap(), "Removed notes:");
@@ -570,32 +570,33 @@ public class SkosDiffing extends STServiceAdapter {
 	private void appendUpdatedPropValues(org.w3c.dom.Document document,
 			Element parentUl, Map<String, List<String>> updatedProValuesMap, String itemLabel) {
 
-		Element removedLexicalizationsLi = document.createElement("li");
-		parentUl.appendChild(removedLexicalizationsLi);
+		Element changedPropValuesLi = document.createElement("li");
+		parentUl.appendChild(changedPropValuesLi);
 
-		Element removedLexicalizationsLabel = document.createElement("label");
-		removedLexicalizationsLi.appendChild(removedLexicalizationsLabel);
-		removedLexicalizationsLabel.setTextContent(itemLabel);
+		Element changedPropValuesLabel = document.createElement("label");
+		changedPropValuesLi.appendChild(changedPropValuesLabel);
+		changedPropValuesLabel.setTextContent(itemLabel);
 
-		Element removedLexicalizationsValueUl = document.createElement("ul");
-		removedLexicalizationsLi.appendChild(removedLexicalizationsValueUl);
+		Element changedPropValuesUl = document.createElement("ul");
+		changedPropValuesLi.appendChild(changedPropValuesUl);
 
 		for (String propIri : updatedProValuesMap.keySet()) {
 
-			appendPlainListItem(document, removedLexicalizationsValueUl, "Property:", propIri);
+			appendPlainListItem(document, changedPropValuesUl, "Property:", propIri);
 
-			Element removedLexLi = document.createElement("li");
-			removedLexicalizationsValueUl.appendChild(removedLexLi);
+			Element changedValuesLi = document.createElement("li");
+			changedPropValuesUl.appendChild(changedValuesLi);
 
-			Element removedLexLabel = document.createElement("label");
-			removedLexLi.appendChild(removedLexLabel);
-			removedLexLabel.setTextContent("Values:");
+			Element changedValue = document.createElement("label");
+			changedValuesLi.appendChild(changedValue);
+			changedValue.setTextContent("Values:");
 
-			Element removedLexValuesUl = document.createElement("ul");
-			for (String removedLex : updatedProValuesMap.get(propIri)) {
-				Element removedLexValueLi = document.createElement("li");
-				removedLexValuesUl.appendChild(removedLexValueLi);
-				removedLexValueLi.setTextContent(removedLex);
+			Element changedValuesUl = document.createElement("ul");
+			changedValuesLi.appendChild(changedValuesUl);
+			for (String value : updatedProValuesMap.get(propIri)) {
+				Element changedValueLi = document.createElement("li");
+				changedValueLi.setTextContent(value);
+				changedValuesUl.appendChild(changedValueLi);
 			}
 		}
 	}
