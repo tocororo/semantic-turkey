@@ -277,7 +277,7 @@ public class SkosDiffing extends STServiceAdapter {
 
 		//style
 		Node styleElem = document.createElement("style");
-		styleElem.setTextContent(".section { margin-bottom: 30px; }");
+		styleElem.setTextContent(".section { margin-bottom: 30px; } label { font-weight: bold; margin-right: 4px; }");
 		headElem.appendChild(styleElem);
 
 		//==== END head ====
@@ -298,7 +298,7 @@ public class SkosDiffing extends STServiceAdapter {
 		bodyElem.appendChild(taskIdSection);
 		taskIdSection.setAttribute("class", "section");
 
-		Element taskIdLabel = document.createElement("b");
+		Element taskIdLabel = document.createElement("label");
 		taskIdSection.appendChild(taskIdLabel);
 		taskIdLabel.setTextContent("taskId:");
 
@@ -402,7 +402,7 @@ public class SkosDiffing extends STServiceAdapter {
 					Element litFormLi = document.createElement("li");
 					changedXlabelUl.appendChild(litFormLi);
 
-					Element litFormLabel = document.createElement("b");
+					Element litFormLabel = document.createElement("label");
 					litFormLi.appendChild(litFormLabel);
 					litFormLabel.setTextContent("Literal Form:");
 
@@ -422,7 +422,7 @@ public class SkosDiffing extends STServiceAdapter {
 					Element lexicalizedResLi = document.createElement("li");
 					changedXlabelUl.appendChild(lexicalizedResLi);
 
-					Element lexicalizedResLabel = document.createElement("b");
+					Element lexicalizedResLabel = document.createElement("label");
 					lexicalizedResLi.appendChild(lexicalizedResLabel);
 					lexicalizedResLabel.setTextContent("Lexicalized Resource:");
 
@@ -462,7 +462,7 @@ public class SkosDiffing extends STServiceAdapter {
 		parentElem.appendChild(datasetSection);
 		datasetSection.setAttribute("class", "section");
 
-		Element datasetLabel = document.createElement("b");
+		Element datasetLabel = document.createElement("label");
 		datasetSection.appendChild(datasetLabel);
 		datasetLabel.setTextContent(title);
 
@@ -511,7 +511,7 @@ public class SkosDiffing extends STServiceAdapter {
 			Element typesLi = document.createElement("li");
 			lexicalizedResUl.appendChild(typesLi);
 
-			Element typesLabel = document.createElement("b");
+			Element typesLabel = document.createElement("label");
 			typesLi.appendChild(typesLabel);
 			typesLabel.setTextContent("Types:");
 
@@ -528,7 +528,7 @@ public class SkosDiffing extends STServiceAdapter {
 			Element lexicalizationsLi = document.createElement("li");
 			lexicalizedResUl.appendChild(lexicalizationsLi);
 
-			Element lexicalizationsLabel = document.createElement("b");
+			Element lexicalizationsLabel = document.createElement("label");
 			lexicalizationsLi.appendChild(lexicalizationsLabel);
 			lexicalizationsLabel.setTextContent("Lexicalizations:");
 
@@ -573,7 +573,7 @@ public class SkosDiffing extends STServiceAdapter {
 		Element removedLexicalizationsLi = document.createElement("li");
 		parentUl.appendChild(removedLexicalizationsLi);
 
-		Element removedLexicalizationsLabel = document.createElement("b");
+		Element removedLexicalizationsLabel = document.createElement("label");
 		removedLexicalizationsLi.appendChild(removedLexicalizationsLabel);
 		removedLexicalizationsLabel.setTextContent(itemLabel);
 
@@ -587,7 +587,7 @@ public class SkosDiffing extends STServiceAdapter {
 			Element removedLexLi = document.createElement("li");
 			removedLexicalizationsValueUl.appendChild(removedLexLi);
 
-			Element removedLexLabel = document.createElement("b");
+			Element removedLexLabel = document.createElement("label");
 			removedLexLi.appendChild(removedLexLabel);
 			removedLexLabel.setTextContent("Values:");
 
@@ -611,7 +611,7 @@ public class SkosDiffing extends STServiceAdapter {
 		Element li = document.createElement("li");
 		parentUl.appendChild(li);
 
-		Element liLabel = document.createElement("b");
+		Element liLabel = document.createElement("label");
 		li.appendChild(liLabel);
 		liLabel.setTextContent(label);
 
