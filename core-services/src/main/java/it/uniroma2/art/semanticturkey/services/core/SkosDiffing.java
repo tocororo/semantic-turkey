@@ -277,7 +277,13 @@ public class SkosDiffing extends STServiceAdapter {
 
 		//style
 		Node styleElem = document.createElement("style");
-		styleElem.setTextContent(".section { margin-bottom: 30px; } label { font-weight: bold; margin-right: 4px; }");
+		styleElem.setTextContent("body { font-size: 16px; } " +
+				".section { margin-bottom: 30px; } " +
+				".modifiedResSection { margin-bottom: 16px; } " +
+				".modifiedResHeader { font-size: 18px; margin-bottom: 6px; } " +
+				"ul { margin-top: 4px; margin-bottom: 4px; padding-inline-start: 26px; } " +
+				"label { font-weight: bold; margin-right: 4px; } "
+		);
 		headElem.appendChild(styleElem);
 
 		//==== END head ====
@@ -289,22 +295,16 @@ public class SkosDiffing extends STServiceAdapter {
 
 		//== START task info
 
-		Element infoTitle = document.createElement("h1");
-		bodyElem.appendChild(infoTitle);
-		infoTitle.setTextContent("Task info");
+		appendTextualElement(document, bodyElem, "h1", "Task info");
 
 		//task id
 		Element taskIdSection = document.createElement("div");
 		bodyElem.appendChild(taskIdSection);
 		taskIdSection.setAttribute("class", "section");
 
-		Element taskIdLabel = document.createElement("label");
-		taskIdSection.appendChild(taskIdLabel);
-		taskIdLabel.setTextContent("taskId:");
+		appendTextualElement(document, taskIdSection, "label", "taskId:");
 
-		Element taskIdValue = document.createElement("span");
-		taskIdSection.appendChild(taskIdValue);
-		taskIdValue.setTextContent(diffResultStructure.getTaskId());
+		appendTextualElement(document, taskIdSection, "span", diffResultStructure.getTaskId());
 
 		//left dataset
 		appendDatasetSection(document, bodyElem, diffResultStructure.getLeftDataset(), "Left dataset:");
@@ -316,9 +316,7 @@ public class SkosDiffing extends STServiceAdapter {
 
 		//== START diffing results
 
-		Element resultTitle = document.createElement("h1");
-		bodyElem.appendChild(resultTitle);
-		resultTitle.setTextContent("Diffing results");
+		appendTextualElement(document, bodyElem, "h1", "Diffing results");
 
 		//removed resources
 		appendResourcesWithLexicalizationSection(document, bodyElem, diffResultStructure.getRemovedResources(), "Removed resources");
@@ -327,25 +325,22 @@ public class SkosDiffing extends STServiceAdapter {
 		appendResourcesWithLexicalizationSection(document, bodyElem, diffResultStructure.getAddedResources(), "Added resources");
 
 		//changed resources
-		Element changedResSection = document.createElement("div");
-		bodyElem.appendChild(changedResSection);
-		changedResSection.setAttribute("class", "section");
+		Element changedResourcesSection = document.createElement("div");
+		bodyElem.appendChild(changedResourcesSection);
+		changedResourcesSection.setAttribute("class", "section");
 
-		Element changedResTitle = document.createElement("h2");
-		changedResSection.appendChild(changedResTitle);
-		changedResTitle.setTextContent("Changed resources");
-
-		Element changedResBlock = document.createElement("div");
-		changedResSection.appendChild(changedResBlock);
+		appendTextualElement(document, changedResourcesSection, "h2", "Changed resources");
 
 		for (ChangedResource changedResource : diffResultStructure.getChangedResources()) {
 
+			Element changedResBlock = document.createElement("div");
+			changedResBlock.setAttribute("class", "modifiedResSection");
+			changedResourcesSection.appendChild(changedResBlock);
+
+			appendModifiedEntityHeader(document, changedResBlock, "Resource:", changedResource.getResourceId());
+
 			Element changedResUl = document.createElement("ul");
 			changedResBlock.appendChild(changedResUl);
-			changedResUl.setAttribute("style", "margin-bottom: 8px;");
-
-			//iri
-			appendPlainListItem(document, changedResUl, "Resource IRI:", changedResource.getResourceId());
 
 			//removed lexicalizations
 			appendUpdatedPropValues(document, changedResUl, changedResource.getLexPropToRemovedLexicalizationListMap(), "Removed lexicalizations:");
@@ -377,23 +372,22 @@ public class SkosDiffing extends STServiceAdapter {
 			//added xlabels
 			appendXLabelSection(document, bodyElem, diffResultStructure.getAddedLabels(), "Added SKOS-XL labels");
 
+			Element changedXlabelsSection = document.createElement("div");
+			bodyElem.appendChild(changedXlabelsSection);
+			changedXlabelsSection.setAttribute("class", "section");
 
-			Element changedXlabelSection = document.createElement("div");
-			bodyElem.appendChild(changedXlabelSection);
-			changedXlabelSection.setAttribute("class", "section");
-
-			Element changedXlabelTitle = document.createElement("h2");
-			changedXlabelSection.appendChild(changedXlabelTitle);
-			changedXlabelTitle.setTextContent("Changed SKOS-XL labels");
+			appendTextualElement(document, changedXlabelsSection, "h2", "Changed SKOS-XL labels");
 
 			for(ChangedLabel changedLabel : diffResultStructure.getChangedLabels()){
 
-				Element changedXlabelUl = document.createElement("ul");
-				changedXlabelSection.appendChild(changedXlabelUl);
-				changedXlabelUl.setAttribute("style", "margin-bottom: 8px;");
+				Element changedXlabelBlock = document.createElement("div");
+				changedXlabelBlock.setAttribute("class", "modifiedResSection");
+				changedXlabelsSection.appendChild(changedXlabelBlock);
 
-				//label iri
-				appendPlainListItem(document, changedXlabelUl, "XLabel:", changedLabel.getLabel());
+				appendModifiedEntityHeader(document, changedXlabelBlock, "XLabel:", changedLabel.getLabel());
+
+				Element changedXlabelUl = document.createElement("ul");
+				changedXlabelBlock.appendChild(changedXlabelUl);
 
 				//literal form
 				if (changedLabel.getLiteralForm() != null && !changedLabel.getLiteralForm().isEmpty()) {
@@ -402,9 +396,7 @@ public class SkosDiffing extends STServiceAdapter {
 					Element litFormLi = document.createElement("li");
 					changedXlabelUl.appendChild(litFormLi);
 
-					Element litFormLabel = document.createElement("label");
-					litFormLi.appendChild(litFormLabel);
-					litFormLabel.setTextContent("Literal Form:");
+					appendTextualElement(document, litFormLi, "label", "Literal Form:");
 
 					Element changedLitFormUl = document.createElement("ul");
 					litFormLi.appendChild(changedLitFormUl);
@@ -422,9 +414,7 @@ public class SkosDiffing extends STServiceAdapter {
 					Element lexicalizedResLi = document.createElement("li");
 					changedXlabelUl.appendChild(lexicalizedResLi);
 
-					Element lexicalizedResLabel = document.createElement("label");
-					lexicalizedResLi.appendChild(lexicalizedResLabel);
-					lexicalizedResLabel.setTextContent("Lexicalized Resource:");
+					appendTextualElement(document, lexicalizedResLi, "label", "Lexicalized Resource:");
 
 					Element changedLexResUl = document.createElement("ul");
 					lexicalizedResLi.appendChild(changedLexResUl);
@@ -462,9 +452,7 @@ public class SkosDiffing extends STServiceAdapter {
 		parentElem.appendChild(datasetSection);
 		datasetSection.setAttribute("class", "section");
 
-		Element datasetLabel = document.createElement("label");
-		datasetSection.appendChild(datasetLabel);
-		datasetLabel.setTextContent(title);
+		appendTextualElement(document, datasetSection, "label", title);
 
 		Element datasetUl = document.createElement("ul");
 		datasetSection.appendChild(datasetUl);
@@ -492,28 +480,24 @@ public class SkosDiffing extends STServiceAdapter {
 		bodyElem.appendChild(removedResSection);
 		removedResSection.setAttribute("class", "section");
 
-		Element removedResTitle = document.createElement("h2");
-		removedResSection.appendChild(removedResTitle);
-		removedResTitle.setTextContent(title);
+		appendTextualElement(document, removedResSection, "h2", title);
 
-		Element removedResBlock = document.createElement("div");
-		removedResSection.appendChild(removedResBlock);
+		for (ResourceWithLexicalization resourceWithLexicalization : resourcesWithLexicalization) {
 
-		for (ResourceWithLexicalization resourceWithLexicalization : resourcesWithLexicalization){
+			Element removedResBlock = document.createElement("div");
+			removedResBlock.setAttribute("class", "modifiedResSection");
+			removedResSection.appendChild(removedResBlock);
+
+			appendModifiedEntityHeader(document, removedResBlock, "Resource:", resourceWithLexicalization.getResourceIri());
+
 			Element lexicalizedResUl = document.createElement("ul");
 			removedResBlock.appendChild(lexicalizedResUl);
-			lexicalizedResUl.setAttribute("style", "margin-bottom: 8px;");
-
-			//iri
-			appendPlainListItem(document, lexicalizedResUl, "Resource IRI:", resourceWithLexicalization.getResourceIri());
 
 			//types
 			Element typesLi = document.createElement("li");
 			lexicalizedResUl.appendChild(typesLi);
 
-			Element typesLabel = document.createElement("label");
-			typesLi.appendChild(typesLabel);
-			typesLabel.setTextContent("Types:");
+			appendTextualElement(document, typesLi, "label", "Types:");
 
 			Element typesValueUl = document.createElement("ul");
 			typesLi.appendChild(typesValueUl);
@@ -528,9 +512,7 @@ public class SkosDiffing extends STServiceAdapter {
 			Element lexicalizationsLi = document.createElement("li");
 			lexicalizedResUl.appendChild(lexicalizationsLi);
 
-			Element lexicalizationsLabel = document.createElement("label");
-			lexicalizationsLi.appendChild(lexicalizationsLabel);
-			lexicalizationsLabel.setTextContent("Lexicalizations:");
+			appendTextualElement(document, lexicalizationsLi, "label", "Lexicalizations:");
 
 			Element lexicalizationsValueUl = document.createElement("ul");
 			lexicalizationsLi.appendChild(lexicalizationsValueUl);
@@ -550,16 +532,19 @@ public class SkosDiffing extends STServiceAdapter {
 		bodyElem.appendChild(xlabelSection);
 		xlabelSection.setAttribute("class", "section");
 
-		Element xlabelTitle = document.createElement("h2");
-		xlabelSection.appendChild(xlabelTitle);
-		xlabelTitle.setTextContent(title);
+		appendTextualElement(document, xlabelSection, "h2", title);
 
-		for(LabelWithResAndLitForm labelWithResAndLitForm : labels){
+		for (LabelWithResAndLitForm labelWithResAndLitForm : labels) {
+
+			Element changedLexBlock = document.createElement("div");
+			changedLexBlock.setAttribute("class", "modifiedResSection");
+			xlabelSection.appendChild(changedLexBlock);
+
+			appendModifiedEntityHeader(document, changedLexBlock, "XLabel:", labelWithResAndLitForm.getLabel());
+
 			Element lexicalizationUl = document.createElement("ul");
-			xlabelSection.appendChild(lexicalizationUl);
-			lexicalizationUl.setAttribute("style", "margin-bottom: 8px;");
-			//iri
-			appendPlainListItem(document, lexicalizationUl, "Label IRI:", labelWithResAndLitForm.getLabel());
+			changedLexBlock.appendChild(lexicalizationUl);
+
 			//lit form
 			appendPlainListItem(document, lexicalizationUl, "Literal form:", labelWithResAndLitForm.getLiteralForm());
 			//lexicalized resource
@@ -573,9 +558,7 @@ public class SkosDiffing extends STServiceAdapter {
 		Element changedPropValuesLi = document.createElement("li");
 		parentUl.appendChild(changedPropValuesLi);
 
-		Element changedPropValuesLabel = document.createElement("label");
-		changedPropValuesLi.appendChild(changedPropValuesLabel);
-		changedPropValuesLabel.setTextContent(itemLabel);
+		appendTextualElement(document, changedPropValuesLi, "label", itemLabel);
 
 		Element changedPropValuesUl = document.createElement("ul");
 		changedPropValuesLi.appendChild(changedPropValuesUl);
@@ -587,9 +570,7 @@ public class SkosDiffing extends STServiceAdapter {
 			Element changedValuesLi = document.createElement("li");
 			changedPropValuesUl.appendChild(changedValuesLi);
 
-			Element changedValue = document.createElement("label");
-			changedValuesLi.appendChild(changedValue);
-			changedValue.setTextContent("Values:");
+			appendTextualElement(document, changedValuesLi, "label", "Values:");
 
 			Element changedValuesUl = document.createElement("ul");
 			changedValuesLi.appendChild(changedValuesUl);
@@ -599,6 +580,16 @@ public class SkosDiffing extends STServiceAdapter {
 				changedValuesUl.appendChild(changedValueLi);
 			}
 		}
+	}
+
+	//Utilities for the creation of html elements
+
+	private void appendModifiedEntityHeader(org.w3c.dom.Document document, Element parentEl, String label, String value) {
+		Element changedEntityHeader = document.createElement("div");
+		changedEntityHeader.setAttribute("class", "modifiedResHeader");
+		parentEl.appendChild(changedEntityHeader);
+		appendTextualElement(document, changedEntityHeader, "label", label);
+		appendTextualElement(document, changedEntityHeader, "span", value);
 	}
 
 	/**
@@ -611,14 +602,21 @@ public class SkosDiffing extends STServiceAdapter {
 	private void appendPlainListItem(org.w3c.dom.Document document, Element parentUl, String label, String value) {
 		Element li = document.createElement("li");
 		parentUl.appendChild(li);
+		appendTextualElement(document, li, "label", label);
+		appendTextualElement(document, li, "span", value);
+	}
 
-		Element liLabel = document.createElement("label");
-		li.appendChild(liLabel);
-		liLabel.setTextContent(label);
-
-		Element liValue = document.createElement("span");
-		li.appendChild(liValue);
-		liValue.setTextContent(value);
+	/**
+	 * Append a textual element (h1, h2, ..., p) with the given text content
+	 * @param document
+	 * @param parentEl
+	 * @param elementTag
+	 * @param textContent
+	 */
+	private void appendTextualElement(org.w3c.dom.Document document, Element parentEl, String elementTag, String textContent) {
+		Element el = document.createElement(elementTag);
+		parentEl.appendChild(el);
+		el.setTextContent(textContent);
 	}
 
 	private IRI getSparqlEndpoint(Project project, String versionId) {
