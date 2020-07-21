@@ -1,5 +1,8 @@
 package it.uniroma2.art.semanticturkey.services.core.skosdiff;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 
 public class DiffResultStructure {
@@ -21,14 +24,18 @@ public class DiffResultStructure {
     private List<ChangedLabel> changedLabels;
 
 
-    public DiffResultStructure() {
-    }
-
-    public DiffResultStructure(String sparqlEndpoint1, String lexicalization1, String projectName1, String versionRepoId1,
-            String sparqlEndpoint2, String lexicalization2, String projectName2, String versionRepoId2,
-            String taskId,  List<String> langList,
-            List<ResourceWithLexicalization> removedResources, List<ResourceWithLexicalization> addedResources, List<ChangedResource> changedResources,
-            List<LabelWithResAndLitForm> removeLabels, List<LabelWithResAndLitForm> addedLabels, List<ChangedLabel> changedLabels) {
+    @JsonCreator
+    public DiffResultStructure(@JsonProperty("projectName1")String projectName1, @JsonProperty("versionRepoId1")String versionRepoId1,
+            @JsonProperty("sparqlEndpoint1")String sparqlEndpoint1, @JsonProperty("lexicalization1")String lexicalization1,
+            @JsonProperty("projectName2")String projectName2, @JsonProperty("versionRepoId2")String versionRepoId2,
+            @JsonProperty("sparqlEndpoint2")String sparqlEndpoint2, @JsonProperty("lexicalization2")String lexicalization2,
+            @JsonProperty("taskId")String taskId,  @JsonProperty("langList")List<String> langList,
+            @JsonProperty("removedResources")List<ResourceWithLexicalization> removedResources,
+            @JsonProperty("addedResources")List<ResourceWithLexicalization> addedResources,
+            @JsonProperty("changedResources")List<ChangedResource> changedResources,
+            @JsonProperty("removeLabels")List<LabelWithResAndLitForm> removeLabels,
+            @JsonProperty("addedLabels")List<LabelWithResAndLitForm> addedLabels,
+            @JsonProperty("changedLabels")List<ChangedLabel> changedLabels) {
         this.leftDataset = new DatasetInfo(projectName1, versionRepoId1, sparqlEndpoint1, lexicalization1);
         this.rightDataset = new DatasetInfo(projectName2, versionRepoId2, sparqlEndpoint2, lexicalization2);
         this.taskId = taskId;

@@ -1,10 +1,11 @@
 package it.uniroma2.art.semanticturkey.services.core.skosdiff;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,11 +13,11 @@ import java.util.List;
 import java.util.Map;
 
 public class ChangedLabel {
-    //all the parameter are string of the form NTriplesUtil.toNTriplesString
+    //all the parameter are string of the form SkosDiffUtils.toNTriplesString
 
     private String label;
 
-    private String resource; // if this is not null, then addedResource and removedResouce must be null
+    private String resource; // if this is not null, then addedResource and removedResource must be null
     private String addedResource;
     private String removedResouce;
 
@@ -24,7 +25,7 @@ public class ChangedLabel {
     private String addedLiteralForm;
     private String removedLiteralForm;
 
-    //the list of String are a list of Value, and are a List of NTriplesUtil.toNTriplesString(Value)
+    //the list of String are a list of Value, and are a List of SkosDiffUtils.toNTriplesString(Value)
     private Map<String, List<String>> propToRemovedValueListMap = new HashMap<>(); //the prop is in <propIRI>
     private Map<String, List<String>> propToAddedValueListMap = new HashMap<>(); //the prop is in <propIRI>
 
@@ -33,11 +34,30 @@ public class ChangedLabel {
     private Map<String, List<String>> notePropToAddedNoteValueListMap = new HashMap<>(); //the prop is in <propIRI>
 
 
-    public ChangedLabel() {
+    @JsonCreator
+    public ChangedLabel(@JsonProperty("label")String label, @JsonProperty("resource")String resource,
+            @JsonProperty("addedResource")String addedResource, @JsonProperty("removedResouce")String removedResouce,
+            @JsonProperty("literalForm")String literalForm, @JsonProperty("addedLiteralForm")String addedLiteralForm,
+            @JsonProperty("removedLiteralForm")String removedLiteralForm,
+            @JsonProperty("propToRemovedValueListMap")Map<String, List<String>> propToRemovedValueListMap,
+            @JsonProperty("propToAddedValueListMap")Map<String, List<String>> propToAddedValueListMap,
+            @JsonProperty("notePropToRemovedNoteValueListMap")Map<String, List<String>> notePropToRemovedNoteValueListMap,
+            @JsonProperty("notePropToAddedNoteValueListMap")Map<String, List<String>> notePropToAddedNoteValueListMap) {
+        this.label = label;
+        this.resource = resource;
+        this.addedResource = addedResource;
+        this.removedResouce = removedResouce;
+        this.literalForm = literalForm;
+        this.addedLiteralForm = addedLiteralForm;
+        this.removedLiteralForm = removedLiteralForm;
+        this.propToRemovedValueListMap = propToRemovedValueListMap;
+        this.propToAddedValueListMap = propToAddedValueListMap;
+        this.notePropToRemovedNoteValueListMap = notePropToRemovedNoteValueListMap;
+        this.notePropToAddedNoteValueListMap = notePropToAddedNoteValueListMap;
     }
 
     public ChangedLabel(IRI label) {
-        this.label = NTriplesUtil.toNTriplesString(label);
+        this.label = SkosDiffUtils.toNTriplesString(label);
     }
 
     public String getLabel() {
@@ -49,7 +69,7 @@ public class ChangedLabel {
     }
 
     public void setResource(IRI resource) {
-        this.resource = NTriplesUtil.toNTriplesString(resource);
+        this.resource = SkosDiffUtils.toNTriplesString(resource);
     }
 
     public String getAddedResource() {
@@ -57,7 +77,7 @@ public class ChangedLabel {
     }
 
     public void setAddedResource(IRI addedResource) {
-        this.addedResource = NTriplesUtil.toNTriplesString(addedResource);
+        this.addedResource = SkosDiffUtils.toNTriplesString(addedResource);
     }
 
     public String getRemovedResouce() {
@@ -65,7 +85,7 @@ public class ChangedLabel {
     }
 
     public void setRemovedResouce(IRI removedResouce) {
-        this.removedResouce = NTriplesUtil.toNTriplesString(removedResouce);
+        this.removedResouce = SkosDiffUtils.toNTriplesString(removedResouce);
     }
 
     public String getLiteralForm() {
@@ -73,7 +93,7 @@ public class ChangedLabel {
     }
 
     public void setLiteralForm(Literal literalForm) {
-        this.literalForm = NTriplesUtil.toNTriplesString(literalForm);
+        this.literalForm = SkosDiffUtils.toNTriplesString(literalForm);
     }
 
     public String getAddedLiteralForm() {
@@ -81,7 +101,7 @@ public class ChangedLabel {
     }
 
     public void setAddedLiteralForm(Literal addedLiteralForm) {
-        this.addedLiteralForm = NTriplesUtil.toNTriplesString(addedLiteralForm);
+        this.addedLiteralForm = SkosDiffUtils.toNTriplesString(addedLiteralForm);
     }
 
     public String getRemovedLiteralForm() {
@@ -89,7 +109,7 @@ public class ChangedLabel {
     }
 
     public void setRemovedLiteralForm(Literal removedLiteralForm) {
-        this.removedLiteralForm = NTriplesUtil.toNTriplesString(removedLiteralForm);
+        this.removedLiteralForm = SkosDiffUtils.toNTriplesString(removedLiteralForm);
     }
 
     public Map<String, List<String>> getPropToRemovedValueListMap() {
@@ -100,7 +120,7 @@ public class ChangedLabel {
         if(prop == null || value == null){
             return;
         }
-        String propString = NTriplesUtil.toNTriplesString(prop);
+        String propString = SkosDiffUtils.toNTriplesString(prop);
         if(value instanceof BNode){
             //do not add BNode
             return;
@@ -110,12 +130,12 @@ public class ChangedLabel {
         }
         //iterate to check if the value is already present
         for(String existingValue : propToRemovedValueListMap.get(propString)){
-            if(existingValue.equals(NTriplesUtil.toNTriplesString(value))){
+            if(existingValue.equals(SkosDiffUtils.toNTriplesString(value))){
                 //the value is already present, so just return
                 return;
             }
         }
-        propToRemovedValueListMap.get(propString).add(NTriplesUtil.toNTriplesString(value));
+        propToRemovedValueListMap.get(propString).add(SkosDiffUtils.toNTriplesString(value));
     }
 
     public Map<String, List<String>> getPropToAddedValueListMap() {
@@ -126,7 +146,7 @@ public class ChangedLabel {
         if(prop == null || value == null){
             return;
         }
-        String propString = NTriplesUtil.toNTriplesString(prop);
+        String propString = SkosDiffUtils.toNTriplesString(prop);
         if(value instanceof BNode){
             //do not add BNode
             return;
@@ -136,12 +156,12 @@ public class ChangedLabel {
         }
         //iterate to check if the value is already present
         for(String existingValue : propToAddedValueListMap.get(propString)){
-            if(existingValue.equals(NTriplesUtil.toNTriplesString(value))){
+            if(existingValue.equals(SkosDiffUtils.toNTriplesString(value))){
                 //the value is already present, so just return
                 return;
             }
         }
-        propToAddedValueListMap.get(propString).add(NTriplesUtil.toNTriplesString(value));
+        propToAddedValueListMap.get(propString).add(SkosDiffUtils.toNTriplesString(value));
     }
 
     public Map<String, List<String>> getNotePropToRemovedNoteValueListMap() {
@@ -152,18 +172,18 @@ public class ChangedLabel {
         if(noteProp == null || noteValue == null){
             return;
         }
-        String propString = NTriplesUtil.toNTriplesString(noteProp);
+        String propString = SkosDiffUtils.toNTriplesString(noteProp);
         if(!notePropToRemovedNoteValueListMap.containsKey(propString)){
             notePropToRemovedNoteValueListMap.put(propString, new ArrayList<>());
         }
         //iterate to check if the value is already present
         for(String existingValue : notePropToRemovedNoteValueListMap.get(propString)){
-            if(existingValue.equals(NTriplesUtil.toNTriplesString(noteValue))){
+            if(existingValue.equals(SkosDiffUtils.toNTriplesString(noteValue))){
                 //the value is already present, so just return
                 return;
             }
         }
-        notePropToRemovedNoteValueListMap.get(propString).add(NTriplesUtil.toNTriplesString(noteValue));
+        notePropToRemovedNoteValueListMap.get(propString).add(SkosDiffUtils.toNTriplesString(noteValue));
     }
 
     public Map<String, List<String>> getNotePropToAddedNoteValueListMap() {
@@ -174,17 +194,17 @@ public class ChangedLabel {
         if(noteProp == null || noteValue == null){
             return;
         }
-        String propString = NTriplesUtil.toNTriplesString(noteProp);
+        String propString = SkosDiffUtils.toNTriplesString(noteProp);
         if(!notePropToAddedNoteValueListMap.containsKey(propString)){
             notePropToAddedNoteValueListMap.put(propString, new ArrayList<>());
         }
         //iterate to check if the value is already present
         for(String existingValue : notePropToAddedNoteValueListMap.get(propString)){
-            if(existingValue.equals(NTriplesUtil.toNTriplesString(noteValue))){
+            if(existingValue.equals(SkosDiffUtils.toNTriplesString(noteValue))){
                 //the value is already present, so just return
                 return;
             }
         }
-        notePropToAddedNoteValueListMap.get(propString).add(NTriplesUtil.toNTriplesString(noteValue));
+        notePropToAddedNoteValueListMap.get(propString).add(SkosDiffUtils.toNTriplesString(noteValue));
     }
 }

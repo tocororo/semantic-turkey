@@ -1,10 +1,11 @@
 package it.uniroma2.art.semanticturkey.services.core.skosdiff;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,9 +13,9 @@ import java.util.List;
 import java.util.Map;
 
 public class ChangedResource {
-    private String resourceId; //NTriplesUtil.toNTriplesString(resource)
+    private String resourceId; //SkosDiffUtils.toNTriplesString(resource)
 
-    //the list of String are Value transformed in NT, via the function: NTriplesUtil.toNTriplesString(Value)
+    //the list of String are Value transformed in NT, via the function: SkosDiffUtils.toNTriplesString(Value)
     private Map<String, List<String>> lexPropToRemovedLexicalizationListMap = new HashMap<>(); //the lexProp is in <lexProp>, lexicalization present in dataset1 but not in dataset2
     private Map<String, List<String>> lexPropToAddedLexicalizationListMap= new HashMap<>(); //the lexProp is in <lexProp>, lexicalization present in dataset2 but not in dataset1
 
@@ -24,12 +25,25 @@ public class ChangedResource {
     private Map<String, List<String>> propToRemovedValueListMap = new HashMap<>(); //the prop is in <propIRI>, prop-value present in dataset1 but not in dataset2
     private Map<String, List<String>> propToAddedValueListMap = new HashMap<>(); //the prop is in <propIRI>, prop-value present in dataset2 but not in dataset1
 
-
-    public ChangedResource() {
+    @JsonCreator
+    public ChangedResource(@JsonProperty("resourceId")String resourceId,
+            @JsonProperty("lexPropToRemovedLexicalizationListMap")Map<String, List<String>> lexPropToRemovedLexicalizationListMap,
+            @JsonProperty("lexPropToAddedLexicalizationListMap")Map<String, List<String>> lexPropToAddedLexicalizationListMap,
+            @JsonProperty("notePropToRemovedNoteValueListMap")Map<String, List<String>> notePropToRemovedNoteValueListMap,
+            @JsonProperty("notePropToAddedNoteValueListMap")Map<String, List<String>> notePropToAddedNoteValueListMap,
+            @JsonProperty("propToRemovedValueListMap")Map<String, List<String>> propToRemovedValueListMap,
+            @JsonProperty("propToAddedValueListMap")Map<String, List<String>> propToAddedValueListMap) {
+        this.resourceId = resourceId;
+        this.lexPropToRemovedLexicalizationListMap = lexPropToRemovedLexicalizationListMap;
+        this.lexPropToAddedLexicalizationListMap = lexPropToAddedLexicalizationListMap;
+        this.notePropToRemovedNoteValueListMap = notePropToRemovedNoteValueListMap;
+        this.notePropToAddedNoteValueListMap = notePropToAddedNoteValueListMap;
+        this.propToRemovedValueListMap = propToRemovedValueListMap;
+        this.propToAddedValueListMap = propToAddedValueListMap;
     }
 
     public ChangedResource(IRI resourceId) {
-        this.resourceId = NTriplesUtil.toNTriplesString(resourceId);
+        this.resourceId = SkosDiffUtils.toNTriplesString(resourceId);
     }
 
     public String getResourceId() {
@@ -44,18 +58,18 @@ public class ChangedResource {
         if(lexProp==null || lexicalization == null){
             return;
         }
-        String lexPropString = NTriplesUtil.toNTriplesString(lexProp);
+        String lexPropString = SkosDiffUtils.toNTriplesString(lexProp);
         if(!lexPropToRemovedLexicalizationListMap.containsKey(lexPropString)){
             lexPropToRemovedLexicalizationListMap.put(lexPropString, new ArrayList<>());
         }
         //iterate to check if the lexicalization is already present
         for(String existingLex : lexPropToRemovedLexicalizationListMap.get(lexPropString)){
-            if(existingLex.equals(NTriplesUtil.toNTriplesString(lexicalization))){
+            if(existingLex.equals(SkosDiffUtils.toNTriplesString(lexicalization))){
                 //the lexicalization is already present, so just return
                 return;
             }
         }
-        lexPropToRemovedLexicalizationListMap.get(lexPropString).add(NTriplesUtil.toNTriplesString(lexicalization));
+        lexPropToRemovedLexicalizationListMap.get(lexPropString).add(SkosDiffUtils.toNTriplesString(lexicalization));
     }
 
 
@@ -67,18 +81,18 @@ public class ChangedResource {
         if(lexProp==null || lexicalization == null){
             return;
         }
-        String lexPropString = NTriplesUtil.toNTriplesString(lexProp);
+        String lexPropString = SkosDiffUtils.toNTriplesString(lexProp);
         if(!lexPropToAddedLexicalizationListMap.containsKey(lexPropString)){
             lexPropToAddedLexicalizationListMap.put(lexPropString, new ArrayList<>());
         }
         //iterate to check if the lexicalization is already present
         for(String existingLex : lexPropToAddedLexicalizationListMap.get(lexPropString)){
-            if(existingLex.equals(NTriplesUtil.toNTriplesString(lexicalization))){
+            if(existingLex.equals(SkosDiffUtils.toNTriplesString(lexicalization))){
                 //the lexicalization is already present, so just return
                 return;
             }
         }
-        lexPropToAddedLexicalizationListMap.get(lexPropString).add(NTriplesUtil.toNTriplesString(lexicalization));
+        lexPropToAddedLexicalizationListMap.get(lexPropString).add(SkosDiffUtils.toNTriplesString(lexicalization));
     }
 
 
@@ -90,18 +104,18 @@ public class ChangedResource {
         if(noteProp==null || noteValue == null){
             return;
         }
-        String notePropString = NTriplesUtil.toNTriplesString(noteProp);
+        String notePropString = SkosDiffUtils.toNTriplesString(noteProp);
         if(!notePropToRemovedNoteValueListMap.containsKey(notePropString)){
             notePropToRemovedNoteValueListMap.put(notePropString, new ArrayList<>());
         }
         //iterate to check if the noteValue is already present
         for(String existingNoteValue : notePropToRemovedNoteValueListMap.get(notePropString)){
-            if(existingNoteValue.equals(NTriplesUtil.toNTriplesString(noteValue))){
+            if(existingNoteValue.equals(SkosDiffUtils.toNTriplesString(noteValue))){
                 //the noteValue is already present, so just return
                 return;
             }
         }
-        notePropToRemovedNoteValueListMap.get(notePropString).add(NTriplesUtil.toNTriplesString(noteValue));
+        notePropToRemovedNoteValueListMap.get(notePropString).add(SkosDiffUtils.toNTriplesString(noteValue));
     }
 
     public Map<String, List<String>> getNotePropToAddedNoteValueListMap() {
@@ -112,18 +126,18 @@ public class ChangedResource {
         if(noteProp==null || noteValue == null){
             return;
         }
-        String notePropString = NTriplesUtil.toNTriplesString(noteProp);
+        String notePropString = SkosDiffUtils.toNTriplesString(noteProp);
         if(!notePropToAddedNoteValueListMap.containsKey(notePropString)){
             notePropToAddedNoteValueListMap.put(notePropString, new ArrayList<>());
         }
         //iterate to check if the lexicalization is already present
         for(String existingNoteValue : notePropToAddedNoteValueListMap.get(notePropString)){
-            if(existingNoteValue.equals(NTriplesUtil.toNTriplesString(noteValue))){
+            if(existingNoteValue.equals(SkosDiffUtils.toNTriplesString(noteValue))){
                 //the noteVaòie is already present, so just return
                 return;
             }
         }
-        notePropToAddedNoteValueListMap.get(notePropString).add(NTriplesUtil.toNTriplesString(noteValue));
+        notePropToAddedNoteValueListMap.get(notePropString).add(SkosDiffUtils.toNTriplesString(noteValue));
     }
 
     public Map<String, List<String>> getPropToRemovedValueListMap() {
@@ -134,7 +148,7 @@ public class ChangedResource {
         if(prop == null || value == null){
             return;
         }
-        String propString = NTriplesUtil.toNTriplesString(prop);
+        String propString = SkosDiffUtils.toNTriplesString(prop);
         if(value instanceof BNode){
             //do not add BNode
             return;
@@ -144,12 +158,12 @@ public class ChangedResource {
         }
         //iterate to check if the value is already present
         for(String existingValue : propToRemovedValueListMap.get(propString)){
-            if(existingValue.equals(NTriplesUtil.toNTriplesString(value))){
+            if(existingValue.equals(SkosDiffUtils.toNTriplesString(value))){
                 //the value is already present, so just return
                 return;
             }
         }
-        propToRemovedValueListMap.get(propString).add(NTriplesUtil.toNTriplesString(value));
+        propToRemovedValueListMap.get(propString).add(SkosDiffUtils.toNTriplesString(value));
     }
 
     public Map<String, List<String>> getPropToAddedValueListMap() {
@@ -160,7 +174,7 @@ public class ChangedResource {
         if(prop == null || value == null){
             return;
         }
-        String propString = NTriplesUtil.toNTriplesString(prop);
+        String propString = SkosDiffUtils.toNTriplesString(prop);
         if(value instanceof BNode){
             //do not add BNode
             return;
@@ -170,12 +184,12 @@ public class ChangedResource {
         }
         //iterate to check if the value is already present
         for(String existingValue : propToAddedValueListMap.get(propString)){
-            if(existingValue.equals(NTriplesUtil.toNTriplesString(value))){
+            if(existingValue.equals(SkosDiffUtils.toNTriplesString(value))){
                 //the value is already present, so just return
                 return;
             }
         }
-        propToAddedValueListMap.get(propString).add(NTriplesUtil.toNTriplesString(value));
+        propToAddedValueListMap.get(propString).add(SkosDiffUtils.toNTriplesString(value));
     }
 
 

@@ -1,22 +1,29 @@
 package it.uniroma2.art.semanticturkey.services.core.skosdiff;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ResourceWithLexicalization {
-    private String resourceIri; //NTriplesUtil.toNTriplesString(resource)
+    private String resourceIri; //SkosDiffUtils.toNTriplesString(resource)
     private List<String> resourceTypeList; // normally this should e only one value
-    private List<String> lexicalizationList; // NTriplesUtil.toNTriplesString(literal)
+    private List<String> lexicalizationList; // SkosDiffUtils.toNTriplesString(literal)
 
-    public ResourceWithLexicalization() {
+    @JsonCreator
+    public ResourceWithLexicalization(@JsonProperty("resourceIri")String resourceIri,
+            @JsonProperty("resourceTypeList")List<String> resourceTypeList,
+            @JsonProperty("lexicalizationList")List<String> lexicalizationList) {
+        this.resourceIri = resourceIri;
+        this.resourceTypeList = resourceTypeList;
+        this.lexicalizationList = lexicalizationList;
     }
 
     public ResourceWithLexicalization(IRI resourceIri) {
-        this.resourceIri = NTriplesUtil.toNTriplesString(resourceIri);
+        this.resourceIri = SkosDiffUtils.toNTriplesString(resourceIri);
         this.resourceTypeList = new ArrayList<>();
         this.lexicalizationList = new ArrayList<>();
     }
@@ -41,11 +48,11 @@ public class ResourceWithLexicalization {
 
     public  void addLexicalization(Literal lexicalization){
         for(String existingLexicalization : lexicalizationList){
-            if(existingLexicalization.equals(NTriplesUtil.toNTriplesString(lexicalization))){
+            if(existingLexicalization.equals(SkosDiffUtils.toNTriplesString(lexicalization))){
                 return;
             }
         }
-        lexicalizationList.add(NTriplesUtil.toNTriplesString(lexicalization));
+        lexicalizationList.add(SkosDiffUtils.toNTriplesString(lexicalization));
     }
 
 }

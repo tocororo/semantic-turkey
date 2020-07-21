@@ -345,7 +345,7 @@ public class SkosDiffing extends STServiceAdapter {
 			changedResUl.setAttribute("style", "margin-bottom: 8px;");
 
 			//iri
-			appendPlainListItem(document, changedResUl, "Resource:", changedResource.getResourceId());
+			appendPlainListItem(document, changedResUl, "Resource IRI:", changedResource.getResourceId());
 
 			//removed lexicalizations
 			appendUpdatedPropValues(document, changedResUl, changedResource.getLexPropToRemovedLexicalizationListMap(), "Removed lexicalizations:");
