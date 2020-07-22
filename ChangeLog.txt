@@ -1,5 +1,7 @@
 version 8.0
 date: dd/mm/yyyy
+  * new graph names and metadata namespace in the support repository of newly created projects. Upgrade of the
+    metadata namespace of existing projects, if the current namespace contains two hashes
   * skosDiff system (based on a different server to which ST sends the requests)
   * user notification APIs based on Lucene index
   * allow to configure remote alignment service URL
@@ -38,6 +40,7 @@ date: dd/mm/yyyy
   * updated dependency on Sheet2RDF 4.0.1
   * updated dependency on CODA 1.7.0
   * updated to ANTLRv4 4.8
+  * updated to RDF4J 3.2.3
 
 version 7.0
 date: 06/02/2020

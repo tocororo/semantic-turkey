@@ -363,7 +363,7 @@ public abstract class Project extends AbstractProject {
 		this.exptManager = exptManager;
 		try {
 			repositoryManager = new STLocalRepositoryManager(_projectDir);
-			repositoryManager.initialize();
+			repositoryManager.init();
 			Repository supportRepository = repositoryManager.getRepository("support");
 
 			if (supportRepository != null) {

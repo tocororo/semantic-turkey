@@ -172,6 +172,8 @@ public abstract class TrivialInferencerTest extends NotifyingSailWrapper {
 				CoreMatchers.not(CoreMatchers.hasItem(vf.createStatement(philipp, friend, john, g))));
 		assertThat(actualStatements,
 				CoreMatchers.not(CoreMatchers.hasItem(vf.createStatement(john, friend, philipp, g))));
+		
+		System.out.println("test ended");
 	}
 
 	@Test

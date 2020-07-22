@@ -876,7 +876,7 @@ public class Projects extends STServiceAdapter {
 		ProjectManager.handleProjectExclusively(projectName, project -> {
 			STLocalRepositoryManager repoManager = new STLocalRepositoryManager(
 					project.getProjectDirectory());
-			repoManager.initialize();
+			repoManager.init();
 			try {
 				Collection<RepositoryInfo> repos = repoManager.getAllUserRepositoryInfos();
 
@@ -939,7 +939,7 @@ public class Projects extends STServiceAdapter {
 		ProjectManager.handleProjectExclusively(projectName, project -> {
 			STLocalRepositoryManager repoManager = new STLocalRepositoryManager(
 					project.getProjectDirectory());
-			repoManager.initialize();
+			repoManager.init();
 			try {
 				repoManager.modifyAccessCredentials(repositoryID, newUsername, newPassword);
 			} finally {
@@ -973,7 +973,7 @@ public class Projects extends STServiceAdapter {
 		ProjectManager.handleProjectExclusively(projectName, project -> {
 			STLocalRepositoryManager repoManager = new STLocalRepositoryManager(
 					project.getProjectDirectory());
-			repoManager.initialize();
+			repoManager.init();
 			try {
 				repoManager.batchModifyAccessCredentials(serverURL, matchUsername, currentUsername,
 						newUsername, newPassword);

@@ -573,7 +573,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			GraphQuery commitDescribeQuery = supportRepoConn.prepareGraphQuery(
 					"describe " + RenderUtils.toSPARQL(commitIRI) + " from " + RenderUtils.toSPARQL(graph));
 			commitDescribeQuery.setIncludeInferred(false);
-			supportRepoConn.remove(commitDescribeQuery.evaluate(), graph);
+			supportRepoConn.remove((CloseableIteration<Statement, QueryEvaluationException>)commitDescribeQuery.evaluate(), graph);
 
 			if (updateTip) {
 				supportRepoConn.remove(CHANGELOG.MASTER, CHANGELOG.TIP, commitIRI, graph);

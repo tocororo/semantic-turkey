@@ -133,7 +133,7 @@ public class STEnviroment implements TestRule {
 
 			// Sets up the repository manager
 			repositoryManager = new LocalRepositoryManager(stProjectDir);
-			repositoryManager.initialize();
+			repositoryManager.init();
 
 			repositoryManager.addRepositoryConfig(
 					new RepositoryConfig(supportRepoID, new SailRepositoryConfig(new MemoryStoreConfig())));

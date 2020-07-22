@@ -60,7 +60,7 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 	}
 
 	@Override
-	public synchronized void initialize() throws RepositoryException {
+	public synchronized void init() throws RepositoryException {
 		if (isInitialized()) {
 			return;
 		}
@@ -75,7 +75,7 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 				throw new RepositoryException(e);
 			}
 		}
-		super.initialize();
+		super.init();
 	}
 
 	@Override

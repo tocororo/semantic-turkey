@@ -26,9 +26,65 @@
  */
 package it.uniroma2.art.semanticturkey.project;
 
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import javax.annotation.Nullable;
+
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.rdf4j.IsolationLevels;
+import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.http.protocol.Protocol;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryConfigUtil;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
+import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
+import org.eclipse.rdf4j.repository.manager.RepositoryManager;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.sail.config.SailConfigSchema;
+import org.eclipse.rdf4j.sail.config.SailImplConfig;
+import org.eclipse.rdf4j.sail.shacl.config.ShaclSailConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerFactory;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociation;
 import it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociationStore;
@@ -71,53 +127,11 @@ import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.utilities.ModelBasedRepositoryManager;
 import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 import it.uniroma2.art.semanticturkey.vocabulary.SUPPORT;
-
-import org.eclipse.rdf4j.RDF4JException;
-import org.eclipse.rdf4j.http.protocol.Protocol;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.config.RepositoryConfig;
-import org.eclipse.rdf4j.repository.config.RepositoryConfigUtil;
-import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
-import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
-import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
-import org.eclipse.rdf4j.repository.manager.RepositoryManager;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.sail.config.SailImplConfig;
-import org.eclipse.rdf4j.sail.shacl.config.ShaclSailConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * <p>
@@ -297,6 +311,8 @@ public class ProjectManager {
 		try {
 			logger.debug("project " + projectName + " initialized");
 
+			startProjectUpdate(proj);
+
 			proj.activate(exptManager);
 
 			CustomFormManager.getInstance().registerCustomFormModelOfProject(proj);
@@ -311,6 +327,87 @@ public class ProjectManager {
 			// Utilities.deleteDir(resolveProjectNameToDir(projectName));
 			// I moved the delete to where I'm sure I'm creating the project
 			throw new ProjectCreationException(e);
+		}
+	}
+
+	private static void startProjectUpdate(Project proj) {
+		STLocalRepositoryManager repMgr = new STLocalRepositoryManager(proj.getProjectDirectory());
+		repMgr.init();
+		try {
+			@Nullable
+			Repository supportRep = repMgr.getRepository(Project.SUPPORT_REPOSITORY);
+			if (supportRep != null) {
+				// if there is a support repository, we should check whether the namespace is illegal (i.e.
+				// double
+				// hash character), and upgrade it
+
+				// Firstly, in case of remote repositories, determine repositories containing the actual data
+
+				RepositoryConfig coreRepConfig = repMgr.getRepositoryConfig(Project.CORE_REPOSITORY);
+
+				RepositoryImplConfig coreRepImpl = STLocalRepositoryManager
+						.getUnfoldedRepositoryImplConfig(coreRepConfig);
+
+				if (coreRepImpl instanceof HTTPRepositoryConfig) {
+					HTTPRepositoryConfig coreRepHttpImpl = (HTTPRepositoryConfig) coreRepImpl;
+					String repURL = coreRepHttpImpl.getURL();
+					String serverURL = Protocol.getServerLocation(repURL);
+					String remoteCoreRepId = Protocol.getRepositoryID(repURL);
+
+					STRepositoryInfo coreRepInfo = repMgr.getSTRepositoryInfo(Project.CORE_REPOSITORY).get();
+
+					try (ModelBasedRepositoryManager.RemoteRepositoryManagerAdapter remoteRepMgr = new ModelBasedRepositoryManager.RemoteRepositoryManagerAdapter(
+							serverURL, coreRepInfo.getUsername(), coreRepInfo.getPassword())) {
+						conditionalUpgradeOfMetadataNamespaceInSupportRepository(remoteRepMgr,
+								remoteCoreRepId, proj.getBaseURI());
+					}
+				} else {
+					conditionalUpgradeOfMetadataNamespaceInSupportRepository(
+							new ModelBasedRepositoryManager.LocalRepositoryManagerAdapter(repMgr),
+							coreRepConfig.getID(), proj.getBaseURI());
+				}
+
+			}
+		} finally {
+			repMgr.shutDown();
+		}
+	}
+
+	private static void conditionalUpgradeOfMetadataNamespaceInSupportRepository(
+			ModelBasedRepositoryManager repMgr, String coreRepId, String baseURI) {
+
+		ValueFactory vf = SimpleValueFactory.getInstance();
+		Model coreRepConfigModel = repMgr.getRepositoryConfig(coreRepId);
+
+		Optional<Resource> changeTrackerSailHolder = Models.subject(coreRepConfigModel.filter(null,
+				SailConfigSchema.SAILTYPE, vf.createLiteral(ChangeTrackerFactory.SAIL_TYPE)));
+
+		if (changeTrackerSailHolder.isPresent()) {
+			Resource changeTrackerSail = changeTrackerSailHolder.get();
+			@Nullable
+			String metadataNS = Models
+					.getPropertyString(coreRepConfigModel, changeTrackerSail, ChangeTrackerSchema.METADATA_NS)
+					.orElse(null);
+
+			if (metadataNS == null)
+				return;
+
+			if (StringUtils.countMatches(metadataNS, "#") <= 1)
+				return;
+
+			String newMetadataNS = SUPPORT.computeMetadataNS(baseURI);
+
+			@Nullable
+			String supportRepID = Models.getPropertyString(coreRepConfigModel, changeTrackerSail,
+					ChangeTrackerSchema.SUPPORT_REPOSITORY_ID).orElse(null);
+
+			if (supportRepID == null)
+				return;
+
+			Models.setProperty(coreRepConfigModel, changeTrackerSail, ChangeTrackerSchema.METADATA_NS,
+					vf.createLiteral(newMetadataNS));
+
+			repMgr.addRepositoryConfig(coreRepConfigModel);
 		}
 	}
 
@@ -1307,8 +1404,7 @@ public class ProjectManager {
 					ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(sailImplConfig);
 					changeTrackerSailConfig.setSupportRepositoryID(
 							repositoryAccess.isLocal() ? Project.SUPPORT_REPOSITORY : supportRepoID);
-					changeTrackerSailConfig
-							.setMetadataNS(SUPPORT.METADATA_NS);
+					changeTrackerSailConfig.setMetadataNS(SUPPORT.computeMetadataNS(baseURI));
 					changeTrackerSailConfig.setHistoryEnabled(historyEnabled);
 					if (historyEnabled) {
 						changeTrackerSailConfig.setHistoryGraph(SUPPORT.HISTORY);
@@ -1726,7 +1822,7 @@ public class ProjectManager {
 			logger.debug("all project info have been built");
 
 			STLocalRepositoryManager localRepoMgr = new STLocalRepositoryManager(projectDir);
-			localRepoMgr.initialize();
+			localRepoMgr.init();
 			try {
 				localRepoMgr.addRepositoryConfig(coreRepoConfig, coreBackendType, true);
 

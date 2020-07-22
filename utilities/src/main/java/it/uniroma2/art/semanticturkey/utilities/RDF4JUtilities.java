@@ -4,8 +4,15 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.util.RDFLoader;
 import org.eclipse.rdf4j.rio.ParserConfig;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -84,6 +91,81 @@ public abstract class RDF4JUtilities {
 		ParserConfig parserConfig = new ParserConfig();
 		ValueFactory valueFactory = ErrorRecoveringValueFactory.getInstance();
 		return new RDFLoader(parserConfig, valueFactory);
+	}
+
+	/**
+	 * Creates a new {@link Model} in which the {@code original} value has been substituted with the
+	 * {@code replacement} value
+	 * 
+	 * @param model
+	 * @param original
+	 * @param replacement
+	 * @return
+	 */
+	public static Model substitute(Model model, Value original, Value replacement) {
+		ValueFactory vf = SimpleValueFactory.getInstance();
+		Model rv = new LinkedHashModel();
+		model.stream().flatMap(s -> {
+			Resource subj = s.getSubject();
+			IRI pred = s.getPredicate();
+			Value obj = s.getObject();
+			/* Nullable */ Resource ctx = s.getContext();
+
+			boolean renamed = false;
+
+			Resource newSubj;
+			IRI newPred;
+			Value newObj;
+			Resource newCtx;
+
+			if (Objects.equals(subj, original)) {
+				if (!(replacement instanceof Resource)) {
+					return Stream.empty();
+				}
+				newSubj = (Resource) replacement;
+				renamed = true;
+			} else {
+				newSubj = subj;
+			}
+
+			if (Objects.equals(pred, original)) {
+				if (!(replacement instanceof IRI)) {
+					return Stream.empty();
+				}
+				newPred = (IRI) replacement;
+				renamed = true;
+			} else {
+				newPred = pred;
+			}
+
+			if (Objects.equals(obj, original)) {
+				newObj = replacement;
+				renamed = true;
+			} else {
+				newObj = obj;
+			}
+
+			if (Objects.equals(ctx, original)) {
+				if (!(replacement instanceof Resource)) {
+					return Stream.empty();
+				}
+				newCtx = (Resource) replacement;
+				renamed = true;
+			} else {
+				newCtx = ctx;
+			}
+
+			if (renamed) {
+				if (newCtx != null) {
+					return Stream.of(vf.createStatement(newSubj, newPred, newObj, newCtx));
+				} else {
+					return Stream.of(vf.createStatement(newSubj, newPred, newObj));
+				}
+			} else {
+				return Stream.of(s);
+			}
+		}).forEach(rv::add);
+		return rv;
 	}
 
 }

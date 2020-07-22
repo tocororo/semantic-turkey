@@ -44,4 +44,15 @@ public abstract class SUPPORT {
 
 		METADATA_NS = ModelUtilities.extendNamespace(NAMESPACE, "metadata/");
 	}
+
+	/**
+	 * Computes the namespace used for the definition of metadata in the support repository based on the base
+	 * URI defined in the core repository.
+	 * 
+	 * @param baseURI
+	 * @return
+	 */
+	public static String computeMetadataNS(String baseURI) {
+		return ModelUtilities.extendNamespace(baseURI, "metadata");
+	}
 }

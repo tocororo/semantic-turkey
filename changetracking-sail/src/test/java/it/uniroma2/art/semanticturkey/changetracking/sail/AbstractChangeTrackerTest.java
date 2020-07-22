@@ -119,7 +119,7 @@ public abstract class AbstractChangeTrackerTest {
 		baseRepoManagerDir.mkdirs();
 
 		repositoryManager = new LocalRepositoryManager(baseRepoManagerDir);
-		repositoryManager.initialize();
+		repositoryManager.init();
 
 		repositoryManager.addRepositoryConfig(
 				new RepositoryConfig(HISTORY_REPO_ID, new SailRepositoryConfig(new NativeStoreConfig())));
