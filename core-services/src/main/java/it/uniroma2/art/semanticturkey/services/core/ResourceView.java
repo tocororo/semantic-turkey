@@ -595,8 +595,12 @@ public class ResourceView extends STServiceAdapter {
 					" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                      \n" +
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                               \n" +
 					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                               \n" +
-					" SELECT ?resource " + (useGroupBy ? "?predicate (MAX(?attr_creShowTemp) as ?predattr_creShow) " + generateNatureSPARQLSelectPart() : "") + " WHERE { \n" +
-					"   {                                                                               \n" +
+					" SELECT ?resource " + (useGroupBy ? "?predicate (MAX(?attr_creShowTemp) as ?predattr_creShow) " + generateNatureSPARQLSelectPart() : "") + "\n"+
+					" WHERE { \n");
+			if(resource instanceof IRI) {
+				sb.append("BIND (<"+resource.stringValue()+"> AS ?subjectResource )\n");
+			}
+			sb.append("   {                                                                               \n" +
 					"       {                                                                           \n" +
 					"         ?subjectResource ?predicate ?tempResource .                               \n" +
 					"         " + propertyExclusionFilterWithVarPredicate +
@@ -685,7 +689,9 @@ public class ResourceView extends STServiceAdapter {
 				qb.process(LexiconRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
 						"attr_limeLexiconRendering");
 			}
-			qb.setBinding("subjectResource", resource);
+			if(!(resource instanceof IRI)) {
+				qb.setBinding("subjectResource", resource);
+			}
 			qb.setIncludeInferred(includeInferred); // inference is required to properly render / assign
 													// nature to inferred objects
 
