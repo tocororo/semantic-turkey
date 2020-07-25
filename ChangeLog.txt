@@ -30,8 +30,8 @@ date: dd/mm/yyyy
   * add a sail for trivial reasoning (based on symmetric / inverse properties)
   * use the Alignment Services API defined by MAPLE
   * Update to MAPLE 0.0.6
-  * add a Deployer for submitting an ontology (in fact, an OWL ontology or a SKOS thesaurus) to
-    BioPortal-compatible catalogs
+  * add a Deployer for submitting an ontology (in fact, an OWL ontology or a SKOS thesaurus) to an OntoPortal
+    repository
   * make both the base URI and the ontology mirror file optional when importing an ontology from a local file
   * port of the remote alignment system (Genoma) is now configurable
   * fix mishandling of status code by HTTP-based deployers
