@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.impl.deployer.bioportal;
+package it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal;
 
 import java.util.Set;
 
@@ -8,15 +8,15 @@ import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 /**
- * Configuration class for {@link BioPortalDeployerFactory}.
+ * Configuration class for {@link OntoPortalDeployerFactory}.
  * 
  * <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class BioPortalDeployerConfiguration implements Configuration {
+public class OntoPortalDeployerConfiguration implements Configuration {
 
 	@Override
 	public String getShortName() {
-		return "BioPortal Deployer Configuration";
+		return "OntoPortal Deployer Configuration";
 	}
 
 	@Override
@@ -25,10 +25,11 @@ public class BioPortalDeployerConfiguration implements Configuration {
 				+ "Be aware that the system administration could be able to see it.";
 	}
 
-	@STProperty(description = "The base URL of an implementation of the BioPortal REST API. If this parameter is omitted, then the deployer defaults to the official base URL of the BioPortal official server (https://data.bioontology.org/)", displayName = "API Base URL")
+	@STProperty(description = "The base URL of an implementation of the OntoPortal REST API. For example, the base URL of the BioPortal server is https://data.bioontology.org/", displayName = "API Base URL")
+	@Required
 	public String apiBaseURL;
 
-	@STProperty(description = "A valid API key for the BioPortal REST API. A user's API key be found on the account page of that user", displayName = "API Key")
+	@STProperty(description = "A valid API key for the OntoPortal REST API. A user's API key be found on the account page of that user", displayName = "API Key")
 	@Required
 	public String apiKey;
 

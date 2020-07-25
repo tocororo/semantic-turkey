@@ -5,11 +5,11 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd">
 
-	<!-- Publishes the BioPortal Deployer extension -->
+	<!-- Publishes the OntoPortal Deployer extension -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
-			class="it.uniroma2.art.semanticturkey.extension.impl.deployer.bioportal.BioPortalDeployerFactory" />
+			class="it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.OntoPortalDeployerFactory" />
 	</osgi:service>
 
 </beans>

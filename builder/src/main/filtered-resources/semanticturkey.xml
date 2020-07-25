@@ -143,7 +143,7 @@
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-dcat-dataset-metadata-exporter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-voidlime-dataset-metadata-exporter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-http-deployer/${project.version}</bundle>
-		<bundle>mvn:it.uniroma2.art.semanticturkey/st-bioportal-deployer/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-ontoportal-deployer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-graph-store-http-deployer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-sftp-deployer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-http-loader/${project.version}</bundle>

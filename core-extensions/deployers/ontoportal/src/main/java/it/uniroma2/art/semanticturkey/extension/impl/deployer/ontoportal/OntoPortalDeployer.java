@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.impl.deployer.bioportal;
+package it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -32,24 +32,24 @@ import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RepositorySource
 import it.uniroma2.art.semanticturkey.extension.impl.deployer.http.AbstractHTTPDeployer;
 
 /**
- * Implementation of the {@link Deployer} that uses the BioPortal REST API.
+ * Implementation of the {@link Deployer} that uses the OntoPortal REST API.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ * @see <a href="https://ontoportal.org/">OntoPortal Alliance</a>
  * @see <a href="http://data.bioontology.org/documentation#OntologySubmission">Ontology submission</a>
  * 
  */
-public class BioPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
+public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		implements RepositorySourcedDeployer {
 
-	public static String BIOPORTAL_BASE = "https://data.bioontology.org/";
 	public static String SUBMISSIONS_ENDPOINT = "ontologies/{acronym}/submissions";
 
-	private BioPortalDeployerConfiguration conf;
+	private OntoPortalDeployerConfiguration conf;
 
 	// can be used to register resources to be freed after the deployment
 	protected ThreadLocal<Closer> requestScopedResourcesToRelease;
 
-	public BioPortalDeployer(BioPortalDeployerConfiguration conf) {
+	public OntoPortalDeployer(OntoPortalDeployerConfiguration conf) {
 		this.conf = conf;
 		this.requestScopedResourcesToRelease = ThreadLocal.withInitial(Closer::create);
 	}
@@ -64,10 +64,12 @@ public class BioPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 	}
 
 	protected URI getAddress() throws URISyntaxException {
-		return UriComponentsBuilder
-				.fromHttpUrl(
-						StringUtils.isNoneBlank(conf.apiBaseURL) ? conf.apiBaseURL.trim() : BIOPORTAL_BASE)
-				.path(SUBMISSIONS_ENDPOINT).buildAndExpand(ImmutableMap.of("acronym", conf.acronym)).toUri();
+		String apiBaseURL = conf.apiBaseURL.trim();
+		if (!apiBaseURL.endsWith("/")) {
+			apiBaseURL = apiBaseURL + "/";
+		}
+		return UriComponentsBuilder.fromHttpUrl(apiBaseURL).path(SUBMISSIONS_ENDPOINT)
+				.buildAndExpand(ImmutableMap.of("acronym", conf.acronym)).toUri();
 	}
 
 	@Override
@@ -101,7 +103,8 @@ public class BioPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		}
 
 		if (conf.contact.size() < 1) {
-			throw new RuntimeException("An ontology submission to BioPortal shall have at least one contact");
+			throw new RuntimeException(
+					"An ontology submission to an OntoPortal repository shall have at least one contact");
 		}
 
 		for (String encodedContact : conf.contact) {
@@ -123,7 +126,7 @@ public class BioPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 			entityBuilder.addTextBody("publication", conf.publication);
 		}
 
-		Path tempFilePath = Files.createTempFile("bioportal_deployer", "rdf");
+		Path tempFilePath = Files.createTempFile("ontoportal_deployer", "rdf");
 		this.requestScopedResourcesToRelease.get().register(() -> Files.deleteIfExists(tempFilePath));
 		try (OutputStream os = Files.newOutputStream(tempFilePath)) {
 			source.getSourceRepositoryConnection().export(Rio.createWriter(RDFFormat.RDFXML, os),

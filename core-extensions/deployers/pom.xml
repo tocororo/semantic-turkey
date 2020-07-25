@@ -11,7 +11,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>http</module> <!-- defines abstract classes used by other HTTP-based deployers -->
-		<module>bioportal</module>
+		<module>ontoportal</module>
 		<module>sftp</module>
 		<module>graph-store</module>
 	</modules>
