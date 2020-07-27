@@ -333,7 +333,7 @@ public class Resources extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', values)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public String getOutgoingTriples(Resource resource, RDFFormat format) throws IOException {
 		RepositoryConnection conn = getManagedConnection();
 		GraphQueryResult res = getOutgoingTriplesQueryResult(conn, resource);
@@ -368,7 +368,7 @@ public class Resources extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', values)', 'U')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'U')")
 	public void updateResourceTriplesDescription(@LocallyDefined @Modified Resource resource, String triples, RDFFormat format) throws IOException {
 		RepositoryConnection conn = getManagedConnection();
 
