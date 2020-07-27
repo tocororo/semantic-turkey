@@ -40,9 +40,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
-import com.google.common.collect.Iterators;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.CustomContext;
@@ -85,7 +85,7 @@ public class InvokableReporters extends STServiceAdapter {
 	private ObjectMapper objectMapper;
 
 	public InvokableReporters() {
-		mustacheCompiler = Mustache.compiler();
+		mustacheCompiler = Mustache.compiler().emptyStringIsFalse(true).zeroIsFalse(true);
 		objectMapper = RequestMappingHandlerAdapterPostProcessor.createObjectMapper();
 	}
 
@@ -146,8 +146,8 @@ public class InvokableReporters extends STServiceAdapter {
 	 */
 	@PreAuthorize("@auth.isAuthorized('invokableReporter(reporter)', 'R')")
 	@STServiceOperation
-	public InvokableReporter getInvokableReporter(String reference) throws NoSuchConfigurationManager,
-			STPropertyAccessException {
+	public InvokableReporter getInvokableReporter(String reference)
+			throws NoSuchConfigurationManager, STPropertyAccessException {
 		InvokableReporterStore cm = getInvokableReporterStore();
 		return cm.getConfiguration(parseReference(reference));
 	}
@@ -228,8 +228,8 @@ public class InvokableReporters extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	public void addSectionToReporter(String reference, @JsonSerialized ObjectNode section,
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "-1") int index)
-			throws NoSuchConfigurationManager, IOException,
-			WrongPropertiesException, STPropertyAccessException, STPropertyUpdateException {
+			throws NoSuchConfigurationManager, IOException, WrongPropertiesException,
+			STPropertyAccessException, STPropertyUpdateException {
 		ObjectMapper mapper = STPropertiesManager.createObjectMapper(exptManager);
 		ServiceInvocation sectObj = mapper.treeToValue(section, ServiceInvocation.class);
 
@@ -275,8 +275,8 @@ public class InvokableReporters extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('invokableReporter(reporter, section)', 'U')")
 	@STServiceOperation(method = RequestMethod.POST)
 	public void updateSectionInReporter(String reference, @JsonSerialized ObjectNode section, int index)
-			throws NoSuchConfigurationManager, IOException,
-			WrongPropertiesException, STPropertyAccessException, STPropertyUpdateException {
+			throws NoSuchConfigurationManager, IOException, WrongPropertiesException,
+			STPropertyAccessException, STPropertyUpdateException {
 		ObjectMapper mapper = STPropertiesManager.createObjectMapper(exptManager);
 		ServiceInvocation sectObj = mapper.treeToValue(section, ServiceInvocation.class);
 
@@ -308,9 +308,8 @@ public class InvokableReporters extends STServiceAdapter {
 	 */
 	@PreAuthorize("@auth.isAuthorized('invokableReporter(reporter,section)', 'D')")
 	@STServiceOperation(method = RequestMethod.POST)
-	public void removeSectionFromReporter(String reference, int index)
-			throws NoSuchConfigurationManager, IOException,
-			WrongPropertiesException, STPropertyAccessException, STPropertyUpdateException {
+	public void removeSectionFromReporter(String reference, int index) throws NoSuchConfigurationManager,
+			IOException, WrongPropertiesException, STPropertyAccessException, STPropertyUpdateException {
 		InvokableReporterStore cm = getInvokableReporterStore();
 
 		Reference ref = parseReference(reference);
@@ -350,8 +349,8 @@ public class InvokableReporters extends STServiceAdapter {
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "true") boolean render,
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "true") boolean includeTemplate)
 			throws NoSuchConfigurationManager, IOException, ConfigurationNotFoundException,
-			WrongPropertiesException, STPropertyAccessException,
-			IllegalArgumentException, InvokableReporterException {
+			WrongPropertiesException, STPropertyAccessException, IllegalArgumentException,
+			InvokableReporterException {
 		Reference ref = parseReference(reporterReference);
 
 		InvokableReporter reporter = (InvokableReporter) exptManager
@@ -464,8 +463,9 @@ public class InvokableReporters extends STServiceAdapter {
 					if (e instanceof Error) {
 						throw (Error) e;
 					} else {
-						throw new InvokableReporterException("An exception was raied on execution of sections["
-								+ sectionNumber + "]: " + e.getClass().getSimpleName() + ":" + e.getMessage(),
+						throw new InvokableReporterException(
+								"An exception was raied on execution of sections[" + sectionNumber + "]: "
+										+ e.getClass().getSimpleName() + ":" + e.getMessage(),
 								e);
 					}
 				}
@@ -528,8 +528,8 @@ public class InvokableReporters extends STServiceAdapter {
 	public void compileAndDownloadReport(HttpServletResponse response, String reporterReference,
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional String targetMimeType)
 			throws NoSuchConfigurationManager, IOException, ConfigurationNotFoundException,
-			WrongPropertiesException, STPropertyAccessException,
-			IllegalArgumentException, InvokableReporterException {
+			WrongPropertiesException, STPropertyAccessException, IllegalArgumentException,
+			InvokableReporterException {
 		Report report = compileReport(reporterReference, true, true);
 		String reportMimeType = report.mimeType;
 		String rendering = report.rendering != null ? report.rendering : "";
@@ -666,6 +666,14 @@ public class InvokableReporters extends STServiceAdapter {
 				return new ArrayAdaptor((ArrayNode) node);
 			} else if (node.isObject()) {
 				return new ObjectNodeCustomContext((ObjectNode) node);
+			} else if (node.isBoolean()) {
+				return node.asBoolean();
+			} else if (node.isTextual()) {
+				return node.textValue();
+			} else if (node.isLong() || node.isInt()) {
+				return node.asLong();
+			} else if (node.isFloat() || node.isDouble()) {
+				return node.asDouble();
 			} else {
 				return new NodeAdaptor(node);
 			}
