@@ -40,7 +40,8 @@ date: dd/mm/yyyy
   * updated dependency on Sheet2RDF 4.0.1
   * updated dependency on CODA 1.7.0
   * updated dependency on lime-api 0.4.1
-  * updated to ANTLRv4 4.8
+  * updated dependency on maple 0.0.6
+  * updated to ANTLR v4 4.8
   * updated to RDF4J 3.2.3
 
 version 7.0
