@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -177,12 +178,11 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
 			HttpPost httpRequest = new HttpPost(buildIRI(path, uriVariables, endpoint));
 			httpRequest.setHeader("Accept", "application/json");
-			return doPOST(buildEntityDeserializationResponseHandler(valueType), httpRequest,
-					requestBody);
+			return doPOST(buildEntityDeserializationResponseHandler(valueType), httpRequest, requestBody);
 		}
 
-		private <T> T doPOST(ResponseHandler<T> responseHandler, HttpPost httpRequest,
-				Object requestBody) throws AlignmentServiceException {
+		private <T> T doPOST(ResponseHandler<T> responseHandler, HttpPost httpRequest, Object requestBody)
+				throws AlignmentServiceException {
 			if (requestBody != null) {
 				String jsonString;
 				try {
@@ -255,8 +255,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 						throw new IOException("Unexpected media type: " + responseMediaType);
 					}
 
-					String responseString = IOUtils.toString(responseEntity.getContent(),
-							MoreObjects.firstNonNull(responseMediaType.getCharSet().name(), "UTF-8"));
+					String responseString = IOUtils.toString(responseEntity.getContent(), MoreObjects
+							.firstNonNull(responseMediaType.getCharSet(), StandardCharsets.UTF_8).name());
 					return objectMapper.readValue(responseString, valueType);
 				}
 			};
