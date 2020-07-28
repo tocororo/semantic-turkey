@@ -596,18 +596,21 @@ public class ResourceView extends STServiceAdapter {
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                               \n" +
 					" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>                               \n" +
 					" SELECT ?resource " + (useGroupBy ? "?predicate (MAX(?attr_creShowTemp) as ?predattr_creShow) " + generateNatureSPARQLSelectPart() : "") + "\n"+
-					" WHERE { \n");
+					" WHERE { 																			\n" +
+					"   {                                                                               \n" +
+					"       {                                                                           \n");
 			if(resource instanceof IRI) {
 				sb.append("BIND (<"+resource.stringValue()+"> AS ?subjectResource )\n");
 			}
-			sb.append("   {                                                                               \n" +
-					"       {                                                                           \n" +
-					"         ?subjectResource ?predicate ?tempResource .                               \n" +
+			sb.append("         ?subjectResource ?predicate ?tempResource .                               \n" +
 					"         " + propertyExclusionFilterWithVarPredicate +
 					"       }                                                                           \n" +
 					"     ?tempResource (rdf:rest*/rdf:first)* ?resource                                \n" +
-					"   } UNION {                                                                       \n" +
-					"     bind(?subjectResource as ?resource)                                           \n" +
+					"   } UNION {                                                                       \n");
+			if(resource instanceof IRI) {
+				sb.append("BIND (<"+resource.stringValue()+"> AS ?subjectResource )\n");
+			}
+			sb.append("     bind(?subjectResource as ?resource)                                           \n" +
 					"   }                                                                               \n" +
 					"   FILTER(!isLITERAL(?resource))                                                   \n" +
 					(useGroupBy ? generateNatureSPARQLWherePart("resource") : "")
