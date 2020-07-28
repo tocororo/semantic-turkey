@@ -16,6 +16,7 @@ import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Namespace;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -307,6 +308,8 @@ public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 			return (BNode) input;
 		} else if (outputTypeName.equals("IRI")) {
 			return (IRI) input;
+		} else if (outputTypeName.equals("Resource")) {
+			return (Resource) input;
 		} else if (outputTypeName.equals("boolean")) {
 			return Literals.getBooleanValue(input, false);
 		} else if (outputTypeName.equals("float")) {

@@ -32,6 +32,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.slf4j.Logger;
@@ -217,11 +218,9 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		return cs.getSystemConfiguration(id);
 	}
 
-	public void registerCustomService(String customServiceCfgID)
-			throws STPropertyAccessException, WrongPropertiesException,
-			InstantiationException, IllegalAccessException, SchemaException,
-			IllegalArgumentException, NoSuchExtensionException, InvalidConfigurationException,
-			DuplicateName {
+	public void registerCustomService(String customServiceCfgID) throws STPropertyAccessException,
+			WrongPropertiesException, InstantiationException, IllegalAccessException, SchemaException,
+			IllegalArgumentException, NoSuchExtensionException, InvalidConfigurationException, DuplicateName {
 		Lock wlock = lock.writeLock();
 		wlock.lock();
 		try {
@@ -267,10 +266,10 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	}
 
 	public void registerCustomService(String customServiceCfgID, CustomService customServiceCfg,
-			boolean overwrite) throws STPropertyAccessException, IOException,
-			WrongPropertiesException, STPropertyUpdateException, InstantiationException,
-			IllegalAccessException, SchemaException, IllegalArgumentException, NoSuchExtensionException,
-			InvalidConfigurationException, CustomServiceException {
+			boolean overwrite) throws STPropertyAccessException, IOException, WrongPropertiesException,
+			STPropertyUpdateException, InstantiationException, IllegalAccessException, SchemaException,
+			IllegalArgumentException, NoSuchExtensionException, InvalidConfigurationException,
+			CustomServiceException {
 		Lock wlock = lock.writeLock();
 		wlock.lock();
 		try {
@@ -374,8 +373,8 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	}
 
 	public void udpateOperationInCustomeService(String id, ObjectNode operationDefinition,
-			String oldOperationName) throws STPropertyAccessException, IOException,
-			WrongPropertiesException, InstantiationException,
+			String oldOperationName)
+			throws STPropertyAccessException, IOException, WrongPropertiesException, InstantiationException,
 			IllegalAccessException, SchemaException, IllegalArgumentException, NoSuchExtensionException,
 			STPropertyUpdateException, InvalidConfigurationException, CustomServiceException {
 		Lock wlock = lock.writeLock();
@@ -410,10 +409,9 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 	}
 
 	public void removeOperationFromCustomeService(String id, String operationName)
-			throws STPropertyAccessException, IOException,
-			WrongPropertiesException, InstantiationException, IllegalAccessException, SchemaException,
-			IllegalArgumentException, NoSuchExtensionException, STPropertyUpdateException,
-			InvalidConfigurationException, CustomServiceException {
+			throws STPropertyAccessException, IOException, WrongPropertiesException, InstantiationException,
+			IllegalAccessException, SchemaException, IllegalArgumentException, NoSuchExtensionException,
+			STPropertyUpdateException, InvalidConfigurationException, CustomServiceException {
 		Lock wlock = lock.writeLock();
 		wlock.lock();
 		try {
@@ -475,9 +473,8 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 			Pattern.CASE_INSENSITIVE);
 
 	private Object buildCustomServiceHandler(String cfgID, CustomService customServiceCfg)
-			throws SchemaException, IllegalArgumentException,
-			NoSuchExtensionException, WrongPropertiesException, STPropertyAccessException,
-			InvalidConfigurationException {
+			throws SchemaException, IllegalArgumentException, NoSuchExtensionException,
+			WrongPropertiesException, STPropertyAccessException, InvalidConfigurationException {
 		// mimicking ordinary ST service, we have to build i) a Spring MVC controller, and ii) an @STService
 		// object. The controller binds the request parameters and delegates the actual implementation to the
 		// service
@@ -678,7 +675,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 			sb.append(")");
 			preauthorizeValue = sb.toString();
 		} else {
-			preauthorizeValue = "@auth.isAuthorized(true)";
+			preauthorizeValue = "@auth.isAuthorized('rdf', " + (isWrite ? "'CUD'" : "'R'") + ")";
 		}
 
 		return preauthorizeValue;
@@ -734,6 +731,9 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(IRI.class).build();
 		} else if ("Literal".equals(typeDescription.getName())) {
 			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(Literal.class)
+					.build();
+		} else if ("Resource".equals(typeDescription.getName())) {
+			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(Resource.class)
 					.build();
 		} else if ("BNode".equals(typeDescription.getName())) {
 			return net.bytebuddy.description.type.TypeDescription.Generic.Builder.rawType(BNode.class)
