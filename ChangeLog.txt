@@ -1,48 +1,51 @@
 version 8.0
-date: dd/mm/yyyy
-  * new graph names and metadata namespace in the support repository of newly created projects. Upgrade of the
-    metadata namespace of existing projects, if the current namespace contains two hashes
-  * skosDiff system (based on a different server to which ST sends the requests)
-  * user notification APIs based on Lucene index
-  * allow to configure remote alignment service URL
-  * automatic update of the PEARL part of a Custom Form with inferred annotations
-  * new API for the programmatic creation of STProperties
-  * on-the-fly generation of STProperties from JSON Schemas
-  * changed the directory where indexes for the global search are stored 
-  * allow for configurable dataset catalog connectors
-  * add an indication of how to interpret the show of blank nodes in the resource view
-  * no-lexicon mode in OntoLex lexical entries view
-  * possibility to manipulate the choices made by MAPLE
-  * PMKI catalog connector
-  * added a new service that uses Lucene indexes to perform translations
-  * introduced a new event bus (e.g. for resource-level changes)
-  * change the namespace of the vocabulary used by the metadata registry
-  * partial modularization of the platform. The following parts were moved to dedicated modules:
+date: 29/07/2020
+  * changed graph names and metadata namespace in the support repository in favor of more robust/readable ones
+    (it applies only to newly created projects).
+  * upgraded the metadata namespace of existing projects, if the current namespace contains two hashes
+  * introduced support for SkosDiff (a separate component: https://bitbucket.org/art-uniroma2/skosdiff/ for 
+    computing differences among SKOS thesauri)
+  * added support for the configuration of the URL for the remote alignment service
+  * added support in CustomForm for new Pearl annotations improving the description of forms in UI clients
+  * added support for inference of the above PEARL annotations based on the shape of the PEARL file
+  * introduced new API for the programmatic creation of STProperties
+  * added support for on-the-fly generation of STProperties from JSON Schemas
+  * changed the directory name for indexes supporting global search 
+  * added support for configurable dataset catalog connectors
+  * added a property on the resourceview telling how to interpret blank nodes (e.g. use an OWL axiom renderer)
+  * added support for no-lexicon mode in OntoLex lexical entries view (i.e. if no lexicon has been selected,
+    then all lexical entries are shown)
+  * in Alignment, enabled the possibility for the user to modify the scenario suggested by MAPLE
+  * introduced PMKI catalog connector
+  * introduced new translation service based on global search
+  * introduced a new event bus 
+  * introduced support for PEARL-based definition of resource-level metadata, exploiting the new event bus
+  * introduced user notification APIs exploiting the new event bus
+  * changed the namespace of the vocabulary used by the metadata registry
+  * reenginered a partial modularization of the platform. The following parts were moved to dedicated modules:
     - metadata registry
     - implementations of the extension points
     - utilities
   * added support for cross-bundle session management, necessary to support authentication and authorization
     across bundles (while allowing for new service-level extensions)
-  * added custom services with an implementation based on SPARQL
-  * added invokable reporters based on custom services
+  * introduced support for developing custom services, with an implementation based on SPARQL
+  * introduced invokable reporters based on custom services
   * added the prefix resolution in all Search services
-  * added SHACL to PEARL
-  * add a sail for trivial reasoning (based on symmetric / inverse properties)
-  * use the Alignment Services API defined by MAPLE
-  * Update to MAPLE 0.0.6
-  * add a Deployer for submitting an ontology (in fact, an OWL ontology or a SKOS thesaurus) to an OntoPortal
-    repository
-  * make both the base URI and the ontology mirror file optional when importing an ontology from a local file
-  * port of the remote alignment system (Genoma) is now configurable
+  * added support for the generation of PEARL custom forms from SHACL shapes
+  * added a sail for trivial reasoning (based on symmetric / inverse properties)
+  * added support for the new MAPLE Open API for Alignment Services 
+  * added a Deployer for submitting datasets (OWL ontologies or SKOS thesauri) to an OntoPortal repository
+  * made both the base URI and the ontology mirror file optional when importing an ontology from a local file
+  * the port of connected remote alignment systems is now configurable
   * fix mishandling of status code by HTTP-based deployers
   * fix authentication bug when deleting the remote repositories associated with a project
-  * added support in CustomForm for new Pearl annotations
+  * other minor fixes
   * updated dependency on Sheet2RDF 4.0.1
   * updated dependency on CODA 1.7.0
   * updated dependency on lime-api 0.4.1
   * updated dependency on maple 0.0.6
-  * updated to ANTLR v4 4.8
-  * updated to RDF4J 3.2.3
+  * updated dependency on ANTLR v4 4.8
+  * updated dependency on RDF4J 3.2.3
 
 version 7.0
 date: 06/02/2020
