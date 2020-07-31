@@ -43,6 +43,14 @@ public abstract class SupportRepositoryUtils {
 		}
 	}
 
+	public static String addInnerPatter(boolean addPatter, String innerPatter){
+		if(addPatter){
+			return innerPatter;
+		} else {
+			return "";
+		}
+	}
+
 	public static String computeTimeBoundsSPARQLFilter(String timeLowerBound, String timeUpperBound)
 			throws IllegalArgumentException {
 		String timeLowerBoundSPARQLFilter;
@@ -110,13 +118,13 @@ public abstract class SupportRepositoryUtils {
 		return orderBy;
 	}
 
-	public static String computeOperationSPARQLFilter(IRI[] operationFilter) {
+	/*public static String computeOperationSPARQLFilter(IRI[] operationFilter) {
 		String operationSPARQLFilter = operationFilter.length != 0
 				? "FILTER(?operationT IN " + Arrays.stream(operationFilter).map(RenderUtils::toSPARQL)
 						.collect(Collectors.joining(", ", "(", ")")) + ")\n"
 				: "";
 		return operationSPARQLFilter;
-	}
+	}*/
 
 	public static String computeInCollectionSPARQLFilter(Value[] values, String variableName) {
 		return values.length == 0 ? ""

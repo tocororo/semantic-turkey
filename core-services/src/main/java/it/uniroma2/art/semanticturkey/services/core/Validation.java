@@ -82,7 +82,8 @@ public class Validation extends STServiceAdapter {
 
 		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound,
 				timeUpperBound);
-		String operationSPARQLFilter = SupportRepositoryUtils.computeOperationSPARQLFilter(operationFilter);
+		String operationSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(operationFilter,
+				"operationT");
 		String performerSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(performerFilter,
 				"performerT");
 
@@ -158,7 +159,8 @@ public class Validation extends STServiceAdapter {
 
 		IRI validationGraph = SupportRepositoryUtils.obtainValidationGraph(getManagedConnection());
 
-		String operationSPARQLFilter = SupportRepositoryUtils.computeOperationSPARQLFilter(operationFilter);
+		String operationSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(operationFilter,
+				"operationT");
 
 		String performerSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(performerFilter,
 				"performerT");
