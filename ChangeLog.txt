@@ -1,3 +1,7 @@
+version 8.0.1
+date: xx/xx/202x
+  * improved the performance of the history paging service
+  
 version 8.0
 date: 29/07/2020
   * changed graph names and metadata namespace in the support repository in favor of more robust/readable ones
