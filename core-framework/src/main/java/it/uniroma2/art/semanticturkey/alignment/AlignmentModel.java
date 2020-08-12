@@ -1001,7 +1001,7 @@ public class AlignmentModel {
 
 				@Override
 				public RDFFormat getRDFFormat() {
-					return null;
+					return RDFFormat.NTRIPLES;
 				}
 			});
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
