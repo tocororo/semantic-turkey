@@ -131,6 +131,9 @@ public class UpdateRoutines {
 			if (stDataVersionNumber.compareTo(new VersionNumber(8, 0, 0)) < 0) {
 				alignFrom7To8();
 			}
+			if (stDataVersionNumber.compareTo(new VersionNumber(8, 0, 1)) < 0) {
+				alignFrom8To801();
+			}
 			Config.setSTDataVersionNumber(stVersionNumber);
 		}
 
@@ -287,8 +290,11 @@ public class UpdateRoutines {
 				}
 			}
 		}
+	}
 
-
+	private static void alignFrom8To801() throws IOException {
+		logger.debug("Version 8.0.1 updated the languages in the project-settings-defaults");
+		updateProjectSettingsDefaults();
 	}
 
 	private static void updateCustomServices(String... serviceID) throws IOException {

@@ -2,6 +2,7 @@ version 8.0.1
 date: xx/xx/202x
   * improved the performance of the history paging service
   * fixed a NullPointerException thrown when clicking "Export as..." in the alignment validation tool
+  * added icelandic to system languages
   
 version 8.0
 date: 29/07/2020
