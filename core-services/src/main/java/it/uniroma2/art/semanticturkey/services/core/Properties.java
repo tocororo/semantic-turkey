@@ -10,7 +10,6 @@ import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
@@ -43,7 +42,6 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ObjectPropertyExpression;
-
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -73,7 +71,6 @@ import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import javax.validation.constraints.Size;
@@ -94,9 +91,6 @@ import java.util.Set;
 public class Properties extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(Properties.class);
-
-	@Autowired
-	private CustomFormManager cfManager;
 
 	/**
 	 * returns all root properties

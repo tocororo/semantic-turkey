@@ -8,10 +8,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.exception.RDFModelNotSetException;
+import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.GraphQueryResult;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.stereotype.Component;
 
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -479,6 +488,76 @@ public class CustomFormManager {
 	 */
 	public boolean existsCustomFormGraphForResource(Project project, IRI resource){
 		return (!getAllCustomFormGraphs(project, resource).isEmpty());
+	}
+
+
+
+
+	/**
+	 * Returns the CustomFormGraph that probably generated the reified resource. If for the given resource
+	 * there is no CustomForm available returns null, if there's just one CustomForm then return it, otherwise
+	 * if there are multiple CustomForm returns the one which its PEARL fits better the given reified resource
+	 * description.
+	 *
+	 * @param project
+	 * @param codaCore
+	 * @param repoConnection
+	 * @param resource
+	 * @param predicateOrClasses
+	 * @param includeInferred
+	 * @return
+	 * @throws RDFModelNotSetException
+	 */
+	public CustomFormGraph getCustomFormGraphSeed(Project project, CODACore codaCore, RepositoryConnection repoConnection,
+			Resource resource, Collection<IRI> predicateOrClasses, boolean includeInferred) {
+
+		if (predicateOrClasses.isEmpty()) { // edge case when no predicate or class is given
+			return null;
+		}
+
+		Collection<CustomFormGraph> cForms = predicateOrClasses.stream().flatMap(
+				aPredOrClass -> getAllCustomFormGraphs(project, aPredOrClass).stream())
+				.collect(Collectors.toList());
+
+		if (cForms.isEmpty())  { // no custom form --> just return null
+			return null;
+		} else if (cForms.size() == 1) { // only one custom form --> return it
+			return cForms.iterator().next();
+		} else { // cForms.size() > 1
+			// return the CF whose graph section matches more triples in the model
+			int maxStats = 0;
+			CustomFormGraph bestCF = null;
+			for (CustomFormGraph cf : cForms) {
+				try {
+					// creating the construct query
+					StringBuilder queryBuilder = new StringBuilder();
+					queryBuilder.append("construct { ");
+					queryBuilder.append(cf.getGraphSectionAsString(codaCore, false));
+					queryBuilder.append(" } where { ");
+					queryBuilder.append(cf.getGraphSectionAsString(codaCore, true));
+					queryBuilder.append(" }");
+					String query = queryBuilder.toString();
+
+					GraphQuery gq = repoConnection.prepareGraphQuery(query);
+					gq.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), resource);
+					gq.setIncludeInferred(includeInferred);
+
+					try (GraphQueryResult result = gq.evaluate()) {
+						int nStats = QueryResults.asModel(result).size();
+						if (nStats > maxStats) {
+							maxStats = nStats;
+							bestCF = cf;
+						}
+					}
+				} catch (PRParserException e) {
+					// if one of the CF contains an error, catch the exception and continue checking the other
+					// CFs
+					System.out.println("Parsing error in PEARL rule of CustomForm with ID " + cf.getId()
+							+ ". " + "The CustomForm will be ignored, please fix its PEARL rule.");
+				}
+			}
+			return bestCF;
+		}
 	}
 	
 	/* ##################

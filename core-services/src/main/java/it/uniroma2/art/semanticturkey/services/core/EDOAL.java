@@ -1,45 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import static java.util.stream.Collectors.toList;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
-import org.eclipse.rdf4j.query.MalformedQueryException;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.query.UpdateExecutionException;
-import org.eclipse.rdf4j.query.impl.SimpleDataset;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.config.RepositoryConfig;
-import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
-import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -63,6 +25,40 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStateme
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.query.MalformedQueryException;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.UpdateExecutionException;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * This class provides services for manipulating Alignments in the Align API format.
@@ -120,12 +116,9 @@ public class EDOAL extends STServiceAdapter {
 		}
 	}
 
-	private static Logger logger = LoggerFactory.getLogger(EDOAL.class);
+	private final static Logger logger = LoggerFactory.getLogger(EDOAL.class);
 
 	private static Pattern variablePattern = Pattern.compile("(?:\\?|\\$)([a-zA-Z\\d]+)\\b");
-
-	@Autowired
-	private CustomFormManager cfManager;
 
 	/**
 	 * Returns information about the aligned projects
@@ -145,8 +138,6 @@ public class EDOAL extends STServiceAdapter {
 	/**
 	 * Returns the align:Alignment resources defined in the current project
 	 * 
-	 * @param superClass
-	 * @param numInst
 	 * @return
 	 * @throws ProjectInexistentException
 	 * @throws InvalidProjectNameException
@@ -194,8 +185,6 @@ public class EDOAL extends STServiceAdapter {
 	/**
 	 * Returns the align:Alignment resources defined in the current project
 	 * 
-	 * @param superClass
-	 * @param numInst
 	 * @return
 	 */
 	@STServiceOperation
@@ -302,7 +291,7 @@ public class EDOAL extends STServiceAdapter {
 	 * Sets the <code>align:relation</code> of the provided <code>correspondence</code>.
 	 * 
 	 * @param correspondence
-	 * @param entity
+	 * @param relation
 	 */
 	@Write
 	@STServiceOperation(method = RequestMethod.POST)
@@ -315,7 +304,7 @@ public class EDOAL extends STServiceAdapter {
 	 * Sets the <code>align:relation</code> of the provided <code>correspondence</code>.
 	 * 
 	 * @param correspondence
-	 * @param entity
+	 * @param measure
 	 */
 	@Write
 	@STServiceOperation(method = RequestMethod.POST)
@@ -328,7 +317,6 @@ public class EDOAL extends STServiceAdapter {
 	 * Sets the <code>align:relation</code> of the provided <code>correspondence</code>.
 	 * 
 	 * @param correspondence
-	 * @param entity
 	 */
 	@Write
 	@STServiceOperation(method = RequestMethod.POST)

@@ -1,31 +1,5 @@
 package it.uniroma2.art.semanticturkey.services;
 
-import static java.util.stream.Collectors.toList;
-
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import it.uniroma2.art.coda.structures.CODATriple;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.springframework.beans.factory.ObjectFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.PlatformTransactionManager;
-
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
@@ -33,6 +7,7 @@ import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.pearl.model.ProjectionOperator;
 import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
+import it.uniroma2.art.coda.structures.CODATriple;
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
@@ -64,6 +39,30 @@ import it.uniroma2.art.semanticturkey.sparql.SPARQLUtilities;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.tx.STServiceAspect;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.springframework.beans.factory.ObjectFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Base class of Semantic Turkey services.
@@ -83,7 +82,7 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	private ObjectFactory<CODACoreProvider> codaCoreProviderFactory;
 
 	@Autowired
-	private CustomFormManager cfManager;
+	protected CustomFormManager cfManager;
 
 	@Autowired
 	protected ExtensionPointManager exptManager;
@@ -294,6 +293,50 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 			}
 		}
 	}
+
+//	protected void removeReifiedValue(RepositoryConnection repoConn, Resource subject, IRI predicate,
+//			Resource value) throws PRParserException {
+//		// remove resource as object in the triple <s, p, o> for the given subject and predicate
+//		repoConn.remove(subject, predicate, value, getWorkingGraph());
+//
+//		CODACore codaCore = getInitializedCodaCore(repoConn);
+//		CustomFormGraph cf = cfManager.getCustomFormGraphSeed(getProject(), codaCore, repoConn,
+//				value, Collections.singleton(predicate), false);
+//
+//		Update update;
+//		if (cf == null) {
+//			/*
+//			 * If property hasn't a CustomForm simply delete all triples where resource occurs. note: this
+//			 * case should never be verified cause this service should be called only when the predicate has a
+//			 * CustomForm
+//			 */
+//			StringBuilder queryBuilder = new StringBuilder();
+//			queryBuilder.append("delete { ");
+//			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
+//			queryBuilder.append(" <" + value.stringValue() + "> ?p1 ?o1 . ");
+//			queryBuilder.append(" ?s2 ?p2 <" + value.stringValue() + "> . ");
+//			queryBuilder.append(" }"); //close graph {}
+//			queryBuilder.append(" } where { ");
+//			queryBuilder.append(" <" + value.stringValue() + "> ?p1 ?o1 . ");
+//			queryBuilder.append(" ?s2 ?p2 <" + value.stringValue() + "> . ");
+//			queryBuilder.append(" }");
+//			update = repoConn.prepareUpdate(queryBuilder.toString());
+//		} else { // otherwise remove with a SPARQL delete the graph defined by the CustomFormGraph
+//			StringBuilder queryBuilder = new StringBuilder();
+//			queryBuilder.append("delete { ");
+//			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
+//			queryBuilder.append(cf.getGraphSectionAsString(codaCore, false));
+//			queryBuilder.append(" }"); //close graph {}
+//			queryBuilder.append(" } where { ");
+//			queryBuilder.append(cf.getGraphSectionAsString(codaCore, true));
+//			queryBuilder.append(" }");
+//			update = repoConn.prepareUpdate(queryBuilder.toString());
+//			update.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), value);
+//		}
+//		update.setIncludeInferred(false);
+//		update.execute();
+//		shutDownCodaCore(codaCore);
+//	}
 
 	/**
 	 * This method detects the entry of a graph (list of triples) based on an heuristic: entry is that subject

@@ -14,7 +14,6 @@ import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
@@ -71,7 +70,6 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.hibernate.validator.constraints.Length;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import javax.annotation.Nullable;
@@ -95,9 +93,6 @@ import static java.util.stream.Collectors.toSet;
 public class OntoLexLemon extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(OntoLexLemon.class);
-
-	@Autowired
-	private CustomFormManager cfManager;
 
 	/* --- Lexicons --- */
 

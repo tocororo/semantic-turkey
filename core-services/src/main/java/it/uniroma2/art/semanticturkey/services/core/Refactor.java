@@ -1,11 +1,32 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
+import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
+import it.uniroma2.art.semanticturkey.customform.CustomForm;
+import it.uniroma2.art.semanticturkey.customform.CustomFormException;
+import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
+import it.uniroma2.art.semanticturkey.customform.StandardForm;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingLiteralFormForResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.NonExistingLiteralFormForResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
+import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Selection;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
+import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
+import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -30,37 +51,13 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
-import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
-import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
-import it.uniroma2.art.semanticturkey.customform.CustomForm;
-import it.uniroma2.art.semanticturkey.customform.CustomFormException;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
-import it.uniroma2.art.semanticturkey.customform.StandardForm;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingLiteralFormForResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.CODAException;
-import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.NonExistingLiteralFormForResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Selection;
-import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
-import it.uniroma2.art.semanticturkey.utilities.SPARQLHelp;
-import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class provides services to convert SKOS to SKOSXL data and SKOSXL to SKOS.
@@ -72,9 +69,6 @@ import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
 public class Refactor extends STServiceAdapter  {
 	
 	private static Logger logger = LoggerFactory.getLogger(Refactor.class);
-	
-	@Autowired
-	private CustomFormManager cfManager;
 	
 	@STServiceOperation
 	@Write

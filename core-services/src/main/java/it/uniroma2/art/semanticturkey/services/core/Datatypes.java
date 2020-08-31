@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeDataOneOf;
@@ -50,7 +49,6 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.ArrayList;
@@ -74,9 +72,6 @@ import static java.util.stream.Collectors.toSet;
 public class Datatypes extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(Datatypes.class);
-
-	@Autowired
-	private CustomFormManager cfManager;
 
 	private static final Set<IRI> owl2datatypeMap = ImmutableSet.copyOf(new IRI[]{
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2002/07/owl#real"),

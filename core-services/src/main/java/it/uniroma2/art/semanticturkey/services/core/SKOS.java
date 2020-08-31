@@ -1,40 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import it.uniroma2.art.semanticturkey.services.STServiceContext;
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.BooleanQuery;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryResult;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
@@ -43,7 +10,7 @@ import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.SpecialValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
@@ -58,6 +25,7 @@ import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Deleted;
 import it.uniroma2.art.semanticturkey.services.annotations.DisplayName;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
@@ -78,6 +46,39 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class provides services for manipulating SKOS constructs.
@@ -88,11 +89,8 @@ import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
 @STService
 public class SKOS extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(SKOS.class);
+	private final static Logger logger = LoggerFactory.getLogger(SKOS.class);
 	
-	@Autowired
-	private CustomFormManager cfManager;
-
 	/**
 	 * Returns the list of top concepts
 	 * @param schemes an optional list of schemes. When passed, only concept being topConcept of one of the 
@@ -1989,11 +1987,75 @@ public class SKOS extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', notes)', '{lang: ''' +@auth.langof(#value)+ '''}','C')")
-	@DisplayName("add alternative label")
-	public void addNote(@LocallyDefined @Modified IRI resource, 
+	public void addNote(@LocallyDefined @Modified IRI resource,
 			@Optional @LocallyDefined @SubPropertyOf(superPropertyIRI = "http://www.w3.org/2004/02/skos/core#note") IRI predicate,
 			SpecialValue value) throws CODAException {
 		addValue(getManagedConnection(), resource, predicate, value);
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', notes)', '{lang: ''' +@auth.langof(#value)+ '''}','D')")
+	public void removeNote(@LocallyDefined @Modified IRI resource,
+			@Optional @LocallyDefined @SubPropertyOf(superPropertyIRI = "http://www.w3.org/2004/02/skos/core#note") IRI predicate,
+			Value value) throws PRParserException {
+		if (value instanceof Literal) {
+			getManagedConnection().remove(resource, predicate, value, getWorkingGraph());
+		} else { //reified note
+			removeReifiedValue(getManagedConnection(), resource, predicate, (Resource) value);
+		}
+	}
+
+	/**
+	 * TODO move to STServiceAdapter
+	 * @param repoConn
+	 * @param subject
+	 * @param predicate
+	 * @param value
+	 * @throws PRParserException
+	 */
+	protected void removeReifiedValue(RepositoryConnection repoConn, Resource subject, IRI predicate,
+			Resource value) throws PRParserException {
+		// remove resource as object in the triple <s, p, o> for the given subject and predicate
+		repoConn.remove(subject, predicate, value, getWorkingGraph());
+
+		CODACore codaCore = getInitializedCodaCore(repoConn);
+		CustomFormGraph cf = cfManager.getCustomFormGraphSeed(getProject(), codaCore, repoConn,
+				value, Collections.singleton(predicate), false);
+
+		Update update;
+		if (cf == null) {
+			/*
+			 * If property hasn't a CustomForm simply delete all triples where resource occurs. note: this
+			 * case should never be verified cause this service should be called only when the predicate has a
+			 * CustomForm
+			 */
+			StringBuilder queryBuilder = new StringBuilder();
+			queryBuilder.append("delete { ");
+			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
+			queryBuilder.append(" <" + value.stringValue() + "> ?p1 ?o1 . ");
+			queryBuilder.append(" ?s2 ?p2 <" + value.stringValue() + "> . ");
+			queryBuilder.append(" }"); //close graph {}
+			queryBuilder.append(" } where { ");
+			queryBuilder.append(" <" + value.stringValue() + "> ?p1 ?o1 . ");
+			queryBuilder.append(" ?s2 ?p2 <" + value.stringValue() + "> . ");
+			queryBuilder.append(" }");
+			update = repoConn.prepareUpdate(queryBuilder.toString());
+		} else { // otherwise remove with a SPARQL delete the graph defined by the CustomFormGraph
+			StringBuilder queryBuilder = new StringBuilder();
+			queryBuilder.append("delete { ");
+			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
+			queryBuilder.append(cf.getGraphSectionAsString(codaCore, false));
+			queryBuilder.append(" }"); //close graph {}
+			queryBuilder.append(" } where { ");
+			queryBuilder.append(cf.getGraphSectionAsString(codaCore, true));
+			queryBuilder.append(" }");
+			update = repoConn.prepareUpdate(queryBuilder.toString());
+			update.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), value);
+		}
+		update.setIncludeInferred(false);
+		update.execute();
+		shutDownCodaCore(codaCore);
 	}
 
 	

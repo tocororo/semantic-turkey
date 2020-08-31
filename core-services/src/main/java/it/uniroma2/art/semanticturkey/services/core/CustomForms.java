@@ -69,17 +69,13 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.URIUtil;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.GraphQuery;
-import org.eclipse.rdf4j.query.GraphQueryResult;
-import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -101,7 +97,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @STService
 public class CustomForms extends STServiceAdapter {
@@ -117,13 +112,6 @@ public class CustomForms extends STServiceAdapter {
 	private final String ANN_DATAONEOF = "DataOneOf";
 	private final String ANN_OBJECTONEOF = "ObjectOneOf";
 	private final String ANN_LIST = "List";
-
-
-
-
-
-	@Autowired
-	private CustomFormManager cfManager;
 
 	/**
 	 * Returns a description of a graph created through a CustomForm. The description is based on the
@@ -148,7 +136,7 @@ public class CustomForms extends STServiceAdapter {
 
 		try {
 			// try to identify the CF which has generated the graph
-			CustomFormGraph cfGraph = getCustomFormGraphSeed(getProject(), codaCore, cfManager,
+			CustomFormGraph cfGraph = cfManager.getCustomFormGraphSeed(getProject(), codaCore,
 					repoConnection, resource, Sets.newHashSet(predicate), false);
 			if (cfGraph != null) {
 				// retrieves, through a query, the values of those placeholders filled through a userPrompt in
@@ -251,7 +239,7 @@ public class CustomForms extends STServiceAdapter {
 		Map<String, ResourceViewSection> rv = new LinkedHashMap<>();
 
 		// try to identify the CF which has generated the graph
-		CustomFormGraph cfGraph = getCustomFormGraphSeed(project, codaCore, cfManager, repoConnection,
+		CustomFormGraph cfGraph = cfManager.getCustomFormGraphSeed(project, codaCore, repoConnection,
 				resource, customFormBearingResources, includeInferred);
 		if (cfGraph != null) {
 			// retrieves, through a query, the values of those placeholders filled through a userPrompt in
@@ -354,13 +342,18 @@ public class CustomForms extends STServiceAdapter {
 			throws PRParserException {
 
 		RepositoryConnection repoConnection = getManagedConnection();
+
+//		removeReifiedValue(repoConnection, subject, predicate, resource);
+
+		//TODO delete the following and restore the previous as soon as removeReifiedValue is restored in STServiceAdapter
+
 		// remove resource as object in the triple <s, p, o> for the given subject and predicate
 		repoConnection.remove(subject, predicate, resource, getWorkingGraph());
 
 		CODACore codaCore = getInitializedCodaCore(repoConnection);
-		CustomFormGraph cf = getCustomFormGraphSeed(getProject(), codaCore, cfManager, repoConnection,
+		CustomFormGraph cf = cfManager.getCustomFormGraphSeed(getProject(), codaCore, repoConnection,
 				resource, Collections.singleton(predicate), false);
-		
+
 		Update update;
 		if (cf == null) { //
 			/*
@@ -409,7 +402,7 @@ public class CustomForms extends STServiceAdapter {
 	public void updateReifiedResourceShow(@Modified Resource subject, IRI predicate, Resource reifiedNode, Literal newValue) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		CODACore codaCore = getInitializedCodaCore(repoConnection);
-		CustomFormGraph cfGraph = getCustomFormGraphSeed(getProject(), codaCore, cfManager,
+		CustomFormGraph cfGraph = cfManager.getCustomFormGraphSeed(getProject(), codaCore,
 				repoConnection, reifiedNode, Sets.newHashSet(predicate), false);
 		List<IRI> propChain = cfGraph.getShowPropertyChain();
 		shutDownCodaCore(codaCore);
@@ -469,74 +462,6 @@ public class CustomForms extends STServiceAdapter {
 		update.execute();
 	}
 
-	/**
-	 * Returns the CustomFormGraph that probably generated the reified resource. If for the given resource
-	 * there is no CustomForm available returns null, if there's just one CustomForm then return it, otherwise
-	 * if there are multiple CustomForm returns the one which its PEARL fits better the given reified resource
-	 * description.
-	 * 
-	 * @param project
-	 * @param codaCore
-	 * @param cfManager
-	 * @param repoConnection
-	 * @param resource
-	 * @param predicateOrClasses
-	 * @param includeInferred
-	 * @return
-	 * @throws RDFModelNotSetException
-	 */
-	private static CustomFormGraph getCustomFormGraphSeed(Project project, CODACore codaCore, CustomFormManager cfManager,
-			RepositoryConnection repoConnection, Resource resource, Collection<IRI> predicateOrClasses, boolean includeInferred) {
-		
-		if (predicateOrClasses.isEmpty()) { // edge case when no predicate or class is given
-			return null;
-		}
-		
-		Collection<CustomFormGraph> cForms = predicateOrClasses.stream().flatMap(
-				aPredOrClass -> cfManager.getAllCustomFormGraphs(project, aPredOrClass).stream())
-				.collect(Collectors.toList());
-
-		if (cForms.isEmpty())  { // no custom form --> just return null
-			return null;
-		} else if (cForms.size() == 1) { // only one custom form --> return it
-			return cForms.iterator().next();
-		} else { // cForms.size() > 1
-			// return the CF whose graph section matches more triples in the model
-			int maxStats = 0;
-			CustomFormGraph bestCF = null;
-			for (CustomFormGraph cf : cForms) {
-				try {
-					// creating the construct query
-					StringBuilder queryBuilder = new StringBuilder();
-					queryBuilder.append("construct { ");
-					queryBuilder.append(cf.getGraphSectionAsString(codaCore, false));
-					queryBuilder.append(" } where { ");
-					queryBuilder.append(cf.getGraphSectionAsString(codaCore, true));
-					queryBuilder.append(" }");
-					String query = queryBuilder.toString();
-
-					GraphQuery gq = repoConnection.prepareGraphQuery(query);
-					gq.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), resource);
-					gq.setIncludeInferred(includeInferred);
-
-					try (GraphQueryResult result = gq.evaluate()) {
-						int nStats = QueryResults.asModel(result).size();
-						if (nStats > maxStats) {
-							maxStats = nStats;
-							bestCF = cf;
-						}
-					}
-				} catch (PRParserException e) {
-					// if one of the CF contains an error, catch the exception and continue checking the other
-					// CFs
-					System.out.println("Parsing error in PEARL rule of CustomForm with ID " + cf.getId()
-							+ ". " + "The CustomForm will be ignored, please fix its PEARL rule.");
-				}
-			}
-			return bestCF;
-		}
-	}
-
 	@STServiceOperation
 	@Read
 	public JsonNode executeURIConverter(String converter, @Optional String value)
@@ -583,7 +508,7 @@ public class CustomForms extends STServiceAdapter {
 		boolean isStandard;
 		RepositoryConnection repoConnection = getManagedConnection();
 		CODACore codaCore = getInitializedCodaCore(repoConnection);
-		CustomFormGraph cfGraph = getCustomFormGraphSeed(getProject(), codaCore, cfManager,
+		CustomFormGraph cfGraph = cfManager.getCustomFormGraphSeed(getProject(), codaCore,
 				repoConnection, definitionNode, Sets.newHashSet(predicate), false);
 		List<IRI> propChain = cfGraph.getShowPropertyChain();
 		isStandard = (propChain != null && propChain.size() == 1 && propChain.get(0).equals(RDF.VALUE));

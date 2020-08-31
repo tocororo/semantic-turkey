@@ -24,7 +24,7 @@ public interface STMetadataRegistryBackend extends MetadataRegistryBackend {
 	 * Returns the project associated with the given dataset. If no project is found, then the method returns
 	 * <code>null</code>.
 	 * 
-	 * @param ontology1
+	 * @param dataset
 	 * @return
 	 */
 	Project findProjectForDataset(IRI dataset);
