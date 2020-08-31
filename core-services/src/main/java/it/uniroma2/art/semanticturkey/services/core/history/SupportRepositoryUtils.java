@@ -51,7 +51,8 @@ public abstract class SupportRepositoryUtils {
 		}
 	}
 
-	public static String computeTimeBoundsSPARQLFilter(String timeLowerBound, String timeUpperBound)
+	public static String computeTimeBoundsSPARQLFilter(String timeLowerBound, String timeUpperBound,
+			String timeLowerBoundeVar, String timeUpperBoundVar)
 			throws IllegalArgumentException {
 		String timeLowerBoundSPARQLFilter;
 		if (timeLowerBound != null) {
@@ -60,7 +61,7 @@ public abstract class SupportRepositoryUtils {
 						"Time lower bound is not a valid xsd:dateTime lexical form: " + timeLowerBound);
 			}
 
-			timeLowerBoundSPARQLFilter = "FILTER(?endTimeT >= " + RenderUtils.toSPARQL(
+			timeLowerBoundSPARQLFilter = "FILTER("+timeLowerBoundeVar+" >= " + RenderUtils.toSPARQL(
 					SimpleValueFactory.getInstance().createLiteral(timeLowerBound, XMLSchema.DATETIME))
 					+ ")\n";
 
@@ -75,7 +76,7 @@ public abstract class SupportRepositoryUtils {
 						"Time lower bound is not a valid xsd:dateTime lexical form: " + timeUpperBound);
 			}
 
-			timeUpperBoundSPARQLFilter = "FILTER(?endTimeT <= " + RenderUtils.toSPARQL(
+			timeUpperBoundSPARQLFilter = "FILTER("+timeUpperBoundVar+" <= " + RenderUtils.toSPARQL(
 					SimpleValueFactory.getInstance().createLiteral(timeUpperBound, XMLSchema.DATETIME))
 					+ ")\n";
 

@@ -81,7 +81,7 @@ public class Validation extends STServiceAdapter {
 		IRI validationGraph = SupportRepositoryUtils.obtainValidationGraph(getManagedConnection());
 
 		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound,
-				timeUpperBound);
+				timeUpperBound, "?startTimeT", "?endTimeT");
 		String operationSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(operationFilter,
 				"operationT");
 		String performerSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(performerFilter,
@@ -169,7 +169,7 @@ public class Validation extends STServiceAdapter {
 				timeSorting, false);
 
 		String timeBoundsSPARQLFilter = SupportRepositoryUtils.computeTimeBoundsSPARQLFilter(timeLowerBound,
-				timeUpperBound);
+				timeUpperBound, "?startTimeT", "?endTimeT");
 
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
