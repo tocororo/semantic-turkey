@@ -826,7 +826,7 @@ public class Projects extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	public void setProjectFacetDir(String projectName, @Optional String facetValue) throws InvalidProjectNameException,
 			ProjectInexistentException, ProjectAccessException, ProjectUpdateException {
-		Project project = ProjectManager.getProjectDescription(projectName);
+		Project project = ProjectManager.getProject(projectName, true);
 		if (facetValue != null) {
 			project.setFacetDir(facetValue);
 		} else {
