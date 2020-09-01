@@ -1982,21 +1982,34 @@ public class SKOS extends STServiceAdapter {
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}
-	
-	
+
+	/**
+	 * Allows the addition of a note (plain or reified)
+	 * @param resource
+	 * @param predicate
+	 * @param value
+	 * @throws CODAException
+	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', notes)', '{lang: ''' +@auth.langof(#value)+ '''}','C')")
-	public void addNote(@LocallyDefined @Modified IRI resource,
+	public void addNote(@LocallyDefined @Modified Resource resource,
 			@Optional @LocallyDefined @SubPropertyOf(superPropertyIRI = "http://www.w3.org/2004/02/skos/core#note") IRI predicate,
 			SpecialValue value) throws CODAException {
 		addValue(getManagedConnection(), resource, predicate, value);
 	}
 
+	/**
+	 * Allows the deletion of a note (plain or reified)
+	 * @param resource
+	 * @param predicate
+	 * @param value
+	 * @throws PRParserException
+	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', notes)', '{lang: ''' +@auth.langof(#value)+ '''}','D')")
-	public void removeNote(@LocallyDefined @Modified IRI resource,
+	public void removeNote(@LocallyDefined @Modified Resource resource,
 			@Optional @LocallyDefined @SubPropertyOf(superPropertyIRI = "http://www.w3.org/2004/02/skos/core#note") IRI predicate,
 			Value value) throws PRParserException {
 		if (value instanceof Literal) {
@@ -2004,6 +2017,46 @@ public class SKOS extends STServiceAdapter {
 		} else { //reified note
 			removeReifiedValue(getManagedConnection(), resource, predicate, (Resource) value);
 		}
+	}
+
+	/**
+	 * Allows the update of note (not reified through CustomForm, use {@link CustomForms#updateReifiedResourceShow} instead)
+	 * @param resource
+	 * @param predicate
+	 * @param value
+	 * @param newValue
+	 * @throws PRParserException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', notes)', '{lang: [''' +@auth.langof(#value)+ ''', ''' +@auth.langof(#newValue)+ ''']}','U')")
+	public void updateNote(@LocallyDefined @Modified Resource resource,
+			@Optional @LocallyDefined @SubPropertyOf(superPropertyIRI = "http://www.w3.org/2004/02/skos/core#note") IRI predicate,
+			Value value, Value newValue) {
+		String query = "DELETE  {							\n"
+				+ "		GRAPH ?g {							\n"
+				+ "			?subject ?property ?value .		\n"
+				+ "		}									\n"
+				+ "}										\n"
+				+ "INSERT  {								\n"
+				+ "		GRAPH ?g {							\n"
+				+ "			?subject ?property ?newValue .	\n"
+				+ "		}									\n"
+				+ "}										\n"
+				+ "WHERE{									\n"
+				+ "BIND(?g_input AS ?g )					\n"
+				+ "BIND(?subject_input AS ?subject )		\n"
+				+ "BIND(?property_input AS ?property )		\n"
+				+ "BIND(?value_input AS ?value )			\n"
+				+ "BIND(?newValue_input AS ?newValue )		\n" +
+				"}";
+		Update update = getManagedConnection().prepareUpdate(query);
+		update.setBinding("g_input", getWorkingGraph());
+		update.setBinding("subject_input", resource);
+		update.setBinding("property_input", predicate);
+		update.setBinding("value_input", value);
+		update.setBinding("newValue_input", newValue);
+		update.execute();
 	}
 
 	/**
