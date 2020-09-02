@@ -6,6 +6,7 @@ import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.ontology.OntologyImport;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -19,6 +20,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -121,12 +123,12 @@ public class Resources extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, values)', '{lang: [''' +@auth.langof(#value)+ ''', ''' +@auth.langof(#newValue)+ ''']}', 'U')")
 	public void updatePredicateObject(IRI property, Value value, Value newValue) {
 		RepositoryConnection repoConnection = getManagedConnection();
-		
+
 		String ntGraph = NTriplesUtil.toNTriplesString(getWorkingGraph());
 		String ntProperty = NTriplesUtil.toNTriplesString(property);
 		String ntValue = NTriplesUtil.toNTriplesString(value);
 		String ntNewValue = NTriplesUtil.toNTriplesString(newValue);
-		
+
 		String query =
 				"DELETE { 														\n" +
 				"	GRAPH " + ntGraph + " { 									\n" +
@@ -147,17 +149,17 @@ public class Resources extends STServiceAdapter {
 		Update update = repoConnection.prepareUpdate(query);
 		update.execute();
 	}
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, values)', '{lang: ''' +@auth.langof(#value)+ '''}', 'D')")
 	public void removePredicateObject(IRI property, Value value) {
 		RepositoryConnection repoConnection = getManagedConnection();
-		
+
 		String ntGraph = NTriplesUtil.toNTriplesString(getWorkingGraph());
 		String ntProperty = NTriplesUtil.toNTriplesString(property);
 		String ntValue = NTriplesUtil.toNTriplesString(value);
-		
+
 		//this part is related to the modified date to be added to each modified subject
 		String query =
 				"DELETE  {														\n" +
@@ -174,7 +176,7 @@ public class Resources extends STServiceAdapter {
 		Update update = repoConnection.prepareUpdate(query);
 		update.execute();
 	}
-	
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ', values)', '{lang: ''' +@auth.langof(#value)+ '''}', 'D')")
@@ -201,7 +203,7 @@ public class Resources extends STServiceAdapter {
 
 	/**
 	 * Return the description of a resource, including show and nature
-	 * 
+	 *
 	 * @param resource
 	 * @return
 	 */
@@ -213,10 +215,10 @@ public class Resources extends STServiceAdapter {
 		// @formatter:off
 			" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>						\n" +
 			" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>							\n" +
-			" PREFIX owl: <http://www.w3.org/2002/07/owl#>									\n" +                                      
+			" PREFIX owl: <http://www.w3.org/2002/07/owl#>									\n" +
 			" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>							\n" +
 			" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>							\n" +
-			" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {				\n" +                                                                              
+			" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {				\n" +
 			"    ?resource ?p ?o .															\n" +
 			generateNatureSPARQLWherePart("?resource") +
 			" }																				\n" +
@@ -236,7 +238,7 @@ public class Resources extends STServiceAdapter {
 
 	/**
 	 * Return the description of a list of resources, including show and nature
-	 * 
+	 *
 	 * @param resources
 	 * @return
 	 */
@@ -249,9 +251,9 @@ public class Resources extends STServiceAdapter {
 		StringBuilder sb = new StringBuilder();
 		sb.append(
 		// @formatter:off
-				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +                                      
-				" prefix owl: <http://www.w3.org/2002/07/owl#>							\n" +                                      
-				" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +                                      
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>				\n" +
+				" prefix owl: <http://www.w3.org/2002/07/owl#>							\n" +
+				" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
 				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>					\n" +
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>					\n" +
 				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {		\n" +
@@ -268,7 +270,7 @@ public class Resources extends STServiceAdapter {
 		qb.processQName();
 		qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_lexicalEntryRendering");
 		qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_formRendering");
-		
+
 		Collection<AnnotatedValue<Resource>> annotatedValues = qb.runQuery();
 		Iterator<AnnotatedValue<Resource>> it = annotatedValues.iterator();
 		while (it.hasNext()) {
@@ -276,7 +278,7 @@ public class Resources extends STServiceAdapter {
 		}
 		return annotatedValues;
 	}
-	
+
 	/**
 	 * Rendering of the lexical entry and ontolex form are computed by two dedicated query builders
 	 * (not by processRendering()).
@@ -299,7 +301,7 @@ public class Resources extends STServiceAdapter {
 
 	/**
 	 * Return the position of a resource (local/remote/unknown)
-	 * 
+	 *
 	 * @param resource
 	 * @return
 	 * @throws ProjectAccessException
@@ -416,10 +418,20 @@ public class Resources extends STServiceAdapter {
 			throw new IllegalArgumentException("Cannot delete all the resource triples");
 		}
 
-		conn.add(modelAdditions, getWorkingGraph());
-		conn.remove(modelRemovals, getWorkingGraph());
+
+		ValidationUtilities.executeWithoutValidation(
+				ValidationUtilities.isValidationEnabled(stServiceContext), conn, (conn2) -> {
+					try {
+						conn.add(modelAdditions, getWorkingGraph());
+						conn.remove(modelRemovals, getWorkingGraph());
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+				});
+
+
 	}
-	
+
 	private GraphQueryResult getOutgoingTriplesQueryResult(RepositoryConnection conn, Resource resource) {
 		String query = "CONSTRUCT {											\n" +
 				"	?s ?p ?o .												\n" +
