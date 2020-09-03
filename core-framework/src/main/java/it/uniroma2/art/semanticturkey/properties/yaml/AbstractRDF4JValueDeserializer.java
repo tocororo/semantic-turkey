@@ -5,12 +5,11 @@ import java.io.IOException;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 /**
  * Converts the NT serialization of an RDF term to an object implementing {@link Value}.
@@ -31,7 +30,7 @@ public class AbstractRDF4JValueDeserializer<T extends Value> extends StdDeserial
 
 	@Override
 	public T deserialize(JsonParser p, DeserializationContext ctxt)
-			throws IOException, JsonProcessingException {
+			throws IOException {
 
 		String NTTerm = p.getText();
 

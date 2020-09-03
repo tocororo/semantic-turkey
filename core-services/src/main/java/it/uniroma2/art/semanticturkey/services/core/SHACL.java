@@ -41,7 +41,7 @@ import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +74,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 @STService
 public class SHACL extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(SHACL.class);
+	private static final Logger logger = LoggerFactory.getLogger(SHACL.class);
 
 	private static final String SH_NAMESPACE = "http://www.w3.org/ns/shacl#";
 
@@ -172,7 +172,7 @@ public class SHACL extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(shacl)', 'D')")
-	public void clearShapes() throws IOException {
+	public void clearShapes() {
 		getManagedConnection().clear(RDF4J.SHACL_SHAPE_GRAPH);
 	}
 
@@ -200,7 +200,7 @@ public class SHACL extends STServiceAdapter {
 		Repository rep = new SailRepository(new MemoryStore());
 		rep.init();
 		String pearlFileText="";
-		try(RepositoryConnection connection = rep.getConnection();) {
+		try(RepositoryConnection connection = rep.getConnection()) {
 			connection.add(serverShaclFile, getProject().getBaseURI(), fileFormat);
 
 			//prepare the prefix-namespace map

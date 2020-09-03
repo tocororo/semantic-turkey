@@ -350,7 +350,7 @@ public class Alignment extends STServiceAdapter {
 			
 			logger.debug("SPARQL endpoint = "+sparqlEndPoint.get().stringValue());
 			SPARQLRepository sparqlRepository = new SPARQLRepository(sparqlEndPoint.get().stringValue());
-			sparqlRepository.initialize();
+			sparqlRepository.init();
 			
 			RepositoryConnection conn = sparqlRepository.getConnection();
 			
@@ -657,7 +657,7 @@ public class Alignment extends STServiceAdapter {
 		MemoryStore memStore = new MemoryStore();
 		memStore.setPersist(false);
 		Repository repository = new SailRepository(memStore);
-		repository.initialize();
+		repository.init();
 		AlignmentModel alignModel = new AlignmentModel();
 		alignModel.add(inputServerFile);
 

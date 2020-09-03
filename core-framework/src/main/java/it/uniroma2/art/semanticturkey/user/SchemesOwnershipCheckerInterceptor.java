@@ -15,7 +15,7 @@ import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import it.uniroma2.art.semanticturkey.project.Project;

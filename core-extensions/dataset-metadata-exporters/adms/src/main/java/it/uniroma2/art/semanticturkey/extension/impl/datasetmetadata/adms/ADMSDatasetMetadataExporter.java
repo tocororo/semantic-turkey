@@ -45,7 +45,7 @@ public class ADMSDatasetMetadataExporter implements DatasetMetadataExporter {
 			throws DatasetMetadataExporterException {
 
 		Repository tempMetadataRepository = new SailRepository(new MemoryStore());
-		tempMetadataRepository.initialize();
+		tempMetadataRepository.init();
 
 		ValueFactory valueFactory = conn.getValueFactory();
 

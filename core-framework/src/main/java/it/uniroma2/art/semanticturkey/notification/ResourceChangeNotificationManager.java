@@ -30,7 +30,7 @@ import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

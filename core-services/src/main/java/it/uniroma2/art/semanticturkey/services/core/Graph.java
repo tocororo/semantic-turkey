@@ -18,7 +18,7 @@ import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @STService
 public class Graph extends STServiceAdapter {
 	
-	private static Logger logger = LoggerFactory.getLogger(Graph.class);
+	private static final Logger logger = LoggerFactory.getLogger(Graph.class);
 	
 	/**
 	 * Returns a set of triples <code>property</code>-<code>domain</code><code>range</code> for each properties

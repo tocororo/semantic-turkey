@@ -7,7 +7,6 @@ import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,6 @@ import org.springframework.core.convert.ConversionService;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.services.InvalidContextException;
 import it.uniroma2.art.semanticturkey.services.STRequest;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -85,7 +83,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 
 		if (project == null) {
 			throw new InvalidContextException(
-					"not an open project: " + (projectParameter == "null" ? "<current>" : projectParameter));
+					"not an open project: " + (projectParameter.equals("null") ? "<current>" : projectParameter));
 		}
 		return project;
 	}
@@ -134,7 +132,7 @@ public class STServiceHTTPContext implements STServiceContext, ApplicationListen
 		} else {
 			projectPar = new StringBuilder(HTTP_PARAM_PROJECT).append("_").append(index).toString();
 		}
-		return ProjectManager.getProject(request.getParameter(projectPar.toString()));
+		return ProjectManager.getProject(request.getParameter(projectPar));
 	}
 
 	@Override

@@ -9,7 +9,6 @@ import javax.annotation.Nullable;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.extension.Extension;
@@ -21,6 +20,7 @@ import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 /**
  * Common interface abstracting different search mechanisms.
@@ -84,7 +84,7 @@ public interface SearchStrategy extends Extension {
 		// see https://www.w3.org/community/ontolex/wiki/Final_Model_Specification
 		String directResToLexicalEntry = 
 				"^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
-				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
+				"|"+ NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
 				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES) +
 				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY);
 		String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +

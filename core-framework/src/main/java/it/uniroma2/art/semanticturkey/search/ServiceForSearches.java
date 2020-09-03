@@ -22,7 +22,6 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
@@ -33,6 +32,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy.Sta
 import it.uniroma2.art.semanticturkey.properties.Pair;
 import it.uniroma2.art.semanticturkey.properties.TripleForSearch;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 public class ServiceForSearches {
 
@@ -206,7 +206,7 @@ public class ServiceForSearches {
 			}
 			filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
 					//consider the classes that are subclasses of RDFS.DATATYPE
-					"\n"+varType+" "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
+					"\n"+varType+" "+ NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "
 							+NTriplesUtil.toNTriplesString(RDFS.DATATYPE)+" ." +
 							"\n}";
 			

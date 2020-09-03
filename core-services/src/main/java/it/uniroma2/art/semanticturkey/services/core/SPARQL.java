@@ -50,7 +50,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
 import org.slf4j.Logger;
@@ -96,7 +96,7 @@ public class SPARQL extends STServiceAdapter {
 	@Autowired
 	private ExtensionPointManager exptManager;
 
-	private static Logger logger = LoggerFactory.getLogger(SPARQL.class);
+	private static final Logger logger = LoggerFactory.getLogger(SPARQL.class);
 
 	/**
 	 * Evaluates a query. The parameters controlling the dataset (i.e. {@code defaultGraphs} and
@@ -164,7 +164,7 @@ public class SPARQL extends STServiceAdapter {
 			JsonNode sparqlObj;
 			try (TupleQueryResult queryResult = new IteratingTupleQueryResult(
 					Arrays.asList("subj", "pred", "obj"),
-					new Graph2TupleQueryResultAdapter(((GraphQuery) preparedQuery).evaluate()));) {
+					new Graph2TupleQueryResultAdapter(((GraphQuery) preparedQuery).evaluate()))) {
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				QueryResults.report(queryResult, new SPARQLResultsJSONWriter(baos));
 				ObjectMapper mapper = new ObjectMapper();
@@ -202,7 +202,7 @@ public class SPARQL extends STServiceAdapter {
 	 *            the graphs that constitute the set of named graphs.
 	 * @param defaultInsertGraph
 	 *            the default insert graph to be used. The default value is {@code null}.
-	 * @param defaultRemoveGraph
+	 * @param defaultRemoveGraphs
 	 *            the default remove graphs.
 	 * 
 	 * 
@@ -218,8 +218,7 @@ public class SPARQL extends STServiceAdapter {
 			@Optional(defaultValue = "{}") Map<String, Value> bindings,
 			@Optional(defaultValue = "0") int maxExecTime, @Optional(defaultValue = "") IRI[] defaultGraphs,
 			@Optional(defaultValue = "") IRI[] namedGraphs, @Optional IRI defaultInsertGraph,
-			@Optional(defaultValue = "") IRI[] defaultRemoveGraphs)
-			throws JsonProcessingException, IOException {
+			@Optional(defaultValue = "") IRI[] defaultRemoveGraphs) {
 
 		RepositoryConnection conn = getManagedConnection();
 
@@ -444,7 +443,7 @@ public class SPARQL extends STServiceAdapter {
 						RDF4JUtilities.getRDFFormat(outputFormat));
 			} else {
 				Repository tempSourceRepository = new SailRepository(new MemoryStore());
-				tempSourceRepository.initialize();
+				tempSourceRepository.init();
 				try {
 					try (RepositoryConnection sourceConnection = tempSourceRepository.getConnection()) {
 						RDFInserter rdfInserter = new RDFInserter(sourceConnection);

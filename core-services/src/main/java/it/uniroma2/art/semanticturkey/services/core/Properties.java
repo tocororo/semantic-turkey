@@ -68,7 +68,7 @@ import org.eclipse.rdf4j.query.UpdateExecutionException;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -90,7 +90,7 @@ import java.util.Set;
 @STService
 public class Properties extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(Properties.class);
+	private static final Logger logger = LoggerFactory.getLogger(Properties.class);
 
 	/**
 	 * returns all root properties

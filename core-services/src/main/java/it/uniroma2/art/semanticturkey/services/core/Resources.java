@@ -6,7 +6,6 @@ import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.ontology.OntologyImport;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -42,8 +41,8 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -384,6 +383,15 @@ public class Resources extends STServiceAdapter {
 		rdfParser.getParserConfig().set(BasicParserSettings.PRESERVE_BNODE_IDS, true);
 		rdfParser.setRDFHandler(new StatementCollector(newDescriptionModel));
 		rdfParser.parse(triplesStream, getProject().getNewOntologyManager().getBaseURI());
+
+		//if new description contains statements with a different subject throws an exception
+		Statement diffSubjStmt = newDescriptionModel.stream()
+				.filter(stmt -> !stmt.getSubject().equals(resource)).findAny().orElse(null);
+		if (diffSubjStmt != null) {
+			throw new IllegalArgumentException(
+					"Invalid resource description: it includes statement about a different resource " +
+							NTriplesUtil.toNTriplesString(diffSubjStmt.getSubject()));
+		}
 
 		//get the statements of the old description
 		GraphQueryResult res = getOutgoingTriplesQueryResult(conn, resource);

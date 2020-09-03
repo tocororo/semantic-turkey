@@ -66,7 +66,7 @@ import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.hibernate.validator.constraints.Length;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +92,7 @@ import static java.util.stream.Collectors.toSet;
 @STService
 public class OntoLexLemon extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(OntoLexLemon.class);
+	private static final Logger logger = LoggerFactory.getLogger(OntoLexLemon.class);
 
 	/* --- Lexicons --- */
 

@@ -42,7 +42,7 @@ public class DCATAPDatasetMetadataExporter implements DatasetMetadataExporter {
 	public Model produceDatasetMetadata(Project project, RepositoryConnection conn, IRI dataGraph)
 			throws DatasetMetadataExporterException {
 		Repository tempMetadataRepository = new SailRepository(new MemoryStore());
-		tempMetadataRepository.initialize();
+		tempMetadataRepository.init();
 
 		ValueFactory valueFactory = conn.getValueFactory();
 		try {

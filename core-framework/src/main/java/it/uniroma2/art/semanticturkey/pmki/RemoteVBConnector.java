@@ -1,6 +1,5 @@
 package it.uniroma2.art.semanticturkey.pmki;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -33,15 +32,13 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.springframework.web.multipart.MultipartFile;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 public class RemoteVBConnector {

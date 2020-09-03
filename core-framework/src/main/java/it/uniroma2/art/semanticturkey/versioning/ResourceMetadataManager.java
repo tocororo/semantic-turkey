@@ -34,7 +34,9 @@ import it.uniroma2.art.semanticturkey.services.events.ResourceCreated;
 import it.uniroma2.art.semanticturkey.services.events.ResourceDeleted;
 import it.uniroma2.art.semanticturkey.services.events.ResourceModified;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.tx.STServiceAspect;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 import it.uniroma2.art.semanticturkey.versioning.OperationContext.OpCtxKeys;
 import org.apache.uima.UIMAException;
 import org.apache.uima.cas.CAS;
@@ -64,6 +66,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -275,6 +278,10 @@ public class ResourceMetadataManager {
 	/* ========== CODA and PEARL stuff ========== */
 
 	private void applyUpdates(RepositoryConnection conn, UpdateTripleSet updates, Resource workingGraph) {
+
+		//if service is Resources.updateResourceTriplesDescription() skip the validation
+		boolean skipValidation = STServiceAspect.getCurrentServiceInvocation().getMethod().getName().equals("updateResourceTriplesDescription");
+
 		Model modelRemovals = new LinkedHashModel();
 		for (CODATriple triple : updates.getDeleteTriples()) {
 			logger.debug("ResourceMetadata, remove: " + triple.getSubject() + ", " + triple.getPredicate() + ", " + triple.getObject());
@@ -287,8 +294,21 @@ public class ResourceMetadataManager {
 //			System.out.println("ADD " + triple.getSubject() + ", " + triple.getPredicate() + ", " + triple.getObject());
 			modelAdditions.add(triple.getSubject(), triple.getPredicate(), triple.getObject());
 		}
-		conn.remove(modelRemovals, workingGraph);
-		conn.add(modelAdditions, workingGraph);
+
+		if (skipValidation) {
+			ValidationUtilities.executeWithoutValidation(
+					ValidationUtilities.isValidationEnabled(conn), conn, (conn2) -> {
+						try {
+							conn.remove(modelRemovals, workingGraph);
+							conn.add(modelAdditions, workingGraph);
+						} catch (Exception e) {
+							throw new RuntimeException(e);
+						}
+					});
+		} else {
+			conn.remove(modelRemovals, workingGraph);
+			conn.add(modelAdditions, workingGraph);
+		}
 	}
 
 	private UpdateTripleSet executePearl(RepositoryConnection connection, String pearl, OperationContext opCtx) {

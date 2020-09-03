@@ -282,7 +282,7 @@ public class BaseRenderingEngineTest {
 				false);
 		try {
 			Repository repo = new SailRepository(new MemoryStore());
-			repo.initialize();
+			repo.init();
 
 			STServiceContext stServiceContext = new STServiceContext() {
 

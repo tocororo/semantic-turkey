@@ -26,7 +26,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.sail.SailException;
 
 import javax.xml.datatype.DatatypeConfigurationException;
@@ -179,7 +179,7 @@ public class UserNotificationsAPI {
 			}
 		}
 		//now add the new value (if not already present)
-		String proj_res_role_act_timestamp = project.getName()+SEPARATOR+NTriplesUtil.toNTriplesString(resource)+
+		String proj_res_role_act_timestamp = project.getName()+SEPARATOR+ NTriplesUtil.toNTriplesString(resource)+
 				SEPARATOR+role.name()+SEPARATOR+action.name()+SEPARATOR+currentTime();
 		if(!presentValueSet.contains(proj_res_role_act_timestamp)){
 			newDoc.add(new StringField(PROJ_RES_ROLE_ACT_TIMESTAMP_FIELD, proj_res_role_act_timestamp, Field.Store.YES));

@@ -19,7 +19,7 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -60,11 +60,11 @@ import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetada
 @STService
 public class SKOSXL extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(SKOSXL.class);
+	private static final Logger logger = LoggerFactory.getLogger(SKOSXL.class);
 	
 	public static enum XLabelCreationMode {
 		bnode, uri
-	};
+	}
 	
 	/**
 	 * Generates a new URI for a SKOSXL Label, based on the provided mandatory parameters. The actual
@@ -156,7 +156,7 @@ public class SKOSXL extends STServiceAdapter {
 		// @formatter:off
 		String query = "SELECT ?prefLabel ?label" +
 				"\nWHERE{" + 
-				"?concept "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL)+" ?prefLabel ." +
+				"?concept "+ NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL)+" ?prefLabel ." +
 				"?prefLabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" ?label ." +
 				"\n}";
 		// @formatter:on

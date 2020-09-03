@@ -81,8 +81,8 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterFactory;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,7 +138,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	 * <code>$baseDir/metadataRegistry/catalog.ttl</code>.
 	 * 
 	 * @param baseDir
-	 * @param exptManager
+	 * @param mediationFramework
 	 * @throws MetadataRegistryCreationException
 	 */
 	public MetadataRegistryBackendImpl(File baseDir, MediationFramework mediationFramework)
@@ -1582,7 +1582,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					logger.debug("Attempt to identify an example resource using SPARQL");
 					SPARQLRepository sparqlRepository = new SPARQLRepository(
 							datasetSPARQLEndpoint.stringValue());
-					sparqlRepository.initialize();
+					sparqlRepository.init();
 					try {
 						String exampleResourceQuery =
 					// @formatter:off

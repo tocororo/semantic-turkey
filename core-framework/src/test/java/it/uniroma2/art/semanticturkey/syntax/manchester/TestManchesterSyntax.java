@@ -50,7 +50,7 @@ public class TestManchesterSyntax {
 		MemoryStore memStore = new MemoryStore();
 		memStore.setPersist(false);
 		Repository repository = new SailRepository(memStore);
-		repository.initialize();
+		repository.init();
 
 		// String baseDir = "localRepforTest";
 		// LocalRepositoryManager localRep = new LocalRepositoryManager(new File(baseDir));
@@ -78,7 +78,7 @@ public class TestManchesterSyntax {
 		MemoryStore memStore = new MemoryStore();
 		memStore.setPersist(false);
 		Repository repository = new SailRepository(memStore);
-		repository.initialize();
+		repository.init();
 		return repository.getConnection();
 	}
 

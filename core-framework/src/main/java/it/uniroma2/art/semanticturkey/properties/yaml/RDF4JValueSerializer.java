@@ -4,12 +4,12 @@ import java.io.IOException;
 
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 /**
  * /** A {@link JsonSerializer} for RDF4J {@link Value}.

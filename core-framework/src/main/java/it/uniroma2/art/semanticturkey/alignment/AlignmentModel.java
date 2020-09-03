@@ -58,8 +58,8 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.AbstractRDFWriter;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.rio.rdfxml.util.RDFXMLPrettyWriterFactory;
 import org.eclipse.rdf4j.rio.turtle.TurtleWriterFactory;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
@@ -94,7 +94,7 @@ public class AlignmentModel {
 		MemoryStore memStore = new MemoryStore();
 		memStore.setPersist(false);
 		Repository repository = new SailRepository(memStore);
-		repository.initialize();
+		repository.init();
 		repoConnection = repository.getConnection();
 	}
 
@@ -525,8 +525,6 @@ public class AlignmentModel {
 
 	/**
 	 * Deletes all the <code>Cell</code>s from the alignment
-	 * 
-	 * @param cell
 	 */
 	public void deleteAllCells() {
 		String query = "DELETE { " + "?alignment " + NTriplesUtil.toNTriplesString(Alignment.MAP)
@@ -674,7 +672,6 @@ public class AlignmentModel {
 	 * 
 	 * @param entity1
 	 * @param entity2
-	 * @param relation
 	 * @return
 	 */
 	public void rejectAlignment(IRI entity1, IRI entity2) {

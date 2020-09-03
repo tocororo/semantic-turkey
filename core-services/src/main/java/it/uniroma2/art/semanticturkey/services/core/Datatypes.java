@@ -46,7 +46,7 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -71,7 +71,7 @@ import static java.util.stream.Collectors.toSet;
 @STService
 public class Datatypes extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(Datatypes.class);
+	private static final Logger logger = LoggerFactory.getLogger(Datatypes.class);
 
 	private static final Set<IRI> owl2datatypeMap = ImmutableSet.copyOf(new IRI[]{
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2002/07/owl#real"),

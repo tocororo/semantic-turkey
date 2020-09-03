@@ -1,16 +1,12 @@
 package it.uniroma2.art.semanticturkey.services.core.search;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
-import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
-import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
@@ -23,15 +19,14 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
-import it.uniroma2.art.semanticturkey.extension.impl.search.regex.RegexSearchStrategy;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class AdvancedSearch {
 	
@@ -307,7 +302,7 @@ public class AdvancedSearch {
 				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
 				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY)+
 				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES);
-		String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
+		String doubleStepResToLexicalEntry = "("+ NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
 				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_LEXICALIZED_SENSE_OF)+
 				"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.REFERENCE)+
 				"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_REFERENCE_OF)+")"+

@@ -26,7 +26,7 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,7 @@ public class UsersGroupsRepoHelper {
 		MemoryStore memStore = new MemoryStore();
 		memStore.setPersist(false);
 		repository = new SailRepository(memStore);
-		repository.initialize();
+		repository.init();
 	}
 	
 	public void loadGroupDetails(File groupDetailsFile) throws RDFParseException, RepositoryException, IOException {

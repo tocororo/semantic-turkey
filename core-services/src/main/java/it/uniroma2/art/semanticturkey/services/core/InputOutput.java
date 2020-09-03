@@ -205,7 +205,7 @@ public class InputOutput extends STServiceAdapter {
 				tempRepoConn = null;
 			} else {
 				tempRepo = new SailRepository(new MemoryStore());
-				tempRepo.initialize();
+				tempRepo.init();
 				closer.register(tempRepo::shutDown);
 
 				tempRepoConn = tempRepo.getConnection();

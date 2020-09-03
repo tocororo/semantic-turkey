@@ -17,10 +17,10 @@ import java.util.Properties;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 /**
  * @author Armando Stellato &lt;stellato@uniroma2.it&gt;
@@ -153,7 +153,7 @@ public interface STProperties {
 	 * invokes {@link #setPropertyValue(String, Object)} on each of the property/value pairs found in
 	 * <code>properties</code>
 	 * 
-	 * @param properties
+	 * @param props
 	 * @throws WrongPropertiesException
 	 */
 	default void setProperties(Properties props) throws WrongPropertiesException {
@@ -198,7 +198,7 @@ public interface STProperties {
 	/**
 	 * stores the properties in this instance in the given {@link Properties} object <code>properties</code>
 	 * 
-	 * @param propertyFile
+	 * @param properties
 	 * @throws IOException
 	 * @throws WrongPropertiesException
 	 */

@@ -215,7 +215,7 @@ public class Export extends STServiceAdapter {
 			// Creates a working copy of the source repository (in-memory, without inference)
 			Repository workingRepository = new SailRepository(new MemoryStore());
 			try {
-				workingRepository.initialize();
+				workingRepository.init();
 
 				try (RepositoryConnection workingRepositoryConnection = workingRepository.getConnection()) {
 					// Copies all graphs from the source repository to the working repository (including the

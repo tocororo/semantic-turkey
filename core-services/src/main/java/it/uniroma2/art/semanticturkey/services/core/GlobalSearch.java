@@ -42,7 +42,7 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -125,7 +125,7 @@ public class GlobalSearch extends STServiceAdapter {
 							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
 							+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
 							+ "\nWHERE{"
-							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) +"{"
+							+ "\nGRAPH "+ NTriplesUtil.toNTriplesString(getWorkingGraph()) +"{"
 							+ "\n?xlabel skosxl:literalForm ?value ."
 							+ "\nFILTER(isLiteral(?value)) "
 							+ "\nBIND(lang(?value) AS ?lang)"

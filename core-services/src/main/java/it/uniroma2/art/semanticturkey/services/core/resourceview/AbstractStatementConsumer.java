@@ -24,7 +24,6 @@ import org.eclipse.rdf4j.model.util.RDFCollections;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import com.google.common.collect.Sets;
 
@@ -34,6 +33,7 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 public abstract class AbstractStatementConsumer implements StatementConsumer {
 

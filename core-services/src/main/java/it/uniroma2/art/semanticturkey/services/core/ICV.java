@@ -1,45 +1,9 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.OWL;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOS;
-import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.MalformedQueryException;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.UnsupportedQueryLanguageException;
-import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
@@ -66,6 +30,37 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 @STService
@@ -394,10 +389,6 @@ public class ICV extends STServiceAdapter {
 	/**
 	 * Returns a list of concepts or schemes that have no skos:prefLabel
 	 * @return a list of concepts or schemes that have no skos:prefLabel
-	 * @throws QueryEvaluationException 
-	 * @throws MalformedQueryException 
-	 * @throws ModelAccessException 
-	 * @throws UnsupportedQueryLanguageException 
 	 */
 	@STServiceOperation
 	@Read
@@ -928,8 +919,7 @@ public class ICV extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Collection<AnnotatedValue<Resource>> listResourcesWithNoLanguageTagForLabel(RDFResourceRole[] rolesArray) 
-			throws UnsupportedLexicalizationModelException  {
+	public Collection<AnnotatedValue<Resource>> listResourcesWithNoLanguageTagForLabel(RDFResourceRole[] rolesArray) {
 		IRI lexModel = getProject().getLexicalizationModel();
 		/*if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
 				lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL))) {
@@ -973,8 +963,7 @@ public class ICV extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Collection<AnnotatedValue<Resource>> listResourcesWithExtraSpacesInLabel(RDFResourceRole[] rolesArray) 
-			throws UnsupportedLexicalizationModelException  {
+	public Collection<AnnotatedValue<Resource>> listResourcesWithExtraSpacesInLabel(RDFResourceRole[] rolesArray) {
 		IRI lexModel = getProject().getLexicalizationModel();
 		
 		/*if(!(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || 
@@ -1824,7 +1813,7 @@ public class ICV extends STServiceAdapter {
 								RepositoryLocation.Location.remote.toString()+":")[1]; 
 						if(sparqlEndPoint != null) {
 							Repository sparqlRepository = new SPARQLRepository(sparqlEndPoint);
-							sparqlRepository.initialize();
+							sparqlRepository.init();
 							connectionToOtherRepository = sparqlRepository.getConnection();
 						}
 					}

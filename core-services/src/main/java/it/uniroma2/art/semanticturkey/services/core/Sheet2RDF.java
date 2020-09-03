@@ -75,7 +75,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
@@ -716,7 +716,7 @@ public class Sheet2RDF extends STServiceAdapter {
 		List<SuggOntologyCoda> suggTriples = ctx.getCachedSuggestedTriples();
 		
 		Repository rep = new SailRepository(new MemoryStore());
-		rep.initialize();
+		rep.init();
 		RepositoryConnection connection = rep.getConnection();
 
 		for (SuggOntologyCoda sugg : suggTriples){

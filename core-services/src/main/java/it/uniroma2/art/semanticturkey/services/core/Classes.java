@@ -52,7 +52,7 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -73,7 +73,7 @@ import static java.util.stream.Collectors.joining;
 @STService
 public class Classes extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(Classes.class);
+	private static final Logger logger = LoggerFactory.getLogger(Classes.class);
 	
 	/**
 	 * Returns the (explicit) subclasses of the class <code>superClass</code>. If <code>numInst</code> is set to
@@ -284,7 +284,7 @@ public class Classes extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, instances)', 'R')")
 	public Integer getNumberOfInstances(@LocallyDefined IRI cls) {
 		String query = " SELECT (count(distinct ?s) as ?count) WHERE { \n" + 
-			"?s a " + NTriplesUtil.toNTriplesString(cls) + " \n" + 
+			"?s a " + NTriplesUtil.toNTriplesString(cls) + " \n" +
 			"}";
 		TupleQueryResult result = getManagedConnection().prepareTupleQuery(query).evaluate();
 		return ((Literal) result.next().getValue("count")).intValue();

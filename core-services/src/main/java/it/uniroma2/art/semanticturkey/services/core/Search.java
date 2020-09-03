@@ -32,9 +32,8 @@ import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
-import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sparql.query.QueryStringUtil;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -689,7 +688,7 @@ public class Search extends STServiceAdapter {
 			query = "SELECT DISTINCT ?broader ?broaderOfBroader ?isTopConcept ?isTop" + 
 					"\nWHERE{" +
 					
-					"\nBIND("+NTriplesUtil.toNTriplesString(resourceURI)+" AS ?resource )" +
+					"\nBIND("+ NTriplesUtil.toNTriplesString(resourceURI)+" AS ?resource )" +
 					"\n?subConceptClass <"+RDFS.SUBCLASSOF+">* <"+SKOS.CONCEPT+">.";
 					
 					

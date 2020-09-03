@@ -1,15 +1,15 @@
 package it.uniroma2.art.semanticturkey.services.aspects;
 
-import static java.util.stream.Collectors.joining;
-
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.BLACKLIST;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.exceptions.BlacklistForbiddendException;
+import it.uniroma2.art.semanticturkey.history.HistoryMetadataSupport;
+import it.uniroma2.art.semanticturkey.history.OperationMetadata;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.ArrayUtils;
@@ -25,28 +25,24 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.RDFCollections;
 import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.annotation.AnnotationUtils;
 
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.BLACKLIST;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
-import it.uniroma2.art.semanticturkey.exceptions.BlacklistForbiddendException;
-import it.uniroma2.art.semanticturkey.history.HistoryMetadataSupport;
-import it.uniroma2.art.semanticturkey.history.OperationMetadata;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.services.STServiceContext;
-import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation;
-import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
-import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * An AOP Alliance {@link MethodInterceptor} implementation that takes care of term rejection logging

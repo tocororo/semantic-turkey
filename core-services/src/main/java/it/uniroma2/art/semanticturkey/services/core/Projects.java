@@ -1158,12 +1158,12 @@ public class Projects extends STServiceAdapter {
 				try (Closer closer = Closer.create()) {
 					// metadata repository
 					SailRepository metadataRepo = new SailRepository(new MemoryStore());
-					metadataRepo.initialize();
+					metadataRepo.init();
 					closer.register(metadataRepo::shutDown);
 
 					// data repository
 					SailRepository dataRepo = new SailRepository(new MemoryStore());
-					dataRepo.initialize();
+					dataRepo.init();
 					closer.register(dataRepo::shutDown);
 
 					try (LIMERepositoryConnectionWrapper metadataConn = new LIMERepositoryConnectionWrapper(

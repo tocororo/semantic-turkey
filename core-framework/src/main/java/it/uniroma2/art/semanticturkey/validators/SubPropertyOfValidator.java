@@ -9,7 +9,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
@@ -51,7 +51,7 @@ public class SubPropertyOfValidator implements ConstraintValidator<SubPropertyOf
 			try (RepositoryConnection repoConn = RDF4JRepositoryUtils
 					.getConnection(STServiceContextUtils.getRepostory(serviceContext))) {
 				String query = "ASK { \n"
-						+ NTriplesUtil.toNTriplesString(value) + " " 
+						+ NTriplesUtil.toNTriplesString(value) + " "
 						+ NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF) + "* "
 						+ NTriplesUtil.toNTriplesString(superProp) + " \n"
 						+ " }";

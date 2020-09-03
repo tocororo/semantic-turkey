@@ -12,7 +12,7 @@ import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,7 +27,7 @@ import java.util.Collection;
 @STService
 public class Individuals extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(Individuals.class);
+	private static final Logger logger = LoggerFactory.getLogger(Individuals.class);
 
 	/**
 	 * Returns the (explicit) named types of the given individual <code>individual</code>. 

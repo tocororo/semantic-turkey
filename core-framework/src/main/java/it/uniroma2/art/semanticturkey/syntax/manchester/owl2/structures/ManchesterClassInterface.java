@@ -28,14 +28,14 @@ import java.util.Map;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 public abstract class ManchesterClassInterface {
 	private PossType type;
 
 	public static enum PossType {
 		BASE, AND, OR, NOT, ONEOF, SOME, ONLY, MIN, MAX, EXACTLY, VALUE, SELF, LITERALLIST, DATATYPERESTRICTION,
-		DATARANGE, DATACONJUCTION;
+		DATARANGE, DATACONJUCTION
 	}
 
 	public ManchesterClassInterface(PossType type) {

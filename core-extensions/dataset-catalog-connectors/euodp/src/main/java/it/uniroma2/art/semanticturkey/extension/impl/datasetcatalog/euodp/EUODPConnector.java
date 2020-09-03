@@ -228,7 +228,7 @@ public class EUODPConnector implements DatasetCatalogConnector {
 	@Override
 	public DatasetDescription describeDataset(String id) throws IOException {
 		SPARQLRepository rep = new SPARQLRepository(EUODP_SPARQL_ENDPOINT);
-		rep.initialize();
+		rep.init();
 		try (RepositoryConnection conn = rep.getConnection()) {
 			ValueFactory vf = conn.getValueFactory();
 

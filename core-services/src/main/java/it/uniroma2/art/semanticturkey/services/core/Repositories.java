@@ -92,7 +92,7 @@ public class Repositories extends STServiceAdapter {
 		if (username != null && password != null) {
 			remoteRepositoryManager.setUsernameAndPassword(username, password);
 		}
-		remoteRepositoryManager.initialize();
+		remoteRepositoryManager.init();
 		try {
 			return remoteRepositoryManager.getAllRepositoryInfos();
 		} finally {

@@ -107,8 +107,8 @@ import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.repository.util.RDFLoader;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -776,7 +776,7 @@ public class ResourceView extends STServiceAdapter {
 				ResourcePosition resourcePosition, Resource resource, boolean includeInferred,
 				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions) {
 			Repository repo = new SailRepository(new MemoryStore());
-			repo.initialize();
+			repo.init();
 			try (RepositoryConnection conn = repo.getConnection()) {
 				conn.add(statements);
 				// It is necessary to load the OWL vocabulary, because the nature processor assumes its
@@ -936,7 +936,7 @@ public class ResourceView extends STServiceAdapter {
 				boolean includeInferred, boolean ignorePropertyExclusions, MutableLong excludedObjectsCount)
 				throws RDF4JException {
 			Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint.stringValue());
-			sparqlRepository.initialize();
+			sparqlRepository.init();
 			try {
 				Model retrievedStatements = new LinkedHashModel();
 				try (RepositoryConnection conn = sparqlRepository.getConnection()) {
@@ -1011,7 +1011,7 @@ public class ResourceView extends STServiceAdapter {
 				throws ProjectAccessException {
 			if (useGroupBy) {
 				Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint.stringValue());
-				sparqlRepository.initialize();
+				sparqlRepository.init();
 				try {
 					try (RepositoryConnection conn = sparqlRepository.getConnection()) {
 
@@ -1033,7 +1033,7 @@ public class ResourceView extends STServiceAdapter {
 				Model statements, Set<IRI> resourcePredicates, boolean ignorePropertyExclusions)
 				throws AssessmentException {
 			Repository sparqlRepository = createSPARQLRepository(sparqlEndpoint.stringValue());
-			sparqlRepository.initialize();
+			sparqlRepository.init();
 			try (RepositoryConnection conn = sparqlRepository.getConnection()) {
 				IRI dataset = ((RemoteResourcePosition) resourcePosition).getDatasetMetadata().getIdentity();
 				java.util.Optional<IRI> lexicalizationModel = mediationFramework

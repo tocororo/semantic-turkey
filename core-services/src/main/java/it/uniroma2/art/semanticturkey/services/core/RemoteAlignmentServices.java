@@ -31,7 +31,6 @@ import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
@@ -54,7 +53,7 @@ import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,7 +123,7 @@ import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 @STService
 public class RemoteAlignmentServices extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(RemoteAlignmentServices.class);
+	private static final Logger logger = LoggerFactory.getLogger(RemoteAlignmentServices.class);
 
 	@Autowired
 	private STMetadataRegistryBackend metadataRegistryBackend;
@@ -245,7 +244,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			return new ResponseHandler<T>() {
 
 				@Override
-				public T handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
+				public T handleResponse(HttpResponse response) throws IOException {
 					org.apache.http.HttpEntity responseEntity = response.getEntity();
 					Header responseContentType = responseEntity.getContentType();
 

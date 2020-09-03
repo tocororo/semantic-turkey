@@ -1,9 +1,8 @@
 package it.uniroma2.art.semanticturkey.exceptions.shacl;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class SHACLMultipleTargetShapeFromClassIRIException extends SHACLGenericException {
@@ -20,7 +19,7 @@ public class SHACLMultipleTargetShapeFromClassIRIException extends SHACLGenericE
     public String getMessage() {
         String tsListAsString = "";
         for(IRI targetShape : targetShapeList){
-            tsListAsString += " "+NTriplesUtil.toNTriplesString(targetShape)+",";
+            tsListAsString += " "+ NTriplesUtil.toNTriplesString(targetShape)+",";
         }
         tsListAsString = tsListAsString.substring(1, tsListAsString.length()-1);
 

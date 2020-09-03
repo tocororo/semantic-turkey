@@ -40,7 +40,7 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +58,7 @@ import java.util.Map;
  */
 public class STAuthorizationEvaluator {
 	
-	private static Logger logger = LoggerFactory.getLogger(STAuthorizationEvaluator.class);
+	private static final Logger logger = LoggerFactory.getLogger(STAuthorizationEvaluator.class);
 
 	@Autowired
 	private STServiceContext stServiceContext;

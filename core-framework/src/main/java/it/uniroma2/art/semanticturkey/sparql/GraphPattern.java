@@ -10,10 +10,10 @@ import java.util.regex.Pattern;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
 import com.google.common.base.Function;
 import com.google.common.collect.BiMap;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 /**
  * Represents a graph pattern that can be used to construct a SPARQL query.

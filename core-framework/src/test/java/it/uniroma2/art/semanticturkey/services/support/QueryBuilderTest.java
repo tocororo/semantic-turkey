@@ -145,7 +145,7 @@ public class QueryBuilderTest {
 		}, "resource", "attr_show");
 
 		Repository repo = new SailRepository(new MemoryStore());
-		repo.initialize();
+		repo.init();
 		try (RepositoryConnection conn = repo.getConnection()) {
 			ValueFactory vf = conn.getValueFactory();
 
@@ -224,7 +224,7 @@ public class QueryBuilderTest {
 		}, "resource", "attr_show");
 
 		Repository repo = new SailRepository(new MemoryStore());
-		repo.initialize();
+		repo.init();
 		try (RepositoryConnection conn = repo.getConnection()) {
 			ValueFactory vf = conn.getValueFactory();
 
@@ -298,7 +298,7 @@ public class QueryBuilderTest {
 		}, "resource", "attr_show");
 
 		Repository repo = new SailRepository(new MemoryStore());
-		repo.initialize();
+		repo.init();
 		try (RepositoryConnection conn = repo.getConnection()) {
 			ValueFactory vf = conn.getValueFactory();
 
