@@ -210,7 +210,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 		}
 
 		public CloseableHttpClient buildHTTPClient(RemoteAlignmentServiceConfiguration endpoint) {
-			return HttpClientBuilder.create().build();
+			return HttpClientBuilder.create().useSystemProperties().build();
 		}
 
 		public HttpContext buildContext(RemoteAlignmentServiceConfiguration endpoint) {

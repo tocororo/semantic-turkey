@@ -142,7 +142,7 @@ public class EUODPConnector implements DatasetCatalogConnector {
 
 		logger.debug("Search URL = {}", searchURL);
 
-		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+		try (CloseableHttpClient httpClient = HttpClientBuilder.create().useSystemProperties().build()) {
 			try (CloseableHttpResponse response = httpClient.execute(new HttpGet(searchURL))) {
 				StatusLine statusLine = response.getStatusLine();
 				if ((statusLine.getStatusCode() / 200) != 1) {

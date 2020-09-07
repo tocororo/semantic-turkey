@@ -69,7 +69,7 @@ public abstract class AbstractHTTPDeployer<T extends Source> implements Deployer
 			context = null;
 		}
 
-		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+		try (CloseableHttpClient httpClient = HttpClientBuilder.create().useSystemProperties().build()) {
 			HttpEntityEnclosingRequestBase request;
 			HttpVerbs httpVerb = getHttpVerb();
 

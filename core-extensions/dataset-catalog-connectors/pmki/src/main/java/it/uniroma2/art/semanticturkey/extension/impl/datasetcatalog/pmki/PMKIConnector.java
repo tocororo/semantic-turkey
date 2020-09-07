@@ -256,7 +256,7 @@ class PMKIClient implements AutoCloseable {
 		this.email = email;
 		this.password = password;
 
-		this.httpClient = HttpClientBuilder.create().build();
+		this.httpClient = HttpClientBuilder.create().useSystemProperties().build();
 		this.objectMapper = RequestMappingHandlerAdapterPostProcessor.createObjectMapper();
 	}
 

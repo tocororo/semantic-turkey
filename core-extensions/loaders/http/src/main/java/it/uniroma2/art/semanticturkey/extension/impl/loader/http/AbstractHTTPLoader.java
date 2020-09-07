@@ -62,7 +62,7 @@ public abstract class AbstractHTTPLoader<T extends Target> implements Loader {
 			context.setAuthCache(authCache);
 		}
 		
-		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+		try (CloseableHttpClient httpClient = HttpClientBuilder.create().useSystemProperties().build()) {
 			HttpGet request = new HttpGet(address);
 
 			Map<String, String> requestHeaders = new LinkedHashMap<>();

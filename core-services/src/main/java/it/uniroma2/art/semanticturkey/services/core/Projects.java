@@ -1038,7 +1038,7 @@ public class Projects extends STServiceAdapter {
 		File preloadedDataFile;
 
 		HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
-		try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
+		try (CloseableHttpClient httpClient = httpClientBuilder.useSystemProperties().build()) {
 			HttpGet request = new HttpGet(preloadedDataURL.toExternalForm());
 			Set<RDFFormat> rdfFormats = preloadedDataFormat != null
 					? Collections.singleton(preloadedDataFormat)

@@ -76,7 +76,7 @@ public class LODCloudConnector implements DatasetCatalogConnector {
 
 		logger.debug("Search URL = {}", searchURL);
 
-		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+		try (CloseableHttpClient httpClient = HttpClientBuilder.create().useSystemProperties().build()) {
 			try (CloseableHttpResponse response = httpClient.execute(new HttpGet(searchURL))) {
 				StatusLine statusLine = response.getStatusLine();
 				if ((statusLine.getStatusCode() / 200) != 1) {
@@ -159,7 +159,7 @@ public class LODCloudConnector implements DatasetCatalogConnector {
 
 		logger.debug("Info URL = {}", infoURL);
 
-		try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+		try (CloseableHttpClient httpClient = HttpClientBuilder.create().useSystemProperties().build()) {
 			try (CloseableHttpResponse response = httpClient.execute(new HttpGet(infoURL))) {
 				StatusLine statusLine = response.getStatusLine();
 				if ((statusLine.getStatusCode() / 200) != 1) {

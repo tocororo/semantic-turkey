@@ -53,7 +53,7 @@ public class RemoteVBConnector {
 
 	public RemoteVBConnector() throws IOException, STPropertyAccessException {
 		mapper = new ObjectMapper();
-		httpClient = HttpClientBuilder.create().build();
+		httpClient = HttpClientBuilder.create().useSystemProperties().build();
 
 		String vbConfValue = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_VB_CONFIG_FOR_PMKI);
 		if (vbConfValue == null) {
