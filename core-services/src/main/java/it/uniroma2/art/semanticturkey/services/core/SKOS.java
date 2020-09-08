@@ -112,6 +112,10 @@ public class SKOS extends STServiceAdapter {
 			@Optional @LocallyDefinedResources List<IRI> broaderProps, 
 			@Optional @LocallyDefinedResources List<IRI> narrowerProps,
 			@Optional(defaultValue="true") boolean includeSubProperties) {
+
+		//get the sub classes of skos:Concept
+		List<IRI> subClassesOfConceptList = getSubClassesOfConcept(getManagedConnection());
+
 		QueryBuilder qb;
 		
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
@@ -121,7 +125,6 @@ public class SKOS extends STServiceAdapter {
 		
 		String broaderNarrowerPath = preparePropPathForHierarchicalForQuery(broaderPropsToUse, narrowerPropsToUse, 
 				getManagedConnection(), includeSubProperties);
-		
 		if (schemes != null && !schemes.isEmpty()) {
 			String query = 
 					// @formatter:off
@@ -134,7 +137,12 @@ public class SKOS extends STServiceAdapter {
 					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
 					"\nSELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart() +
 					"\nWHERE { " +
-					"\n?conceptSubClass rdfs:subClassOf* skos:Concept . " +
+					//"\n?conceptSubClass rdfs:subClassOf* skos:Concept . " +
+					"\nVALUES ?conceptSubClass { ";
+			for(IRI subClassOfConcept : subClassesOfConceptList){
+				query+=" <"+subClassOfConcept.stringValue()+"> ";
+			}
+			query +=" }" +
 					"\n?resource rdf:type ?conceptSubClass . " +
 					filterAndOrScheme(schemeFilter, schemes, "?resource", "?scheme", "?subPropInScheme1", false)+
 					//prepareHierarchicalPartForQueryPart1(broaderProp , narrowerProp, "?aNarrowerConcept",
@@ -153,7 +161,7 @@ public class SKOS extends STServiceAdapter {
 			// @formatter:on
 			qb = createQueryBuilder(query);
 		} else {
-			qb = createQueryBuilder(
+			String query =
 					// @formatter:off
 					" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                \n" +
 					" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                               \n" +
@@ -165,7 +173,12 @@ public class SKOS extends STServiceAdapter {
 					//adding the nature in the SELECT, which should be removed when the appropriate processor is used
 					" SELECT ?resource ?attr_more "+generateNatureSPARQLSelectPart()+"					 \n" + 
 					" WHERE {																			 \n" + 
-					"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
+					//"     ?conceptSubClass rdfs:subClassOf* skos:Concept .                               \n" +
+							"\nVALUES ?conceptSubClass { ";
+					for(IRI subClassOfConcept : subClassesOfConceptList){
+						query+=" <"+subClassOfConcept.stringValue()+"> ";
+					}
+					query +=" }" +
 					"     ?resource rdf:type ?conceptSubClass .                                          \n" +
 					//TODO, this should be done now with MINUS
 					//"     FILTER NOT EXISTS {?resource skos:broader|^skos:narrower []}                   \n" +
@@ -198,9 +211,9 @@ public class SKOS extends STServiceAdapter {
 					generateNatureSPARQLWherePart("?resource") +
 					
 					" }                                                                                  \n" +
-					" GROUP BY ?resource ?attr_more                                                      \n"
+					" GROUP BY ?resource ?attr_more                                                      \n";
 					// @formatter:on
-			);
+			qb = createQueryBuilder(query);
 		}
 		qb.processRendering();
 		qb.processQName();
@@ -2494,6 +2507,27 @@ public class SKOS extends STServiceAdapter {
 		String query ="\n" + var + " (" + propertyPath  + " ) "+starOrNot+" "+superVar+" .";
 		
 		return query;
+	}
+
+	private List<IRI> getSubClassesOfConcept(RepositoryConnection conn){
+		List<IRI> subClassesOfConceptList = new ArrayList<>();
+		String query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#> \n " +
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
+				"SELECT ?conceptSubClass \n " +
+				"WHERE { \n " +
+				"?conceptSubClass rdfs:subClassOf* skos:Concept . \n" +
+				"} ";
+		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+		while (tupleQueryResult.hasNext()){
+			BindingSet bindingSet = tupleQueryResult.next();
+			if(bindingSet.getValue("conceptSubClass") instanceof  IRI) {
+				subClassesOfConceptList.add((IRI) bindingSet.getValue("conceptSubClass"));
+			}
+		}
+		tupleQueryResult.close();
+		return subClassesOfConceptList;
 	}
 
 	private String filterAndOrScheme(String schemeFilter, List<IRI> schemes, String resourceVar, String schemeVar,

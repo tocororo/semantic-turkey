@@ -5,6 +5,7 @@ date: xx/xx/202x
   * added icelandic to system languages
   * take system properties into account (e.g. proxy settings) when using the default HTTPClientBuilder in Apache
     HTTPComponents
+  * improved the performance when loading the topConcept in the concept tree
   
 version 8.0
 date: 29/07/2020
