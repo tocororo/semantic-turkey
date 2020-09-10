@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
 import java.util.Properties;
@@ -75,6 +76,19 @@ public class NativeTemplateBasedURIGeneratorConfiguration extends AbstractPlugin
 		} catch (PropertyNotFoundException e) {
 			if (props.getProperty(id) != null) {
 				return id;
+			} else {
+				throw new PropertyNotFoundException(String.format("Parameter %s not found", id));
+			}
+		}
+	}
+
+	@Override
+	public Annotation[] getAnnotations(String id) throws PropertyNotFoundException {
+		try {
+			return super.getAnnotations(id);
+		} catch (PropertyNotFoundException e) {
+			if (props.getProperty(id) != null) {
+				return new Annotation[0];
 			} else {
 				throw new PropertyNotFoundException(String.format("Parameter %s not found", id));
 			}
