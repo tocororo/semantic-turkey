@@ -572,7 +572,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		String query ="";
 		
 		String valueForRegex = ServiceForSearches.escapeStringForRegexInSPARQL(value);
-		String valueForIndex = normalizeStringForLuceneIndex(value);
+		String valueForIndex = normalizeStringForLuceneIndex(value, searchMode);
 		
 		if(indexToUse==null || indexToUse.length()==0) {
 			//if no lucene index is specified, then assume it is the Index_Literal
@@ -644,12 +644,22 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		return query;
 	}
 	
-	private String normalizeStringForLuceneIndex(String inputString) {
+	private String normalizeStringForLuceneIndex(String inputString, SearchMode searchMode) {
 		String outputString = inputString;
 
-		//replace all punctuation character except fro the underscore <code>_<code> 
+		//replace all punctuation character except for the underscore <code>_<code>
 		//replace the ' and the - with a whitespace
-		return outputString.replaceAll("\\p{Punct}&&[^_]", " ").replace("\'", " ").replace("-", " ").trim();
+		outputString = outputString.replaceAll("\\p{Punct}&&[^_]", " ").replace("\'", " ").replace("-", " ").trim();
+		//if the search mode is not exactMatch, the starting and ending . should be replace with (.)
+		if(!searchMode.equals(SearchMode.exact)){
+			if(outputString.startsWith(".")){
+				outputString = "(.)"+outputString.substring(1);
+			}
+			if(outputString.endsWith(".")){
+				outputString = outputString.substring(0, outputString.length()-1)+"(.)";
+			}
+		}
+		return outputString;
 		
 		
 		//OLD
