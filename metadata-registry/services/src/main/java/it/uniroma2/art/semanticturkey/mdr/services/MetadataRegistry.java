@@ -7,19 +7,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.ObjectUtils.Null;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-
-import com.google.common.base.MoreObjects;
-import com.google.common.collect.Maps;
 
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;

@@ -8,6 +8,7 @@ date: xx/xx/202x
   * improved the performance when loading the topConcept in the concept tree
   * fixed NoSuchPropertyException when trying to configure the NativeTemplateBasedURIGenerator
   * fixed a bug in searching for the labels starting or ending with a . in a project hosted in GraphDB
+  * fixed bugs in repair broken imports from file
   
 version 8.0
 date: 29/07/2020

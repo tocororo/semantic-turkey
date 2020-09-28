@@ -137,6 +137,7 @@
 							org.joda.time,
 							org.springframework.transaction.interceptor,
 							it.uniroma2.art.coda.core,
+							it.uniroma2.art.coda.exception.parserexception,
 							org.osgi.framework,
 							org.springframework.osgi.service.exporter.support,
 							org.springframework.osgi.context,
