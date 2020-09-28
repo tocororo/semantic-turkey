@@ -1416,6 +1416,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			try {
 				rdfLoader.load(new URL(iri.stringValue()), null, null, new StatementCollector(statements));
 			} catch (IOException | RDFParseException | RDFHandlerException e) {
+				logger.debug("Swallowed exception thrown when dereferecing " + NTriplesUtil.toNTriplesString(iri), e);
 				// swallow exception
 			}
 
