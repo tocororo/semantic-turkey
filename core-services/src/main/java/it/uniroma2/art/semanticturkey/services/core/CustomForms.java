@@ -343,50 +343,50 @@ public class CustomForms extends STServiceAdapter {
 
 		RepositoryConnection repoConnection = getManagedConnection();
 
-//		removeReifiedValue(repoConnection, subject, predicate, resource);
+		removeReifiedValue(repoConnection, subject, predicate, resource);
 
-		//TODO delete the following and restore the previous as soon as removeReifiedValue is restored in STServiceAdapter
-
-		// remove resource as object in the triple <s, p, o> for the given subject and predicate
-		repoConnection.remove(subject, predicate, resource, getWorkingGraph());
-
-		CODACore codaCore = getInitializedCodaCore(repoConnection);
-		CustomFormGraph cf = cfManager.getCustomFormGraphSeed(getProject(), codaCore, repoConnection,
-				resource, Collections.singleton(predicate), false);
-
-		Update update;
-		if (cf == null) { //
-			/*
-			 * If property hasn't a CustomForm simply delete all triples where resource occurs. note: this
-			 * case should never be verified cause this service should be called only when the predicate has a
-			 * CustomForm
-			 */
-			StringBuilder queryBuilder = new StringBuilder();
-			queryBuilder.append("delete { ");
-			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
-			queryBuilder.append(" <" + resource.stringValue() + "> ?p1 ?o1 . ");
-			queryBuilder.append(" ?s2 ?p2 <" + resource.stringValue() + "> . ");
-			queryBuilder.append(" }"); //close graph {}
-			queryBuilder.append(" } where { ");
-			queryBuilder.append(" <" + resource.stringValue() + "> ?p1 ?o1 . ");
-			queryBuilder.append(" ?s2 ?p2 <" + resource.stringValue() + "> . ");
-			queryBuilder.append(" }");
-			update = repoConnection.prepareUpdate(queryBuilder.toString());
-		} else { // otherwise remove with a SPARQL delete the graph defined by the CustomFormGraph
-			StringBuilder queryBuilder = new StringBuilder();
-			queryBuilder.append("delete { ");
-			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
-			queryBuilder.append(cf.getGraphSectionAsString(codaCore, false));
-			queryBuilder.append(" }"); //close graph {}
-			queryBuilder.append(" } where { ");
-			queryBuilder.append(cf.getGraphSectionAsString(codaCore, true));
-			queryBuilder.append(" }");
-			update = repoConnection.prepareUpdate(queryBuilder.toString());
-			update.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), resource);
-		}
-		update.setIncludeInferred(false);
-		update.execute();
-		shutDownCodaCore(codaCore);
+//		//TODO delete the following and restore the previous as soon as removeReifiedValue is restored in STServiceAdapter
+//
+//		// remove resource as object in the triple <s, p, o> for the given subject and predicate
+//		repoConnection.remove(subject, predicate, resource, getWorkingGraph());
+//
+//		CODACore codaCore = getInitializedCodaCore(repoConnection);
+//		CustomFormGraph cf = cfManager.getCustomFormGraphSeed(getProject(), codaCore, repoConnection,
+//				resource, Collections.singleton(predicate), false);
+//
+//		Update update;
+//		if (cf == null) { //
+//			/*
+//			 * If property hasn't a CustomForm simply delete all triples where resource occurs. note: this
+//			 * case should never be verified cause this service should be called only when the predicate has a
+//			 * CustomForm
+//			 */
+//			StringBuilder queryBuilder = new StringBuilder();
+//			queryBuilder.append("delete { ");
+//			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
+//			queryBuilder.append(" <" + resource.stringValue() + "> ?p1 ?o1 . ");
+//			queryBuilder.append(" ?s2 ?p2 <" + resource.stringValue() + "> . ");
+//			queryBuilder.append(" }"); //close graph {}
+//			queryBuilder.append(" } where { ");
+//			queryBuilder.append(" <" + resource.stringValue() + "> ?p1 ?o1 . ");
+//			queryBuilder.append(" ?s2 ?p2 <" + resource.stringValue() + "> . ");
+//			queryBuilder.append(" }");
+//			update = repoConnection.prepareUpdate(queryBuilder.toString());
+//		} else { // otherwise remove with a SPARQL delete the graph defined by the CustomFormGraph
+//			StringBuilder queryBuilder = new StringBuilder();
+//			queryBuilder.append("delete { ");
+//			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
+//			queryBuilder.append(cf.getGraphSectionAsString(codaCore, false));
+//			queryBuilder.append(" }"); //close graph {}
+//			queryBuilder.append(" } where { ");
+//			queryBuilder.append(cf.getGraphSectionAsString(codaCore, true));
+//			queryBuilder.append(" }");
+//			update = repoConnection.prepareUpdate(queryBuilder.toString());
+//			update.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), resource);
+//		}
+//		update.setIncludeInferred(false);
+//		update.execute();
+//		shutDownCodaCore(codaCore);
 	}
 
 	/**
