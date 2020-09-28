@@ -49,7 +49,6 @@ import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.Namespaces;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.impl.BackgroundGraphResult;
@@ -840,15 +839,27 @@ public class OntologyManagerImpl implements OntologyManager {
 			throws IOException {
 		IRI ont = conn.getValueFactory().createIRI(uriToBeRemoved);
 		IRI canonicalOnt = OntologyManager.computeCanonicalURI(ont);
+		IRI baseURI = conn.getValueFactory().createIRI(getBaseURI());
 		IRI canonicalBaseURI = OntologyManager
 				.computeCanonicalURI(conn.getValueFactory().createIRI(getBaseURI()));
-		if (getImportStatus(conn, uriToBeRemoved, true).getValue() != Values.OK) {
+		Values importStatus = getImportStatus(conn, uriToBeRemoved, true).getValue();
+
+		Model importAxioms = QueryResults.asModel(conn.getStatements(null, OWL.IMPORTS, null));
+
+		if (importStatus == Values.FAILED && mod == ImportModality.USER) {
+			if (importAxioms.filter(baseURI, OWL.IMPORTS, ont).stream().map(Statement::getContext)
+					.noneMatch(g -> VALIDATION.isAddGraph(g) || VALIDATION.isRemoveGraph(g))) {
+				removeDeclaredImport(conn, ont, mod);
+				return;
+			}
+		}
+
+		if (importStatus != Values.OK) {
 			throw new OntologyManagerException(
 					"Could not remove import to ontology which is not persistently imported: "
 							+ uriToBeRemoved);
 		}
 
-		Model importAxioms = QueryResults.asModel(conn.getStatements(null, OWL.IMPORTS, null));
 		Set<IRI> toBeRemovedOntologies = computeImportsClosure(importAxioms, ont);
 
 		logger.debug("transitive closure of imports to be removed: " + toBeRemovedOntologies);
@@ -964,24 +975,20 @@ public class OntologyManagerImpl implements OntologyManager {
 		IRI ont = SimpleValueFactory.getInstance().createIRI(baseURI);
 		List<Resource> contexts = QueryResults.asList(conn.getContextIDs());
 
-		if (importedOntologies.contains(ont) || contexts.contains(ont)) {
+		if (importedOntologies.contains(ont)) {
 			return new ImportStatus(ImportStatus.Values.OK, null);
-		}
+		} else {
+			if (validationEnabled) {
+				if (contexts.contains(ValidationUtilities.getAddGraphIfValidatonEnabled(true, ont))) {
+					return new ImportStatus(ImportStatus.Values.STAGED_ADDITION, null);
+				}
 
-		BooleanQuery ctxQuery = conn.prepareBooleanQuery("ASK { GRAPH ?g { ?s ?p ?o } }");
-		ctxQuery.setIncludeInferred(false);
-
-		if (validationEnabled) {
-			ctxQuery.setBinding("g", ValidationUtilities.getAddGraphIfValidatonEnabled(true, ont));
-			if (ctxQuery.evaluate()) {
-				// if (contexts.contains(ValidationUtilities.getAddGraphIfValidatonEnabled(true, ont))) {
-				return new ImportStatus(ImportStatus.Values.STAGED_ADDITION, null);
+				if (contexts.contains(ValidationUtilities.getRemoveGraphIfValidatonEnabled(true, ont))) {
+					return new ImportStatus(ImportStatus.Values.STAGED_REMOVAL, null);
+				}
 			}
-
-			ctxQuery.setBinding("g", ValidationUtilities.getRemoveGraphIfValidatonEnabled(true, ont));
-			if (ctxQuery.evaluate()) {
-				// if (contexts.contains(ValidationUtilities.getRemoveGraphIfValidatonEnabled(true, ont))) {
-				return new ImportStatus(ImportStatus.Values.STAGED_REMOVAL, null);
+			if (contexts.contains(ont)) {
+				return new ImportStatus(ImportStatus.Values.OK, null);
 			}
 		}
 
@@ -1139,7 +1146,7 @@ public class OntologyManagerImpl implements OntologyManager {
 			TransitiveImportMethodAllowance transitiveImportAllowance, Set<IRI> failedImports)
 			throws ImportManagementException, RDF4JException, IOException {
 		File inputFile = new File(fromLocalFilePath);
-		MirroredOntologyFile mirFile = new MirroredOntologyFile(toLocalFile);
+		MirroredOntologyFile mirFile = toLocalFile != null ? new MirroredOntologyFile(toLocalFile) : null;
 
 		checkImportFailed(conn, baseURI);
 

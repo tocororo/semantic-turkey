@@ -460,7 +460,7 @@ public class Metadata extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	public Collection<OntologyImport> getFromLocalFile(String baseURI, MultipartFile localFile,
-			String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
+			@Optional String mirrorFile, TransitiveImportMethodAllowance transitiveImportAllowance)
 			throws RDF4JException, MalformedURLException, ImportManagementException, IOException {
 		Set<IRI> failedImports = new HashSet<>();
 		File inputServerFile = File.createTempFile("getFromLocalFile", localFile.getOriginalFilename());

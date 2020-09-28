@@ -258,7 +258,7 @@ public interface OntologyManager {
 	 * @throws RDF4JException
 	 * @throws IOException
 	 */
-	void getImportedOntologyFromLocalFile(RepositoryConnection conn, String baseURI, String fromLocalFilePath,
+	void getImportedOntologyFromLocalFile(RepositoryConnection conn, String baseURI, @Nullable String fromLocalFilePath,
 			String toLocalFile, TransitiveImportMethodAllowance transitiveImportAllowance,
 			Set<IRI> failedImports)
 			throws MalformedURLException, ImportManagementException, RDF4JException, IOException;
