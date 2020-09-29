@@ -532,7 +532,7 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'R')")
 	public JsonNode getFormCollection(String id) throws CustomFormException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode formCollNode = jsonFactory.objectNode();
@@ -573,7 +573,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'R')")
 	public JsonNode getAllFormCollections() {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode formCollArray = jsonFactory.arrayNode();
@@ -596,7 +596,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws DuplicateIdException
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'C')")
 	public void createFormCollection(String id) throws DuplicateIdException {
 		cfManager.createFormCollection(getProject(), id);
 	}
@@ -612,7 +612,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'C')")
 	public void cloneFormCollection(String sourceId, String targetId) throws CustomFormException {
 		// look for FC at project level
 		FormCollection sourceFC = cfManager.getFormCollection(getProject(), sourceId);
@@ -635,7 +635,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'R')")
 	public void exportFormCollection(HttpServletResponse oRes, String id)
 			throws CustomFormException, IOException {
 		FormCollection formCollection = cfManager.getFormCollection(getProject(), id);
@@ -668,7 +668,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'C')")
 	public void importFormCollection(MultipartFile inputFile, @Optional String newId)
 			throws IOException, CustomFormException {
 		// create a temp file (in karaf data/temp folder) to copy the received file
@@ -715,7 +715,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'D')")
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'D')")
 	public void deleteFormCollection(String id) throws CustomFormException {
 		FormCollection formColl = cfManager.getProjectFormCollection(getProject(), id);
 		if (formColl == null) {
@@ -734,7 +734,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'U')")
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'U')")
 	public void updateFromCollection(String formCollectionId, List<String> customFormIds,
 			List<IRI> suggestions) throws CustomFormException {
 		FormCollection formColl = cfManager.getProjectFormCollection(getProject(), formCollectionId);
@@ -1274,7 +1274,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('cform(form, mapping)', 'R')")
 	public JsonNode getCustomFormConfigMap() {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode cfcArrayNode = jsonFactory.arrayNode();
@@ -1337,7 +1337,7 @@ public class CustomForms extends STServiceAdapter {
 	 * @throws CustomFormException
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('cform(formCollection)', 'U')")
+	@PreAuthorize("@auth.isAuthorized('cform(formCollection, form)', 'U')")
 	public void updateReplace(IRI resource, boolean replace) throws CustomFormException {
 		cfManager.setReplace(getProject(), resource, replace);
 	}
