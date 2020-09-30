@@ -22,8 +22,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary;
-import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary.RemoteRepositorySummary;
+import it.uniroma2.art.semanticturkey.project.RepositorySummary;
+import it.uniroma2.art.semanticturkey.project.RepositorySummary.RemoteRepositorySummary;
 
 /**
  * This class provides services for accessing remote repositories.

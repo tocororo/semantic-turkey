@@ -18,6 +18,7 @@ import it.uniroma2.art.semanticturkey.ontology.OntologyImport;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
+import it.uniroma2.art.semanticturkey.project.ClearDataReport;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.DataFormat;
@@ -29,6 +30,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipeline;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationStep;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 import org.eclipse.rdf4j.RDF4JException;
@@ -376,12 +378,18 @@ public class InputOutput extends STServiceAdapter {
 	/**
 	 * Clear the repository associated with the current project
 	 * 
-	 * @throws RDF4JException
+	 * @throws Exception
+	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rdf', 'D')")
-	public void clearData() throws RDF4JException {
-		getProject().getNewOntologyManager().clearData();
+	public ClearDataReport clearData() throws Exception {
+		ClearDataReport clearDataReport = getProject().clearData();
+		if (UsersManager.getLoggedUser().isAdmin()) {
+			return clearDataReport;
+		} else {
+			return null;
+		}
 	}
 
 	/**

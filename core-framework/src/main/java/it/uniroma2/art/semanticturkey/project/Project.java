@@ -65,6 +65,7 @@ import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory;
+import it.uniroma2.art.semanticturkey.project.RepositorySummary.RemoteRepositorySummary;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -94,6 +95,7 @@ import org.eclipse.rdf4j.repository.config.RepositoryConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
+import org.eclipse.rdf4j.repository.manager.RepositoryInfo;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.slf4j.Logger;
@@ -107,6 +109,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -254,8 +257,8 @@ public abstract class Project extends AbstractProject {
 	private ExtensionPointManager exptManager;
 
 	/*
-	Stuff about DCT metadata, deprecated from v8.0 in favor of ResourceMetadata,
-	but still used in the update routine 7.0 -> 8.0
+	 * Stuff about DCT metadata, deprecated from v8.0 in favor of ResourceMetadata, but still used in the
+	 * update routine 7.0 -> 8.0
 	 */
 	public static final String UPDATE_FOR_ROLES_PROP_DEPRECATED = "updateForRoles";
 	public static final String CREATION_DATE_PROP_DEPRECATED = "creationDate";
@@ -311,7 +314,8 @@ public abstract class Project extends AbstractProject {
 				facets = new HashMap<>(); // default empty map
 			}
 
-			//for the update routine 7 -> 8, we are interested in the sole projects with "resource" as updateForRoles
+			// for the update routine 7 -> 8, we are interested in the sole projects with "resource" as
+			// updateForRoles
 			updateForRoles = new HashSet<>();
 			String updateForRolesString = stp_properties.getProperty(UPDATE_FOR_ROLES_PROP_DEPRECATED);
 			if (updateForRolesString != null && updateForRolesString.equals("resource")) {
@@ -499,6 +503,8 @@ public abstract class Project extends AbstractProject {
 
 				loadingCoreVocabularies();
 
+				conn.begin();
+				
 				ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (connection) -> {
 					// always guarantee that there is an owl:Ontology named after the base URI
 					IRI baseURIasIRI = conn.getValueFactory().createIRI(baseURI);
@@ -507,6 +513,8 @@ public abstract class Project extends AbstractProject {
 						conn.add(baseURIasIRI, RDF.TYPE, OWL.ONTOLOGY, baseURIasIRI);
 					}
 				});
+				
+				conn.commit();
 
 				logger.debug("defaultnamespace set to: " + defaultNamespace);
 			}
@@ -679,6 +687,40 @@ public abstract class Project extends AbstractProject {
 	}
 
 	protected abstract void loadTriples() throws RDF4JException;
+
+	public ClearDataReport clearData() throws Exception {
+		// clear core repository
+		newOntManager.clearData();
+		// reload core vocabularies
+		loadingCoreVocabularies();
+
+		// if support repository is enabled, clear it as well
+		if (supportOntManager != null) {
+			supportOntManager.clearData();
+		}
+
+		// set new version manager
+		versionManager = new VersionManager(this);
+
+		// delete all repositories but the core and support ones
+		Collection<RepositorySummary> repSummaries = getRepositorySummaries(repositoryManager, true);
+		repSummaries.removeIf(s -> s.getId().equals(CORE_REPOSITORY));
+		repSummaries.removeIf(s -> s.getId().equals(SUPPORT_REPOSITORY));
+		
+		for (RepositoryInfo repInfo : repositoryManager.getAllRepositoryInfos()) {
+			String repID = repInfo.getId();
+			// skip core and support repository
+			if (repID.equals(CORE_REPOSITORY) || repID.equals(SUPPORT_REPOSITORY))
+				continue;
+
+			repositoryManager.removeRepository(repID);
+		}
+
+		ClearDataReport clearDataReport = new ClearDataReport();
+		clearDataReport.danglingRemoteRepositories = repSummaries;
+		
+		return clearDataReport;
+	}
 
 	private void updateProjectProperties() throws IOException {
 		FileOutputStream os = new FileOutputStream(infoSTPFile);
@@ -1242,6 +1284,44 @@ public abstract class Project extends AbstractProject {
 
 	public void removeFacetDir() throws ProjectUpdateException {
 		setFacet(FACET_DIR, null);
+	}
+
+	public static Collection<RepositorySummary> getRepositorySummaries(STLocalRepositoryManager repoManager,
+			boolean excludeLocal) {
+		Collection<RepositoryInfo> repos = repoManager.getAllUserRepositoryInfos();
+		Collection<RepositorySummary> summaries = new ArrayList<>();
+
+		for (RepositoryInfo rep : repos) {
+
+			RepositoryConfig config = repoManager.getRepositoryConfig(rep.getId());
+			RepositoryImplConfig repImplConfig = STLocalRepositoryManager
+					.getUnfoldedRepositoryImplConfig(config);
+
+			RemoteRepositorySummary remoteRepoSummary;
+
+			if (repImplConfig instanceof HTTPRepositoryConfig) {
+				HTTPRepositoryConfig httpRepConfig = ((HTTPRepositoryConfig) repImplConfig);
+
+				java.util.Optional<STRepositoryInfo> stRepositoryInfo = repoManager
+						.getSTRepositoryInfo(rep.getId());
+
+				remoteRepoSummary = new RemoteRepositorySummary(
+						Protocol.getServerLocation(httpRepConfig.getURL()),
+						Protocol.getRepositoryID(httpRepConfig.getURL()),
+						stRepositoryInfo.map(STRepositoryInfo::getUsername).orElse(null),
+						stRepositoryInfo.map(STRepositoryInfo::getPassword).orElse(null));
+			} else {
+				if (excludeLocal) {
+					continue; // as indicated in the parameters, skip local repositories
+				}
+				remoteRepoSummary = null;
+			}
+
+			RepositorySummary repSummary = new RepositorySummary(rep.getId(), rep.getDescription(),
+					remoteRepoSummary);
+			summaries.add(repSummary);
+		}
+		return summaries;
 	}
 
 }

@@ -1211,7 +1211,11 @@ public class OntologyManagerImpl implements OntologyManager {
 			logger.debug("owlModel not active: no need to clear RDF data");
 		} else {
 			try (RepositoryConnection conn = repository.getConnection()) {
-				conn.clear();
+				conn.begin();
+				ValidationUtilities.executeWithoutValidation(validationEnabled, conn, c_ -> {
+					c_.clear();
+				});
+				conn.commit();
 			}
 			logger.debug("RDF Data cleared");
 		}

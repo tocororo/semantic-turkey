@@ -36,7 +36,7 @@ public class ValidationUtilities {
 
 		logger.debug("Disable validation on connection: " + conn.toString());
 
-		logger.debug("Is validation enabled6: " + validationEnabled);
+		logger.debug("Is validation enabled: " + validationEnabled);
 
 		if (validationEnabled) {
 			conn.add(CHANGETRACKER.VALIDATION, CHANGETRACKER.ENABLED, BooleanLiteral.FALSE,

@@ -861,7 +861,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 					}
 				}
 
-				if (!contextsToClear.isEmpty()) {
+				if (!contextsToClear.isEmpty() || !validationEnabled) {
 					super.clear(contextsToClear.toArray(new Resource[contextsToClear.size()]));
 				}
 

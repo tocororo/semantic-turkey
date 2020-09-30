@@ -23,10 +23,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
 
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
-import it.uniroma2.art.semanticturkey.properties.Pair;
-import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
@@ -37,10 +33,8 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.eclipse.rdf4j.common.iteration.Iterations;
-import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.util.Models;
@@ -52,10 +46,6 @@ import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.config.RepositoryConfig;
-import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
-import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
-import org.eclipse.rdf4j.repository.manager.RepositoryInfo;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
@@ -82,6 +72,7 @@ import it.uniroma2.art.lime.profiler.ProfilerException;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -93,6 +84,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
+import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
@@ -116,11 +108,13 @@ import it.uniroma2.art.semanticturkey.project.ProjectStatus;
 import it.uniroma2.art.semanticturkey.project.ProjectStatus.Status;
 import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
 import it.uniroma2.art.semanticturkey.project.RepositoryLocation;
+import it.uniroma2.art.semanticturkey.project.RepositorySummary;
 import it.uniroma2.art.semanticturkey.project.SHACLSettings;
 import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
-import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
+import it.uniroma2.art.semanticturkey.properties.Pair;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -132,8 +126,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataStore;
 import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummary;
 import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
-import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary;
-import it.uniroma2.art.semanticturkey.services.core.projects.RepositorySummary.RemoteRepositorySummary;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
@@ -878,38 +870,8 @@ public class Projects extends STServiceAdapter {
 					project.getProjectDirectory());
 			repoManager.init();
 			try {
-				Collection<RepositoryInfo> repos = repoManager.getAllUserRepositoryInfos();
-
-				for (RepositoryInfo rep : repos) {
-
-					RepositoryConfig config = repoManager.getRepositoryConfig(rep.getId());
-					RepositoryImplConfig repImplConfig = STLocalRepositoryManager
-							.getUnfoldedRepositoryImplConfig(config);
-
-					RemoteRepositorySummary remoteRepoSummary;
-
-					if (repImplConfig instanceof HTTPRepositoryConfig) {
-						HTTPRepositoryConfig httpRepConfig = ((HTTPRepositoryConfig) repImplConfig);
-
-						java.util.Optional<STRepositoryInfo> stRepositoryInfo = repoManager
-								.getSTRepositoryInfo(rep.getId());
-
-						remoteRepoSummary = new RemoteRepositorySummary(
-								Protocol.getServerLocation(httpRepConfig.getURL()),
-								Protocol.getRepositoryID(httpRepConfig.getURL()),
-								stRepositoryInfo.map(STRepositoryInfo::getUsername).orElse(null),
-								stRepositoryInfo.map(STRepositoryInfo::getPassword).orElse(null));
-					} else {
-						if (excludeLocal) {
-							continue; // as indicated in the parameters, skip local repositories
-						}
-						remoteRepoSummary = null;
-					}
-
-					RepositorySummary repSummary = new RepositorySummary(rep.getId(), rep.getDescription(),
-							remoteRepoSummary);
-					rv.add(repSummary);
-				}
+				Collection<RepositorySummary> summaries = Project.getRepositorySummaries(repoManager, excludeLocal);
+				rv.addAll(summaries);
 			} finally {
 				repoManager.shutDown();
 			}

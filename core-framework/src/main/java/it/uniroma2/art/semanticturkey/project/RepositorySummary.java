@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.services.core.projects;
+package it.uniroma2.art.semanticturkey.project;
 
 import javax.annotation.Nullable;
 
