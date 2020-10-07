@@ -165,6 +165,19 @@ chk_capability(rbac(_,_), CRUDV) :-
 %	write('exp: rbac into rbac(_,_)  | '),
 	chk_capability(rbac, CRUDV).
 
+/*********************************
+ ** rules and shortcuts for cform **
+ *********************************/
+
+chk_capability(cform(_), CRUDV) :-	
+%	write('exp: cform into cform(_) | '),
+	chk_capability(cform, CRUDV).	
+
+chk_capability(cform(_,_), CRUDV) :-	
+%	write('exp: cform into cform(_,_)  | '),
+	chk_capability(cform, CRUDV).
+
+
 
 /*********************
  ** CORE PREDICATES **
