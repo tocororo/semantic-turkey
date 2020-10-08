@@ -111,7 +111,7 @@ public class CustomForms extends STServiceAdapter {
 	private final String ANN_ROLE = "Role";
 	private final String ANN_DATAONEOF = "DataOneOf";
 	private final String ANN_OBJECTONEOF = "ObjectOneOf";
-	private final String ANN_LIST = "List";
+	private final String ANN_COLLECTION = "Collection";
 
 	/**
 	 * Returns a description of a graph created through a CustomForm. The description is based on the
@@ -1493,6 +1493,7 @@ public class CustomForms extends STServiceAdapter {
 			addAnnRangeOrRole(projectionRule, projectionRulesModel, getManagedConnection());
 			addAnnOneOf(projectionRule, projectionRulesModel, getManagedConnection());
 			addAnnListMax(projectionRule, projectionRulesModel, getManagedConnection());
+			addAnnListMin(projectionRule, projectionRulesModel, getManagedConnection());
 		}
 
 		return projectionRulesModel.getModelAsString(annDefToExludeList);
@@ -1533,7 +1534,7 @@ public class CustomForms extends STServiceAdapter {
 				//it not a placeholder hosting a URI, so just skip it
 				continue;
 			}
-			//check if it alreay has the annotation ANN_RANGE or ANN_RANGELIST
+			//check if it alreday has the annotation ANN_RANGE or ANN_RANGELIST
 			boolean skipAnnRangeAndRangeList = false;
 			boolean skipAnnRole = false;
 			for(Annotation annotation : placeholderStruct.getAnnotationList()){
@@ -1781,9 +1782,9 @@ public class CustomForms extends STServiceAdapter {
 	}
 
 	private void addAnnListMax(ProjectionRule projectionRule, ProjectionRulesModel projectionRulesModel, RepositoryConnection managedConnection) {
-		AnnotationDefinition listAnnDef = projectionRulesModel.getAnnotationDefinition(ANN_LIST);
+		AnnotationDefinition listAnnDef = projectionRulesModel.getAnnotationDefinition(ANN_COLLECTION);
 
-		//iterate over each placeholder, if such placeholder is an IRI and does not already have ANN_LIST then
+		//iterate over each placeholder, if such placeholder is an IRI and does not already have ANN_COLLECTION then
 		//check if in the graph section there are any triples of the type  "SUBJ PROP PLACEHOLDER" and in the repository
 		// there is :
 		// PROP a owl:FunctionalProperty
@@ -1796,7 +1797,7 @@ public class CustomForms extends STServiceAdapter {
 			}
 			boolean skipAnnList = false;
 			for (Annotation annotation : placeholderStruct.getAnnotationList()) {
-				if (annotation.getName().equals(ANN_LIST)) {
+				if (annotation.getName().equals(ANN_COLLECTION)) {
 					skipAnnList = true;
 					break;
 				}
@@ -1831,7 +1832,7 @@ public class CustomForms extends STServiceAdapter {
 			}
 			// create the appropriate annotation, if isPropFunct is true
 			if(isPropFunct) {
-				Annotation newAnnotaiton = new Annotation(ANN_LIST, listAnnDef);
+				Annotation newAnnotaiton = new Annotation(ANN_COLLECTION, listAnnDef);
 				List<ParamValueInterface> paramValueInterfaceList = new ArrayList<>();
 				paramValueInterfaceList.add(new ParamValueInteger(1));
 				newAnnotaiton.addParams("max", paramValueInterfaceList);
@@ -1861,6 +1862,37 @@ public class CustomForms extends STServiceAdapter {
 		try(TupleQueryResult queryResult = tupleQuery.evaluate()){
 			return queryResult.hasNext();
 		}
+	}
+
+	private void addAnnListMin(ProjectionRule projectionRule, ProjectionRulesModel projectionRulesModel, RepositoryConnection managedConnection){
+		AnnotationDefinition listAnnDef = projectionRulesModel.getAnnotationDefinition(ANN_COLLECTION);
+
+		//iterate over each placeholder, if such placeholder does not already have ANN_COLLECTION then
+		//check if it is not a mandatory placeholder, if so, set min=0
+
+		for(String plcName : projectionRule.getPlaceholderMap().keySet()) {
+			PlaceholderStruct placeholderStruct = projectionRule.getPlaceholderMap().get(plcName);
+			boolean isMandatory = placeholderStruct.isMandatoryInGraphSection();
+			boolean skipAnnList = false;
+			for (Annotation annotation : placeholderStruct.getAnnotationList()) {
+				if (annotation.getName().equals(ANN_COLLECTION)) {
+					skipAnnList = true;
+					break;
+				}
+			}
+
+			if(skipAnnList){
+				continue;
+			}
+
+			// create the appropriate annotation, with min=0
+			Annotation newAnnotaiton = new Annotation(ANN_COLLECTION, listAnnDef);
+			List<ParamValueInterface> paramValueInterfaceList = new ArrayList<>();
+			paramValueInterfaceList.add(new ParamValueInteger(0));
+			newAnnotaiton.addParams("min", paramValueInterfaceList);
+			placeholderStruct.getAnnotationList().add(newAnnotaiton);
+		}
+
 	}
 
 

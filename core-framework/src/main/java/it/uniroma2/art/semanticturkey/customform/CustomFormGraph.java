@@ -187,7 +187,7 @@ public class CustomFormGraph extends CustomForm {
 							// fill the UserPromptStruct independently from its type (literal or uri)
 							upStruct.setLiteralDatatype(literalDatatype);
 							upStruct.setLiteralLang(literalLang);
-							upStruct.setConverter(converter);//for now I suppese there is used only one converter
+							upStruct.setConverter(converter);//for now I suppose there is used only one converter
 							upStruct.setConverterArgPhId(converterArgPh);
 							upStruct.setConverterArgLangTag(converterArgLangTag);
 							upStruct.setMandatory(placeHolderStruct.isMandatoryInGraphSection());

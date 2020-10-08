@@ -474,6 +474,7 @@ public class SHACL extends STServiceAdapter {
 
 	private String generatePearlFileString(Map<String, PropInfo> propToPropInfoMap, Map <String, String>prefixToNamespaceMap, IRI classIRI) {
 		StringBuffer sb = new StringBuffer();
+		List<String> plchInOptional = new ArrayList<>();
 		//create the prefix part
 		for(String prefix : prefixToNamespaceMap.keySet()){
 			sb.append("prefix "+prefix+": <"+prefixToNamespaceMap.get(prefix)+">");
@@ -483,20 +484,15 @@ public class SHACL extends STServiceAdapter {
 		String className = classIRI.getLocalName();
 		String classNameInst = className.toLowerCase()+"_inst";
 		//now create the rule
-		sb.append("\n");
-		sb.append("rule it.uniroma2.art." + className + " id:" + className + " { ");
-		sb.append("\n");
+		sb.append("\nrule it.uniroma2.art." + className + " id:" + className + " { ");
 
 		//the nodes part
-		sb.append("\tnodes = {");
-		sb.append("\n");
+		sb.append("\n\tnodes = {");
 		//write the main element
 		//sb.append("\t\t" + classNameInst + "\turi\t" + className + " .");
-		sb.append("\t\t" + classNameInst + "\turi\t" + FEATPATH_MAIN + " .");
-		sb.append("\n");
+		sb.append("\n\t\t" + classNameInst + "\turi\t" + FEATPATH_MAIN + " .\n");
 		//iterate over the property
 		for(String prop : propToPropInfoMap.keySet()){
-			sb.append("\n");
 			String propName = propToPropInfoMap.get(prop).getPropIRI().getLocalName();
 			PropInfo propInfo = propToPropInfoMap.get(prop);
 			if(propInfo.getSh_hasValue()!=null){
@@ -507,13 +503,15 @@ public class SHACL extends STServiceAdapter {
 				//the Annotation ANN_COLLECTION is needed
 				String min = propInfo.getMinCount()!=-1 ? "min="+propInfo.getMinCount() : "";
 				String max = propInfo.getMaxCount()!=-1 ? "max="+propInfo.getMaxCount() : "";
-				sb.append("\t\t"+ ANN_COLLECTION +"("+min+ (!min.isEmpty() && !max.isEmpty() ? ", " : "") + max+")");
-				sb.append("\n");
+				if(propInfo.getMinCount()==0){
+					plchInOptional.add(propName);
+				}
+				sb.append("\n\t\t"+ ANN_COLLECTION +"("+min+ (!min.isEmpty() && !max.isEmpty() ? ", " : "") + max+")");
 			}
+
 			if(propInfo.getSh_class()!=null){
 				//the Annotation ANN_RANGE is needed
-				sb.append("\t\t"+ANN_RANGE+"("+getQName(propInfo.getSh_class(), prefixToNamespaceMap)+")");
-				sb.append("\n");
+				sb.append("\n\t\t"+ANN_RANGE+"("+getQName(propInfo.getSh_class(), prefixToNamespaceMap)+")");
 			}
 			if(propInfo.getSh_in()!=null && !propInfo.getSh_in().isEmpty()){
 				//Depending on the type of values, either the Annotation
@@ -534,24 +532,19 @@ public class SHACL extends STServiceAdapter {
 					allValues+= getQNameOrNTLiteral(value, prefixToNamespaceMap)+", ";
 				}
 				allValues = allValues.substring(0, allValues.length()-2); // to remove the last ", "
-				sb.append( "\t\t"+(allIRI ? ANN_OBJECTONEOF : ANN_DATAONEOF)+"({"+allValues+"})");
-				sb.append("\n");
+				sb.append( "\n\t\t"+(allIRI ? ANN_OBJECTONEOF : ANN_DATAONEOF)+"({"+allValues+"})");
 			}
 			//now add the node definition
 			String literalConv = "literal"+(propInfo.getSh_datatype()!=null ? "^^"+getQName(propInfo.getSh_datatype(), prefixToNamespaceMap) : "");
-			sb.append("\t\t"+propName+"\t"+(propInfo.isLiteral() ? literalConv : "uri")+"\t"+USERPROMT+propName+" .");
-			sb.append("\n");
+			sb.append("\n\t\t"+propName+"\t"+(propInfo.isLiteral() ? literalConv : "uri")+"\t"+USERPROMT+propName+" .\n");
 		}
 		sb.append("\t}");
-		sb.append("\n");
 
 		//the graph part
 		String clasNamePlch = "$"+classNameInst;
-		sb.append("\tgraph = {");
-		sb.append("\n");
+		sb.append("\n\tgraph = {");
 		//write the main element
-		sb.append("\t\t" + clasNamePlch + "\ta\t" + getQName(classIRI, prefixToNamespaceMap) + " .");
-		sb.append("\n");
+		sb.append("\n\t\t" + clasNamePlch + "\ta\t" + getQName(classIRI, prefixToNamespaceMap) + " .");
 		for(String prop : propToPropInfoMap.keySet()){
 			String propName = propToPropInfoMap.get(prop).getPropIRI().getLocalName();
 			String propPlchOrValue = "$"+propName;
@@ -560,16 +553,21 @@ public class SHACL extends STServiceAdapter {
 				//has a specific value
 				propPlchOrValue = getQNameOrNTLiteral(propInfo.getSh_hasValue(), prefixToNamespaceMap);
 			}
-			sb.append("\t\t"+clasNamePlch+"\t"+getQName(propInfo.getPropIRI(), prefixToNamespaceMap)+"\t"+propPlchOrValue+" .");
-			sb.append("\n");
-
+			//if the current placeholder has the PEARL annotation min=0 (so isMinZero=true), then this triple should be placed in an OPTIONAL graph
+			String indentantion = "\n\t\t";
+			if(plchInOptional.contains(propName)){
+				sb.append("\n\t\tOPTIONAL {");
+				indentantion += "\t";
+			}
+			sb.append(indentantion+clasNamePlch+"\t"+getQName(propInfo.getPropIRI(), prefixToNamespaceMap)+"\t"+propPlchOrValue+" .");
+			if(plchInOptional.contains(propName)){
+				sb.append("\n\t\t}");
+			}
 		}
 
-		sb.append("\t}");
-		sb.append("\n");
+		sb.append("\n\t}");
 
-		sb.append("}");
-		sb.append("\n");
+		sb.append("\n}");
         return replaceTab(sb.toString());
 	}
 

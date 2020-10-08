@@ -21,6 +21,7 @@ date: 08/10/2020
     rdf(_) and rdf(_,_) and should never be expressed as a capability. "rdf(code)" has been associated to all
     capabilities previously expressed as "rdf".
   * minor fixes to the labels identifying some locales
+  * fixed a bug in the creation of the PEARL from a SHACL when the sh:minCount is used
   
 version 8.0
 date: 29/07/2020
