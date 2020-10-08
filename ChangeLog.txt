@@ -1,15 +1,26 @@
 version 8.0.1
 date: 08/10/2020
   * improved the performance of the history paging service
-  * fixed a NullPointerException thrown when clicking "Export as..." in the alignment validation tool
-  * added icelandic to system languages
+  * improved the performance when loading the topConcept in the concept tree
+  * improved the performance of the service listing recommended properties for a resource
+  * added inference for the cform term to cover all cform(_) and cform(_,_) expressions
+  * added an option to the resview for toggling the show of deprecated concepts
+  * added zip files to the range of supported file types when loading data
+  * enable the triple editor also for other roles than the administrator, by associating the capability rdf(code)
   * take system properties into account (e.g. proxy settings) when using the default HTTPClientBuilder in Apache
     HTTPComponents
-  * improved the performance when loading the topConcept in the concept tree
+  * fixed a NullPointerException thrown when clicking "Export as..." in the alignment validation tool
+  * added icelandic (and related flag icon) to system languages
   * fixed NoSuchPropertyException when trying to configure the NativeTemplateBasedURIGenerator
-  * fixed a bug in searching for the labels starting or ending with a . in a project hosted in GraphDB
-  * fixed bugs in repair broken imports from file
-  * minor changes to services authorizations
+  * fixed a bug in label search (when labels start or end with a . in a project hosted on GraphDB)
+  * fixed bugs in repairing broken imports from file
+  * fixed the interpretation of min=0 pearl annotation for custom forms
+  * fix for constraint min=0 in Custom Form's annotations not properly interpreted
+  * brought a few changes to the services for managing broken imports
+  * minor changes to services authorizations. In particular, the simple term "rdf" is now only a shortcut for 
+    rdf(_) and rdf(_,_) and should never be expressed as a capability. "rdf(code)" has been associated to all
+    capabilities previously expressed as "rdf".
+  * minor fixes to the labels identifying some locales
   
 version 8.0
 date: 29/07/2020
