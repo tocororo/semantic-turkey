@@ -154,7 +154,7 @@ public class Refactor extends STServiceAdapter  {
 	 */
 	@STServiceOperation(method=RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf', 'CRUD')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'CRUD')")
 	public void replaceBaseURI(@Optional IRI sourceBaseURI, IRI targetBaseURI) throws ProjectUpdateException {
 		//get the source baseURI
 		String source;
@@ -299,7 +299,7 @@ public class Refactor extends STServiceAdapter  {
 	 */
 	@STServiceOperation
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf', 'CRUD')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'CRUD')")
 	public void migrateDefaultGraphToBaseURIGraph(@Optional(defaultValue = "false") boolean clearDestinationGraph) {
 		String updateSpec;
 		if (clearDestinationGraph) {

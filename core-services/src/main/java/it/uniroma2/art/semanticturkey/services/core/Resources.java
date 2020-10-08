@@ -208,7 +208,7 @@ public class Resources extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public AnnotatedValue<Resource> getResourceDescription(@LocallyDefined Resource resource) {
 		QueryBuilder qb = createQueryBuilder(
 		// @formatter:off

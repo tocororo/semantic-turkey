@@ -64,7 +64,7 @@ public class History extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public HistoryPaginationInfo getCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
 			@Optional(defaultValue = "") IRI[] performerFilter,
 			@Optional(defaultValue = "") IRI[] validatorFilter, @Optional String timeLowerBound,
@@ -137,7 +137,7 @@ public class History extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public Collection<CommitInfo> getCommits(long tipRevisionNumber,
 			@Optional(defaultValue = "") IRI[] operationFilter,
 			@Optional(defaultValue = "") IRI[] performerFilter,
@@ -300,7 +300,7 @@ public class History extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public CommitDelta getCommitDelta(@SkipTermValidation IRI commit, @Optional(defaultValue = "100") int limit) {
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 

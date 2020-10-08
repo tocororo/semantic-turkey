@@ -675,7 +675,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 			sb.append(")");
 			preauthorizeValue = sb.toString();
 		} else {
-			preauthorizeValue = "@auth.isAuthorized('rdf', " + (isWrite ? "'CUD'" : "'R'") + ")";
+			preauthorizeValue = "@auth.isAuthorized('rdf(code)', " + (isWrite ? "'CUD'" : "'R'") + ")";
 		}
 
 		return preauthorizeValue;

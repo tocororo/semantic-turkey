@@ -60,7 +60,7 @@ public class Validation extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'V')")
 	public ValidationPaginationInfo getStagedCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
 			@Optional(defaultValue = "") IRI[] performerFilter, @Optional String timeLowerBound,
 			@Optional String timeUpperBound, @Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
@@ -131,7 +131,7 @@ public class Validation extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'V')")
 	public Collection<CommitInfo> getCommits(@Optional(defaultValue = "") IRI[] operationFilter,
 			@Optional(defaultValue = "") IRI[] performerFilter, @Optional String timeLowerBound,
 			String timeUpperBound, @Optional(defaultValue = "Unordered") SortingDirection operationSorting,
@@ -277,7 +277,7 @@ public class Validation extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@OmitHistoryMetadata
-	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'V')")
 	public void accept(@SkipTermValidation IRI validatableCommit) {
 		OperationMetadata operationMetadata = new OperationMetadata();
 		operationMetadata.setUserIRI(UsersManager.getLoggedUser().getIRI(), STCHANGELOG.VALIDATOR);
@@ -294,7 +294,7 @@ public class Validation extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@OmitHistoryMetadata
-	@PreAuthorize("@auth.isAuthorized('rdf', 'V')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'V')")
 	public void reject(@SkipTermValidation IRI validatableCommit, @Optional String comment) {
 		RepositoryConnection conn = getManagedConnection();
 		rejectInternal(conn, validatableCommit, comment);

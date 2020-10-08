@@ -145,7 +145,7 @@ public class InputOutput extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("#validateImplicitly ? @auth.isAuthorized('rdf', 'CV') : @auth.isAuthorized('rdf', 'C')")
+	@PreAuthorize("#validateImplicitly ? @auth.isAuthorized('rdf(code)', 'CV') : @auth.isAuthorized('rdf(code)', 'C')")
 	public Collection<OntologyImport> loadRDF(@Optional MultipartFile inputFile, String baseURI,
 			@Optional String format, TransitiveImportMethodAllowance transitiveImportAllowance,
 			@Optional PluginSpecification loaderSpec, @Optional PluginSpecification rdfLifterSpec,
@@ -382,7 +382,7 @@ public class InputOutput extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('rdf', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'D')")
 	public ClearDataReport clearData() throws Exception {
 		ClearDataReport clearDataReport = getProject().clearData();
 		if (UsersManager.getLoggedUser().isAdmin()) {

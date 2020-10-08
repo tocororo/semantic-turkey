@@ -84,7 +84,7 @@ public class Export extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public Collection<AnnotatedValue<org.eclipse.rdf4j.model.Resource>> getNamedGraphs() throws Exception {
 		return Iterations.stream(getManagedConnection().getContextIDs()).distinct()
 				.map(AnnotatedValue<org.eclipse.rdf4j.model.Resource>::new).collect(toList());
@@ -151,7 +151,7 @@ public class Export extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public void export(HttpServletResponse oRes, @Optional(defaultValue = "") IRI[] graphs,
 			@Optional(defaultValue = "[]") TransformationPipeline filteringPipeline,
 			@Optional(defaultValue = "false") boolean includeInferred, @Optional String outputFormat,
@@ -165,7 +165,7 @@ public class Export extends STServiceAdapter {
 
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public void dataDump(HttpServletResponse oRes, @Optional(defaultValue = "Turtle") RDFFormat format)
 			throws Exception {
 		exportHelper(exptManager, stServiceContext, oRes, getManagedConnection(),
@@ -178,8 +178,7 @@ public class Export extends STServiceAdapter {
 			TransformationPipeline filteringPipeline, boolean includeInferred, String outputFormat,
 			boolean force, @Nullable PluginSpecification deployerSpec,
 			@Nullable PluginSpecification reformattingExporterSpec)
-			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, WrongPropertiesException,
+			throws IOException, WrongPropertiesException,
 			ExportPreconditionViolationException, IllegalArgumentException, STPropertyAccessException,
 			InvalidConfigurationException, NoSuchExtensionException, ReformattingException {
 		Set<Resource> sourceGraphs = QueryResults.asSet(sourceRepositoryConnection.getContextIDs());

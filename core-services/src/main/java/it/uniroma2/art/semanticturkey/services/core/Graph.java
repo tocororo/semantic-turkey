@@ -38,7 +38,7 @@ public class Graph extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public JsonNode getGraphModel() {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode graphModelArrayNode = jsonFactory.arrayNode();
@@ -126,7 +126,7 @@ public class Graph extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public JsonNode expandGraphModelNode(IRI resource) {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 
@@ -209,7 +209,7 @@ public class Graph extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public JsonNode expandSubResources(IRI resource, RDFResourceRole role) {
 		
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
@@ -270,7 +270,7 @@ public class Graph extends STServiceAdapter {
 	
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public JsonNode expandSuperResources(IRI resource, RDFResourceRole role) {
 		
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
