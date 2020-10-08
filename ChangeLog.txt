@@ -10,7 +10,7 @@ date: 08/10/2020
   * take system properties into account (e.g. proxy settings) when using the default HTTPClientBuilder in Apache
     HTTPComponents
   * fixed a NullPointerException thrown when clicking "Export as..." in the alignment validation tool
-  * added icelandic (and related flag icon) to system languages
+  * added icelandic to system languages
   * fixed NoSuchPropertyException when trying to configure the NativeTemplateBasedURIGenerator
   * fixed a bug in label search (when labels start or end with a . in a project hosted on GraphDB)
   * fixed bugs in repairing broken imports from file
