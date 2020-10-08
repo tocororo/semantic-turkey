@@ -2487,53 +2487,63 @@ public class ICV extends STServiceAdapter {
 	
 	private String rolePartForQuery(RDFResourceRole[] rolesArray, String var, boolean useSubQuery) {
 		String query = "";
-		String union="";
-		boolean first=true;
-		if(useSubQuery) {
-			query += "\n{SELECT "+var+" "
+		String union = "";
+		boolean first = true;
+		if (useSubQuery) {
+			query += "\n{SELECT " + var + " "
 					+ "\nWHERE {";
 		}
-		for(RDFResourceRole role : rolesArray) {
-			if(!first) {
+		for (RDFResourceRole role : rolesArray) {
+			if (!first) {
 				union = "\nUNION";
 			}
-			
-			if(role.equals(RDFResourceRole.concept)) {
-				query+=union+"\n{ "+var+" a <"+SKOS.CONCEPT.stringValue()+"> . } ";
-				first=false;
-			} else if(role.equals(RDFResourceRole.cls)) {
-				query+=union+"\n{ "+var+" a ?type .  "
-						+ "\nFILTER(?type = <"+OWL.CLASS.stringValue()+"> || "
-								+ "?type = <"+RDFS.CLASS.stringValue()+"> ) } \n";
+
+			if (role.equals(RDFResourceRole.concept)) {
+				query += union + "\n{ " + var + " "
+						+ NTriplesUtil.toNTriplesString(RDF.TYPE) + "/" + NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + "* "
+						+ NTriplesUtil.toNTriplesString(SKOS.CONCEPT) + " . } ";
 				first = false;
-			} else if(role.equals(RDFResourceRole.property)) {
-				query+=union+"\n{ "+var+" a ?type .  "
-						+ "\nFILTER(?type = <"+RDF.PROPERTY.stringValue()+"> || "
-						+ "?type = <"+OWL.OBJECTPROPERTY.stringValue()+"> || "
-						+ "?type = <"+OWL.DATATYPEPROPERTY.stringValue()+"> || "
-						+ "?type = <"+OWL.ANNOTATIONPROPERTY.stringValue()+"> || " 
-						+ "?type = <"+OWL.ONTOLOGYPROPERTY.stringValue()+"> )"+
+			} else if (role.equals(RDFResourceRole.cls)) {
+				query += union + "\n{ " + var
+						+ NTriplesUtil.toNTriplesString(RDF.TYPE) + "/" + NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + "* "
+						+ "?type .  "
+						+ "\nFILTER(?type = " + NTriplesUtil.toNTriplesString(OWL.CLASS) + " || "
+						+ "?type = " + NTriplesUtil.toNTriplesString(RDFS.CLASS) + " ) } \n";
+				first = false;
+			} else if (role.equals(RDFResourceRole.property)) {
+				query += union + "\n{ " + var
+						+ NTriplesUtil.toNTriplesString(RDF.TYPE) + "/" + NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + "* "
+						+ "?type .  "
+						+ "\nFILTER(?type = " + NTriplesUtil.toNTriplesString(RDF.PROPERTY) + " || "
+						+ "?type = " + NTriplesUtil.toNTriplesString(OWL.OBJECTPROPERTY) + " || "
+						+ "?type = " + NTriplesUtil.toNTriplesString(OWL.DATATYPEPROPERTY) + " || "
+						+ "?type = " + NTriplesUtil.toNTriplesString(OWL.ANNOTATIONPROPERTY) + " || "
+						+ "?type = " + NTriplesUtil.toNTriplesString(OWL.ONTOLOGYPROPERTY) + " )" +
 						"\n}";
 				first = false;
-			} else if(role.equals(RDFResourceRole.conceptScheme)) {
-				query+=union+"\n{ "+var+" a <"+SKOS.CONCEPT_SCHEME.stringValue()+"> . } ";
-				first=false;
-			} else if(role.equals(RDFResourceRole.conceptScheme)) {
-				query+=union+"\n{ "+var+" a ?type .  "
-						+ "\nFILTER(?type = <"+SKOS.COLLECTION.stringValue()+"> || "
-						+ "?type = <"+SKOS.ORDERED_COLLECTION.stringValue()+"> ) }";
+			} else if (role.equals(RDFResourceRole.conceptScheme)) {
+				query += union + "\n{ " + var + " "
+						+ NTriplesUtil.toNTriplesString(RDF.TYPE) + "/" + NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + "* "
+						+ NTriplesUtil.toNTriplesString(SKOS.CONCEPT_SCHEME) + " . } ";
+				first = false;
+			} else if (role.equals(RDFResourceRole.skosCollection)) {
+				query += union + "\n{ " + var
+						+ NTriplesUtil.toNTriplesString(RDF.TYPE) + "/" + NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF) + "* "
+						+ "?type .  "
+						+ "\nFILTER(?type = " + NTriplesUtil.toNTriplesString(SKOS.COLLECTION) + " || "
+						+ "?type = " + NTriplesUtil.toNTriplesString(SKOS.ORDERED_COLLECTION) + " ) }";
 				first = false;
 			} else if (role.equals(RDFResourceRole.individual)) {
-				query+=union+"\n{ "+var+" a ?type .  "
-						+"\n?type a ?classType . "
-						+ "\nFILTER(?classType = <"+OWL.CLASS.stringValue()+"> || "
-								+ "?classType = <"+RDFS.CLASS.stringValue()+"> ) } \n";
+				query += union + "\n{ " + var + " a ?type .  "
+						+ "\n?type a ?classType . "
+						+ "\nFILTER(?classType = " + NTriplesUtil.toNTriplesString(OWL.CLASS) + " || "
+						+ "?classType = " + NTriplesUtil.toNTriplesString(RDFS.CLASS) + " ) } \n";
 				first = false;
 			}
 		}
-		
-		if(useSubQuery) {
-			query +="\n}\n}";
+
+		if (useSubQuery) {
+			query += "\n}\n}";
 		}
 		return query;
 	}
