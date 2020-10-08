@@ -1,5 +1,5 @@
 version 8.0.1
-date: xx/xx/202x
+date: 08/10/2020
   * improved the performance of the history paging service
   * fixed a NullPointerException thrown when clicking "Export as..." in the alignment validation tool
   * added icelandic to system languages
@@ -9,6 +9,7 @@ date: xx/xx/202x
   * fixed NoSuchPropertyException when trying to configure the NativeTemplateBasedURIGenerator
   * fixed a bug in searching for the labels starting or ending with a . in a project hosted in GraphDB
   * fixed bugs in repair broken imports from file
+  * minor changes to services authorizations
   
 version 8.0
 date: 29/07/2020
