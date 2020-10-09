@@ -1466,6 +1466,11 @@ public class CustomForms extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	public String inferPearlAnnotations(String cfPearl) throws PRParserException, IOException {
+		List<String> annDefToExludeList = new ArrayList<>();
+		annDefToExludeList.add("Memoized");
+		annDefToExludeList.add("Confidence");
+		annDefToExludeList.addAll(getAnnotationsDefFromFile(ANN_DEF_PATH));
+
 		RepositoryConnection repoConnection = getManagedConnection();
 		CODACore codaCore = getInitializedCodaCore(repoConnection);
 		codaCore.initialize(repoConnection);
@@ -1481,11 +1486,6 @@ public class CustomForms extends STServiceAdapter {
 		codaCore.setAllProjectionRulelModelFromInputStreamList(inputStreamList);
 
 		ProjectionRulesModel projectionRulesModel = codaCore.getProjRuleModel();
-
-		List<String> annDefToExludeList = new ArrayList<>();
-		annDefToExludeList.add("Memoized");
-		annDefToExludeList.add("Confidence");
-		annDefToExludeList.addAll(getAnnotationsDefFromFile(ANN_DEF_PATH));
 
 		for(String currPrId : projectionRulesModel.getProjRule().keySet()){
 			ProjectionRule projectionRule = projectionRulesModel.getProjRuleFromId(currPrId);
@@ -1873,6 +1873,10 @@ public class CustomForms extends STServiceAdapter {
 		for(String plcName : projectionRule.getPlaceholderMap().keySet()) {
 			PlaceholderStruct placeholderStruct = projectionRule.getPlaceholderMap().get(plcName);
 			boolean isMandatory = placeholderStruct.isMandatoryInGraphSection();
+			if(isMandatory){
+				//this is a mandatory placeholder, so just skip it
+				continue;
+			}
 			boolean skipAnnList = false;
 			for (Annotation annotation : placeholderStruct.getAnnotationList()) {
 				if (annotation.getName().equals(ANN_COLLECTION)) {

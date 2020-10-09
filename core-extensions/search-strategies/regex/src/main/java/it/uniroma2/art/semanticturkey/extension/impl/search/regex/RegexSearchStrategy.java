@@ -53,7 +53,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 	@Override
 	public String searchResource(STServiceContext stServiceContext,
-			String searchString, String[] rolesArray, boolean useLocalName, boolean  useLexicalizations,
+			String searchString, String[] rolesArray, boolean  useLexicalizations, boolean useLocalName,
 			boolean useURI, boolean useNotes,
 			SearchMode searchMode, @Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter,
 			@Optional List<String> langs,
@@ -372,15 +372,26 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			boolean searchInSKOSXLLabel, boolean searchInOntolex, boolean includeResToLexicalEntry,
 			Map<String, String> prefixToNamespaceMap) {
 		String query="";
-	
+
+		int countUse = 0;
+		countUse +=  useLexicalizations ? 1 : 0;
+		countUse +=  useLocalName ? 1 : 0;
+		countUse +=  useURI ? 1 : 0;
+		countUse +=  useNotes ? 1 : 0;
+
+
+		String conditionalOpenPar = countUse>1 ? "{" : "";
+		String conditionalClosePar = countUse>1 ? "}" : "";
+
+
 		//check if the request want to search in the local name
 		if(useLocalName){
-			query+="\n{" +
+			query+="\n" + conditionalOpenPar+
 					"\n?resource a ?type . " + // otherwise the localName is not computed
 					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
 					searchSpecificModePrepareQuery("?localName", searchString, searchMode, null, null, 
 							includeLocales) +
-					"\n}";
+					"\n"+conditionalClosePar;
 			if(useURI || useLexicalizations) {
 				query+="\nUNION";
 			}
@@ -397,11 +408,11 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				searchStringForUri = searchString;
 			}
 
-			query+="\n{" +
+			query+="\n" + conditionalOpenPar +
 					"\n?resource a ?type . " + // otherwise the completeURI is not computed
 					"\nBIND(str(?resource) AS ?complURI)"+
 					searchSpecificModePrepareQuery("?complURI", searchStringForUri, searchMode, null, null, includeLocales) +
-					"\n}";
+					"\n" + conditionalClosePar;
 			if(useLexicalizations) {
 				query+="\nUNION";
 			}
@@ -409,7 +420,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		if(useLexicalizations){
 			//check if the request want to search in the notes as well (plain or reified)
 			if(useNotes) {
-				query+="\n{" +
+				query+="\n" + conditionalOpenPar +
 						"\n{SELECT ?propNote{?propNote <"+RDFS.SUBPROPERTYOF+">* <"+SKOS.NOTE+"> .}}" +
 						"\n?resource ?propNote ?label ." +
 						searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
@@ -420,18 +431,28 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 						"\n?resource ?propNote ?refNote ." +
 						"\n?refNote <"+RDF.VALUE+"> ?label ." +
 						searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-						"\n}"+
+						"\n"+ conditionalClosePar +
 						"\nUNION";
 			}
 
 
 			boolean unionNeeded = false;
+
+			int countLexMultiSearch = 0;
+			countLexMultiSearch += searchInRDFSLabel ? 1 : 0 ;
+			countLexMultiSearch += searchInSKOSLabel ? 1 : 0 ;
+			countLexMultiSearch += searchInSKOSXLLabel ? 1 : 0 ;
+			countLexMultiSearch += searchInOntolex ? 1 : 0 ;
+
+			conditionalOpenPar = (countUse>1 || countLexMultiSearch > 1) ? "{" : "";
+			conditionalClosePar = (countUse>1 || countLexMultiSearch > 1) ? "}" : "";
+
 			if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) || searchInRDFSLabel) {
 				//search in the rdfs:label
-				query+="\n{" +
+				query+="\n" + conditionalOpenPar +
 					"\n?resource <"+RDFS.LABEL+"> ?label ." +
 					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}";
+					"\n"+conditionalClosePar;
 				unionNeeded = true;
 			}
 			if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) || searchInSKOSLabel) {
@@ -441,10 +462,10 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				}
 				unionNeeded = true;
 				//search in skos:prefLabel and skos:altLabel
-				query+="\n{" +
+				query+="\n" + conditionalOpenPar +
 					"\n?resource (<"+SKOS.PREF_LABEL.stringValue()+"> | <"+SKOS.ALT_LABEL.stringValue()+"> | <"+SKOS.HIDDEN_LABEL.stringValue()+">) ?label ."+
 					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}" ;
+					"\n" + conditionalClosePar ;
 			}
 			if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL) || searchInSKOSXLLabel) {
 				if(unionNeeded) {
@@ -452,11 +473,11 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 				}
 				unionNeeded = true;
 				//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
-				query+="\n{" +
+				query+="\n" + conditionalOpenPar +
 					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+"> | <"+SKOSXL.HIDDEN_LABEL.stringValue()+">) ?skosxlLabel ." +
 					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
 					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
-					"\n}";
+					"\n"+conditionalClosePar;
 			}
 			if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL) || searchInOntolex) {
 				//construct the complex path from a resource to a LexicalEntry
