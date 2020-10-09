@@ -22,7 +22,7 @@ date: 08/10/2020
     capabilities previously expressed as "rdf".
   * minor fixes to the labels identifying some locales
   * fixed a bug in the creation of the PEARL from SHACL when sh:minCount is used
-  * improved ICVs in order to take 
+  * improved ICVs in order to check also resources belonging to subclasses of the specified types
   
 version 8.0
 date: 29/07/2020
