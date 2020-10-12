@@ -20,7 +20,7 @@ mvn clean install
 
 should suffice. In any case, more detailed instructions can be found here:
 
-http://semanticturkey.uniroma2.it/documentation/dev/building.jsf
+http://semanticturkey.uniroma2.it/doc/dev/building.jsf
 
 ### Troubleshooting ###
 If ST is built with an old version of Maven, it may happen that the build fails with an error like the one below:
