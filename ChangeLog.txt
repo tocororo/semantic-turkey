@@ -1,3 +1,7 @@
+version 8.0.2
+date: dd/mm/yyyy
+  * 
+
 version 8.0.1
 date: 08/10/2020
   * improved the performance of the history paging service

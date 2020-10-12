@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>it.uniroma2.art.semanticturkey</groupId>
 		<artifactId>st-rendering-engines</artifactId>
-		<version>8.0.1</version>
+		<version>8.0.2-SNAPSHOT</version>
 	</parent>
 	<artifactId>st-skosxl-rendering-engine</artifactId>
 	<packaging>bundle</packaging>
