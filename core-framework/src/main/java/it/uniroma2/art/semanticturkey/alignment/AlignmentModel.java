@@ -83,7 +83,7 @@ public class AlignmentModel {
 		accepted, rejected, error;
 	}
 
-	private static List<String> knownRelations = Arrays.asList("=", ">", "<", "%", "HasInstance",
+	private static final List<String> knownRelations = Arrays.asList("=", ">", "<", "%", "HasInstance",
 			"InstanceOf");
 
 	private static Map<String, IRI> relationPropertyMap = new HashMap<>();
@@ -774,7 +774,6 @@ public class AlignmentModel {
 	 * Converts the given relation to a property. The conversion depends on:
 	 * <ul>
 	 * <li>Relation: =, >, <, %, InstanceOf, HasInstance</li>
-	 * <li>Type of model: ontology or thesaurus</li>
 	 * <li>Type of entity: property, class, instance, concept</li>
 	 * </ul>
 	 * 
@@ -790,10 +789,29 @@ public class AlignmentModel {
 	 */
 	public List<IRI> suggestPropertiesForRelation(IRI entity, String relation, boolean withDefault,
 			RepositoryConnection projRepoConn) throws InvalidAlignmentRelationException {
-		List<IRI> suggested = new ArrayList<>();
 		RDFResourceRole roleEnum = RoleRecognitionOrchestrator.computeRole(entity, projRepoConn);
+		return suggestPropertiesForRelation(roleEnum, relation, withDefault);
+	}
 
-		if (RDFResourceRole.isProperty(roleEnum)) {
+	/**
+	 * Converts the given relation to a property. The conversion depends on:
+	 * <ul>
+	 * <li>Relation: =, >, <, %, InstanceOf, HasInstance</li>
+	 * <li>Type of entity: property, class, instance, concept</li>
+	 * </ul>
+	 *
+	 * @param role
+	 * @param relation
+	 * @param withDefault
+	 *            if cannot infer a property, determine if consider an eventual default property assigned to
+	 *            the relation
+	 * @return
+	 * @throws InvalidAlignmentRelationException
+	 */
+	public List<IRI> suggestPropertiesForRelation(RDFResourceRole role, String relation, boolean withDefault) throws InvalidAlignmentRelationException {
+		List<IRI> suggested = new ArrayList<>();
+
+		if (RDFResourceRole.isProperty(role)) {
 			if (relation.equals("=")) {
 				suggested.add(OWL.EQUIVALENTPROPERTY);
 				suggested.add(OWL.SAMEAS);
@@ -812,7 +830,7 @@ public class AlignmentModel {
 						+ "assert a triple with the target resource as the subject, "
 						+ "which is advisable not to do");
 			}
-		} else if (roleEnum.equals(RDFResourceRole.concept)) {
+		} else if (role.equals(RDFResourceRole.concept)) {
 			if (relation.equals("=")) {
 				suggested.add(SKOS.EXACT_MATCH);
 				suggested.add(SKOS.CLOSE_MATCH);
@@ -828,7 +846,7 @@ public class AlignmentModel {
 			} else if (relation.equals("HasInstance")) {
 				suggested.add(SKOS.NARROW_MATCH);
 			}
-		} else if (roleEnum.equals(RDFResourceRole.cls)) {
+		} else if (role.equals(RDFResourceRole.cls)) {
 			if (relation.equals("=")) {
 				suggested.add(OWL.EQUIVALENTCLASS);
 				suggested.add(OWL.SAMEAS);
@@ -847,7 +865,7 @@ public class AlignmentModel {
 						+ "to assert a triple with the target resource as the subject, "
 						+ "which is advisable not to do");
 			}
-		} else if (roleEnum.equals(RDFResourceRole.individual)) {
+		} else if (role.equals(RDFResourceRole.individual)) {
 			if (relation.equals("=")) {
 				suggested.add(OWL.SAMEAS);
 			} else if (relation.equals(">") || relation.equals("<")) {
@@ -871,7 +889,7 @@ public class AlignmentModel {
 			}
 			if (suggested.isEmpty()) {
 				throw new InvalidAlignmentRelationException(
-						"Not possible to convert relation " + relation + " for entity " + entity.stringValue()
+						"Not possible to convert relation " + relation + " for an entity of type " + role
 								+ ". Possible reasons: " + "unknown relation or unknown type of entity.");
 			}
 		}

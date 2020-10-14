@@ -1,30 +1,44 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletResponse;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
+import it.uniroma2.art.semanticturkey.alignment.AlignmentModel;
+import it.uniroma2.art.semanticturkey.alignment.AlignmentModel.Status;
+import it.uniroma2.art.semanticturkey.alignment.Cell;
+import it.uniroma2.art.semanticturkey.alignment.InvalidAlignmentRelationException;
+import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
+import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
+import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
-import it.uniroma2.art.semanticturkey.extension.impl.search.regex.RegexSearchStrategy;
-import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
+import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
+import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryStateException;
+import it.uniroma2.art.semanticturkey.mdr.core.NoSuchDatasetMetadataException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.search.SearchMode;
+import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
+import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.SimpleSTServiceContext;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.*;
+import it.uniroma2.art.semanticturkey.services.core.search.AdvancedSearch;
+import it.uniroma2.art.semanticturkey.services.core.search.AdvancedSearch.InWhatToSearch;
+import it.uniroma2.art.semanticturkey.services.core.search.AdvancedSearch.WhatToShow;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Namespace;
-import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Literals;
@@ -47,72 +61,29 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
-import it.uniroma2.art.semanticturkey.alignment.AlignmentModel;
-import it.uniroma2.art.semanticturkey.alignment.AlignmentModel.Status;
-import it.uniroma2.art.semanticturkey.alignment.Cell;
-import it.uniroma2.art.semanticturkey.alignment.InvalidAlignmentRelationException;
-import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
-import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
-import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
-import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
-import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryStateException;
-import it.uniroma2.art.semanticturkey.mdr.core.NoSuchDatasetMetadataException;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
-import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.services.core.search.AdvancedSearch;
-import it.uniroma2.art.semanticturkey.services.core.search.AdvancedSearch.InWhatToSearch;
-import it.uniroma2.art.semanticturkey.services.core.search.AdvancedSearch.WhatToShow;
-import it.uniroma2.art.semanticturkey.search.SearchMode;
-import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
-import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.STServiceContext;
-import it.uniroma2.art.semanticturkey.services.SimpleSTServiceContext;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
-import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @STService
 public class Alignment extends STServiceAdapter {
 
 	protected static Logger logger = LoggerFactory.getLogger(Alignment.class);
 
-	// @Autowired
-	// private MetadataRegistryBackend metadataRegistryBackend;
-
-	// @Autowired
-	// private MediationFramework mediationFramework;
-
 	@Autowired
 	protected ExtensionPointManager exptManager;
 
-	@Autowired
-	private STServiceContext stServiceContext;
-
-	private static List<IRI> skosMappingRelations = Arrays.asList(SKOS.MAPPING_RELATION, SKOS.EXACT_MATCH,
+	private static final List<IRI> skosMappingRelations = Arrays.asList(SKOS.MAPPING_RELATION, SKOS.EXACT_MATCH,
 			SKOS.BROAD_MATCH, SKOS.NARROW_MATCH, SKOS.CLOSE_MATCH, SKOS.RELATED_MATCH);
 
-	private static List<IRI> owlMappingRelations = Arrays.asList(OWL.SAMEAS, OWL.DIFFERENTFROM,
+	private static final List<IRI> owlMappingRelations = Arrays.asList(OWL.SAMEAS, OWL.DIFFERENTFROM,
 			OWL.EQUIVALENTCLASS, OWL.DISJOINTWITH, RDFS.SUBCLASSOF);
 
-	private static List<IRI> propertiesMappingRelations = Arrays.asList(OWL.EQUIVALENTPROPERTY,
+	private static final List<IRI> propertiesMappingRelations = Arrays.asList(OWL.EQUIVALENTPROPERTY,
 			OWL.PROPERTYDISJOINTWITH, RDFS.SUBPROPERTYOF);
 
 	// map that contain <id, context> pairs to handle multiple sessions
@@ -207,8 +178,7 @@ public class Alignment extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchResources(IRI inputRes,
 			ResourcePosition resourcePosition, String[] rolesArray, @Optional List<SearchMode> searchModeList,
-			Map<String, IRI> langToLexModel) throws NoSuchDatasetMetadataException,
-			MetadataRegistryStateException, IllegalStateException, STPropertyAccessException {
+			Map<String, IRI> langToLexModel) throws IllegalStateException, STPropertyAccessException {
 
 		SearchStrategy regexSearchStrategy = instantiateSearchStrategy(SearchStrategies.REGEX);
 
@@ -297,9 +267,10 @@ public class Alignment extends STServiceAdapter {
 									.get("matchedLang").stringValue();
 							boolean addLang = true;
 							String[] langsMatched = matchedLang.split(",");
-							for(String prevMatchedLang : langsMatched) {
-								if(prevMatchedLang==lang) {
+							for (String prevMatchedLang : langsMatched) {
+								if (prevMatchedLang.equals(lang)) {
 									addLang = false;
+									break;
 								}
 							}
 							if(addLang) {
@@ -312,8 +283,8 @@ public class Alignment extends STServiceAdapter {
 									.get("matchMode").stringValue();
 							boolean addMatchMode = true;
 							String[] matchedModeArray = matchedMode.split(",");
-							for(String singleMachedMode : matchedModeArray) {
-								if(singleMachedMode==annValue.getAttributes().get("matchMode").stringValue()) {
+							for (String singleMatchedMode : matchedModeArray) {
+								if (singleMatchedMode.equals(annValue.getAttributes().get("matchMode").stringValue())) {
 									addMatchMode = false;
 								}
 							}
@@ -367,8 +338,7 @@ public class Alignment extends STServiceAdapter {
 
 	public Collection<AnnotatedValue<Resource>> searchResourcesForRemote(List<Literal> labelsList,
 			RepositoryConnection remoteConn, String[] rolesArray, List<SearchMode> searchModeList,
-			Map<String, IRI> langToLexModel, SearchStrategy regexSearchStrategy)
-			throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
+			Map<String, IRI> langToLexModel, SearchStrategy regexSearchStrategy) {
 
 		// check that the optional targetLexModel has one of the right value
 		if (langToLexModel == null || langToLexModel.size() == 0) {
@@ -606,11 +576,11 @@ public class Alignment extends STServiceAdapter {
 	}
 
 	/**
-	 * Returns the available alignment properties depending on the type resource to align (property, or
+	 * Returns the available alignment properties depending on the resource role to align (property, or
 	 * concept, or class,...).
 	 * 
-	 * @param resource
-	 *            resource to align
+	 * @param role
+	 *            role of resource to align
 	 * @param allMappingProps
 	 *            if false returns just the mapping properties available for the current model type; if true
 	 *            returns all the mapping properties independently from the model type
@@ -620,9 +590,9 @@ public class Alignment extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	public Collection<AnnotatedValue<IRI>> getMappingProperties(IRI resource,
-			@Optional(defaultValue = "false") boolean allMappingProps) throws ProjectInconsistentException {
-		List<IRI> props = getAvailableMappingProperties(resource, allMappingProps, getManagedConnection());
+	public Collection<AnnotatedValue<IRI>> getMappingProperties(RDFResourceRole role,
+			@Optional(defaultValue = "false") boolean allMappingProps) {
+		List<IRI> props = getAvailableMappingProperties(role, allMappingProps);
 		Collection<AnnotatedValue<IRI>> propColl = new ArrayList<>();
 		for (IRI p : props) {
 			AnnotatedValue<IRI> annValue = new AnnotatedValue<>(p);
@@ -1060,7 +1030,7 @@ public class Alignment extends STServiceAdapter {
 	/**
 	 * Return a list of mapping properties suggested for the given entity and the alignment relation
 	 * 
-	 * @param entity
+	 * @param role
 	 * @param relation
 	 * @return
 	 * @throws InvalidAlignmentRelationException
@@ -1069,19 +1039,17 @@ public class Alignment extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
-	public Collection<AnnotatedValue<IRI>> getSuggestedProperties(IRI entity, String relation)
-			throws InvalidAlignmentRelationException, ProjectInconsistentException {
+	public Collection<AnnotatedValue<IRI>> getSuggestedProperties(RDFResourceRole role, String relation) {
 		AlignmentModel alignmentModel = modelsMap.get(stServiceContext.getSessionToken());
 		List<IRI> props;
 		try {
-			props = alignmentModel.suggestPropertiesForRelation(entity, relation, false,
-					getManagedConnection());
+			props = alignmentModel.suggestPropertiesForRelation(role, relation, false);
 		} catch (InvalidAlignmentRelationException e) {
 			/*
 			 * If it is not possible to find properties to suggest, (probably because the relation is not
 			 * known) returns all the mapping properties.
 			 */
-			props = getAvailableMappingProperties(entity, false, getManagedConnection());
+			props = getAvailableMappingProperties(role, false);
 		}
 
 		Collection<AnnotatedValue<IRI>> propColl = new ArrayList<>();
@@ -1094,45 +1062,30 @@ public class Alignment extends STServiceAdapter {
 	}
 
 	/**
-	 * Returns a list of mapping properties
+	 * Returns a list of mapping properties compliant to the given role
 	 * 
-	 * @param resource
+	 * @param role
 	 * @param allMappingProps
 	 *            if true, returns all the known mapping properties, if false filters out the properties not
 	 *            compatible with the resource and the project type
-	 * @param repoConn
 	 * @return
 	 * @throws ProjectInconsistentException
 	 */
-	private List<IRI> getAvailableMappingProperties(IRI resource, boolean allMappingProps,
-			RepositoryConnection repoConn) throws ProjectInconsistentException {
+	private List<IRI> getAvailableMappingProperties(RDFResourceRole role, boolean allMappingProps) {
 		List<IRI> mappingProps = new ArrayList<>();
 		if (allMappingProps) {
-			for (IRI prop : propertiesMappingRelations) {
-				mappingProps.add(prop);
-			}
-			for (IRI prop : skosMappingRelations) {
-				mappingProps.add(prop);
-			}
-			for (IRI prop : owlMappingRelations) {
-				mappingProps.add(prop);
-			}
+			mappingProps.addAll(propertiesMappingRelations);
+			mappingProps.addAll(skosMappingRelations);
+			mappingProps.addAll(owlMappingRelations);
 		} else {
-			boolean isProperty = RDFResourceRole
-					.isProperty(RoleRecognitionOrchestrator.computeRole(resource, repoConn));
+			boolean isProperty = RDFResourceRole.isProperty(role);
 			if (isProperty) { // is Property?
-				for (IRI prop : propertiesMappingRelations) {
-					mappingProps.add(prop);
-				}
+				mappingProps.addAll(propertiesMappingRelations);
 			} else {
 				if (getProject().getModel().equals(Project.SKOS_MODEL)) { // SKOS or SKOSXL
-					for (IRI prop : skosMappingRelations) {
-						mappingProps.add(prop);
-					}
+					mappingProps.addAll(skosMappingRelations);
 				} else { // OWL
-					for (IRI prop : owlMappingRelations) {
-						mappingProps.add(prop);
-					}
+					mappingProps.addAll(owlMappingRelations);
 				}
 			}
 		}
