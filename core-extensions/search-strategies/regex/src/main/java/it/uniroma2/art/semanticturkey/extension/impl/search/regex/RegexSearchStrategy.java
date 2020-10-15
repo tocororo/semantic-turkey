@@ -387,7 +387,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//check if the request want to search in the local name
 		if(useLocalName){
 			query+="\n" + conditionalOpenPar+
-					"\n?resource a ?type . " + // otherwise the localName is not computed
+					"\n?resource a ?type2 . " + // otherwise the localName is not computed
 					"\nBIND(REPLACE(str(?resource), '^.*(#|/)', \"\") AS ?localName)"+
 					searchSpecificModePrepareQuery("?localName", searchString, searchMode, null, null, 
 							includeLocales) +
@@ -409,7 +409,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			}
 
 			query+="\n" + conditionalOpenPar +
-					"\n?resource a ?type . " + // otherwise the completeURI is not computed
+					"\n?resource a ?type3 . " + // otherwise the completeURI is not computed
 					"\nBIND(str(?resource) AS ?complURI)"+
 					searchSpecificModePrepareQuery("?complURI", searchStringForUri, searchMode, null, null, includeLocales) +
 					"\n" + conditionalClosePar;
