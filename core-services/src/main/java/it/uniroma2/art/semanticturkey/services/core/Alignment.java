@@ -1032,17 +1032,19 @@ public class Alignment extends STServiceAdapter {
 					"        align:entity1 ?leftEntity ;\n" +
 					"        align:entity2 ?rightEntity ;\n" +
 					"        align:relation ?relation ;\n" +
-					"        align:measure ?measure\n" +
+					"        align:measure ?measure;\n" +
+					"        align:mappingProperty ?mappingProperty\n" +
 					"    ] .\n" +
 					"  }\n" +
 					"} WHERE {\n" +
 					"  ?alignment a align:Alignment . \n" +
-					"  values (?leftEntity ?rightEntity ?relation ?measure) {\n";
+					"  values (?leftEntity ?rightEntity ?relation ?measure ?mappingProperty) {\n";
 			for (Cell cell : acceptedCells) {
 				insertQuery += "( " + NTriplesUtil.toNTriplesString(cell.getEntity1()) + " "
 						+ NTriplesUtil.toNTriplesString(cell.getEntity2()) + " "
 						+ "'" + cell.getRelation() + "' "
-						+ cell.getMeasure() + " )\n";
+						+ cell.getMeasure() + " "
+						+ NTriplesUtil.toNTriplesString(cell.getMappingProperty()) + " )\n";
 			}
 			insertQuery += "}\n}"; //close values and where
 			Update update = repoConn.prepareUpdate(insertQuery);
