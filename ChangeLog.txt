@@ -1,6 +1,7 @@
 version 8.0.2
 date: dd/mm/yyyy
-  * Add datatype information in the single-value custom form preview
+  * Added data type information in the single-value custom form preview
+  * Added mapping property to the descriptions of correspondences in the EDOAL data view
 
 version 8.0.1
 date: 08/10/2020

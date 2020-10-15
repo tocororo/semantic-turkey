@@ -73,6 +73,7 @@ public class EDOAL extends STServiceAdapter {
 		private Collection<AnnotatedValue<Value>> leftEntity;
 		private Collection<AnnotatedValue<Value>> rightEntity;
 		private Collection<AnnotatedValue<Value>> relation;
+		private Collection<AnnotatedValue<Value>> mappingProperty;
 		private Collection<AnnotatedValue<Value>> measure;
 
 		public Resource getIdentity() {
@@ -103,8 +104,16 @@ public class EDOAL extends STServiceAdapter {
 			return relation;
 		}
 
+		public Collection<AnnotatedValue<Value>> getMappingProperty() {
+			return mappingProperty;
+		}
+
 		public void setRelation(Collection<AnnotatedValue<Value>> relation) {
 			this.relation = relation;
+		}
+
+		public void setMappingProperty(Collection<AnnotatedValue<Value>> mappingProperty) {
+			this.mappingProperty = mappingProperty;
 		}
 
 		public Collection<AnnotatedValue<Value>> getMeasure() {
@@ -178,7 +187,7 @@ public class EDOAL extends STServiceAdapter {
 		update.setBinding("alignment", alignmentNode);
 
 		update.execute();
-		
+
 		return alignmentNode;
 	}
 
@@ -401,7 +410,8 @@ public class EDOAL extends STServiceAdapter {
 			"       (GROUP_CONCAT(CONCAT(STR(?g1),\"|=|\",STR(?entity1));separator=\"|_|\") as ?entity1B)\n" + 
 			"       (GROUP_CONCAT(CONCAT(STR(?g2),\"|=|\",STR(?entity2));separator=\"|_|\") as ?entity2B)\n" + 
 			"       (GROUP_CONCAT(CONCAT(STR(?g3),\"|=|\",STR(?relation));separator=\"|_|\") as ?relationB)\n" + 
-			"       (GROUP_CONCAT(CONCAT(STR(?g4),\"|=|\",STR(?measure));separator=\"|_|\") as ?measureB)\n" + 
+			"       (GROUP_CONCAT(CONCAT(STR(?g4),\"|=|\",STR(?mappingProperty));separator=\"|_|\") as ?mappingPropertyB)\n" + 
+			"       (GROUP_CONCAT(CONCAT(STR(?g5),\"|=|\",STR(?measure));separator=\"|_|\") as ?measureB)\n" + 
 			"       (MIN(LCASE(?valueIndex)) as ?index) \n" + 
 			"{\n" + 
 			"    ?x a align:Cell .\n" + 
@@ -414,7 +424,10 @@ public class EDOAL extends STServiceAdapter {
 			"    graph ?g3 {\n" + 
 			"       ?x align:relation ?relation .\n" + 
 			"    }\n" + 
-			"    graph ?g4 {\n" + 
+			"    OPTIONAL { graph ?g4 {\n" + 
+			"       ?x align:mappingProperty ?mappingProperty .\n" + 
+			"    } }\n" + 
+			"    graph ?g5 {\n" + 
 			"       ?x align:measure ?measure .\n" + 
 			"    }\n" + 
 			"    ?al align:map ?x.\n" +
@@ -442,6 +455,8 @@ public class EDOAL extends STServiceAdapter {
 			corr.setRightEntity(processStringiedObjectList(bs.getValue("entity2B").stringValue(), null));
 			corr.setRelation(
 					processStringiedObjectList(bs.getValue("relationB").stringValue(), XMLSchema.STRING));
+			corr.setMappingProperty(
+					processStringiedObjectList(bs.getValue("mappingPropertyB").stringValue(), null));
 			corr.setMeasure(
 					processStringiedObjectList(bs.getValue("measureB").stringValue(), XMLSchema.FLOAT));
 			return corr;
