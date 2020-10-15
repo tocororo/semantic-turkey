@@ -47,6 +47,7 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -54,6 +55,7 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -948,7 +950,7 @@ public class Alignment extends STServiceAdapter {
 	 *            tells if remove the triples related to rejected alignments
 	 * @return
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'CUD')")
 	public JsonNode applyValidation(@Optional(defaultValue = "false") boolean deleteRejected) {
@@ -1000,6 +1002,81 @@ public class Alignment extends STServiceAdapter {
 		repoConn.remove(modelRemovals, getWorkingGraph());
 
 		return reportArrayNode;
+	}
+
+	/**
+	 * Adds the accepted alignment cell to the EDOAL model and delete the rejected ones (if previously added).
+	 *
+	 * Note: this service needs to be here and cannot be moved to Edoal class since I need to retrieve the
+	 * alignment model from modelMap that is stored here
+	 *
+	 * @param deleteRejected
+	 *            tells if remove the linkset related to rejected alignments
+	 * @return
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+//	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'CUD')")
+	public void applyValidationToEdoal(@Optional(defaultValue = "false") boolean deleteRejected) {
+		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
+		RepositoryConnection repoConn = getManagedConnection();
+
+		List<Cell> acceptedCells = alignModel.listCellsByStatus(Status.accepted);
+		if (!acceptedCells.isEmpty()) {
+			//TODO check for duplicate
+			String insertQuery = "PREFIX align: <http://knowledgeweb.semanticweb.org/heterogeneity/alignment#>\n" +
+					"INSERT {\n" +
+					"  GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {\n" +
+					"    ?alignment align:map [\n" +
+					"      a align:Cell ;\n" +
+					"        align:entity1 ?leftEntity ;\n" +
+					"        align:entity2 ?rightEntity ;\n" +
+					"        align:relation ?relation ;\n" +
+					"        align:measure ?measure\n" +
+					"    ] .\n" +
+					"  }\n" +
+					"} WHERE {\n" +
+					"  ?alignment a align:Alignment . \n" +
+					"  values (?leftEntity ?rightEntity ?relation ?measure) {\n";
+			for (Cell cell : acceptedCells) {
+				insertQuery += "( " + NTriplesUtil.toNTriplesString(cell.getEntity1()) + " "
+						+ NTriplesUtil.toNTriplesString(cell.getEntity2()) + " "
+						+ "'" + cell.getRelation() + "' "
+						+ cell.getMeasure() + " )\n";
+			}
+			insertQuery += "}\n}"; //close values and where
+			Update update = repoConn.prepareUpdate(insertQuery);
+			update.execute();
+		}
+
+		if (deleteRejected) {
+			List<Cell> rejectedCells = alignModel.listCellsByStatus(Status.rejected);
+			if (!rejectedCells.isEmpty()) {
+				String deleteQuery = "PREFIX align: <http://knowledgeweb.semanticweb.org/heterogeneity/alignment#>\n" +
+						"DELETE {\n" +
+						"  GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {\n" +
+						"    ?alignment align:map ?cell .\n" +
+						"    ?cell ?p ?o .\n" +
+						"  }\n" +
+						"} WHERE {\n" +
+						"  ?alignment a align:Alignment . \n" +
+						"  ?cell a align:Cell . \n" +
+						"  ?cell align:entity1 ?leftEntity .\n" +
+						"  ?cell align:entity2 ?rightEntity .\n" +
+						"  ?cell align:relation ?relation .\n" +
+						"  ?cell align:measure ?measure .\n" +
+						"  values (?leftEntity ?rightEntity ?relation ?measure) {\n";
+				for (Cell cell : rejectedCells) {
+					deleteQuery += "  ( " + NTriplesUtil.toNTriplesString(cell.getEntity1()) + " "
+							+ NTriplesUtil.toNTriplesString(cell.getEntity2()) + " "
+							+ "'" + cell.getRelation() + "' "
+							+ cell.getMeasure() + " )\n";
+				}
+				deleteQuery += "}\n}"; //close values and where
+				Update update = repoConn.prepareUpdate(deleteQuery);
+				update.execute();
+			}
+		}
 	}
 
 	/**
