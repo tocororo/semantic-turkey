@@ -1,33 +1,8 @@
 package it.uniroma2.art.semanticturkey.alignment;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathException;
-import javax.xml.xpath.XPathFactory;
-
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
+import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -36,10 +11,7 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.TreeModel;
 import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
@@ -50,12 +22,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFHandler;
-import org.eclipse.rdf4j.rio.RDFHandlerException;
-import org.eclipse.rdf4j.rio.RDFParseException;
-import org.eclipse.rdf4j.rio.RDFWriter;
-import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.*;
 import org.eclipse.rdf4j.rio.helpers.AbstractRDFWriter;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
@@ -71,16 +38,33 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
-import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathException;
+import javax.xml.xpath.XPathFactory;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class AlignmentModel {
 
 	protected static Logger logger = LoggerFactory.getLogger(AlignmentModel.class);
 
 	public enum Status {
-		accepted, rejected, error;
+		accepted, rejected, error
 	}
 
 	private static final List<String> knownRelations = Arrays.asList("=", ">", "<", "%", "HasInstance",
@@ -320,19 +304,22 @@ public class AlignmentModel {
 	 * @param entity2
 	 * @return
 	 */
-	public Cell getCell(IRI entity1, IRI entity2) {
-		String query = "SELECT ?entity1 ?entity2 ?relation ?measure ?prop ?status ?comment WHERE { "
-				+ "BIND(URI('" + entity1.stringValue() + "') AS ?entity1)" + "BIND(URI('"
-				+ entity2.stringValue() + "') AS ?entity2)" + "?cell a "
-				+ NTriplesUtil.toNTriplesString(Alignment.CELL) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?entity1 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?entity2 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?measure . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?relation . " + "OPTIONAL { ?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?status . } " + "OPTIONAL { ?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?prop . } "
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . } } "
-				+ "ORDERBY ?entity1 ?entity2";
+	public Cell getCell(IRI entity1, IRI entity2, String relation) {
+		//@formatter:off
+		String query = "SELECT ?entity1 ?entity2 ?relation ?measure ?prop ?status ?comment WHERE {\n"
+				+ "BIND(URI('" + entity1.stringValue() + "') AS ?entity1)\n"
+				+ "BIND(URI('" + entity2.stringValue() + "') AS ?entity2)\n"
+				+ "BIND('" + relation + "' AS ?relation)\n"
+				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?entity1 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?entity2 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?measure .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?relation .\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?status .\n}"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?prop . }\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . }\n"
+				+ "}\n ORDERBY ?entity1 ?entity2";
+		//@formatter:on
 		logger.debug(query);
 		TupleQuery tq = repoConnection.prepareTupleQuery(query);
 		try (TupleQueryResult result = tq.evaluate()) {
@@ -350,16 +337,18 @@ public class AlignmentModel {
 	 * @return
 	 */
 	public List<Cell> listCells() {
-		String query = "SELECT ?entity1 ?entity2 ?relation ?measure ?prop ?status ?comment WHERE { "
-				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?entity1 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?entity2 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?measure . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?relation . " + "OPTIONAL { ?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?prop . } "
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?status . } "
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . } } "
-				+ "ORDERBY ?entity1 ?entity2";
+		//@formatter:off
+		String query = "SELECT ?entity1 ?entity2 ?relation ?measure ?prop ?status ?comment WHERE {\n"
+				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?entity1 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?entity2 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?measure .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?relation .\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?prop . }\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?status . }\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . }\n"
+				+"}\n ORDERBY ?entity1 ?entity2";
+		//@formatter:on
 		logger.debug(query);
 		TupleQuery tq = repoConnection.prepareTupleQuery(query);
 		try (TupleQueryResult result = tq.evaluate()) {
@@ -373,17 +362,19 @@ public class AlignmentModel {
 	 * @return
 	 */
 	public List<Cell> listCellsByStatus(Status status) {
-		String query = "SELECT ?entity1 ?entity2 ?relation ?measure ?prop ?status ?comment WHERE { "
-				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?entity1 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?entity2 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?measure . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?relation . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?status . " + "FILTER (STR(?status) = '"
-				+ status + "')" + "OPTIONAL { ?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?prop . } "
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . } } "
-				+ "ORDERBY ?entity1 ?entity2";
+		//@formatter:off
+		String query = "SELECT ?entity1 ?entity2 ?relation ?measure ?prop ?status ?comment WHERE {\n"
+				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?entity1 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?entity2 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?measure .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?relation .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?status .\n"
+				+ "FILTER (STR(?status) = '" + status + "')\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?prop . }\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?comment . }\n"
+				+ "}\n ORDERBY ?entity1 ?entity2";
+		//@formatter:on
 		TupleQuery tq = repoConnection.prepareTupleQuery(query);
 		try (TupleQueryResult result = tq.evaluate()) {
 			return getCellFromTupleResult(result);
@@ -419,28 +410,27 @@ public class AlignmentModel {
 	 * @param cell
 	 */
 	public void addCell(Cell cell) {
-		String query = "INSERT { " + "_:cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . "
-				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.MAP) + " _:cell . " + "_:cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "
-				+ NTriplesUtil.toNTriplesString(cell.getEntity1()) + " . " + "_:cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "
-				+ NTriplesUtil.toNTriplesString(cell.getEntity2()) + " . " + "_:cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + cell.getMeasure() + "'^^"
-				+ NTriplesUtil.toNTriplesString(XMLSchema.FLOAT) + " . " + "_:cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + cell.getRelation() + "' . ";
+		//@formatter:off
+		String query = "INSERT {\n"
+				+ "_:cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.MAP) + " _:cell .\n"
+				+ "_:cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " " + NTriplesUtil.toNTriplesString(cell.getEntity1()) + " .\n"
+				+ "_:cell "	+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " " + NTriplesUtil.toNTriplesString(cell.getEntity2()) + " .\n"
+				+ "_:cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + cell.getMeasure() + "'^^" + NTriplesUtil.toNTriplesString(XMLSchema.FLOAT) + " .\n"
+				+ "_:cell "	+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + cell.getRelation() + "' .\n";
 		if (cell.getMappingProperty() != null) {
-			query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " '"
-					+ cell.getMappingProperty() + "' . ";
+			query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " '" + cell.getMappingProperty() + "' .\n";
 		}
 		if (cell.getStatus() != null) {
-			query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + cell.getStatus()
-					+ "' . ";
+			query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + cell.getStatus() + "' .\n";
 		}
 		if (cell.getComment() != null) {
-			query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " '" + cell.getComment()
-					+ "' . ";
+			query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " '" + cell.getComment() + "' .\n";
 		}
-		query += "} WHERE { ?alignment a " + NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " . }";
+		query += "} WHERE {\n"
+				+"?alignment a " + NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " .\n"
+				+ "}";
+		//@formatter:on
 		Update update = repoConnection.prepareUpdate(query);
 		update.execute();
 	}
@@ -452,28 +442,27 @@ public class AlignmentModel {
 	 */
 	public void addCells(Collection<Cell> cells) {
 		for (Cell cell : cells) {
-			String query = "INSERT { " + "_:cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . "
-					+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.MAP) + " _:cell . " + "_:cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "
-					+ NTriplesUtil.toNTriplesString(cell.getEntity1()) + " . " + "_:cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "
-					+ NTriplesUtil.toNTriplesString(cell.getEntity2()) + " . " + "_:cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + cell.getMeasure() + "'^^"
-					+ NTriplesUtil.toNTriplesString(XMLSchema.FLOAT) + " . " + "_:cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + cell.getRelation() + "' . ";
+			//@formatter:off
+			String query = "INSERT {\n"
+					+ "_:cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+					+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.MAP) + " _:cell .\n"
+					+ "_:cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " " + NTriplesUtil.toNTriplesString(cell.getEntity1()) + " .\n"
+					+ "_:cell "	+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " " + NTriplesUtil.toNTriplesString(cell.getEntity2()) + " .\n"
+					+ "_:cell "	+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + cell.getMeasure() + "'^^" + NTriplesUtil.toNTriplesString(XMLSchema.FLOAT) + " .\n"
+					+ "_:cell "	+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + cell.getRelation() + "' .\n";
 			if (cell.getMappingProperty() != null) {
-				query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " '"
-						+ cell.getMappingProperty() + "' . ";
+				query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " '" + cell.getMappingProperty() + "' .\n";
 			}
 			if (cell.getStatus() != null) {
-				query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + cell.getStatus()
-						+ "' . ";
+				query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + cell.getStatus() + "' .\n";
 			}
 			if (cell.getComment() != null) {
-				query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " '"
-						+ cell.getComment() + "' . ";
+				query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " '" + cell.getComment() + "' .\n";
 			}
-			query += "} WHERE { ?alignment a " + NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " . }";
+			query += "} WHERE {\n"
+					+ "?alignment a " + NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " .\n"
+					+ "}";
+			//@formatter:on
 			Update update = repoConnection.prepareUpdate(query);
 			update.execute();
 		}
@@ -496,29 +485,29 @@ public class AlignmentModel {
 	 * @param entity2
 	 */
 	public void deleteCell(IRI entity1, IRI entity2) {
-		String query = "DELETE { " + "?alignment " + NTriplesUtil.toNTriplesString(Alignment.MAP)
-				+ " ?cell . " + "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "
-				+ NTriplesUtil.toNTriplesString(entity1) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "
-				+ NTriplesUtil.toNTriplesString(entity2) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?sp . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } " + "WHERE { " + "?alignment a "
-				+ NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " . " + "?alignment "
-				+ NTriplesUtil.toNTriplesString(Alignment.MAP) + " ?cell . " + "?cell a "
-				+ NTriplesUtil.toNTriplesString(Alignment.CELL) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "
-				+ NTriplesUtil.toNTriplesString(entity1) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "
-				+ NTriplesUtil.toNTriplesString(entity2) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r . " + "OPTIONAL { ?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?sp . } "
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . } "
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } }";
+		//@formatter:off
+		String query = "DELETE {\n"
+				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.MAP) + " ?cell .\n"
+				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "	+ NTriplesUtil.toNTriplesString(entity1) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "	+ NTriplesUtil.toNTriplesString(entity2) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?sp .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c .\n"
+				+ "} WHERE {\n"
+				+ "?alignment a " + NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " .\n"
+				+ "?alignment "	+ NTriplesUtil.toNTriplesString(Alignment.MAP) + " ?cell .\n"
+				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "	+ NTriplesUtil.toNTriplesString(entity1) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "	+ NTriplesUtil.toNTriplesString(entity2) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r .\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?sp . }\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . }\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . }\n}";
+		//@formatter:on
 		Update update = repoConnection.prepareUpdate(query);
 		update.execute();
 	}
@@ -527,25 +516,29 @@ public class AlignmentModel {
 	 * Deletes all the <code>Cell</code>s from the alignment
 	 */
 	public void deleteAllCells() {
-		String query = "DELETE { " + "?alignment " + NTriplesUtil.toNTriplesString(Alignment.MAP)
-				+ " ?cell . " + "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?e1 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?e2 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?sp . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } " + "WHERE { " + "?alignment a "
-				+ NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " . " + "?alignment "
-				+ NTriplesUtil.toNTriplesString(Alignment.MAP) + " ?cell . " + "?cell a "
-				+ NTriplesUtil.toNTriplesString(Alignment.CELL) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?e1 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?e2 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r . " + "OPTIONAL { ?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?sp . } "
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . } "
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } }";
+		//@formatter:off
+		String query = "DELETE {\n"
+				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.MAP) + " ?cell .\n"
+				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?e1 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?e2 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?sp .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c .\n"
+				+ "} WHERE {\n"
+				+ "?alignment a " + NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " .\n"
+				+ "?alignment "	+ NTriplesUtil.toNTriplesString(Alignment.MAP) + " ?cell .\n"
+				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?e1 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?e2 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r .\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?sp . }\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . }\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . }\n}";
+		//@formatter:on
 		Update update = repoConnection.prepareUpdate(query);
 		update.execute();
 	}
@@ -576,36 +569,42 @@ public class AlignmentModel {
 				List<IRI> suggProps = suggestPropertiesForRelation(entity1, relation, true, projRepoConn);
 				prop = suggProps.get(0);
 			}
-
-			query = "DELETE { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . "
-					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . " + "?cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } " + "INSERT { ?cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " "
-					+ NTriplesUtil.toNTriplesString(prop) + " . " + "?cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + Status.accepted + "' . }"
-					+ "WHERE { ?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . " + "?cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "
-					+ NTriplesUtil.toNTriplesString(entity1) + " . " + "?cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "
-					+ NTriplesUtil.toNTriplesString(entity2) + " . " + "OPTIONAL { ?cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . } "
-					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . } "
-					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } }";
+			//@formatter:off
+			query = "DELETE {\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c .\n"
+					+ "} INSERT {\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " " + NTriplesUtil.toNTriplesString(prop) + " .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + Status.accepted + "' .\n"
+					+ "} WHERE {\n"
+					+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " " + NTriplesUtil.toNTriplesString(entity1) + " .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " " + NTriplesUtil.toNTriplesString(entity2) + " .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + relation + "' .\n"
+					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . }\n"
+					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . }\n"
+					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . }\n}";
+			//@formatter:on
 		} catch (InvalidAlignmentRelationException e) {
 			// in case of exception add the error status and the error as comment to the alignment cell
-			query = "DELETE { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . "
-					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . " + "?cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } " + "INSERT { ?cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + Status.error + "' . "
-					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " '" + e.getMessage()
-					+ "' . } " + "WHERE { ?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . "
-					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "
-					+ NTriplesUtil.toNTriplesString(entity1) + " . " + "?cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "
-					+ NTriplesUtil.toNTriplesString(entity2) + " . " + "OPTIONAL { ?cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . } "
-					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . } "
-					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } }";
+			//@formatter:off
+			query = "DELETE {\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c .\n"
+					+ "} INSERT {\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + Status.error + "' .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " '" + e.getMessage() + "' .\n"
+					+ "} WHERE {\n"
+					+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " " + NTriplesUtil.toNTriplesString(entity1) + " .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "	+ NTriplesUtil.toNTriplesString(entity2) + " .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + relation + "' .\n"
+					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . }\n"
+					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . }\n"
+					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . }\n}";
+			//@formatter:on
 		}
 
 		Update update = repoConnection.prepareUpdate(query);
@@ -629,38 +628,40 @@ public class AlignmentModel {
 				// in case of no exception add the accepted status and the suggested property to the alignment
 				// cell
 				IRI sProp = suggProps.get(0);
-				query = "DELETE { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY)
-						+ " ?p . " + "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . "
-						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } "
-						+ "INSERT { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " "
-						+ NTriplesUtil.toNTriplesString(sProp) + " . " + "?cell "
-						+ NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + Status.accepted + "' . }"
-						+ "WHERE { ?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . "
-						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "
-						+ NTriplesUtil.toNTriplesString(c.getEntity1()) + " . " + "?cell "
-						+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "
-						+ NTriplesUtil.toNTriplesString(c.getEntity2()) + " . " + "OPTIONAL { ?cell "
-						+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . } "
-						+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . } "
-						+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT)
-						+ " ?c . } }";
+				//@formatter:off
+				query = "DELETE {\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p .\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s .\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c .\n"
+						+ "} INSERT {\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " "+  NTriplesUtil.toNTriplesString(sProp) + " .\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + Status.accepted + "' .\n"
+						+ "} WHERE {\n"
+						+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "	+ NTriplesUtil.toNTriplesString(c.getEntity1()) + " .\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "	+ NTriplesUtil.toNTriplesString(c.getEntity2()) + " .\n"
+						+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . }\n"
+						+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . }\n"
+						+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . }\n}";
+				//@formatter:on
 			} catch (InvalidAlignmentRelationException e) {
 				// in case of exception add the error status and the error as comment to the alignment cell
-				query = "DELETE { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY)
-						+ " ?p . " + "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . "
-						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } "
-						+ "INSERT { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '"
-						+ Status.error + "' . " + "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT)
-						+ " '" + e.getMessage() + "' . } " + "WHERE { ?cell a "
-						+ NTriplesUtil.toNTriplesString(Alignment.CELL) + " . " + "?cell "
-						+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "
-						+ NTriplesUtil.toNTriplesString(c.getEntity1()) + " . " + "?cell "
-						+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "
-						+ NTriplesUtil.toNTriplesString(c.getEntity2()) + " . " + "OPTIONAL { ?cell "
-						+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . } "
-						+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . } "
-						+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT)
-						+ " ?c . } }";
+				//@formatter:off
+				query = "DELETE {\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p .\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s .\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c .\n"
+						+ "} INSERT {\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + Status.error + "' .\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " '" + e.getMessage() + "' .\n"
+						+ "} WHERE {\n"
+						+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " " + NTriplesUtil.toNTriplesString(c.getEntity1()) + " .\n"
+						+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "	+ NTriplesUtil.toNTriplesString(c.getEntity2()) + " .\n"
+						+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . }\n"
+						+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . }\n"
+						+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . }\n}";
+				//@formatter:on
 			}
 			Update update = repoConnection.prepareUpdate(query);
 			update.execute();
@@ -674,19 +675,24 @@ public class AlignmentModel {
 	 * @param entity2
 	 * @return
 	 */
-	public void rejectAlignment(IRI entity1, IRI entity2) {
-		String query = "DELETE { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY)
-				+ " ?p . " + "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } " + "INSERT { ?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + Status.rejected + "' . }"
-				+ "WHERE { ?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "
-				+ NTriplesUtil.toNTriplesString(entity1) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "
-				+ NTriplesUtil.toNTriplesString(entity2) + " . " + "OPTIONAL { ?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . } " + "OPTIONAL { ?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . } " + "OPTIONAL { ?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } }";
+	public void rejectAlignment(IRI entity1, IRI entity2, String relation) {
+		//@formatter:off
+		String query = "DELETE {\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c .\n"
+				+ "} INSERT {\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '" + Status.rejected + "' .\n"
+				+ "} WHERE {\n"
+				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " " + NTriplesUtil.toNTriplesString(entity1) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " " + NTriplesUtil.toNTriplesString(entity2) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + relation + "' .\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . }\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . }\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . }\n" +
+				"}";
+		//@formatter:on
 		Update update = repoConnection.prepareUpdate(query);
 		update.execute();
 	}
@@ -699,19 +705,21 @@ public class AlignmentModel {
 	public void rejectAllAlignment() {
 		List<Cell> cells = listCells();
 		for (Cell c : cells) {
-			String query = "DELETE { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY)
-					+ " ?p . " + "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . "
-					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } "
-					+ "INSERT { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '"
-					+ Status.rejected + "' . }" + "WHERE { ?cell a "
-					+ NTriplesUtil.toNTriplesString(Alignment.CELL) + " . " + "?cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "
-					+ NTriplesUtil.toNTriplesString(c.getEntity1()) + " . " + "?cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "
-					+ NTriplesUtil.toNTriplesString(c.getEntity2()) + " . " + "OPTIONAL { ?cell "
-					+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . } "
-					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . } "
-					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } }";
+			//@formatter:off
+			String query = "DELETE {\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c .\n"
+					+ "} INSERT {\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " '"	+ Status.rejected + "' .\n"
+					+ "} WHERE {\n"
+					+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "	+ NTriplesUtil.toNTriplesString(c.getEntity1()) + " .\n"
+					+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "	+ NTriplesUtil.toNTriplesString(c.getEntity2()) + " .\n"
+					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . }\n"
+					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . }\n"
+					+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . }\n}";
+			//@formatter:off
 			Update update = repoConnection.prepareUpdate(query);
 			update.execute();
 		}
@@ -722,28 +730,30 @@ public class AlignmentModel {
 	 * 
 	 * @param entity1
 	 * @param entity2
-	 * @param relation
+	 * @param oldRelation
 	 * @param measure
 	 */
-	public void setRelation(IRI entity1, IRI entity2, String relation, float measure) {
-		String query = "DELETE { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY)
-				+ " ?p .	" + "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . "
-				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c .	" + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m .	" + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r . } " + "INSERT {	" + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + relation + "' . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + String.format("%s", measure)
-				+ "'^^" + NTriplesUtil.toNTriplesString(XMLSchema.FLOAT) + " . } " + "WHERE { " + "?cell a "
-				+ NTriplesUtil.toNTriplesString(Alignment.CELL) + " .	" + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "
-				+ NTriplesUtil.toNTriplesString(entity1) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "
-				+ NTriplesUtil.toNTriplesString(entity2) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m .	" + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r . " + "OPTIONAL { ?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . }	"
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . } "
-				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . } }";
+	public void updateRelation(IRI entity1, IRI entity2, String oldRelation, String newRelation, float measure) {
+		//@formatter:off
+		String query = "DELETE {\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r .\n"
+				+ "} INSERT {\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + newRelation + "' .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + String.format("%s", measure)	+ "'^^" + NTriplesUtil.toNTriplesString(XMLSchema.FLOAT) + " .\n"
+				+ "} WHERE { "
+				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "	+ NTriplesUtil.toNTriplesString(entity1) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " " + NTriplesUtil.toNTriplesString(entity2) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + oldRelation + "' .\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . }\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s . }\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c . }\n}";
+		//@formatter:on
 		Update update = repoConnection.prepareUpdate(query);
 		update.execute();
 	}
@@ -753,19 +763,23 @@ public class AlignmentModel {
 	 * 
 	 * @param entity1
 	 * @param entity2
+	 * @param relation
 	 * @param mappingProperty
 	 */
-	public void changeMappingProperty(IRI entity1, IRI entity2, IRI mappingProperty) {
-		String query = "DELETE { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY)
-				+ " ?p . } " + "INSERT {	" + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " "
-				+ NTriplesUtil.toNTriplesString(mappingProperty) + " . } " + "WHERE { " + "?cell a "
-				+ NTriplesUtil.toNTriplesString(Alignment.CELL) + " .	" + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "
-				+ NTriplesUtil.toNTriplesString(entity1) + " . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " "
-				+ NTriplesUtil.toNTriplesString(entity2) + " . " + "OPTIONAL { ?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . }	}";
+	public void changeMappingProperty(IRI entity1, IRI entity2, String relation, IRI mappingProperty) {
+		//@formatter:off
+		String query = "DELETE {\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p .\n"
+				+ "} INSERT {\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " " + NTriplesUtil.toNTriplesString(mappingProperty) + " .\n"
+				+ "} WHERE {\n"
+				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " " + NTriplesUtil.toNTriplesString(entity1) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " " + NTriplesUtil.toNTriplesString(entity2) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + relation + "' .\n"
+				+ "OPTIONAL { ?cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " ?p . }\n"
+				+ "}";
+		//@formatter:on
 		Update update = repoConnection.prepareUpdate(query);
 		update.execute();
 	}
@@ -803,89 +817,17 @@ public class AlignmentModel {
 	 * @param role
 	 * @param relation
 	 * @param withDefault
-	 *            if cannot infer a property, determine if consider an eventual default property assigned to
-	 *            the relation
+	 *            if cannot infer a property, determine if consider an eventual default property stored in the
+	 *            alignment model as default for the relation
 	 * @return
 	 * @throws InvalidAlignmentRelationException
 	 */
 	public List<IRI> suggestPropertiesForRelation(RDFResourceRole role, String relation, boolean withDefault) throws InvalidAlignmentRelationException {
-		List<IRI> suggested = new ArrayList<>();
-
-		if (RDFResourceRole.isProperty(role)) {
-			if (relation.equals("=")) {
-				suggested.add(OWL.EQUIVALENTPROPERTY);
-				suggested.add(OWL.SAMEAS);
-			} else if (relation.equals(">")) {
-				throw new InvalidAlignmentRelationException("a rdfs:subProperty alignment would "
-						+ "require to assert a triple with the target resource as the subject, "
-						+ "which is advisable not to do");
-			} else if (relation.equals("<")) {
-				suggested.add(RDFS.SUBPROPERTYOF);
-			} else if (relation.equals("%")) {
-				suggested.add(OWL.PROPERTYDISJOINTWITH);
-			} else if (relation.equals("InstanceOf")) {
-				suggested.add(RDF.TYPE);
-			} else if (relation.equals("HasInstance")) {
-				throw new InvalidAlignmentRelationException("a rdf:type alignment would require to "
-						+ "assert a triple with the target resource as the subject, "
-						+ "which is advisable not to do");
-			}
-		} else if (role.equals(RDFResourceRole.concept)) {
-			if (relation.equals("=")) {
-				suggested.add(SKOS.EXACT_MATCH);
-				suggested.add(SKOS.CLOSE_MATCH);
-			} else if (relation.equals(">")) {
-				suggested.add(SKOS.NARROW_MATCH);
-			} else if (relation.equals("<")) {
-				suggested.add(SKOS.BROAD_MATCH);
-			} else if (relation.equals("%")) {
-				// TODO
-			} else if (relation.equals("InstanceOf")) {
-				suggested.add(SKOS.BROAD_MATCH);
-				suggested.add(RDF.TYPE);
-			} else if (relation.equals("HasInstance")) {
-				suggested.add(SKOS.NARROW_MATCH);
-			}
-		} else if (role.equals(RDFResourceRole.cls)) {
-			if (relation.equals("=")) {
-				suggested.add(OWL.EQUIVALENTCLASS);
-				suggested.add(OWL.SAMEAS);
-			} else if (relation.equals(">")) {
-				throw new InvalidAlignmentRelationException("a rdfs:subClass alignment would "
-						+ "require to assert a triple with the target resource as the subject, "
-						+ "which is advisable not to do");
-			} else if (relation.equals("<")) {
-				suggested.add(RDFS.SUBCLASSOF);
-			} else if (relation.equals("%")) {
-				suggested.add(OWL.DISJOINTWITH);
-			} else if (relation.equals("InstanceOf")) {
-				suggested.add(RDF.TYPE);
-			} else if (relation.equals("HasInstance")) {
-				throw new InvalidAlignmentRelationException("a rdf:type alignment would require "
-						+ "to assert a triple with the target resource as the subject, "
-						+ "which is advisable not to do");
-			}
-		} else if (role.equals(RDFResourceRole.individual)) {
-			if (relation.equals("=")) {
-				suggested.add(OWL.SAMEAS);
-			} else if (relation.equals(">") || relation.equals("<")) {
-				throw new InvalidAlignmentRelationException(
-						"not possible to state a class subsumption on a individual");
-			} else if (relation.equals("%")) {
-				suggested.add(OWL.DIFFERENTFROM);
-			} else if (relation.equals("InstanceOf")) {
-				suggested.add(RDF.TYPE);
-			} else if (relation.equals("HasInstance")) {
-				throw new InvalidAlignmentRelationException(
-						"not possible to state a " + "class denotation on an individual");
-			}
-		}
-		if (suggested.isEmpty()) {
-			if (withDefault) {
-				IRI defaultProp = relationPropertyMap.get(relation);
-				if (defaultProp != null) {
-					suggested.add(defaultProp);
-				}
+		List<IRI> suggested = AlignmentUtils.suggestPropertiesForRelation(role, relation);
+		if (suggested.isEmpty() && withDefault) {
+			IRI defaultProp = relationPropertyMap.get(relation);
+			if (defaultProp != null) {
+				suggested.add(defaultProp);
 			}
 			if (suggested.isEmpty()) {
 				throw new InvalidAlignmentRelationException(
@@ -920,25 +862,30 @@ public class AlignmentModel {
 	 * Reverses the two ontologies aligned the alignment and the entities in the cells
 	 */
 	public void reverse() {
-		String query = "DELETE { " + "?alignment " + NTriplesUtil.toNTriplesString(Alignment.ONTO1)
-				+ " ?onto1 .	" + "?alignment " + NTriplesUtil.toNTriplesString(Alignment.ONTO2)
-				+ " ?onto2 .	" + "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?e1 . "
-				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?e2 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r . }	" + "INSERT { "
-				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.ONTO1) + " ?onto2 .	"
-				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.ONTO2) + " ?onto1 .	" + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?e2 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?e1 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?rr . } " + "WHERE { "
-				+ "?alignment a " + NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " . " + "?alignment "
-				+ NTriplesUtil.toNTriplesString(Alignment.ONTO1) + " ?onto1 . " + "?alignment "
-				+ NTriplesUtil.toNTriplesString(Alignment.ONTO2) + " ?onto2 . " + "?cell a "
-				+ NTriplesUtil.toNTriplesString(Alignment.CELL) + " .	" + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?e1 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?e2 . " + "?cell "
-				+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r . "
+		//@formatter:off
+		String query = "DELETE {\n"
+				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.ONTO1) + " ?onto1 .\n"
+				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.ONTO2) + " ?onto2 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?e1 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?e2 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r .\n"
+				+ "} INSERT {\n"
+				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.ONTO1) + " ?onto2 .\n"
+				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.ONTO2) + " ?onto1 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?e2 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?e1 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?rr .\n"
+				+ "} WHERE {\n"
+				+ "?alignment a " + NTriplesUtil.toNTriplesString(Alignment.ALIGNMENT) + " .\n"
+				+ "?alignment "	+ NTriplesUtil.toNTriplesString(Alignment.ONTO1) + " ?onto1 .\n"
+				+ "?alignment "	+ NTriplesUtil.toNTriplesString(Alignment.ONTO2) + " ?onto2 .\n"
+				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " ?e1 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " ?e2 .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r .\n"
 				+ "BIND( IF(?r = '<', '>', IF (?r = '>', '<', " + "IF (?r = 'HasInstance', 'InstanceOf', "
 				+ "IF (?r = 'InstanceOf', 'HasInstance', ?r) ) ) ) as ?rr ) }";
+		//@formatter:on
 		Update update = repoConnection.prepareUpdate(query);
 		update.execute();
 	}

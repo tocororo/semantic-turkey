@@ -4,11 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
-import it.uniroma2.art.semanticturkey.alignment.AlignmentModel;
+import it.uniroma2.art.semanticturkey.alignment.*;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentModel.Status;
-import it.uniroma2.art.semanticturkey.alignment.Cell;
-import it.uniroma2.art.semanticturkey.alignment.InvalidAlignmentRelationException;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
@@ -791,7 +788,7 @@ public class Alignment extends STServiceAdapter {
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
 		alignModel.acceptAlignment(entity1, entity2, relation, forcedProperty, setAsDefault,
 				getManagedConnection());
-		Cell c = alignModel.getCell(entity1, entity2);
+		Cell c = alignModel.getCell(entity1, entity2, relation);
 		return createCellJsonNode(c);
 	}
 
@@ -836,7 +833,7 @@ public class Alignment extends STServiceAdapter {
 				IRI entity2 = cell.getEntity2();
 				String relation = cell.getRelation();
 				alignModel.acceptAlignment(entity1, entity2, relation, null, false, getManagedConnection());
-				Cell updatedCell = alignModel.getCell(entity1, entity2);
+				Cell updatedCell = alignModel.getCell(entity1, entity2, relation);
 				cellsArrayNode.add(createCellJsonNode(updatedCell));
 			}
 		}
@@ -856,8 +853,8 @@ public class Alignment extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', '')")
 	public JsonNode rejectAlignment(IRI entity1, IRI entity2, String relation) {
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
-		alignModel.rejectAlignment(entity1, entity2);
-		Cell c = alignModel.getCell(entity1, entity2);
+		alignModel.rejectAlignment(entity1, entity2, relation);
+		Cell c = alignModel.getCell(entity1, entity2, relation);
 		return createCellJsonNode(c);
 	}
 
@@ -899,8 +896,9 @@ public class Alignment extends STServiceAdapter {
 			if (measure < threshold) {
 				IRI entity1 = cell.getEntity1();
 				IRI entity2 = cell.getEntity2();
-				alignModel.rejectAlignment(entity1, entity2);
-				Cell updatedCell = alignModel.getCell(entity1, entity2);
+				String relation = cell.getRelation();
+				alignModel.rejectAlignment(entity1, entity2, relation);
+				Cell updatedCell = alignModel.getCell(entity1, entity2, relation);
 				cellsArrayNode.add(createCellJsonNode(updatedCell));
 			}
 		}
@@ -912,15 +910,15 @@ public class Alignment extends STServiceAdapter {
 	 * 
 	 * @param entity1
 	 * @param entity2
-	 * @param relation
+	 * @param oldRelation
 	 * @return
 	 */
 	@STServiceOperation
 	@Read
-	public JsonNode changeRelation(IRI entity1, IRI entity2, String relation) {
+	public JsonNode changeRelation(IRI entity1, IRI entity2, String oldRelation, String newRelation) {
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
-		alignModel.setRelation(entity1, entity2, relation, 1.0f);
-		Cell updatedCell = alignModel.getCell(entity1, entity2);
+		alignModel.updateRelation(entity1, entity2, oldRelation, newRelation, 1.0f); //
+		Cell updatedCell = alignModel.getCell(entity1, entity2, oldRelation);
 		return createCellJsonNode(updatedCell);
 	}
 
@@ -929,16 +927,17 @@ public class Alignment extends STServiceAdapter {
 	 * 
 	 * @param entity1
 	 * @param entity2
+	 * @param relation
 	 * @param mappingProperty
 	 * @return
 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'U')")
-	public JsonNode changeMappingProperty(IRI entity1, IRI entity2, IRI mappingProperty) {
+	public JsonNode changeMappingProperty(IRI entity1, IRI entity2, String relation, IRI mappingProperty) {
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
-		alignModel.changeMappingProperty(entity1, entity2, mappingProperty);
-		Cell updatedCell = alignModel.getCell(entity1, entity2);
+		alignModel.changeMappingProperty(entity1, entity2, relation, mappingProperty);
+		Cell updatedCell = alignModel.getCell(entity1, entity2, relation);
 		return createCellJsonNode(updatedCell);
 	}
 
@@ -1119,15 +1118,12 @@ public class Alignment extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
 	public Collection<AnnotatedValue<IRI>> getSuggestedProperties(RDFResourceRole role, String relation) {
-		AlignmentModel alignmentModel = modelsMap.get(stServiceContext.getSessionToken());
 		List<IRI> props;
 		try {
-			props = alignmentModel.suggestPropertiesForRelation(role, relation, false);
+			props = AlignmentUtils.suggestPropertiesForRelation(role, relation);
 		} catch (InvalidAlignmentRelationException e) {
-			/*
-			 * If it is not possible to find properties to suggest, (probably because the relation is not
-			 * known) returns all the mapping properties.
-			 */
+			/* If it is not possible to find properties to suggest, (probably because the relation is not
+			known) returns all the mapping properties. */
 			props = getAvailableMappingProperties(role, false);
 		}
 

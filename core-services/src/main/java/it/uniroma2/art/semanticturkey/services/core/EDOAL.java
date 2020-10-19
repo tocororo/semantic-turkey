@@ -323,6 +323,18 @@ public class EDOAL extends STServiceAdapter {
 	}
 
 	/**
+	 * Sets the <code>align:mappingProperty</code> of the provided <code>correspondence</code>.
+	 *
+	 * @param correspondence
+	 * @param property
+	 */
+	@Write
+	@STServiceOperation(method = RequestMethod.POST)
+	public void setMappingProperty(Resource correspondence, IRI property) {
+		replacePropertyValueInternal(correspondence, Alignment.MAPPING_PROPERTY, property);
+	}
+
+	/**
 	 * Sets the <code>align:relation</code> of the provided <code>correspondence</code>.
 	 * 
 	 * @param correspondence
