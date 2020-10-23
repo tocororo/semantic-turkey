@@ -2,7 +2,8 @@ version 8.0.2
 date: dd/mm/yyyy
   * Added data type information in the single-value custom form preview
   * Added mapping property to the descriptions of correspondences in the EDOAL data view
-  * fixed a bug in the search services on a local project 
+  * fixed a bug in the search services on a local project
+  * updated dependency on Sheet2RDF 4.0.2
 
 version 8.0.1
 date: 08/10/2020
