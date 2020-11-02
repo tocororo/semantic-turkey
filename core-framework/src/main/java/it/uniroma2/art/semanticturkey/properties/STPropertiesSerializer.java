@@ -105,22 +105,26 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 					writeTypeDescription(parType, gen, provider);
 				}
 
-				Optional<Collection<String>> enumerationHolder = value.getEnumeration(prop);
+				Optional<EnumerationDescription> enumerationHolder = value.getEnumeration(prop);
 
 				if (enumerationHolder.isPresent()) {
-					gen.writeArrayFieldStart("enumeration");
-					Collection<String> enumeration = enumerationHolder.get();
+					gen.writeObjectFieldStart("enumeration");
+					EnumerationDescription enumeration = enumerationHolder.get();
 
-					for (String val : enumeration) {
+					gen.writeArrayFieldStart("values");
+					for (String val : enumeration.getValues()) {
 						gen.writeString(val);
 					}
-
 					gen.writeEndArray();
+
+					gen.writeBooleanField("open", enumeration.isOpen());
+
+					gen.writeEndObject();
 				}
-				
+
 				List<Annotation> constraints = selectConstraints(value.getAnnotations(prop));
 				appendConstraints(constraints, gen, provider);
-				
+
 				Object parValue = value.getPropertyValue(prop);
 				if (parValue != null) {
 					// Serializes property values using the ObjectMapper specific for STProperties
@@ -167,7 +171,17 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 		boolean isParametricType = type instanceof ParameterizedType || TypeUtils.isArrayType(type);
 
 		gen.writeStartObject();
-		gen.writeStringField("name", reducedTypeName);
+
+		if (TypeUtils.isAssignable(annotatedType.getType(), STProperties.class)) {
+			gen.writeStringField("name", "Properties");
+			try {
+				gen.writeObjectField("schema", ((Class<?>) annotatedType.getType()).newInstance());
+			} catch (InstantiationException | IllegalAccessException | IOException e) {
+				e.printStackTrace();
+			}
+		} else {
+			gen.writeStringField("name", reducedTypeName);
+		}
 		appendConstraints(constraints, gen, provider);
 
 		if (isParametricType) {

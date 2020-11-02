@@ -2,6 +2,8 @@ package it.uniroma2.art.semanticturkey.properties;
 
 import java.util.Collection;
 
+import org.apache.commons.lang3.StringUtils;
+
 public class STPropertiesChecker {
 
 	private STProperties props;
@@ -26,7 +28,7 @@ public class STPropertiesChecker {
 		Collection<String> pars = props.getProperties();
 		try {
 			for (String p : pars) {
-				if (props.isRequiredProperty(p) && (props.getPropertyValue(p) == null)) {
+				if (props.isRequiredProperty(p) && isNullish(props.getPropertyValue(p))) {
 					setErrorMessage("property: " + p + " has not been set");
 					return false;
 				}
@@ -37,6 +39,16 @@ public class STPropertiesChecker {
 			return false;
 		}
 		return true;
+	}
+
+	private static boolean isNullish(Object v) {
+		// @formatter:off
+		return v == null || 
+				(v instanceof String && StringUtils.isAllBlank((String) v)) ||
+				(v instanceof STProperties && !STPropertiesChecker.getModelConfigurationChecker((STProperties)v).isValid()) ||
+				(v instanceof Collection<?> && (
+						((Collection<?>)v).isEmpty() || ((Collection<?>)v).stream().anyMatch(STPropertiesChecker::isNullish)));
+		// @formatter:on
 	}
 
 	private void setErrorMessage(String msg) {

@@ -33,7 +33,7 @@ public class OntoPortalDeployerFactory implements ExtensionFactory<OntoPortalDep
 
 	@Override
 	public Collection<OntoPortalDeployerConfiguration> getConfigurations() {
-		return Arrays.asList(new OntoPortalDeployerConfiguration());
+		return Arrays.asList(new OntoPortalDeployerConfiguration(), new EcoPortalDeployerConfiguration());
 	}
 
 }

@@ -4,6 +4,10 @@ date: dd/mm/yyyy
   * Added mapping property to the descriptions of correspondences in the EDOAL data view
   * fixed a bug in the search services on a local project
   * updated dependency on Sheet2RDF 4.0.2
+  * updates to the OntoPortal deployer, allowing for a specific configuration dedicated to EcoPortal
+  * enabled nesting of settings
+  * enabled open enumerations in settings
+  * align the server to the client concerning validation of properties objects
 
 version 8.0.1
 date: 08/10/2020

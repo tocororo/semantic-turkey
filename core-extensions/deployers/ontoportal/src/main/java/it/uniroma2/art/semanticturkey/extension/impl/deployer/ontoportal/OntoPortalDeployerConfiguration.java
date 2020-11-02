@@ -10,13 +10,13 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
 /**
  * Configuration class for {@link OntoPortalDeployerFactory}.
  * 
- * <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
+ * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class OntoPortalDeployerConfiguration implements Configuration {
 
 	@Override
 	public String getShortName() {
-		return "OntoPortal Deployer Configuration";
+		return "OntoPortal";
 	}
 
 	@Override
@@ -89,4 +89,6 @@ public class OntoPortalDeployerConfiguration implements Configuration {
 	// public String email;
 	//
 	// }
+	
+	
 }

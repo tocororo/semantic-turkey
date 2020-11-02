@@ -138,13 +138,17 @@ public interface STProperties {
 			value = convertToPropertValue(propType, value);
 		}
 
-		Optional<Collection<String>> enumeration = getEnumeration(id);
-		if (enumeration.isPresent()) {
-			Object tempValue = value;
+		Optional<EnumerationDescription> enumerationHolder = getEnumeration(id);
+		if (enumerationHolder.isPresent()) {
+			EnumerationDescription enumeration = enumerationHolder.get();
 
-			enumeration.get().stream().filter(v -> v.equals(tempValue.toString())).findAny()
-					.orElseThrow(() -> new IllegalArgumentException("Value \"" + tempValue.toString()
-							+ "\" is not assignable to property \"" + id + "\""));
+			if (!enumeration.isOpen()) {
+				Object tempValue = value;
+
+				enumeration.getValues().stream().filter(v -> v.equals(tempValue.toString())).findAny()
+						.orElseThrow(() -> new IllegalArgumentException("Value \"" + tempValue.toString()
+								+ "\" is not assignable to property \"" + id + "\""));
+			}
 		}
 		return value;
 	}
@@ -378,14 +382,14 @@ public interface STProperties {
 	 * @param id
 	 * @return
 	 */
-	default Optional<Collection<String>> getEnumeration(String id) throws PropertyNotFoundException {
+	default Optional<EnumerationDescription> getEnumeration(String id) throws PropertyNotFoundException {
 		getPropertyDescription(id); // just used to check the existence of the property
 		try {
 			Field field = this.getClass().getField(id);
 			return Optional
 					.ofNullable(
 							field.getAnnotation(it.uniroma2.art.semanticturkey.properties.Enumeration.class))
-					.map(ann -> Lists.newArrayList(ann.value()));
+					.map(EnumerationDescription::fromAnnotation);
 		} catch (NoSuchFieldException | SecurityException e) {
 			return Optional.empty();
 		}

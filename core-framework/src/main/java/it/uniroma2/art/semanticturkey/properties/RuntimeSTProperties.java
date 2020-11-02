@@ -360,8 +360,8 @@ public class RuntimeSTProperties implements STProperties {
 	}
 
 	@Override
-	public Optional<Collection<String>> getEnumeration(String id) throws PropertyNotFoundException {
-		return getPropertyDefinition(id).getEnumeration();
+	public Optional<EnumerationDescription> getEnumeration(String id) throws PropertyNotFoundException {
+		return getPropertyDefinition(id).getEnumeration().map(ls -> new EnumerationDescription(ls, false));
 	}
 
 	@Override

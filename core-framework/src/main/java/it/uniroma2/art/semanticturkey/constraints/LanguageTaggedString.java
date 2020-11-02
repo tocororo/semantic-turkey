@@ -15,7 +15,6 @@ import javax.validation.Constraint;
 import javax.validation.Payload;
 
 import it.uniroma2.art.semanticturkey.validators.LanguageTaggedStringValidator;
-import it.uniroma2.art.semanticturkey.validators.LocallyDefinedValidator;
 
 /**
  * Requires that an RDF literal represents a language tagged string.

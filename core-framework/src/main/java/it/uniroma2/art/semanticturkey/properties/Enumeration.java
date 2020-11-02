@@ -17,4 +17,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface Enumeration {
 	String[] value();
+	boolean open() default false;
 }
