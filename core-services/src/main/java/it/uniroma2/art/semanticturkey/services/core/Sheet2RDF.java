@@ -33,11 +33,12 @@ import it.uniroma2.art.coda.structures.CODATriple;
 import it.uniroma2.art.coda.structures.SuggOntologyCoda;
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration;
+import it.uniroma2.art.semanticturkey.properties.Pair;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -66,6 +67,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.uima.UIMAException;
 import org.apache.uima.jcas.JCas;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.MalformedQueryException;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
@@ -77,7 +80,6 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.DOMException;
 
@@ -109,10 +111,7 @@ import java.util.Set;
 public class Sheet2RDF extends STServiceAdapter {
 
     //map that contain <id, context> pairs to handle multiple sessions
-    private Map<String, S2RDFContext> contextMap = new HashMap<String, S2RDFContext>();
-
-    @Autowired
-    private STServiceContext stServiceContext;
+    private Map<String, S2RDFContext> contextMap = new HashMap<>();
 
     /**
      * Uploads an excel file into a server directory
@@ -207,14 +206,14 @@ public class Sheet2RDF extends STServiceAdapter {
      * @param type     the optional rdf:type of the node
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void addSimpleGraphApplicationToHeader(String headerId, IRI property, String nodeId, @Optional IRI type) {
+    public void addSimpleGraphApplicationToHeader(String headerId, IRI property, String nodeId, @Optional Resource type) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
         SimpleGraphApplication g = new SimpleGraphApplication();
         g.setProperty(property);
         g.setNodeId(nodeId);
-        g.setType(type);
+        g.setValue(type);
         h.addGraphApplication(g);
     }
 
@@ -242,7 +241,7 @@ public class Sheet2RDF extends STServiceAdapter {
      * @param type     the optional rdf:type of the node
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void updateSimpleGraphApplication(String headerId, String graphId, IRI property, String nodeId, @Optional IRI type) {
+    public void updateSimpleGraphApplication(String headerId, String graphId, IRI property, String nodeId, @Optional Resource type) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
@@ -251,7 +250,7 @@ public class Sheet2RDF extends STServiceAdapter {
                 SimpleGraphApplication sga = (SimpleGraphApplication) g;
                 sga.setProperty(property);
                 sga.setNodeId(nodeId);
-                sga.setType(type);
+                sga.setValue(type);
                 break;
             }
         }
@@ -470,8 +469,9 @@ public class Sheet2RDF extends STServiceAdapter {
      */
     @Read
     @STServiceOperation(method = RequestMethod.POST)
-    public void updateSubjectHeader(String headerId, String converterContract, @Optional IRI type,
-                                    @Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) {
+    public void updateSubjectHeader(String headerId, String converterContract, @Optional Map<String, String> converterParams,
+            @Optional Resource type, @Optional @JsonSerialized List<Pair<IRI, Value>> additionalPredObjs,
+            @Optional(defaultValue = "false") boolean memoize) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
         SubjectHeader subjHeader = mappingStruct.getSubjectHeader();
@@ -486,7 +486,17 @@ public class Sheet2RDF extends STServiceAdapter {
         n.setConverter(c);
         n.setMemoize(memoize);
         //update the type in the graph application
-        subjHeader.getGraphApplication().setType(type);
+        subjHeader.getTypeGraphApplication().setValue(type);
+        //update the additional graph application
+        List<SimpleGraphApplication> additionalGraphApplications = new ArrayList<>();
+        for (Pair<IRI, Value> additionalPO: additionalPredObjs) {
+            SimpleGraphApplication sga = new SimpleGraphApplication();
+            sga.setNodeId(subjHeader.getNodeConversion().getNodeId());
+            sga.setProperty(additionalPO.getFirst());
+            sga.setValue(additionalPO.getSecond());
+            additionalGraphApplications.add(sga);
+        }
+        subjHeader.setAdditionalGraphApplications(additionalGraphApplications);
     }
 
     /**
@@ -603,7 +613,7 @@ public class Sheet2RDF extends STServiceAdapter {
             }
         }
         //get all placeholder from all the ProjectionRule and add their name in the json array of the response
-        Set<String> nodeNameSet = new HashSet<String>();
+        Set<String> nodeNameSet = new HashSet<>();
         ArrayNode usedNodesJsonArray = jf.arrayNode();
         respNode.set("usedNodes", usedNodesJsonArray);
         if (prModel != null) {
@@ -864,7 +874,7 @@ public class Sheet2RDF extends STServiceAdapter {
      */
     @STServiceOperation
     public Collection<Reference> getDefaultAdvancedGraphApplicationConfigurations() {
-        ArrayList<Reference> references = new ArrayList<Reference>();
+        ArrayList<Reference> references = new ArrayList<>();
         List<String> confList = GraphApplicationConfigurationLoader.getAvailableConfigurations();
         for (String c : confList) {
             references.add(new Reference(null, null, c));
