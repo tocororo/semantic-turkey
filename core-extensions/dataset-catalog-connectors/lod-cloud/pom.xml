@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>it.uniroma2.art.semanticturkey</groupId>
 		<artifactId>st-dataset-catalog-connectors</artifactId>
-		<version>9.0</version>
+		<version>9.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>st-lod-cloud-connector</artifactId>
 	<packaging>bundle</packaging>
