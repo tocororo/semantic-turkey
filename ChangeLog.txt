@@ -2,7 +2,8 @@ version 8.0.2
 date: dd/mm/yyyy
   * Added data type information in the single-value custom form preview
   * Added mapping property to the descriptions of correspondences in the EDOAL data view
-  * fixed a bug in the search services on a local project
+  * Fixed a bug in the search services on a local project
+  * Fixed a bug that occurred when updating the email address of an administrator user
   * updates to the OntoPortal deployer, allowing for a specific configuration dedicated to EcoPortal
   * enabled nesting of settings
   * enabled open enumerations in settings
