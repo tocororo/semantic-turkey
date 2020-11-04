@@ -63,6 +63,7 @@ import it.uniroma2.art.sheet2rdf.sheet.SheetManager;
 import it.uniroma2.art.sheet2rdf.sheet.SheetManagerFactory;
 import it.uniroma2.art.sheet2rdf.utils.FsNamingStrategy;
 import it.uniroma2.art.sheet2rdf.utils.S2RDFUtils;
+import it.uniroma2.art.sheet2rdf.utils.StatusHandler;
 import org.apache.commons.io.IOUtils;
 import org.apache.uima.UIMAException;
 import org.apache.uima.jcas.JCas;
@@ -470,7 +471,7 @@ public class Sheet2RDF extends STServiceAdapter {
     @Read
     @STServiceOperation(method = RequestMethod.POST)
     public void updateSubjectHeader(String headerId, String converterContract, @Optional Map<String, String> converterParams,
-            @Optional Resource type, @Optional @JsonSerialized List<Pair<IRI, Value>> additionalPredObjs,
+            @Optional IRI type, @Optional(defaultValue = "[]") @JsonSerialized List<Pair<IRI, Value>> additionalPredObjs,
             @Optional(defaultValue = "false") boolean memoize) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
@@ -486,8 +487,8 @@ public class Sheet2RDF extends STServiceAdapter {
         n.setConverter(c);
         n.setMemoize(memoize);
         //update the type in the graph application
-        subjHeader.getTypeGraphApplication().setValue(type);
-        //update the additional graph application
+        subjHeader.getGraphApplication().setType(type);
+        //update the additional graph applicati
         List<SimpleGraphApplication> additionalGraphApplications = new ArrayList<>();
         for (Pair<IRI, Value> additionalPO: additionalPredObjs) {
             SimpleGraphApplication sga = new SimpleGraphApplication();
@@ -548,12 +549,11 @@ public class Sheet2RDF extends STServiceAdapter {
      * @throws IOException
      */
     @STServiceOperation
-    @Read
     public JsonNode getPearl() throws IOException {
         File pearlFile = File.createTempFile("pearl", ".pr");
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         Sheet2RDFCore s2rdfCore = ctx.getSheet2RDFCore();
-        s2rdfCore.generatePearlFile(pearlFile, getManagedConnection());
+        s2rdfCore.generatePearlFile(pearlFile);
         ctx.setPearlFile(pearlFile);
         String pearl = S2RDFUtils.pearlFileToString(pearlFile);
         return JsonNodeFactory.instance.textNode(pearl);
@@ -837,7 +837,8 @@ public class Sheet2RDF extends STServiceAdapter {
         MappingStruct ms = ctx.getSheet2RDFCore().getMappingStruct();
         File tempServerFile = File.createTempFile("sheet2rdf_status", ".json");
         try {
-            ms.toJson(tempServerFile);
+            StatusHandler statusHandler = new StatusHandler(ms);
+            statusHandler.toJson(tempServerFile);
             oRes.setHeader("Content-Disposition", "attachment; filename=alignment.rdf");
             oRes.setContentType(RDFFormat.RDFXML.getDefaultMIMEType());
             oRes.setContentLength((int) tempServerFile.length());
@@ -863,7 +864,8 @@ public class Sheet2RDF extends STServiceAdapter {
         MappingStruct ms = ctx.getSheet2RDFCore().getMappingStruct();
         File inputServerFile = File.createTempFile("sheet2rdf_status", statusFile.getOriginalFilename());
         statusFile.transferTo(inputServerFile);
-        ms.fromJson(inputServerFile, getManagedConnection());
+        StatusHandler statusHandler = new StatusHandler(ms);
+        statusHandler.fromJson(inputServerFile, getManagedConnection());
     }
 
 

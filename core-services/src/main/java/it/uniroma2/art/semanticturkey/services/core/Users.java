@@ -16,7 +16,6 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
@@ -314,18 +313,14 @@ public class Users extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
-	public ObjectNode updateUserEmail(String email, String newEmail) throws UserException, STPropertyUpdateException {
+	public ObjectNode updateUserEmail(String email, String newEmail) throws UserException, STPropertyUpdateException, JsonProcessingException {
 		STUser user = UsersManager.getUser(email);
 		//check if there is already a user that uses the newEmail
 		if (UsersManager.isEmailUsed(newEmail)) {
 			throw new UserException("Cannot update the email for the user " + email + ". The email " + newEmail + 
 					" is already used by another user");
 		}
-		boolean wasAdmin = user.isAdmin(); 
 		user = UsersManager.updateUserEmail(user, newEmail);
-		if (wasAdmin) { //if user was admin, update the admin email in the configuration file
-			STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS, user.getEmail());
-		}
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}

@@ -53,10 +53,10 @@ public class STUser implements UserDetails {
 		this.password = password;
 		this.givenName = givenName;
 		this.familyName = familyName;
-		this.authorities = new ArrayList<GrantedAuthority>();
+		this.authorities = new ArrayList<>();
 		this.status = UserStatus.NEW;
-		this.languageProficiencies = new ArrayList<String>();
-		this.customProps = new HashMap<IRI, String>();
+		this.languageProficiencies = new ArrayList<>();
+		this.customProps = new HashMap<>();
 	}
 	
 	public IRI getIRI() {

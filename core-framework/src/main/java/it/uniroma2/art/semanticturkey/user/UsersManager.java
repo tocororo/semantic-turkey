@@ -282,7 +282,13 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserEmail(STUser user, String newValue) throws UserException {
+	public static STUser updateUserEmail(STUser user, String newValue) throws UserException, STPropertyUpdateException, JsonProcessingException {
+		//if user was admin, update also the admin setting
+		if (adminSet.contains(user.getEmail())) {
+			adminSet.remove(user.getEmail());
+			adminSet.add(newValue);
+			updateAdminSetting();
+		}
 		user.setEmail(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
