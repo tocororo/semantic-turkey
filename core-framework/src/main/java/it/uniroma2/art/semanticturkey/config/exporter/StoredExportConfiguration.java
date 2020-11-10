@@ -23,12 +23,10 @@ public class StoredExportConfiguration implements Configuration {
 		return "Stored Export Configuration";
 	}
 
-	@STProperty(description = "The graphs to be exported. An empty array means all graphs the name of which is an IRI", displayName = "Graphs")
-	@Required
+	@STProperty(description = "The graphs to be exported. An empty (or a missing) array means all graphs the name of which is an IRI", displayName = "Graphs")
 	public List<IRI> graphs;
 
 	@STProperty(description = "A sequence of RDFTransformers, each applied to a subset of the exported graphs", displayName = "Transformation pipeline")
-	@Required
 	public List<Pair<ExtensionSpecificationByRef, List<IRI>>> transformationPipeline;
 
 	@STProperty(description = "Tells if inferred triples should be included", displayName = "Include inferred triples")

@@ -49,8 +49,6 @@ import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.Clos
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingException;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingExporter;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.DataFormat;

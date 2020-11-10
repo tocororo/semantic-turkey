@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.generation.annotation.processor.internal;
 
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -8,9 +9,14 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVisitor;
 import javax.lang.model.util.Elements;
+import javax.lang.model.util.SimpleTypeVisitor8;
 import javax.lang.model.util.Types;
 
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -74,7 +80,7 @@ public class VelocitySupportTools {
 
 		return false;
 	}
-	
+
 	public boolean isSkipTermValidationParameter(VariableElement element) {
 
 		for (AnnotationMirror am : element.getAnnotationMirrors()) {
@@ -86,7 +92,7 @@ public class VelocitySupportTools {
 
 		return false;
 	}
-	
+
 	public boolean isJsonSerializedParameter(VariableElement element) {
 
 		for (AnnotationMirror am : element.getAnnotationMirrors()) {
@@ -98,7 +104,6 @@ public class VelocitySupportTools {
 
 		return false;
 	}
-
 
 	public boolean hasDefaultValue(VariableElement element) {
 
@@ -157,5 +162,37 @@ public class VelocitySupportTools {
 		}
 
 		throw new IllegalArgumentException("Missing operation-related annotation on " + executableElement);
+	}
+
+	public String printType(TypeMirror typeMirror) {
+		TypeVisitor<String, Void> typeAnnotationStripingVisitor = new SimpleTypeVisitor8<String, Void>() {
+			@Override
+			public String visitDeclared(DeclaredType t, Void p) {
+				String typeName = ((QualifiedNameable) t.asElement()).getQualifiedName().toString();
+
+				if (t.getTypeArguments().isEmpty())
+					return typeName;
+
+				return typeName + "<" + t.getTypeArguments().stream().map(arg -> arg.accept(this, p))
+						.collect(Collectors.joining(", ")) + ">";
+			}
+
+			@Override
+			public String visitPrimitive(PrimitiveType t, Void p) {
+				return t.toString();
+			}
+
+			@Override
+			public String visitArray(ArrayType t, Void p) {
+				return t.getComponentType().accept(this, p) + "[]";
+			}
+
+			@Override
+			protected String defaultAction(TypeMirror e, Void p) {
+				throw new IllegalArgumentException("Unable to process type mirror: " + e);
+			}
+		};
+		return typeMirror.accept(typeAnnotationStripingVisitor, null);
+
 	}
 }

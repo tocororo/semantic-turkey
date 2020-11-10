@@ -84,7 +84,7 @@ public class ${generatedClassSimpleName}
 #end#*
 	Add the parameter name to the signature
 *###
-#set( $arguments = "${arguments} $type $parameter.simpleName" )
+#set( $arguments = "${arguments} " + $tools.printType($type) + " $parameter.simpleName" )
 #set( $subarg = "${subarg}#{if}($foreach.count > 1), #{end}$parameter.simpleName" )
 #end
 #*

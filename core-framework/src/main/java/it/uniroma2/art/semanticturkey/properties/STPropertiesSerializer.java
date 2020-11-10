@@ -4,6 +4,8 @@ import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 import java.lang.reflect.AnnotatedArrayType;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
@@ -19,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import javax.validation.Constraint;
 
@@ -122,7 +125,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 					gen.writeEndObject();
 				}
 
-				List<Annotation> constraints = selectConstraints(value.getAnnotations(prop));
+				List<Annotation> constraints = selectConstraints(value.getAnnotations(prop), true);
 				appendConstraints(constraints, gen, provider);
 
 				Object parValue = value.getPropertyValue(prop);
@@ -166,7 +169,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 		Type type = annotatedType.getType();
 		String reducedTypeName = computeReducedTypeName(type);
 
-		List<Annotation> constraints = selectConstraints(annotatedType.getAnnotations());
+		List<Annotation> constraints = selectConstraints(annotatedType.getAnnotations(), false);
 
 		boolean isParametricType = type instanceof ParameterizedType || TypeUtils.isArrayType(type);
 
@@ -206,9 +209,20 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 
 	}
 
-	private List<Annotation> selectConstraints(Annotation[] annotations) {
-		return Arrays.stream(annotations)
-				.filter(a -> a.annotationType().isAnnotationPresent(Constraint.class)).collect(toList());
+	private List<Annotation> selectConstraints(Annotation[] annotations, boolean excludeTypeUse) {
+		Predicate<Annotation> pred = a -> a.annotationType().isAnnotationPresent(Constraint.class);
+		if (excludeTypeUse) {
+			pred = pred.and(a -> {
+				Target targetMetaAnnot = a.annotationType().getAnnotation(Target.class);
+				if (targetMetaAnnot != null) {
+					return Arrays.stream(targetMetaAnnot.value()).noneMatch(ElementType.TYPE_USE::equals);
+				} else {
+					return true;
+				}
+			});
+		}
+		return Arrays.stream(annotations).filter(pred).collect(toList());
+
 	}
 
 	private void appendConstraints(Collection<? extends Annotation> constraints, JsonGenerator gen,

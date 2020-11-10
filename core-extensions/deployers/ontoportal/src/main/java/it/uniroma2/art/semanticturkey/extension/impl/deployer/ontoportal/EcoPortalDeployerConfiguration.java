@@ -1,14 +1,14 @@
 package it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal;
 
+import java.util.Objects;
 import java.util.Set;
-
-import javax.validation.constraints.Size;
 
 import org.eclipse.rdf4j.model.Literal;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.properties.Enumeration;
+import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
@@ -60,9 +60,7 @@ public class EcoPortalDeployerConfiguration extends OntoPortalDeployerConfigurat
 	 */
 	@STProperty(displayName = "Creators", description = "The main researchers involved in producing the data, or the authors of the publication, in priority order")
 	@Required
-	@Size(min = 1)
-	public Set<String> creators; // TODO: implement min lenght = 1
-
+	public Set<String> creators;
 	/*
 	 * E’ necessario specificare almeno un titolo con le relative informazioni. Esempio { "titles":[ {
 	 * "title":"Alien Species Thesaurus", "lang":"en-EN", "titleType":"Other" } ] }
@@ -73,10 +71,9 @@ public class EcoPortalDeployerConfiguration extends OntoPortalDeployerConfigurat
 	 * di inserirlo nel form)
 	 * 
 	 */
-	
+
 	@STProperty(displayName = "Titles", description = "")
 	@Required
-	@Size(min = 1)
 	public Set<Title> titles;
 
 	@STProperty(displayName = "Publisher", description = "The name of the entitythat holds, archives, publishes prints, distributes, releases, issues, or produces the resource")
@@ -97,6 +94,19 @@ public class EcoPortalDeployerConfiguration extends OntoPortalDeployerConfigurat
 	@Enumeration({ "Dataset", "Other" })
 	@Required
 	public String resourceTypeGeneral = "Dataset";
+
+	/*
+	 * Overrides #isRequiredProperty(String) to tighten the definition of the property "publication", whic is
+	 * optional in BioPortal but mandatory in EcoPortal 
+	 */
+	@Override
+	public boolean isRequiredProperty(String parID) throws PropertyNotFoundException {
+		if (Objects.equals(parID, "publication")) {
+			return true;
+		} else {
+			return super.isRequiredProperty(parID);
+		}
+	}
 
 	{
 		// defines the default address of the EcoPortal server

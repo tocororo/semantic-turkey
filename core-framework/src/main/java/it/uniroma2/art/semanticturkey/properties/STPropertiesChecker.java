@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.properties;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -28,9 +29,31 @@ public class STPropertiesChecker {
 		Collection<String> pars = props.getProperties();
 		try {
 			for (String p : pars) {
-				if (props.isRequiredProperty(p) && isNullish(props.getPropertyValue(p))) {
-					setErrorMessage("property: " + p + " has not been set");
-					return false;
+				Object v = props.getPropertyValue(p);
+				if (props.isRequiredProperty(p)) {
+					if (isNullish(v)) {
+						setErrorMessage("property: " + p + " has not been set");
+						return false;
+					} else {
+						if (v instanceof STProperties) {
+							if (isNullish(v)) {
+								setErrorMessage("property: " + p + " is an incomplete nested structure");
+								return false;
+							}
+						} else if (v instanceof Collection<?>) {
+							Collection<?> coll = (Collection<?>) v;
+							if (coll.isEmpty()) {
+								setErrorMessage("property: " + p + " is an empty collection");
+								return false;
+							} else {
+								if (coll.stream().anyMatch(STPropertiesChecker::isNullish)) {
+									setErrorMessage("property: " + p
+											+ " is a collection containing an incomplete item");
+									return false;
+								}
+							}
+						}
+					}
 				}
 			}
 		} catch (PropertyNotFoundException e) {
