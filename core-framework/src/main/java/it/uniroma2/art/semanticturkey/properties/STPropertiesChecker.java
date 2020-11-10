@@ -42,15 +42,11 @@ public class STPropertiesChecker {
 							}
 						} else if (v instanceof Collection<?>) {
 							Collection<?> coll = (Collection<?>) v;
-							if (coll.isEmpty()) {
-								setErrorMessage("property: " + p + " is an empty collection");
+						
+							if (coll.stream().anyMatch(STPropertiesChecker::isNullish)) {
+								setErrorMessage(
+										"property: " + p + " is a collection containing an incomplete item");
 								return false;
-							} else {
-								if (coll.stream().anyMatch(STPropertiesChecker::isNullish)) {
-									setErrorMessage("property: " + p
-											+ " is a collection containing an incomplete item");
-									return false;
-								}
 							}
 						}
 					}
