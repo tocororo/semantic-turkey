@@ -10,17 +10,18 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.collect.Lists;
-import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 /**
  * @author Armando Stellato &lt;stellato@uniroma2.it&gt;
@@ -62,12 +63,27 @@ public interface STProperties {
 	 * @return
 	 */
 	default Collection<String> getProperties() {
+
+		// Stores this class and all of its super classes
+		List<Class<?>> classes = new ArrayList<>();
+		Class<?> cls = this.getClass();
+		do {
+			classes.add(cls);
+			cls = cls.getSuperclass();
+		} while (cls != null);
+
+		// Reverse the list of classes, so that super classes come first
+		Collections.reverse(classes);
+
+		// Collect all properties, from super classes to sub classes
 		Collection<String> properties = new ArrayList<String>();
 
-		Field[] fields = this.getClass().getFields();
-		for (Field field : fields) {
-			if (field.isAnnotationPresent(STProperty.class))
-				properties.add(field.getName());
+		for (Class<?> aCls : classes) {
+			Field[] fields = aCls.getDeclaredFields();
+			for (Field field : fields) {
+				if (field.isAnnotationPresent(STProperty.class))
+					properties.add(field.getName());
+			}
 		}
 		return properties;
 	}

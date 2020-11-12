@@ -8,7 +8,9 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashSet;
 import java.util.Properties;
+import java.util.Set;
 
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -702,6 +704,8 @@ public class STPropertiesManager {
 				return deserializer;
 			}
 		});
+		// ensures that the order of the items in a set is preserved
+		stPropsModule.addAbstractTypeMapping(Set.class, LinkedHashSet.class);
 		ObjectMapper mapper = new ObjectMapper(fact);
 		mapper.registerModule(stPropsModule);
 		return mapper;

@@ -1,7 +1,6 @@
 package it.uniroma2.art.semanticturkey.properties;
 
 import java.util.Collection;
-import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
