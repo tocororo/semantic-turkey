@@ -13,8 +13,8 @@ import it.uniroma2.art.semanticturkey.extension.PUScopedConfigurableComponent;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class OntoPortalDeployerFactory implements ExtensionFactory<OntoPortalDeployer>,
-		ConfigurableExtensionFactory<OntoPortalDeployer, OntoPortalDeployerConfiguration>,
-		PUScopedConfigurableComponent<OntoPortalDeployerConfiguration> {
+		ConfigurableExtensionFactory<OntoPortalDeployer, AbstractOntoPortalDeployerConfiguration>,
+		PUScopedConfigurableComponent<AbstractOntoPortalDeployerConfiguration> {
 
 	@Override
 	public String getName() {
@@ -27,12 +27,12 @@ public class OntoPortalDeployerFactory implements ExtensionFactory<OntoPortalDep
 	}
 
 	@Override
-	public OntoPortalDeployer createInstance(OntoPortalDeployerConfiguration conf) {
+	public OntoPortalDeployer createInstance(AbstractOntoPortalDeployerConfiguration conf) {
 		return new OntoPortalDeployer(conf);
 	}
 
 	@Override
-	public Collection<OntoPortalDeployerConfiguration> getConfigurations() {
+	public Collection<AbstractOntoPortalDeployerConfiguration> getConfigurations() {
 		return Arrays.asList(new OntoPortalDeployerConfiguration(), new EcoPortalDeployerConfiguration());
 	}
 

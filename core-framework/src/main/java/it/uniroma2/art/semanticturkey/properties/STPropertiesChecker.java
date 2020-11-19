@@ -1,10 +1,66 @@
 package it.uniroma2.art.semanticturkey.properties;
 
-import java.util.Collection;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
+import javax.validation.ConstraintValidatorFactory;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validator;
+
+import org.apache.commons.lang3.reflect.ConstructorUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+
+import it.uniroma2.art.semanticturkey.constraints.MsgInterpolationVariables;
+import it.uniroma2.art.semanticturkey.properties.STProperties.BasicPropertiesConstraints;
 
 public class STPropertiesChecker {
+
+	private static class AutowiredValidatorFilteringFactory implements ConstraintValidatorFactory {
+
+		private static class AlwaysPassingValidator<A extends Annotation, T>
+				implements ConstraintValidator<A, T> {
+
+			@Override
+			public void initialize(A constraintAnnotation) {
+				// nothing to do
+			}
+
+			@Override
+			public boolean isValid(T value, ConstraintValidatorContext context) {
+				return true;
+			}
+
+		}
+
+		@Override
+		public void releaseInstance(ConstraintValidator<?, ?> instance) {
+			// nothing to do
+		}
+
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@Override
+		public <T extends ConstraintValidator<?, ?>> T getInstance(Class<T> key) {
+			boolean autowired = FieldUtils.getFieldsWithAnnotation(key, Autowired.class).length != 0
+					|| MethodUtils.getMethodsWithAnnotation(key, Autowired.class).length != 0;
+
+			if (autowired) {
+				return (T) new AlwaysPassingValidator();
+			} else {
+				try {
+					return ConstructorUtils.invokeConstructor(key);
+				} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException
+						| InstantiationException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+	};
 
 	private STProperties props;
 	private String errorMsg;
@@ -25,48 +81,41 @@ public class STPropertiesChecker {
 	 * @return <code>true</code> if the handed property set is valid.
 	 */
 	public boolean isValid() {
-		Collection<String> pars = props.getProperties();
-		try {
-			for (String p : pars) {
-				Object v = props.getPropertyValue(p);
-				if (props.isRequiredProperty(p)) {
-					if (isNullish(v)) {
-						setErrorMessage("property: " + p + " has not been set");
-						return false;
-					} else {
-						if (v instanceof STProperties) {
-							if (isNullish(v)) {
-								setErrorMessage("property: " + p + " is an incomplete nested structure");
-								return false;
-							}
-						} else if (v instanceof Collection<?>) {
-							Collection<?> coll = (Collection<?>) v;
-						
-							if (coll.stream().anyMatch(STPropertiesChecker::isNullish)) {
-								setErrorMessage(
-										"property: " + p + " is a collection containing an incomplete item");
-								return false;
-							}
-						}
-					}
-				}
+		StringBuilder msgBuilder = new StringBuilder();
+
+		LocalValidatorFactoryBean validatorFactoryBean = new LocalValidatorFactoryBean();
+		validatorFactoryBean.setConstraintValidatorFactory(new AutowiredValidatorFilteringFactory());
+		validatorFactoryBean.afterPropertiesSet();
+
+		Validator validator = validatorFactoryBean.getValidator();
+		Set<ConstraintViolation<STProperties>> constraintViolations = validator.validate(props);
+
+		for (ConstraintViolation<STProperties> violation : constraintViolations) {
+			String path = violation.getPropertyPath().toString();
+
+			// skips the violation reports for BasicPropertiesConstraints associated with the root path
+			// since we are interested in the other more specific violation reports
+			if (violation.getConstraintDescriptor().getAnnotation()
+					.annotationType() == BasicPropertiesConstraints.class
+					&& path.isEmpty()) {
+				continue;
 			}
-		} catch (PropertyNotFoundException e) {
-			// really could never happen if the property implementation is self consistent!!!
-			e.printStackTrace();
+			if (msgBuilder.length() != 0) {
+				msgBuilder.append("\n");
+			}
+			if (!path.isEmpty()) {
+				msgBuilder.append(path).append(": ");
+			}
+			msgBuilder.append(
+					violation.getMessage().replace(MsgInterpolationVariables.invalidParamValuePlaceHolder,
+							"" + violation.getInvalidValue()));
+		}
+
+		if (!constraintViolations.isEmpty()) {
+			setErrorMessage(msgBuilder.toString());
 			return false;
 		}
 		return true;
-	}
-
-	private static boolean isNullish(Object v) {
-		// @formatter:off
-		return v == null || 
-				(v instanceof String && StringUtils.isAllBlank((String) v)) ||
-				(v instanceof STProperties && !STPropertiesChecker.getModelConfigurationChecker((STProperties)v).isValid()) ||
-				(v instanceof Collection<?> && (
-						((Collection<?>)v).isEmpty() || ((Collection<?>)v).stream().anyMatch(STPropertiesChecker::isNullish)));
-		// @formatter:on
 	}
 
 	private void setErrorMessage(String msg) {

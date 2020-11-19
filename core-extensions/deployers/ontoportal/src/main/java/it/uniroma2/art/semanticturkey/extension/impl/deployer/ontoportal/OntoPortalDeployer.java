@@ -40,14 +40,14 @@ public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 
 	public static String SUBMISSIONS_ENDPOINT = "ontologies/{acronym}/submissions";
 
-	private OntoPortalDeployerConfiguration conf;
+	private AbstractOntoPortalDeployerConfiguration conf;
 
 	// can be used to register resources to be freed after the deployment
 	protected ThreadLocal<Closer> requestScopedResourcesToRelease;
 
 	private ServerCommunicationStrategy strategy;
 
-	public OntoPortalDeployer(OntoPortalDeployerConfiguration conf) {
+	public OntoPortalDeployer(AbstractOntoPortalDeployerConfiguration conf) {
 		this.conf = conf;
 		this.strategy = ServerCommunicationStrategy.getStrategy(conf);
 		this.requestScopedResourcesToRelease = ThreadLocal.withInitial(Closer::create);
@@ -63,7 +63,7 @@ public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 	}
 
 	protected URI getAddress() throws URISyntaxException {
-		String apiBaseURL = conf.apiBaseURL.trim();
+		String apiBaseURL = this.strategy.getAPIBaseURL();
 		if (!apiBaseURL.endsWith("/")) {
 			apiBaseURL = apiBaseURL + "/";
 		}

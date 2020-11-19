@@ -5,6 +5,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -13,9 +15,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
+import javax.validation.Constraint;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
+import javax.validation.Payload;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -23,13 +32,124 @@ import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import it.uniroma2.art.semanticturkey.constraints.MsgInterpolationVariables;
+
 /**
  * @author Armando Stellato &lt;stellato@uniroma2.it&gt;
  * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
  *
  */
 @JsonSerialize(using = STPropertiesSerializer.class)
+@STProperties.BasicPropertiesConstraints
 public interface STProperties {
+
+	@Constraint(validatedBy = BasicPropertyCostraintValidator.class)
+	@Retention(RetentionPolicy.RUNTIME)
+	@interface BasicPropertiesConstraints {
+
+		String message() default "Invalid properties";
+
+		Class<?>[] groups() default {};
+
+		Class<? extends Payload>[] payload() default {};
+
+	}
+
+	class BasicPropertyCostraintValidator implements ConstraintValidator<Annotation, STProperties> {
+
+		@Override
+		public void initialize(Annotation constraintAnnotation) {
+			// nothing todo
+		}
+
+		@Override
+		public boolean isValid(STProperties value, ConstraintValidatorContext context) {
+			Collection<String> pars = value.getProperties();
+
+			boolean isValid = true;
+
+			for (String p : pars) {
+				Object v;
+				boolean isRequired;
+				Optional<EnumerationDescription> optEnumDes;
+				try {
+					v = value.getPropertyValue(p);
+					isRequired = value.isRequiredProperty(p);
+					optEnumDes = value.getEnumeration(p);
+				} catch (PropertyNotFoundException e) {
+					throw new RuntimeException(e);
+				}
+
+				if (isRequired) {
+					if (v == null) {
+						context.buildConstraintViolationWithTemplate("Required property shall be non null")
+								.addNode(p).addConstraintViolation();
+						isValid = false;
+					} else if (v instanceof Collection<?>) {
+						if (((Collection<?>) v).isEmpty()) {
+							context.buildConstraintViolationWithTemplate(
+									"Required property shall not be an empty collection").addNode(p)
+									.addConstraintViolation();
+							isValid = false;
+						}
+					} else if (v instanceof Map<?, ?>) {
+						if (((Map<?, ?>) v).isEmpty()) {
+							context.buildConstraintViolationWithTemplate(
+									"Required property shall not be an empty map").addNode(p)
+									.addConstraintViolation();
+							isValid = false;
+						}
+					} else if (v instanceof String) {
+						if (StringUtils.isAllBlank((String) v)) {
+							context.buildConstraintViolationWithTemplate(
+									"Required property shall not be a blank string").addNode(p)
+									.addConstraintViolation();
+							isValid = false;
+						}
+					}
+				}
+
+				if (v != null) {
+					if (optEnumDes.isPresent()) {
+						EnumerationDescription enumDes = optEnumDes.get();
+						if (!enumDes.isOpen()) {
+							if (!enumDes.getValues().contains(v)) {
+								context.buildConstraintViolationWithTemplate(
+										"Provided value " + v.toString() + " not allowed").addNode(p)
+										.addConstraintViolation();
+								isValid = false;
+							}
+						}
+					}
+				}
+
+				if (v instanceof Collection<?>) {
+					int i = 0;
+					for (Object item : (Collection<?>) v) {
+						if (isNullish(item)) {
+							context.buildConstraintViolationWithTemplate(
+									"The collection contains a nullish value at index " + i).addNode(p)
+									.addConstraintViolation();
+							isValid = false;
+						}
+						i++;
+					}
+				}
+
+			}
+
+			return isValid;
+		}
+
+		private static boolean isNullish(Object v) {
+			return v == null || (v instanceof String && StringUtils.isAllBlank((String) v))
+					|| (v instanceof Collection<?> && ((Collection<?>) v).stream()
+							.anyMatch(BasicPropertyCostraintValidator::isNullish))
+					|| (v instanceof Map<?, ?> && ((Map<?, ?>) v).values().stream()
+							.anyMatch(BasicPropertyCostraintValidator::isNullish));
+		}
+
+	}
 
 	/**
 	 * @return a humanly understandable short name representing the type of this property set

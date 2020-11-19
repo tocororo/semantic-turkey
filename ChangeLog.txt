@@ -1,4 +1,4 @@
-version 8.0.2
+version 9.0.
 date: dd/mm/yyyy
   * added data type information in the single-value custom form preview
   * added mapping property to the descriptions of correspondences in the EDOAL data view
@@ -10,6 +10,10 @@ date: dd/mm/yyyy
   * align the server to the client concerning validation of properties objects
   * stripped type annotations on the generated service code
   * allowed the use @LanguageTaggedString to annotate types
+  * the order of set-typed fields of STProperties is now preserved on deserialization (using a LinkedHashSet)
+  * fields inherited by an STProperties are listed before the locally defined ones when producing a 
+    serialization for display
+  * reimplemented STPropertiesChecker using Hibernate to support additional property constraints
   * updated StoredExportConfiguration to make transformationPipeline optional
   * updated dependency on Sheet2RDF 4.0.2
 

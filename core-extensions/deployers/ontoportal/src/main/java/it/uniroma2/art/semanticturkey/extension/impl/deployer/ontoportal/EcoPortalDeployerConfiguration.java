@@ -1,7 +1,9 @@
 package it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal;
 
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
+
+import javax.validation.Valid;
 
 import org.eclipse.rdf4j.model.Literal;
 
@@ -20,7 +22,8 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  * @see <a href="https://doi.org/10.14454/7xq3-zf69">Version 4.3. DataCite e.V.</a>
  */
-public class EcoPortalDeployerConfiguration extends OntoPortalDeployerConfiguration implements Configuration {
+public class EcoPortalDeployerConfiguration extends AbstractOntoPortalDeployerConfiguration
+		implements Configuration {
 
 	/**
 	 * A structure describing a title of a resource
@@ -41,8 +44,9 @@ public class EcoPortalDeployerConfiguration extends OntoPortalDeployerConfigurat
 		public Literal title;
 
 		@STProperty(displayName = "Title type", description = "The type of title")
+		@Required
 		@Enumeration({ "AlternativeTitle", "Subtitle", "TranslatedTitle", "Other" })
-		public String titleType;
+		public String titleType = "Other";
 
 	};
 
@@ -51,30 +55,14 @@ public class EcoPortalDeployerConfiguration extends OntoPortalDeployerConfigurat
 		return "EcoPortal";
 	}
 
-	/*
-	 * E’ una lista di creator con almeno un elemento. E’ sufficiente inserire solo la denominazione dei
-	 * creator (creatorName) . Di seguito un esempio. { "creators":[ { "creatorName":"Mario Rossi" }, {
-	 * "creatorName":"NomeOrganizzazione" } ] }
-	 * 
-	 * 
-	 */
 	@STProperty(displayName = "Creators", description = "The main researchers involved in producing the data, or the authors of the publication, in priority order")
 	@Required
-	public Set<String> creators;
-	/*
-	 * E’ necessario specificare almeno un titolo con le relative informazioni. Esempio { "titles":[ {
-	 * "title":"Alien Species Thesaurus", "lang":"en-EN", "titleType":"Other" } ] }
-	 * 
-	 * I campi title, lang e titleType sono obbligatori.
-	 * 
-	 * Suggerirei di inserire solo un titolo forzando il campo titleType al valore “Other” (evitando, quindi,
-	 * di inserirlo nel form)
-	 * 
-	 */
+	public List<String> creators;
 
 	@STProperty(displayName = "Titles", description = "")
 	@Required
-	public Set<Title> titles;
+	@Valid
+	public List<Title> titles;
 
 	@STProperty(displayName = "Publisher", description = "The name of the entitythat holds, archives, publishes prints, distributes, releases, issues, or produces the resource")
 	@Required
@@ -96,8 +84,8 @@ public class EcoPortalDeployerConfiguration extends OntoPortalDeployerConfigurat
 	public String resourceTypeGeneral = "Dataset";
 
 	/*
-	 * Overrides #isRequiredProperty(String) to tighten the definition of the property "publication", whic is
-	 * optional in BioPortal but mandatory in EcoPortal 
+	 * Overrides #isRequiredProperty(String) to tighten the definition of the property "publication", which is
+	 * optional in BioPortal but mandatory in EcoPortal
 	 */
 	@Override
 	public boolean isRequiredProperty(String parID) throws PropertyNotFoundException {
@@ -108,8 +96,37 @@ public class EcoPortalDeployerConfiguration extends OntoPortalDeployerConfigurat
 		}
 	}
 
-	{
-		// defines the default address of the EcoPortal server
-		this.apiBaseURL = "http://example.org/";
+	/*
+	@formatter:off
+	
+// main method to test validation
+	
+	public static void main(String[] args) {
+		EcoPortalDeployerConfiguration conf = new EcoPortalDeployerConfiguration();
+		conf.acronym = "TEST";
+//		conf.apiKey = "xyz";
+		conf.contact = Collections.singleton("Mario (mario@example.org)");
+		conf.creators = Collections.singleton("Luca (luca@example.org)");
+		conf.description = "descr";
+		conf.documentation = "http://example.org/";
+		conf.hasOntologyLanguage = "SKOS2";
+		conf.status = "alpha";
+		conf.publication = "http://example.org/";
+		conf.publicationYear = 2020;
+		conf.publisher = "Pub";
+		conf.released = "2020-11-13";
+		conf.resourceType = "Other";
+		conf.resourceTypeGeneral = "Other";
+		Title title = new Title();
+		title.title = null; // SimpleValueFactory.getInstance().createLiteral("hello");
+		conf.titles = Sets.newLinkedHashSet();
+		conf.titles.addAll(Arrays.asList(title, null));
+		
+		STPropertiesChecker checker = STPropertiesChecker.getModelConfigurationChecker(conf);
+		checker.isValid();
+		System.out.println(checker.getErrorMessage());
 	}
+	
+		@formatter:on
+	*/
 }

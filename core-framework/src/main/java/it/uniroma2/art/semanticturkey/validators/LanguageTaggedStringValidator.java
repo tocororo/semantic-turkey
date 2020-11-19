@@ -17,7 +17,7 @@ ConstraintValidator<LanguageTaggedString, Literal>{
 
 	@Override
 	public boolean isValid(Literal value, ConstraintValidatorContext context) {
-		return value.getLanguage().isPresent();
+		return value == null || value.getLanguage().isPresent();
 	}
 
 }

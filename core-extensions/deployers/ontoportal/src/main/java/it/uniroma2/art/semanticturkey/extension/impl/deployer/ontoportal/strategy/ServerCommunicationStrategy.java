@@ -6,6 +6,7 @@ import java.util.Objects;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.springframework.aop.support.AopUtils;
 
+import it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration;
 import it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration;
 import it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.OntoPortalDeployerConfiguration;
 
@@ -38,7 +39,7 @@ public interface ServerCommunicationStrategy {
 	 * @param conf
 	 * @return
 	 */
-	static ServerCommunicationStrategy getStrategy(OntoPortalDeployerConfiguration conf) {
+	static ServerCommunicationStrategy getStrategy(AbstractOntoPortalDeployerConfiguration conf) {
 		Class<?> clazz = AopUtils.getTargetClass(conf);
 
 		if (Objects.equals(clazz, OntoPortalDeployerConfiguration.class)) {
@@ -49,4 +50,6 @@ public interface ServerCommunicationStrategy {
 			throw new IllegalArgumentException("Unrecognized configuration type");
 		}
 	}
+
+	String getAPIBaseURL();
 }
