@@ -187,9 +187,8 @@ public class ServiceForSearches {
 			}
 			if(otherWanted || cls==null ) {
 				filterQuery += "\n{\n"+varResource+" a "+varType+" . " +
-						"\n?type a <"+OWL.CLASS.stringValue()+"> . "+
-						//"\n?type a ?classType ." +
-						//"\nFILTER (EXISTS{?classType a <"+OWL.CLASS+">})"+
+						//"\n?type a <"+OWL.CLASS.stringValue()+"> . "+
+						"\nFILTER("+varType+" != owl:Class && "+varType+" != rdfs:Class)" +
 						"\n}";
 				
 				otherWanted = true;
