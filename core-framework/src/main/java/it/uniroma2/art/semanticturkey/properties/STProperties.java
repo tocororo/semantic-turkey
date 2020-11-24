@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -24,6 +25,7 @@ import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.rdf4j.model.Value;
@@ -113,7 +115,8 @@ public interface STProperties {
 					if (optEnumDes.isPresent()) {
 						EnumerationDescription enumDes = optEnumDes.get();
 						if (!enumDes.isOpen()) {
-							if (!enumDes.getValues().contains(v)) {
+							String vAsString = Objects.toString(v);
+							if (!enumDes.getValues().contains(vAsString)) {
 								context.buildConstraintViolationWithTemplate(
 										"Provided value " + v.toString() + " not allowed").addNode(p)
 										.addConstraintViolation();
