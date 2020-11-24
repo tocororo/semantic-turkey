@@ -694,10 +694,17 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	@STServiceOperation(method = RequestMethod.POST)
 	public synchronized void deleteRemoteAlignmentService(String id)
-			throws ConfigurationNotFoundException, NoSuchConfigurationManager {
+			throws ConfigurationNotFoundException, NoSuchConfigurationManager, STPropertyAccessException, STPropertyUpdateException {
 		RemoteAlignmentServicesStore cm = (RemoteAlignmentServicesStore) exptManager
 				.getConfigurationManager(RemoteAlignmentServicesStore.class.getName());
 		cm.deleteSystemConfiguration(id);
+		//check if the deleted configuration is referenced in the default setting, in case delete the default
+		String defaultConfigId = STPropertiesManager.getProjectSettingDefault("configID",
+				RemoteAlignmentServiceProjectSettingsManager.class.getName());
+		if (defaultConfigId.equals(id)) { //remove default
+			STPropertiesManager.setProjectSettingsDefault("configID", null,
+					RemoteAlignmentServiceProjectSettingsManager.class.getName());
+		}
 	}
 
 	/**
