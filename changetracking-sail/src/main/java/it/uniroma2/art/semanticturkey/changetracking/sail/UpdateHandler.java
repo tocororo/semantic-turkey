@@ -41,10 +41,13 @@ public interface UpdateHandler {
 
 	void clear(Resource[] contexts);
 
+	void setNamespace(String prefix, String name);
+	
 	void clearNamespaces();
 
 	void removeNamespace(String prefix);
 
 	void clearHandler(IRI...contexts);
+
 
 }

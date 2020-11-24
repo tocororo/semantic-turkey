@@ -15,6 +15,7 @@ date: dd/mm/yyyy
     serialization for display
   * reimplemented STPropertiesChecker using Hibernate to support additional property constraints
   * updated StoredExportConfiguration to make transformationPipeline optional
+  * allowed to manipulate namespace prefixes in project using validation
   * updated dependency on Sheet2RDF 4.0.2
 
 version 8.0.1

@@ -40,14 +40,26 @@ public class FlagUpdateHandler extends BaseUpdateHandler {
 		readonly = false;
 	}
 
+	/*
+	 * Namespace operations do not modify the actual triples, and as such they are not reported in history not
+	 * vetted by validation. Actually, some triple stores seem not to allow rollback from such operations at
+	 * all. Therefore, we consider these operations as part of read-only transactions (which in any case will
+	 * be committed as well).
+	 */
+	
+	@Override
+	public void setNamespace(String prefix, String name) {
+//		readonly = false;
+	}
+	
 	@Override
 	public void clearNamespaces() {
-		readonly = false;
+//		readonly = false;
 	}
 
 	@Override
 	public void removeNamespace(String prefix) {
-		readonly = false;
+//		readonly = false;
 	}
 	
 	@Override

@@ -59,14 +59,20 @@ public class LoggingUpdateHandler extends BaseUpdateHandler {
 		throw new UnsupportedOperationException();
 	}
 
+	
+	@Override
+	public void setNamespace(String prefix, String name) {
+		// Nothing to do
+	}
+	
 	@Override
 	public void clearNamespaces() {
-		throw new UnsupportedOperationException();
+		// Nothing to do
 	}
 
 	@Override
 	public void removeNamespace(String prefix) {
-		throw new UnsupportedOperationException();
+		// Nothing to do
 	}
 
 	@Override

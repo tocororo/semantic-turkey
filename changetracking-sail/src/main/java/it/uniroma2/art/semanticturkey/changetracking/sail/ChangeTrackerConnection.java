@@ -888,11 +888,17 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 	}
 
 	@Override
-	public void clearNamespaces() throws SailException {
-		if (validationEnabled) {
-			throw new NotValidatableOperationException("Could not validate clearNamespaces()");
+	public void setNamespace(String prefix, String name) throws SailException {
+		readonlyHandler.setNamespace(prefix, name);
+		try {
+			super.setNamespace(prefix, name);
+		} catch (Exception e) {
+			readonlyHandler.recordCorruption();
+			throw e;
 		}
-
+	}
+	@Override
+	public void clearNamespaces() throws SailException {
 		readonlyHandler.clearNamespaces();
 		try {
 			super.clearNamespaces();
@@ -904,10 +910,6 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 	@Override
 	public void removeNamespace(String prefix) throws SailException {
-		if (validationEnabled) {
-			throw new NotValidatableOperationException("Could not validate removeNamespace(String)");
-		}
-
 		readonlyHandler.removeNamespace(prefix);
 		try {
 			super.removeNamespace(prefix);
