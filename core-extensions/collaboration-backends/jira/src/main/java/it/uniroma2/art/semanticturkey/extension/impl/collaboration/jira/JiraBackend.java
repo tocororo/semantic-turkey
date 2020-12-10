@@ -80,35 +80,17 @@ public class JiraBackend implements CollaborationBackend {
 		//get all the projects and see if one of them has the desired id and key
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"project";
 
-		URL url = new URL(urlString);
-		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
-
-		// By default it is GET request
-		httpcon.setRequestMethod("GET");
-
-		// add request header
-		httpcon.setRequestProperty("User-Agent", USER_AGENT);
-		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-		httpcon.setRequestProperty("Authorization", "Basic " + 
-				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
-
+		HttpURLConnection httpcon = prepareHttpURLConnection(ConnType.GET, urlString,
+				"application/json;charset=UTF-8", projectPreferences);
 
 		executeAndCheckError(httpcon);
 
-		// Reading response from input Stream
-		BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream()));
-		String output;
-		StringBuffer response = new StringBuffer();
+		String response = readRsponse(httpcon);
 
-		while ((output = in.readLine()) != null) {
-			response.append(output);
-		}
-		in.close();
-		
 		// create ObjectMapper instance
 		ObjectMapper objectMapper = new ObjectMapper();
 		
-		ArrayNode prjFromJiraArray = (ArrayNode) objectMapper.readTree(response.toString());
+		ArrayNode prjFromJiraArray = (ArrayNode) objectMapper.readTree(response);
 		Map<String, String> prjIdToPrjKeyMap = new HashMap<>();
 		//add all the couple id-key to a map
 		for(JsonNode prjFromJiraNode : prjFromJiraArray) {
@@ -157,16 +139,9 @@ public class JiraBackend implements CollaborationBackend {
 		//now create the issue
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"issue";
 
-		URL url = new URL(urlString);
-		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
+		HttpURLConnection httpcon = prepareHttpURLConnection(ConnType.POST, urlString,
+				"application/json;charset=UTF-8", projectPreferences);
 
-		httpcon.setRequestMethod("POST");
-
-		// add request header
-		httpcon.setRequestProperty("User-Agent", USER_AGENT);
-		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-		httpcon.setRequestProperty("Authorization", "Basic " + 
-				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
 
 		String summary = escapeString(issueCreationForm.get("summary").textValue());
 		// @formatter:off
@@ -219,11 +194,7 @@ public class JiraBackend implements CollaborationBackend {
 		// @formatter:on
 		
 		// Send post request
-		httpcon.setDoOutput(true);
-		DataOutputStream wr = new DataOutputStream(httpcon.getOutputStream());
-		wr.writeBytes(postJsonData);
-		wr.flush();
-		wr.close();
+		addPostToHttpURLConnection(httpcon, postJsonData);
 
 		executeAndCheckError(httpcon);
 		
@@ -266,24 +237,6 @@ public class JiraBackend implements CollaborationBackend {
 			throw new NullPointerException("Jira Backend not bound to a project");
 		}
 
-		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
-		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
-				UsersManager.getLoggedUser());
-
-		//now create the project
-		String urlString = projectSettings.serverURL+"/rest/api/2/" + "project";
-
-		URL url = new URL(urlString);
-		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
-
-		httpcon.setRequestMethod("POST");
-
-		// add request header
-		httpcon.setRequestProperty("User-Agent", USER_AGENT);
-		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-		httpcon.setRequestProperty("Authorization", "Basic " + 
-				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
-		
 		JsonNode keyNode = projectJson.get("key");
 		if (keyNode == null || keyNode instanceof NullNode) {
 			throw new CollaborationBackendException("'key' attribute is missing in the project Json object.");
@@ -292,7 +245,17 @@ public class JiraBackend implements CollaborationBackend {
 		if (nameNode == null || nameNode instanceof NullNode) {
 			throw new CollaborationBackendException("'name' attribute is missing in the project Json object.");
 		}
-		
+
+		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
+		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
+				UsersManager.getLoggedUser());
+
+		//now create the project
+		String urlString = projectSettings.serverURL+"/rest/api/2/" + "project";
+
+		HttpURLConnection httpcon = prepareHttpURLConnection(ConnType.POST, urlString, "application/json;charset=UTF-8",
+				projectPreferences);
+
 		String projectName = nameNode.textValue();
 		String projectKey = keyNode.textValue();
 
@@ -305,29 +268,15 @@ public class JiraBackend implements CollaborationBackend {
 				"\n\"projectTemplateKey\":\""+projectTemplateKey+"\"" +
 				"\n}";
 
-		// Send post request
-		httpcon.setDoOutput(true);
-		DataOutputStream wr = new DataOutputStream(httpcon.getOutputStream());
-		wr.writeBytes(postJsonData);
-		wr.flush();
-		wr.close();
-
+		addPostToHttpURLConnection(httpcon, postJsonData);
 
 		executeAndCheckError(httpcon);
 
-		// Reading response from input Stream
-		BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream()));
-		String output;
-		StringBuffer response = new StringBuffer();
+		String response = readRsponse(httpcon);
 
-		while ((output = in.readLine()) != null) {
-			response.append(output);
-		}
-		in.close();
-		
 		//finally save all the info associated to the newly created project (take the id from the response)
 		ObjectMapper objectMapper = new ObjectMapper();
-		JsonNode rootNode = objectMapper.readTree(response.toString());
+		JsonNode rootNode = objectMapper.readTree(response);
 		String projectId = rootNode.get("id").asText();
 		projectSettings.jiraPrjId = projectId;
 		projectSettings.jiraPrjKey = projectKey;
@@ -344,20 +293,11 @@ public class JiraBackend implements CollaborationBackend {
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 
-		// now upda the labels of the desied issue with the IRI of the input Resorce
+		// now update the labels of the desired issue with the IRI of the input Resource
 		String url = projectSettings.serverURL+"/rest/api/2/"+ "issue/"+issueKey;
 
-		URL urlUpdate = new URL(url);
-		HttpURLConnection httpconUpdate = (HttpURLConnection) urlUpdate.openConnection();
-
-		// By default it is GET request
-		httpconUpdate.setRequestMethod("PUT");
-
-		// add request header
-		httpconUpdate.setRequestProperty("User-Agent", USER_AGENT);
-		httpconUpdate.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-		httpconUpdate.setRequestProperty("Authorization", "Basic " + 
-				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
+		HttpURLConnection httpcon = prepareHttpURLConnection(ConnType.PUT, url, "application/json;charset=UTF-8",
+				projectPreferences);
 
 		String postJsonData = "{"
 				+"\n\"update\":{"
@@ -366,17 +306,11 @@ public class JiraBackend implements CollaborationBackend {
 				"\n\""+resource.stringValue()+"\""
 				+ "\n}]"
 				+ "\n}"	
-				+ "\n}"; 
-		
-		// Send post request
-		httpconUpdate.setDoOutput(true);
-		DataOutputStream wrUpdate = new DataOutputStream(httpconUpdate.getOutputStream());
-		wrUpdate.writeBytes(postJsonData);
-		wrUpdate.flush();
-		wrUpdate.close();
+				+ "\n}";
 
-		executeAndCheckError(httpconUpdate);
-		
+		addPostToHttpURLConnection(httpcon, postJsonData);
+
+		executeAndCheckError(httpcon);
 	}
 
 	@Override
@@ -393,16 +327,9 @@ public class JiraBackend implements CollaborationBackend {
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"search";
 
 		URL url = new URL(urlString);
-		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
 
-		// By default it is GET request
-		httpcon.setRequestMethod("POST");
-
-		// add request header
-		httpcon.setRequestProperty("User-Agent", USER_AGENT);
-		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-		httpcon.setRequestProperty("Authorization", "Basic " + 
-				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
+		HttpURLConnection httpcon = prepareHttpURLConnection(ConnType.POST, urlString, "application/json;charset=UTF-8",
+				projectPreferences);
 
 		String jqlString = "labels = \\\""+resource.stringValue()+"\\\" AND project ="
 				+ "\\\""+projectSettings.jiraPrjId+"\\\"";
@@ -416,32 +343,17 @@ public class JiraBackend implements CollaborationBackend {
 				+"\n\"labels\","
 				+"\n\"summary\""
 				+"\n]"*/
-				+ "\n}"; 
-		
+				+ "\n}";
 
-		// Send post request
-		httpcon.setDoOutput(true);
-		DataOutputStream wr = new DataOutputStream(httpcon.getOutputStream());
-		wr.writeBytes(postJsonData);
-		wr.flush();
-		wr.close();
+		addPostToHttpURLConnection(httpcon, postJsonData);
 
 		executeAndCheckError(httpcon);
 
-		// Reading response from input Stream
-		BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream()));
-		String output;
-		StringBuffer response = new StringBuffer();
+		String response = readRsponse(httpcon);
 
-		while ((output = in.readLine()) != null) {
-			response.append(output);
-		}
-		in.close();
-
-		
 		// create ObjectMapper instance
 		ObjectMapper objectMapper = new ObjectMapper();
-		JsonNode rootNode = objectMapper.readTree(response.toString());
+		JsonNode rootNode = objectMapper.readTree(response);
 		
 		int issueNum = Integer.parseInt(rootNode.get("total").asText());
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
@@ -475,16 +387,9 @@ public class JiraBackend implements CollaborationBackend {
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"search";
 
 		URL url = new URL(urlString);
-		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
 
-		// By default it is GET request
-		httpcon.setRequestMethod("POST");
-
-		// add request header
-		httpcon.setRequestProperty("User-Agent", USER_AGENT);
-		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-		httpcon.setRequestProperty("Authorization", "Basic " + 
-				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
+		HttpURLConnection httpcon = prepareHttpURLConnection(ConnType.POST, urlString, "application/json;charset=UTF-8",
+				projectPreferences);
 
 		String jqlString = "project =\\\""+projectSettings.jiraPrjId+"\\\"";
 		
@@ -497,31 +402,18 @@ public class JiraBackend implements CollaborationBackend {
 				+"\n\"labels\","
 				+"\n\"summary\""
 				+"\n]"*/
-				+ "\n}"; 
-		
-		// Send post request
-		httpcon.setDoOutput(true);
-		DataOutputStream wr = new DataOutputStream(httpcon.getOutputStream());
-		wr.writeBytes(postJsonData);
-		wr.flush();
-		wr.close();
+				+ "\n}";
+
+
+		addPostToHttpURLConnection(httpcon, postJsonData);
 
 		executeAndCheckError(httpcon);
 
-		// Reading response from input Stream
-		BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream()));
-		String output;
-		StringBuffer response = new StringBuffer();
+		String response = readRsponse(httpcon);
 
-		while ((output = in.readLine()) != null) {
-			response.append(output);
-		}
-		in.close();
-
-		
 		// create ObjectMapper instance
 		ObjectMapper objectMapper = new ObjectMapper();
-		JsonNode rootNode = objectMapper.readTree(response.toString());
+		JsonNode rootNode = objectMapper.readTree(response);
 		
 		int total = Integer.parseInt(rootNode.get("total").asText());
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
@@ -584,35 +476,17 @@ public class JiraBackend implements CollaborationBackend {
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"user/assignable/search?";
 
 		urlString += "project="+projectSettings.jiraPrjKey;
-		
-		URL url = new URL(urlString);
-		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
 
-		// By default it is GET request
-		httpcon.setRequestMethod("GET");
+		HttpURLConnection httpcon = prepareHttpURLConnection(ConnType.GET, urlString, "application/json;charset=UTF-8",
+				projectPreferences);
 
-		// add request header
-		httpcon.setRequestProperty("User-Agent", USER_AGENT);
-		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-		httpcon.setRequestProperty("Authorization", "Basic " + 
-				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
-		
 		executeAndCheckError(httpcon);
 
-		// Reading response from input Stream
-		BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream()));
-		String output;
-		StringBuffer response = new StringBuffer();
+		String response = readRsponse(httpcon);
 
-		while ((output = in.readLine()) != null) {
-			response.append(output);
-		}
-		in.close();
-
-		
 		// create ObjectMapper instance
 		ObjectMapper objectMapper = new ObjectMapper();
-		ArrayNode userArray = (ArrayNode) objectMapper.readTree(response.toString());
+		ArrayNode userArray = (ArrayNode) objectMapper.readTree(response);
 		
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode userArrayResponse = jsonFactory.arrayNode();
@@ -641,35 +515,17 @@ public class JiraBackend implements CollaborationBackend {
 		//now ask jira for all the project
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"project";
 
-		URL url = new URL(urlString);
-		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
-
-		// By default it is GET request
-		httpcon.setRequestMethod("GET");
-
-		// add request header
-		httpcon.setRequestProperty("User-Agent", USER_AGENT);
-		httpcon.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-		httpcon.setRequestProperty("Authorization", "Basic " + 
-				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
-
+		HttpURLConnection httpcon = prepareHttpURLConnection(ConnType.GET, urlString, "application/json;charset=UTF-8",
+				projectPreferences);
 
 		executeAndCheckError(httpcon);
 
-		// Reading response from input Stream
-		BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream()));
-		String output;
-		StringBuffer response = new StringBuffer();
+		String response = readRsponse(httpcon);
 
-		while ((output = in.readLine()) != null) {
-			response.append(output);
-		}
-		in.close();
-		
 		// create ObjectMapper instance
 		ObjectMapper objectMapper = new ObjectMapper();
 		
-		ArrayNode prjFromJiraArray = (ArrayNode) objectMapper.readTree(response.toString());
+		ArrayNode prjFromJiraArray = (ArrayNode) objectMapper.readTree(response);
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		
 		ObjectNode respNode = jsonFactory.objectNode();
@@ -685,11 +541,11 @@ public class JiraBackend implements CollaborationBackend {
 			String prjId = prjFromJiraNode.get("id").asText();
 			String prjKey = prjFromJiraNode.get("key").asText();
 			String prjName = prjFromJiraNode.get("name").asText();
-			ObjectNode issueRedux = jsonFactory.objectNode();
-			issueRedux.set("id", jsonFactory.textNode(prjId));
-			issueRedux.set("key", jsonFactory.textNode(prjKey));
-			issueRedux.set("name", jsonFactory.textNode(prjName));
-			prjArray.add(issueRedux);
+			ObjectNode projectRedux = jsonFactory.objectNode();
+			projectRedux.set("id", jsonFactory.textNode(prjId));
+			projectRedux.set("key", jsonFactory.textNode(prjKey));
+			projectRedux.set("name", jsonFactory.textNode(prjName));
+			prjArray.add(projectRedux);
 		}
 		
 		return respNode;
@@ -929,4 +785,48 @@ public class JiraBackend implements CollaborationBackend {
 		return escaptedText;
 	}
 
+
+	private HttpURLConnection prepareHttpURLConnection(ConnType connType, String urlString,
+			String contentType, JiraBackendPUSettings projectPreferences) throws IOException {
+		URL url = new URL(urlString);
+		HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
+
+		httpcon.setRequestMethod(connType.name());
+
+		// add request header
+		httpcon.setRequestProperty("User-Agent", USER_AGENT);
+		httpcon.setRequestProperty("Content-Type", contentType);
+		httpcon.setRequestProperty("Authorization", "Basic " +
+				generateEncodeBase64String(projectPreferences.username, projectPreferences.password));
+
+		return  httpcon;
+	}
+
+	public void addPostToHttpURLConnection(HttpURLConnection httpcon, String postJsonData)
+			throws IOException {
+		httpcon.setDoOutput(true);
+
+		DataOutputStream wr = new DataOutputStream(httpcon.getOutputStream());
+		wr.writeBytes(postJsonData);
+		wr.flush();
+		wr.close();
+	}
+
+	private String readRsponse(HttpURLConnection httpcon) throws IOException {
+		// Reading response from input Stream
+		BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream()));
+		String output;
+		StringBuffer response = new StringBuffer();
+
+		while ((output = in.readLine()) != null) {
+			response.append(output);
+		}
+		in.close();
+
+		return response.toString();
+	}
+
+	public enum ConnType {
+		GET, POST, PUT
+	}
 }
