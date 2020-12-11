@@ -36,11 +36,30 @@
 			expression="it\.uniroma2\.art\.semanticturkey\.security\..*" />
 	</context:component-scan>
 
+	<!-- MessageSource for localization -->
+	<bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
+		<property name="defaultEncoding" value="UTF-8" /> <!-- use UTF-8 to avoid the need for escaping non-ascii characters -->
+		<property name="fallbackToSystemLocale" value="false" /> <!-- fallback to the root local "" instead of the system locale whatever it is -->
+		<property name="basenames">
+			<array>
+				<value>it.uniroma2.art.semanticturkey.l10n.ValidationMessages</value>
+			</array>
+		</property>
+	</bean>
+	
+	<bean id="localeResolver" class="org.springframework.web.servlet.i18n.CookieLocaleResolver">
+	    <property name="cookieName" value="translate.lang"/>
+	    <!-- 10 years (in seconds) as in the client -->
+	    <property name="cookieMaxAge" value="315400000" />
+	</bean>
+
 	<!--A ValidatorFactory whose products (Validators) support dependency injection 
 		on constraint validators, through the use of SpringConstraintValidatorFactory 
 		for instantiating them. (See: http://stackoverflow.com/a/13361762) -->
 	<bean id="validatorFactory"
-		class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean" />
+		class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean">
+	    <property name="validationMessageSource" ref="messageSource" />
+	</bean>
 
 	<bean id="viewResolver"
 		class="org.springframework.web.servlet.view.InternalResourceViewResolver">

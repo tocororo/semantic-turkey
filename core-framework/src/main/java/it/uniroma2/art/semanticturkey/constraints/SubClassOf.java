@@ -26,8 +26,7 @@ import it.uniroma2.art.semanticturkey.validators.SubClassOfValidator;
 @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SubClassOf {
-	String message() default "Error: resource " + MsgInterpolationVariables.invalidParamValuePlaceHolder
-			+ " is not subClass of the provided 'superClassIRI' parameter";
+	String message() default "{it.uniroma2.art.semanticturkey.constraints.SubClassOf.message}";
 	
 	Class<?>[] groups() default {};
 

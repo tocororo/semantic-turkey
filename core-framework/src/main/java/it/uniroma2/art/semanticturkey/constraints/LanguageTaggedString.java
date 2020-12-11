@@ -27,8 +27,7 @@ import it.uniroma2.art.semanticturkey.validators.LanguageTaggedStringValidator;
 @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface LanguageTaggedString {
-	String message() default "Error: literal " + MsgInterpolationVariables.invalidParamValuePlaceHolder
-			+ " does not represent a language tagged string";
+	String message() default "{it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString.message}";
 
 	Class<?>[] groups() default {};
 

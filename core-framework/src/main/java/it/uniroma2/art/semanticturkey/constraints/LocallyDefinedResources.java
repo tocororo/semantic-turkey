@@ -26,8 +26,7 @@ import it.uniroma2.art.semanticturkey.validators.LocallyDefinedResourcesValidato
 @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface LocallyDefinedResources {
-	String message() default "Error: resource " + MsgInterpolationVariables.invalidParamValuePlaceHolder
-			+ " does not exist in the current dataset";
+	String message() default "{it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources.message}";
 
 	Class<?>[] groups() default {};
 

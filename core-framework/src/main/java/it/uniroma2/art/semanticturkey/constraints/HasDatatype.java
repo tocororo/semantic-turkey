@@ -27,8 +27,7 @@ import it.uniroma2.art.semanticturkey.validators.DatatypeValidator;
 @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface HasDatatype {
-	String message() default "Error: resource " + MsgInterpolationVariables.invalidParamValuePlaceHolder
-			+ " does not have the provided 'datatype'";
+	String message() default "{it.uniroma2.art.semanticturkey.constraints.HasDatatype.message}";
 
 	Class<?>[] groups() default {};
 

@@ -36,6 +36,12 @@
 	<dependencies>
 		<dependency>
 			<groupId>it.uniroma2.art.semanticturkey</groupId>
+			<artifactId>st-l10n</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>it.uniroma2.art.semanticturkey</groupId>
 			<artifactId>st-core-framework</artifactId>
 			<version>${project.version}</version>
 		</dependency>
@@ -205,11 +211,12 @@
 							it.uniroma2.art.semanticturkey.servlet,
 							it.uniroma2.art.semanticturkey.utilities,
 							it.uniroma2.art.semanticturkey.vocabulary,
+							it.uniroma2.art.semanticturkey.l10n,
 							it.uniroma2.art.sheet2rdf.*,
 							org.springframework.web.servlet.view,
 							org.springframework.web.servlet,
 							org.springframework.context.*,
-							org.springframework.context.support,
+<!-- 							org.springframework.context.support, -->
 							org.springframework.context.config,
 							org.springframework.core,
 							org.springframework.web.context,

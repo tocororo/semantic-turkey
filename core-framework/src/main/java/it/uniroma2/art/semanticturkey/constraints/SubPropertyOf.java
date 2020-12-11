@@ -26,8 +26,7 @@ import it.uniroma2.art.semanticturkey.validators.SubPropertyOfValidator;
 @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SubPropertyOf {
-	String message() default "Error: resource " + MsgInterpolationVariables.invalidParamValuePlaceHolder
-			+ " is not subProperty of the provided 'superPropertyIRI' parameter";
+	String message() default "{it.uniroma2.art.semanticturkey.constraints.SubPropertyOf.message}";
 	
 	Class<?>[] groups() default {};
 

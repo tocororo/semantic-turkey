@@ -27,8 +27,7 @@ import it.uniroma2.art.semanticturkey.validators.NarrowerThanValidator;
 @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NarrowerThan {
-	String message() default "Error: resource " + MsgInterpolationVariables.invalidParamValuePlaceHolder
-			+ " is not a narrower concept of the provided 'broaderConceptIRI' parameter";
+	String message() default "{it.uniroma2.art.semanticturkey.constraints.NarrowerThan.message}";
 
 	Class<?>[] groups() default {};
 

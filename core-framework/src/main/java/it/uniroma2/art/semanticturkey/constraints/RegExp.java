@@ -30,7 +30,7 @@ import it.uniroma2.art.semanticturkey.validators.RegExpValidator;
 @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RegExp {
-	String message() default "The value does not match the given regular expression";
+	String message() default "{it.uniroma2.art.semanticturkey.constraints.RegExp.message}";
 
 	Class<?>[] groups() default {};
 

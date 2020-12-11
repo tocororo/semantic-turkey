@@ -26,8 +26,7 @@ import it.uniroma2.art.semanticturkey.validators.NotLocallyDefinedValidator;
 @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NotLocallyDefined {
-	String message() default "Error: resource " + MsgInterpolationVariables.invalidParamValuePlaceHolder
-			+ " already exists in the current dataset";
+	String message() default "{it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined.message}";
 
 	Class<?>[] groups() default {};
 

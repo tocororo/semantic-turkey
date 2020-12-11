@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.constraints;
 
 public class MsgInterpolationVariables {
 
-	public static final String invalidParamValuePlaceHolder = "çInvalidValueç"; 
+	// we still need this variable since Hibernate Validator 4.2 doesn't support ${validatedValue} natively
+	public static final String invalidParamValuePlaceHolder = "${validatedValue}"; 
 	
 }
