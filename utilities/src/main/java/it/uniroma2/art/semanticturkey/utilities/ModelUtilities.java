@@ -1,12 +1,14 @@
 package it.uniroma2.art.semanticturkey.utilities;
 
+import org.apache.axis.types.NCName;
+
 public class ModelUtilities {
 
 	/**
 	 * given namespace <code>namespace</code>, this tries to automatically suggest a prefix for it
 	 * 
 	 * @param namespace
-	 * @return
+	 * @return the guessed prefix, or null if the guess was not possible
 	 */
 	public static String guessPrefix(String namespace) {
 		int lowerCutIndex;
@@ -27,7 +29,18 @@ public class ModelUtilities {
 		else
 			lowerCutIndex = slashLowerCutIndex;
 
-		return tempString.substring(lowerCutIndex + 1);
+		String prefix = tempString.substring(lowerCutIndex + 1);
+		return isPrefixSyntValid(prefix) ? prefix : null;
+	}
+
+	/**
+	 * given the candidate prefix <code>prefix</code>, return true it is syntactically valid,
+	 * false otherwise
+	 * @param prefix the prefix to be checked if it is syntactically valid
+	 * @return true if the prefix is syntactically valid, false otherwise
+	 */
+	public static boolean isPrefixSyntValid(String prefix){
+		return NCName.isValid(prefix);
 	}
 
 	/**

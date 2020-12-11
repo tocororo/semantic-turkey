@@ -821,6 +821,10 @@ public class OntologyManagerImpl implements OntologyManager {
 		logger.debug("checking namespace: " + ns + " for missing prefix");
 		if (QueryResults.stream(conn.getNamespaces()).noneMatch(nsObj -> nsObj.getName().equals(ns))) {
 			String guessedPrefix = ModelUtilities.guessPrefix(ns);
+			if(guessedPrefix == null){
+				//the guess was not possible, so just return and add nothing
+				return;
+			}
 			if (conn.getNamespace(guessedPrefix) == null) { // avoid to override the declarion of the guessed
 															// prefix
 				conn.setNamespace(guessedPrefix, ns);

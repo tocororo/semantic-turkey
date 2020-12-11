@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
@@ -148,6 +149,9 @@ public class Metadata extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'U')")
 	public void setNSPrefixMapping(String prefix, String namespace) throws NSPrefixMappingUpdateException {
+		if(!ModelUtilities.isPrefixSyntValid(prefix)){
+			throw new NSPrefixMappingUpdateException("The prefix "+prefix+" is not valid, please try a different one");
+		}
 		getOntologyManager().setNSPrefixMapping(prefix, namespace);
 	}
 
@@ -160,6 +164,9 @@ public class Metadata extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'U')")
 	public void changeNSPrefixMapping(String prefix, String namespace) throws NSPrefixMappingUpdateException {
+		if(!ModelUtilities.isPrefixSyntValid(prefix)){
+			throw new NSPrefixMappingUpdateException("The prefix "+prefix+" is not valid, please try a different one");
+		}
 		getOntologyManager().setNSPrefixMapping(prefix, namespace);
 	}
 
