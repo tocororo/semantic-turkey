@@ -6,19 +6,28 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 public class JiraIssueCreationForm implements STProperties {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraIssueCreationForm";
 
-	
+		public static final String shortName = keyBase + ".shortName";
+		public static final String summary$description = keyBase + ".summary.description";
+		public static final String summary$displayName = keyBase + ".summary.displayName";
+		public static final String description$description = keyBase + ".description.description";
+		public static final String description$displayName = keyBase + ".description.displayName";
+	}
+
 	@Override
 	public String getShortName() {
-		return "Jira Settings for the creation of an Issue";
+		return "{" + MessageKeys.shortName + "}";
 	}
-	
-	
-	@STProperty(description = "Summary for the new Issue", displayName = "Summary")
+
+	@STProperty(description = "{" + MessageKeys.summary$description + "}", displayName = "{"
+			+ MessageKeys.summary$displayName + "}")
 	@Required
 	public String summary;
-	
-	@STProperty(description = "Description of the new Issue", displayName = "Description")
+
+	@STProperty(description = "{" + MessageKeys.description$description + "}", displayName = "{"
+			+ MessageKeys.description$displayName + "}")
 	public String description;
-	
+
 }

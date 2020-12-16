@@ -12,20 +12,32 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public class Parameter implements STProperties {
 
-	@Override
-	public String getShortName() {
-		return "Parameter";
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.config.customservice.Parameter";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String name$description = keyBase + ".name.description";
+		public static final String name$displayName = keyBase + ".name.displayName";
+		public static final String required$description = keyBase + ".required.description";
+		public static final String required$displayName = keyBase + ".required.displayName";
+		public static final String type$description = keyBase + ".type.description";
+		public static final String type$displayName = keyBase + ".type.displayName";
 	}
 
-	@STProperty(displayName = "Name", description = "The name of this parameter")
+	@Override
+	public String getShortName() {
+		return "{" + MessageKeys.shortName + "}";
+	}
+
+	@STProperty(displayName = "{" + MessageKeys.name$displayName + "}", description = "{" + MessageKeys.name$description + "}")
 	@Required
 	public String name;
 
-	@STProperty(displayName = "Required", description = "Whether this parameter is required or not")
+	@STProperty(displayName = "{" + MessageKeys.required$displayName + "}", description = "{" + MessageKeys.required$description + "}")
 	@Required
 	public Boolean required;
 
-	@STProperty(displayName = "Type", description = "The type of this parameter")
+	@STProperty(displayName = "{" + MessageKeys.type$displayName + "}", description = "{" + MessageKeys.type$description + "}")
 	@Required
 	public Type type;
 }

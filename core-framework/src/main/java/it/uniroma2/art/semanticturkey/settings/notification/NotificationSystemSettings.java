@@ -14,26 +14,45 @@ public class NotificationSystemSettings implements Settings {
 
 	public static class CronDefinition implements STProperties {
 
+		public static class MessageKeys {
+			public static final String keyBase = "it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettings.CronDefinition";
+			
+			public static final String shortName = keyBase + ".shortName";
+			public static final String expression$description = keyBase + ".expression.description";
+			public static final String expression$displayName = keyBase + ".expression.displayName";
+			public static final String zone$description = keyBase + ".zone.description";
+			public static final String zone$displayName = keyBase + ".zone.displayName";
+		}
+		
 		@Override
 		public String getShortName() {
-			return "Cron";
+			return "{" + MessageKeys.shortName + "}";
 		}
 
-		@STProperty(description = "A cron expression", displayName = "Expression")
+		@STProperty(description = "{" + MessageKeys.expression$description +"}", displayName = "{" + MessageKeys.expression$displayName +"}")
 		@Required
-		@Cron(type=CronType.SPRING)
+		@Cron(type = CronType.SPRING)
 		public String expression;
 
-		@STProperty(description = "A timezone id suitable for java.util.TimeZone.getTimeZone(String)", displayName = "Time zone")
+		@STProperty(description = "{" + MessageKeys.zone$description +"}", displayName = "{" + MessageKeys.zone$displayName +"}")
 		public TimeZone zone;
 
 	}
+	
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettings";
+		
+		public static final String shortName = keyBase + ".shortName";
+		public static final String notificationDigestSchedule$description = keyBase + ".notificationDigestSchedule.description";
+		public static final String notificationDigestSchedule$displayName = keyBase + ".notificationDigestSchedule.displayName";
+	}
+
 
 	@Override
 	public String getShortName() {
-		return "Notification System Settings";
+		return "{" + MessageKeys.shortName + "}";
 	}
 
-	@STProperty(description = "A cron expression scheduling periodic notification digests", displayName = "Notification digest schedule")
+	@STProperty(description = "{" + MessageKeys.notificationDigestSchedule$description +"}", displayName = "{" + MessageKeys.notificationDigestSchedule$displayName +"}")
 	public CronDefinition notificationDigestSchedule;
 }

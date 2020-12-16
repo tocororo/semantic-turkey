@@ -19,58 +19,88 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public abstract class AbstractOntoPortalDeployerConfiguration implements Configuration {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String htmlWarning = keyBase + ".htmlWarning";
+		public static final String apiBaseURL$description = keyBase + ".apiBaseURL.description";
+		public static final String apiBaseURL$displayName = keyBase + ".apiBaseURL.displayName";
+		public static final String apiKey$description = keyBase + ".apiKey.description";
+		public static final String apiKey$displayName = keyBase + ".apiKey.displayName";
+		public static final String acronym$description = keyBase + ".acronym.description";
+		public static final String acronym$displayName = keyBase + ".acronym.displayName";
+		public static final String description$description = keyBase + ".description.description";
+		public static final String description$displayName = keyBase + ".description.displayName";
+		public static final String version$description = keyBase + ".version.description";
+		public static final String version$displayName = keyBase + ".version.displayName";
+		public static final String hasOntologyLanguage$description = keyBase + ".hasOntologyLanguage.description";
+		public static final String hasOntologyLanguage$displayName = keyBase + ".hasOntologyLanguage.displayName";
+		public static final String status$description = keyBase + ".status.description";
+		public static final String status$displayName = keyBase + ".status.displayName";
+		public static final String released$description = keyBase + ".released.description";
+		public static final String released$displayName = keyBase + ".released.displayName";
+		public static final String contact$description = keyBase + ".contact.description";
+		public static final String contact$displayName = keyBase + ".contact.displayName";
+		public static final String homepage$description = keyBase + ".homepage.description";
+		public static final String homepage$displayName = keyBase + ".homepage.displayName";
+		public static final String documentation$description = keyBase + ".documentation.description";
+		public static final String documentation$displayName = keyBase + ".documentation.displayName";
+		public static final String publication$description = keyBase + ".publication.description";
+		public static final String publication$displayName = keyBase + ".publication.displayName";
+	}
+
 	public static final String CONTACT_PATTERN = "^\\s*(?<name>.+)\\s*\\((?<email>.+)\\s*\\)$";
 
 	@Override
 	public String getHTMLWarning() {
-		return "The API key is stored wihtout encryption on the server. "
-				+ "Be aware that the system administration could be able to see it.";
+		return "{" + MessageKeys.htmlWarning + "}";
 	}
 
-	@STProperty(description = "The base URL of the OntoPortal REST API", displayName = "API Base URL")
+	@STProperty(description = "{" + MessageKeys.apiBaseURL$description+ "}", displayName = "{" + MessageKeys.apiBaseURL$displayName + "}")
 	public String apiBaseURL;
 
-	@STProperty(description = "A valid API key for the OntoPortal REST API. A user's API key be found on the account page of that user", displayName = "API Key")
+	@STProperty(description = "{" + MessageKeys.apiKey$description+ "}", displayName = "{" + MessageKeys.apiKey$displayName + "}")
 	@Required
 	public String apiKey;
 
-	@STProperty(description = "The acronym of the ontology for which the submission is being done", displayName = "Acronym")
+	@STProperty(description = "{" + MessageKeys.acronym$description+ "}", displayName = "{" + MessageKeys.acronym$displayName + "}")
 	@Required
 	public String acronym;
 
-	@STProperty(description = "Description of the ontology", displayName = "Description")
+	@STProperty(description = "{" + MessageKeys.description$description+ "}", displayName = "{" + MessageKeys.description$displayName + "}")
 	@Required
 	public String description;
 
-	@STProperty(description = "Version of the ontology", displayName = "Version")
+	@STProperty(description = "{" + MessageKeys.version$description+ "}", displayName = "{" + MessageKeys.version$displayName + "}")
 	public String version;
 
-	@STProperty(description = "Ontology language", displayName = "Format")
+	@STProperty(description = "{" + MessageKeys.hasOntologyLanguage$description+ "}", displayName = "{" + MessageKeys.hasOntologyLanguage$displayName + "}")
 	@Enumeration({ "OWL", "SKOS" })
 	@Required
 	public String hasOntologyLanguage;
 
-	@STProperty(description = "Status of the ontology", displayName = "Status")
+	@STProperty(description = "{" + MessageKeys.status$description+ "}", displayName = "{" + MessageKeys.status$displayName + "}")
 	@Enumeration({ "alpha", "beta", "production", "retired" })
 	@Required
 	public String status;
 
-	@STProperty(description = "Release date. The date shall be formatted as yyyy-mm-dd (e.g. 2020-02-20)", displayName = "Release date")
+	@STProperty(description = "{" + MessageKeys.released$description+ "}", displayName = "{" + MessageKeys.released$displayName + "}")
 	@Required
 	@Pattern(regexp = "^\\d\\d\\d\\d-(0?[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$")
 	public String released;
 
-	@STProperty(description = "Contacts for the ontology. Each contact should be provided as a string matching this paattern: name (email)", displayName = "Contacts")
+	@STProperty(description = "{" + MessageKeys.contact$description+ "}", displayName = "{" + MessageKeys.contact$displayName + "}")
 	@Required
 	public List<@RegExp(regexp = CONTACT_PATTERN) String> contact;
 
-	@STProperty(description = "Address of the main web page of the ontology", displayName = "Homepage")
+	@STProperty(description = "{" + MessageKeys.homepage$description+ "}", displayName = "{" + MessageKeys.homepage$displayName + "}")
 	public String homepage; // note: it should be URL but this type is not currently supported by the UI
 
-	@STProperty(description = "Address of a web page providing documentation for the ontology", displayName = "Documentation")
+	@STProperty(description = "{" + MessageKeys.documentation$description+ "}", displayName = "{" + MessageKeys.documentation$displayName + "}")
 	public String documentation;
 
-	@STProperty(description = "Address of a web page listing publications about the ontology", displayName = "Publications")
+	@STProperty(description = "{" + MessageKeys.publication$description+ "}", displayName = "{" + MessageKeys.publication$displayName + "}")
 	public String publication;
 
 	// public static class Contact implements STProperties {

@@ -10,17 +10,30 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public abstract class AbstractLabelBasedRenderingEngineConfiguration extends AbstractPluginConfiguration {
 
-	@STProperty(description = "A comma-separated list of language tags. Use ${"
-			+ STPropertiesManager.PREF_LANGUAGES + "} to depend on ST Properties")
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.rendering.AbstractLabelBasedRenderingEngineConfiguration";
+		
+		public static final String shortName = keyBase + ".shortName";
+		public static final String languages$description = keyBase + ".languages.description";
+		public static final String languages$displayName = keyBase + ".languages.displayName";
+		public static final String template$description = keyBase + ".template.description";
+		public static final String template$displayName = keyBase + ".template.displayName";
+		public static final String variables$description = keyBase + ".variables.description";
+		public static final String variables$displayName = keyBase + ".variables.displayName";
+		public static final String ignoreValidation$description = keyBase + ".ignoreValidation.description";
+		public static final String ignoreValidation$displayName = keyBase + ".ignoreValidation.displayName";
+	}
+
+	@STProperty(description = MessageKeys.languages$description, displayName = MessageKeys.languages$displayName)
 	public String languages = "${" + STPropertiesManager.PREF_LANGUAGES + "}";
 
-	@STProperty(description = "The template for the redering of resources", displayName = "template")
+	@STProperty(description = MessageKeys.template$description, displayName = MessageKeys.template$displayName)
 	public String template;
 
-	@STProperty(description = "Definition of the variables that can be used inside the template", displayName = "variables")
+	@STProperty(description = MessageKeys.variables$description, displayName = MessageKeys.variables$displayName)
 	public String variables;
 
-	@STProperty(description = "Tells whether the rendering engine should ignore the fact that validation is enabled", displayName = "ignore validation")
+	@STProperty(description = MessageKeys.ignoreValidation$description, displayName = MessageKeys.ignoreValidation$displayName)
 	public Boolean ignoreValidation;
 
 }

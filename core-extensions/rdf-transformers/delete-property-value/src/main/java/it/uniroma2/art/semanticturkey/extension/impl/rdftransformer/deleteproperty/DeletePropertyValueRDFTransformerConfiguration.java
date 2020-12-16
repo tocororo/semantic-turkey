@@ -15,21 +15,33 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public class DeletePropertyValueRDFTransformerConfiguration implements Configuration {
 
-	@Override
-	public String getShortName() {
-		return "Delete Property Value RDF Transformer";
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty.DeletePropertyValueRDFTransformerConfiguration";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String resource$description = keyBase + ".resource.description";
+		public static final String resource$displayName = keyBase + ".resource.displayName";
+		public static final String property$description = keyBase + ".property.description";
+		public static final String property$displayName = keyBase + ".property.displayName";
+		public static final String value$description = keyBase + ".value.description";
+		public static final String value$displayName = keyBase + ".value.displayName";
+
 	}
 
-	@STProperty(description = "The subject of the filtered out triple")
+	@Override
+	public String getShortName() {
+		return "{" + MessageKeys.shortName + "}";
+	}
+
+	@STProperty(description = "{" + MessageKeys.resource$description + "}", displayName = "{" + MessageKeys.resource$displayName + "}")
 	@Required
 	public Resource resource;
 
-	@STProperty(description = "The predicate of the filtered out triple")
+	@STProperty(description = "{" + MessageKeys.property$description + "}", displayName = "{" + MessageKeys.property$displayName + "}")
 	@Required
 	@HasRole(RDFResourceRole.property)
 	public IRI property;
 
-	@STProperty(description = "The value of the triple being filtered out. If not set, "
-			+ "then all triples of the form <resource, predicate, *> are deleted")
+	@STProperty(description = "{" + MessageKeys.value$description + "}", displayName = "{" + MessageKeys.value$displayName + "}")
 	public Value value = null;
 }

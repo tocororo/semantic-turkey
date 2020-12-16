@@ -8,13 +8,23 @@ import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 public class StoredProjectMetadata implements Settings {
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.settings.metadata.StoredProjectMetadata";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String datasetDescription$description = keyBase
+				+ ".datasetDescription.description";
+		public static final String datasetDescription$displayName = keyBase
+				+ ".datasetDescription.displayName";
+	}
 
 	@Override
 	public String getShortName() {
-		return "Stored Project Metadata";
+		return "{" + MessageKeys.shortName + "}";
 	}
 
-	@STProperty(description = "A pair consisting of an IRI uniquely identifying the dataset associated with the proeject together with its description encoded in the Turtle syntax", displayName = "Dataset Description")
+	@STProperty(description = "{" + MessageKeys.datasetDescription$description + "}", displayName = "{"
+			+ MessageKeys.datasetDescription$displayName + "}")
 	@Required
 	public Pair<IRI, String> datasetDescription;
 

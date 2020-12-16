@@ -14,33 +14,47 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  * <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public class GraphStoreHTTPDeployerConfiguration implements Configuration {
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerConfiguration";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String htmlWarning = keyBase + ".htmlWarning";		
+		public static final String graphStoreHTTPEndpoint$description = keyBase + ".graphStoreHTTPEndpoint.description";
+		public static final String graphStoreHTTPEndpoint$displayName = keyBase + ".graphStoreHTTPEndpoint.displayName";
+		public static final String destinationGraph$description = keyBase + ".destinationGraph.description";
+		public static final String destinationGraph$displayName = keyBase + ".destinationGraph.displayName";
+		public static final String clearFirst$description = keyBase + ".clearFirst.description";
+		public static final String clearFirst$displayName = keyBase + ".clearFirst.displayName";
+		public static final String username$description = keyBase + ".username.description";
+		public static final String username$displayName = keyBase + ".username.displayName";
+		public static final String password$description = keyBase + ".password.description";
+		public static final String password$displayName = keyBase + ".password.displayName";
+	}
 
 	@Override
 	public String getShortName() {
-		return "Graph Store HTTP Deployer Configuration";
+		return "{" + MessageKeys.shortName + "}";
 	}
 
 	@Override
 	public String getHTMLWarning() {
-		return "Either &quot;<em>graphStoreHTTPEndpoint</em>&quot; or &quot;<em>destinationGraph</em>&quot; shall be set."
-				+ "The credentials are stored wihtout encryption on the server. "
-				+ "Be aware that the system administration could be able to see them.";
+		return "{" + MessageKeys.htmlWarning + "}";
 	}
 
-	@STProperty(description = "The address of the endpoint conforming to the HTTP Graph Store protocol. If not provided, it is assumed that the destination graph is identified directly", displayName = "Graph Store HTTP endpoint")
+	@STProperty(description = "{" + MessageKeys.graphStoreHTTPEndpoint$description + "}", displayName = "{" + MessageKeys.graphStoreHTTPEndpoint$displayName + "}")
 	public URL graphStoreHTTPEndpoint;
 
-	@STProperty(description = "The graph where data should be deployed. If not provided, the default graph is used", displayName = "Destination graph")
+	@STProperty(description = "{" + MessageKeys.destinationGraph$description + "}", displayName = "{" + MessageKeys.destinationGraph$displayName + "}")
 	public IRI destinationGraph;
 
-	@STProperty(description = "Tells if already existing data should be cleared fist", displayName = "Clear first")
+	@STProperty(description = "{" + MessageKeys.clearFirst$description + "}", displayName = "{" + MessageKeys.clearFirst$displayName + "}")
 	@Required
 	public Boolean clearFirst;
 
-	@STProperty(description = "Username", displayName = "Username")
+	@STProperty(description = "{" + MessageKeys.username$description + "}", displayName = "{" + MessageKeys.username$displayName + "}")
 	public String username;
 
-	@STProperty(description = "Password", displayName = "Password")
+	@STProperty(description = "{" + MessageKeys.password$description + "}", displayName = "{" + MessageKeys.password$displayName + "}")
 	public String password;
 
 }

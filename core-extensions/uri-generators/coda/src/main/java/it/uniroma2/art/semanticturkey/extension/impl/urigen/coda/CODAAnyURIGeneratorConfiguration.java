@@ -9,13 +9,21 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  *
  */
 public class CODAAnyURIGeneratorConfiguration extends CODAURIGeneratorConfiguration {
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAAnyURIGeneratorConfiguration";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String converter$description = keyBase + ".converter.description";
+		public static final String converter$displayName = keyBase + ".converter.displayName";
+	}
 
 	@Override
 	public String getShortName() {
-		return "CODA-based any converter URI generator";
+		return "{" + MessageKeys.shortName + "}";
 	}
 
-	@STProperty(description="The class name for the selection of the desired CODA converter")
+	@STProperty(description = "{" + MessageKeys.converter$description + "}", displayName = "{"
+			+ MessageKeys.converter$displayName + "}")
 	public String converter = "http://art.uniroma2.it/coda/converters/templateBasedRandIdGen";
 
 }

@@ -8,6 +8,12 @@ import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURI
  */
 public class NativeTemplateBasedURIGeneratorSettings implements Settings {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorSettings";
+
+		public static final String shortName = keyBase + ".shortName";
+	}
+
 //	private Properties props;
 //	private Properties propDescriptions;
 	
@@ -18,7 +24,7 @@ public class NativeTemplateBasedURIGeneratorSettings implements Settings {
 
 	@Override
 	public String getShortName() {
-		return "Native template-based";
+		return "{" + MessageKeys.shortName + "}";
 	}
 /*
 	@Override

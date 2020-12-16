@@ -8,29 +8,53 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 public class ServiceInvocation implements STProperties {
 
-	@Override
-	public String getShortName() {
-		return "Service Invocation";
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String service$description = keyBase + ".service.description";
+		public static final String service$displayName = keyBase + ".service.displayName";
+		public static final String operation$description = keyBase + ".operation.description";
+		public static final String operation$displayName = keyBase + ".operation.displayName";
+		public static final String arguments$description = keyBase + ".arguments.description";
+		public static final String arguments$displayName = keyBase + ".arguments.displayName";
+		public static final String label$description = keyBase + ".label.description";
+		public static final String label$displayName = keyBase + ".label.displayName";
+		public static final String description$description = keyBase + ".description.description";
+		public static final String description$displayName = keyBase + ".description.displayName";
+		public static final String template$description = keyBase + ".template.description";
+		public static final String template$displayName = keyBase + ".template.displayName";
 	}
 
-	@STProperty(displayName = "Service", description = "The name of service being invoked")
+	@Override
+	public String getShortName() {
+		return MessageKeys.shortName;
+	}
+
+	@STProperty(displayName = "{" + MessageKeys.service$displayName + "}", description = "{"
+			+ MessageKeys.service$description + "}")
 	@Required
 	public String service;
 
-	@STProperty(displayName = "Operation", description = "the name of the specific operation invoked")
+	@STProperty(displayName = "{" + MessageKeys.operation$displayName + "}", description = "{"
+			+ MessageKeys.operation$description + "}")
 	@Required
 	public String operation;
 
-	@STProperty(displayName = "Arguments", description = "the arguments passed to the invoked service operation")
+	@STProperty(displayName = "{" + MessageKeys.arguments$displayName + "}", description = "{"
+			+ MessageKeys.arguments$description + "}")
 	public Map<String, String> arguments;
 
-	@STProperty(description = "The label of this section", displayName = "Label")
+	@STProperty(displayName = "{" + MessageKeys.label$displayName + "}", description = "{"
+			+ MessageKeys.label$description + "}")
 	public String label;
 
-	@STProperty(description = "A description of this section", displayName = "Description")
+	@STProperty(displayName = "{" + MessageKeys.description$displayName + "}", description = "{"
+			+ MessageKeys.description$description + "}")
 	public String description;
 
-	@STProperty(description = "A template for rendering an individual section. The template must conform to Mustache templating language.", displayName = "Template")
+	@STProperty(displayName = "{" + MessageKeys.template$displayName + "}", description = "{"
+			+ MessageKeys.template$description + "}")
 	public String template;
 
 }

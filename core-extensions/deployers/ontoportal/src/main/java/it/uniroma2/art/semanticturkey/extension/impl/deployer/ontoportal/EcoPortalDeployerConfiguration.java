@@ -32,53 +32,82 @@ public class EcoPortalDeployerConfiguration extends AbstractOntoPortalDeployerCo
 	 *
 	 */
 	public static class Title implements STProperties {
+		
+		public static class MessageKeys {
+			public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.Title";
+
+			public static final String shortName = keyBase + ".shortName";
+			public static final String title$description = keyBase + ".title.description";
+			public static final String title$displayName = keyBase + ".title.displayName";
+			public static final String titleType$description = keyBase + ".titleType.description";
+			public static final String titleType$displayName = keyBase + ".titleType.displayName";
+		}
 
 		@Override
 		public String getShortName() {
-			return "Title";
+			return "{" + MessageKeys.shortName + "}";
 		}
 
-		@STProperty(displayName = "Title", description = "A name or title by which a resource is known. May be the title of a dataset or the name of a piece of software")
+		@STProperty(displayName = "{" + MessageKeys.title$displayName + "}", description = "{" + MessageKeys.title$description + "}")
 		@Required
 		@LanguageTaggedString
 		public Literal title;
 
-		@STProperty(displayName = "Title type", description = "The type of title")
+		@STProperty(displayName = "{" + MessageKeys.titleType$displayName + "}", description = "{" + MessageKeys.titleType$description + "}")
 		@Required
 		@Enumeration({ "AlternativeTitle", "Subtitle", "TranslatedTitle", "Other" })
 		public String titleType = "Other";
 
 	};
+	
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String creators$description = keyBase + ".creators.description";
+		public static final String creators$displayName = keyBase + ".creators.displayName";
+		public static final String titles$description = keyBase + ".titles.description";
+		public static final String titles$displayName = keyBase + ".titles.displayName";
+		public static final String publisher$description = keyBase + ".publisher.description";
+		public static final String publisher$displayName = keyBase + ".publisher.displayName";
+		public static final String publicationYear$description = keyBase + ".publicationYear.description";
+		public static final String publicationYear$displayName = keyBase + ".publicationYear.displayName";
+		public static final String resourceType$description = keyBase + ".resourceType.description";
+		public static final String resourceType$displayName = keyBase + ".resourceType.displayName";
+		public static final String resourceTypeGeneral$description = keyBase + ".resourceTypeGeneral.description";
+		public static final String resourceTypeGeneral$displayName = keyBase + ".resourceTypeGeneral.displayName";
+	}
+
 
 	@Override
 	public String getShortName() {
-		return "EcoPortal";
+		return "{" + MessageKeys.shortName + "}";
 	}
 
-	@STProperty(displayName = "Creators", description = "The main researchers involved in producing the data, or the authors of the publication, in priority order")
+	@STProperty(displayName = "{" + MessageKeys.creators$displayName + "}", description = "{" + MessageKeys.creators$description + "}")
 	@Required
 	public List<String> creators;
 
-	@STProperty(displayName = "Titles", description = "")
+	@STProperty(displayName = "{" + MessageKeys.titles$displayName + "}", description = "")
 	@Required
 	@Valid
 	public List<Title> titles;
 
-	@STProperty(displayName = "Publisher", description = "The name of the entitythat holds, archives, publishes prints, distributes, releases, issues, or produces the resource")
+	@STProperty(displayName = "{" + MessageKeys.publisher$displayName + "}", description = "{" + MessageKeys.publisher$description + "}")
 	@Required
 	public String publisher;
 
-	@STProperty(displayName = "Publication year", description = "The year when the data was or will be made publicly available")
+	@STProperty(displayName = "{" + MessageKeys.publicationYear$displayName + "}", description = "{" + MessageKeys.publicationYear$description + "}")
 	@Required
 	public Integer publicationYear;
 
-	@STProperty(displayName = "Resource type", description = "A description of the resource. The format is open, but the preferred format is a single term of some detail. ")
+	@STProperty(displayName = "{" + MessageKeys.resourceType$displayName + "}", description = "{" + MessageKeys.resourceType$description + "}")
 	@Required
 	@Enumeration(value = { "Authority File", "Controlled Vocabulary", "Glossary", "Ontology",
 			"Thesaurus" }, open = true)
 	public String resourceType;
 
-	@STProperty(displayName = "Resource type general", description = "The general type of a resource")
+	@STProperty(displayName = "{" + MessageKeys.resourceTypeGeneral$displayName + "}", description = "{" + MessageKeys.resourceTypeGeneral$description + "}")
 	@Enumeration({ "Dataset", "Other" })
 	@Required
 	public String resourceTypeGeneral = "Dataset";

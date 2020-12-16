@@ -8,12 +8,23 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 public class StoredCustomSearch implements Settings {
 
-	@Override
-	public String getShortName() {
-		return "Stored Custom Search";
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.settings.search.StoredCustomSearch";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String searchSPARQLParameterizationReferences$description = keyBase
+				+ ".searchSPARQLParameterizationReferences.description";
+		public static final String searchSPARQLParameterizationReferences$displayName = keyBase
+				+ ".searchSPARQLParameterizationReferences.displayName";
 	}
 
-	@STProperty(description = "A set of relative references to stored parameterizations of SPARQL queries that can be used for custom search", displayName = "Search SPARQL parameterization references")
+	@Override
+	public String getShortName() {
+		return "{" + MessageKeys.shortName + "}";
+	}
+
+	@STProperty(description = "{" + MessageKeys.searchSPARQLParameterizationReferences$description
+			+ "}", displayName = "{" + MessageKeys.searchSPARQLParameterizationReferences$displayName + "}")
 	@Required
 	public Set<String> searchSPARQLParameterizationReferences;
 }

@@ -13,9 +13,16 @@ import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 public class OntoPortalDeployerConfiguration extends AbstractOntoPortalDeployerConfiguration
 		implements Configuration {
 
+	public static class MessageKeys {
+
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.OntoPortalDeployerConfiguration";
+
+		public static final String shortName = keyBase + ".shortName";
+	}
+
 	@Override
 	public String getShortName() {
-		return "OntoPortal";
+		return "{" + MessageKeys.shortName + "}";
 	}
 
 	/*

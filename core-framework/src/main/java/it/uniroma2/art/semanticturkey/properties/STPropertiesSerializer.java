@@ -17,11 +17,14 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.validation.Constraint;
 
@@ -31,6 +34,8 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.context.support.ResourceBundleMessageSource;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.ObjectCodec;
@@ -39,6 +44,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
+import it.uniroma2.art.semanticturkey.l10n.ResourceBundles;
+
 /**
  * A Jackson's {@link JsonSerializer} for {@link STProperties}.
  * 
@@ -46,7 +53,9 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
  */
 public class STPropertiesSerializer extends StdSerializer<STProperties> {
 
+	private Pattern templatePattern = Pattern.compile("\\{(.*?)\\}");
 	private static final long serialVersionUID = 1L;
+	private ResourceBundleMessageSource messageSource;
 
 	public STPropertiesSerializer() {
 		this(null);
@@ -54,6 +63,28 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 
 	public STPropertiesSerializer(Class<STProperties> t) {
 		super(t);
+		messageSource = new ResourceBundleMessageSource();
+		messageSource.setBeanClassLoader(this.getClass().getClassLoader());
+		messageSource.setFallbackToSystemLocale(false);
+		messageSource.setUseCodeAsDefaultMessage(true);
+		messageSource.setBasenames(ResourceBundles.ST_PROPERTIES_MESSAGES_BUNDLE);
+	}
+
+	protected String interpolate(String template) {
+		if (template == null) {
+			return template;
+		}
+
+		Matcher m = templatePattern.matcher(template);
+		StringBuffer sb = new StringBuffer();
+
+		while (m.find()) {
+			m.appendReplacement(sb,
+					messageSource.getMessage(m.group(1), null, LocaleContextHolder.getLocale()));
+		}
+		m.appendTail(sb);
+
+		return sb.toString();
 	}
 
 	/*
@@ -66,20 +97,22 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 	public void serialize(STProperties value, JsonGenerator gen, SerializerProvider provider)
 			throws IOException {
 		try {
+			Locale locale = LocaleContextHolder.getLocale();
+
 			ObjectMapper propertiesObjectMapper = STPropertiesManager.createObjectMapper();
 
 			gen.writeStartObject();
 
 			gen.writeStringField("@type", value.getClass().getName());
-			gen.writeStringField("shortName", value.getShortName());
+			gen.writeStringField("shortName", interpolate(value.getShortName()));
 			gen.writeBooleanField("editRequired", value.hasRequiredProperties());
 
 			if (value.getHTMLDescription() != null) {
-				gen.writeStringField("htmlDescription", value.getHTMLDescription());
+				gen.writeStringField("htmlDescription", interpolate(value.getHTMLDescription()));
 			}
 
 			if (value.getHTMLWarning() != null) {
-				gen.writeStringField("htmlWarning", value.getHTMLWarning());
+				gen.writeStringField("htmlWarning", interpolate(value.getHTMLWarning()));
 			}
 
 			gen.writeArrayFieldStart("properties");
@@ -95,8 +128,8 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 				String parDispName = value.getPropertyDisplayName(prop);
 
 				gen.writeStringField("name", prop);
-				gen.writeStringField("description", parDescr);
-				gen.writeStringField("displayName", parDispName);
+				gen.writeStringField("description", interpolate(parDescr));
+				gen.writeStringField("displayName", interpolate(parDispName));
 				gen.writeBooleanField("required", value.isRequiredProperty(prop));
 				String contentType = value.getPropertyContentType(prop);
 				if (contentType != null) {

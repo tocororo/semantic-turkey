@@ -6,30 +6,40 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 public class JiraBackendProjectSettings implements Settings {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendProjectSettings";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String htmlDescription = keyBase + ".htmlDescription";
+		public static final String serverURL$description = keyBase + ".serverURL.description";
+		public static final String serverURL$displayName = keyBase + ".serverURL.displayName";
+		public static final String jiraPrjKey$description = keyBase + ".jiraPrjKey.description";
+		public static final String jiraPrjKey$displayName = keyBase + ".jiraPrjKey.displayName";
+		public static final String jiraPrjId$description = keyBase + ".jiraPrjId.description";
+		public static final String jiraPrjId$displayName = keyBase + ".jiraPrjId.displayName";
+
+
+	}
 	@Override
 	public String getShortName() {
-		return "Jira Project Settings";
+		return "{" + MessageKeys.shortName + "}";
 	}
 
 	public String getHTMLDescription() {
-		String message = "The manual configuration for JIRA requires that all of the following fields "
-				+ "(including the non-mandatory ones) are filled up. Alternatively, insert only the mandatory "
-				+ "field and, once the connection credentials have been provided, it will be possible to "
-				+ "browse the list of JIRA projects and select one of them.";
-		return message;
+		return "{" + MessageKeys.htmlDescription + "}";
 	}
 	
-	@STProperty(description = "Server URL", displayName = "Server URL")
+	@STProperty(description = "{" + MessageKeys.serverURL$description + "}", displayName = MessageKeys.serverURL$displayName)
 	@Required
 	public String serverURL;
 	
 	//@STProperty(description = "Jira Project Name", displayName = "Jira Project Name")
 	//public String jiraPrjName;
 	
-	@STProperty(description = "Jira Project Key", displayName = "Jira Project Key")
+	@STProperty(description = "{" + MessageKeys.jiraPrjKey$description + "}", displayName = MessageKeys.jiraPrjKey$displayName)
 	public String jiraPrjKey;
 	
-	@STProperty(description = "Jira Project Id", displayName = "Jira Project Id")
+	@STProperty(description = "{" + MessageKeys.jiraPrjId$description + "}", displayName = MessageKeys.jiraPrjId$displayName)
 	public String jiraPrjId;
 	
 }
