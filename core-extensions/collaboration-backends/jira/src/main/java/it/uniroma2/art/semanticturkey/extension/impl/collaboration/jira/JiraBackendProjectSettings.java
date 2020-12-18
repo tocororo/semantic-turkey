@@ -17,9 +17,8 @@ public class JiraBackendProjectSettings implements Settings {
 		public static final String jiraPrjKey$displayName = keyBase + ".jiraPrjKey.displayName";
 		public static final String jiraPrjId$description = keyBase + ".jiraPrjId.description";
 		public static final String jiraPrjId$displayName = keyBase + ".jiraPrjId.displayName";
-
-
 	}
+
 	@Override
 	public String getShortName() {
 		return "{" + MessageKeys.shortName + "}";
@@ -29,17 +28,17 @@ public class JiraBackendProjectSettings implements Settings {
 		return "{" + MessageKeys.htmlDescription + "}";
 	}
 	
-	@STProperty(description = "{" + MessageKeys.serverURL$description + "}", displayName = MessageKeys.serverURL$displayName)
+	@STProperty(description = "{" + MessageKeys.serverURL$description + "}", displayName = "{" + MessageKeys.serverURL$displayName + "}")
 	@Required
 	public String serverURL;
 	
 	//@STProperty(description = "Jira Project Name", displayName = "Jira Project Name")
 	//public String jiraPrjName;
 	
-	@STProperty(description = "{" + MessageKeys.jiraPrjKey$description + "}", displayName = MessageKeys.jiraPrjKey$displayName)
+	@STProperty(description = "{" + MessageKeys.jiraPrjKey$description + "}", displayName = "{" + MessageKeys.jiraPrjKey$displayName + "}")
 	public String jiraPrjKey;
 	
-	@STProperty(description = "{" + MessageKeys.jiraPrjId$description + "}", displayName = MessageKeys.jiraPrjId$displayName)
+	@STProperty(description = "{" + MessageKeys.jiraPrjId$description + "}", displayName = "{" + MessageKeys.jiraPrjId$displayName + "}")
 	public String jiraPrjId;
 	
 }

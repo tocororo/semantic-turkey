@@ -136,6 +136,7 @@
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-trivial-inference-sail/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-core-framework/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-jira-backend/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-freedcamp-backend/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-sparql-custom-service-backend/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-euodp-connector/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-lod-cloud-connector/${project.version}</bundle>

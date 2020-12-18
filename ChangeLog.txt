@@ -1,5 +1,6 @@
 version 9.0.
 date: dd/mm/yyyy
+  * added support for the Freecamp collaboration system
   * added support for internationalization (i18n)
   * added data type information in the single-value custom form preview
   * added mapping property to the descriptions of correspondences in the EDOAL data view

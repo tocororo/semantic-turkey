@@ -44,7 +44,7 @@ public interface CollaborationBackend extends Extension {
 	public JsonNode listIssues(int pageOffset)
 			throws STPropertyAccessException, IOException, CollaborationBackendException;
 
-	public JsonNode listUsers() throws STPropertyAccessException, IOException, CollaborationBackendException;
+	//public JsonNode listUsers() throws STPropertyAccessException, IOException, CollaborationBackendException;
 
 	public JsonNode listProjects()
 			throws STPropertyAccessException, IOException, CollaborationBackendException;

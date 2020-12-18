@@ -169,10 +169,12 @@ public class Collaboration extends STServiceAdapter {
 		return getCollaborationBackend().listIssues(pageOffset);
 	}
 
+	/*
 	@STServiceOperation(method = RequestMethod.GET)
 	public JsonNode listUsers() throws STPropertyAccessException, IOException, CollaborationBackendException {
 		return getCollaborationBackend().listUsers();
 	}
+	 */
 
 	@STServiceOperation(method = RequestMethod.GET)
 	public JsonNode listProjects()

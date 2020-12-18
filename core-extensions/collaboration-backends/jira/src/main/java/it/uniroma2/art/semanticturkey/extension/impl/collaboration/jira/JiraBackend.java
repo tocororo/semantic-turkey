@@ -383,7 +383,7 @@ public class JiraBackend implements CollaborationBackend {
 		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 		
-		//now ask jira for all the issue associated to the desired Resource
+		//now ask jira for all the issue in the desired project
 		String urlString = projectSettings.serverURL+"/rest/api/2/"+"search";
 
 		URL url = new URL(urlString);
@@ -461,7 +461,8 @@ public class JiraBackend implements CollaborationBackend {
 		
 		return objectNode;
 	}
-	
+
+	/*
 	@Override
 	public JsonNode listUsers() throws STPropertyAccessException, IOException, 
 			CollaborationBackendException {
@@ -499,6 +500,7 @@ public class JiraBackend implements CollaborationBackend {
 		
 		return userArrayResponse;
 	}
+	*/
 	
 	
 	@Override
