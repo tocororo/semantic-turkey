@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.l10n;
+package it.uniroma2.art.semanticturkey.i18n;
 
 /**
  * Constants holding the names of resource bundles
@@ -8,6 +8,5 @@ package it.uniroma2.art.semanticturkey.l10n;
  */
 public abstract class ResourceBundles {
 
-	public static final String ST_PROPERTIES_MESSAGES_BUNDLE = ResourceBundles.class.getPackage().getName()
-			+ ".STPropertiesMessages";
+	public static final String ST_PROPERTIES_MESSAGES_BUNDLE = "it.uniroma2.art.semanticturkey.l10n.STPropertiesMessages";
 }

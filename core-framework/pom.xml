@@ -371,7 +371,7 @@
 		</dependency>
 		<dependency>
 			<groupId>it.uniroma2.art.semanticturkey</groupId>
-			<artifactId>st-l10n</artifactId>
+			<artifactId>st-i18n</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>

@@ -11,25 +11,40 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public class RDFSerializingExporterConfiguration implements Configuration {
 
-	@Override
-	public String getShortName() {
-		return "RDF Serializing Exporter";
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterConfiguration";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String prettyPrint$description = keyBase + ".prettyPrint.description";
+		public static final String prettyPrint$displayName = keyBase + ".prettyPrint.displayName";
+		public static final String inlineBlankNodes$description = keyBase + ".inlineBlankNodes.description";
+		public static final String inlineBlankNodes$displayName = keyBase + ".inlineBlankNodes.displayName";
+		public static final String xsdStringToPlainLiteral$description = keyBase + ".xsdStringToPlainLiteral.description";
+		public static final String xsdStringToPlainLiteral$displayName = keyBase + ".xsdStringToPlainLiteral.displayName";
+		public static final String rdfLangStringToLangLiteral$description = keyBase + ".rdfLangStringToLangLiteral.description";
+		public static final String rdfLangStringToLangLiteral$displayName = keyBase + ".rdfLangStringToLangLiteral.displayName";
+		public static final String baseDirective$description = keyBase + ".baseDirective.description";
+		public static final String baseDirective$displayName = keyBase + ".baseDirective.displayName";
 	}
 
-	@STProperty(displayName = "pretty print", description = "Tells whether pretty printing is preferred")
+	@Override
+	public String getShortName() {
+		return "{" + MessageKeys.shortName + "}";
+	}
+
+	@STProperty(description = "{" + MessageKeys.prettyPrint$description + "}", displayName = "{" + MessageKeys.prettyPrint$displayName + "}")
 	public Boolean prettyPrint;
 
-	@STProperty(displayName = "inline blank nodes", description = "Tells whether to use blank node property lists, collections, and anonymous nodes instead of blank node labels."
-			+ "This settings requires that all triples are first loaded in memory, and should not be checked for large datasets")
+	@STProperty(description = "{" + MessageKeys.inlineBlankNodes$description + "}", displayName = "{" + MessageKeys.inlineBlankNodes$displayName + "}")
 	public Boolean inlineBlankNodes;
 
-	@STProperty(displayName = "xsd:string to plain literal", description = "Tells whether the serializer should remove the xsd:string datatype from literals and represent them as RDF-1.0 Plain Literals")
+	@STProperty(description = "{" + MessageKeys.xsdStringToPlainLiteral$description + "}", displayName = "{" + MessageKeys.xsdStringToPlainLiteral$displayName + "}")
 	public Boolean xsdStringToPlainLiteral;
 
-	@STProperty(displayName = "rdf:langString to language tagged literal", description = "Tells whether the serializer should omit the rdf:langString datatype from language literals when serializing them")
+	@STProperty(description = "{" + MessageKeys.rdfLangStringToLangLiteral$description + "}", displayName = "{" + MessageKeys.rdfLangStringToLangLiteral$displayName + "}")
 	public Boolean rdfLangStringToLangLiteral;
 
-	@STProperty(displayName = "base directive", description = "Tells whether the serializer should include a base directive")
+	@STProperty(description = "{" + MessageKeys.baseDirective$description + "}", displayName = "{" + MessageKeys.baseDirective$displayName + "}")
 	public Boolean baseDirective;
 
 }

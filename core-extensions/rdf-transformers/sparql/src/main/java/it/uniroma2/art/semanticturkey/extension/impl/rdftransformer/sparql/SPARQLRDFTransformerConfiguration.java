@@ -9,15 +9,25 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public class SPARQLRDFTransformerConfiguration implements Configuration {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerConfiguration";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String filter$description = keyBase + ".filter.description";
+		public static final String filter$displayName = keyBase + ".filter.displayName";
+		public static final String sliced$description = keyBase + ".sliced.description";
+		public static final String sliced$displayName = keyBase + ".sliced.displayName";
+	}
+
 	@Override
 	public String getShortName() {
-		return "SPARQL Update RDF Transformer";
+		return "{" + MessageKeys.shortName + "}";
 	}
 	
-	@STProperty(description="SPARQL Update implementing the filter")
+	@STProperty(description = "{" + MessageKeys.filter$description + "}", displayName = "{" + MessageKeys.filter$displayName + "}")
 	@Required
 	public String filter;
 	
-	@STProperty(description="Executes the SPARQL query on each graph separately")
+	@STProperty(description = "{" + MessageKeys.sliced$description + "}", displayName = "{"	+ MessageKeys.sliced$displayName + "}")
 	public boolean sliced = true;
 }

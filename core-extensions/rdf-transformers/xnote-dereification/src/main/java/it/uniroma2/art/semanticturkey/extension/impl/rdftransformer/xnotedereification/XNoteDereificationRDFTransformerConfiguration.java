@@ -8,11 +8,19 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public class XNoteDereificationRDFTransformerConfiguration implements Configuration {
 
-	@Override
-	public String getShortName() {
-		return "XNote Dereification RDF Transformer";
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xnotedereification.XNoteDereificationRDFTransformerConfiguration";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String preserveReifiedNotes$description = keyBase + ".preserveReifiedNotes.description";
+		public static final String preserveReifiedNotes$displayName = keyBase + ".preserveReifiedNotes.displayName";
 	}
 
-	@STProperty(description = "Preserves reified notes in the output")
+	@Override
+	public String getShortName() {
+		return "{" + MessageKeys.shortName + "}";
+	}
+
+	@STProperty(description = "{" + MessageKeys.preserveReifiedNotes$description + "}", displayName = "{" + MessageKeys.preserveReifiedNotes$displayName + "}")
 	public boolean preserveReifiedNotes = true;
 }

@@ -17,7 +17,6 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -34,8 +33,6 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
-import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.context.support.ResourceBundleMessageSource;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.ObjectCodec;
@@ -44,7 +41,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
-import it.uniroma2.art.semanticturkey.l10n.ResourceBundles;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
  * A Jackson's {@link JsonSerializer} for {@link STProperties}.
@@ -55,7 +52,6 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 
 	private Pattern templatePattern = Pattern.compile("\\{(.*?)\\}");
 	private static final long serialVersionUID = 1L;
-	private ResourceBundleMessageSource messageSource;
 
 	public STPropertiesSerializer() {
 		this(null);
@@ -63,11 +59,6 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 
 	public STPropertiesSerializer(Class<STProperties> t) {
 		super(t);
-		messageSource = new ResourceBundleMessageSource();
-		messageSource.setBeanClassLoader(this.getClass().getClassLoader());
-		messageSource.setFallbackToSystemLocale(false);
-		messageSource.setUseCodeAsDefaultMessage(true);
-		messageSource.setBasenames(ResourceBundles.ST_PROPERTIES_MESSAGES_BUNDLE);
 	}
 
 	protected String interpolate(String template) {
@@ -79,8 +70,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 		StringBuffer sb = new StringBuffer();
 
 		while (m.find()) {
-			m.appendReplacement(sb,
-					messageSource.getMessage(m.group(1), null, LocaleContextHolder.getLocale()));
+			m.appendReplacement(sb, STMessageSource.getMessage(m.group(1)));
 		}
 		m.appendTail(sb);
 
@@ -97,8 +87,6 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 	public void serialize(STProperties value, JsonGenerator gen, SerializerProvider provider)
 			throws IOException {
 		try {
-			Locale locale = LocaleContextHolder.getLocale();
-
 			ObjectMapper propertiesObjectMapper = STPropertiesManager.createObjectMapper();
 
 			gen.writeStartObject();

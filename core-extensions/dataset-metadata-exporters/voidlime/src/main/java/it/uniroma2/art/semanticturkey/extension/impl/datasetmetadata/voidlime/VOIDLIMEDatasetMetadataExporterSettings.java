@@ -2,8 +2,6 @@ package it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime;
 
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.properties.Required;
-import it.uniroma2.art.semanticturkey.properties.STProperties;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesImpl;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 public class VOIDLIMEDatasetMetadataExporterSettings implements Settings {

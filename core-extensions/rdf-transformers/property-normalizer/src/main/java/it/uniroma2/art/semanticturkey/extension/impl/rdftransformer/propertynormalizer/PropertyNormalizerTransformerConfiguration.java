@@ -17,17 +17,27 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public class PropertyNormalizerTransformerConfiguration implements Configuration {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.propertynormalizer.PropertyNormalizerTransformerConfiguration";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String normalizingProperty$description = keyBase + ".normalizingProperty.description";
+		public static final String normalizingProperty$displayName = keyBase + ".normalizingProperty.displayName";
+		public static final String propertiesBeingNormalized$description = keyBase + ".propertiesBeingNormalized.description";
+		public static final String propertiesBeingNormalized$displayName = keyBase + ".propertiesBeingNormalized.displayName";
+	}
+	
 	@Override
 	public String getShortName() {
-		return "Property Normalizer Transformer";
+		return "{" + MessageKeys.shortName + "}";
 	}
 
-	@STProperty(description = "Replacement property")
+	@STProperty(description = "{" + MessageKeys.normalizingProperty$description + "}", displayName = "{" + MessageKeys.normalizingProperty$displayName + "}")
 	@Required
 	@HasRole(RDFResourceRole.property)
 	public IRI normalizingProperty;
 
-	@STProperty(description = "Properties that are replaced in the output")
+	@STProperty(description = "{" + MessageKeys.propertiesBeingNormalized$description + "}", displayName = "{" + MessageKeys.propertiesBeingNormalized$displayName + "}")
 	@Required
 	public Set<@HasRole(RDFResourceRole.property) IRI> propertiesBeingNormalized;
 }

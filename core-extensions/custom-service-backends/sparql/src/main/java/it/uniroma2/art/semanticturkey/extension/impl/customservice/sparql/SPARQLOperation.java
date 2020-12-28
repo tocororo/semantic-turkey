@@ -11,12 +11,21 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public class SPARQLOperation extends Operation {
 
-	@Override
-	public String getShortName() {
-		return "SPARQL Custom Service Operation";
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql.SPARQLOperation";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String sparql$description = keyBase + ".sparql.description";
+		public static final String sparql$displayName = keyBase + ".sparql.displayName";
 	}
 
-	@STProperty(description = "Implementation of a custom service operation in SPARQL", displayName = "SPARQL")
+	@Override
+	public String getShortName() {
+		return "{" + MessageKeys.shortName + "}";
+	}
+
+	@STProperty(description = "{" + MessageKeys.sparql$description + "}", displayName = "{"
+			+ MessageKeys.sparql$displayName + "}")
 	@Required
 	public String sparql;
 

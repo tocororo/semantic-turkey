@@ -11,16 +11,26 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public class PMKIConnectorConfiguration implements Configuration {
 
-	@Override
-	public String getShortName() {
-		return "PMKI Connector";
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.pmki.PMKIConnectorConfiguration";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String apiBaseURL$description = keyBase + ".apiBaseURL.description";
+		public static final String apiBaseURL$displayName = keyBase + ".apiBaseURL.displayName";
+		public static final String frontendBaseURL$description = keyBase + ".frontendBaseURL.description";
+		public static final String frontendBaseURL$displayName = keyBase + ".frontendBaseURL.displayName";
 	}
 
-	@STProperty(description = "The base URL of an implementation of the PMKI REST API", displayName = "API Base URL")
+	@Override
+	public String getShortName() {
+		return "{" + MessageKeys.shortName + "}";
+	}
+
+	@STProperty(description = "{" + MessageKeys.apiBaseURL$description + "}", displayName = "{" + MessageKeys.apiBaseURL$displayName + "}")
 	@Required
 	public String apiBaseURL;
 
-	@STProperty(description = "The base URL of the frontend of a PMKI instance", displayName = "Frontend Base URL")
+	@STProperty(description = "{" + MessageKeys.frontendBaseURL$description + "}", displayName = "{" + MessageKeys.frontendBaseURL$displayName + "}")
 	public String frontendBaseURL;
 
 }

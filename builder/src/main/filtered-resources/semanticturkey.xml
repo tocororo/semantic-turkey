@@ -128,6 +128,7 @@
 
 		<!-- Finally install Semantic Turkey -->
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-l10n/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-i18n/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-utilities/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-metadata-registry-core/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-metadata-registry-bindings/${project.version}</bundle>
