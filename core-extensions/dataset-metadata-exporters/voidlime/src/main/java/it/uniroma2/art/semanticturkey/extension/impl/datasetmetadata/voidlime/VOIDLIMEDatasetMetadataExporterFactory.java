@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime;
 
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.settings.ProjectSettingsManager;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
  * Factory for the instantiation of {@link VOIDLIMEDatasetMetadataExporter}.
@@ -11,15 +12,21 @@ import it.uniroma2.art.semanticturkey.extension.settings.ProjectSettingsManager;
 public class VOIDLIMEDatasetMetadataExporterFactory
 		implements NonConfigurableExtensionFactory<VOIDLIMEDatasetMetadataExporter>,
 		ProjectSettingsManager<VOIDLIMEDatasetMetadataExporterSettings> {
+	
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterFactory";
+		private static final String name = keyBase + ".name";
+		private static final String description = keyBase + ".description";
+	}
 
 	@Override
 	public String getName() {
-		return "VoID/LIME Dataset Metadata Exporter";
+		return STMessageSource.getMessage(MessageKeys.name);
 	}
 
 	@Override
 	public String getDescription() {
-		return "Exports dataset metadata using the VoID and LIME vocabularies";
+		return STMessageSource.getMessage(MessageKeys.description);
 	}
 
 	@Override

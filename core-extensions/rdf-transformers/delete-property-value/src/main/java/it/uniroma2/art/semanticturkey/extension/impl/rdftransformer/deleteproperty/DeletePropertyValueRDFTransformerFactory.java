@@ -5,6 +5,7 @@ import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.PUScopedConfigurableComponent;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
  * Factory for the instantiation of {@link DeletePropertyValueRDFTransformer}.
@@ -15,15 +16,20 @@ public class DeletePropertyValueRDFTransformerFactory implements
 		ConfigurableExtensionFactory<DeletePropertyValueRDFTransformer, DeletePropertyValueRDFTransformerConfiguration>,
 		PUScopedConfigurableComponent<DeletePropertyValueRDFTransformerConfiguration> {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty.DeletePropertyValueRDFTransformerFactory";
+		private static final String name = keyBase + ".name";
+		private static final String description = keyBase + ".description";
+	}
+
 	@Override
 	public String getName() {
-		return "Delete Property Value RDF Transformer";
-
+		return STMessageSource.getMessage(MessageKeys.name);
 	}
 
 	@Override
 	public String getDescription() {
-		return "An RDF transformer that can be configured to delete a property value";
+		return STMessageSource.getMessage(MessageKeys.description);
 	}
 
 	@Override

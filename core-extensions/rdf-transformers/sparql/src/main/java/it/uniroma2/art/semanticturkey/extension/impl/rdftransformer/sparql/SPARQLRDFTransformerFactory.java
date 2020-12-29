@@ -5,6 +5,7 @@ import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.PUScopedConfigurableComponent;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
  * Factory for the instantiation of {@link SPARQLRDFTransformer}.
@@ -15,14 +16,20 @@ public class SPARQLRDFTransformerFactory
 		implements ConfigurableExtensionFactory<SPARQLRDFTransformer, SPARQLRDFTransformerConfiguration>,
 		PUScopedConfigurableComponent<SPARQLRDFTransformerConfiguration> {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerFactory";
+		private static final String name = keyBase + ".name";
+		private static final String description = keyBase + ".description";
+	}
+
 	@Override
 	public String getName() {
-		return "SPARQL RDF Transformer";
+		return STMessageSource.getMessage(MessageKeys.name);
 	}
 
 	@Override
 	public String getDescription() {
-		return "An RDF transformer that can be configured through a SPARQL Update";
+		return STMessageSource.getMessage(MessageKeys.description);
 	}
 
 	@Override

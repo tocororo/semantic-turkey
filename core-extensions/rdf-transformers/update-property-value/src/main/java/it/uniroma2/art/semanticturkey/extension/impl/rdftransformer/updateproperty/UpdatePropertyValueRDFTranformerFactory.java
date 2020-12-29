@@ -5,6 +5,7 @@ import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.PUScopedConfigurableComponent;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
  * Factory for the instantiation of {@link UpdatePropertyValueRDFTransformer}.
@@ -15,15 +16,20 @@ public class UpdatePropertyValueRDFTranformerFactory implements
 		ConfigurableExtensionFactory<UpdatePropertyValueRDFTransformer, UpdatePropertyValueRDFTransformerConfiguration>,
 		PUScopedConfigurableComponent<UpdatePropertyValueRDFTransformerConfiguration> {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTranformerFactory";
+		private static final String name = keyBase + ".name";
+		private static final String description = keyBase + ".description";
+	}
+
 	@Override
 	public String getName() {
-		return "Update Property Value RDF Transformer";
-
+		return STMessageSource.getMessage(MessageKeys.name);
 	}
 
 	@Override
 	public String getDescription() {
-		return "An RDF transformer that can be configured to update a property value";
+		return STMessageSource.getMessage(MessageKeys.description);
 	}
 
 	@Override

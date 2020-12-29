@@ -5,6 +5,7 @@ import java.util.List;
 
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.commons.io.FormatCapabilityProvider;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 import it.uniroma2.art.semanticturkey.resources.DataFormat;
 
 /**
@@ -14,15 +15,21 @@ import it.uniroma2.art.semanticturkey.resources.DataFormat;
  */
 public class ZthesDeserializingLifterFactory
 		implements NonConfigurableExtensionFactory<ZthesDeserializingLifter>, FormatCapabilityProvider {
+	
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rdflifter.zthesdeserializer.ZthesDeserializingLifterFactory";
+		private static final String name = keyBase + ".name";
+		private static final String description = keyBase + ".description";
+	}
 
 	@Override
 	public String getName() {
-		return "Zthes Deserializing Lifter";
+		return STMessageSource.getMessage(MessageKeys.name);
 	}
 
 	@Override
 	public String getDescription() {
-		return "An RDF Lifter that deserializes RDF data according to a concrete Zthes syntax";
+		return STMessageSource.getMessage(MessageKeys.description);
 	}
 
 	@Override

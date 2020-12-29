@@ -5,6 +5,7 @@ import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.PUScopedConfigurableComponent;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
  * Factory for the instantiation of {@link PropertyNormalizerTransformer}.
@@ -15,14 +16,20 @@ public class PropertyNormalizerTransformerFactory implements
 		ConfigurableExtensionFactory<PropertyNormalizerTransformer, PropertyNormalizerTransformerConfiguration>,
 		PUScopedConfigurableComponent<PropertyNormalizerTransformerConfiguration> {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.propertynormalizer.PropertyNormalizerTransformerFactory";
+		private static final String name = keyBase + ".name";
+		private static final String description = keyBase + ".description";
+	}
+
 	@Override
 	public String getName() {
-		return "Property Normalizer Transformer";
+		return STMessageSource.getMessage(MessageKeys.name);
 	}
 
 	@Override
 	public String getDescription() {
-		return "An RDF transformer that normalizes a set of properties replacing their occurrences as predicate in triples with a provided property";
+		return STMessageSource.getMessage(MessageKeys.description);
 	}
 
 	@Override

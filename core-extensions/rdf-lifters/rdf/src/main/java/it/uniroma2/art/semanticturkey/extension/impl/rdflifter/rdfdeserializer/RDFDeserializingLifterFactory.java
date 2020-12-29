@@ -6,6 +6,7 @@ import java.util.List;
 
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.commons.io.FormatCapabilityProvider;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 import it.uniroma2.art.semanticturkey.resources.DataFormat;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 
@@ -17,14 +18,20 @@ import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 public class RDFDeserializingLifterFactory
 		implements NonConfigurableExtensionFactory<RDFDeserializingLifter>, FormatCapabilityProvider {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rdflifter.rdfdeserializer.RDFDeserializingLifterFactory";
+		private static final String name = keyBase + ".name";
+		private static final String description = keyBase + ".description";
+	}
+
 	@Override
 	public String getName() {
-		return "RDF Deserializing Lifter";
+		return STMessageSource.getMessage(MessageKeys.name);
 	}
 
 	@Override
 	public String getDescription() {
-		return "An RDF Lifter that deserializes RDF data according to a concrete RDF syntax";
+		return STMessageSource.getMessage(MessageKeys.description);
 	}
 
 	@Override

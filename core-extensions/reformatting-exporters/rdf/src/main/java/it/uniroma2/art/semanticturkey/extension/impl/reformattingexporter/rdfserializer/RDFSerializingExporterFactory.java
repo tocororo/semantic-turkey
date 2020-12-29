@@ -9,6 +9,7 @@ import java.util.List;
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.PUScopedConfigurableComponent;
 import it.uniroma2.art.semanticturkey.extension.extpts.commons.io.FormatCapabilityProvider;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 import it.uniroma2.art.semanticturkey.resources.DataFormat;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 
@@ -21,14 +22,20 @@ public class RDFSerializingExporterFactory
 		implements ConfigurableExtensionFactory<RDFSerializingExporter, RDFSerializingExporterConfiguration>,
 		PUScopedConfigurableComponent<RDFSerializingExporterConfiguration>, FormatCapabilityProvider {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterFactory";
+		private static final String name = keyBase + ".name";
+		private static final String description = keyBase + ".description";
+	}
+
 	@Override
 	public String getName() {
-		return "RDF Serializing Exporter";
+		return STMessageSource.getMessage(MessageKeys.name);
 	}
 
 	@Override
 	public String getDescription() {
-		return "A Reformatting Exporter that serializes RDF data according to a concrete RDF syntax";
+		return STMessageSource.getMessage(MessageKeys.description);
 	}
 
 	@Override

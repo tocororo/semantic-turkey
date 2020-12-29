@@ -6,6 +6,7 @@ import java.util.Collection;
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.PUScopedConfigurableComponent;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
  * The {@link ExtensionFactory} for the the {@link GraphStoreHTTPDeployer}.
@@ -15,15 +16,21 @@ import it.uniroma2.art.semanticturkey.extension.PUScopedConfigurableComponent;
 public class GraphStoreHTTPDeployerFactory implements ExtensionFactory<GraphStoreHTTPDeployer>,
 		ConfigurableExtensionFactory<GraphStoreHTTPDeployer, GraphStoreHTTPDeployerConfiguration>,
 		PUScopedConfigurableComponent<GraphStoreHTTPDeployerConfiguration> {
+	
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerFactory";
+		private static final String name = keyBase + ".name";
+		private static final String description = keyBase + ".description";
+	}
 
 	@Override
 	public String getName() {
-		return "Graph Store HTTP Deployer";
+		return STMessageSource.getMessage(MessageKeys.name);
 	}
 
 	@Override
 	public String getDescription() {
-		return "A deployer that uses the SPARQL 1.1 Graph Store HTTP Protocol";
+		return STMessageSource.getMessage(MessageKeys.description);
 	}
 
 	@Override

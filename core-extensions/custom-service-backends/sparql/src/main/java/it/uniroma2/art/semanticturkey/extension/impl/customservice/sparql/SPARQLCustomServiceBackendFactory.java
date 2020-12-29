@@ -22,6 +22,7 @@ import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.config.customservice.Type;
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
  * The {@link ExtensionFactory} for the the {@link SPARQLCustomServiceBackend}.
@@ -31,14 +32,20 @@ import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 public class SPARQLCustomServiceBackendFactory implements ExtensionFactory<SPARQLCustomServiceBackend>,
 		ConfigurableExtensionFactory<SPARQLCustomServiceBackend, SPARQLOperation> {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql.SPARQLCustomServiceBackendFactory";
+		private static final String name = keyBase + ".name";
+		private static final String description = keyBase + ".description";
+	}
+
 	@Override
 	public String getName() {
-		return "SPARQL Custom Service Backend";
+		return STMessageSource.getMessage(MessageKeys.name);
 	}
 
 	@Override
 	public String getDescription() {
-		return "A backend for implementing custom services using SPARQL";
+		return STMessageSource.getMessage(MessageKeys.description);
 	}
 
 	@Override

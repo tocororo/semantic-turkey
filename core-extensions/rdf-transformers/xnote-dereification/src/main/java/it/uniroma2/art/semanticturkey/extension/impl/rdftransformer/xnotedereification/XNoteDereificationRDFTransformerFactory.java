@@ -5,6 +5,7 @@ import java.util.Collection;
 
 import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.PUScopedConfigurableComponent;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
  * Factory for the instantiation of {@link XNoteDereificationRDFTransformer}.
@@ -15,14 +16,20 @@ public class XNoteDereificationRDFTransformerFactory implements
 		ConfigurableExtensionFactory<XNoteDereificationRDFTransformer, XNoteDereificationRDFTransformerConfiguration>,
 		PUScopedConfigurableComponent<XNoteDereificationRDFTransformerConfiguration> {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xnotedereification.XNoteDereificationRDFTransformerFactory";
+		private static final String name = keyBase + ".name";
+		private static final String description = keyBase + ".description";
+	}
+
 	@Override
 	public String getName() {
-		return "XNote Dereification RDF Transformer";
+		return STMessageSource.getMessage(MessageKeys.name);
 	}
 
 	@Override
 	public String getDescription() {
-		return "An RDF transformer that performs XNote dereification";
+		return STMessageSource.getMessage(MessageKeys.description);
 	}
 
 	@Override

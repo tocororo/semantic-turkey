@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.extension.impl.search.graphdb;
 
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
  * Factory for the instantiation of {@link GraphDBSearchStrategy}.
@@ -9,15 +10,20 @@ import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
  */
 public class GraphDBSearchStrategyFactory implements NonConfigurableExtensionFactory<GraphDBSearchStrategy> {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.search.graphdb.GraphDBSearchStrategyFactory";
+		private static final String name = keyBase + ".name";
+		private static final String description = keyBase + ".description";
+	}
+
 	@Override
 	public String getName() {
-		return "GraphDB Search Strategy";
+		return STMessageSource.getMessage(MessageKeys.name);
 	}
 
 	@Override
 	public String getDescription() {
-		return "Uses fulltext capabilities of GraphDB repositories";
-
+		return STMessageSource.getMessage(MessageKeys.description);
 	}
 
 	@Override
