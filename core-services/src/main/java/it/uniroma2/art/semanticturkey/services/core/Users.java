@@ -30,6 +30,7 @@ import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UpdateEmailAlreadyUsedException;
 import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UserFormCustomField;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
@@ -317,8 +318,7 @@ public class Users extends STServiceAdapter {
 		STUser user = UsersManager.getUser(email);
 		//check if there is already a user that uses the newEmail
 		if (UsersManager.isEmailUsed(newEmail)) {
-			throw new UserException("Cannot update the email for the user " + email + ". The email " + newEmail + 
-					" is already used by another user");
+			throw new UpdateEmailAlreadyUsedException(email, newEmail);
 		}
 		user = UsersManager.updateUserEmail(user, newEmail);
 		updateUserInSecurityContext(user);
@@ -435,7 +435,7 @@ public class Users extends STServiceAdapter {
 	public ObjectNode enableUser(String email, boolean enabled, @Optional (defaultValue = "true") boolean sendNotification)
 			throws UserException, ProjectBindingException {
 		if (UsersManager.getLoggedUser().getEmail().equals(email)) {
-			throw new ProjectBindingException("Cannot disable current logged user");
+			throw new ProjectBindingException(Users.class.getName() + ".messages.cant_disable_current_user", null);
 		}
 		STUser user = UsersManager.getUser(email);
 		if (enabled) {

@@ -167,10 +167,10 @@ public class RBACManager {
 	public static void createRole(Project project, String roleName) throws RoleCreationException {
 		//look if the role already exists at project or system level
 		if (rbacMap.get(SYSTEM_PROJ_ID).containsKey(roleName)) {
-			throw new RoleCreationException("Role '" + roleName + "' already exists");
+			throw RoleCreationException.roleAlreadyExists(roleName);
 		}
 		if (rbacMap.get(project.getName()).containsKey(roleName)) {
-			throw new RoleCreationException("Role '" + roleName + "' already exists in project " + project.getName());
+			throw RoleCreationException.roleAlreadyExistsInProject(roleName, project.getName());
 		}
 		try {
 			File newRoleFile = getRoleFile(project, roleName);
@@ -190,7 +190,7 @@ public class RBACManager {
 	public static void addSystemRole(String roleName, File roleFile) throws RoleCreationException {
 		//look if the role already exists at system level
 		if (rbacMap.get(SYSTEM_PROJ_ID).containsKey(roleName)) {
-			throw new RoleCreationException("Role '" + roleName + "' already exists");
+			throw RoleCreationException.roleAlreadyExists(roleName);
 		}
 		try {
 			rbacMap.get(SYSTEM_PROJ_ID).put(roleName, new RBACProcessor(roleFile));
@@ -221,7 +221,7 @@ public class RBACManager {
 				rbac = getRBACProcessor(null, role);
 			}
 			if (rbac == null) {
-				throw new RBACException("Role '" + role + "' doesn't exist");
+				throw new RoleNotExistingException(role);
 			}
 			return rbac.getCapabilitiesAsStringList();
 		} catch (MalformedGoalException | NoSolutionException | NoMoreSolutionException e) {
@@ -232,28 +232,28 @@ public class RBACManager {
 	public static void setCapabilities(Project project, String role, Collection<String> capabilities) throws RBACException {
 		RBACProcessor rbac = getRBACProcessor(project, role);
 		if (rbac == null) {
-			throw new RBACException("Role '" + role + "' doesn't exist");
+			throw new RoleNotExistingException(role);
 		} 
 		try {
 			File roleFile = getRoleFile(project, role);
 			serializeCapabilities(roleFile, capabilities);
 			rbacMap.get(project.getName()).put(role, new RBACProcessor(roleFile));
 		} catch (InvalidTheoryException | TheoryNotFoundException | IOException e) {
-			throw new RBACException("Failed to update the capability of role " + role, e);
+			throw new RoleCapabilityUpdateException(role, e);
 		}
 	}
 	
 	public static void addCapability(Project project, String role, String capability) throws RBACException {
 		RBACProcessor rbac = getRBACProcessor(project, role);
 		if (rbac == null) {
-			throw new RBACException("Role '" + role + "' doesn't exist");
+			throw new RoleNotExistingException(role);
 		} 
 		try {
 			//check if capability is duplicated
 			capability = capability.replaceAll(" ", ""); //removes whitespaces
 			Collection<String> capabilities = rbac.getCapabilitiesAsStringList();
 			if (capabilities.contains(capability)) {
-				throw new RBACException("Duplicated capability '" + capability + "' in role " + role);
+				throw new DuplicatedCapabilityException(capability, role);
 			}
 			//add capability
 			capabilities.add(capability);
@@ -263,14 +263,14 @@ public class RBACManager {
 			rbacMap.get(project.getName()).put(role, new RBACProcessor(roleFile));
 		} catch (NoMoreSolutionException | MalformedGoalException | NoSolutionException |
 				InvalidTheoryException | TheoryNotFoundException | IOException e) {
-			throw new RBACException("Failed to update the capability of role " + role, e);
+			throw new RoleCapabilityUpdateException(role, e);
 		}
 	}
 	
 	public static void removeCapability(Project project, String role, String capability) throws RBACException {
 		RBACProcessor rbac = getRBACProcessor(project, role);
 		if (rbac == null) {
-			throw new RBACException("Role '" + role + "' doesn't exist");
+			throw new RoleNotExistingException(role);
 		} 
 		try {
 			Collection<String> capabilities = rbac.getCapabilitiesAsStringList();
@@ -280,7 +280,7 @@ public class RBACManager {
 			rbacMap.get(project.getName()).put(role, new RBACProcessor(roleFile));
 		} catch (NoMoreSolutionException | MalformedGoalException | NoSolutionException |
 				InvalidTheoryException | TheoryNotFoundException | IOException e) {
-			throw new RBACException("Failed to update the capability of role " + role, e);
+			throw new RoleCapabilityUpdateException(role, e);
 		}
 	}
 

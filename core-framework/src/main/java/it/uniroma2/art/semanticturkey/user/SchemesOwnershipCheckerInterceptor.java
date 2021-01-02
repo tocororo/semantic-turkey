@@ -71,13 +71,10 @@ public class SchemesOwnershipCheckerInterceptor  implements MethodInterceptor {
 				if (!ProjectGroupBindingsManager.hasUserOwnershipOfSchemes(UsersManager.getLoggedUser(), stServiceContext.getProject(), assignedSchemes, false)) {
 					String errorMsg;
 					if (assignedSchemes.size() == 1) {
-						errorMsg = "You do not have enough privileges for operating on the selected scheme. "
-							+ "Your group (" + group.getShortName() + ") has not the ownership of the scheme.";
+						throw OperationOnResourceDeniedException.missingSchemeOwnership(group.getShortName());
 					} else {
-						errorMsg = "You do not have enough privileges for operating on the selected schemes. "
-								+ "Your group (" + group.getShortName() + ") has not the ownership of one or more schemes.";
+						throw OperationOnResourceDeniedException.missingSchemesOwnership(group.getShortName());
 					}
-					throw new OperationOnResourceDeniedException(errorMsg);
 				}
 			}
 			if (modifiedArg != null) {
@@ -157,11 +154,7 @@ public class SchemesOwnershipCheckerInterceptor  implements MethodInterceptor {
 				if (!schemes.isEmpty()) {
 					//do the check of the ownership only if schemes is not empty (it means that the modified resource belongs to a scheme or it's a scheme)
 					if (!ProjectGroupBindingsManager.hasUserOwnershipOfSchemes(UsersManager.getLoggedUser(), stServiceContext.getProject(), schemes, true)) {
-						throw new OperationOnResourceDeniedException(
-								"You do not have enough privileges for modifying " + NTriplesUtil.toNTriplesString(modifiedArg)
-								+ ". Your group (" + group.getShortName() + ") has not the ownership of the modifying resource "
-								+ "or of the scheme(s) which the resource belongs to."
-						);
+						throw OperationOnResourceDeniedException.resourceModificationForbidden(modifiedArg, group.getShortName());
 					}
 				}
 			}
@@ -188,11 +181,7 @@ public class SchemesOwnershipCheckerInterceptor  implements MethodInterceptor {
 				if (!schemes.isEmpty()) {
 					//do the check of the ownership only if schemes is not empty (it means that the deleted resource belongs to a scheme or it's a scheme)
 					if (!ProjectGroupBindingsManager.hasUserOwnershipOfSchemes(UsersManager.getLoggedUser(), stServiceContext.getProject(), schemes, false)) {
-						throw new OperationOnResourceDeniedException(
-								"You do not have enough privileges for deleting " + NTriplesUtil.toNTriplesString(deletedArg)
-								+ ". Your group (" + group.getShortName() + ") has not the ownership of the deleting resource "
-								+ " or of one or more schemes which the resource belongs to."
-						);
+						throw OperationOnResourceDeniedException.resourceDeletionForbidden(modifiedArg, group.getShortName());
 					}
 				}
 			}

@@ -23,6 +23,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.user.GroupNameAlreadyUsedException;
+import it.uniroma2.art.semanticturkey.user.GroupNotFoundException;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectGroupBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
@@ -108,7 +110,7 @@ public class UsersGroups extends STServiceAdapter {
 		}
 		
 		if (UsersGroupsManager.getGroupByShortName(shortName) != null) {
-			throw new UsersGroupException("Name " + shortName + " already used by another group");
+			throw new GroupNameAlreadyUsedException(shortName);
 		}
 		group = UsersGroupsManager.updateShortName(group, shortName);
 		return group.getAsJsonObject();
@@ -185,7 +187,7 @@ public class UsersGroups extends STServiceAdapter {
 		Project project = ProjectManager.getProjectDescription(projectName);
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
 		if (group == null) {
-			throw new ProjectBindingException("Group not found");
+			throw new GroupNotFoundException();
 		}
 		ProjectUserBindingsManager.assignGroupToPUBinding(user, project, group);
 	}
@@ -209,7 +211,7 @@ public class UsersGroups extends STServiceAdapter {
 		Project project = ProjectManager.getProjectDescription(projectName);
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
 		if (group == null) {
-			throw new ProjectBindingException("Group not found");
+			throw new GroupNotFoundException();
 		}
 		ProjectUserBindingsManager.setGroupLimitationsToPUBinding(user, project, group, limitations);
 	}
@@ -248,7 +250,7 @@ public class UsersGroups extends STServiceAdapter {
 			throws ProjectBindingException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
 		if (group == null) {
-			throw new ProjectBindingException("No group found with iri " + groupIri.stringValue());
+			throw new GroupNotFoundException();
 		}
 		Project project = ProjectManager.getProjectDescription(projectName);
 		ProjectGroupBindingsManager.addSchemeToPGBinding(group, project, scheme);
@@ -270,7 +272,7 @@ public class UsersGroups extends STServiceAdapter {
 			throws ProjectBindingException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
 		if (group == null) {
-			throw new ProjectBindingException("No group found with iri " + groupIri.stringValue());
+			throw new GroupNotFoundException(groupIri);
 		}
 		Project project = ProjectManager.getProjectDescription(projectName);
 		ProjectGroupBindingsManager.removeSchemeFromPGBinding(group, project, scheme);
@@ -289,7 +291,7 @@ public class UsersGroups extends STServiceAdapter {
 		InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		UsersGroup group = UsersGroupsManager.getGroupByIRI(groupIri);
 		if (group == null) {
-			throw new ProjectBindingException("No group found " + groupIri);
+			throw new GroupNotFoundException(groupIri);
 		}
 		Project project = ProjectManager.getProjectDescription(projectName);
 		ProjectGroupBinding pgBinding = ProjectGroupBindingsManager.getPGBinding(group, project);

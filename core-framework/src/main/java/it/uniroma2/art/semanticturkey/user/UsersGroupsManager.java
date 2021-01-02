@@ -44,10 +44,10 @@ public class UsersGroupsManager {
 	 */
 	public static void createGroup(UsersGroup group) throws UsersGroupException {
 		if (getGroupByShortName(group.getShortName()) != null) {
-			throw new UsersGroupException("Name " + group.getShortName() + " already used by another group");
+			throw new GroupNameAlreadyUsedException(group.getShortName());
 		}
 		if (getGroupByIRI(group.getIRI()) != null) {
-			throw new UsersGroupException("IRI " + group.getIRI().stringValue() + " already used by another group");
+			throw new GroupIRIAlreadyUsedException(group.getIRI());
 		}
 		groupList.add(group);
 		createOrUpdateGroupDetailsFolder(group); // serialize group detials

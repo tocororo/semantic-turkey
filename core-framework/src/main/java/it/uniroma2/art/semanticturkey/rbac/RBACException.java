@@ -1,22 +1,24 @@
 package it.uniroma2.art.semanticturkey.rbac;
 
-public class RBACException extends Exception {
+import it.uniroma2.art.semanticturkey.i18n.InternationalizedException;
+
+public class RBACException extends InternationalizedException {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -619227838879011063L;
 	
-	public RBACException(String message) {
-        super(message);
-    }
-	
 	public RBACException(Exception e) {
 		super(e);
 	}
 	
-	public RBACException(String message, Exception e) {
-        super(message, e);
-    }
+	public RBACException(String key, Object[] args) {
+		this(key, args, null);
+	}
+
+	public RBACException(String key, Object[] args, Throwable cause) {
+		super(key, args, cause);
+	}
 
 }

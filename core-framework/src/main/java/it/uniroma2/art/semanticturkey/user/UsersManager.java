@@ -49,7 +49,8 @@ public class UsersManager {
 	 * @throws RepositoryException
 	 * @throws IOException
 	 */
-	public static void loadUsers() throws RDFParseException, RepositoryException, IOException, STPropertyAccessException {
+	public static void loadUsers()
+			throws RDFParseException, RepositoryException, IOException, STPropertyAccessException {
 		UsersRepoHelper userRepoHelper = new UsersRepoHelper();
 		Collection<File> userDetailsFolders = getAllUserDetailsFiles();
 		for (File f : userDetailsFolders) {
@@ -57,7 +58,7 @@ public class UsersManager {
 		}
 		userList = userRepoHelper.listUsers();
 
-		//load also the custom fields of the user form
+		// load also the custom fields of the user form
 		userRepoHelper.loadUserFormFields(getUserFormFieldsFile());
 		userForm = userRepoHelper.initUserForm();
 
@@ -67,11 +68,14 @@ public class UsersManager {
 	}
 
 	private static void initAdminList() throws STPropertyAccessException, IOException {
-		String adminEmailsSetting = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS);
-		//adminEmails could be a plain string for a single address (ST < 6.1.0) or a json serialized list => handle both cases
-		adminSet = adminEmailsSetting.startsWith("[") ?
-				new ObjectMapper().readValue(adminEmailsSetting, new TypeReference<Set<String>>(){}) :
-				new HashSet<>(Collections.singletonList(adminEmailsSetting));
+		String adminEmailsSetting = STPropertiesManager
+				.getSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS);
+		// adminEmails could be a plain string for a single address (ST < 6.1.0) or a json serialized list =>
+		// handle both cases
+		adminSet = adminEmailsSetting.startsWith("[")
+				? new ObjectMapper().readValue(adminEmailsSetting, new TypeReference<Set<String>>() {
+				})
+				: new HashSet<>(Collections.singletonList(adminEmailsSetting));
 	}
 
 	/**
@@ -83,10 +87,10 @@ public class UsersManager {
 	 */
 	public static void registerUser(STUser user) throws UserException, ProjectAccessException {
 		if (isEmailUsed(user.getEmail())) {
-			throw new UserException("E-mail address " + user.getEmail() + " already used by another user");
+			throw new EmailAlreadyUsedException(user.getEmail());
 		}
 		if (isIriUsed(user.getIRI())) {
-			throw new UserException("IRI " + user.getIRI().stringValue() + " already used by another user");
+			throw new IRIAlreadyUsedException(user.getIRI());
 		}
 		user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword())); // encode password
 		user.setRegistrationDate(new Date());
@@ -106,6 +110,7 @@ public class UsersManager {
 
 	/**
 	 * Returns the list of the administrators' email
+	 * 
 	 * @return
 	 */
 	public static Collection<String> getAdminEmailList() {
@@ -114,6 +119,7 @@ public class UsersManager {
 
 	/**
 	 * Returns the admin
+	 * 
 	 * @return
 	 */
 	public static List<STUser> getAdminUsers() {
@@ -163,7 +169,7 @@ public class UsersManager {
 			}
 		}
 		if (user == null) {
-			throw new UserException("User with email " + email + " doesn't exist");
+			throw new UserNotFoundException(email);
 		}
 		return user;
 	}
@@ -182,13 +188,14 @@ public class UsersManager {
 			}
 		}
 		if (user == null) {
-			throw new UserException("User with IRI " + iri.stringValue() + " doesn't exist");
+			throw new UserNotFoundException(iri);
 		}
 		return user;
 	}
 
 	/**
 	 * Check if the given email is already used
+	 * 
 	 * @param email
 	 * @return
 	 */
@@ -203,6 +210,7 @@ public class UsersManager {
 
 	/**
 	 * Check if the given iri is already used
+	 * 
 	 * @param iri
 	 * @return
 	 */
@@ -227,7 +235,7 @@ public class UsersManager {
 		FileUtils.deleteDirectory(getUserFolder(user));
 		// delete the bindings
 		ProjectUserBindingsManager.deletePUBindingsOfUser(user);
-		//delete notification indexes
+		// delete notification indexes
 		NotificationPreferencesAPI.getInstance().removeUser(user);
 		UserNotificationsAPI.getInstance().removeUser(user);
 	}
@@ -282,8 +290,9 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserEmail(STUser user, String newValue) throws UserException, STPropertyUpdateException, JsonProcessingException {
-		//if user was admin, update also the admin setting
+	public static STUser updateUserEmail(STUser user, String newValue)
+			throws UserException, STPropertyUpdateException, JsonProcessingException {
+		// if user was admin, update also the admin setting
 		if (adminSet.contains(user.getEmail())) {
 			adminSet.remove(user.getEmail());
 			adminSet.add(newValue);
@@ -372,7 +381,8 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserLanguageProficiencies(STUser user, Collection<String> newValue) throws UserException {
+	public static STUser updateUserLanguageProficiencies(STUser user, Collection<String> newValue)
+			throws UserException {
 		user.setLanguageProficiencies(newValue);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
@@ -430,6 +440,7 @@ public class UsersManager {
 
 	/**
 	 * Returns the user folder under <STData>/users/ for the given user
+	 * 
 	 * @param user
 	 * @return
 	 */
@@ -439,12 +450,13 @@ public class UsersManager {
 
 	/**
 	 * Returns all the user folders under <STData>/users/
+	 * 
 	 * @return
 	 */
 	public static Collection<File> getAllUserFolders() {
 		Collection<File> userFolders = new ArrayList<>();
 		File usersFolder = Resources.getUsersDir();
-		//get all subfolder of "users" folder (one subfolder for each user)		
+		// get all subfolder of "users" folder (one subfolder for each user)
 		String[] userDirectories = usersFolder.list(new FilenameFilter() {
 			public boolean accept(File current, String name) {
 				return new File(current, name).isDirectory();
@@ -458,11 +470,13 @@ public class UsersManager {
 
 	/**
 	 * Returns the user details file for the given user
+	 * 
 	 * @param user
 	 * @return
 	 */
 	private static File getUserDetailsFile(STUser user) {
-		File userFolder = new File(Resources.getUsersDir() + File.separator + STUser.encodeUserIri(user.getIRI()));
+		File userFolder = new File(
+				Resources.getUsersDir() + File.separator + STUser.encodeUserIri(user.getIRI()));
 		if (!userFolder.exists()) {
 			userFolder.mkdir();
 		}
@@ -471,6 +485,7 @@ public class UsersManager {
 
 	/**
 	 * Returns the user details files for all the users
+	 * 
 	 * @return
 	 */
 	private static Collection<File> getAllUserDetailsFiles() {
@@ -490,29 +505,34 @@ public class UsersManager {
 		return userForm;
 	}
 
-	public static void setUserFormOptionalFieldVisibility(IRI fieldIri, boolean visibility) throws UserException {
+	public static void setUserFormOptionalFieldVisibility(IRI fieldIri, boolean visibility)
+			throws UserException {
 		userForm.setOptionalFieldVisibility(fieldIri, visibility);
 		updateUserFormFieldsFile();
 	}
 
 	public static void addUserFormCustomField(String field) throws UserException {
 		IRI p = userForm.getFirstAvailableProperty();
-		if (p == null) { //this should never happen, the UI should prevent to add new fields when there are no more fields available 
+		if (p == null) { // this should never happen, the UI should prevent to add new fields when there are
+							// no more fields available
 			throw new IllegalStateException("Cannot add a field, the form is already filled");
 		}
 		userForm.addField(new UserFormCustomField(p, userForm.getOrderedCustomFields().size(), field));
 		updateUserFormFieldsFile();
 	}
+
 	public static void renameUserFormCustomField(IRI fieldIri, String newLabel) throws UserException {
 		UserFormCustomField field = userForm.getCustomField(fieldIri);
 		field.setLabel(newLabel);
 		updateUserFormFieldsFile();
 	}
+
 	public static void removeUserFormCustomField(IRI field) throws UserException {
 		userForm.removeCustomField(field);
 		removeCustomPropertyFromUsers(field);
 		updateUserFormFieldsFile();
 	}
+
 	public static void swapUserFormCustomField(IRI field1, IRI field2) throws UserException {
 		UserFormCustomField f1 = userForm.getCustomField(field1);
 		int pos1 = f1.getPosition();
@@ -532,7 +552,8 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserCustomProperty(STUser user, IRI property, String value) throws UserException {
+	public static STUser updateUserCustomProperty(STUser user, IRI property, String value)
+			throws UserException {
 		user.setCustomProperty(property, value);
 		createOrUpdateUserDetailsFolder(user);
 		return user;
@@ -540,16 +561,16 @@ public class UsersManager {
 
 	/**
 	 * To invoke when a custom property is deleted from the form definition
+	 * 
 	 * @param field
 	 * @throws UserException
 	 */
 	private static void removeCustomPropertyFromUsers(IRI field) throws UserException {
-		for (STUser u: userList) {
+		for (STUser u : userList) {
 			u.removeCustomProperty(field);
 			createOrUpdateUserDetailsFolder(u);
 		}
 	}
-
 
 	private static void updateUserFormFieldsFile() throws UserException {
 		try {
@@ -558,7 +579,7 @@ public class UsersManager {
 			for (UserFormCustomField f : userForm.getCustomFields()) {
 				tempUserRepoHelper.insertUserFormCustomField(f);
 			}
-			for (Entry<IRI, Boolean> f: userForm.getOptionalFields().entrySet()) {
+			for (Entry<IRI, Boolean> f : userForm.getOptionalFields().entrySet()) {
 				tempUserRepoHelper.insertUserFormOptionalField(f.getKey(), f.getValue());
 			}
 			tempUserRepoHelper.serializeRepoContent(getUserFormFieldsFile());

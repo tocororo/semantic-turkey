@@ -17,6 +17,14 @@ public class InternationalizedException extends Exception {
 	private final String key;
 	private final Object[] args;
 
+	public InternationalizedException(Throwable cause) {
+		this(null, null, cause);
+	}
+
+	public InternationalizedException(String key, Object[] args) {
+		this(key, args, null);
+	}
+
 	public InternationalizedException(String key, Object[] args, Throwable cause) {
 		super(cause);
 		this.key = key;
@@ -25,12 +33,12 @@ public class InternationalizedException extends Exception {
 
 	@Override
 	public String getMessage() {
-		return STMessageSource.getMessage(key, args, Locale.ROOT);
+		return key != null ? STMessageSource.getMessage(key, args, Locale.ROOT) : null;
 	}
 
 	@Override
 	public String getLocalizedMessage() {
-		return STMessageSource.getMessage(key, args);
+		return key != null ? STMessageSource.getMessage(key, args) : null;
 	}
 
 }

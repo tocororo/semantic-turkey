@@ -1,18 +1,45 @@
 package it.uniroma2.art.semanticturkey.user;
 
-public class OperationOnResourceDeniedException extends RuntimeException {
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+
+import it.uniroma2.art.semanticturkey.i18n.InternationalizedException;
+
+public class OperationOnResourceDeniedException extends InternationalizedException {
+
+	public OperationOnResourceDeniedException(String key, Object[] args) {
+		super(key, args);
+	}
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -2146605441785396178L;
-	
-	public OperationOnResourceDeniedException(Throwable e) {
-		super(e);
-	}
-	
-	public OperationOnResourceDeniedException(String msg) {
-		super(msg);
+
+	public static OperationOnResourceDeniedException missingSchemeOwnership(String group) {
+		return new OperationOnResourceDeniedException(
+				OperationOnResourceDeniedException.class.getName() + ".messages.missing_scheme_ownership",
+				new Object[] { group });
 	}
 
+	public static OperationOnResourceDeniedException missingSchemesOwnership(String group) {
+		return new OperationOnResourceDeniedException(
+				OperationOnResourceDeniedException.class.getName() + ".messages.missing_schemes_ownership",
+				new Object[] { group });
+	}
+
+	public static OperationOnResourceDeniedException resourceModificationForbidden(IRI resource,
+			String group) {
+		return new OperationOnResourceDeniedException(
+				OperationOnResourceDeniedException.class.getName() + ".messages.resource_modification_forbidden",
+				new Object[] { NTriplesUtil.toNTriplesString(resource), group });
+	}
+
+	
+	public static OperationOnResourceDeniedException resourceDeletionForbidden(IRI resource,
+			String group) {
+		return new OperationOnResourceDeniedException(
+				OperationOnResourceDeniedException.class.getName() + ".messages.resource_deletion_forbidden",
+				new Object[] { NTriplesUtil.toNTriplesString(resource), group });
+	}
 }

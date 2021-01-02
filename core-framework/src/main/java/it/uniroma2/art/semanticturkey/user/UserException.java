@@ -1,6 +1,8 @@
 package it.uniroma2.art.semanticturkey.user;
 
-public class UserException extends Exception {
+import it.uniroma2.art.semanticturkey.i18n.InternationalizedException;
+
+public class UserException extends InternationalizedException {
 
 	/**
 	 * 
@@ -11,8 +13,8 @@ public class UserException extends Exception {
 		super(e);
 	}
 	
-	public UserException(String msg) {
-		super(msg);
+	public UserException(String key, Object[] args) {
+		super(key, args);
 	}
 
 }

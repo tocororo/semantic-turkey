@@ -24,6 +24,7 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.rbac.InvalidRoleFileException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACProcessor;
@@ -247,7 +248,7 @@ public class Administration extends STServiceAdapter {
 		for (String r : roles) {
 			Role role = RBACManager.getRole(project, r);
 			if (role == null) {
-				throw new ProjectBindingException("No role '" + r + "' found");
+				throw ProjectBindingException.noRole(r);
 			} else {
 				roleList.add(role);
 			}
@@ -285,7 +286,7 @@ public class Administration extends STServiceAdapter {
 		Project project = ProjectManager.getProjectDescription(projectName);
 		Role aRole = RBACManager.getRole(project, role);
 		if (aRole == null) {
-			throw new ProjectBindingException("No role '" + role + "' found");
+			throw ProjectBindingException.noRole(role);
 		}
 		ProjectUserBindingsManager.removeRoleFromPUBinding(user, project, aRole);
 	}
@@ -390,7 +391,7 @@ public class Administration extends STServiceAdapter {
 		}
 		Role aRole = RBACManager.getRole(project, roleName);
 		if (aRole == null) {
-			throw new ProjectBindingException("No role '" + roleName + "' found");
+			throw ProjectBindingException.noRole(roleName);
 		}
 		RBACManager.deleteRole(getProject(), roleName);
 		ProjectUserBindingsManager.removeRoleFromPUBindings(getProject(), aRole);
@@ -412,8 +413,7 @@ public class Administration extends STServiceAdapter {
 			project = getProject();
 		}
 		if (RBACManager.getRBACProcessor(project, roleName) == null) {
-			throw new RBACException("Impossible to export role '" + roleName + "'."
-					+ " A role with that name doesn't exist");
+			throw new RBACException(Administration.class.getName() + ".messages.unable_to_export_role", new Object[] {roleName});
 		}
 		File roleFile = RBACManager.getRoleFile(project, roleName);
 		if (!roleFile.exists()) { //in case the role file was not found at project level)
@@ -446,8 +446,7 @@ public class Administration extends STServiceAdapter {
 	public void importRole(MultipartFile inputFile, String newRoleName) 
 			throws IOException, RBACException, RoleCreationException {
 		if (RBACManager.getRBACProcessor(getProject(), newRoleName) != null) {
-			throw new RBACException("Cannot import role '" + newRoleName + "'."
-					+ " A role with that name already exists in project '" + getProject().getName() + "'");
+			throw new RBACException(Administration.class.getName() + ".messages.unable_to_import_role", new Object[] {newRoleName, getProject().getName()});
 		}
 		File tempServerFile = File.createTempFile("roleImport", ".pl");
 		try {
@@ -459,7 +458,7 @@ public class Administration extends STServiceAdapter {
 				RBACManager.setCapabilities(getProject(), newRoleName, capabilities);
 			} catch (InvalidTheoryException | TheoryNotFoundException | 
 					MalformedGoalException | NoSolutionException | NoMoreSolutionException e) {
-				throw new RBACException("Invalid role file", e);
+				throw new InvalidRoleFileException(e);
 			}
 		} finally {
 			tempServerFile.delete();
@@ -483,7 +482,7 @@ public class Administration extends STServiceAdapter {
 		}
 		Role sourceRole = RBACManager.getRole(project, sourceRoleName);
 		if (sourceRole == null) {
-			throw new RoleCreationException("No role '" + sourceRoleName + "' found");
+			throw RoleCreationException.noRole(sourceRoleName);
 		}
 		//doesn't check the existence of targetRoleName since it is already done by createRole()
 		RBACManager.createRole(getProject(), targetRoleName);
