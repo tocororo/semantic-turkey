@@ -81,6 +81,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.export.ExportPreconditionViolationException;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipeline;
 import it.uniroma2.art.semanticturkey.services.core.sparql.Graph2TupleQueryResultAdapter;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;

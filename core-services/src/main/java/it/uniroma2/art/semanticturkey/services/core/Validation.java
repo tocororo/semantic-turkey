@@ -5,6 +5,7 @@ import java.util.GregorianCalendar;
 import java.util.stream.Collectors;
 
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
+import it.uniroma2.art.semanticturkey.exceptions.OtherUsersCommitRejectionException;
 import it.uniroma2.art.semanticturkey.user.UserException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -327,7 +328,7 @@ public class Validation extends STServiceAdapter {
 			if (isAllowed) {
 				rejectInternal(conn, validatableCommit, comment);
 			} else {
-				throw new DeniedOperationException("You cannot reject commit about operation performed by other users");
+				throw new OtherUsersCommitRejectionException();
 			}
 		}
 	}

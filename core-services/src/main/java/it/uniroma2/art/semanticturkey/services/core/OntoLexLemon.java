@@ -19,6 +19,7 @@ import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
+import it.uniroma2.art.semanticturkey.exceptions.NonWorkingGraphUpdateException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
@@ -1250,8 +1251,7 @@ public class OntoLexLemon extends STServiceAdapter {
 
 		checkQuery.setIncludeInferred(false);
 		if (checkQuery.evaluate()) {
-			throw new DeniedOperationException(
-					"The operation would require to alter triples outside of the working graph");
+			throw new NonWorkingGraphUpdateException();
 		}
 
 		// Deletes the triples

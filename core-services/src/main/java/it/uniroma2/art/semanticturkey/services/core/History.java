@@ -1,12 +1,10 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import it.uniroma2.art.semanticturkey.user.UserException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
@@ -40,6 +38,7 @@ import it.uniroma2.art.semanticturkey.services.core.history.HistoryPaginationInf
 import it.uniroma2.art.semanticturkey.services.core.history.SupportRepositoryUtils;
 import it.uniroma2.art.semanticturkey.services.tracker.STServiceTracker;
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.vocabulary.STCHANGELOG;
 

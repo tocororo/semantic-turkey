@@ -71,7 +71,7 @@ public class STPropertiesPersistenceDeserializer extends StdDeserializer<STPrope
 			}
 
 			STProperties stProp = (STProperties) target.newInstance();
-
+ 
 			Iterator<String> propIt = node.fieldNames();
 			while (propIt.hasNext()) {
 				String jsonPropName = propIt.next();

@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
@@ -372,8 +371,7 @@ public class MetadataRegistry extends STServiceAdapter {
 		DatasetMetadata datasetMeta = metadataRegistryBackend.findDatasetForResource(iri);
 
 		if (datasetMeta != null) {
-			throw new DeniedOperationException("A dataset for the provided IRI " + RenderUtils.toSPARQL(iri)
-					+ " is already in the metadata registry: " + datasetMeta.getIdentity());
+			throw new DatasetAlreadyCatalogedException(iri, datasetMeta.getIdentity());
 		}
 
 		return metadataRegistryBackend.discoverDatasetMetadata(iri);
@@ -395,8 +393,7 @@ public class MetadataRegistry extends STServiceAdapter {
 		DatasetMetadata datasetMeta = metadataRegistryBackend.findDatasetForResource(iri);
 
 		if (datasetMeta != null) {
-			throw new DeniedOperationException("A dataset for the provided IRI " + RenderUtils.toSPARQL(iri)
-					+ " is already in the metadata registry: " + datasetMeta.getIdentity());
+			throw new DatasetAlreadyCatalogedException(iri, datasetMeta.getIdentity());
 		}
 
 		IRI catalogRecord = metadataRegistryBackend.discoverDataset(iri);

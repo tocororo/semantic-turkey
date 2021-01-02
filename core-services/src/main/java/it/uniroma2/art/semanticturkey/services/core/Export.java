@@ -60,8 +60,11 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.export.ExportPreconditionViolationException;
+import it.uniroma2.art.semanticturkey.services.core.export.NullGraphNotExportedException;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipeline;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationStep;
+import it.uniroma2.art.semanticturkey.services.core.export.UnnamedGraphNotExportedException;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.servlet.ServletUtilities;
@@ -183,13 +186,11 @@ public class Export extends STServiceAdapter {
 
 		if (!force) {
 			if (sourceRepositoryConnection.size((Resource) null) != 0) {
-				throw new ExportPreconditionViolationException(
-						"The null graph contains triples that will not be exported. You can force the export, to ignore this issue.");
+				throw new NullGraphNotExportedException();
 			}
 
 			if (sourceGraphs.stream().anyMatch(BNode.class::isInstance)) {
-				throw new ExportPreconditionViolationException(
-						"Some graphs that are associated with bnodes will not be exported. You can force the export, to ignore this issue.");
+				throw new UnnamedGraphNotExportedException();
 			}
 		}
 

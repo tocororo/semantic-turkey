@@ -17,7 +17,12 @@ import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingLiteralFormForResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import it.uniroma2.art.semanticturkey.exceptions.CollectionWithNestedCollectionsException;
+import it.uniroma2.art.semanticturkey.exceptions.ConceptWithNarrowerConceptsException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
+import it.uniroma2.art.semanticturkey.exceptions.ElementAlreadyContainedInCollectionException;
+import it.uniroma2.art.semanticturkey.exceptions.ElementNotInCollectionException;
+import it.uniroma2.art.semanticturkey.exceptions.EmptyCollectionException;
 import it.uniroma2.art.semanticturkey.exceptions.PrefAltLabelClashException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
@@ -1088,8 +1093,7 @@ public class SKOS extends STServiceAdapter {
 		boolean hasElement = repoConnection.hasStatement(collection,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER, element, false, graphs);
 		if (hasElement) {
-			throw new DeniedOperationException("Element: " + element.stringValue()
-					+ " already contained in collection: " + collection.stringValue());
+			throw new ElementAlreadyContainedInCollectionException(element, collection);
 		}
 
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(collection,
@@ -1113,8 +1117,7 @@ public class SKOS extends STServiceAdapter {
 		if (!list.equals(RDF.NIL)) {
 			boolean found = hasElementInList(list, element, repoConnection);
 			if (found) {
-				throw new DeniedOperationException("Element: " + element.stringValue()
-						+ " already contained in collection: " + collection.stringValue());
+				throw new ElementAlreadyContainedInCollectionException(element, collection);
 			}
 		}
 		// if the list was empty, then list=RDF.NIL otherwise list is the first element, it does not matter
@@ -1150,8 +1153,7 @@ public class SKOS extends STServiceAdapter {
 		}
 		boolean found = hasElementInList(list, element, repoConnection);
 		if (found) {
-			throw new DeniedOperationException("Element: " + element.stringValue()
-					+ " already contained in collection: " + collection.stringValue());
+			throw new ElementAlreadyContainedInCollectionException(element, collection);
 		}
 		if (index == 1) {
 			addFirstToOrderedCollection(element, collection, repoConnection, modelAdditions, modelRemovals);
@@ -1185,8 +1187,7 @@ public class SKOS extends STServiceAdapter {
 		} else {
 			boolean found = hasElementInList(list, element, repoConnection);
 			if (found) {
-				throw new DeniedOperationException("Element: " + element.stringValue()
-						+ " already contained in collection: " + collection.stringValue());
+				throw new ElementAlreadyContainedInCollectionException(element, collection);
 			}
 
 			// create the last element of the list with the desired value (as RDF.FIRST)
@@ -1546,8 +1547,7 @@ public class SKOS extends STServiceAdapter {
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setBinding("concept", concept);
 		if(booleanQuery.evaluate()){
-			throw new DeniedOperationException(
-					"concept: " + concept.stringValue() + " has narrower concepts; delete them before");
+			throw new ConceptWithNarrowerConceptsException(concept);
 		}
 
 		//this query removes also all skosxl:prefLabel, skosxl:altLabel, skosxl:hiddenLabel (after the UNION)
@@ -1738,8 +1738,7 @@ public class SKOS extends STServiceAdapter {
 		booleanQuery.setIncludeInferred(false);
 		boolean result = booleanQuery.evaluate();
 		if(result){
-			throw new DeniedOperationException("collection: " + collection.stringValue() + 
-					" has nested collections; delete them before");
+			throw new CollectionWithNestedCollectionsException(collection);
 		}		
 		// @formatter:off
 		String updateString =
@@ -1831,8 +1830,7 @@ public class SKOS extends STServiceAdapter {
 		booleanQuery.setIncludeInferred(false);
 		boolean result = booleanQuery.evaluate();
 		if(result){
-			throw new DeniedOperationException("collection: " + collection.stringValue() + 
-					" has nested collections; delete them before");
+			throw new CollectionWithNestedCollectionsException(collection);
 		}		
 		
 		
@@ -1933,8 +1931,7 @@ public class SKOS extends STServiceAdapter {
 		
 		if(!repoConnection.hasStatement(collection, org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER, 
 				element, false, grahs)){
-			throw new DeniedOperationException("collection: " + collection.stringValue() + 
-					" does not have elment "+element.stringValue());
+			throw new ElementNotInCollectionException(element, collection);
 		} 
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(collection, 
 				org.eclipse.rdf4j.model.vocabulary.SKOS.MEMBER, element));
@@ -1957,7 +1954,7 @@ public class SKOS extends STServiceAdapter {
 		
 		Resource list = getFirstElemOfOrderedCollection(collection, repoConnection);
 		if(list.equals(RDF.NIL)){
-			throw new DeniedOperationException("collection: " + collection.stringValue() + " is empty");
+			throw new EmptyCollectionException(collection);
 		}
 		//check if the desired element is the first one of the list
 		if(repoConnection.hasStatement(list, RDF.FIRST, element, false, graphs)){

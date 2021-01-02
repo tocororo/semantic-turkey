@@ -1,5 +1,38 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import static java.util.stream.Collectors.joining;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.hibernate.validator.constraints.NotEmpty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
@@ -9,6 +42,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import it.uniroma2.art.semanticturkey.exceptions.ClassWithSubclassesOrInstancesException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
@@ -33,37 +67,6 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface;
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.vocabulary.OWL;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOS;
-import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.BooleanQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryResult;
-import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.access.prepost.PreAuthorize;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-import static java.util.stream.Collectors.joining;
 
 /**
  * This class provides services for manipulating OWL/RDFS classes.
@@ -351,8 +354,7 @@ public class Classes extends STServiceAdapter {
 		booleanQuery.setBinding("cls", cls);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
-			throw new DeniedOperationException(
-					"Class: " + cls.stringValue() + " has sub class(es) or instance(s); delete them before");
+			throw new ClassWithSubclassesOrInstancesException(cls);
 		}
 		
 		query = 
@@ -576,13 +578,10 @@ public class Classes extends STServiceAdapter {
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 	}	
 	
-	private void addCollectionBasedClassAxiom(IRI cls, IRI axiomProp, List<String> clsDescriptions, 
+	private void addCollectionBasedClassAxiom(IRI cls, IRI axiomProp, @NotEmpty List<String> clsDescriptions, 
 			Model modelAdditions, RepositoryConnection repoConnection, Map<String, String> prefixToNamespacesMap)
 			throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
 		List<Resource> resourceList = new ArrayList<>();
-		if(clsDescriptions == null || clsDescriptions.size() == 0){
-			throw new IllegalArgumentException("the list of expression cannot be empty");
-		}
 		//generate all the triple associated to each clsDescription
 		for(String clsDesc : clsDescriptions){
 			//check if clsDesc is a single IRI or a manchester expression

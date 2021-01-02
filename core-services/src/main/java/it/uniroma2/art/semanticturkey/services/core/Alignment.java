@@ -691,26 +691,17 @@ public class Alignment extends STServiceAdapter {
 			}
 			
 			if (!leftProjectBaseURI.equals(onto1BaseURI) || !rightProjectBaseURI.equals(onto2BaseURI)) {
-				throw new AlignmentInitializationException(
-						"Failed to open and validate the given alignment file. "
-								+ "One or both the two aligned ontologies don't match the datasets of the EDOAL project");
+				throw new AlignmentNotMatchingProjectsException();
 			}
 		} else { //not EDOAL => one of the two ontologies must refer to the current project
 			if (!leftProjectBaseURI.equals(onto1BaseURI)) {
 				if (leftProjectBaseURI.equals(onto2BaseURI)) {
 					if (alignModel.hasCustomRelation()) {
-						throw new AlignmentInitializationException("The alignment file is reversed "
-								+ "(the source ontology in the alignment file is your target ontology in your project) "
-								+ "and it contains custom relations. It is possible to work with inverted alignment files "
-								+ "only when they do not contain custom relations. Please invert the order of ontologies "
-								+ "in the alignment file and adjust the custom relations by replacing them with their "
-								+ "inverse in the custom alignment model that is being adopted.");
+						throw new ReversedAlignmentWithCustomRelationsException();
 					}
 					alignModel.reverse();
 				} else {
-					throw new AlignmentInitializationException(
-							"Failed to open and validate the given alignment file. "
-									+ "None of the two aligned ontologies matches the current project ontology");
+					throw new AlignmentNotMatchingCurrentProject();
 				}
 			}
 		}

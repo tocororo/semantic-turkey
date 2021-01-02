@@ -5,7 +5,7 @@ import java.util.Arrays;
 import org.eclipse.rdf4j.model.Resource;
 
 
-public class NonExistingPredicateBetweenResourcesExpcetion extends Exception {
+public class NonExistingPredicateBetweenResourcesException extends Exception {
 
 	/**
 	 * 
@@ -17,11 +17,11 @@ public class NonExistingPredicateBetweenResourcesExpcetion extends Exception {
 	 * 
 	 * @param uri
 	 */
-	public NonExistingPredicateBetweenResourcesExpcetion(Resource resourceA, Resource resourceB) {
+	public NonExistingPredicateBetweenResourcesException(Resource resourceA, Resource resourceB) {
 		super("There is no predicate between resource: " + resourceA.stringValue() + " and resource: "+resourceB.stringValue());
 	}
 	
-	public NonExistingPredicateBetweenResourcesExpcetion(Resource resourceA, Resource resourceB, Resource[] graphs) {
+	public NonExistingPredicateBetweenResourcesException(Resource resourceA, Resource resourceB, Resource[] graphs) {
 		super("There is no predicate between resource: " + resourceA.stringValue() + " and resource: "+
 				resourceB.stringValue()+" in graphs: " + Arrays.toString(graphs));
 	}	

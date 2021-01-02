@@ -26,17 +26,15 @@
  */
 package it.uniroma2.art.semanticturkey.exceptions;
 
+import it.uniroma2.art.semanticturkey.i18n.InternationalizedException;
 
-public class DeniedOperationException extends Exception {
+public class DeniedOperationException extends InternationalizedException {
 
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 5916925078192119045L;
 
-	public DeniedOperationException(String msg) {
-		super(msg);
+	public DeniedOperationException(String key, Object[] args) {
+		super(key, args);
 	}
 
 }
