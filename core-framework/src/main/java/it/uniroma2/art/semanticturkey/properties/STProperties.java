@@ -25,7 +25,6 @@ import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.rdf4j.model.Value;
@@ -33,8 +32,6 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import it.uniroma2.art.semanticturkey.constraints.MsgInterpolationVariables;
 
 /**
  * @author Armando Stellato &lt;stellato@uniroma2.it&gt;

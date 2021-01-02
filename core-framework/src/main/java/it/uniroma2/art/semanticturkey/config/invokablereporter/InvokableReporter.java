@@ -14,26 +14,42 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public class InvokableReporter implements Configuration {
 
-	@Override
-	public String getShortName() {
-		return "Custom Service";
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String label$description = keyBase + ".label.description";
+		public static final String label$displayName = keyBase + ".label.displayName";
+		public static final String description$description = keyBase + ".description.description";
+		public static final String description$displayName = keyBase + ".description.displayName";
+		public static final String sections$description = keyBase + ".sections.description";
+		public static final String sections$displayName = keyBase + ".sections.displayName";
+		public static final String template$description = keyBase + ".template.description";
+		public static final String template$displayName = keyBase + ".template.displayName";
+		public static final String mimeType$description = keyBase + ".mimeType.description";
+		public static final String mimeType$displayName = keyBase + ".mimeType.displayName";
 	}
 
-	@STProperty(description = "The label of this invokable reporter", displayName = "Label")
+	@Override
+	public String getShortName() {
+		return "{" + MessageKeys.shortName + "}";
+	}
+
+	@STProperty(description = "{" + MessageKeys.label$description + "}", displayName = "{" + MessageKeys.label$displayName + "}")
 	@Required
 	public String label;
 
-	@STProperty(description = "A description of this invokable reporter", displayName = "Description")
+	@STProperty(description = "{" + MessageKeys.description$description + "}", displayName = "{" + MessageKeys.description$displayName + "}")
 	public String description;
 
-	@STProperty(description = "The invocations of custom services that make up this invokable reporter", displayName = "Service invocations")
+	@STProperty(description = "{" + MessageKeys.sections$description + "}", displayName = "{" + MessageKeys.sections$displayName + "}")
 	public List<ServiceInvocation> sections;
 
-	@STProperty(description = "A template for rendering the report that takes all results as input. The template must conform to Mustache templating language.", displayName = "Template")
+	@STProperty(description = "{" + MessageKeys.template$description + "}", displayName = "{" + MessageKeys.template$displayName + "}")
 	@Required
 	public String template = "";
 
-	@STProperty(description = "The mimetype of the generated rendering. If not specified, it is assumed text/plain", displayName = "mime")
+	@STProperty(description = "{" + MessageKeys.mimeType$description + "}", displayName = "{" + MessageKeys.mimeType$displayName + "}")
 	@Required
 	public String mimeType = "text/plain";
 

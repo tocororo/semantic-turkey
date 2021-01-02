@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.i18n;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -25,7 +26,10 @@ public class STMessageSource {
 		msgSource = tmpMsgSource;
 	}
 
-	public static String getMessage(String key, Object... args) {
+	public static String getMessage(String key, Object[] args, Locale locale) {
 		return msgSource.getMessage(key, args, LocaleContextHolder.getLocale());
+	}
+	public static String getMessage(String key, Object... args) {
+		return getMessage(key, args, LocaleContextHolder.getLocale());
 	}
 }
