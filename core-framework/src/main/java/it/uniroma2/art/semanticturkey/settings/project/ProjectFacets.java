@@ -25,7 +25,7 @@ public class ProjectFacets implements Settings{
 	}
 
 	@STProperty(description = "Organization", displayName = "Organization")
-	public STProperties organization;
+	public String organization;
 
 	@STProperty(description = "{" + MessageKeys.customFacets$description + "}", displayName = "{" + MessageKeys.customFacets$displayName + "}")
 	public STProperties customFacets;

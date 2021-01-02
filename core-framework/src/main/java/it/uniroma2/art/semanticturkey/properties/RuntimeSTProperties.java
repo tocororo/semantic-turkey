@@ -281,10 +281,26 @@ public class RuntimeSTProperties implements STProperties {
 	private String htmlDescription;
 	private String htmlWarning;
 	private Map<String, org.apache.commons.lang3.tuple.Pair<PropertyDefinition, Object>> properties;
+	private boolean open;
 
 	public RuntimeSTProperties(String shortName) {
 		this.shortName = shortName;
 		this.properties = new LinkedHashMap<>();
+		this.open = false;
+	}
+	
+	public RuntimeSTProperties() {
+		this("");
+	}
+
+
+	public void setOpen(boolean open) {
+		this.open = open;
+	}
+
+	@Override
+	public boolean isOpen() {
+		return open;
 	}
 
 	protected Pair<PropertyDefinition, Object> getPropertyDefinitionAndValue(String id)
@@ -292,7 +308,12 @@ public class RuntimeSTProperties implements STProperties {
 		Pair<PropertyDefinition, Object> defAndValue = properties.get(id);
 
 		if (defAndValue == null) {
-			throw new PropertyNotFoundException("Poperty \"" + id + "\" is not defined");
+			if (isOpen()) {
+				return MutablePair.of(new PropertyDefinition(null, "", false,
+						new AnnotatedTypeBuilder().withType(Object.class).build()), null);
+			} else {
+				throw new PropertyNotFoundException("Poperty \"" + id + "\" is not defined");
+			}
 		}
 		return defAndValue;
 	}
@@ -374,7 +395,11 @@ public class RuntimeSTProperties implements STProperties {
 		try {
 			AnnotatedType annotType = getPropertyAnnotatedType(id);
 			Object convertedValue = checkAndConvertPropertyValue(id, value, annotType.getType());
-			getPropertyDefinitionAndValue(id).setValue(convertedValue);
+			Pair<PropertyDefinition, Object> defAndValue = getPropertyDefinitionAndValue(id);
+			defAndValue.setValue(convertedValue);
+			if (isOpen() && !properties.containsKey(id)) {
+				properties.put(id, defAndValue);
+			}
 		} catch (PropertyNotFoundException e) {
 			throw new WrongPropertiesException(e);
 		}

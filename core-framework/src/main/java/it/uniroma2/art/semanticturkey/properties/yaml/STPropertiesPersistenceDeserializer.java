@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
+import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 
@@ -48,7 +49,10 @@ public class STPropertiesPersistenceDeserializer extends StdDeserializer<STPrope
 			ObjectNode node = p.readValueAsTree();
 
 			Class<?> target = handledType();
-
+			
+			if (TypeUtils.equals(target, STProperties.class)) {
+				target = RuntimeSTProperties.class;
+			}
 			JsonNode typeNode = node.get("@type");
 			if (typeNode != null && !typeNode.isNull()) {
 				String propsType = typeNode.asText();
@@ -72,11 +76,15 @@ public class STPropertiesPersistenceDeserializer extends StdDeserializer<STPrope
 
 			STProperties stProp = (STProperties) target.newInstance();
  
+			if (stProp instanceof RuntimeSTProperties) {
+				((RuntimeSTProperties)stProp).setOpen(true);
+			}
+			
 			Iterator<String> propIt = node.fieldNames();
 			while (propIt.hasNext()) {
 				String jsonPropName = propIt.next();
 				JsonNode jsonPropValue = node.get(jsonPropName);
-				if (!stProp.getProperties().contains(jsonPropName))
+				if (!stProp.isOpen() && !stProp.getProperties().contains(jsonPropName))
 					continue; // skip unknown prop names
 				AnnotatedType targetType = stProp.getPropertyAnnotatedType(jsonPropName);
 

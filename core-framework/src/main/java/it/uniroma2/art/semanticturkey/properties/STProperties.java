@@ -546,4 +546,13 @@ public interface STProperties {
 			throw new PropertyNotFoundException(e);
 		}
 	}
+
+	/**
+	 * Returns whether unknown properties are allowed
+	 * 
+	 * @return
+	 */
+	default boolean isOpen() {
+		return false;
+	}
 }
