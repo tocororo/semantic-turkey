@@ -14,6 +14,7 @@ import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.*;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
@@ -29,15 +30,19 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
 import it.uniroma2.art.semanticturkey.project.ProjectStatus.Status;
 import it.uniroma2.art.semanticturkey.properties.*;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
+import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.*;
 import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataStore;
 import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummary;
 import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
+import it.uniroma2.art.semanticturkey.settings.project.ProjectFacets;
+import it.uniroma2.art.semanticturkey.settings.project.ProjectFacetsStore;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -302,7 +307,7 @@ public class Projects extends STServiceAdapter {
 	 * @return
 	 * @throws ProjectAccessException
 	 */
-	public static ProjectInfo getProjectInfoHelper(ProjectConsumer consumer,
+	public ProjectInfo getProjectInfoHelper(ProjectConsumer consumer,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel,
 			boolean userDependent, boolean onlyOpen, AbstractProject absProj) {
 		String name = absProj.getName();
@@ -319,6 +324,7 @@ public class Projects extends STServiceAdapter {
 		RepositoryLocation repoLocation = new RepositoryLocation(null);
 		ProjectStatus status = new ProjectStatus(Status.ok);
 		String description = null;
+		ProjectFacets facets2 = null;
 
 		if (absProj instanceof Project) {
 			Project proj = (Project) absProj;
@@ -344,12 +350,18 @@ public class Projects extends STServiceAdapter {
 					.hasUserAccessToProject(UsersManager.getLoggedUser(), proj)) {
 				return null;
 			}
+			try {
+				facets2 = (ProjectFacets)exptManager.getSettings(proj, UsersManager.getLoggedUser(), ProjectFacetsStore.class.getName(), Scope.PROJECT);
+			} catch (IllegalStateException | STPropertyAccessException | NoSuchSettingsManager e) {
+				throw new RuntimeException(e);
+			}
+			
 		} else { // absProj instanceof CorruptedProject
 			CorruptedProject proj = (CorruptedProject) absProj;
 			status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
 		}
 		return new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel,
-				historyEnabled, validationEnabled, shaclEnabled, facets, access, repoLocation, status, description);
+				historyEnabled, validationEnabled, shaclEnabled, facets, access, repoLocation, status, description, facets2);
 	}
 
 	/**

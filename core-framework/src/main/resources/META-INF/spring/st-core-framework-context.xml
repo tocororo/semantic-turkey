@@ -264,7 +264,15 @@
 			class="it.uniroma2.art.semanticturkey.settings.search.CustomSearchStore" />
 	</osgi:service>
 
-	<!-- Publishes the NotificationSystemSettingsManage -->
+	<!-- Publishes the ProjectFacetsStore -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.settings.project.ProjectFacetsStore" />
+	</osgi:service>
+
+
+	<!-- Publishes the NotificationSystemSettingsManager -->
 
 	<bean id="notificationSystemSettingsManager"
 		class="it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettingsManager" />
