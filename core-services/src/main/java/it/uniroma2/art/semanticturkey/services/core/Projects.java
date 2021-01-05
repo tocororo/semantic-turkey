@@ -120,7 +120,7 @@ public class Projects extends STServiceAdapter {
 			@Optional String preloadedDataFileName, @Optional RDFFormat preloadedDataFormat,
 			@Optional TransitiveImportMethodAllowance transitiveImportAllowance, @Optional String leftDataset,
 			@Optional String rightDataset, @Optional boolean shaclEnabled,
-			@Optional @JsonSerialized SHACLSettings shaclSettings,  @Optional boolean trivialInferenceEnabled)
+			@Optional @JsonSerialized SHACLSettings shaclSettings, @Optional boolean trivialInferenceEnabled)
 			throws ProjectInconsistentException, InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
 			ProjectCreationException, ClassNotFoundException, WrongPropertiesException,
@@ -170,9 +170,9 @@ public class Projects extends STServiceAdapter {
 					historyEnabled, validationEnabled, blacklistingEnabled, repositoryAccess, coreRepoID,
 					coreRepoSailConfigurerSpecification, coreBackendType, supportRepoID,
 					supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
-					renderingEngineSpecification, resourceMetadataAssociations,
-					preloadedDataFile, preloadedDataFormat, transitiveImportAllowance,
-					failedImports, leftDataset, rightDataset, shaclEnabled, shaclSettings, trivialInferenceEnabled);
+					renderingEngineSpecification, resourceMetadataAssociations, preloadedDataFile,
+					preloadedDataFormat, transitiveImportAllowance, failedImports, leftDataset, rightDataset,
+					shaclEnabled, shaclSettings, trivialInferenceEnabled);
 			deletePreloadedDataFile = true;
 		} finally {
 			if (preloadedDataFileName != null) {
@@ -242,8 +242,8 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 */
 	@STServiceOperation
-	public List<ProjectInfo> listProjectsPerRole(@Optional(defaultValue = "SYSTEM") ProjectConsumer consumer, String role,
-			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
+	public List<ProjectInfo> listProjectsPerRole(@Optional(defaultValue = "SYSTEM") ProjectConsumer consumer,
+			String role, @Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
 			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel,
 			@Optional(defaultValue = "false") boolean onlyOpen) throws ProjectAccessException {
 		List<ProjectInfo> listProjInfo = new ArrayList<>();
@@ -351,17 +351,19 @@ public class Projects extends STServiceAdapter {
 				return null;
 			}
 			try {
-				facets2 = (ProjectFacets)exptManager.getSettings(proj, UsersManager.getLoggedUser(), ProjectFacetsStore.class.getName(), Scope.PROJECT);
+				facets2 = (ProjectFacets) exptManager.getSettings(proj, UsersManager.getLoggedUser(),
+						ProjectFacetsStore.class.getName(), Scope.PROJECT);
 			} catch (IllegalStateException | STPropertyAccessException | NoSuchSettingsManager e) {
 				throw new RuntimeException(e);
 			}
-			
+
 		} else { // absProj instanceof CorruptedProject
 			CorruptedProject proj = (CorruptedProject) absProj;
 			status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
 		}
 		return new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel,
-				historyEnabled, validationEnabled, shaclEnabled, facets, access, repoLocation, status, description, facets2);
+				historyEnabled, validationEnabled, shaclEnabled, facets, access, repoLocation, status,
+				description, facets2);
 	}
 
 	/**
@@ -397,7 +399,7 @@ public class Projects extends STServiceAdapter {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode responseNode = jsonFactory.arrayNode();
 
-		//list and sort alphabetically
+		// list and sort alphabetically
 		List<AbstractProject> projects = new ArrayList<>(ProjectManager.listProjects());
 		projects.sort(Comparator.comparing(AbstractProject::getName));
 
@@ -419,7 +421,8 @@ public class Projects extends STServiceAdapter {
 		return createProjectAclNode(project);
 	}
 
-	private JsonNode createProjectAclNode(Project project) throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+	private JsonNode createProjectAclNode(Project project)
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 
 		ObjectNode projectNode = jsonFactory.objectNode();
@@ -430,7 +433,8 @@ public class Projects extends STServiceAdapter {
 		List<AbstractProject> consumers = new ArrayList<>(ProjectManager.listProjects());
 		consumers.sort(Comparator.comparing(AbstractProject::getName));
 
-		consumers.removeIf(c -> c.getName().equals(project.getName())); // remove itself from its possible consumers
+		consumers.removeIf(c -> c.getName().equals(project.getName())); // remove itself from its possible
+																		// consumers
 
 		ProjectACL projectAcl = project.getACL();
 
@@ -457,8 +461,7 @@ public class Projects extends STServiceAdapter {
 		String acquiredLockLevel = null;
 		if (lockingConsumer != null) { // the project could be not locked by any consumer
 			lockingConsumerName = lockingConsumer.getName();
-			acquiredLockLevel = ProjectManager.getLockingLevel(project.getName(), lockingConsumer)
-					.name();
+			acquiredLockLevel = ProjectManager.getLockingLevel(project.getName(), lockingConsumer).name();
 		}
 		lockNode.set("lockingConsumer", jsonFactory.textNode(lockingConsumerName));
 		lockNode.set("acquiredLockLevel", jsonFactory.textNode(acquiredLockLevel));
@@ -495,6 +498,7 @@ public class Projects extends STServiceAdapter {
 
 	/**
 	 * Update the AccessLevel of the current project
+	 * 
 	 * @param consumerName
 	 * @param accessLevel
 	 *            if not provided revoke any access level assigned from the project to the consumer
@@ -531,9 +535,9 @@ public class Projects extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void updateProjectAccessLevel(String projectName, String consumerName, @Optional AccessLevel accessLevel)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ProjectUpdateException, ReservedPropertyUpdateException {
+	public void updateProjectAccessLevel(String projectName, String consumerName,
+			@Optional AccessLevel accessLevel) throws InvalidProjectNameException, ProjectInexistentException,
+			ProjectAccessException, ProjectUpdateException, ReservedPropertyUpdateException {
 		Project project = ProjectManager.getProject(projectName, true);
 		if (accessLevel != null) {
 			project.getACL().grantAccess(ProjectManager.getProjectDescription(consumerName), accessLevel);
@@ -583,9 +587,9 @@ public class Projects extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void deleteProject(ProjectConsumer consumer, String projectName) throws ProjectDeletionException,
-			ProjectAccessException, ProjectUpdateException, ReservedPropertyUpdateException,
-			InvalidProjectNameException, ProjectInexistentException {
+	public void deleteProject(ProjectConsumer consumer, String projectName)
+			throws ProjectDeletionException, ProjectAccessException, ProjectUpdateException,
+			ReservedPropertyUpdateException, InvalidProjectNameException, ProjectInexistentException {
 		ProjectManager.deleteProject(projectName);
 	}
 
@@ -778,6 +782,7 @@ public class Projects extends STServiceAdapter {
 
 	/**
 	 * Sets the "dir" facet to the given project. If the value is null, the facet is removed
+	 * 
 	 * @param projectName
 	 * @param facetValue
 	 * @throws InvalidProjectNameException
@@ -787,14 +792,63 @@ public class Projects extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void setProjectFacetDir(String projectName, @Optional String facetValue) throws InvalidProjectNameException,
-			ProjectInexistentException, ProjectAccessException, ProjectUpdateException {
+	public void setProjectFacetDir(String projectName, @Optional String facetValue)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ProjectUpdateException {
 		Project project = ProjectManager.getProject(projectName, true);
 		if (facetValue != null) {
 			project.setFacetDir(facetValue);
 		} else {
 			project.removeFacetDir();
 		}
+	}
+
+	/**
+	 * Sets the facets of a project
+	 * 
+	 * @param projectName
+	 * @param facets
+	 * @throws STPropertyAccessException
+	 * @throws WrongPropertiesException
+	 * @throws STPropertyUpdateException
+	 * @throws NoSuchSettingsManager
+	 * @throws IllegalStateException
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectAccessException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void setProjectFacets(String projectName, ObjectNode facets)
+			throws IllegalStateException, NoSuchSettingsManager, STPropertyUpdateException,
+			WrongPropertiesException, STPropertyAccessException, ProjectAccessException,
+			InvalidProjectNameException, ProjectInexistentException {
+		Project project = ProjectManager.getProject(projectName, true);
+		exptManager.storeSettings(ProjectFacetsStore.class.getName(), project, UsersManager.getLoggedUser(),
+				Scope.PROJECT, facets);
+	}
+
+	/**
+	 * Returns the facets of the current project
+	 * 
+	 * @param projectName
+	 * 
+	 * @throws NoSuchSettingsManager
+	 * @throws STPropertyAccessException
+	 * @throws IllegalStateException
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectAccessException
+	 * 
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public ProjectFacets getProjectFacets(String projectName)
+			throws IllegalStateException, STPropertyAccessException, NoSuchSettingsManager,
+			ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		Project project = ProjectManager.getProject(projectName, true);
+		return (ProjectFacets) exptManager.getSettings(project, UsersManager.getLoggedUser(),
+				ProjectFacetsStore.class.getName(), Scope.PROJECT);
 	}
 
 	/**
@@ -806,7 +860,8 @@ public class Projects extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void renameProjectFacetDir(String oldValue, String newValue) throws ProjectAccessException, ProjectUpdateException {
+	public void renameProjectFacetDir(String oldValue, String newValue)
+			throws ProjectAccessException, ProjectUpdateException {
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		for (AbstractProject absProj : projects) {
 			if (absProj instanceof Project) {
@@ -841,7 +896,8 @@ public class Projects extends STServiceAdapter {
 					project.getProjectDirectory());
 			repoManager.init();
 			try {
-				Collection<RepositorySummary> summaries = Project.getRepositorySummaries(repoManager, excludeLocal);
+				Collection<RepositorySummary> summaries = Project.getRepositorySummaries(repoManager,
+						excludeLocal);
 				rv.addAll(summaries);
 			} finally {
 				repoManager.shutDown();
