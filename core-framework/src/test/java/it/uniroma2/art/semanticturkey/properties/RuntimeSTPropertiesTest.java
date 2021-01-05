@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 
+import it.uniroma2.art.semanticturkey.mvc.RequestMappingHandlerAdapterPostProcessor;
 import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties.AnnotatedTypeBuilder;
 import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties.PropertyDefinition;
 
@@ -27,7 +28,7 @@ public class RuntimeSTPropertiesTest {
 	}
 
 	protected ObjectMapper buildObjectMapper() {
-		return new ObjectMapper();
+		return RequestMappingHandlerAdapterPostProcessor.createObjectMapper();
 	}
 
 	@Test

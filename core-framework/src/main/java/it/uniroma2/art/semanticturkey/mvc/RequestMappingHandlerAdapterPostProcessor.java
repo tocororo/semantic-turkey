@@ -24,9 +24,12 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.json.PairSerializer;
 import it.uniroma2.art.semanticturkey.json.TripleSerializer;
 import it.uniroma2.art.semanticturkey.json.TupleQueryResultSerializer;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesSerializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JBNodeDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JIRIDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JLiteralDeserializer;
@@ -49,13 +52,14 @@ import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JValueSerializer;
 @Component
 public class RequestMappingHandlerAdapterPostProcessor implements BeanPostProcessor {
 
-	private ObjectMapper objectMapper;
-
 	public RequestMappingHandlerAdapterPostProcessor() {
-		this.objectMapper = createObjectMapper();
 	}
 
 	public static ObjectMapper createObjectMapper() {
+		return createObjectMapper(null);
+	}
+
+	public static ObjectMapper createObjectMapper(ExtensionPointManager exptManager) {
 		SimpleModule customTypeHandlers = new SimpleModule();
 		customTypeHandlers.addDeserializer(Value.class, new RDF4JValueDeserializer());
 		customTypeHandlers.addDeserializer(Resource.class, new RDF4JResourceDeserializer());
@@ -66,11 +70,12 @@ public class RequestMappingHandlerAdapterPostProcessor implements BeanPostProces
 		customTypeHandlers.addSerializer(new PairSerializer());
 		customTypeHandlers.addSerializer(new TripleSerializer());
 		customTypeHandlers.addSerializer(new TupleQueryResultSerializer());
+		customTypeHandlers.addSerializer(STProperties.class, new STPropertiesSerializer(null, exptManager));
 		ObjectMapper newObjectMapper = new ObjectMapper();
 		newObjectMapper.registerModule(customTypeHandlers);
 		newObjectMapper.registerModule(new Jdk8Module());
 		newObjectMapper.registerModule(new JavaTimeModule());
-	
+
 		return newObjectMapper;
 	}
 
@@ -83,7 +88,8 @@ public class RequestMappingHandlerAdapterPostProcessor implements BeanPostProces
 			RequestMappingHandlerAdapter requestMappingHandlerAdapter = (RequestMappingHandlerAdapter) bean;
 
 			MappingJackson2HttpMessageConverter jacksonMessageConverter = new MappingJackson2HttpMessageConverter();
-			jacksonMessageConverter.setObjectMapper(objectMapper);
+			jacksonMessageConverter
+					.setObjectMapper(createObjectMapper(beanFactory.getBean(ExtensionPointManager.class)));
 
 			List<HttpMessageConverter<?>> originalMessageConverters = requestMappingHandlerAdapter
 					.getMessageConverters();
@@ -120,7 +126,8 @@ public class RequestMappingHandlerAdapterPostProcessor implements BeanPostProces
 			RequestMappingHandlerAdapter requestMappingHandlerAdapter = (RequestMappingHandlerAdapter) bean;
 
 			List<HandlerMethodArgumentResolver> resolvers = new ArrayList<>();
-			resolvers.add(new JacksonMethodArgumentResolver(beanFactory, false, objectMapper));
+			resolvers.add(new JacksonMethodArgumentResolver(beanFactory, false,
+					createObjectMapper(beanFactory.getBean(ExtensionPointManager.class))));
 			resolvers.addAll((requestMappingHandlerAdapter.getArgumentResolvers()).getResolvers());
 
 			requestMappingHandlerAdapter.setArgumentResolvers(resolvers);

@@ -264,13 +264,19 @@
 			class="it.uniroma2.art.semanticturkey.settings.search.CustomSearchStore" />
 	</osgi:service>
 
+	<!-- Publishes the ProjectFacetsSchemaStore -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+			class="it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsSchemaStore" />
+	</osgi:service>
+
 	<!-- Publishes the ProjectFacetsStore -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
-			class="it.uniroma2.art.semanticturkey.settings.project.ProjectFacetsStore" />
+			class="it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsStore" />
 	</osgi:service>
-
 
 	<!-- Publishes the NotificationSystemSettingsManager -->
 

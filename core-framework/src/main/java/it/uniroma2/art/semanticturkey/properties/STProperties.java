@@ -31,14 +31,11 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 /**
  * @author Armando Stellato &lt;stellato@uniroma2.it&gt;
  * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
  *
  */
-@JsonSerialize(using = STPropertiesSerializer.class)
 @STProperties.BasicPropertiesConstraints
 public interface STProperties {
 

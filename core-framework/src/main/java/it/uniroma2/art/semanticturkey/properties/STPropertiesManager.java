@@ -42,6 +42,7 @@ import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JResourceDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JValueDeserializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JValueSerializer;
 import it.uniroma2.art.semanticturkey.properties.yaml.STPropertiesPersistenceDeserializer;
+import it.uniroma2.art.semanticturkey.properties.yaml.STPropertiesPersistenceSerializer;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
@@ -683,14 +684,13 @@ public class STPropertiesManager {
 		fact.disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER);
 
 		SimpleModule stPropsModule = new SimpleModule();
-		stPropsModule.setMixInAnnotation(STProperties.class,
-				it.uniroma2.art.semanticturkey.properties.yaml.STPropertiesPersistenceMixin.class);
 		stPropsModule.addDeserializer(Value.class, new RDF4JValueDeserializer());
 		stPropsModule.addDeserializer(Resource.class, new RDF4JResourceDeserializer());
 		stPropsModule.addDeserializer(BNode.class, new RDF4JBNodeDeserializer());
 		stPropsModule.addDeserializer(IRI.class, new RDF4JIRIDeserializer());
 		stPropsModule.addDeserializer(Literal.class, new RDF4JLiteralDeserializer());
 		stPropsModule.addSerializer(new RDF4JValueSerializer());
+		stPropsModule.addSerializer(new STPropertiesPersistenceSerializer());
 		// see: https://stackoverflow.com/a/18405958
 		stPropsModule.setDeserializerModifier(new BeanDeserializerModifier() {
 			@Override

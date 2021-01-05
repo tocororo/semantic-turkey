@@ -46,6 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetSearchResult;
@@ -71,13 +72,15 @@ public class PMKIConnector implements DatasetCatalogConnector {
 
 	private PMKIConnectorConfiguration conf;
 
-	public PMKIConnector(PMKIConnectorConfiguration conf) {
-		this.conf = conf;
+	private ExtensionPointManager exptManager;
 
+	public PMKIConnector(PMKIConnectorConfiguration conf, ExtensionPointManager exptManager) {
+		this.conf = conf;
+		this.exptManager = exptManager;
 	}
 
 	protected PMKIClient createPmkiClient() {
-		return new PMKIClient(conf.apiBaseURL, PmkiConstants.PMKI_VISITOR_EMAIL,
+		return new PMKIClient(exptManager, conf.apiBaseURL, PmkiConstants.PMKI_VISITOR_EMAIL,
 				PmkiConstants.PMKI_VISITOR_PWD);
 	}
 
@@ -251,13 +254,13 @@ class PMKIClient implements AutoCloseable {
 	private CloseableHttpClient httpClient;
 	private ObjectMapper objectMapper;
 
-	public PMKIClient(String apiBaseURL, String email, String password) {
+	public PMKIClient(ExtensionPointManager exptManager, String apiBaseURL, String email, String password) {
 		this.apiBaseURL = apiBaseURL;
 		this.email = email;
 		this.password = password;
 
 		this.httpClient = HttpClientBuilder.create().useSystemProperties().build();
-		this.objectMapper = RequestMappingHandlerAdapterPostProcessor.createObjectMapper();
+		this.objectMapper = RequestMappingHandlerAdapterPostProcessor.createObjectMapper(exptManager);
 	}
 
 	@Override

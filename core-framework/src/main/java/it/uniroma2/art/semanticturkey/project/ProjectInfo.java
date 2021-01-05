@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
-import it.uniroma2.art.semanticturkey.settings.project.ProjectFacets;
+import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacets;
 
 import java.util.Map;
 

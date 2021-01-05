@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.settings.project;
+package it.uniroma2.art.semanticturkey.settings.facets;
 
 import it.uniroma2.art.semanticturkey.extension.settings.ProjectSettingsManager;
 

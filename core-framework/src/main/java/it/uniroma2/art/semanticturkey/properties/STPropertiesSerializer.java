@@ -33,6 +33,8 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.ObjectCodec;
@@ -41,6 +43,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
+import it.uniroma2.art.semanticturkey.extension.settings.SystemSettingsManager;
 import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
@@ -50,15 +55,23 @@ import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
  */
 public class STPropertiesSerializer extends StdSerializer<STProperties> {
 
+	private static final Logger logger = LoggerFactory.getLogger(STPropertiesSerializer.class);
+
 	private Pattern templatePattern = Pattern.compile("\\{(.*?)\\}");
 	private static final long serialVersionUID = 1L;
+	private ExtensionPointManager exptManager;
 
 	public STPropertiesSerializer() {
 		this(null);
 	}
 
 	public STPropertiesSerializer(Class<STProperties> t) {
+		this(t, null);
+	}
+
+	public STPropertiesSerializer(Class<STProperties> t, ExtensionPointManager exptManager) {
 		super(t);
+		this.exptManager = exptManager;
 	}
 
 	protected String interpolate(String template) {
@@ -87,7 +100,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 	public void serialize(STProperties value, JsonGenerator gen, SerializerProvider provider)
 			throws IOException {
 		try {
-			ObjectMapper propertiesObjectMapper = STPropertiesManager.createObjectMapper();
+			ObjectMapper propertiesObjectMapper = STPropertiesManager.createObjectMapper(exptManager);
 
 			gen.writeStartObject();
 
@@ -199,9 +212,23 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 		if (TypeUtils.isAssignable(annotatedType.getType(), STProperties.class)) {
 			gen.writeStringField("name", "Properties");
 			try {
-				gen.writeObjectField("schema", ((Class<?>) annotatedType.getType()).newInstance());
-			} catch (InstantiationException | IllegalAccessException | IOException e) {
-				e.printStackTrace();
+				Schema schemaAnnotation = annotatedType.getAnnotation(Schema.class);
+
+				STProperties schema;
+				if (schemaAnnotation != null) {
+					@SuppressWarnings("unchecked")
+					SystemSettingsManager<STPropertiesSchema> schemaProvider = (SystemSettingsManager<STPropertiesSchema>) exptManager
+							.getSettingsManager(schemaAnnotation.settingsManager().getName());
+					STPropertiesSchema propertiesSchema = schemaProvider.getSystemSettings();
+					schema = propertiesSchema.toSTProperties();
+				} else {
+					Class<?> clazz = (Class<?>) type;
+					schema = (STProperties) clazz.newInstance();
+				}
+				gen.writeObjectField("schema", schema);
+			} catch (InstantiationException | IllegalAccessException | IOException | STPropertyAccessException
+					| NoSuchSettingsManager e) {
+				logger.warn("Can't serialized the schema", e);
 			}
 		} else {
 			gen.writeStringField("name", reducedTypeName);

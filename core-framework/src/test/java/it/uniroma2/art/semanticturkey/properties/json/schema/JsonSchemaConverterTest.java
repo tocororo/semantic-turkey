@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.mvc.RequestMappingHandlerAdapterPostProcessor;
 import it.uniroma2.art.semanticturkey.properties.Enumeration;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties;
@@ -36,7 +37,7 @@ public class JsonSchemaConverterTest {
 	}
 
 	protected ObjectMapper buildObjectMapper() {
-		return new ObjectMapper();
+		return RequestMappingHandlerAdapterPostProcessor.createObjectMapper();
 	}
 
 	public static class ExpectedProperties1 implements STProperties {

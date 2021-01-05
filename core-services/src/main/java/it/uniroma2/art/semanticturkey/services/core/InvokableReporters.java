@@ -82,11 +82,8 @@ public class InvokableReporters extends STServiceAdapter {
 
 	private Mustache.Compiler mustacheCompiler;
 
-	private ObjectMapper objectMapper;
-
 	public InvokableReporters() {
 		mustacheCompiler = Mustache.compiler().emptyStringIsFalse(true).zeroIsFalse(true);
-		objectMapper = RequestMappingHandlerAdapterPostProcessor.createObjectMapper();
 	}
 
 	protected InvokableReporterStore getInvokableReporterStore() throws NoSuchConfigurationManager {
@@ -473,7 +470,7 @@ public class InvokableReporters extends STServiceAdapter {
 
 			if (render) {
 				ObjectMapper responseObjectMapper = RequestMappingHandlerAdapterPostProcessor
-						.createObjectMapper();
+						.createObjectMapper(exptManager);
 
 				Iterator<Section> reportSectionIt = report.sections.iterator();
 				Iterator<ServiceInvocation> reporterSectionIt = reporter.sections.iterator();
