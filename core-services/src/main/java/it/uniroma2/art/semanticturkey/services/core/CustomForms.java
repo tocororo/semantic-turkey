@@ -553,8 +553,6 @@ public class CustomForms extends STServiceAdapter {
 			for (IRI sugg : formColl.getSuggestions()) {
 				ObjectNode suggNode = jsonFactory.objectNode();
 				suggNode.set("@id", jsonFactory.textNode(sugg.stringValue()));
-				suggNode.set("role", jsonFactory.textNode(
-						RoleRecognitionOrchestrator.computeRole(sugg, getManagedConnection()).name()));
 				suggNode.set("nature", jsonFactory
 						.textNode(NatureRecognitionOrchestrator.computeNature(sugg, getManagedConnection())));
 				suggestionsColl.add(suggNode);

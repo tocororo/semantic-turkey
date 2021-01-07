@@ -240,8 +240,11 @@ public class ProjectManager {
 			} else { // case of using a consumer
 				try {
 					proj = getProjectDescription(projDir.getName());
-					if (((Project) proj).getACL().hasInACL(consumer))
+					ProjectACL acl = ((Project) proj).getACL();
+					//check if project is accessible by the consumer (or any consumer)
+					if (acl.hasInACL(consumer) || acl.isUniversallyAccessible()) {
 						projects.add(proj);
+					}
 				} catch (Exception e) {
 					// if a project is corrupted, it is simply cut from the list of available projects
 				}

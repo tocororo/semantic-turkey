@@ -453,6 +453,10 @@ public class Projects extends STServiceAdapter {
 
 		projectNode.set("consumers", consumerArrayNode);
 
+		AccessLevel univAclLevel = projectAcl.getUniversalAccessLevel();
+		String universalAclStr = univAclLevel != null ? univAclLevel.name() : null;
+		projectNode.set("universalACLLevel", jsonFactory.textNode(universalAclStr));
+
 		// LOCK for the project
 		ObjectNode lockNode = jsonFactory.objectNode();
 		lockNode.set("availableLockLevel", jsonFactory.textNode(projectAcl.getLockLevel().name()));
@@ -480,8 +484,12 @@ public class Projects extends STServiceAdapter {
 		ProjectACL projectAcl = project.getACL();
 
 		String availableAclLevel = null;
+		//universal access level is valid for every project consumers except for SYSTEM
+		AccessLevel aclUniversal = (consumer != ProjectConsumer.SYSTEM) ? projectAcl.getUniversalAccessLevel() : null;
 		AccessLevel aclForConsumer = projectAcl.getAccessLevelForConsumer(consumer);
-		if (aclForConsumer != null) {
+		if (aclUniversal != null) {
+			availableAclLevel = aclUniversal.name();
+		} else if (aclForConsumer != null) {
 			availableAclLevel = aclForConsumer.name();
 		}
 		consumerNode.set("availableACLLevel", jsonFactory.textNode(availableAclLevel));
@@ -547,9 +555,49 @@ public class Projects extends STServiceAdapter {
 	}
 
 	/**
+	 * Update the universal (for every consumer) AccessLevel of the current project
+	 * @param accessLevel if not provided revoke any universal access level assigned from the project
+	 * @throws ProjectUpdateException
+	 * @throws ReservedPropertyUpdateException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
+	public void updateUniversalAccessLevel(@Optional AccessLevel accessLevel)
+			throws ProjectUpdateException, ReservedPropertyUpdateException {
+		Project project = getProject();
+		if (accessLevel != null) {
+			project.getACL().grantUniversalAccess(accessLevel);
+		} else {
+			project.getACL().revokeUniversalAccess();
+		}
+	}
+
+	/**
+	 * Update the universal (for every consumer) AccessLevel of the given project
+	 * @param projectName
+	 * @param accessLevel if not provided revoke any universal access level assigned from the project
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 * @throws ProjectAccessException
+	 * @throws ProjectUpdateException
+	 * @throws ReservedPropertyUpdateException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void updateUniversalProjectAccessLevel(String projectName, @Optional AccessLevel accessLevel)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+				ProjectUpdateException, ReservedPropertyUpdateException {
+		Project project = ProjectManager.getProject(projectName, true);
+		if (accessLevel != null) {
+			project.getACL().grantUniversalAccess(accessLevel);
+		} else {
+			project.getACL().revokeUniversalAccess();
+		}
+	}
+
+	/**
 	 * Updates the lock level of the accessed project
 	 *
-	 * @param projectName
 	 * @param lockLevel
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
@@ -559,7 +607,7 @@ public class Projects extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
-	public void updateLockLevel(String projectName, LockLevel lockLevel)
+	public void updateLockLevel(LockLevel lockLevel)
 			throws ProjectUpdateException, ReservedPropertyUpdateException {
 		Project project = getProject();
 		project.getACL().setLockableWithLevel(lockLevel);

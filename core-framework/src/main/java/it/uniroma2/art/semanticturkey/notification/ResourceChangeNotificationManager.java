@@ -185,44 +185,6 @@ public class ResourceChangeNotificationManager {
 		SimpleDateFormat timestampInputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 		SimpleDateFormat timestampOutputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
 
-//		for (STUser user : userProjMap.keySet()) {
-//			//for each project collect the notifications to send
-//			Map<Project, List<NotificationRecord>> projNotificationsMap = new HashMap<>();
-//			for (Project project : userProjMap.get(user)) {
-//				List<NotificationRecord> notifications = notificationApi.retrieveNotifications(user, project);
-//				if (!notifications.isEmpty()) {
-//					projNotificationsMap.put(project, notifications);
-//				}
-//			}
-//			//write and send email only if there are notifications
-//			if (projNotificationsMap.isEmpty()) continue;
-//
-//			String content = "";
-//			for (Project project: projNotificationsMap.keySet()) {
-//				content += "<b>Project:</b> <i>" + project.getName() + "</i><br>";
-//				for (NotificationRecord notification: projNotificationsMap.get(project)) {
-//					//try to re-format the timestamp
-//					String formattedTimestamp = notification.getTimestamp(); //by default, formatted as retrieved
-//					try {
-//						Date d = timestampInputFormat.parse(notification.getTimestamp());
-//						formattedTimestamp = timestampOutputFormat.format(d);
-//					} catch (ParseException e) {}
-//					//write content about single notification
-//					content += "<ul>" +
-//							"<li><b>Resource:</b> <i>" + StringEscapeUtils.escapeHtml4(notification.getResource()) + "</i></li>" +
-//							"<li><b>Role:</b> <i>" + notification.getRole() + "</i></li>" +
-//							"<li><b>Action:</b> <i>" + notification.getAction() + "</i></li>" +
-//							"<li><b>Time:</b> <i>" + formattedTimestamp + "</i></li>" +
-//							"</ul>";
-//				}
-//				content += "<br>";
-//				//report compiled, notifications can be cleared
-//				notificationApi.clearNotifications(user, project);
-//			}
-//			content = appendDoNotReplyContent(content);
-//			EmailSender.sendMail(user.getEmail(), "VocBench daily digest notifications", content);
-//		}
-
 		for (STUser user : userProjMap.keySet()) {
 			String content = "";
 			//write mail content for each notification per project

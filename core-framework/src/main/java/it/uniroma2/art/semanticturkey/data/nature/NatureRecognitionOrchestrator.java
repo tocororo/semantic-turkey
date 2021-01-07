@@ -5,7 +5,9 @@ import java.util.Objects;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -104,8 +106,11 @@ public class NatureRecognitionOrchestrator {
 		tq.setBinding("resource", resource);
 		tq.setIncludeInferred(false);
 		try (TupleQueryResult result = tq.evaluate()) {
-			String natureValue = result.next().getValue("attr_nature").stringValue();
-			return natureValue;
+			if (result.hasNext()) {
+				return result.next().getValue("attr_nature").stringValue();
+			} else {
+				return null;
+			}
 		}
 	}
 

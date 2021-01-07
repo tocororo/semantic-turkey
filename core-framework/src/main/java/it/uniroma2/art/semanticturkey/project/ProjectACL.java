@@ -79,12 +79,14 @@ public class ProjectACL {
 	public static final String ACL = "acl.acl";
 	public static final String LOCKLEVEL = "acl.lockLevel";
 
+	public static final String WILDCARD_CONSUMER = "*";
+
 	/**
 	 * this constructors takes as input a list of comma separated values of the form:<br/>
 	 * <code>&lt;ProjectConsumer&gt;:&lt;AccessLevel&gt;</code>
+	 * A special "*" ProjectConsumer can be used as wildcard for "every consumer" (except SYSTEM)
 	 * 
-	 * @param aclSerialization
-	 * @param lockLevelSerialization
+	 * @param project
 	 */
 	ProjectACL(Project project) {
 		this.project = project;
@@ -153,6 +155,15 @@ public class ProjectACL {
 	public AccessLevel getAccessLevelForConsumer(ProjectConsumer consumer) {
 		return acl.get(consumer.getName());
 	}
+
+	/**
+	 * Returns the AccessLevel granted from the project that is owning this ACL to all the consumers ("*" consumer).
+	 * <code>null</code> if no AccessLevel is specified.
+	 * @return
+	 */
+	public AccessLevel getUniversalAccessLevel() {
+		return acl.get(WILDCARD_CONSUMER);
+	}
 	
 	/**
 	 * Returns the lock level of the project that is owning this ACL
@@ -174,8 +185,31 @@ public class ProjectACL {
 	 * @return
 	 */
 	public boolean isAccessibleFrom(ProjectConsumer consumer, AccessLevel reqAccessLevel, LockLevel reqLock) {
-		return (allowsAccessWith(consumer, reqAccessLevel) && isLockableWithLevel(reqLock));
+		return ((allowsAccessWith(consumer, reqAccessLevel) || isUniversallyAccessible(reqAccessLevel)) && isLockableWithLevel(reqLock));
+	}
 
+	/**
+	 * Tells if the project that is owning this ACL can be universally accessed with any level
+	 * @return
+	 */
+	public boolean isUniversallyAccessible() {
+		return isUniversallyAccessible(null);
+	}
+
+	/**
+	 * Tells if the project that is owning this ACL can be universally accessed with the given level
+	 * @return
+	 */
+	public boolean isUniversallyAccessible(AccessLevel reqAccessLevel) {
+		AccessLevel accessLevelAnyProject = acl.get(WILDCARD_CONSUMER);
+		if (accessLevelAnyProject != null) {
+			if (reqAccessLevel != null) {
+				return reqAccessLevel.isAcceptedBy(accessLevelAnyProject);
+			} else {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -198,9 +232,31 @@ public class ProjectACL {
 		acl.put(consumer.getName(), reqAccessLevel);
 		saveACL();
 	}
+
+	/**
+	 * Grants universally (to all consumer) the given access level
+	 * @param reqAccessLevel
+	 * @throws ProjectUpdateException
+	 * @throws ReservedPropertyUpdateException
+	 */
+	public void grantUniversalAccess(AccessLevel reqAccessLevel)
+			throws ProjectUpdateException, ReservedPropertyUpdateException {
+		acl.put(WILDCARD_CONSUMER, reqAccessLevel);
+		saveACL();
+	}
 	
 	public void revokeAccess(ProjectConsumer consumer) throws ProjectUpdateException, ReservedPropertyUpdateException {
 		acl.remove(consumer.getName());
+		saveACL();
+	}
+
+	/**
+	 * Revokes the universal access level
+	 * @throws ProjectUpdateException
+	 * @throws ReservedPropertyUpdateException
+	 */
+	public void revokeUniversalAccess() throws ProjectUpdateException, ReservedPropertyUpdateException {
+		acl.remove(WILDCARD_CONSUMER);
 		saveACL();
 	}
 
