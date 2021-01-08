@@ -25,8 +25,8 @@ public class ProjectFacets implements Settings {
 		return "{" + MessageKeys.shortName + "}";
 	}
 
-	@STProperty(description = "Organization", displayName = "Organization")
-	public String organization;
+	@STProperty(description = "Category", displayName = "Category")
+	public String category;
 
 	@STProperty(description = "{" + MessageKeys.customFacets$description + "}", displayName = "{"
 			+ MessageKeys.customFacets$displayName + "}")

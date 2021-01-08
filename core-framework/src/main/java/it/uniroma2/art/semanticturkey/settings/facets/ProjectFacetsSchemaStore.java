@@ -1,7 +1,7 @@
 package it.uniroma2.art.semanticturkey.settings.facets;
 
 import it.uniroma2.art.semanticturkey.extension.settings.SystemSettingsManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesSchema;
+import it.uniroma2.art.semanticturkey.properties.dynamic.STPropertiesSchema;
 
 /**
  * A store for the schema of custom project facets.

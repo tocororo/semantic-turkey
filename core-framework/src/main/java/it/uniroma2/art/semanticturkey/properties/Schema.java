@@ -8,6 +8,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 import it.uniroma2.art.semanticturkey.extension.settings.SystemSettingsManager;
+import it.uniroma2.art.semanticturkey.properties.dynamic.STPropertiesSchema;
 
 /**
  * Annotate an {@link STProperties} property to a schema provider.

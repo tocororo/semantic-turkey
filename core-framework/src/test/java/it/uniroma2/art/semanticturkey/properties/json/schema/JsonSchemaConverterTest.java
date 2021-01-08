@@ -23,9 +23,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.semanticturkey.mvc.RequestMappingHandlerAdapterPostProcessor;
 import it.uniroma2.art.semanticturkey.properties.Enumeration;
 import it.uniroma2.art.semanticturkey.properties.Required;
-import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
+import it.uniroma2.art.semanticturkey.properties.dynamic.DynamicSTProperties;
 
 public class JsonSchemaConverterTest {
 
@@ -79,13 +79,13 @@ public class JsonSchemaConverterTest {
 	public void testSchema1Conversion() throws JSONException, ConversionException, JsonProcessingException {
 
 		JsonSchemaConverter schemaConverter = new JsonSchemaConverter();
-		RuntimeSTProperties actualProps = schemaConverter.convert(new InputStreamReader(
+		DynamicSTProperties actualProps = schemaConverter.convert(new InputStreamReader(
 				this.getClass().getResourceAsStream("schema1.json"), StandardCharsets.UTF_8));
 
 		JsonNode actualTree = objectMapper.valueToTree(actualProps);
 
 		JsonNode expectedTree = objectMapper.valueToTree(new ExpectedProperties1());
-		((ObjectNode) expectedTree).put("@type", RuntimeSTProperties.class.getName());
+		((ObjectNode) expectedTree).put("@type", DynamicSTProperties.class.getName());
 
 		JSONAssert.assertEquals(expectedTree.toString(), actualTree.toString(), true);
 	}

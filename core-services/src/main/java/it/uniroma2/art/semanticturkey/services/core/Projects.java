@@ -1,49 +1,29 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.io.Closer;
-import it.uniroma2.art.lime.model.repo.LIMERepositoryConnectionWrapper;
-import it.uniroma2.art.lime.profiler.LIMEProfiler;
-import it.uniroma2.art.lime.profiler.ProfilerException;
-import it.uniroma2.art.maple.orchestration.AssessmentException;
-import it.uniroma2.art.maple.orchestration.MediationFramework;
-import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.*;
-import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
-import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDescription;
-import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
-import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.project.*;
-import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
-import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
-import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
-import it.uniroma2.art.semanticturkey.project.ProjectStatus.Status;
-import it.uniroma2.art.semanticturkey.properties.*;
-import it.uniroma2.art.semanticturkey.rbac.RBACException;
-import it.uniroma2.art.semanticturkey.resources.Scope;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.*;
-import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataStore;
-import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummary;
-import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
-import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacets;
-import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsStore;
-import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
-import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.StringWriter;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
@@ -81,13 +61,83 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.Nullable;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.net.URL;
-import java.util.Properties;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.io.Closer;
+
+import it.uniroma2.art.lime.model.repo.LIMERepositoryConnectionWrapper;
+import it.uniroma2.art.lime.profiler.LIMEProfiler;
+import it.uniroma2.art.lime.profiler.ProfilerException;
+import it.uniroma2.art.maple.orchestration.AssessmentException;
+import it.uniroma2.art.maple.orchestration.MediationFramework;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectDeletionException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
+import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
+import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDescription;
+import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.CorruptedProject;
+import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectACL;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
+import it.uniroma2.art.semanticturkey.project.ProjectInfo;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
+import it.uniroma2.art.semanticturkey.project.ProjectStatus;
+import it.uniroma2.art.semanticturkey.project.ProjectStatus.Status;
+import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
+import it.uniroma2.art.semanticturkey.project.RepositoryLocation;
+import it.uniroma2.art.semanticturkey.project.RepositorySummary;
+import it.uniroma2.art.semanticturkey.project.SHACLSettings;
+import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
+import it.uniroma2.art.semanticturkey.properties.Pair;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.properties.dynamic.STPropertiesSchema;
+import it.uniroma2.art.semanticturkey.rbac.RBACException;
+import it.uniroma2.art.semanticturkey.resources.Scope;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataStore;
+import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummary;
+import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
+import it.uniroma2.art.semanticturkey.settings.facets.CorruptedProjectFacets;
+import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacets;
+import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsSchemaStore;
+import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsStore;
+import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 //import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerNotDetectedException;
 //import it.uniroma2.art.semanticturkey.changetracking.ChangeTrackerParameterMismatchException;
@@ -354,7 +404,7 @@ public class Projects extends STServiceAdapter {
 				facets2 = (ProjectFacets) exptManager.getSettings(proj, UsersManager.getLoggedUser(),
 						ProjectFacetsStore.class.getName(), Scope.PROJECT);
 			} catch (IllegalStateException | STPropertyAccessException | NoSuchSettingsManager e) {
-				throw new RuntimeException(e);
+				facets2 = new CorruptedProjectFacets(e);
 			}
 
 		} else { // absProj instanceof CorruptedProject
@@ -484,8 +534,9 @@ public class Projects extends STServiceAdapter {
 		ProjectACL projectAcl = project.getACL();
 
 		String availableAclLevel = null;
-		//universal access level is valid for every project consumers except for SYSTEM
-		AccessLevel aclUniversal = (consumer != ProjectConsumer.SYSTEM) ? projectAcl.getUniversalAccessLevel() : null;
+		// universal access level is valid for every project consumers except for SYSTEM
+		AccessLevel aclUniversal = (consumer != ProjectConsumer.SYSTEM) ? projectAcl.getUniversalAccessLevel()
+				: null;
 		AccessLevel aclForConsumer = projectAcl.getAccessLevelForConsumer(consumer);
 		if (aclUniversal != null) {
 			availableAclLevel = aclUniversal.name();
@@ -556,7 +607,9 @@ public class Projects extends STServiceAdapter {
 
 	/**
 	 * Update the universal (for every consumer) AccessLevel of the current project
-	 * @param accessLevel if not provided revoke any universal access level assigned from the project
+	 * 
+	 * @param accessLevel
+	 *            if not provided revoke any universal access level assigned from the project
 	 * @throws ProjectUpdateException
 	 * @throws ReservedPropertyUpdateException
 	 */
@@ -574,8 +627,10 @@ public class Projects extends STServiceAdapter {
 
 	/**
 	 * Update the universal (for every consumer) AccessLevel of the given project
+	 * 
 	 * @param projectName
-	 * @param accessLevel if not provided revoke any universal access level assigned from the project
+	 * @param accessLevel
+	 *            if not provided revoke any universal access level assigned from the project
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
 	 * @throws ProjectAccessException
@@ -586,7 +641,7 @@ public class Projects extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	public void updateUniversalProjectAccessLevel(String projectName, @Optional AccessLevel accessLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-				ProjectUpdateException, ReservedPropertyUpdateException {
+			ProjectUpdateException, ReservedPropertyUpdateException {
 		Project project = ProjectManager.getProject(projectName, true);
 		if (accessLevel != null) {
 			project.getACL().grantUniversalAccess(accessLevel);
@@ -877,7 +932,7 @@ public class Projects extends STServiceAdapter {
 	}
 
 	/**
-	 * Returns the facets of the current project
+	 * Returns the facets of a project
 	 * 
 	 * @param projectName
 	 * 
@@ -889,7 +944,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectAccessException
 	 * 
 	 */
-	@STServiceOperation(method = RequestMethod.POST)
+	@STServiceOperation
 	@PreAuthorize("@auth.isAdmin()")
 	public ProjectFacets getProjectFacets(String projectName)
 			throws IllegalStateException, STPropertyAccessException, NoSuchSettingsManager,
@@ -897,6 +952,37 @@ public class Projects extends STServiceAdapter {
 		Project project = ProjectManager.getProject(projectName, true);
 		return (ProjectFacets) exptManager.getSettings(project, UsersManager.getLoggedUser(),
 				ProjectFacetsStore.class.getName(), Scope.PROJECT);
+	}
+
+	/**
+	 * Sets the schema of project facets
+	 * 
+	 * @param facetsSchema
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void setProjectFacetsSchema(ObjectNode facetsSchema)
+			throws IllegalStateException, NoSuchSettingsManager, STPropertyUpdateException,
+			WrongPropertiesException, STPropertyAccessException, ProjectAccessException,
+			InvalidProjectNameException, ProjectInexistentException {
+		exptManager.storeSettings(ProjectFacetsSchemaStore.class.getName(), null,
+				UsersManager.getLoggedUser(), Scope.SYSTEM, facetsSchema);
+	}
+
+	/**
+	 * Returns the schema of project facets
+	 * 
+	 * @throws NoSuchSettingsManager
+	 * @throws STPropertyAccessException
+	 * @throws IllegalStateException
+	 * 
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAdmin()")
+	public STPropertiesSchema getProjectFacetsSchema()
+			throws IllegalStateException, STPropertyAccessException, NoSuchSettingsManager {
+		return (STPropertiesSchema) exptManager.getSettings(null, UsersManager.getLoggedUser(),
+				ProjectFacetsSchemaStore.class.getName(), Scope.SYSTEM);
 	}
 
 	/**

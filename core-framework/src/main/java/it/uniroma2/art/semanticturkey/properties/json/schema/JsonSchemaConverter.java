@@ -5,6 +5,7 @@ import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -19,6 +20,7 @@ import javax.validation.constraints.Size;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.util.iterators.Iterators;
 import org.everit.json.schema.ArraySchema;
 import org.everit.json.schema.BooleanSchema;
@@ -38,14 +40,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 
-import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties;
-import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties.AnnotatedTypeBuilder;
-import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties.PropertyDefinition;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.properties.dynamic.DynamicSTProperties;
+import it.uniroma2.art.semanticturkey.properties.dynamic.DynamicSTProperties.AnnotatedTypeBuilder;
+import it.uniroma2.art.semanticturkey.properties.dynamic.DynamicSTProperties.PropertyDefinition;
 
 /**
- * Converters a JSON schema to a {@link RuntimeSTProperties}. This converter supports the following keywords:
+ * Converters a JSON schema to a {@link DynamicSTProperties}. This converter supports the following keywords:
  * <ul>
  * <li>type</li>
  * <li>enum</li>
@@ -79,7 +81,7 @@ import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 public class JsonSchemaConverter {
 	private ObjectMapper objectMapper = new ObjectMapper();
 
-	public RuntimeSTProperties convert(Reader reader) throws ConversionException {
+	public DynamicSTProperties convert(Reader reader) throws ConversionException {
 		try {
 			JsonNode jacksonSchemaNode = objectMapper.readTree(reader);
 			return convert(jacksonSchemaNode);
@@ -88,7 +90,7 @@ public class JsonSchemaConverter {
 		}
 	}
 
-	public RuntimeSTProperties convert(JsonNode jacksonSchemaNode) throws ConversionException {
+	public DynamicSTProperties convert(JsonNode jacksonSchemaNode) throws ConversionException {
 		try {
 			ObjectMapper stPropertiesObjectMapper = STPropertiesManager.createObjectMapper();
 
@@ -102,7 +104,7 @@ public class JsonSchemaConverter {
 
 			ObjectSchema objectSchema = (ObjectSchema) schema;
 
-			RuntimeSTProperties stProps = new RuntimeSTProperties(
+			DynamicSTProperties stProps = new DynamicSTProperties(
 					Optional.ofNullable(objectSchema.getTitle()).orElse(""));
 
 			String description = objectSchema.getDescription();
@@ -134,8 +136,11 @@ public class JsonSchemaConverter {
 						throw new ConversionException("Enumeration with some non string constant");
 					}
 
-					stPropDef = new PropertyDefinition(Optional.ofNullable(propSchema.getTitle()).orElse(""),
-							Optional.ofNullable(propSchema.getDescription()).orElse(""),
+					stPropDef = new PropertyDefinition(
+							Arrays.asList(SimpleValueFactory.getInstance()
+									.createLiteral(Optional.ofNullable(propSchema.getTitle()).orElse(""))),
+							Arrays.asList(SimpleValueFactory.getInstance().createLiteral(
+									Optional.ofNullable(propSchema.getDescription()).orElse(""))),
 							requiredProps.contains(propName),
 							new AnnotatedTypeBuilder().withType(String.class).build());
 					stPropDef.setEnumeration(possibleValues.toArray(new String[possibleValues.size()]));
@@ -143,8 +148,11 @@ public class JsonSchemaConverter {
 				} else {
 					Pair<AnnotatedType, List<Pair<Class<? extends Annotation>, Map<String, Object>>>> fieldTypeAndAnnotations = convertSchemaToAnnotatedTypeAndFieldConstraints(
 							propSchema);
-					stPropDef = new PropertyDefinition(Optional.ofNullable(propSchema.getTitle()).orElse(""),
-							Optional.ofNullable(propSchema.getDescription()).orElse(""),
+					stPropDef = new PropertyDefinition(
+							Arrays.asList(SimpleValueFactory.getInstance()
+									.createLiteral(Optional.ofNullable(propSchema.getTitle()).orElse(""))),
+							Arrays.asList(SimpleValueFactory.getInstance().createLiteral(
+									Optional.ofNullable(propSchema.getDescription()).orElse(""))),
 							requiredProps.contains(propName), fieldTypeAndAnnotations.getLeft());
 
 					fieldTypeAndAnnotations.getRight()

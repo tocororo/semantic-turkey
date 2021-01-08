@@ -47,6 +47,7 @@ import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.SystemSettingsManager;
 import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
+import it.uniroma2.art.semanticturkey.properties.dynamic.STPropertiesSchema;
 
 /**
  * A Jackson's {@link JsonSerializer} for {@link STProperties}.

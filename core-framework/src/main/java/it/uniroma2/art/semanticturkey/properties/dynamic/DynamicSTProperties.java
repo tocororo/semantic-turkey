@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.properties;
+package it.uniroma2.art.semanticturkey.properties.dynamic;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedParameterizedType;
@@ -10,19 +10,30 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.rdf4j.model.Literal;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import com.google.common.reflect.AbstractInvocationHandler;
+
+import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
+import it.uniroma2.art.semanticturkey.properties.EnumerationDescription;
+import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 
 /**
  * An {@link STProperties} which can be defined at runtime. Differently from ordinary {@link STProperties}
@@ -32,19 +43,20 @@ import com.google.common.reflect.AbstractInvocationHandler;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  *
  */
-public class RuntimeSTProperties implements STProperties {
+public class DynamicSTProperties implements STProperties {
 
 	public static class PropertyDefinition {
 
 		private AnnotatedType annotatedType;
 		private String contentType;
-		private String description;
-		private String displayName;
-		private Optional<Collection<String>> enumeration;
+		private List<Literal> description;
+		private List<Literal> displayName;
+		private Optional<EnumerationDescription> enumeration;
 		private boolean required;
 		private List<Annotation> annotations;
 
-		public PropertyDefinition(String displayName, String description, boolean required,
+		public PropertyDefinition(List<@LanguageTaggedString Literal> displayName,
+				List<@LanguageTaggedString Literal> description, boolean required,
 				AnnotatedType annotatedType) {
 			this.annotatedType = annotatedType;
 			this.displayName = displayName;
@@ -72,19 +84,19 @@ public class RuntimeSTProperties implements STProperties {
 			return contentType;
 		}
 
-		public void setDescription(String description) {
+		public void setDescription(List<Literal> description) {
 			this.description = description;
 		}
 
-		public String getDescription() {
+		public List<Literal> getDescription() {
 			return description;
 		}
 
-		public void setDisplayName(String displayName) {
+		public void setDisplayName(List<Literal> displayName) {
 			this.displayName = displayName;
 		}
 
-		public String getDisplayName() {
+		public List<Literal> getDisplayName() {
 			return displayName;
 		}
 
@@ -97,14 +109,22 @@ public class RuntimeSTProperties implements STProperties {
 		}
 
 		public void setEnumeration(String... items) {
-			if (items.length == 0) {
+			setEnumeration(Arrays.asList(items), false);
+		}
+
+		public void setOpenEnumeration(String... items) {
+			setEnumeration(Arrays.asList(items), true);
+		}
+
+		public void setEnumeration(List<String> items, boolean open) {
+			if (items.isEmpty()) {
 				this.enumeration = Optional.empty();
 			} else {
-				this.enumeration = Optional.of(Collections.unmodifiableList(Arrays.asList(items)));
+				this.enumeration = Optional.of(new EnumerationDescription(items, open));
 			}
 		}
 
-		public Optional<Collection<String>> getEnumeration() {
+		public Optional<EnumerationDescription> getEnumeration() {
 			return enumeration;
 		}
 
@@ -283,24 +303,18 @@ public class RuntimeSTProperties implements STProperties {
 	private Map<String, org.apache.commons.lang3.tuple.Pair<PropertyDefinition, Object>> properties;
 	private boolean open;
 
-	public RuntimeSTProperties(String shortName) {
+	public DynamicSTProperties(String shortName) {
 		this.shortName = shortName;
 		this.properties = new LinkedHashMap<>();
 		this.open = false;
 	}
-	
-	public RuntimeSTProperties() {
+
+	public DynamicSTProperties() {
 		this("");
 	}
 
-
 	public void setOpen(boolean open) {
 		this.open = open;
-	}
-
-	@Override
-	public boolean isOpen() {
-		return open;
 	}
 
 	protected Pair<PropertyDefinition, Object> getPropertyDefinitionAndValue(String id)
@@ -308,12 +322,7 @@ public class RuntimeSTProperties implements STProperties {
 		Pair<PropertyDefinition, Object> defAndValue = properties.get(id);
 
 		if (defAndValue == null) {
-			if (isOpen()) {
-				return MutablePair.of(new PropertyDefinition(null, "", false,
-						new AnnotatedTypeBuilder().withType(Object.class).build()), null);
-			} else {
-				throw new PropertyNotFoundException("Poperty \"" + id + "\" is not defined");
-			}
+			throw new PropertyNotFoundException("Poperty \"" + id + "\" is not defined");
 		}
 		return defAndValue;
 	}
@@ -372,17 +381,68 @@ public class RuntimeSTProperties implements STProperties {
 
 	@Override
 	public String getPropertyDescription(String id) throws PropertyNotFoundException {
-		return getPropertyDefinition(id).getDescription();
+		List<Literal> description = getPropertyDefinition(id).getDescription();
+
+		if (description == null)
+			return null;
+		if (description.size() == 1)
+			return description.iterator().next().stringValue();
+		Locale currentLocale = LocaleContextHolder.getLocale();
+		String currentLangTag = currentLocale.toString().toLowerCase();
+		String defaultLangTag = "en";
+
+		Stream<Literal> sortedDescriptions = description.stream().sorted(
+				Comparator.comparing((Literal l) -> l.getLanguage().orElse("").toLowerCase()).reversed());
+
+		Optional<Literal> localizedDescription = sortedDescriptions
+				.filter(l -> currentLangTag.startsWith(l.getLanguage().orElse("").toLowerCase())).findFirst();
+		if (localizedDescription.isPresent()) {
+			return localizedDescription.get().stringValue();
+		}
+
+		Optional<Literal> defaultLangDescription = sortedDescriptions
+				.filter(l -> defaultLangTag.startsWith(l.getLanguage().orElse("").toLowerCase())).findFirst();
+		if (defaultLangDescription.isPresent()) {
+			return defaultLangDescription.get().stringValue();
+		}
+
+		return "";
+
 	}
 
 	@Override
 	public String getPropertyDisplayName(String id) throws PropertyNotFoundException {
-		return getPropertyDefinition(id).getDisplayName();
+		List<Literal> displayName = getPropertyDefinition(id).getDisplayName();
+		if (displayName == null)
+			return null;
+
+		if (displayName.size() == 1)
+			return displayName.iterator().next().stringValue();
+		Locale currentLocale = LocaleContextHolder.getLocale();
+		String currentLangTag = currentLocale.toString().toLowerCase();
+		String defaultLangTag = "en";
+
+		Stream<Literal> sortedDisplayNames = displayName.stream().sorted(
+				Comparator.comparing((Literal l) -> l.getLanguage().orElse("").toLowerCase()).reversed());
+
+		Optional<Literal> localizedDescription = sortedDisplayNames
+				.filter(l -> currentLangTag.startsWith(l.getLanguage().orElse("").toLowerCase())).findFirst();
+		if (localizedDescription.isPresent()) {
+			return localizedDescription.get().stringValue();
+		}
+
+		Optional<Literal> defaultLangDescription = sortedDisplayNames
+				.filter(l -> defaultLangTag.startsWith(l.getLanguage().orElse("").toLowerCase())).findFirst();
+		if (defaultLangDescription.isPresent()) {
+			return defaultLangDescription.get().stringValue();
+		}
+
+		return null;
 	}
 
 	@Override
 	public Optional<EnumerationDescription> getEnumeration(String id) throws PropertyNotFoundException {
-		return getPropertyDefinition(id).getEnumeration().map(ls -> new EnumerationDescription(ls, false));
+		return getPropertyDefinition(id).getEnumeration();
 	}
 
 	@Override
@@ -397,9 +457,6 @@ public class RuntimeSTProperties implements STProperties {
 			Object convertedValue = checkAndConvertPropertyValue(id, value, annotType.getType());
 			Pair<PropertyDefinition, Object> defAndValue = getPropertyDefinitionAndValue(id);
 			defAndValue.setValue(convertedValue);
-			if (isOpen() && !properties.containsKey(id)) {
-				properties.put(id, defAndValue);
-			}
 		} catch (PropertyNotFoundException e) {
 			throw new WrongPropertiesException(e);
 		}

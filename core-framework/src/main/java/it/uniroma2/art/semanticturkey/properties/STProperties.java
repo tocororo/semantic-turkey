@@ -544,12 +544,4 @@ public interface STProperties {
 		}
 	}
 
-	/**
-	 * Returns whether unknown properties are allowed
-	 * 
-	 * @return
-	 */
-	default boolean isOpen() {
-		return false;
-	}
 }

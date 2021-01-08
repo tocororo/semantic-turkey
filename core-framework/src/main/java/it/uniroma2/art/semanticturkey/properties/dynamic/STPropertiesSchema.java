@@ -1,10 +1,8 @@
-package it.uniroma2.art.semanticturkey.properties;
+package it.uniroma2.art.semanticturkey.properties.dynamic;
 
-import java.awt.List;
 import java.lang.reflect.AnnotatedType;
 import java.net.URL;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.rdf4j.model.BNode;
@@ -13,9 +11,13 @@ import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 
+import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
-import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties.AnnotatedTypeBuilder;
-import it.uniroma2.art.semanticturkey.properties.RuntimeSTProperties.PropertyDefinition;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STProperty;
+import it.uniroma2.art.semanticturkey.properties.Schema;
+import it.uniroma2.art.semanticturkey.properties.dynamic.DynamicSTProperties.AnnotatedTypeBuilder;
+import it.uniroma2.art.semanticturkey.properties.dynamic.DynamicSTProperties.PropertyDefinition;
 
 /**
  * A schema for an {@link STProperties} object. It should be used together with the annotation {@link Schema}
@@ -41,7 +43,7 @@ public class STPropertiesSchema implements Settings {
 
 	@STProperty(description = "{" + MessageKeys.properties$description + "}", displayName = "{"
 			+ MessageKeys.properties$displayName + "}")
-	public Map<String, STPropertySchema> properties;
+	public List<STPropertySchema> properties;
 
 	/**
 	 * Returns an {@link STProperties} object that conforms to this schema
@@ -49,33 +51,25 @@ public class STPropertiesSchema implements Settings {
 	 * @return
 	 */
 	public STProperties toSTProperties() {
-		RuntimeSTProperties rv = new RuntimeSTProperties();
+		DynamicSTProperties rv = new DynamicSTProperties();
 
 		if (properties != null) {
-			for (Entry<String, STPropertySchema> propDef : properties.entrySet()) {
-				String propName = propDef.getKey();
-				STPropertySchema propSchema = propDef.getValue();
-
+			for (STPropertySchema propSchema : properties) {
 				boolean required = propSchema.required;
-				Map<String, String> description = propSchema.description;
-				Map<String, String> displayName = propSchema.displayName;
-				String typeName = propSchema.type;
-				String containerName = propSchema.container;
+				java.util.List<@LanguageTaggedString Literal> description = propSchema.description;
+				java.util.List<@LanguageTaggedString Literal> displayName = propSchema.displayName;
+				String typeName = propSchema.type.name;
 
-				Class<?> container = makeContainerClass(containerName);
-				AnnotatedType elementType = new AnnotatedTypeBuilder().withType(makeElementType(typeName))
+				AnnotatedType annotatedType = new AnnotatedTypeBuilder().withType(makeElementType(typeName))
 						.build();
 
-				AnnotatedType annotatedType;
-
-				if (container != null) {
-					annotatedType = new AnnotatedTypeBuilder().withType(container)
-							.withTypeArgument(elementType).build();
-				} else {
-					annotatedType = elementType;
+				PropertyDefinition dynPropDef = new PropertyDefinition(displayName, description, required,
+						annotatedType);
+				if (propSchema.enumeration != null) {
+					dynPropDef.setEnumeration(propSchema.enumeration.values, propSchema.enumeration.open);
 				}
-				rv.addProperty(propName,
-						new PropertyDefinition("a displayName", "a descr", required, annotatedType));
+
+				rv.addProperty(propSchema.name, dynPropDef);
 			}
 		}
 
