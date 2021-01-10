@@ -37,7 +37,7 @@ public class DynamicSTPropertiesTest {
 		return RequestMappingHandlerAdapterPostProcessor.createObjectMapper();
 	}
 
-	static STProperties expectedProps = new STProperties() {
+	public static class ExpectedSTProperties implements STProperties {
 		@Override
 		public String getShortName() {
 			return "TestProp";
@@ -70,9 +70,10 @@ public class DynamicSTPropertiesTest {
 		@Pattern(regexp = "a*")
 		@Required
 		public String patternedString;
-
-	};
-
+	}
+	
+	private static STProperties expectedProps = new ExpectedSTProperties();
+	
 	@Test
 	public void testProps() throws JSONException {
 
