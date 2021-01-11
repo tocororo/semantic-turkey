@@ -396,8 +396,8 @@ public class FreedcampBackend implements CollaborationBackend {
 		}
 		//check if there already a tag having as name the resource URI
 		String tagId = null;
-		if(resourceToTagsidMap.containsKey(resource)){
-			tagId = resourceToTagsidMap.get(resource);
+		if(resourceToTagsidMap.containsKey(resource.stringValue())){
+			tagId = resourceToTagsidMap.get(resource.stringValue());
 		}
 
 		//get the tags already associated to the task having id taskId
@@ -447,6 +447,101 @@ public class FreedcampBackend implements CollaborationBackend {
 			existingTagResourceList.add(tagId);
 		} else {
 			newTagResourceList.add("_"+resource); //TODO temporary solution, the _ will be removed when fixed in the freedcamp API server
+		}
+		String postJsonData = preparePostData(nameValueMap, newTagResourceList, existingTagResourceList);
+
+		addPostToHttpURLConnection(httpcon, postJsonData);
+
+		// Send post request
+		executeAndCheckError(httpcon);
+	}
+
+	@Override
+	public void removeResourceFromIssue(String taskId, IRI resource) throws STPropertyAccessException, IOException, CollaborationBackendException {
+		//first of all, check that there is a valid associated Freedcamp Project
+		checkPrjConfiguration();
+
+		FreedcampBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
+		FreedcampBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
+				UsersManager.getLoggedUser());
+
+		//get the mapping of tags_name-tags_id (the tags_id in this icas is a List, since there could be different tag with the same resourceIRI, even
+		// if this should never happen)
+		Map<String, List<String>> resourceToListTagsidMap = new HashMap<>();
+		String urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/tags?"+setSecureOrNot(projectPreferences);
+
+		HttpURLConnection httpcon = prepareHttpURLConnection(ConnType.GET, urlString,
+				"application/json;charset=UTF-8", projectPreferences);
+
+		// Send post request
+		executeAndCheckError(httpcon);
+
+		String responseTags = readRsponse(httpcon, true);
+		ObjectMapper objectMapper = new ObjectMapper();
+		JsonNode freedCampResponseNode = objectMapper.readTree(responseTags);
+		ArrayNode tagsFromFreedcampArray = (ArrayNode)freedCampResponseNode.get("data").get("tags");
+		for(JsonNode tagNode : tagsFromFreedcampArray){
+			String tagId = tagNode.get("id").asText();
+			String tagTitle = tagNode.get("title").asText();
+			if(!resourceToListTagsidMap.containsKey(tagTitle)) {
+				resourceToListTagsidMap.put(tagTitle, new ArrayList<>());
+			}
+			resourceToListTagsidMap.get(tagTitle).add(tagId);
+		}
+		//check if there already a tag having as name the resource URI
+		List<String> tagIdList = new ArrayList<>();
+		if(resourceToListTagsidMap.containsKey(resource.stringValue())){
+			tagIdList = resourceToListTagsidMap.get(resource.stringValue());
+		}
+		//if there is no tag with the desired resource URI (the one that the user want to remove from the task) then just exit,
+		// since is not a resource with
+		if(tagIdList == null || tagIdList.isEmpty()){
+			return;
+		}
+
+		//get the tags already associated to the task having id taskId
+		urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/tasks/"+taskId+"?f_use_cache=1"+
+				setSecureOrNot(projectPreferences);
+		httpcon = prepareHttpURLConnection(ConnType.GET, urlString,
+				"application/json;charset=UTF-8", projectPreferences);
+		// Send post request
+		executeAndCheckError(httpcon);
+		String responseTask = readRsponse(httpcon, true);
+		freedCampResponseNode = objectMapper.readTree(responseTask);
+		ArrayNode tasksArray = (ArrayNode)freedCampResponseNode.get("data").get("tasks");
+		if(tasksArray.size()==0){
+			throw new NullPointerException("There is no task with id "+taskId);
+		} else if(tasksArray.size()>1){
+			throw new NullPointerException("There are multiple tasks with id "+taskId+" which should not be possible");
+		}
+		JsonNode taskNode = tasksArray.get(0);
+		ArrayNode tagsArray = (ArrayNode) taskNode.get("tags");
+		List<String> alreadyAssociatedTagsList = new ArrayList<>();
+		for(JsonNode tagNode : tagsArray ){
+			alreadyAssociatedTagsList.add(tagNode.asText());
+		}
+
+		//remove from alreadyAssociatedTagsList the values from  tagIdList
+		List<String> tagsToMaintainList = new ArrayList<>();
+		for(String tagId : alreadyAssociatedTagsList){
+			if(!tagIdList.contains(tagId)){
+				tagsToMaintainList.add(tagId);
+			}
+		}
+
+		//now add to the task all the tags that were already present (except the one that has been removed)
+		urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/item_tags/2/"+
+				taskId+"/?"+setSecureOrNot(projectPreferences);
+		httpcon = prepareHttpURLConnection(ConnType.POST, urlString,
+				"application/x-www-form-urlencoded", projectPreferences);
+
+		Map<String, String> nameValueMap = new HashMap<>();
+		List<String> newTagResourceList = new ArrayList<>();
+		List<String> existingTagResourceList = new ArrayList<>();
+
+		//add the already assocaited tags
+		for(String tagsToMaintain : tagsToMaintainList){
+			existingTagResourceList.add(tagsToMaintain);
 		}
 		String postJsonData = preparePostData(nameValueMap, newTagResourceList, existingTagResourceList);
 
@@ -542,7 +637,7 @@ public class FreedcampBackend implements CollaborationBackend {
 			CollaborationBackendException {
 		int maxResult = 100;
 		int startAt = pageOffset*maxResult;
-		//TODO check how to the limit + offset
+		//TODO check how to do the limit + offset
 		String more="";
 		int total=0;
 		int numPagesTotal=0;

@@ -44,6 +44,7 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
 public class Collaboration extends STServiceAdapter {
 
 	private static final String PROJ_PROP_BACKEND = "plugins.optional.collaboration.factoryID";
+	private static final String PROJ_PROP_BACKEND_ACTIVE = "plugins.optional.collaboration.active";
 	private static Logger logger = LoggerFactory.getLogger(Collaboration.class);
 
 	@Autowired
@@ -51,17 +52,19 @@ public class Collaboration extends STServiceAdapter {
 
 	@STServiceOperation
 	public JsonNode getCollaborationSystemStatus()
-			throws STPropertyAccessException, NoSuchSettingsManager {
+			throws STPropertyAccessException, NoSuchSettingsManager, CollaborationBackendException {
 
 		STUser user = UsersManager.getLoggedUser();
 		Project project = getProject();
 		
 		String csBackendId = project.getProperty(PROJ_PROP_BACKEND);
+		String csActive = project.getProperty(PROJ_PROP_BACKEND_ACTIVE);
 		
 		boolean csEnabled = csBackendId != null; //CS factoryID assigned to project
+		boolean isCsActive = csActive==null ? false : Boolean.parseBoolean(csActive);
 		boolean csProjSettingsConfigured = false; //proj settings of the CS configured
 		boolean csUserSettingsConfigured = false; //user settings of the CS configured
-		boolean csLinked = csEnabled ? getCollaborationBackend().isProjectLinked() : false; //CS project linked
+		boolean csLinked = csEnabled ? getCollaborationBackend(false).isProjectLinked() : false; //CS project linked
 		
 		if (csEnabled) {
 			STProperties projSettings = exptManager.getSettings(project, user, csBackendId, Scope.PROJECT);
@@ -75,6 +78,7 @@ public class Collaboration extends STServiceAdapter {
 		ObjectNode respNode = jf.objectNode();
 		respNode.set("enabled", jf.booleanNode(csEnabled));
 		respNode.set("backendId", jf.textNode(csBackendId));
+		respNode.set("csActive", jf.booleanNode(isCsActive));
 		respNode.set("projSettingsConfigured", jf.booleanNode(csProjSettingsConfigured));
 		respNode.set("userSettingsConfigured", jf.booleanNode(csUserSettingsConfigured));
 		respNode.set("linked", jf.booleanNode(csLinked));
@@ -88,13 +92,27 @@ public class Collaboration extends STServiceAdapter {
 			throws ProjectUpdateException, ReservedPropertyUpdateException {
 		Project project = getProject();
 		project.setProperty(PROJ_PROP_BACKEND, backendId);
+		activate(project);
 	}
-	
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('pm(project, collaboration)', 'U')")
+	public void setCollaborationSystemActive(boolean active) throws ProjectUpdateException, ReservedPropertyUpdateException {
+		if(active){
+			Project project = getProject();
+			activate(project);
+		} else {
+			Project project = getProject();
+			deactivate(project);
+		}
+	}
+
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, collaboration)', 'U')")
 	public void resetCollaborationOnProject() throws ProjectUpdateException, ReservedPropertyUpdateException {
 		Project project = getProject();
 		project.removeProperty(PROJ_PROP_BACKEND, null);
+		deactivate(project);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -109,8 +127,12 @@ public class Collaboration extends STServiceAdapter {
 		project.setProperty(PROJ_PROP_BACKEND, backendId);
 	}
 
-	private CollaborationBackend getCollaborationBackend() throws IllegalStateException {
+	private CollaborationBackend getCollaborationBackend(boolean checkIfActive) throws IllegalStateException, CollaborationBackendException {
 		String backendId = getProject().getProperty(PROJ_PROP_BACKEND);
+		boolean isCsActive = isActive(getProject());
+		if(checkIfActive && !isCsActive){
+			throw new CollaborationBackendException("The Collaboration System is not active for this project");
+		}
 
 		CollaborationBackend instance;
 		try {
@@ -125,14 +147,14 @@ public class Collaboration extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.GET)
-	public STProperties getIssueCreationForm() {
-		return getCollaborationBackend().getCreateIssueForm();
+	public STProperties getIssueCreationForm() throws CollaborationBackendException {
+		return getCollaborationBackend(true).getCreateIssueForm();
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	public void createIssue(IRI resource, ObjectNode issueCreationForm)
 			throws STPropertyAccessException, IOException, CollaborationBackendException {
-		getCollaborationBackend().createIssue(resource.stringValue(), issueCreationForm);
+		getCollaborationBackend(true).createIssue(resource.stringValue(), issueCreationForm);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
@@ -140,33 +162,39 @@ public class Collaboration extends STServiceAdapter {
 	public void assignProject(ObjectNode projectJson)
 			throws STPropertyAccessException, IOException, CollaborationBackendException,
 			STPropertyUpdateException {
-		getCollaborationBackend().assignProject(projectJson);
-		getCollaborationBackend().checkPrjConfiguration();
+		getCollaborationBackend(true).assignProject(projectJson);
+		getCollaborationBackend(true).checkPrjConfiguration();
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, collaboration)', 'C')")
 	public void createProject(ObjectNode projectJson) throws STPropertyAccessException,
 			JsonProcessingException, IOException, CollaborationBackendException, STPropertyUpdateException {
-		getCollaborationBackend().createProject(projectJson);
+		getCollaborationBackend(true).createProject(projectJson);
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void assignResourceToIssue(String issue, IRI resource)
 			throws STPropertyAccessException, IOException, CollaborationBackendException {
-		getCollaborationBackend().assignResourceToIssue(issue, resource);
+		getCollaborationBackend(true).assignResourceToIssue(issue, resource);
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	public void removeResourceFromIssue(String issue, IRI resource)
+			throws STPropertyAccessException, IOException, CollaborationBackendException {
+		getCollaborationBackend(true).removeResourceFromIssue(issue, resource);
 	}
 
 	@STServiceOperation(method = RequestMethod.GET)
 	public JsonNode listIssuesAssignedToResource(IRI resource)
 			throws STPropertyAccessException, IOException, CollaborationBackendException {
-		return getCollaborationBackend().listIssuesAssignedToResource(resource);
+		return getCollaborationBackend(true).listIssuesAssignedToResource(resource);
 	}
 
 	@STServiceOperation(method = RequestMethod.GET)
 	public JsonNode listIssues(int pageOffset)
 			throws STPropertyAccessException, IOException, CollaborationBackendException {
-		return getCollaborationBackend().listIssues(pageOffset);
+		return getCollaborationBackend(true).listIssues(pageOffset);
 	}
 
 	/*
@@ -179,7 +207,22 @@ public class Collaboration extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.GET)
 	public JsonNode listProjects()
 			throws STPropertyAccessException, IOException, CollaborationBackendException {
-		return getCollaborationBackend().listProjects();
+		return getCollaborationBackend(true).listProjects();
+	}
+
+
+	private void activate(Project project) throws ProjectUpdateException, ReservedPropertyUpdateException {
+		project.setProperty(PROJ_PROP_BACKEND_ACTIVE, "true");
+	}
+
+	private void deactivate(Project project) throws ProjectUpdateException, ReservedPropertyUpdateException {
+		project.setProperty(PROJ_PROP_BACKEND_ACTIVE, "false");
+	}
+
+	private boolean isActive(Project project){
+		String csActive = project.getProperty(PROJ_PROP_BACKEND_ACTIVE);
+		boolean isCsActive = csActive==null ? false : Boolean.parseBoolean(csActive);
+		return  isCsActive;
 	}
 
 }

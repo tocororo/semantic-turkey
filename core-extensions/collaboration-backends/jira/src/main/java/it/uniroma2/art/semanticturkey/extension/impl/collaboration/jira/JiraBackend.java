@@ -314,6 +314,35 @@ public class JiraBackend implements CollaborationBackend {
 	}
 
 	@Override
+	public void removeResourceFromIssue(String issueKey, IRI resource) throws STPropertyAccessException, IOException, CollaborationBackendException {
+		//first of all, check that there is a valid associated Jira Project
+		checkPrjConfiguration();
+
+		JiraBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
+		JiraBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
+				UsersManager.getLoggedUser());
+
+		// now update the labels of the desired issue with the IRI of the input Resource
+		String url = projectSettings.serverURL+"/rest/api/2/"+ "issue/"+issueKey;
+
+		HttpURLConnection httpcon = prepareHttpURLConnection(ConnType.PUT, url, "application/json;charset=UTF-8",
+				projectPreferences);
+
+		String postJsonData = "{"
+				+"\n\"update\":{"
+				+"\n\"labels\": "
+				+"\n[{\"remove\":"+
+				"\n\""+resource.stringValue()+"\""
+				+ "\n}]"
+				+ "\n}"
+				+ "\n}";
+
+		addPostToHttpURLConnection(httpcon, postJsonData);
+
+		executeAndCheckError(httpcon);
+	}
+
+	@Override
 	public JsonNode listIssuesAssignedToResource(IRI resource) throws STPropertyAccessException, IOException, 
 			CollaborationBackendException {
 		//first of all, check that there is a valid associated Jira Project

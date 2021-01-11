@@ -36,6 +36,9 @@ public interface CollaborationBackend extends Extension {
 	public void assignResourceToIssue(String issue, IRI resource)
 			throws STPropertyAccessException, IOException, CollaborationBackendException;
 
+	public void removeResourceFromIssue(String issue, IRI resource)
+			throws STPropertyAccessException, IOException, CollaborationBackendException;
+
 	void bind2project(Project project);
 
 	public JsonNode listIssuesAssignedToResource(IRI resource)
