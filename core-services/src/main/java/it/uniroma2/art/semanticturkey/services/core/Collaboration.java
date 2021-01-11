@@ -60,23 +60,23 @@ public class Collaboration extends STServiceAdapter {
 		String csBackendId = project.getProperty(PROJ_PROP_BACKEND);
 		String csActive = project.getProperty(PROJ_PROP_BACKEND_ACTIVE);
 		
-		boolean csEnabled = csBackendId != null; //CS factoryID assigned to project
 		boolean isCsActive = csActive==null ? false : Boolean.parseBoolean(csActive);
 		boolean csProjSettingsConfigured = false; //proj settings of the CS configured
 		boolean csUserSettingsConfigured = false; //user settings of the CS configured
-		boolean csLinked = csEnabled ? getCollaborationBackend(false).isProjectLinked() : false; //CS project linked
+		boolean csLinked = false; //CS project linked
 		
-		if (csEnabled) {
+		if (csBackendId != null) {
 			STProperties projSettings = exptManager.getSettings(project, user, csBackendId, Scope.PROJECT);
 			csProjSettingsConfigured = STPropertiesChecker.getModelConfigurationChecker(projSettings).isValid();
 
 			STProperties userSettings = exptManager.getSettings(project, user, csBackendId, Scope.PROJECT_USER);
 			csUserSettingsConfigured = STPropertiesChecker.getModelConfigurationChecker(userSettings).isValid();
+
+			csLinked = getCollaborationBackend(false).isProjectLinked();
 		}
 
 		JsonNodeFactory jf = JsonNodeFactory.instance;
 		ObjectNode respNode = jf.objectNode();
-		respNode.set("enabled", jf.booleanNode(csEnabled));
 		respNode.set("backendId", jf.textNode(csBackendId));
 		respNode.set("csActive", jf.booleanNode(isCsActive));
 		respNode.set("projSettingsConfigured", jf.booleanNode(csProjSettingsConfigured));
