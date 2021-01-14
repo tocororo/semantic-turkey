@@ -6,12 +6,14 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.ORG;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
@@ -295,6 +297,7 @@ public class UsersRepoHelper {
 		query += " } " + //close VALUES
 				"?prop " + NTriplesUtil.toNTriplesString(RDFS.LABEL) + " ?label . " +
 				"?prop " + NTriplesUtil.toNTriplesString(RDF.VALUE) + " ?position . " +
+				"OPTIONAL { ?prop " + NTriplesUtil.toNTriplesString(SKOS.DEFINITION) + " ?descr .  }" +
 				" } ";
 		logger.debug(query);
 		try (
@@ -307,7 +310,9 @@ public class UsersRepoHelper {
 				if (bsProp != null) {
 					String fieldLabel = bs.getValue("label").stringValue();
 					int fieldPosition = ((Literal)bs.getValue("position")).intValue();
-					UserFormCustomField field = new UserFormCustomField((IRI)bsProp.getValue(), fieldPosition, fieldLabel);
+					Value descrValue = bs.getValue("descr");
+					String description = descrValue != null ? descrValue.stringValue() : null;
+					UserFormCustomField field = new UserFormCustomField((IRI)bsProp.getValue(), fieldPosition, fieldLabel, description);
 					form.addField(field);
 				}
 			}
@@ -332,8 +337,11 @@ public class UsersRepoHelper {
 	public void insertUserFormCustomField(UserFormCustomField field) {
 		String query = "INSERT DATA { " +
 			NTriplesUtil.toNTriplesString(field.getIri()) + " " + NTriplesUtil.toNTriplesString(RDFS.LABEL) + " '" + field.getLabel() + "' . " +
-			NTriplesUtil.toNTriplesString(field.getIri()) + " " + NTriplesUtil.toNTriplesString(RDF.VALUE) + " " + field.getPosition() + " . " +
-			"}";
+			NTriplesUtil.toNTriplesString(field.getIri()) + " " + NTriplesUtil.toNTriplesString(RDF.VALUE) + " " + field.getPosition() + " . ";
+		if (field.getDescription() != null) {
+			query += NTriplesUtil.toNTriplesString(field.getIri()) + " " + NTriplesUtil.toNTriplesString(SKOS.DEFINITION) + " '" + field.getDescription() + "' . ";
+		}
+		query += "}";
 		//execute query
 		logger.debug(query);
 		try (RepositoryConnection conn = repository.getConnection()) {

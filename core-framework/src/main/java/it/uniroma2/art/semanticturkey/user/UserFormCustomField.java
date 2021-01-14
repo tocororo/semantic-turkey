@@ -7,11 +7,13 @@ public class UserFormCustomField {
 	private IRI iri;
 	private int position;
 	private String label;
+	private String description;
 	
-	public UserFormCustomField(IRI iri, int position, String label) {
+	public UserFormCustomField(IRI iri, int position, String label, String description) {
 		this.iri = iri;
 		this.position = position;
 		this.label = label;
+		this.description = description;
 	}
 
 	public IRI getIri() {
@@ -24,13 +26,19 @@ public class UserFormCustomField {
 	public void setPosition(int position) {
 		this.position = position;
 	}
+
 	public String getLabel() {
 		return label;
 	}
 	public void setLabel(String label) {
 		this.label = label;
 	}
-	
-	
+
+	public String getDescription() {
+		return description;
+	}
+	public void setDescription(String description) {
+		this.description = description;
+	}
 
 }

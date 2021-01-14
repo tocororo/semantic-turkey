@@ -511,19 +511,20 @@ public class UsersManager {
 		updateUserFormFieldsFile();
 	}
 
-	public static void addUserFormCustomField(String field) throws UserException {
+	public static void addUserFormCustomField(String field, String description) throws UserException {
 		IRI p = userForm.getFirstAvailableProperty();
 		if (p == null) { // this should never happen, the UI should prevent to add new fields when there are
 							// no more fields available
 			throw new IllegalStateException("Cannot add a field, the form is already filled");
 		}
-		userForm.addField(new UserFormCustomField(p, userForm.getOrderedCustomFields().size(), field));
+		userForm.addField(new UserFormCustomField(p, userForm.getOrderedCustomFields().size(), field, description));
 		updateUserFormFieldsFile();
 	}
 
-	public static void renameUserFormCustomField(IRI fieldIri, String newLabel) throws UserException {
+	public static void updateUserFormCustomField(IRI fieldIri, String label, String description) throws UserException {
 		UserFormCustomField field = userForm.getCustomField(fieldIri);
-		field.setLabel(newLabel);
+		field.setLabel(label);
+		field.setDescription(description);
 		updateUserFormFieldsFile();
 	}
 

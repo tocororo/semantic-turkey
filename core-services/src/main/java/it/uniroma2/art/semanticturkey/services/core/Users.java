@@ -588,7 +588,7 @@ public class Users extends STServiceAdapter {
 			ObjectNode fieldJson = jsonFactory.objectNode();
 			fieldJson.set("iri", jsonFactory.textNode(field.getIri().stringValue()));
 			fieldJson.set("label", jsonFactory.textNode(field.getLabel()));
-//			fieldJson.set("position", jsonFactory.numberNode(field.getPosition()));
+			fieldJson.set("description", jsonFactory.textNode(field.getDescription()));
 			customFieldsJson.add(fieldJson);
 		}
 		respJson.set("customFields", customFieldsJson);
@@ -603,14 +603,14 @@ public class Users extends STServiceAdapter {
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void addUserFormCustomField(String field) throws UserException {
-		UsersManager.addUserFormCustomField(field);
+	public void addUserFormCustomField(String field, @Optional String description) throws UserException {
+		UsersManager.addUserFormCustomField(field, description);
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void renameUserFormCustomField(IRI fieldIri, String newLabel) throws UserException {
-		UsersManager.renameUserFormCustomField(fieldIri, newLabel);
+	public void updateUserFormCustomField(IRI fieldIri, String label, @Optional String description) throws UserException {
+		UsersManager.updateUserFormCustomField(fieldIri, label, description);
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
