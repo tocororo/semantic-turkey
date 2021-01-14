@@ -209,6 +209,7 @@ public class STPropertiesPersistenceDeserializer extends StdDeserializer<STPrope
 			return null;
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public <A extends Annotation> A getAnnotation(Class<A> acls) {
 			if (Schema.class.equals(acls)) {
