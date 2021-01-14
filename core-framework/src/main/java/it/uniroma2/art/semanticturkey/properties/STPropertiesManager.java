@@ -12,11 +12,16 @@ import java.util.LinkedHashSet;
 import java.util.Properties;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
 
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
@@ -175,9 +180,9 @@ public class STPropertiesManager {
 		File propFile = getPUSettingsFile(project, user, pluginID);
 
 		if (explicit) {
-			return loadSTPropertiesFromYAMLFiles(valueType, false, propFile);
+			return loadSettings(valueType, propFile);
 		} else {
-			return loadSTPropertiesFromYAMLFiles(valueType, false, defaultPropFile, propFile);
+			return loadSettings(valueType, defaultPropFile, propFile);
 		}
 	}
 
@@ -629,9 +634,9 @@ public class STPropertiesManager {
 		File defaultPropFile = getUserSettingsDefaultsFile(pluginID);
 
 		if (explicit) {
-			return loadSTPropertiesFromYAMLFiles(valueType, false, propFile);
+			return loadSettings(valueType, propFile);
 		} else {
-			return loadSTPropertiesFromYAMLFiles(valueType, false, defaultPropFile, propFile);
+			return loadSettings(valueType, defaultPropFile, propFile);
 		}
 	}
 
@@ -787,41 +792,19 @@ public class STPropertiesManager {
 
 	public static <T extends STProperties> T loadSTPropertiesFromObjectNode(Class<T> valueType,
 			boolean loadObjType, ObjectNode obj) throws STPropertyAccessException {
-		return loadSTPropertiesFromObjectNode(valueType, loadObjType, obj, createObjectMapper());
+		return loadSTPropertiesFromObjectNode(valueType, loadObjType, obj, createObjectMapper(null));
 	}
 
 	@SuppressWarnings("unchecked")
 	public static <T extends STProperties> T loadSTPropertiesFromObjectNode(Class<T> valueType,
 			boolean loadObjType, ObjectNode obj, ObjectMapper objectMapper) throws STPropertyAccessException {
 		try {
-			Class<?> effectveValueType = valueType;
-
-			if (loadObjType && obj.hasNonNull(SETTINGS_TYPE_PROPERTY)) {
-				String specificClassName = obj.get(SETTINGS_TYPE_PROPERTY).asText();
-				Class<?> specificClass = valueType.getClassLoader().loadClass(specificClassName);
-				if (!valueType.isAssignableFrom(specificClass)) {
-					throw new STPropertyAccessException("Specific type \"" + specificClassName
-							+ "\" is not assignable to generic type \"" + valueType.getName() + "\"");
-				}
-				effectveValueType = specificClass;
+			if (!loadObjType && obj.hasNonNull(SETTINGS_TYPE_PROPERTY)) {
+				obj.remove(SETTINGS_TYPE_PROPERTY);
 			}
 
-			STProperties properties = (STProperties) effectveValueType.newInstance();
-
-			for (String prop : properties.getProperties()) {
-				Type propType = properties.getPropertyType(prop);
-				JavaType jacksonPropType = objectMapper.getTypeFactory().constructType(propType);
-
-				if (obj.hasNonNull(prop)) {
-					Object propValue = objectMapper.readValue(objectMapper.treeAsTokens(obj.get(prop)),
-							jacksonPropType);
-					properties.setPropertyValue(prop, propValue);
-				}
-			}
-
-			return (T) properties;
-		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
-				| PropertyNotFoundException | IOException | WrongPropertiesException e) {
+			return (T) objectMapper.readValue(objectMapper.treeAsTokens(obj), valueType);
+		} catch (IOException e) {
 			throw new STPropertyAccessException(e);
 		}
 	}
@@ -983,9 +966,9 @@ public class STPropertiesManager {
 		File propFile = getProjectSettingsFile(project, pluginID);
 
 		if (explicit) {
-			return loadSTPropertiesFromYAMLFiles(valueType, false, propFile);
+			return loadSettings(valueType, propFile);
 		} else {
-			return loadSTPropertiesFromYAMLFiles(valueType, false, defaultPropFile, propFile);
+			return loadSettings(valueType, defaultPropFile, propFile);
 		}
 	}
 
@@ -1182,9 +1165,31 @@ public class STPropertiesManager {
 		return loadProperties(getSystemSettingsFile(pluginID)).getProperty(propName);
 	}
 
+	private static <T extends STProperties> T loadSettings(Class<T> valueType, File... settingsFiles)
+			throws STPropertyAccessException {
+		BundleContext bundleContext = FrameworkUtil.getBundle(STPropertiesManager.class).getBundleContext();
+		@Nullable
+		ServiceReference sr = bundleContext.getServiceReference(ExtensionPointManager.class.getName());
+		@Nullable
+		ExtensionPointManager exptManager;
+		if (sr != null) {
+			exptManager = (ExtensionPointManager) bundleContext.getService(sr);
+		} else {
+			exptManager = null;
+		}
+
+		try {
+			return loadSTPropertiesFromYAMLFiles(valueType, false, exptManager, settingsFiles);
+		} finally {
+			if (sr != null) {
+				bundleContext.ungetService(sr);
+			}
+		}
+	}
+
 	public static <T extends STProperties> T getSystemSettings(Class<T> valueType, String pluginID)
 			throws STPropertyAccessException {
-		return loadSTPropertiesFromYAMLFiles(valueType, false, getSystemSettingsFile(pluginID));
+		return loadSettings(valueType, getSystemSettingsFile(pluginID));
 	}
 
 	/**

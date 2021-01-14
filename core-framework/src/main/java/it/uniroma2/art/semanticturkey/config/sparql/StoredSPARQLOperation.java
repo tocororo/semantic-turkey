@@ -7,21 +7,33 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 public class StoredSPARQLOperation implements Configuration {
 
-	@Override
-	public String getShortName() {
-		return "Stored SPARQL Operation";
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLOperation";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String sparql$description = keyBase + ".sparql.description";
+		public static final String sparql$displayName = keyBase + ".sparql.displayName";
+		public static final String type$description = keyBase + ".type.description";
+		public static final String type$displayName = keyBase + ".type.displayName";
+		public static final String includeInferred$description = keyBase + ".includeInferred.description";
+		public static final String includeInferred$displayName = keyBase + ".includeInferred.displayName";
 	}
 
-	@STProperty(description="SPARQL")
+	@Override
+	public String getShortName() {
+		return "{" + MessageKeys.shortName + "}";
+	}
+
+	@STProperty(description="{" + MessageKeys.sparql$description + "}", displayName = "{" + MessageKeys.sparql$displayName + "}")
 	@Required
 	public String sparql;
 
-	@STProperty(description="Tells whether the provided SPARQL string represents a query or an update")
+	@STProperty(description="{" + MessageKeys.type$description + "}", displayName = "{" + MessageKeys.type$displayName + "}")
 	@Required
 	@Enumeration({"query", "update"})
 	public String type;
 	
-	@STProperty(description="Tells whether to inlude inferred statements in the evaluation of the query")
+	@STProperty(description="{" + MessageKeys.type$description + "}", displayName = "{" + MessageKeys.type$displayName + "}")
 	@Required
 	public Boolean includeInferred;
 }

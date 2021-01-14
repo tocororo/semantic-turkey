@@ -17,7 +17,7 @@ import it.uniroma2.art.semanticturkey.properties.dynamic.STPropertiesSchema;
  *
  */
 @Documented
-@Target(ElementType.TYPE_USE)
+@Target(ElementType.FIELD)
 @Retention(RUNTIME)
 public @interface Schema {
 	Class<? extends SystemSettingsManager<STPropertiesSchema>> settingsManager();

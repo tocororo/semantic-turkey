@@ -37,19 +37,31 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public class StoredSPARQLParameterization implements Configuration {
 
-	@Override
-	public String getShortName() {
-		return "Stored SPARQL Parameterization";
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String relativeReference$description = keyBase + ".relativeReference.description";
+		public static final String relativeReference$displayName = keyBase + ".relativeReference.displayName";
+		public static final String description$description = keyBase + ".description.description";
+		public static final String description$displayName = keyBase + ".description.displayName";
+		public static final String variableBindings$description = keyBase + ".variableBindings.description";
+		public static final String variableBindings$displayName = keyBase + ".variableBindings.displayName";
 	}
 
-	@STProperty(description = "A relative reference to a stored SPARQL operation", displayName = "Relative reference")
+	@Override
+	public String getShortName() {
+		return "{" + MessageKeys.shortName + "}";
+	}
+
+	@STProperty(description = "{" + MessageKeys.relativeReference$description + "}", displayName = "{" + MessageKeys.relativeReference$displayName + "}")
 	@Required
 	public String relativeReference;
 
-	@STProperty(description = "A description of this parameterization", displayName = "Description")
+	@STProperty(description = "{" + MessageKeys.description$description + "}", displayName = "{" + MessageKeys.description$displayName + "}")
 	public String description;
 
-	@STProperty(description = "Variable bindings", displayName = "Variable bindings")
+	@STProperty(description = "{" + MessageKeys.variableBindings$description + "}", displayName = "{" + MessageKeys.variableBindings$displayName + "}")
 	public Map<String, VariableBinding> variableBindings;
 
 	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = As.EXISTING_PROPERTY, property = "bindingType")

@@ -1,7 +1,14 @@
 package it.uniroma2.art.semanticturkey.extension.settings.impl;
 
+import javax.annotation.Nullable;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
+
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.settings.PUSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.ProjectSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
@@ -41,8 +48,23 @@ public abstract class SettingsSupport {
 
 	public static Settings createSettings(SettingsManager settingsManager, Scope scope, ObjectNode settings)
 			throws WrongPropertiesException, STPropertyAccessException {
+		BundleContext bundleContext = FrameworkUtil.getBundle(SettingsSupport.class).getBundleContext();
+		@Nullable
+		ServiceReference sr = bundleContext.getServiceReference(ExtensionPointManager.class.getName());
+		@Nullable
+		ExtensionPointManager exptManager;
+		if (sr != null) {
+			exptManager = (ExtensionPointManager) bundleContext.getService(sr);
+		} else {
+			exptManager = null;
+		}
 		Class<Settings> settingsClass = getSettingsClass(settingsManager, scope);
-		return STPropertiesManager.loadSTPropertiesFromObjectNode(settingsClass, false, settings);
+		try {
+			return STPropertiesManager.loadSTPropertiesFromObjectNode(settingsClass, false, settings,
+					STPropertiesManager.createObjectMapper(exptManager));
+		} finally {
+			bundleContext.ungetService(sr);
+		}
 	}
 
 }

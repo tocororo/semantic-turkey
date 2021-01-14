@@ -13,12 +13,20 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public class STPropertyType implements STProperties {
 
-	@Override
-	public String getShortName() {
-		return "STProperty type";
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.properties.dynamic.STPropertyType";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String name$description = keyBase + ".name.description";
+		public static final String name$displayName = keyBase + ".name.displayName";
 	}
 
-	@STProperty(description = "")
+	@Override
+	public String getShortName() {
+		return "{" + MessageKeys.shortName + "}";
+	}
+
+	@STProperty(description = "{" + MessageKeys.name$description + "}", displayName = "{" + MessageKeys.name$displayName + "}")
 	@Required
 	@Enumeration(value = { "boolean", "short", "integer", "long", "float", "double", "IRI", "BNode",
 			"Resource", "Literal", "RDFValue", "URL", "java.lang.String" })

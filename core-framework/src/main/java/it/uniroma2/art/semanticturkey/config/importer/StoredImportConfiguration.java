@@ -15,6 +15,19 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public class StoredImportConfiguration implements Configuration {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.config.importer.StoredImportConfiguration";
+
+		public static final String loaderSpec$description = keyBase + ".loaderSpec.description";
+		public static final String loaderSpec$displayName = keyBase + ".loaderSpec.displayName";
+		public static final String rdfLifterSpec$description = keyBase + ".rdfLifterSpec.description";
+		public static final String rdfLifterSpec$displayName = keyBase + ".rdfLifterSpec.displayName";
+		public static final String format$description = keyBase + ".format.description";
+		public static final String format$displayName = keyBase + ".format.displayName";
+		public static final String transformationPipeline$description = keyBase + ".transformationPipeline.description";
+		public static final String transformationPipeline$displayName = keyBase + ".transformationPipeline.displayName";
+	}
+
 	@Override
 	public String getShortName() {
 		return "Stored Import Configuration";

@@ -25,6 +25,7 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
 import javax.validation.Constraint;
 
 import org.apache.commons.lang3.reflect.TypeUtils;
@@ -126,8 +127,34 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 				gen.writeStartObject();
 
 				String parDescr = value.getPropertyDescription(prop);
-				AnnotatedType parType = value.getPropertyAnnotatedType(prop);
+				AnnotatedType parAnnotatedType = value.getPropertyAnnotatedType(prop);
+				Type parType = parAnnotatedType.getType();
 				String parDispName = value.getPropertyDisplayName(prop);
+				Annotation[] parAnnots = value.getAnnotations(prop);
+
+				@Nullable
+				Schema schemaAnnot = (Schema) Arrays.stream(parAnnots)
+						.filter(ann -> Schema.class.equals(ann.annotationType())).findAny().orElse(null);
+				@Nullable
+				STPropertiesSchema schema;
+				if (schemaAnnot != null) {
+					if (!TypeUtils.equals(parType, STProperties.class)) {
+						throw new IOException(
+								"@Schema annotated property '" + prop + "' has not type STProperty");
+					}
+
+					if (exptManager == null) {
+						throw new IllegalStateException(
+								"No extension point manager has been plugged into the serializer");
+					}
+					@SuppressWarnings("unchecked")
+					SystemSettingsManager<STPropertiesSchema> schemaProvider = (SystemSettingsManager<STPropertiesSchema>) exptManager
+							.getSettingsManager(schemaAnnot.settingsManager().getName());
+
+					schema = schemaProvider.getSystemSettings();
+				} else {
+					schema = null;
+				}
 
 				gen.writeStringField("name", prop);
 				gen.writeStringField("description", interpolate(parDescr));
@@ -140,7 +167,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 					gen.writeEndObject();
 				} else {
 					gen.writeFieldName("type");
-					writeTypeDescription(parType, gen, provider);
+					writeTypeDescription(parAnnotatedType, schema, gen, provider);
 				}
 
 				Optional<EnumerationDescription> enumerationHolder = value.getEnumeration(prop);
@@ -160,7 +187,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 					gen.writeEndObject();
 				}
 
-				List<Annotation> constraints = selectConstraints(value.getAnnotations(prop), true);
+				List<Annotation> constraints = selectConstraints(parAnnots, true);
 				appendConstraints(constraints, gen, provider);
 
 				Object parValue = value.getPropertyValue(prop);
@@ -181,7 +208,8 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 			gen.writeEndArray();
 
 			gen.writeEndObject();
-		} catch (PropertyNotFoundException e) {
+		} catch (PropertyNotFoundException | IllegalStateException | STPropertyAccessException
+				| NoSuchSettingsManager e) {
 			throw new IOException(e);
 		}
 	}
@@ -195,12 +223,13 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 	 * parameterized type or the element type of an array type.
 	 * 
 	 * @param annotatedType
+	 * @param schema
 	 * @param gen
 	 * @param provider
 	 * @throws IOException
 	 */
-	private void writeTypeDescription(AnnotatedType annotatedType, JsonGenerator gen,
-			SerializerProvider provider) throws IOException {
+	private void writeTypeDescription(AnnotatedType annotatedType, STPropertiesSchema schema,
+			JsonGenerator gen, SerializerProvider provider) throws IOException {
 		Type type = annotatedType.getType();
 		String reducedTypeName = computeReducedTypeName(type);
 
@@ -212,25 +241,17 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 
 		if (TypeUtils.isAssignable(annotatedType.getType(), STProperties.class)) {
 			gen.writeStringField("name", "Properties");
-			try {
-				Schema schemaAnnotation = annotatedType.getAnnotation(Schema.class);
-
-				STProperties schema;
-				if (schemaAnnotation != null) {
-					@SuppressWarnings("unchecked")
-					SystemSettingsManager<STPropertiesSchema> schemaProvider = (SystemSettingsManager<STPropertiesSchema>) exptManager
-							.getSettingsManager(schemaAnnotation.settingsManager().getName());
-					STPropertiesSchema propertiesSchema = schemaProvider.getSystemSettings();
-					schema = propertiesSchema.toSTProperties();
-				} else {
-					Class<?> clazz = (Class<?>) type;
-					schema = (STProperties) clazz.newInstance();
+			STProperties effectiveSchema;
+			if (schema != null) {
+				effectiveSchema = schema.toSTProperties();
+			} else {
+				try {
+					effectiveSchema = (STProperties) ((Class<?>) annotatedType.getType()).newInstance();
+				} catch (InstantiationException | IllegalAccessException e) {
+					throw new IOException("Unable to istantiate property schema", e);
 				}
-				gen.writeObjectField("schema", schema);
-			} catch (InstantiationException | IllegalAccessException | IOException | STPropertyAccessException
-					| NoSuchSettingsManager e) {
-				logger.warn("Can't serialized the schema", e);
 			}
+			gen.writeObjectField("schema", effectiveSchema);
 		} else {
 			gen.writeStringField("name", reducedTypeName);
 		}
@@ -243,12 +264,12 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 				AnnotatedType[] annotatedTypeArguments = ((AnnotatedParameterizedType) annotatedType)
 						.getAnnotatedActualTypeArguments();
 				for (AnnotatedType arg : annotatedTypeArguments) {
-					writeTypeDescription(arg, gen, provider);
+					writeTypeDescription(arg, schema, gen, provider);
 				}
 			} else if (TypeUtils.isArrayType(type)) {
 				AnnotatedType componentType = ((AnnotatedArrayType) annotatedType)
 						.getAnnotatedGenericComponentType();
-				writeTypeDescription(componentType, gen, provider);
+				writeTypeDescription(componentType, schema, gen, provider);
 			}
 
 			gen.writeEndArray();

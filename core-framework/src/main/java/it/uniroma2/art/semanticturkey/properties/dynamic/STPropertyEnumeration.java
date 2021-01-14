@@ -14,16 +14,26 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  */
 public class STPropertyEnumeration implements STProperties {
 
-	@Override
-	public String getShortName() {
-		return "STProperty enumeration";
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.properties.dynamic.STPropertyEnumeration";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String values$description = keyBase + ".values.description";
+		public static final String values$displayName = keyBase + ".values.displayName";
+		public static final String open$description = keyBase + ".open.description";
+		public static final String open$displayName = keyBase + ".open.displayName";
 	}
 
-	@STProperty(description = "")
+	@Override
+	public String getShortName() {
+		return "{" + MessageKeys.shortName + "}";
+	}
+
+	@STProperty(description = "{" + MessageKeys.values$description + "}", displayName = "{" + MessageKeys.values$displayName + "}")
 	@Required
 	public List<String> values;
 
-	@STProperty(description = "")
+	@STProperty(description = "{" + MessageKeys.open$description + "}", displayName = "{" + MessageKeys.open$displayName + "}")
 	@Required
 	public boolean open;
 }

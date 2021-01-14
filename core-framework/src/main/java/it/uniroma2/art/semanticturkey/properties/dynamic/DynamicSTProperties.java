@@ -301,20 +301,14 @@ public class DynamicSTProperties implements STProperties {
 	private String htmlDescription;
 	private String htmlWarning;
 	private Map<String, org.apache.commons.lang3.tuple.Pair<PropertyDefinition, Object>> properties;
-	private boolean open;
 
 	public DynamicSTProperties(String shortName) {
 		this.shortName = shortName;
 		this.properties = new LinkedHashMap<>();
-		this.open = false;
 	}
 
 	public DynamicSTProperties() {
 		this("");
-	}
-
-	public void setOpen(boolean open) {
-		this.open = open;
 	}
 
 	protected Pair<PropertyDefinition, Object> getPropertyDefinitionAndValue(String id)

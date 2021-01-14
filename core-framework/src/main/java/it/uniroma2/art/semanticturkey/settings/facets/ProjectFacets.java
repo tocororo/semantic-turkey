@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.settings.facets;
 
+import javax.validation.Valid;
+
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
@@ -31,5 +33,6 @@ public class ProjectFacets implements Settings {
 	@STProperty(description = "{" + MessageKeys.customFacets$description + "}", displayName = "{"
 			+ MessageKeys.customFacets$displayName + "}")
 	@Schema(settingsManager = ProjectFacetsSchemaStore.class)
+	@Valid
 	public STProperties customFacets;
 }
