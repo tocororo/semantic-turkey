@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,12 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
 
+import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.dynamic.DynamicSTProperties;
+import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
@@ -33,8 +40,29 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.lucene.analysis.core.SimpleAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
@@ -52,6 +80,7 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFParserRegistry;
 import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
@@ -145,7 +174,21 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
 @STService
 public class Projects extends STServiceAdapter {
 
+	private final int MAX_RESULT_QUERY_FACETS = 500;
+
 	private static Logger logger = LoggerFactory.getLogger(Projects.class);
+
+	private final String indexMainDir = "index";
+
+	private final String lucDirName = "facetsIndex";
+
+
+	private final String PROJECT_NAME = "prjName";
+	private final String PROJECT_MODEL = "prjModel";
+	private final String PROJECT_LEX_MODEL = "prjLexModel";
+	private final String PROJECT_HISTORY = "prjHistoryEnabled";
+	private final String PROJECT_VALIDATION = "prjValidationEnabled";
+	private final String PROJECT_DESCRIPTION = "prjDescription";
 
 	@Autowired
 	private MediationFramework mediationFramework;
@@ -177,7 +220,7 @@ public class Projects extends STServiceAdapter {
 			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, InvalidConfigurationException,
 			STPropertyAccessException, IOException, ReservedPropertyUpdateException, ProjectUpdateException,
-			STPropertyUpdateException, NoSuchConfigurationManager {
+			STPropertyUpdateException, NoSuchConfigurationManager, PropertyNotFoundException {
 
 		List<Object> preloadRelatedArgs = Arrays.asList(preloadedDataFileName, preloadedDataFormat,
 				transitiveImportAllowance);
@@ -230,6 +273,8 @@ public class Projects extends STServiceAdapter {
 						deletePreloadedDataFile);
 			}
 		}
+		//create the index about the facets of this project
+		recreateFacetIndexForProjectAPI(projectName);
 	}
 
 	/**
@@ -261,7 +306,8 @@ public class Projects extends STServiceAdapter {
 			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
 			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel,
 			@Optional(defaultValue = "false") boolean userDependent,
-			@Optional(defaultValue = "false") boolean onlyOpen) throws ProjectAccessException {
+			@Optional(defaultValue = "false") boolean onlyOpen) throws ProjectAccessException, PropertyNotFoundException,
+			ProjectInexistentException, IOException, InvalidProjectNameException {
 
 		logger.debug("listProjects, asked by consumer: " + consumer);
 
@@ -275,6 +321,12 @@ public class Projects extends STServiceAdapter {
 			if (projInfo != null) {
 				listProjInfo.add(projInfo);
 			}
+		}
+
+		//check if the lucene dir (for the facets) exists, if not, create the indexes
+		if(!isLuceneDirPresent()){
+			//create the indexes
+			createFacetIndexAPI();
 		}
 
 		return listProjInfo;
@@ -925,10 +977,12 @@ public class Projects extends STServiceAdapter {
 	public void setProjectFacets(String projectName, ObjectNode facets)
 			throws IllegalStateException, NoSuchSettingsManager, STPropertyUpdateException,
 			WrongPropertiesException, STPropertyAccessException, ProjectAccessException,
-			InvalidProjectNameException, ProjectInexistentException {
+			InvalidProjectNameException, ProjectInexistentException, IOException, PropertyNotFoundException {
 		Project project = ProjectManager.getProject(projectName, true);
 		exptManager.storeSettings(ProjectFacetsStore.class.getName(), project, UsersManager.getLoggedUser(),
 				Scope.PROJECT, facets);
+		//update the index about the facets of this project
+		recreateFacetIndexForProjectAPI(projectName);
 	}
 
 	/**
@@ -1376,6 +1430,334 @@ public class Projects extends STServiceAdapter {
 
 		return new PreloadedDataSummary(baseURI, model, lexicalizationModel, preloadedDataFile,
 				preloadedDataFormat, preloadWarnings);
+	}
+
+
+
+	//** ALL SERVICES AND APIS DEALING WITH THE LUCENE INDEX FOR THE FACETS**//
+
+	@STServiceOperation
+	public Map<String, List<String>> getFacetsAndValue() throws IOException {
+		Map<String, List<String>> facetValueListMap = new HashMap<>();
+
+		Query query = new MatchAllDocsQuery();
+		// classloader magic
+		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
+		try {
+			int maxResults = MAX_RESULT_QUERY_FACETS;
+			IndexSearcher searcher = createSearcher();
+			TopDocs topDocs = searcher.search(query, maxResults);
+			for(ScoreDoc scoreDoc : topDocs.scoreDocs){
+				Document doc = searcher.doc(scoreDoc.doc);
+				for(IndexableField indexableField : doc.getFields()){
+					String name = indexableField.name();
+					String value = indexableField.stringValue();
+					if(!name.equals(PROJECT_NAME) && !name.equals(PROJECT_DESCRIPTION)) {
+						if(!facetValueListMap.containsKey(name)){
+							facetValueListMap.put(name, new ArrayList<>());
+						}
+						if(!facetValueListMap.get(name).contains(value)){
+							facetValueListMap.get(name).add(value);
+						}
+					}
+				}
+			}
+		}  finally {
+			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
+		}
+
+		return facetValueListMap;
+	}
+
+	/**
+	 * Create the Lucene index for the facets in ALL projects
+	 */
+	//@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
+	// TODO decide the @PreAuthorize
+	public void createFacetIndex() throws PropertyNotFoundException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			IOException {
+		createFacetIndexAPI();
+	}
+
+	private void createFacetIndexAPI() throws PropertyNotFoundException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			IOException {
+		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
+		try {
+			Directory directory = FSDirectory.open(getLuceneDir().toPath());
+			SimpleAnalyzer simpleAnalyzer = new SimpleAnalyzer();
+			IndexWriterConfig config = new IndexWriterConfig(simpleAnalyzer);
+			try (IndexWriter writer = new IndexWriter(directory, config)) {
+				//clear all indexes
+				writer.deleteAll();
+
+				//iterate over the existing projects
+				Collection<AbstractProject> abstractProjectCollection = ProjectManager.listProjects(ProjectConsumer.SYSTEM);
+				List<ProjectInfo> projInfoList = new ArrayList<>();
+				for (AbstractProject abstractProject : abstractProjectCollection) {
+					ProjectInfo projInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R, LockLevel.NO,
+							false, false, abstractProject);
+					if (projInfo != null) {
+						projInfoList.add(projInfo);
+					}
+				}
+				//add the projects facets and proeprties to the index (one project at a time)
+				for (ProjectInfo projectInfo : projInfoList) {
+					addProjectToIndex(projectInfo, false, writer);
+				}
+			}
+		} finally {
+			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
+		}
+	}
+
+	/**
+	 * Create the Lucene index for the facets in ALL projects
+	 */
+	//@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
+	// TODO decide the @PreAuthorize
+	public void recreateFacetIndexForProject(String projectName) throws PropertyNotFoundException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			IOException {
+
+		recreateFacetIndexForProjectAPI(projectName);
+	}
+
+	private void recreateFacetIndexForProjectAPI(String projectName) throws PropertyNotFoundException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			IOException {
+		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
+		try {
+			Project project = ProjectManager.getProject(projectName);
+
+			ProjectInfo projectInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R, LockLevel.NO,
+					false, false, project);
+			if(projectInfo == null){
+				throw new ProjectAccessException(projectName);
+			}
+			Directory directory = FSDirectory.open(getLuceneDir().toPath());
+			SimpleAnalyzer simpleAnalyzer = new SimpleAnalyzer();
+			IndexWriterConfig config = new IndexWriterConfig(simpleAnalyzer);
+			try (IndexWriter writer = new IndexWriter(directory, config)) {
+				addProjectToIndex(projectInfo, true, writer);
+			}
+		} finally {
+			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
+		}
+	}
+
+
+	private void addProjectToIndex(ProjectInfo projectInfo, boolean removePrevIndex, IndexWriter writer) throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			IOException {
+		ProjectForIndex projectForIndex = new ProjectForIndex();
+
+		String projectName = projectInfo.getName();
+
+		projectForIndex.addNameValue(PROJECT_NAME, projectInfo.getName());
+		projectForIndex.addNameValue(PROJECT_MODEL ,projectInfo.getModel());
+		projectForIndex.addNameValue(PROJECT_LEX_MODEL, projectInfo.getLexicalizationModel());
+		projectForIndex.addNameValue(PROJECT_HISTORY, Boolean.toString(projectInfo.isHistoryEnabled()));
+		projectForIndex.addNameValue(PROJECT_VALIDATION, Boolean.toString(projectInfo.isValidationEnabled()));
+		projectForIndex.addNameValue(PROJECT_DESCRIPTION, projectInfo.getDescription());
+
+		//for each project, get all the facets
+		ProjectFacets projectFacets = projectInfo.getFacets2();
+		for(String propName : projectFacets.getProperties()) {
+			try {
+				String propValue = null;
+				Object value = projectFacets.getPropertyValue(propName);
+				if(value instanceof DynamicSTProperties) {
+					getValuesFromSTProperties((STProperties) value, projectForIndex);
+				} else if(value != null) {
+					propValue = normalizeFacetValue(value);
+					if(propValue!=null && !propValue.isEmpty()) {
+						projectForIndex.addNameValue(propName, propValue.toString());
+					}
+				}
+			} catch (PropertyNotFoundException e) {
+				//the facet was not found, so skip it and pass to the next one
+			}
+		}
+
+		//remove the previous entry, if needed
+		if(removePrevIndex){
+			BooleanQuery.Builder builderBoolean = new BooleanQuery.Builder();
+			builderBoolean.add(new TermQuery(new Term(PROJECT_NAME, projectName)), BooleanClause.Occur.MUST);
+			writer.deleteDocuments(builderBoolean.build());
+		}
+		//add ProjectForIndex in the index
+		addProjectForIndexToIndex(projectForIndex, writer);
+	}
+
+	private String normalizeFacetValue(Object value){
+		if(value==null){
+			return "";
+		}
+		if(value instanceof IRI){
+			return NTriplesUtil.toNTriplesString((IRI)value);
+		} else if(value instanceof Literal){
+			return NTriplesUtil.toNTriplesString((Literal) value);
+		} else {
+			return value.toString();
+		}
+	}
+
+	private void getValuesFromSTProperties(STProperties stProperties, ProjectForIndex projectForIndex) throws PropertyNotFoundException {
+		Collection<String> propertiesList = stProperties.getProperties();
+		for(String propName : propertiesList) {
+			if(stProperties.getPropertyValue(propName) == null){
+				//no value, so skip it
+				continue;
+			}
+			//TODO manage Obejct (toNT or toString)
+			String valueString = stProperties.getPropertyValue(propName).toString();
+			projectForIndex.addNameValue(propName, valueString);
+		}
+	}
+
+
+	@STServiceOperation(method = RequestMethod.POST)
+	public Map<String, List<ProjectInfo>> retrieveProjects(@Optional(defaultValue="")String bagOf, @JsonSerialized List<List<Map<String, Object>>> orQueryList) throws IOException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+		Map<String, List<ProjectInfo>> facetToProjeInfoListMap = new HashMap<>();
+
+		//bagOf and query cannot be both empy/null
+		if((bagOf==null || bagOf.isEmpty()) && (orQueryList==null || orQueryList.isEmpty())){
+			throw new IllegalArgumentException("bagOf and query cannot be both null/empty");
+		}
+
+		// classloader magic
+		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
+		try {
+			List<ProjectInfo> projectInfoList = new ArrayList<>();
+			Query queryLuc;
+			//if the query is not empty, construct a BooleanQuery
+			if(orQueryList == null || orQueryList.isEmpty()){
+				//get all the document (Project)
+				queryLuc = new MatchAllDocsQuery();
+			} else {
+				//prepare a boolean query according to the inpurt query List
+				BooleanQuery.Builder orBuilderBoolean = new BooleanQuery.Builder();
+				for(List<Map<String, Object>> andQueryList : orQueryList){
+					BooleanQuery.Builder andBuilderBoolean = new BooleanQuery.Builder();
+					for(Map<String, Object> andQuery : andQueryList) {
+						for (String facetName : andQuery.keySet()) {
+							String facetValue = normalizeFacetValue(andQuery.get(facetName));
+							andBuilderBoolean.add(new TermQuery(new Term(facetName, facetValue)), BooleanClause.Occur.MUST);
+						}
+						orBuilderBoolean.add(andBuilderBoolean.build(), BooleanClause.Occur.SHOULD);
+					}
+				}
+				queryLuc = orBuilderBoolean.build();
+			}
+
+			//execute the query
+			int maxResults = MAX_RESULT_QUERY_FACETS;
+			IndexSearcher searcher = createSearcher();
+			TopDocs topDocs = searcher.search(queryLuc, maxResults);
+
+			//now, order the results according to the facet of the bagOf parameter (if specified)
+			for(ScoreDoc sd : topDocs.scoreDocs){
+				Document doc = searcher.doc(sd.doc);
+				String projectName = doc.get(PROJECT_NAME);
+				Project project = ProjectManager.getProjectDescription(projectName);
+				ProjectInfo projectInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R, LockLevel.NO,
+						false, false, project);
+
+				String facetValue;
+				if(bagOf!=null && !bagOf.isEmpty()){
+					String facetName = bagOf;
+					facetValue = doc.get(facetName);
+					if(facetValue == null){
+						facetValue = "";
+					}
+				} else {
+					//no need to divide the results
+					facetValue = "";
+				}
+				if(!facetToProjeInfoListMap.containsKey(facetValue)){
+					facetToProjeInfoListMap.put(facetValue, new ArrayList<>());
+				}
+				facetToProjeInfoListMap.get(facetValue).add(projectInfo);
+			}
+
+		} finally {
+			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
+		}
+		return facetToProjeInfoListMap;
+	}
+
+	private class ProjectForIndex {
+		Map<String, String> nameValueForIndexMap = new HashMap<>();
+
+		public ProjectForIndex() {
+		}
+
+		public Set<String> getNameList() {
+			return nameValueForIndexMap.keySet();
+		}
+
+		public String getValue(String name){
+			return nameValueForIndexMap.get(name);
+		}
+
+		public boolean addNameValue(String name, String value){
+			if(nameValueForIndexMap.containsKey(name)){
+				return false;
+			}
+			nameValueForIndexMap.put(name, value);
+			return true;
+		}
+	}
+
+	private IndexSearcher createSearcher() throws IOException {
+		Directory directory = FSDirectory.open(getLuceneDir().toPath());
+		IndexReader reader = DirectoryReader.open(directory);
+		return new IndexSearcher(reader);
+	}
+
+
+	private boolean isLuceneDirPresent (){
+		String mainIndexPath = Resources.getSemTurkeyDataDir()+File.separator+indexMainDir;
+		File mainIndexDir = new File(mainIndexPath);
+		if(!mainIndexDir.exists()){
+			mainIndexDir.mkdir();
+		}
+		File luceneIndexDir = new File(mainIndexDir, lucDirName);
+		if(!luceneIndexDir.exists()){
+			return false;
+		}
+		return true;
+	}
+
+	private File getLuceneDir() {
+
+		String mainIndexPath = Resources.getSemTurkeyDataDir()+File.separator+indexMainDir;
+		File mainIndexDir = new File(mainIndexPath);
+		if(!mainIndexDir.exists()){
+			mainIndexDir.mkdir();
+		}
+		//String luceneIndexDirPath = Resources.getSemTurkeyDataDir()+File.separator+lucDirName;
+		//File luceneIndexDir = new File(luceneIndexDirPath);
+		File luceneIndexDir = new File(mainIndexDir, lucDirName);
+		if(!luceneIndexDir.exists()) {
+			luceneIndexDir.mkdir();
+		}
+
+		return luceneIndexDir;
+	}
+
+	private void addProjectForIndexToIndex(ProjectForIndex projectForIndex, IndexWriter writer) throws IOException {
+		Document doc = new Document();
+		for(String propName : projectForIndex.getNameList()){
+			String propValue = projectForIndex.getValue(propName);
+			if(propValue != null && !propValue.isEmpty()) {
+				doc.add(new StringField(propName, propValue, Field.Store.YES));
+			}
+		}
+		writer.addDocument(doc);
 	}
 
 }

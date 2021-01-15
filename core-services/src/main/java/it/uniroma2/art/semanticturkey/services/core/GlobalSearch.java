@@ -597,7 +597,7 @@ public class GlobalSearch extends STServiceAdapter {
 			@Optional(defaultValue="false") boolean caseSensitive) throws Exception {
 
 		if(caseSensitive && searchInLocalName) {
-			throw new IllegalArgumentException("searchInLocalName and caseSensitive cannot be bot true");
+			throw new IllegalArgumentException("searchInLocalName and caseSensitive cannot be both true");
 		}
 
 		String searchStringLC = searchString.toLowerCase();
