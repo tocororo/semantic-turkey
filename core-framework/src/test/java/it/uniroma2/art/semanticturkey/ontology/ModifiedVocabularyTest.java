@@ -21,7 +21,7 @@ public class ModifiedVocabularyTest extends AbstractModifiedVocabularyTest {
 
 	@Parameters(name = "{0}")
 	public static Collection<String> data() {
-		return Arrays.asList("owl.rdf", "lexinfo.owl");
+		return Arrays.asList("owl.rdf");
 	}
 
 
