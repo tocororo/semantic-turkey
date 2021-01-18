@@ -1,5 +1,6 @@
 version 9.0.
 date: dd/mm/yyyy
+  * updated to LexInfo 3
   * added the support for the Lucene index containing the Project's facets (creating the index and using it for
     the searches)
   * added the possibility to deactivate/activate the Collaboration System for a VB project without removing the
