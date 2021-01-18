@@ -909,7 +909,7 @@ public class Alignment extends STServiceAdapter {
 	public JsonNode changeRelation(IRI entity1, IRI entity2, String oldRelation, String newRelation) {
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
 		alignModel.updateRelation(entity1, entity2, oldRelation, newRelation, 1.0f); //
-		Cell updatedCell = alignModel.getCell(entity1, entity2, oldRelation);
+		Cell updatedCell = alignModel.getCell(entity1, entity2, newRelation);
 		return createCellJsonNode(updatedCell);
 	}
 

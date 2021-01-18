@@ -740,7 +740,7 @@ public class AlignmentModel {
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s .\n"
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c .\n"
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m .\n"
-				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?r .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?oldRelation .\n"
 				+ "} INSERT {\n"
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + newRelation + "' .\n"
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + String.format("%s", measure)	+ "'^^" + NTriplesUtil.toNTriplesString(XMLSchema.FLOAT) + " .\n"
