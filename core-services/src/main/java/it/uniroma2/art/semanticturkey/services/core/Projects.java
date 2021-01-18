@@ -1478,15 +1478,17 @@ public class Projects extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void recreateFacetIndexForProject(String projectName) throws ProjectAccessException, IOException {
+	public void recreateFacetIndexForProject(String projectName) throws ProjectAccessException, IOException,
+			InvalidProjectNameException, ProjectInexistentException {
 		recreateFacetIndexForProjectAPI(projectName);
 	}
 
-	private void recreateFacetIndexForProjectAPI(String projectName) throws ProjectAccessException, IOException {
+	private void recreateFacetIndexForProjectAPI(String projectName) throws ProjectAccessException, IOException,
+			InvalidProjectNameException, ProjectInexistentException {
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
 		try {
-			Project project = ProjectManager.getProject(projectName);
+			Project project = ProjectManager.getProject(projectName, true);
 
 			ProjectInfo projectInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R,
 					LockLevel.NO, false, false, project);
