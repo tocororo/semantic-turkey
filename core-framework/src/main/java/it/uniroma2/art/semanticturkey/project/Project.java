@@ -167,8 +167,6 @@ public abstract class Project extends AbstractProject {
 	protected IRI model;
 	protected IRI lexicalizationModel;
 
-	protected Map<String, String> facets;
-
 	protected String description;
 
 	public static final String INFOFILENAME = "project.info";
@@ -183,9 +181,6 @@ public abstract class Project extends AbstractProject {
 	public static final String MODEL_PROP = "model";
 	public static final String LEXICALIZATION_MODEL_PROP = "lexicalizationModel";
 	public static final String PLUGINS_PROP = "plugins";
-
-	public static final String FACETS_PROP = "facets";
-	private static final String FACET_DIR = "dir";
 
 	public static final String HISTORY_ENABLED_PROP = "historyEnabled";
 	public static final String VALIDATION_ENABLED_PROP = "validationEnabled";
@@ -303,16 +298,6 @@ public abstract class Project extends AbstractProject {
 							"Project property \"" + LEXICALIZATION_MODEL_PROP + "\" must not be null"));
 
 			checkModels(model, lexicalizationModel);
-
-			// init project facets
-			String facetsString = stp_properties.getProperty(FACETS_PROP);
-			if (facetsString != null) {
-				ObjectMapper mapper = new ObjectMapper();
-				facets = mapper.readValue(facetsString, new TypeReference<Map<String, String>>() {
-				});
-			} else {
-				facets = new HashMap<>(); // default empty map
-			}
 
 			// for the update routine 7 -> 8, we are interested in the sole projects with "resource" as
 			// updateForRoles
@@ -1242,48 +1227,6 @@ public abstract class Project extends AbstractProject {
 
 	public String getDescription() {
 		return description;
-	}
-
-	/*
-	 * FACETS MANAGEMENT
-	 */
-
-	/**
-	 * API for setting/removing a facet. If the value is null, the facet is removed from the facets map
-	 * 
-	 * @param facetName
-	 * @param facetValue
-	 * @throws ProjectUpdateException
-	 */
-	private void setFacet(String facetName, String facetValue) throws ProjectUpdateException {
-		if (facetValue == null) {
-			facets.remove(facetName);
-		} else {
-			facets.put(facetName, facetValue);
-		}
-		ObjectMapper mapper = new ObjectMapper();
-		try {
-			stp_properties.setProperty(FACETS_PROP, mapper.writeValueAsString(facets));
-			updateProjectProperties();
-		} catch (IOException e) {
-			throw new ProjectUpdateException(e);
-		}
-	}
-
-	public Map<String, String> getFacets() {
-		return facets;
-	}
-
-	public String getFacetDir() {
-		return facets.get(FACET_DIR);
-	}
-
-	public void setFacetDir(String dirName) throws ProjectUpdateException {
-		setFacet(FACET_DIR, dirName);
-	}
-
-	public void removeFacetDir() throws ProjectUpdateException {
-		setFacet(FACET_DIR, null);
 	}
 
 	public static Collection<RepositorySummary> getRepositorySummaries(STLocalRepositoryManager repoManager,

@@ -2,11 +2,8 @@ package it.uniroma2.art.semanticturkey.project;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
 import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacets;
-
-import java.util.Map;
 
 public class ProjectInfo {
 
@@ -22,9 +19,8 @@ public class ProjectInfo {
 	private final AccessResponse accessible;
 	private final RepositoryLocation repositoryLocation;
 	private final ProjectStatus status;
-	private final Map<String, String> facets;
 	private final String description;
-	private final ProjectFacets facets2;
+	private final ProjectFacets facets;
 
 	@JsonCreator
 	public ProjectInfo(@JsonProperty("name") String name, @JsonProperty("open") boolean open,
@@ -34,11 +30,10 @@ public class ProjectInfo {
 			@JsonProperty("historyEnabled") boolean historyEnabled,
 			@JsonProperty("validationEnabled") boolean validationEnabled,
 			@JsonProperty("shaclEnabled") boolean shaclEnabled,
-			@JsonProperty("facets") Map<String, String> facets,
 			@JsonProperty("accessible") AccessResponse accessible,
 			@JsonProperty("repositoryLocation") RepositoryLocation repositoryLocation,
 			@JsonProperty("status") ProjectStatus status, @JsonProperty("description") String description,
-			ProjectFacets facets2) {
+			ProjectFacets facets) {
 		this.name = name;
 		this.open = open;
 		this.baseURI = baseURI;
@@ -48,12 +43,11 @@ public class ProjectInfo {
 		this.historyEnabled = historyEnabled;
 		this.validationEnabled = validationEnabled;
 		this.shaclEnabled = shaclEnabled;
-		this.facets = facets;
 		this.accessible = accessible;
 		this.repositoryLocation = repositoryLocation;
 		this.status = status;
 		this.description = description;
-		this.facets2 = facets2;
+		this.facets = facets;
 	}
 
 	public String getName() {
@@ -93,10 +87,6 @@ public class ProjectInfo {
 		return shaclEnabled;
 	}
 
-	public Map<String, String> getFacets() {
-		return facets;
-	}
-
 	public AccessResponse getAccessible() {
 		return accessible;
 	}
@@ -113,7 +103,7 @@ public class ProjectInfo {
 		return description;
 	}
 
-	public ProjectFacets getFacets2() {
-		return facets2;
+	public ProjectFacets getFacets() {
+		return facets;
 	}
 }
