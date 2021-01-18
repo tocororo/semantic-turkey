@@ -264,11 +264,11 @@
 			class="it.uniroma2.art.semanticturkey.settings.search.CustomSearchStore" />
 	</osgi:service>
 
-	<!-- Publishes the ProjectFacetsSchemaStore -->
+	<!-- Publishes the CustomProjectFacetsSchemaStore -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
-			class="it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsSchemaStore" />
+			class="it.uniroma2.art.semanticturkey.settings.facets.CustomProjectFacetsSchemaStore" />
 	</osgi:service>
 
 	<!-- Publishes the ProjectFacetsStore -->

@@ -161,7 +161,7 @@ import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummar
 import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
 import it.uniroma2.art.semanticturkey.settings.facets.CorruptedProjectFacets;
 import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacets;
-import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsSchemaStore;
+import it.uniroma2.art.semanticturkey.settings.facets.CustomProjectFacetsSchemaStore;
 import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsStore;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
@@ -181,7 +181,6 @@ public class Projects extends STServiceAdapter {
 	private final String indexMainDir = "index";
 
 	private final String lucDirName = "facetsIndex";
-
 
 	private final String PROJECT_NAME = "prjName";
 	private final String PROJECT_MODEL = "prjModel";
@@ -273,7 +272,7 @@ public class Projects extends STServiceAdapter {
 						deletePreloadedDataFile);
 			}
 		}
-		//create the index about the facets of this project
+		// create the index about the facets of this project
 		recreateFacetIndexForProjectAPI(projectName);
 	}
 
@@ -306,8 +305,8 @@ public class Projects extends STServiceAdapter {
 			@Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
 			@Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel,
 			@Optional(defaultValue = "false") boolean userDependent,
-			@Optional(defaultValue = "false") boolean onlyOpen) throws ProjectAccessException, PropertyNotFoundException,
-			ProjectInexistentException, IOException, InvalidProjectNameException {
+			@Optional(defaultValue = "false") boolean onlyOpen) throws ProjectAccessException,
+			PropertyNotFoundException, ProjectInexistentException, IOException, InvalidProjectNameException {
 
 		logger.debug("listProjects, asked by consumer: " + consumer);
 
@@ -323,9 +322,9 @@ public class Projects extends STServiceAdapter {
 			}
 		}
 
-		//check if the lucene dir (for the facets) exists, if not, create the indexes
-		if(!isLuceneDirPresent()){
-			//create the indexes
+		// check if the lucene dir (for the facets) exists, if not, create the indexes
+		if (!isLuceneDirPresent()) {
+			// create the indexes
 			createFacetIndexAPI();
 		}
 
@@ -981,7 +980,7 @@ public class Projects extends STServiceAdapter {
 		Project project = ProjectManager.getProject(projectName, true);
 		exptManager.storeSettings(ProjectFacetsStore.class.getName(), project, UsersManager.getLoggedUser(),
 				Scope.PROJECT, facets);
-		//update the index about the facets of this project
+		// update the index about the facets of this project
 		recreateFacetIndexForProjectAPI(projectName);
 	}
 
@@ -1009,22 +1008,43 @@ public class Projects extends STServiceAdapter {
 	}
 
 	/**
-	 * Sets the schema of project facets
+	 * Returns an uninitialized form for project facets. Differently from {@link #getProjectFacets(String)},
+	 * this operation doesn't accept a project name as argument nor does it look at the current project
+	 * 
+	 * @return
+	 * @throws IllegalStateException
+	 * @throws STPropertyAccessException
+	 * @throws NoSuchSettingsManager
+	 * @throws ProjectAccessException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectInexistentException
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAdmin()")
+	public ProjectFacets getProjectFacetsForm()
+			throws IllegalStateException, STPropertyAccessException, NoSuchSettingsManager,
+			ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		return STPropertiesManager.loadSTPropertiesFromObjectNode(ProjectFacets.class, false,
+				JsonNodeFactory.instance.objectNode(), STPropertiesManager.createObjectMapper(exptManager));
+	}
+
+	/**
+	 * Sets the schema of custom project facets
 	 * 
 	 * @param facetsSchema
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void setProjectFacetsSchema(ObjectNode facetsSchema)
+	public void setCustomProjectFacetsSchema(ObjectNode facetsSchema)
 			throws IllegalStateException, NoSuchSettingsManager, STPropertyUpdateException,
 			WrongPropertiesException, STPropertyAccessException, ProjectAccessException,
 			InvalidProjectNameException, ProjectInexistentException {
-		exptManager.storeSettings(ProjectFacetsSchemaStore.class.getName(), null,
+		exptManager.storeSettings(CustomProjectFacetsSchemaStore.class.getName(), null,
 				UsersManager.getLoggedUser(), Scope.SYSTEM, facetsSchema);
 	}
 
 	/**
-	 * Returns the schema of project facets
+	 * Returns the schema of custom project facets
 	 * 
 	 * @throws NoSuchSettingsManager
 	 * @throws STPropertyAccessException
@@ -1033,10 +1053,10 @@ public class Projects extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAdmin()")
-	public STPropertiesSchema getProjectFacetsSchema()
+	public STPropertiesSchema getCustomProjectFacetsSchema()
 			throws IllegalStateException, STPropertyAccessException, NoSuchSettingsManager {
 		return (STPropertiesSchema) exptManager.getSettings(null, UsersManager.getLoggedUser(),
-				ProjectFacetsSchemaStore.class.getName(), Scope.SYSTEM);
+				CustomProjectFacetsSchemaStore.class.getName(), Scope.SYSTEM);
 	}
 
 	/**
@@ -1432,9 +1452,7 @@ public class Projects extends STServiceAdapter {
 				preloadedDataFormat, preloadWarnings);
 	}
 
-
-
-	//** ALL SERVICES AND APIS DEALING WITH THE LUCENE INDEX FOR THE FACETS**//
+	// ** ALL SERVICES AND APIS DEALING WITH THE LUCENE INDEX FOR THE FACETS**//
 
 	@STServiceOperation
 	public Map<String, List<String>> getFacetsAndValue() throws IOException {
@@ -1448,22 +1466,22 @@ public class Projects extends STServiceAdapter {
 			int maxResults = MAX_RESULT_QUERY_FACETS;
 			IndexSearcher searcher = createSearcher();
 			TopDocs topDocs = searcher.search(query, maxResults);
-			for(ScoreDoc scoreDoc : topDocs.scoreDocs){
+			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
 				Document doc = searcher.doc(scoreDoc.doc);
-				for(IndexableField indexableField : doc.getFields()){
+				for (IndexableField indexableField : doc.getFields()) {
 					String name = indexableField.name();
 					String value = indexableField.stringValue();
-					if(!name.equals(PROJECT_NAME) && !name.equals(PROJECT_DESCRIPTION)) {
-						if(!facetValueListMap.containsKey(name)){
+					if (!name.equals(PROJECT_NAME) && !name.equals(PROJECT_DESCRIPTION)) {
+						if (!facetValueListMap.containsKey(name)) {
 							facetValueListMap.put(name, new ArrayList<>());
 						}
-						if(!facetValueListMap.get(name).contains(value)){
+						if (!facetValueListMap.get(name).contains(value)) {
 							facetValueListMap.get(name).add(value);
 						}
 					}
 				}
 			}
-		}  finally {
+		} finally {
 			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
 		}
 
@@ -1473,16 +1491,16 @@ public class Projects extends STServiceAdapter {
 	/**
 	 * Create the Lucene index for the facets in ALL projects
 	 */
-	//@STServiceOperation
+	// @STServiceOperation
 	@STServiceOperation(method = RequestMethod.POST)
 	// TODO decide the @PreAuthorize
-	public void createFacetIndex() throws PropertyNotFoundException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			IOException {
+	public void createFacetIndex() throws PropertyNotFoundException, InvalidProjectNameException,
+			ProjectInexistentException, ProjectAccessException, IOException {
 		createFacetIndexAPI();
 	}
 
-	private void createFacetIndexAPI() throws PropertyNotFoundException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			IOException {
+	private void createFacetIndexAPI() throws PropertyNotFoundException, InvalidProjectNameException,
+			ProjectInexistentException, ProjectAccessException, IOException {
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
 		try {
@@ -1490,20 +1508,21 @@ public class Projects extends STServiceAdapter {
 			SimpleAnalyzer simpleAnalyzer = new SimpleAnalyzer();
 			IndexWriterConfig config = new IndexWriterConfig(simpleAnalyzer);
 			try (IndexWriter writer = new IndexWriter(directory, config)) {
-				//clear all indexes
+				// clear all indexes
 				writer.deleteAll();
 
-				//iterate over the existing projects
-				Collection<AbstractProject> abstractProjectCollection = ProjectManager.listProjects(ProjectConsumer.SYSTEM);
+				// iterate over the existing projects
+				Collection<AbstractProject> abstractProjectCollection = ProjectManager
+						.listProjects(ProjectConsumer.SYSTEM);
 				List<ProjectInfo> projInfoList = new ArrayList<>();
 				for (AbstractProject abstractProject : abstractProjectCollection) {
-					ProjectInfo projInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R, LockLevel.NO,
-							false, false, abstractProject);
+					ProjectInfo projInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R,
+							LockLevel.NO, false, false, abstractProject);
 					if (projInfo != null) {
 						projInfoList.add(projInfo);
 					}
 				}
-				//add the projects facets and proeprties to the index (one project at a time)
+				// add the projects facets and proeprties to the index (one project at a time)
 				for (ProjectInfo projectInfo : projInfoList) {
 					addProjectToIndex(projectInfo, false, writer);
 				}
@@ -1516,25 +1535,25 @@ public class Projects extends STServiceAdapter {
 	/**
 	 * Create the Lucene index for the facets in ALL projects
 	 */
-	//@STServiceOperation
+	// @STServiceOperation
 	@STServiceOperation(method = RequestMethod.POST)
 	// TODO decide the @PreAuthorize
-	public void recreateFacetIndexForProject(String projectName) throws PropertyNotFoundException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			IOException {
+	public void recreateFacetIndexForProject(String projectName) throws PropertyNotFoundException,
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, IOException {
 
 		recreateFacetIndexForProjectAPI(projectName);
 	}
 
-	private void recreateFacetIndexForProjectAPI(String projectName) throws PropertyNotFoundException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			IOException {
+	private void recreateFacetIndexForProjectAPI(String projectName) throws PropertyNotFoundException,
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, IOException {
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
 		try {
 			Project project = ProjectManager.getProject(projectName);
 
-			ProjectInfo projectInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R, LockLevel.NO,
-					false, false, project);
-			if(projectInfo == null){
+			ProjectInfo projectInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R,
+					LockLevel.NO, false, false, project);
+			if (projectInfo == null) {
 				throw new ProjectAccessException(projectName);
 			}
 			Directory directory = FSDirectory.open(getLuceneDir().toPath());
@@ -1548,82 +1567,84 @@ public class Projects extends STServiceAdapter {
 		}
 	}
 
-
-	private void addProjectToIndex(ProjectInfo projectInfo, boolean removePrevIndex, IndexWriter writer) throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+	private void addProjectToIndex(ProjectInfo projectInfo, boolean removePrevIndex, IndexWriter writer)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			IOException {
 		ProjectForIndex projectForIndex = new ProjectForIndex();
 
 		String projectName = projectInfo.getName();
 
 		projectForIndex.addNameValue(PROJECT_NAME, projectInfo.getName());
-		projectForIndex.addNameValue(PROJECT_MODEL ,projectInfo.getModel());
+		projectForIndex.addNameValue(PROJECT_MODEL, projectInfo.getModel());
 		projectForIndex.addNameValue(PROJECT_LEX_MODEL, projectInfo.getLexicalizationModel());
 		projectForIndex.addNameValue(PROJECT_HISTORY, Boolean.toString(projectInfo.isHistoryEnabled()));
 		projectForIndex.addNameValue(PROJECT_VALIDATION, Boolean.toString(projectInfo.isValidationEnabled()));
 		projectForIndex.addNameValue(PROJECT_DESCRIPTION, projectInfo.getDescription());
 
-		//for each project, get all the facets
+		// for each project, get all the facets
 		ProjectFacets projectFacets = projectInfo.getFacets2();
-		for(String propName : projectFacets.getProperties()) {
+		for (String propName : projectFacets.getProperties()) {
 			try {
 				String propValue = null;
 				Object value = projectFacets.getPropertyValue(propName);
-				if(value instanceof DynamicSTProperties) {
+				if (value instanceof DynamicSTProperties) {
 					getValuesFromSTProperties((STProperties) value, projectForIndex);
-				} else if(value != null) {
+				} else if (value != null) {
 					propValue = normalizeFacetValue(value);
-					if(propValue!=null && !propValue.isEmpty()) {
+					if (propValue != null && !propValue.isEmpty()) {
 						projectForIndex.addNameValue(propName, propValue.toString());
 					}
 				}
 			} catch (PropertyNotFoundException e) {
-				//the facet was not found, so skip it and pass to the next one
+				// the facet was not found, so skip it and pass to the next one
 			}
 		}
 
-		//remove the previous entry, if needed
-		if(removePrevIndex){
+		// remove the previous entry, if needed
+		if (removePrevIndex) {
 			BooleanQuery.Builder builderBoolean = new BooleanQuery.Builder();
 			builderBoolean.add(new TermQuery(new Term(PROJECT_NAME, projectName)), BooleanClause.Occur.MUST);
 			writer.deleteDocuments(builderBoolean.build());
 		}
-		//add ProjectForIndex in the index
+		// add ProjectForIndex in the index
 		addProjectForIndexToIndex(projectForIndex, writer);
 	}
 
-	private String normalizeFacetValue(Object value){
-		if(value==null){
+	private String normalizeFacetValue(Object value) {
+		if (value == null) {
 			return "";
 		}
-		if(value instanceof IRI){
-			return NTriplesUtil.toNTriplesString((IRI)value);
-		} else if(value instanceof Literal){
+		if (value instanceof IRI) {
+			return NTriplesUtil.toNTriplesString((IRI) value);
+		} else if (value instanceof Literal) {
 			return NTriplesUtil.toNTriplesString((Literal) value);
 		} else {
 			return value.toString();
 		}
 	}
 
-	private void getValuesFromSTProperties(STProperties stProperties, ProjectForIndex projectForIndex) throws PropertyNotFoundException {
+	private void getValuesFromSTProperties(STProperties stProperties, ProjectForIndex projectForIndex)
+			throws PropertyNotFoundException {
 		Collection<String> propertiesList = stProperties.getProperties();
-		for(String propName : propertiesList) {
-			if(stProperties.getPropertyValue(propName) == null){
-				//no value, so skip it
+		for (String propName : propertiesList) {
+			if (stProperties.getPropertyValue(propName) == null) {
+				// no value, so skip it
 				continue;
 			}
-			//TODO manage Obejct (toNT or toString)
+			// TODO manage Obejct (toNT or toString)
 			String valueString = stProperties.getPropertyValue(propName).toString();
 			projectForIndex.addNameValue(propName, valueString);
 		}
 	}
 
-
 	@STServiceOperation(method = RequestMethod.POST)
-	public Map<String, List<ProjectInfo>> retrieveProjects(@Optional(defaultValue="")String bagOf, @JsonSerialized List<List<Map<String, Object>>> orQueryList) throws IOException, InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+	public Map<String, List<ProjectInfo>> retrieveProjects(@Optional(defaultValue = "") String bagOf,
+			@JsonSerialized List<List<Map<String, Object>>> orQueryList) throws IOException,
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		Map<String, List<ProjectInfo>> facetToProjeInfoListMap = new HashMap<>();
 
-		//bagOf and query cannot be both empy/null
-		if((bagOf==null || bagOf.isEmpty()) && (orQueryList==null || orQueryList.isEmpty())){
+		// bagOf and query cannot be both empy/null
+		if ((bagOf == null || bagOf.isEmpty()) && (orQueryList == null || orQueryList.isEmpty())) {
 			throw new IllegalArgumentException("bagOf and query cannot be both null/empty");
 		}
 
@@ -1633,19 +1654,20 @@ public class Projects extends STServiceAdapter {
 		try {
 			List<ProjectInfo> projectInfoList = new ArrayList<>();
 			Query queryLuc;
-			//if the query is not empty, construct a BooleanQuery
-			if(orQueryList == null || orQueryList.isEmpty()){
-				//get all the document (Project)
+			// if the query is not empty, construct a BooleanQuery
+			if (orQueryList == null || orQueryList.isEmpty()) {
+				// get all the document (Project)
 				queryLuc = new MatchAllDocsQuery();
 			} else {
-				//prepare a boolean query according to the inpurt query List
+				// prepare a boolean query according to the inpurt query List
 				BooleanQuery.Builder orBuilderBoolean = new BooleanQuery.Builder();
-				for(List<Map<String, Object>> andQueryList : orQueryList){
+				for (List<Map<String, Object>> andQueryList : orQueryList) {
 					BooleanQuery.Builder andBuilderBoolean = new BooleanQuery.Builder();
-					for(Map<String, Object> andQuery : andQueryList) {
+					for (Map<String, Object> andQuery : andQueryList) {
 						for (String facetName : andQuery.keySet()) {
 							String facetValue = normalizeFacetValue(andQuery.get(facetName));
-							andBuilderBoolean.add(new TermQuery(new Term(facetName, facetValue)), BooleanClause.Occur.MUST);
+							andBuilderBoolean.add(new TermQuery(new Term(facetName, facetValue)),
+									BooleanClause.Occur.MUST);
 						}
 						orBuilderBoolean.add(andBuilderBoolean.build(), BooleanClause.Occur.SHOULD);
 					}
@@ -1653,31 +1675,31 @@ public class Projects extends STServiceAdapter {
 				queryLuc = orBuilderBoolean.build();
 			}
 
-			//execute the query
+			// execute the query
 			int maxResults = MAX_RESULT_QUERY_FACETS;
 			IndexSearcher searcher = createSearcher();
 			TopDocs topDocs = searcher.search(queryLuc, maxResults);
 
-			//now, order the results according to the facet of the bagOf parameter (if specified)
-			for(ScoreDoc sd : topDocs.scoreDocs){
+			// now, order the results according to the facet of the bagOf parameter (if specified)
+			for (ScoreDoc sd : topDocs.scoreDocs) {
 				Document doc = searcher.doc(sd.doc);
 				String projectName = doc.get(PROJECT_NAME);
 				Project project = ProjectManager.getProjectDescription(projectName);
-				ProjectInfo projectInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R, LockLevel.NO,
-						false, false, project);
+				ProjectInfo projectInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R,
+						LockLevel.NO, false, false, project);
 
 				String facetValue;
-				if(bagOf!=null && !bagOf.isEmpty()){
+				if (bagOf != null && !bagOf.isEmpty()) {
 					String facetName = bagOf;
 					facetValue = doc.get(facetName);
-					if(facetValue == null){
+					if (facetValue == null) {
 						facetValue = "";
 					}
 				} else {
-					//no need to divide the results
+					// no need to divide the results
 					facetValue = "";
 				}
-				if(!facetToProjeInfoListMap.containsKey(facetValue)){
+				if (!facetToProjeInfoListMap.containsKey(facetValue)) {
 					facetToProjeInfoListMap.put(facetValue, new ArrayList<>());
 				}
 				facetToProjeInfoListMap.get(facetValue).add(projectInfo);
@@ -1699,12 +1721,12 @@ public class Projects extends STServiceAdapter {
 			return nameValueForIndexMap.keySet();
 		}
 
-		public String getValue(String name){
+		public String getValue(String name) {
 			return nameValueForIndexMap.get(name);
 		}
 
-		public boolean addNameValue(String name, String value){
-			if(nameValueForIndexMap.containsKey(name)){
+		public boolean addNameValue(String name, String value) {
+			if (nameValueForIndexMap.containsKey(name)) {
 				return false;
 			}
 			nameValueForIndexMap.put(name, value);
@@ -1718,15 +1740,14 @@ public class Projects extends STServiceAdapter {
 		return new IndexSearcher(reader);
 	}
 
-
-	private boolean isLuceneDirPresent (){
-		String mainIndexPath = Resources.getSemTurkeyDataDir()+File.separator+indexMainDir;
+	private boolean isLuceneDirPresent() {
+		String mainIndexPath = Resources.getSemTurkeyDataDir() + File.separator + indexMainDir;
 		File mainIndexDir = new File(mainIndexPath);
-		if(!mainIndexDir.exists()){
+		if (!mainIndexDir.exists()) {
 			mainIndexDir.mkdir();
 		}
 		File luceneIndexDir = new File(mainIndexDir, lucDirName);
-		if(!luceneIndexDir.exists()){
+		if (!luceneIndexDir.exists()) {
 			return false;
 		}
 		return true;
@@ -1734,26 +1755,27 @@ public class Projects extends STServiceAdapter {
 
 	private File getLuceneDir() {
 
-		String mainIndexPath = Resources.getSemTurkeyDataDir()+File.separator+indexMainDir;
+		String mainIndexPath = Resources.getSemTurkeyDataDir() + File.separator + indexMainDir;
 		File mainIndexDir = new File(mainIndexPath);
-		if(!mainIndexDir.exists()){
+		if (!mainIndexDir.exists()) {
 			mainIndexDir.mkdir();
 		}
-		//String luceneIndexDirPath = Resources.getSemTurkeyDataDir()+File.separator+lucDirName;
-		//File luceneIndexDir = new File(luceneIndexDirPath);
+		// String luceneIndexDirPath = Resources.getSemTurkeyDataDir()+File.separator+lucDirName;
+		// File luceneIndexDir = new File(luceneIndexDirPath);
 		File luceneIndexDir = new File(mainIndexDir, lucDirName);
-		if(!luceneIndexDir.exists()) {
+		if (!luceneIndexDir.exists()) {
 			luceneIndexDir.mkdir();
 		}
 
 		return luceneIndexDir;
 	}
 
-	private void addProjectForIndexToIndex(ProjectForIndex projectForIndex, IndexWriter writer) throws IOException {
+	private void addProjectForIndexToIndex(ProjectForIndex projectForIndex, IndexWriter writer)
+			throws IOException {
 		Document doc = new Document();
-		for(String propName : projectForIndex.getNameList()){
+		for (String propName : projectForIndex.getNameList()) {
 			String propValue = projectForIndex.getValue(propName);
-			if(propValue != null && !propValue.isEmpty()) {
+			if (propValue != null && !propValue.isEmpty()) {
 				doc.add(new StringField(propName, propValue, Field.Store.YES));
 			}
 		}

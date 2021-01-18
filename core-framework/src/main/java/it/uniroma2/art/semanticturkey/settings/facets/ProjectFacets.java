@@ -32,7 +32,7 @@ public class ProjectFacets implements Settings {
 
 	@STProperty(description = "{" + MessageKeys.customFacets$description + "}", displayName = "{"
 			+ MessageKeys.customFacets$displayName + "}")
-	@Schema(settingsManager = ProjectFacetsSchemaStore.class)
+	@Schema(settingsManager = CustomProjectFacetsSchemaStore.class)
 	@Valid
 	public STProperties customFacets;
 }

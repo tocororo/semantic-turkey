@@ -9,11 +9,11 @@ import it.uniroma2.art.semanticturkey.properties.dynamic.STPropertiesSchema;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>.
  *
  */
-public class ProjectFacetsSchemaStore implements SystemSettingsManager<STPropertiesSchema> {
+public class CustomProjectFacetsSchemaStore implements SystemSettingsManager<STPropertiesSchema> {
 
 	@Override
 	public String getId() {
-		return ProjectFacetsSchemaStore.class.getName();
+		return CustomProjectFacetsSchemaStore.class.getName();
 	}
 
 }
