@@ -628,7 +628,7 @@ public abstract class Project extends AbstractProject {
 					ImmutablePair.of(ONTOLEX.class.getResource("lime.rdf"), RDFFormat.RDFXML));
 			coreVocabularies.put(vf.createIRI("http://purl.org/dc/terms/"),
 					ImmutablePair.of(OntologyManager.class.getResource("dcterms.ttl"), RDFFormat.TURTLE));
-			coreVocabularies.put(vf.createIRI("http://www.lexinfo.net/ontology/2.0/lexinfo"),
+			coreVocabularies.put(vf.createIRI("http://www.lexinfo.net/ontology/3.0/lexinfo"),
 					ImmutablePair.of(OntologyManager.class.getResource("lexinfo.owl"), RDFFormat.RDFXML));
 		case SKOSXL_LEXICALIZATION_MODEL_STRING:
 			coreVocabularies.put(vf.createIRI("http://www.w3.org/2008/05/skos-xl"),
