@@ -743,8 +743,10 @@ public class Projects extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	public void deleteProject(ProjectConsumer consumer, String projectName)
 			throws ProjectDeletionException, ProjectAccessException, ProjectUpdateException,
-			ReservedPropertyUpdateException, InvalidProjectNameException, ProjectInexistentException {
+			ReservedPropertyUpdateException, InvalidProjectNameException, ProjectInexistentException, IOException {
 		ProjectManager.deleteProject(projectName);
+		//delete the project from the Lucene index as well
+		deleteProjectFromFacetIndex(projectName);
 	}
 
 	/**
@@ -1491,7 +1493,6 @@ public class Projects extends STServiceAdapter {
 	/**
 	 * Create the Lucene index for the facets in ALL projects
 	 */
-	// @STServiceOperation
 	@STServiceOperation(method = RequestMethod.POST)
 	// TODO decide the @PreAuthorize
 	public void createFacetIndex() throws PropertyNotFoundException, InvalidProjectNameException,
@@ -1535,7 +1536,6 @@ public class Projects extends STServiceAdapter {
 	/**
 	 * Create the Lucene index for the facets in ALL projects
 	 */
-	// @STServiceOperation
 	@STServiceOperation(method = RequestMethod.POST)
 	// TODO decide the @PreAuthorize
 	public void recreateFacetIndexForProject(String projectName) throws PropertyNotFoundException,
@@ -1638,14 +1638,16 @@ public class Projects extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public Map<String, List<ProjectInfo>> retrieveProjects(@Optional(defaultValue = "") String bagOf,
-			@JsonSerialized List<List<Map<String, Object>>> orQueryList) throws IOException,
+	public Map<String, List<ProjectInfo>> retrieveProjects(@Optional String bagOf,
+			@Optional @JsonSerialized List<List<Map<String, Object>>> orQueryList,
+			@Optional(defaultValue = "false") boolean userDependent,
+			@Optional(defaultValue = "false") boolean onlyOpen) throws IOException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		Map<String, List<ProjectInfo>> facetToProjeInfoListMap = new HashMap<>();
 
 		// bagOf and query cannot be both empy/null
 		if ((bagOf == null || bagOf.isEmpty()) && (orQueryList == null || orQueryList.isEmpty())) {
-			throw new IllegalArgumentException("bagOf and query cannot be both null/empty");
+			throw new IllegalArgumentException("bagOf and orQueryList cannot be both null/empty");
 		}
 
 		// classloader magic
@@ -1686,7 +1688,7 @@ public class Projects extends STServiceAdapter {
 				String projectName = doc.get(PROJECT_NAME);
 				Project project = ProjectManager.getProjectDescription(projectName);
 				ProjectInfo projectInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R,
-						LockLevel.NO, false, false, project);
+						LockLevel.NO, userDependent, onlyOpen, project);
 
 				String facetValue;
 				if (bagOf != null && !bagOf.isEmpty()) {
@@ -1780,6 +1782,25 @@ public class Projects extends STServiceAdapter {
 			}
 		}
 		writer.addDocument(doc);
+	}
+
+	private void deleteProjectFromFacetIndex(String projectName) throws IOException {
+		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
+		Directory directory = FSDirectory.open(getLuceneDir().toPath());
+		SimpleAnalyzer simpleAnalyzer = new SimpleAnalyzer();
+		IndexWriterConfig config = new IndexWriterConfig(simpleAnalyzer);
+		try (IndexWriter writer = new IndexWriter(directory, config)) {
+			deleteProjectFromFacetIndex(projectName, writer);
+		} finally {
+			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
+		}
+	}
+
+	private void deleteProjectFromFacetIndex(String projectName, IndexWriter writer) throws IOException {
+		BooleanQuery.Builder builderBoolean = new BooleanQuery.Builder();
+		builderBoolean.add(new TermQuery(new Term(PROJECT_NAME, projectName)), BooleanClause.Occur.MUST);
+		writer.deleteDocuments(builderBoolean.build());
 	}
 
 }
