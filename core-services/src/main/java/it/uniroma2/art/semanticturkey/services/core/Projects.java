@@ -988,7 +988,6 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectInexistentException
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAdmin()")
 	public ProjectFacets getProjectFacetsForm()
 			throws IllegalStateException, STPropertyAccessException {
 		return STPropertiesManager.loadSTPropertiesFromObjectNode(ProjectFacets.class, false,
@@ -1018,7 +1017,6 @@ public class Projects extends STServiceAdapter {
 	 * 
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAdmin()")
 	public STPropertiesSchema getCustomProjectFacetsSchema()
 			throws IllegalStateException, STPropertyAccessException, NoSuchSettingsManager {
 		return (STPropertiesSchema) exptManager.getSettings(null, UsersManager.getLoggedUser(),
