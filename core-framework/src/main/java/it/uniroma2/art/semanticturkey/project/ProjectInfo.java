@@ -20,6 +20,7 @@ public class ProjectInfo {
 	private final RepositoryLocation repositoryLocation;
 	private final ProjectStatus status;
 	private final String description;
+	private final String createdAt;
 	private final ProjectFacets facets;
 
 	@JsonCreator
@@ -33,6 +34,7 @@ public class ProjectInfo {
 			@JsonProperty("accessible") AccessResponse accessible,
 			@JsonProperty("repositoryLocation") RepositoryLocation repositoryLocation,
 			@JsonProperty("status") ProjectStatus status, @JsonProperty("description") String description,
+			@JsonProperty("createdAt") String createdAt,
 			ProjectFacets facets) {
 		this.name = name;
 		this.open = open;
@@ -47,6 +49,7 @@ public class ProjectInfo {
 		this.repositoryLocation = repositoryLocation;
 		this.status = status;
 		this.description = description;
+		this.createdAt = createdAt;
 		this.facets = facets;
 	}
 
@@ -101,6 +104,10 @@ public class ProjectInfo {
 
 	public String getDescription() {
 		return description;
+	}
+
+	public String getCreatedAt() {
+		return createdAt;
 	}
 
 	public ProjectFacets getFacets() {

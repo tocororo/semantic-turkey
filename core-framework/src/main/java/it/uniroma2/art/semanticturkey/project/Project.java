@@ -26,8 +26,6 @@
  */
 package it.uniroma2.art.semanticturkey.project;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
@@ -168,6 +166,8 @@ public abstract class Project extends AbstractProject {
 	protected IRI lexicalizationModel;
 
 	protected String description;
+	
+	protected  String createdAt;
 
 	public static final String INFOFILENAME = "project.info";
 
@@ -175,6 +175,7 @@ public abstract class Project extends AbstractProject {
 	public static final String RENDERING_ENGINE_CONFIG_FILENAME = "rendering.config";
 
 	public static final String TIMESTAMP_PROP = "timeStamp";
+	public static final String CREATED_AT_PROP = "created_at";
 	public static final String PROJECT_NAME_PROP = "name";
 	public static final String BASEURI_PROP = "baseURI";
 	public static final String DEF_NS_PROP = "defaultNamespace";
@@ -313,6 +314,9 @@ public abstract class Project extends AbstractProject {
 					.map(RepositoryLocation::fromString).orElse(null);
 
 			description = Optional.ofNullable(getProperty(DESCRIPTION_PROP)).orElse(null);
+
+			createdAt = Optional.ofNullable(getProperty(CREATED_AT_PROP)).orElse(null);
+
 		} catch (IOException | UnsupportedLexicalizationModelException | UnsupportedModelException
 				| ProjectInconsistentException e1) {
 			logger.debug("an exception occurred inside the constructor of a corrupted project", e1);
@@ -1227,6 +1231,10 @@ public abstract class Project extends AbstractProject {
 
 	public String getDescription() {
 		return description;
+	}
+
+	public String getCreatedAt() {
+		return createdAt;
 	}
 
 	public static Collection<RepositorySummary> getRepositorySummaries(STLocalRepositoryManager repoManager,

@@ -38,6 +38,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -53,9 +54,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.annotation.Nullable;
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.XMLGregorianCalendar;
 
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
@@ -843,6 +846,21 @@ public class ProjectManager {
 			throws IOException, InvalidProjectNameException, ProjectInexistentException {
 		String propValue = getProjectProperty(projectName, Project.TIMESTAMP_PROP);
 		return Long.parseLong(propValue);
+	}
+
+	/**
+	 * gets the created_at of the project with name <code>projectName</code>.
+	 *
+	 * @param projectName
+	 * @return
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 * @throws IOException
+	 * @throws IOException
+	 */
+	public static String getProjectCreatedAt(String projectName)
+			throws InvalidProjectNameException, ProjectInexistentException, IOException {
+		return getProjectProperty(projectName, Project.CREATED_AT_PROP);
 	}
 
 	// MULTI PROJECT MANAGEMENT ADDITIONS
@@ -1797,6 +1815,12 @@ public class ProjectManager {
 				projProp.setProperty(Project.TRIVIAL_INFERENCER_ENABLED_PROP,
 						String.valueOf(trivialInferenceEnabled));
 			}
+			//add the time of the creation
+			GregorianCalendar calendar = new GregorianCalendar();
+			XMLGregorianCalendar currentDateTimeXML;
+			currentDateTimeXML = DatatypeFactory.newInstance().newXMLGregorianCalendar(calendar);
+			projProp.setProperty(Project.CREATED_AT_PROP, currentDateTimeXML.toString());
+
 			try (FileOutputStream os = new FileOutputStream(info_stp)) {
 				projProp.store(os, Project.stpComment);
 			}
@@ -1835,7 +1859,7 @@ public class ProjectManager {
 			} finally {
 				localRepoMgr.shutDown();
 			}
-		} catch (IOException e) {
+		} catch (IOException | DatatypeConfigurationException e) {
 			throw new ProjectCreationException(e);
 		}
 	}

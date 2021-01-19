@@ -422,6 +422,7 @@ public class Projects extends STServiceAdapter {
 		ProjectStatus status = new ProjectStatus(Status.ok);
 		String description = null;
 		ProjectFacets facets = null;
+		String createdAt = null;
 
 		if (absProj instanceof Project) {
 			Project proj = (Project) absProj;
@@ -438,6 +439,7 @@ public class Projects extends STServiceAdapter {
 					requestedLockLevel);
 			repoLocation = proj.getDefaultRepositoryLocation();
 			description = proj.getDescription();
+			createdAt = proj.getCreatedAt();
 
 			if (onlyOpen && !open) {
 				return null;
@@ -459,7 +461,7 @@ public class Projects extends STServiceAdapter {
 		}
 		return new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel,
 				historyEnabled, validationEnabled, shaclEnabled, access, repoLocation, status,
-				description, facets);
+				description, createdAt, facets);
 	}
 
 	/**
