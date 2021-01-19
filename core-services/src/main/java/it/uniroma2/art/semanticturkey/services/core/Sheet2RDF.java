@@ -771,6 +771,12 @@ public class Sheet2RDF extends STServiceAdapter {
             for (CODATriple t : triples) {
                 connection.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
             }
+            // deal with the suggested triples to remove
+            List<CODATriple> triplesDel = sugg.getAllDeleteARTTriple();
+            for (CODATriple t : triplesDel) {
+                connection.remove(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+            }
+
         }
     }
 

@@ -1,5 +1,6 @@
 version 9.0.
 date: dd/mm/yyyy
+  * added the possibility to delete triples via Sheet2RDF service addTriples()
   * added a new lexicographer view for streamlined editing of OntoLex-Lemon lexicons
   * updated to LexInfo 3
   * added the support for the Lucene index containing the Project's facets (creating the index and using it for
