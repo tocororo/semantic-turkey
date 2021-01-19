@@ -15,6 +15,7 @@ public class ProjectInfo {
 	private final String lexicalizationModel;
 	private final boolean historyEnabled;
 	private final boolean validationEnabled;
+	private final boolean blacklistingEnabled;
 	private final boolean shaclEnabled;
 	private final AccessResponse accessible;
 	private final RepositoryLocation repositoryLocation;
@@ -31,7 +32,7 @@ public class ProjectInfo {
 			@JsonProperty("historyEnabled") boolean historyEnabled,
 			@JsonProperty("validationEnabled") boolean validationEnabled,
 			@JsonProperty("shaclEnabled") boolean shaclEnabled,
-			@JsonProperty("accessible") AccessResponse accessible,
+			@JsonProperty("blacklistingEnabled") boolean blacklistingEnabled, @JsonProperty("accessible") AccessResponse accessible,
 			@JsonProperty("repositoryLocation") RepositoryLocation repositoryLocation,
 			@JsonProperty("status") ProjectStatus status, @JsonProperty("description") String description,
 			@JsonProperty("createdAt") String createdAt,
@@ -44,6 +45,7 @@ public class ProjectInfo {
 		this.lexicalizationModel = lexicalizationModel;
 		this.historyEnabled = historyEnabled;
 		this.validationEnabled = validationEnabled;
+		this.blacklistingEnabled = blacklistingEnabled;
 		this.shaclEnabled = shaclEnabled;
 		this.accessible = accessible;
 		this.repositoryLocation = repositoryLocation;
@@ -83,6 +85,10 @@ public class ProjectInfo {
 
 	public boolean isValidationEnabled() {
 		return validationEnabled;
+	}
+	
+	public boolean isBlacklistingEnabled() {
+		return blacklistingEnabled;
 	}
 
 	@JsonProperty("shaclEnabled")

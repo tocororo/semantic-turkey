@@ -818,6 +818,10 @@ public abstract class Project extends AbstractProject {
 		if (reservedProperties.contains(propName))
 			throw new ReservedPropertyUpdateException(propName);
 
+		setReservedProperty(propName, propValue);
+	}
+
+	public void setReservedProperty(String propName, String propValue) throws ProjectUpdateException {
 		String oldValue = stp_properties.getProperty(propName);
 		try {
 			stp_properties.setProperty(propName, propValue);
@@ -825,7 +829,7 @@ public abstract class Project extends AbstractProject {
 		} catch (IOException e) {
 			stp_properties.setProperty(propName, oldValue);
 			throw new ProjectUpdateException(e);
-		}
+		}		
 	}
 
 	public void removeProperty(String propName, String propValue)

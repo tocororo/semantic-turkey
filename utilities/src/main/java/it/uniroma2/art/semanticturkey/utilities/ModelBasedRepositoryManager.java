@@ -74,11 +74,18 @@ public interface ModelBasedRepositoryManager {
 
 		private ValueFactory vf;
 		private LocalRepositoryManager repMgr;
+		private boolean shutdownOnClose;
 
-		public LocalRepositoryManagerAdapter(LocalRepositoryManager repMgr) {
+		public LocalRepositoryManagerAdapter(LocalRepositoryManager repMgr, boolean shutdownOnClose) {
 			this.vf = SimpleValueFactory.getInstance();
 			this.repMgr = repMgr;
+			this.shutdownOnClose = shutdownOnClose;
 		}
+		
+		public LocalRepositoryManagerAdapter(LocalRepositoryManager repMgr) {
+			this(repMgr, true);
+		}
+
 
 		@Override
 		public Model getRepositoryConfig(String id) {
@@ -102,7 +109,9 @@ public interface ModelBasedRepositoryManager {
 
 		@Override
 		public void close() {
-			repMgr.shutDown();
+			if (shutdownOnClose) {
+				repMgr.shutDown();
+			}
 		}
 
 	}

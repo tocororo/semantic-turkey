@@ -1,15 +1,97 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.StringWriter;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.eclipse.rdf4j.common.iteration.Iterations;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.SESAME;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParseException;
+import org.eclipse.rdf4j.rio.RDFParserRegistry;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.helpers.StatementCollector;
+import org.eclipse.rdf4j.sail.config.SailConfigSchema;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.Closer;
+
 import it.uniroma2.art.lime.model.repo.LIMERepositoryConnectionWrapper;
 import it.uniroma2.art.lime.profiler.LIMEProfiler;
 import it.uniroma2.art.lime.profiler.ProfilerException;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerFactory;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
@@ -53,15 +135,12 @@ import it.uniroma2.art.semanticturkey.project.SHACLSettings;
 import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
 import it.uniroma2.art.semanticturkey.properties.Pair;
 import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
-import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
-import it.uniroma2.art.semanticturkey.properties.dynamic.DynamicSTProperties;
 import it.uniroma2.art.semanticturkey.properties.dynamic.STPropertiesSchema;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
-import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
@@ -81,88 +160,7 @@ import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.lucene.analysis.core.SimpleAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.eclipse.rdf4j.common.iteration.Iterations;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
-import org.eclipse.rdf4j.model.vocabulary.OWL;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFParseException;
-import org.eclipse.rdf4j.rio.RDFParserRegistry;
-import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
-import org.eclipse.rdf4j.rio.helpers.StatementCollector;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
-
-import javax.annotation.Nullable;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.StringWriter;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import it.uniroma2.art.semanticturkey.vocabulary.SUPPORT;
 
 @STService
 public class Projects extends STServiceAdapter {
@@ -415,6 +413,7 @@ public class Projects extends STServiceAdapter {
 		String lexicalizationModel = null;
 		boolean historyEnabled = false;
 		boolean validationEnabled = false;
+		boolean blacklistingEnabled = false;
 		boolean shaclEnabled = false;
 		boolean open = false;
 		AccessResponse access = null;
@@ -433,6 +432,7 @@ public class Projects extends STServiceAdapter {
 			lexicalizationModel = proj.getLexicalizationModel().stringValue();
 			historyEnabled = proj.isHistoryEnabled();
 			validationEnabled = proj.isValidationEnabled();
+			blacklistingEnabled = proj.isBlacklistingEnabled();
 			shaclEnabled = proj.isSHACLEnabled();
 			open = ProjectManager.isOpen(proj);
 			access = ProjectManager.checkAccessibility(consumer, proj, requestedAccessLevel,
@@ -460,8 +460,8 @@ public class Projects extends STServiceAdapter {
 			status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
 		}
 		return new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel,
-				historyEnabled, validationEnabled, shaclEnabled, access, repoLocation, status,
-				description, createdAt, facets);
+				historyEnabled, validationEnabled, blacklistingEnabled, shaclEnabled, access, repoLocation,
+				status, description, createdAt, facets);
 	}
 
 	/**
@@ -738,11 +738,11 @@ public class Projects extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void deleteProject(ProjectConsumer consumer, String projectName)
-			throws ProjectDeletionException, ProjectAccessException, ProjectUpdateException,
-			ReservedPropertyUpdateException, InvalidProjectNameException, ProjectInexistentException, IOException {
+	public void deleteProject(ProjectConsumer consumer, String projectName) throws ProjectDeletionException,
+			ProjectAccessException, ProjectUpdateException, ReservedPropertyUpdateException,
+			InvalidProjectNameException, ProjectInexistentException, IOException {
 		ProjectManager.deleteProject(projectName);
-		//delete the project from the Lucene index as well
+		// delete the project from the Lucene index as well
 		ProjectFacetsIndexUtils.deleteProjectFromFacetIndex(projectName);
 	}
 
@@ -1002,8 +1002,7 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectInexistentException
 	 */
 	@STServiceOperation
-	public ProjectFacets getProjectFacetsForm()
-			throws IllegalStateException, STPropertyAccessException {
+	public ProjectFacets getProjectFacetsForm() throws IllegalStateException, STPropertyAccessException {
 		return STPropertiesManager.loadSTPropertiesFromObjectNode(ProjectFacets.class, false,
 				JsonNodeFactory.instance.objectNode(), STPropertiesManager.createObjectMapper(exptManager));
 	}
@@ -1182,9 +1181,8 @@ public class Projects extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public PreloadedDataSummary preloadDataFromURL(URL preloadedDataURL,
-			@Optional RDFFormat preloadedDataFormat)
-			throws IOException, RDFParseException, RepositoryException,
-			ProfilerException, AssessmentException, STPropertyAccessException {
+			@Optional RDFFormat preloadedDataFormat) throws IOException, RDFParseException,
+			RepositoryException, ProfilerException, AssessmentException, STPropertyAccessException {
 
 		logger.debug("Preload data from URL = {} (format = {})", preloadedDataURL, preloadedDataFormat);
 
@@ -1427,7 +1425,8 @@ public class Projects extends STServiceAdapter {
 				for (IndexableField indexableField : doc.getFields()) {
 					String name = indexableField.name();
 					String value = indexableField.stringValue();
-					if (!name.equals(ProjectFacetsIndexUtils.PROJECT_NAME) && !name.equals(ProjectFacetsIndexUtils.PROJECT_DESCRIPTION)) {
+					if (!name.equals(ProjectFacetsIndexUtils.PROJECT_NAME)
+							&& !name.equals(ProjectFacetsIndexUtils.PROJECT_DESCRIPTION)) {
 						if (!facetValueListMap.containsKey(name)) {
 							facetValueListMap.put(name, new ArrayList<>());
 						}
@@ -1466,8 +1465,6 @@ public class Projects extends STServiceAdapter {
 		// create the indexes
 		ProjectFacetsIndexUtils.createFacetIndexAPI(projInfoList);
 	}
-
-
 
 	/**
 	 * Create the Lucene index for the facets in ALL projects
@@ -1515,7 +1512,8 @@ public class Projects extends STServiceAdapter {
 					BooleanQuery.Builder andBuilderBoolean = new BooleanQuery.Builder();
 					for (Map<String, Object> andQuery : andQueryList) {
 						for (String facetName : andQuery.keySet()) {
-							String facetValue = ProjectFacetsIndexUtils.normalizeFacetValue(andQuery.get(facetName));
+							String facetValue = ProjectFacetsIndexUtils
+									.normalizeFacetValue(andQuery.get(facetName));
 							andBuilderBoolean.add(new TermQuery(new Term(facetName, facetValue)),
 									BooleanClause.Occur.MUST);
 						}
@@ -1561,10 +1559,68 @@ public class Projects extends STServiceAdapter {
 		return facetToProjeInfoListMap;
 	}
 
+	/**
+	 * Enables/disables blacklisting in a <em>closed</em> project with <em>validation</em> already enabled
+	 * 
+	 * @param projectName
+	 * @param blacklistingEnabled
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectAccessException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void setBlacklistingEnabled(String projectName, boolean blacklistingEnabled)
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		ProjectManager.handleProjectExclusively(projectName, project -> {
+			// checks that validation is already enabled
+			if (!project.isValidationEnabled()) {
+				throw new IllegalArgumentException(
+						"Cannot enable blacklisting on a project without validation: " + projectName);
+			}
+			if (project.isBlacklistingEnabled() == blacklistingEnabled)
+				return; // nothing to do
 
+			STLocalRepositoryManager prjRepMgr = new STLocalRepositoryManager(project.getProjectDirectory());
+			prjRepMgr.init();
+			try {
+				prjRepMgr.operateOnUnfoldedManager(Project.CORE_REPOSITORY, (repMgr, repId) -> {
+					// updates the repository configuration
 
+					ValueFactory vf = SimpleValueFactory.getInstance();
+					Model configModel = repMgr.getRepositoryConfig(repId);
+					Resource changeTrackerSailHolder = Models
+							.subject(configModel.filter(null, SailConfigSchema.SAILTYPE,
+									vf.createLiteral(ChangeTrackerFactory.SAIL_TYPE)))
+							.orElseThrow(() -> new IllegalArgumentException(
+									"Unable to find the ChangeTracker sail in the repository configuration"));
+					Models.setProperty(configModel, changeTrackerSailHolder,
+							ChangeTrackerSchema.BLACKLISTING_ENABLED, vf.createLiteral(blacklistingEnabled));
+					if (blacklistingEnabled) {
+						if (Objects.equals(
+								Models.getPropertyIRI(configModel, changeTrackerSailHolder,
+										ChangeTrackerSchema.BLACKLIST_GRAPH).orElse(SESAME.NIL),
+								SESAME.NIL)) {
+							Models.setProperty(configModel, changeTrackerSailHolder,
+									ChangeTrackerSchema.BLACKLIST_GRAPH, SUPPORT.BLACKLIST);
+						}
+					}
 
+					// writes the updated configuration
+					repMgr.addRepositoryConfig(configModel);
+				});
 
+				// udpates the project property
+				project.setReservedProperty(Project.BLACKLISTING_ENABLED_PROP,
+						Boolean.toString(blacklistingEnabled));
+			} catch (ProjectUpdateException e) {
+				throw new IllegalStateException(
+						"Unable to update the project properties for setting blacklisting to "
+								+ blacklistingEnabled);
+			} finally {
+				prjRepMgr.shutDown();
+			}
 
+		});
+	}
 
 }

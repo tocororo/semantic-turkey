@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 
 import javax.annotation.Nullable;
 
@@ -36,6 +37,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
+import it.uniroma2.art.semanticturkey.utilities.ModelBasedRepositoryManager;
 
 /**
  * A subclass of {@link LocalRepositoryManager} adding ST-related capabilities. Currently, an important
@@ -338,4 +340,34 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 		return repImplConfig;
 	}
 
+	public void operateOnUnfoldedManager(String id,
+			BiConsumer<ModelBasedRepositoryManager, String> operation) {
+		@Nullable
+		RepositoryConfig repCfg = getRepositoryConfig(id);
+		if (repCfg != null) {
+			// Firstly, in case of remote repositories, determine repositories containing the actual
+			// data
+			RepositoryImplConfig coreRepImpl = STLocalRepositoryManager
+					.getUnfoldedRepositoryImplConfig(repCfg);
+
+			if (coreRepImpl instanceof HTTPRepositoryConfig) {
+				HTTPRepositoryConfig coreRepHttpImpl = (HTTPRepositoryConfig) coreRepImpl;
+				String repURL = coreRepHttpImpl.getURL();
+				String serverURL = Protocol.getServerLocation(repURL);
+				String remoteId = Protocol.getRepositoryID(repURL);
+
+				STRepositoryInfo remoteRepInfo = getSTRepositoryInfo(id).get();
+
+				try (ModelBasedRepositoryManager.RemoteRepositoryManagerAdapter remoteRepMgr = new ModelBasedRepositoryManager.RemoteRepositoryManagerAdapter(
+						serverURL, remoteRepInfo.getUsername(), remoteRepInfo.getPassword())) {
+					operation.accept(remoteRepMgr, remoteId);
+				}
+			} else {
+				try (ModelBasedRepositoryManager.LocalRepositoryManagerAdapter localRepMgr = new ModelBasedRepositoryManager.LocalRepositoryManagerAdapter(
+						this, false)) {
+					operation.accept(localRepMgr, id);
+				}
+			}
+		}
+	}
 }
