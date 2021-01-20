@@ -28,6 +28,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -112,6 +114,8 @@ import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCat
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDescription;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
+import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
+import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
@@ -135,6 +139,7 @@ import it.uniroma2.art.semanticturkey.project.SHACLSettings;
 import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
 import it.uniroma2.art.semanticturkey.properties.Pair;
 import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -1621,6 +1626,88 @@ public class Projects extends STServiceAdapter {
 			}
 
 		});
+	}
+
+	/**
+	 * Returns the rendering engine associated with a project together with its (optional) configuration
+	 * 
+	 * @param projectName
+	 * @return
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectAccessException
+	 */
+	@PreAuthorize("@auth.isAdmin()")
+	@STServiceOperation
+	public org.apache.commons.lang3.tuple.Pair<String, STProperties> getRenderingEngineConfiguration(
+			String projectName)
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		MutableObject<org.apache.commons.lang3.tuple.Pair<String, STProperties>> rv = new MutableObject<>();
+		ProjectManager.handleProjectExclusively(projectName, project -> {
+			org.apache.commons.lang3.tuple.Pair<String, STProperties> pair = getBoundComponentConfiguration(
+					project, Project.RENDERING_ENGINE_FACTORY_ID_PROP,
+					Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP,
+					Project.RENDERING_ENGINE_CONFIG_FILENAME);
+
+			rv.setValue(pair);
+
+		});
+		return rv.getValue();
+	}
+
+	/**
+	 * Returns the uri generator associated with a project together with its (optional) configuration
+	 * 
+	 * @param projectName
+	 * @return
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectAccessException
+	 */
+	@PreAuthorize("@auth.isAdmin()")
+	@STServiceOperation
+	public org.apache.commons.lang3.tuple.Pair<String, STProperties> getURIGeneratorConfiguration(
+			String projectName)
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		MutableObject<org.apache.commons.lang3.tuple.Pair<String, STProperties>> rv = new MutableObject<>();
+		ProjectManager.handleProjectExclusively(projectName, project -> {
+			org.apache.commons.lang3.tuple.Pair<String, STProperties> pair = getBoundComponentConfiguration(
+					project, Project.URI_GENERATOR_FACTORY_ID_PROP,
+					Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP, Project.URI_GENERATOR_CONFIG_FILENAME);
+
+			rv.setValue(pair);
+
+		});
+		return rv.getValue();
+	}
+
+	protected org.apache.commons.lang3.tuple.Pair<String, STProperties> getBoundComponentConfiguration(
+			Project project, String factoryIdProp, String configTypeProp, String configFilenameProp)
+			throws RuntimeException {
+		String factoryID = project.getProperty(factoryIdProp);
+
+		@Nullable
+		String configType = project.getProperty(configTypeProp);
+		@Nullable
+		STProperties renderingEngineConfig;
+
+		if (configType != null) {
+			PluginFactory<?, ?, ?, ?, ?> renderingEngineFactory = PluginManager.getPluginFactory(factoryID);
+			String configFileName = configFilenameProp;
+			File configFile = new File(project.getProjectDirectory(), configFileName);
+			try {
+				renderingEngineConfig = renderingEngineFactory.createPluginConfiguration(configType);
+				renderingEngineConfig.loadProperties(configFile);
+
+			} catch (ClassNotFoundException | UnsupportedPluginConfigurationException
+					| UnloadablePluginConfigurationException | WrongPropertiesException | IOException e) {
+				throw new RuntimeException(e);
+			}
+		} else {
+			renderingEngineConfig = null;
+		}
+
+		return ImmutablePair.of(factoryID, renderingEngineConfig);
 	}
 
 }
