@@ -383,13 +383,8 @@ public class InputOutput extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'D')")
-	public ClearDataReport clearData() throws Exception {
-		ClearDataReport clearDataReport = getProject().clearData();
-		if (UsersManager.getLoggedUser().isAdmin()) {
-			return clearDataReport;
-		} else {
-			return null;
-		}
+	public void clearData() throws Exception {
+		getProject().clearData();
 	}
 
 	/**

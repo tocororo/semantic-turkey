@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
@@ -28,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.http.Header;
@@ -1660,6 +1662,31 @@ public class Projects extends STServiceAdapter {
 	}
 
 	/**
+	 * Updates the configuration of the rendering engine associated with a project
+	 * 
+	 * @param projectName
+	 * @param renderingEngineSpecification
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectAccessException
+	 */
+	@PreAuthorize("@auth.isAdmin()")
+	@STServiceOperation(method = RequestMethod.POST)
+	public void updateRenderingEngineConfiguration(String projectName,
+			PluginSpecification renderingEngineSpecification)
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		ProjectManager.handleProjectExclusively(projectName, project -> {
+			try {
+				updateBoundComponentConfiguration(project, Project.RENDERING_ENGINE_FACTORY_ID_PROP,
+						Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP,
+						Project.RENDERING_ENGINE_CONFIG_FILENAME, renderingEngineSpecification);
+			} catch (IOException | ProjectUpdateException e) {
+				ExceptionUtils.rethrow(e);
+			}
+		});
+	}
+
+	/**
 	 * Returns the uri generator associated with a project together with its (optional) configuration
 	 * 
 	 * @param projectName
@@ -1683,6 +1710,31 @@ public class Projects extends STServiceAdapter {
 
 		});
 		return rv.getValue();
+	}
+
+	/**
+	 * Updates the configuration of the uri generator associated with a project
+	 * 
+	 * @param projectName
+	 * @param uriGeneratorSpecification
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 * @throws ProjectAccessException
+	 */
+	@PreAuthorize("@auth.isAdmin()")
+	@STServiceOperation(method = RequestMethod.POST)
+	public void updateURIGeneratorConfiguration(String projectName,
+			PluginSpecification uriGeneratorSpecification)
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
+		ProjectManager.handleProjectExclusively(projectName, project -> {
+			try {
+				updateBoundComponentConfiguration(project, Project.URI_GENERATOR_FACTORY_ID_PROP,
+						Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP, Project.URI_GENERATOR_CONFIG_FILENAME,
+						uriGeneratorSpecification);
+			} catch (IOException | ProjectUpdateException e) {
+				ExceptionUtils.rethrow(e);
+			}
+		});
 	}
 
 	protected org.apache.commons.lang3.tuple.Pair<String, STProperties> getBoundComponentConfiguration(
@@ -1714,4 +1766,19 @@ public class Projects extends STServiceAdapter {
 		return ImmutablePair.of(factoryID, renderingEngineConfig);
 	}
 
+	private void updateBoundComponentConfiguration(Project project, String factoryIdProp,
+			String configTypeProp, String configFilenameProp, PluginSpecification componentSpec)
+			throws IOException, ProjectUpdateException {
+		project.setReservedProperty(factoryIdProp, componentSpec.getFactoryId());
+		File componentConfigurationFile = new File(project.getProjectDirectory(), configFilenameProp);
+		if (componentSpec.getProperties() != null) {
+			try (FileWriter fw = new FileWriter(componentConfigurationFile)) {
+				project.setReservedProperty(factoryIdProp, componentSpec.getConfigType());
+				componentSpec.getProperties().store(fw, "configuration updated after project creation");
+			}
+		} else {
+			project.deleteReservedProperty(factoryIdProp);
+			componentConfigurationFile.delete();
+		}
+	}
 }

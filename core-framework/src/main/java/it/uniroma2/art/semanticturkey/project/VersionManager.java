@@ -2,7 +2,10 @@ package it.uniroma2.art.semanticturkey.project;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -52,6 +55,26 @@ public class VersionManager {
 					+ newVersionInfo.getVersionId());
 		}
 		versionInfoList.add(newVersionInfo);
+		saveVersions();
+	}
+
+	public synchronized VersionInfo withdrawVersionRecord(String versionId)
+			throws JsonProcessingException, ProjectUpdateException, ReservedPropertyUpdateException {
+		Iterator<VersionInfo> it = versionInfoList.iterator();
+		while (it.hasNext()) {
+			VersionInfo versionInfo = it.next();
+			if (Objects.equals(versionInfo.getVersionId(), versionId)) {
+				it.remove();
+				saveVersions();
+				return versionInfo;
+			}
+		}
+		throw new NoSuchElementException("Version not found: " + versionId);
+	}
+
+	public synchronized void clearVersionRecords()
+			throws JsonProcessingException, ProjectUpdateException, ReservedPropertyUpdateException {
+		versionInfoList.clear();
 		saveVersions();
 	}
 

@@ -26,8 +26,57 @@
  */
 package it.uniroma2.art.semanticturkey.project;
 
+import static java.util.stream.Collectors.toSet;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
+import org.apache.commons.lang.mutable.MutableBoolean;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.http.protocol.Protocol;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
+import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
+import org.eclipse.rdf4j.repository.manager.RepositoryInfo;
+import org.eclipse.rdf4j.repository.manager.RepositoryManager;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
+
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
@@ -74,52 +123,6 @@ import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManager;
 import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
-import org.apache.commons.lang.mutable.MutableBoolean;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.eclipse.rdf4j.RDF4JException;
-import org.eclipse.rdf4j.http.protocol.Protocol;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.OWL;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.config.RepositoryConfig;
-import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
-import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
-import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
-import org.eclipse.rdf4j.repository.manager.RepositoryInfo;
-import org.eclipse.rdf4j.repository.manager.RepositoryManager;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-
-import static java.util.stream.Collectors.toSet;
 
 public abstract class Project extends AbstractProject {
 
@@ -166,8 +169,8 @@ public abstract class Project extends AbstractProject {
 	protected IRI lexicalizationModel;
 
 	protected String description;
-	
-	protected  String createdAt;
+
+	protected String createdAt;
 
 	public static final String INFOFILENAME = "project.info";
 
@@ -493,7 +496,7 @@ public abstract class Project extends AbstractProject {
 				loadingCoreVocabularies();
 
 				conn.begin();
-				
+
 				ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (connection) -> {
 					// always guarantee that there is an owl:Ontology named after the base URI
 					IRI baseURIasIRI = conn.getValueFactory().createIRI(baseURI);
@@ -502,7 +505,7 @@ public abstract class Project extends AbstractProject {
 						conn.add(baseURIasIRI, RDF.TYPE, OWL.ONTOLOGY, baseURIasIRI);
 					}
 				});
-				
+
 				conn.commit();
 
 				logger.debug("defaultnamespace set to: " + defaultNamespace);
@@ -677,7 +680,7 @@ public abstract class Project extends AbstractProject {
 
 	protected abstract void loadTriples() throws RDF4JException;
 
-	public ClearDataReport clearData() throws Exception {
+	public void clearData() throws Exception {
 		// clear core repository
 		newOntManager.clearData();
 		// reload core vocabularies
@@ -688,27 +691,34 @@ public abstract class Project extends AbstractProject {
 			supportOntManager.clearData();
 		}
 
-		// set new version manager
-		versionManager = new VersionManager(this);
+		// clear version records
+		versionManager.clearVersionRecords();
+
+		@Nullable
+		Exception ex = null;
 
 		// delete all repositories but the core and support ones
-		Collection<RepositorySummary> repSummaries = getRepositorySummaries(repositoryManager, true);
-		repSummaries.removeIf(s -> s.getId().equals(CORE_REPOSITORY));
-		repSummaries.removeIf(s -> s.getId().equals(SUPPORT_REPOSITORY));
-		
-		for (RepositoryInfo repInfo : repositoryManager.getAllRepositoryInfos()) {
-			String repID = repInfo.getId();
-			// skip core and support repository
-			if (repID.equals(CORE_REPOSITORY) || repID.equals(SUPPORT_REPOSITORY))
+		for (RepositoryInfo repInfo : repositoryManager.getAllRepositoryInfos(true)) {
+
+			if (Objects.equals(repInfo.getId(), Project.CORE_REPOSITORY)
+					|| Objects.equals(repInfo.getId(), Project.SUPPORT_REPOSITORY))
 				continue;
 
-			repositoryManager.removeRepository(repID);
+			try {
+				// delete the local handle of the repository and, if any, its remote counterpart too
+				repositoryManager.removeRepository(repInfo.getId(), true);
+			} catch (Exception e) {
+				if (ex == null) {
+					ex = new ProjectUpdateException("Errors occurred when deleting repositories");
+					ex.addSuppressed(
+							new RepositoryException("Error when deleting repository " + repInfo.getId(), e));
+				}
+			}
 		}
 
-		ClearDataReport clearDataReport = new ClearDataReport();
-		clearDataReport.danglingRemoteRepositories = repSummaries;
-		
-		return clearDataReport;
+		if (ex != null) {
+			throw ex;
+		}
 	}
 
 	private void updateProjectProperties() throws IOException {
@@ -829,7 +839,18 @@ public abstract class Project extends AbstractProject {
 		} catch (IOException e) {
 			stp_properties.setProperty(propName, oldValue);
 			throw new ProjectUpdateException(e);
-		}		
+		}
+	}
+
+	public void deleteReservedProperty(String propName) throws ProjectUpdateException {
+		String oldValue = stp_properties.getProperty(propName);
+		try {
+			stp_properties.remove(propName);
+			updateProjectProperties();
+		} catch (IOException e) {
+			stp_properties.setProperty(propName, oldValue);
+			throw new ProjectUpdateException(e);
+		}
 	}
 
 	public void removeProperty(String propName, String propValue)

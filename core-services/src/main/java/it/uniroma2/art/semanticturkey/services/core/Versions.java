@@ -183,4 +183,12 @@ public class Versions extends STServiceAdapter {
 		versionRepository.shutDown();
 	}
 
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('rdf(dataset, version)', 'D')")
+	public void deleteVersion(String versionId)
+			throws JsonProcessingException, ProjectUpdateException, ReservedPropertyUpdateException {
+		VersionInfo versionInfo = getProject().getVersionManager().withdrawVersionRecord(versionId);
+		getProject().getRepositoryManager().removeRepository(versionInfo.getRepositoryId(), true);
+	}
+
 };
