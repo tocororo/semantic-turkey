@@ -60,16 +60,12 @@ public class VersionManager {
 
 	public synchronized VersionInfo withdrawVersionRecord(String versionId)
 			throws JsonProcessingException, ProjectUpdateException, ReservedPropertyUpdateException {
-		Iterator<VersionInfo> it = versionInfoList.iterator();
-		while (it.hasNext()) {
-			VersionInfo versionInfo = it.next();
-			if (Objects.equals(versionInfo.getVersionId(), versionId)) {
-				it.remove();
-				saveVersions();
-				return versionInfo;
-			}
-		}
-		throw new NoSuchElementException("Version not found: " + versionId);
+		VersionInfo vis = versionInfoList.stream()
+				.filter(versionInfo -> Objects.equals(versionInfo.getVersionId(), versionId)).findAny()
+				.orElseThrow(() -> new NoSuchElementException("Version not found: " + versionId));
+		versionInfoList.remove(vis);
+		saveVersions();
+		return vis;
 	}
 
 	public synchronized void clearVersionRecords()
