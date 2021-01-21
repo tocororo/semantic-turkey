@@ -1,9 +1,13 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -24,13 +28,19 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.RDFSRenderingEngineConfiguration;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsList;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 
 /**
  * This class provides services related to the lexicographer view, which provides a simplified, streamlined
@@ -71,9 +81,29 @@ public class LexicographerView extends STServiceAdapter {
 		};
 	}
 
+	@SuppressWarnings("unchecked")
+	protected static PredicateObjectsList parseMorphoSyntacticProperties(Model input, Resource form,
+			Map<Resource, AnnotatedValue<Resource>> morphoSyntacticPropsCache) {
+		Map<IRI, AnnotatedValue<IRI>> propMap = new LinkedHashMap<>();
+		Multimap<IRI, AnnotatedValue<? extends Value>> valueMap = HashMultimap.create();
+
+		for (Resource prop : morphoSyntacticPropsCache.keySet()) {
+			List<AnnotatedValue<Value>> values = Models.getProperties(input, form, (IRI) prop).stream()
+					.map(AnnotatedValue::new).collect(Collectors.toList());
+			if (!values.isEmpty()) {
+				propMap.put((IRI) prop, (AnnotatedValue<IRI>) (Object) morphoSyntacticPropsCache.get(prop));
+				valueMap.putAll((IRI) prop, values);
+			}
+		}
+
+		PredicateObjectsList morphoSyntacticProps = new PredicateObjectsList(propMap, valueMap);
+		return morphoSyntacticProps;
+	}
+
 	public static class LexicalEntry {
 
 		private Resource id;
+		private PredicateObjectsList morphoSyntacticProps;
 		private List<Form> lemma;
 		private List<Form> otherForms;
 		private List<Sense> senses;
@@ -81,6 +111,10 @@ public class LexicographerView extends STServiceAdapter {
 		@JsonSerialize(using = ToStringSerializer.class)
 		public Resource getID() {
 			return id;
+		}
+
+		public PredicateObjectsList getMorphoSyntacticProps() {
+			return morphoSyntacticProps;
 		}
 
 		public List<Form> getLemma() {
@@ -95,12 +129,16 @@ public class LexicographerView extends STServiceAdapter {
 			return senses;
 		}
 
-		public static LexicalEntry parse(Model input, Resource lexicalEntry) {
+		public static LexicalEntry parse(Model input, Resource lexicalEntry,
+				Map<Resource, AnnotatedValue<Resource>> morpoSyntacticProps) {
 			LexicalEntry lexicalEntryObj = new LexicalEntry();
 			lexicalEntryObj.id = lexicalEntry;
 
-			List<Form> lemma = parseForms(input, lexicalEntry, ONTOLEX.CANONICAL_FORM);
-			List<Form> otherForms = parseForms(input, lexicalEntry, ONTOLEX.OTHER_FORM);
+			PredicateObjectsList morphoSyntacticProps = parseMorphoSyntacticProperties(input, lexicalEntry,
+					morpoSyntacticProps);
+
+			List<Form> lemma = parseForms(input, lexicalEntry, ONTOLEX.CANONICAL_FORM, morpoSyntacticProps);
+			List<Form> otherForms = parseForms(input, lexicalEntry, ONTOLEX.OTHER_FORM, morpoSyntacticProps);
 
 			Map<Resource, Sense> senses = new HashMap<>();
 
@@ -162,11 +200,12 @@ public class LexicographerView extends STServiceAdapter {
 					Map<Value, List<Statement>> def2statements = input
 							.filter(c.getValue(), SKOS.DEFINITION, null).stream()
 							.collect(Collectors.groupingBy(Statement::getObject));
-					senseObj.definition = def2statements.keySet().stream()
+					senseObj.definition = def2statements.keySet().stream().filter(IRI.class::isInstance)
 							.map(def -> new AnnotatedValue<>((Literal) def)).collect(Collectors.toList());
 				}
 			}
 
+			lexicalEntryObj.morphoSyntacticProps = morphoSyntacticProps;
 			lexicalEntryObj.lemma = lemma;
 			lexicalEntryObj.otherForms = otherForms;
 			lexicalEntryObj.senses = new ArrayList<>(senses.values());
@@ -174,9 +213,11 @@ public class LexicographerView extends STServiceAdapter {
 			return lexicalEntryObj;
 		}
 
-		protected static List<Form> parseForms(Model input, Resource lexicalEntry, IRI pred) {
+		protected static List<Form> parseForms(Model input, Resource lexicalEntry, IRI pred,
+				Map<Resource, AnnotatedValue<Resource>> morpoSyntacticProps) {
 			return Models.getPropertyResources(input, lexicalEntry, pred).stream()
-					.map(form -> Form.parse(input, (Resource) form)).collect(Collectors.toList());
+					.map(form -> Form.parse(input, (Resource) form, morpoSyntacticProps))
+					.collect(Collectors.toList());
 		}
 	}
 
@@ -185,6 +226,7 @@ public class LexicographerView extends STServiceAdapter {
 		private Resource id;
 		private List<AnnotatedValue<Literal>> writtenRep;
 		private List<AnnotatedValue<Literal>> phoneticRep;
+		private PredicateObjectsList morphoSyntacticProps;
 
 		@JsonSerialize(using = ToStringSerializer.class)
 		public Resource getID() {
@@ -199,15 +241,25 @@ public class LexicographerView extends STServiceAdapter {
 			return phoneticRep;
 		}
 
-		public static Form parse(Model input, Resource form) {
+		public PredicateObjectsList getMorphoSyntacticProps() {
+			return morphoSyntacticProps;
+		}
+
+		@SuppressWarnings("unchecked")
+		public static Form parse(Model input, Resource form,
+				Map<Resource, AnnotatedValue<Resource>> morpoSyntacticProps) {
 			List<AnnotatedValue<Literal>> writtenRep = parseRepresentations(input, form, ONTOLEX.WRITTEN_REP);
 			List<AnnotatedValue<Literal>> phoneticRep = parseRepresentations(input, form,
 					ONTOLEX.PHONETIC_REP);
+
+			PredicateObjectsList morphoSyntacticProps = parseMorphoSyntacticProperties(input, form,
+					morpoSyntacticProps);
 
 			Form formObj = new Form();
 			formObj.id = form;
 			formObj.writtenRep = writtenRep;
 			formObj.phoneticRep = phoneticRep;
+			formObj.morphoSyntacticProps = morphoSyntacticProps;
 
 			return formObj;
 		}
@@ -259,10 +311,18 @@ public class LexicographerView extends STServiceAdapter {
 		);
 		inputQuery.setBinding("resource", lexicalEntry);
 
+		QueryBuilder morpoSyntacPropQB = createQueryBuilder(
+				"SELECT ?resource WHERE { ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty> } GROUP BY ?resource ");
+		morpoSyntacPropQB.processQName();
+		morpoSyntacPropQB.processRendering();
+		morpoSyntacPropQB.processRole();
+		Map<Resource, AnnotatedValue<Resource>> morpoSyntacticProps = morpoSyntacPropQB.runQuery().stream()
+				.collect(Collectors.toMap(AnnotatedValue::getValue, Function.identity()));
+
 		Model input = new LinkedHashModel();
 		inputQuery.evaluate(new BindingSets2Model(input));
 
-		return LexicalEntry.parse(input, lexicalEntry);
+		return LexicalEntry.parse(input, lexicalEntry, morpoSyntacticProps);
 	}
 
 }
