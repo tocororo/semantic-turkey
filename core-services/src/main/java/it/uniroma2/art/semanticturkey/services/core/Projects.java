@@ -1773,7 +1773,7 @@ public class Projects extends STServiceAdapter {
 		File componentConfigurationFile = new File(project.getProjectDirectory(), configFilenameProp);
 		if (componentSpec.getProperties() != null) {
 			try (FileWriter fw = new FileWriter(componentConfigurationFile)) {
-				project.setReservedProperty(factoryIdProp, componentSpec.getConfigType());
+				project.setReservedProperty(configTypeProp, componentSpec.getConfigType());
 				componentSpec.getProperties().store(fw, "configuration updated after project creation");
 			}
 		} else {
