@@ -1541,6 +1541,10 @@ public class Projects extends STServiceAdapter {
 				ProjectInfo projectInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R,
 						LockLevel.NO, userDependent, onlyOpen, project);
 
+				if (projectInfo == null) {
+					continue;
+				}
+
 				String facetValue;
 				if (bagOf != null && !bagOf.isEmpty()) {
 					String facetName = bagOf;
