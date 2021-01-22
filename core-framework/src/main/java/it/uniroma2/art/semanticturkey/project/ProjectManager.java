@@ -1362,7 +1362,7 @@ public class ProjectManager {
 			List<Pair<RDFResourceRole, String>> resourceMetadataAssociations, File preloadedDataFile,
 			RDFFormat preloadedDataFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
 			Set<IRI> failedImports, String leftDataset, String rightDataset, boolean shaclEnabled,
-			SHACLSettings shaclSettings, boolean trivialInferenceEnabled)
+			SHACLSettings shaclSettings, boolean trivialInferenceEnabled, boolean openAtStartup)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, UnsupportedPluginConfigurationException,
@@ -1611,7 +1611,7 @@ public class ProjectManager {
 					repositoryAccess, coreRepoID, coreRepositoryConfig, coreBackendType, supportRepoID,
 					supportRepositoryConfig, supportBackendType, uriGeneratorSpecification,
 					renderingEngineSpecification, leftDataset, rightDataset, shaclEnabled,
-					trivialInferenceEnabled);
+					trivialInferenceEnabled, openAtStartup);
 
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 
@@ -1769,7 +1769,8 @@ public class ProjectManager {
 			RepositoryConfig coreRepoConfig, String coreBackendType, String supportRepoID,
 			RepositoryConfig supportRepoConfig, String supportBackendType,
 			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
-			String leftDataset, String rightDataset, boolean enableSHACL, boolean trivialInferenceEnabled)
+			String leftDataset, String rightDataset, boolean enableSHACL, boolean trivialInferenceEnabled,
+			boolean openAtStartup)
 			throws ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
@@ -1820,6 +1821,9 @@ public class ProjectManager {
 			XMLGregorianCalendar currentDateTimeXML;
 			currentDateTimeXML = DatatypeFactory.newInstance().newXMLGregorianCalendar(calendar);
 			projProp.setProperty(Project.CREATED_AT_PROP, currentDateTimeXML.toString());
+
+			//add the openAtStartup value
+			projProp.setProperty(Project.OPEN_AT_STARTUP_PROP, String.valueOf(openAtStartup));
 
 			try (FileOutputStream os = new FileOutputStream(info_stp)) {
 				projProp.store(os, Project.stpComment);

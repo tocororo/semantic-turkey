@@ -23,6 +23,7 @@ public class ProjectInfo {
 	private final String description;
 	private final String createdAt;
 	private final ProjectFacets facets;
+	private final boolean openAtStartup;
 
 	@JsonCreator
 	public ProjectInfo(@JsonProperty("name") String name, @JsonProperty("open") boolean open,
@@ -36,7 +37,7 @@ public class ProjectInfo {
 			@JsonProperty("accessible") AccessResponse accessible,
 			@JsonProperty("repositoryLocation") RepositoryLocation repositoryLocation,
 			@JsonProperty("status") ProjectStatus status, @JsonProperty("description") String description,
-			@JsonProperty("createdAt") String createdAt,
+			@JsonProperty("createdAt") String createdAt, @JsonProperty("openAtStartup") boolean openAtStartup,
 			ProjectFacets facets) {
 		this.name = name;
 		this.open = open;
@@ -54,6 +55,7 @@ public class ProjectInfo {
 		this.description = description;
 		this.createdAt = createdAt;
 		this.facets = facets;
+		this.openAtStartup = openAtStartup;
 	}
 
 	public String getName() {
@@ -91,6 +93,11 @@ public class ProjectInfo {
 	public boolean isBlacklistingEnabled() {
 		return blacklistingEnabled;
 	}
+
+	public boolean isOpenAtStartup() {
+		return openAtStartup;
+	}
+
 
 	@JsonProperty("shaclEnabled")
 	public boolean isSHACLEnabled() {

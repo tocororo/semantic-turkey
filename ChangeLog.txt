@@ -1,5 +1,6 @@
 version 9.0.
 date: dd/mm/yyyy
+  * addded the automatic opening of desired projects at startup
   * added the possibility to delete a version dump
   * added the possibility to configure the rendering engine and the uri generator after the initial project
     creation

@@ -177,4 +177,7 @@
 	<beans:bean id='auth'
 		class='it.uniroma2.art.semanticturkey.security.STAuthorizationEvaluator' />
 
+	<beans:bean id="projStarter"
+		  class="it.uniroma2.art.semanticturkey.services.core.projects.ProjectStarter" />
+
 </beans:beans>

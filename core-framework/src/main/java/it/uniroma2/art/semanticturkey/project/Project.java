@@ -169,8 +169,8 @@ public abstract class Project extends AbstractProject {
 	protected IRI lexicalizationModel;
 
 	protected String description;
-
-	protected String createdAt;
+	
+	protected  String createdAt;
 
 	public static final String INFOFILENAME = "project.info";
 
@@ -185,6 +185,8 @@ public abstract class Project extends AbstractProject {
 	public static final String MODEL_PROP = "model";
 	public static final String LEXICALIZATION_MODEL_PROP = "lexicalizationModel";
 	public static final String PLUGINS_PROP = "plugins";
+
+	public static final String OPEN_AT_STARTUP_PROP = "openAtStartup";
 
 	public static final String HISTORY_ENABLED_PROP = "historyEnabled";
 	public static final String VALIDATION_ENABLED_PROP = "validationEnabled";
@@ -233,6 +235,8 @@ public abstract class Project extends AbstractProject {
 		reservedProperties.add(VALIDATION_ENABLED_PROP);
 		reservedProperties.add(BLACKLISTING_ENABLED_PROP);
 		reservedProperties.add(SHACL_ENABLED_PROP);
+		reservedProperties.add(CREATED_AT_PROP);
+		reservedProperties.add(OPEN_AT_STARTUP_PROP);
 	}
 
 	private static final String SEPARATION_SYMBOL = ";";
@@ -496,7 +500,7 @@ public abstract class Project extends AbstractProject {
 				loadingCoreVocabularies();
 
 				conn.begin();
-
+				
 				ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (connection) -> {
 					// always guarantee that there is an owl:Ontology named after the base URI
 					IRI baseURIasIRI = conn.getValueFactory().createIRI(baseURI);
@@ -505,7 +509,7 @@ public abstract class Project extends AbstractProject {
 						conn.add(baseURIasIRI, RDF.TYPE, OWL.ONTOLOGY, baseURIasIRI);
 					}
 				});
-
+				
 				conn.commit();
 
 				logger.debug("defaultnamespace set to: " + defaultNamespace);
@@ -825,8 +829,9 @@ public abstract class Project extends AbstractProject {
 	public void setProperty(String propName, String propValue)
 			throws ProjectUpdateException, ReservedPropertyUpdateException {
 		logger.debug("setting property: " + propName + " to value: " + propValue);
-		if (reservedProperties.contains(propName))
+		if (reservedProperties.contains(propName)) {
 			throw new ReservedPropertyUpdateException(propName);
+		}
 
 		setReservedProperty(propName, propValue);
 	}
@@ -1260,6 +1265,10 @@ public abstract class Project extends AbstractProject {
 
 	public String getCreatedAt() {
 		return createdAt;
+	}
+
+	public boolean isOpenAtStartupEnabled(){
+		return Boolean.parseBoolean(ObjectUtils.firstNonNull(getProperty(OPEN_AT_STARTUP_PROP), "false"));
 	}
 
 	public static Collection<RepositorySummary> getRepositorySummaries(STLocalRepositoryManager repoManager,

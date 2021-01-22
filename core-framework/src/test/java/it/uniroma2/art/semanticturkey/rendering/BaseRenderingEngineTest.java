@@ -279,7 +279,7 @@ public class BaseRenderingEngineTest {
 						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
 						JsonNodeFactory.instance.objectNode()),
 				null, null, null, null, null, null, null, false, null,
-				false);
+				false, false);
 		try {
 			Repository repo = new SailRepository(new MemoryStore());
 			repo.init();
@@ -421,7 +421,7 @@ public class BaseRenderingEngineTest {
 						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
 						JsonNodeFactory.instance.objectNode()),
 				null, null, null, null, null, null, null, false, null,
-				false);
+				false, false);
 		try {
 			STServiceContext stServiceContext = new STServiceContext() {
 
