@@ -422,20 +422,16 @@ public class UsersManager {
 	}
 
 	/**
-	 * This method should never return <code>null</code>, since if the user is not logged, the services are
-	 * intercepted by the security filter. However, if for whatever reason no user is logged in, an
-	 * <code>IllegalStateException</code> is thrown.
+	 * Returns the logged user (if any), otherwise returns null
 	 *
 	 * @return
 	 */
-	public static STUser getLoggedUser() throws IllegalStateException {
-
+	public static STUser getLoggedUser() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		if (!(auth instanceof AnonymousAuthenticationToken)) {// if there's a user authenticated
+		if (auth != null && !(auth instanceof AnonymousAuthenticationToken)) {// if there's a user authenticated
 			return (STUser) auth.getPrincipal();
 		}
-
-		throw new IllegalStateException("No user is logged in");
+		return null;
 	}
 
 	/**
