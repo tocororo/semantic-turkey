@@ -79,6 +79,7 @@ public class SHACL extends STServiceAdapter {
 	private static final String SH_NAMESPACE = "http://www.w3.org/ns/shacl#";
 
 	private static final String SH_NODESHAPE = SH_NAMESPACE+"NodeShape";
+	private static final String SH_SHAPE = SH_NAMESPACE+"Shape";
 
 	private static final String SH_MAXCOUNT = SH_NAMESPACE + "maxCount";
 	private static final String SH_MINCOUNT = SH_NAMESPACE + "minCount";
@@ -296,6 +297,7 @@ public class SHACL extends STServiceAdapter {
 
 	private Map<String, PropInfo> generatePropInfoMap(Repository rep, IRI targetShapeIRI, IRI classIRI) throws SHACLGenericException {
 		Map<String, PropInfo> propToPropInfoMap = new HashMap<>();
+		int possCase = -1;
 		try(RepositoryConnection conn = rep.getConnection()) {
 			String query;
 			//perform some checks before getting the data
@@ -312,20 +314,40 @@ public class SHACL extends STServiceAdapter {
 					}
 				}
 			} else {
+				// in this case there are two possible cases:
+				// 1) there is a nodeShape having SH_TARGETCLASS the desired class
+				// 2) the desired class is defined as a SH_SHAPE itself
 				query = "\nSELECT ?nodeShape " +
 						"\nWHERE{" +
 						"\n ?nodeShape <" + SH_TARGETCLASS + "> " + NTriplesUtil.toNTriplesString(classIRI) + " ."  +
 						"\n}";
 				try (TupleQueryResult tupleQueryResult = conn.prepareTupleQuery(query).evaluate()) {
-					if (!tupleQueryResult.hasNext()) {
-						throw new SHACLNoTargetShapeFromClassIriException(classIRI);
+					if(!tupleQueryResult.hasNext()) {
+						//we are not in case 1, so maybe we are in case 2, check
+					} else {
+						possCase = 1;
+						List<IRI> targetShapeIriList = new ArrayList<>();
+						while (tupleQueryResult.hasNext()) {
+							targetShapeIriList.add((IRI) tupleQueryResult.next().getValue("nodeShape"));
+						}
+						if (targetShapeIriList.size() > 1) {
+							throw new SHACLMultipleTargetShapeFromClassIRIException(classIRI, targetShapeIriList);
+						}
 					}
-					List<IRI> targetShapeIriList = new ArrayList<>();
-					while (tupleQueryResult.hasNext()) {
-						targetShapeIriList.add((IRI) tupleQueryResult.next().getValue("nodeShape"));
-					}
-					if (targetShapeIriList.size() > 1) {
-						throw new SHACLMultipleTargetShapeFromClassIRIException(classIRI, targetShapeIriList);
+				}
+				if (possCase!=1) {
+					// since we are not in case 1, then check if the classIRI is defined as type SH_SHAPE
+					query = "\nSELECT ?nodeShape " +
+							"\nWHERE{" +
+							"\n"+NTriplesUtil.toNTriplesString(classIRI)+" a <" + SH_SHAPE + "> ."  +
+							"\n"+NTriplesUtil.toNTriplesString(classIRI)+" a ?type . "  +
+							"\n}";
+					try (TupleQueryResult tupleQueryResult = conn.prepareTupleQuery(query).evaluate()) {
+						if(!tupleQueryResult.hasNext()) {
+							throw new SHACLNoTargetShapeFromClassIriException(classIRI);
+						} else {
+							possCase = 2;
+						}
 					}
 				}
 			}
@@ -338,10 +360,13 @@ public class SHACL extends STServiceAdapter {
 							"\nWHERE {";
 			if (targetShapeIRI != null) {
 				query += "\nBIND(" + NTriplesUtil.toNTriplesString(targetShapeIRI) + " AS ?nodeShape)";
-			} else {
+			} else if(possCase==1) {
 				query += "\nBIND(" + NTriplesUtil.toNTriplesString(classIRI) + " AS ?targetClass) " +
 						"\n?nodeShape <" + SH_TARGETCLASS + "> ?targetClass ." +
 						"\n?nodeShape a <" + SH_NODESHAPE + "> .";
+			} else { // it is possCase==2
+				query += "\nBIND(" + NTriplesUtil.toNTriplesString(classIRI) + " AS ?nodeShape) " +
+						"\n?nodeShape a <" + SH_SHAPE + "> .";
 			}
 			query += "\n}";
 
@@ -364,8 +389,13 @@ public class SHACL extends STServiceAdapter {
 			IRI currentNodeShapeIRI = null;
 			if (targetShapeIRI != null) {
 				currentNodeShapeIRI = targetShapeIRI;
-			} else {
+			} else if(possCase==1){
 				RepositoryResult<Statement> repositoryResult = connTemp.getStatements(null, RDF.TYPE, svf.createIRI(SH_NODESHAPE));
+				if (repositoryResult.hasNext()) {
+					currentNodeShapeIRI = (IRI) repositoryResult.next().getSubject();
+				}
+			} else { // it is possCase==2
+				RepositoryResult<Statement> repositoryResult = connTemp.getStatements(null, RDF.TYPE, svf.createIRI(SH_SHAPE));
 				if (repositoryResult.hasNext()) {
 					currentNodeShapeIRI = (IRI) repositoryResult.next().getSubject();
 				}
