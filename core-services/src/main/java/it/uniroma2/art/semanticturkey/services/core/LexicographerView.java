@@ -1,25 +1,28 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.collections4.MapUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.BooleanLiteral;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.query.AbstractTupleQueryResultHandler;
 import org.eclipse.rdf4j.query.TupleQuery;
@@ -32,8 +35,9 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngine;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.RDFSRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
+import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
@@ -81,17 +85,44 @@ public class LexicographerView extends STServiceAdapter {
 		};
 	}
 
+	public static String simplifiedNatureComputation(Model input, Resource resource,
+			RDFResourceRole fixedRole) {
+		boolean deprecated = input.contains(resource, OWL.DEPRECATED, BooleanLiteral.TRUE)
+				|| input.contains(resource, RDF.TYPE, OWL.DEPRECATEDCLASS)
+				|| input.contains(resource, RDF.TYPE, OWL.DEPRECATEDPROPERTY);
+
+		return input.filter(resource, RDF.TYPE, null).contexts().stream()
+				.map(c -> fixedRole + "," + c + "," + deprecated).collect(Collectors.joining("|_|"));
+	}
+
+	public static @Nullable String computeQName(Map<String, String> ns2prefix, IRI resource) {
+		String prefix = ns2prefix.get(resource.getNamespace());
+		if (prefix != null) {
+			return prefix + ":" + resource.getLocalName();
+		} else {
+			return null;
+		}
+	}
+
 	@SuppressWarnings("unchecked")
-	protected static PredicateObjectsList parseMorphoSyntacticProperties(Model input, Resource form,
-			Map<Resource, AnnotatedValue<Resource>> morphoSyntacticPropsCache) {
+	protected static PredicateObjectsList parseMorphosyntacticProperties(Context ctx, Model input,
+			Resource form) {
 		Map<IRI, AnnotatedValue<IRI>> propMap = new LinkedHashMap<>();
 		Multimap<IRI, AnnotatedValue<? extends Value>> valueMap = HashMultimap.create();
 
-		for (Resource prop : morphoSyntacticPropsCache.keySet()) {
+		for (Resource prop : ctx.morphosyntacticProps.keySet()) {
 			List<AnnotatedValue<Value>> values = Models.getProperties(input, form, (IRI) prop).stream()
-					.map(AnnotatedValue::new).collect(Collectors.toList());
+					.map(value -> {
+						AnnotatedValue<Value> annotatedValue = new AnnotatedValue<>(value);
+						TripleScopes tripleScope = NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(
+								input.filter(form, (IRI) prop, value).contexts(), ctx.workingGraph);
+						annotatedValue.getAttributes().put("tripleScope",
+								SimpleValueFactory.getInstance().createLiteral(tripleScope.toString()));
+
+						return annotatedValue;
+					}).collect(Collectors.toList());
 			if (!values.isEmpty()) {
-				propMap.put((IRI) prop, (AnnotatedValue<IRI>) (Object) morphoSyntacticPropsCache.get(prop));
+				propMap.put((IRI) prop, (AnnotatedValue<IRI>) (Object) ctx.morphosyntacticProps.get(prop));
 				valueMap.putAll((IRI) prop, values);
 			}
 		}
@@ -103,7 +134,8 @@ public class LexicographerView extends STServiceAdapter {
 	public static class LexicalEntry {
 
 		private Resource id;
-		private PredicateObjectsList morphoSyntacticProps;
+		private String nature;
+		private PredicateObjectsList morphosyntacticProps;
 		private List<Form> lemma;
 		private List<Form> otherForms;
 		private List<Sense> senses;
@@ -113,8 +145,12 @@ public class LexicographerView extends STServiceAdapter {
 			return id;
 		}
 
-		public PredicateObjectsList getMorphoSyntacticProps() {
-			return morphoSyntacticProps;
+		public String getNature() {
+			return nature;
+		}
+
+		public PredicateObjectsList getMorphosyntacticProps() {
+			return morphosyntacticProps;
 		}
 
 		public List<Form> getLemma() {
@@ -129,16 +165,17 @@ public class LexicographerView extends STServiceAdapter {
 			return senses;
 		}
 
-		public static LexicalEntry parse(Model input, Resource lexicalEntry,
-				Map<Resource, AnnotatedValue<Resource>> morpoSyntacticProps) {
+		public static LexicalEntry parse(Context ctx, Model input, Resource lexicalEntry) {
 			LexicalEntry lexicalEntryObj = new LexicalEntry();
 			lexicalEntryObj.id = lexicalEntry;
+			lexicalEntryObj.nature = simplifiedNatureComputation(input, lexicalEntry,
+					RDFResourceRole.ontolexLexicalEntry);
 
-			PredicateObjectsList morphoSyntacticProps = parseMorphoSyntacticProperties(input, lexicalEntry,
-					morpoSyntacticProps);
+			PredicateObjectsList morphoSyntacticProps = parseMorphosyntacticProperties(ctx, input,
+					lexicalEntry);
 
-			List<Form> lemma = parseForms(input, lexicalEntry, ONTOLEX.CANONICAL_FORM, morpoSyntacticProps);
-			List<Form> otherForms = parseForms(input, lexicalEntry, ONTOLEX.OTHER_FORM, morpoSyntacticProps);
+			List<Form> lemma = parseForms(ctx, input, lexicalEntry, ONTOLEX.CANONICAL_FORM);
+			List<Form> otherForms = parseForms(ctx, input, lexicalEntry, ONTOLEX.OTHER_FORM);
 
 			Map<Resource, Sense> senses = new HashMap<>();
 
@@ -205,7 +242,7 @@ public class LexicographerView extends STServiceAdapter {
 				}
 			}
 
-			lexicalEntryObj.morphoSyntacticProps = morphoSyntacticProps;
+			lexicalEntryObj.morphosyntacticProps = morphoSyntacticProps;
 			lexicalEntryObj.lemma = lemma;
 			lexicalEntryObj.otherForms = otherForms;
 			lexicalEntryObj.senses = new ArrayList<>(senses.values());
@@ -213,24 +250,39 @@ public class LexicographerView extends STServiceAdapter {
 			return lexicalEntryObj;
 		}
 
-		protected static List<Form> parseForms(Model input, Resource lexicalEntry, IRI pred,
-				Map<Resource, AnnotatedValue<Resource>> morpoSyntacticProps) {
-			return Models.getPropertyResources(input, lexicalEntry, pred).stream()
-					.map(form -> Form.parse(input, (Resource) form, morpoSyntacticProps))
-					.collect(Collectors.toList());
+		protected static List<Form> parseForms(Context ctx, Model input, Resource lexicalEntry, IRI pred) {
+			return Models.getPropertyResources(input, lexicalEntry, pred).stream().map(form -> {
+				Form formObj = Form.parse(ctx, input, (Resource) form);
+				TripleScopes scope = NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(
+						input.filter(lexicalEntry, pred, form).contexts(), ctx.workingGraph);
+				formObj.scope = scope;
+
+				return formObj;
+			}).collect(Collectors.toList());
 		}
 	}
 
 	public static class Form {
 
 		private Resource id;
+		private String nature;
+		private TripleScopes scope;
+
 		private List<AnnotatedValue<Literal>> writtenRep;
 		private List<AnnotatedValue<Literal>> phoneticRep;
-		private PredicateObjectsList morphoSyntacticProps;
+		private PredicateObjectsList morphosyntacticProps;
 
 		@JsonSerialize(using = ToStringSerializer.class)
 		public Resource getID() {
 			return id;
+		}
+
+		public String getNature() {
+			return nature;
+		}
+
+		public TripleScopes getScope() {
+			return scope;
 		}
 
 		public List<AnnotatedValue<Literal>> getWrittenRep() {
@@ -241,31 +293,32 @@ public class LexicographerView extends STServiceAdapter {
 			return phoneticRep;
 		}
 
-		public PredicateObjectsList getMorphoSyntacticProps() {
-			return morphoSyntacticProps;
+		public PredicateObjectsList getMorphosyntacticProps() {
+			return morphosyntacticProps;
 		}
 
 		@SuppressWarnings("unchecked")
-		public static Form parse(Model input, Resource form,
-				Map<Resource, AnnotatedValue<Resource>> morpoSyntacticProps) {
-			List<AnnotatedValue<Literal>> writtenRep = parseRepresentations(input, form, ONTOLEX.WRITTEN_REP);
-			List<AnnotatedValue<Literal>> phoneticRep = parseRepresentations(input, form,
+		public static Form parse(Context ctx, Model input, Resource form) {
+			String nature = simplifiedNatureComputation(input, form, RDFResourceRole.ontolexForm);
+			List<AnnotatedValue<Literal>> writtenRep = parseRepresentations(ctx, input, form,
+					ONTOLEX.WRITTEN_REP);
+			List<AnnotatedValue<Literal>> phoneticRep = parseRepresentations(ctx, input, form,
 					ONTOLEX.PHONETIC_REP);
 
-			PredicateObjectsList morphoSyntacticProps = parseMorphoSyntacticProperties(input, form,
-					morpoSyntacticProps);
+			PredicateObjectsList morphoSyntacticProps = parseMorphosyntacticProperties(ctx, input, form);
 
 			Form formObj = new Form();
 			formObj.id = form;
+			formObj.nature = nature;
 			formObj.writtenRep = writtenRep;
 			formObj.phoneticRep = phoneticRep;
-			formObj.morphoSyntacticProps = morphoSyntacticProps;
+			formObj.morphosyntacticProps = morphoSyntacticProps;
 
 			return formObj;
 		}
 
-		protected static List<AnnotatedValue<Literal>> parseRepresentations(Model input, Resource form,
-				IRI pred) {
+		protected static List<AnnotatedValue<Literal>> parseRepresentations(Context ctx, Model input,
+				Resource form, IRI pred) {
 			return Models.getPropertyLiterals(input, form, pred).stream().map(r -> new AnnotatedValue<>(r))
 					.collect(Collectors.toList());
 		}
@@ -296,6 +349,12 @@ public class LexicographerView extends STServiceAdapter {
 
 	}
 
+	private static class Context {
+		public Map<Resource, AnnotatedValue<Resource>> morphosyntacticProps;
+		public Resource workingGraph;
+		public Map<String, String> ns2prefix;
+	}
+
 	@STServiceOperation
 	@Read
 	public LexicalEntry getLexicalEntryView(Resource lexicalEntry) {
@@ -303,26 +362,30 @@ public class LexicographerView extends STServiceAdapter {
 		// @formatter:off
 			"SELECT * WHERE {                                                    \n" +
 			"    ?resource (<http://www.w3.org/ns/lemon/ontolex#canonicalForm>|<http://www.w3.org/ns/lemon/ontolex#otherForm>|(<http://www.w3.org/ns/lemon/ontolex#sense>|^<http://www.w3.org/ns/lemon/ontolex#isSenseOf>)/(<http://www.w3.org/ns/lemon/ontolex#isReferenceOf>|<http://www.w3.org/ns/lemon/ontolex#isLexicalizedSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#lexicalizedSense>)?)? ?s . \n" +
-			"    GRAPH ?g {                                                      \n" +
+			"    GRAPH ?c {                                                      \n" +
 			"    	?s ?p ?o .                                                   \n" +
 			"    }                                                               \n" +
 			"}                                                                   \n"
 			// @formatter:on
 		);
 		inputQuery.setBinding("resource", lexicalEntry);
+		Model input = new LinkedHashModel();
+		inputQuery.evaluate(new BindingSets2Model(input));
 
 		QueryBuilder morpoSyntacPropQB = createQueryBuilder(
 				"SELECT ?resource WHERE { ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty> } GROUP BY ?resource ");
 		morpoSyntacPropQB.processQName();
 		morpoSyntacPropQB.processRendering();
 		morpoSyntacPropQB.processRole();
-		Map<Resource, AnnotatedValue<Resource>> morpoSyntacticProps = morpoSyntacPropQB.runQuery().stream()
+		Map<Resource, AnnotatedValue<Resource>> morphoSyntacticProps = morpoSyntacPropQB.runQuery().stream()
 				.collect(Collectors.toMap(AnnotatedValue::getValue, Function.identity()));
 
-		Model input = new LinkedHashModel();
-		inputQuery.evaluate(new BindingSets2Model(input));
+		Context ctx = new Context();
+		ctx.morphosyntacticProps = morphoSyntacticProps;
+		ctx.workingGraph = getWorkingGraph();
+		ctx.ns2prefix = MapUtils.invertMap(getProject().getNewOntologyManager().getNSPrefixMappings(true));
 
-		return LexicalEntry.parse(input, lexicalEntry, morpoSyntacticProps);
+		return LexicalEntry.parse(ctx, input, lexicalEntry);
 	}
 
 }
