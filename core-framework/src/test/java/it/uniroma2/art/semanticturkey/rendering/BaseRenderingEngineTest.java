@@ -270,16 +270,15 @@ public class BaseRenderingEngineTest {
 
 		Project project = ProjectManager.createProject(ProjectConsumer.SYSTEM, "Test", Project.SKOS_MODEL,
 				Project.SKOS_MODEL, "http://example.org/", false, false, false, new CreateLocal(), "core",
-				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null, null, null,
-				null,
+				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null, null, null, null,
 				new PluginSpecification(NativeTemplateBasedURIGeneratorFactory.class.getName(),
-						NativeTemplateBasedURIGeneratorConfiguration.class.getName(), null,
-						JsonNodeFactory.instance.objectNode()),
+				NativeTemplateBasedURIGeneratorConfiguration.class.getName(), null,
+				JsonNodeFactory.instance.objectNode()),
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
-						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
-						JsonNodeFactory.instance.objectNode()),
+				SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
+				JsonNodeFactory.instance.objectNode()),
 				null, null, null, null, null, null, null, false, null,
-				false, false);
+				false, false, false);
 		try {
 			Repository repo = new SailRepository(new MemoryStore());
 			repo.init();
@@ -415,13 +414,13 @@ public class BaseRenderingEngineTest {
 				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null, "support",
 				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null,
 				new PluginSpecification(NativeTemplateBasedURIGeneratorFactory.class.getName(),
-						NativeTemplateBasedURIGeneratorConfiguration.class.getName(), null,
-						JsonNodeFactory.instance.objectNode()),
+				NativeTemplateBasedURIGeneratorConfiguration.class.getName(), null,
+				JsonNodeFactory.instance.objectNode()),
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
-						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
-						JsonNodeFactory.instance.objectNode()),
+				SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
+				JsonNodeFactory.instance.objectNode()),
 				null, null, null, null, null, null, null, false, null,
-				false, false);
+				false, false, false);
 		try {
 			STServiceContext stServiceContext = new STServiceContext() {
 

@@ -1362,7 +1362,8 @@ public class ProjectManager {
 			List<Pair<RDFResourceRole, String>> resourceMetadataAssociations, File preloadedDataFile,
 			RDFFormat preloadedDataFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
 			Set<IRI> failedImports, String leftDataset, String rightDataset, boolean shaclEnabled,
-			SHACLSettings shaclSettings, boolean trivialInferenceEnabled, boolean openAtStartup)
+			SHACLSettings shaclSettings, boolean trivialInferenceEnabled, boolean openAtStartup,
+			boolean globallyAccessible)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
 			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
 			ClassNotFoundException, UnsupportedPluginConfigurationException,
@@ -1656,6 +1657,10 @@ public class ProjectManager {
 
 				leftDatasetProject.getACL().grantAccess(projectBeingCreated, AccessLevel.R);
 				rightDatasetProject.getACL().grantAccess(projectBeingCreated, AccessLevel.R);
+			}
+
+			if (globallyAccessible) {
+				project.getACL().grantUniversalAccess(AccessLevel.R);
 			}
 
 			// init the resource metadata associations

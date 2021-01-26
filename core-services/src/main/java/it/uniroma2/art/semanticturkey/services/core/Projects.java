@@ -198,7 +198,8 @@ public class Projects extends STServiceAdapter {
 			@Optional TransitiveImportMethodAllowance transitiveImportAllowance, @Optional String leftDataset,
 			@Optional String rightDataset, @Optional boolean shaclEnabled,
 			@Optional @JsonSerialized SHACLSettings shaclSettings, @Optional boolean trivialInferenceEnabled,
-			@Optional(defaultValue = "false") boolean openAtStartup)
+			@Optional(defaultValue = "false") boolean openAtStartup,
+		    @Optional(defaultValue = "false") boolean globallyAccessible)
 			throws ProjectInconsistentException, InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
 			ProjectCreationException, ClassNotFoundException, WrongPropertiesException,
@@ -250,7 +251,7 @@ public class Projects extends STServiceAdapter {
 					supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
 					renderingEngineSpecification, resourceMetadataAssociations, preloadedDataFile,
 					preloadedDataFormat, transitiveImportAllowance, failedImports, leftDataset, rightDataset,
-					shaclEnabled, shaclSettings, trivialInferenceEnabled, openAtStartup);
+					shaclEnabled, shaclSettings, trivialInferenceEnabled, openAtStartup, globallyAccessible);
 			deletePreloadedDataFile = true;
 		} finally {
 			if (preloadedDataFileName != null) {

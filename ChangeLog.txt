@@ -1,9 +1,10 @@
 version 9.0.
 date: dd/mm/yyyy
-  * addded the automatic opening of desired projects at startup
+  * added the automatic opening of desired projects at startup
   * added the possibility to delete a version dump
   * added the possibility to configure the rendering engine and the uri generator after the initial project
     creation
+  * added the possibility to set a project accessible by all the other
   * added the possibility to enable/disable blacklisting on projects with validation already enabled
   * added the possibility to delete triples via Sheet2RDF service addTriples()
   * added a new lexicographer view for streamlined editing of OntoLex-Lemon lexicons
