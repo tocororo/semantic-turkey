@@ -59,7 +59,7 @@ public class TupleQueryShallowModel {
 		sb.append(query.substring(projectionInsertionIndex, graphPatternInsertionIndex));
 
 		sb.append(graphPatterns.stream().map(GraphPattern::getSPARQLPattern)
-				.collect(joining("}\nOPTIONAL{\n", "\nOPTIONAL{\n", "\n}\n")));
+				.collect(joining("\n")));
 
 		if (groupByInsertionIndex != -1) {
 			sb.append(query.substring(graphPatternInsertionIndex, groupByInsertionIndex));

@@ -15,6 +15,7 @@ import java.util.Map;
 public interface QueryBuilderProcessor {
 	GraphPattern getGraphPattern(STServiceContext context);
 	boolean introducesDuplicates();
+	default boolean requiresOptionalWrapper() { return true; }
 	Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable);
 	default void processBindings(List<BindingSet> resultTable) {}
 	String getBindingVariable();

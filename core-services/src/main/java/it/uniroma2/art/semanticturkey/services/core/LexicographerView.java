@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.eclipse.rdf4j.query.AbstractTupleQueryResultHandler;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
@@ -40,6 +42,7 @@ import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -56,6 +59,9 @@ import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 public class LexicographerView extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(LexicographerView.class);
+
+	private static final IRI MORPHOSYNTACTIC_PROPERTY = SimpleValueFactory.getInstance()
+			.createIRI("http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty");
 
 	public static class BindingSets2Model extends AbstractTupleQueryResultHandler {
 
@@ -355,8 +361,33 @@ public class LexicographerView extends STServiceAdapter {
 		public Map<String, String> ns2prefix;
 	}
 
+	/**
+	 * Returns the collection of known morphosyntactic properties
+	 * 
+	 * @param role
+	 * @return
+	 */
 	@STServiceOperation
 	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
+	public Collection<AnnotatedValue<Resource>> getMorphosyntacticProperties(@Optional RDFResourceRole role) {
+		QueryBuilder qb = createQueryBuilder(
+		// @formatter:off
+			"SELECT DISTINCT ?resource WHERE {                       \n" +
+			"    ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>+ ?topMorphosyntacticProperty \n" +
+			"    FILTER(isIRI(?resource))                                                                    \n" +
+			"}                                                                                               \n" +
+			"GROUP BY ?resource "
+			// @formatter:on
+		);
+		qb.setBinding("topMorphosyntacticProperty", MORPHOSYNTACTIC_PROPERTY);
+		qb.processStandardAttributes();
+		return qb.runQuery();
+	}
+
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
 	public LexicalEntry getLexicalEntryView(Resource lexicalEntry) {
 		TupleQuery inputQuery = getManagedConnection().prepareTupleQuery(
 		// @formatter:off
@@ -373,7 +404,7 @@ public class LexicographerView extends STServiceAdapter {
 		inputQuery.evaluate(new BindingSets2Model(input));
 
 		QueryBuilder morpoSyntacPropQB = createQueryBuilder(
-				"SELECT ?resource WHERE { ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty> } GROUP BY ?resource ");
+				"SELECT ?resource WHERE { ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>+ <http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty> } GROUP BY ?resource ");
 		morpoSyntacPropQB.processQName();
 		morpoSyntacPropQB.processRendering();
 		morpoSyntacPropQB.processRole();

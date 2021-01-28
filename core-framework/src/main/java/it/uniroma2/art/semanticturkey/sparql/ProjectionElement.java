@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.sparql;
 
+import org.eclipse.rdf4j.queryrender.RenderUtils;
+
 import com.google.common.base.Function;
 import com.google.common.collect.BiMap;
 
@@ -18,17 +20,24 @@ public class ProjectionElement {
 	private Types type;
 	private String sourceVariable;
 	private String targetVariable;
+	private String separator;
 
 	public ProjectionElement(Types type, String sourceVariable, String targetVariable) {
+		this(type, sourceVariable, targetVariable, ",");
+	}
+	
+	public ProjectionElement(Types type, String sourceVariable, String targetVariable, String separator) {
 		this.type = type;
 		this.sourceVariable = sourceVariable;
 		this.targetVariable = targetVariable;
+		this.separator = separator;
 	}
+
 
 	public String getSPARQLFragment() {
 		switch (type) {
 		case GROUP_CONCAT:
-			return "(GROUP_CONCAT(DISTINCT ?" + sourceVariable + "; separator=\",\") AS ?" + targetVariable
+			return "(GROUP_CONCAT(DISTINCT ?" + sourceVariable + "; separator=\"" + RenderUtils.escape(separator) +"\") AS ?" + targetVariable
 					+ ")";
 		case MIN:
 			return "(MIN(?" + sourceVariable + ") AS ?" + targetVariable + ")";

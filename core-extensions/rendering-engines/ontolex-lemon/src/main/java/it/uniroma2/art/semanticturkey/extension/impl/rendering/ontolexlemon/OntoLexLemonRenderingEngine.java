@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.extension.impl.rendering.ontolexlemon;
 
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
@@ -30,7 +31,7 @@ public class OntoLexLemonRenderingEngine extends BaseRenderingEngine implements 
 				"\nUNION" +
 				"\n{?resource <"+DCTERMS.TITLE+"> ?labelInternal . }" +
 				"\nUNION" +
-				"\n{?resource rdfs:label ?labelInternal . }");
+				"\n{?resource <" + RDFS.LABEL + "> ?labelInternal . }");
 				//@formatter:on
 	}
 

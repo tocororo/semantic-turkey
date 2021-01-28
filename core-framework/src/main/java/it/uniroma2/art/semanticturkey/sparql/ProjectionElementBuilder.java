@@ -8,7 +8,11 @@ package it.uniroma2.art.semanticturkey.sparql;
  */
 public class ProjectionElementBuilder {
 	public static ProjectionElement groupConcat(String sourceVariable, String targetVariable) {
-		return new ProjectionElement(ProjectionElement.Types.GROUP_CONCAT, sourceVariable, targetVariable);
+		return groupConcat(sourceVariable, targetVariable, ",");
+	}
+
+	public static ProjectionElement groupConcat(String sourceVariable, String targetVariable, String separator) {
+		return new ProjectionElement(ProjectionElement.Types.GROUP_CONCAT, sourceVariable, targetVariable, separator);
 	}
 
 	public static ProjectionElement min(String sourceVariable, String targetVariable) {

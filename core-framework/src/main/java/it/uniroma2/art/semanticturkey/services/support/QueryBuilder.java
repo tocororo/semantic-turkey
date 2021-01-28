@@ -53,6 +53,7 @@ public class QueryBuilder {
 	private final String resourceQuery;
 	private RenderingEngine renderingEngine;
 	private RoleRecognitionOrchestrator roleRecognitionOrchestrator;
+	private ResourceNatureQueryBuilderProcessor resourceNatureQueryBuilderProcessor;
 	private QueryBuilderProcessor qnameProcessor;
 
 	private final Set<QueryBuilderProcessor> attachedProcessors;
@@ -76,6 +77,7 @@ public class QueryBuilder {
 		this.bindingSet = new HashMap<>();
 		this.renderingEngine = null;
 		this.roleRecognitionOrchestrator = null;
+		this.resourceNatureQueryBuilderProcessor = null;
 		this.qnameProcessor = null;
 		this.attachedProcessorsGraphPatternBinding = HashBiMap.create();
 		this.includeInferred = false;
@@ -132,6 +134,19 @@ public class QueryBuilder {
 	}
 
 	/**
+	 * Attaches the nature retrieval of the retrieved resources.
+	 * 
+	 * @throws QueryBuilderException
+	 */
+	public void processNature() throws QueryBuilderException {
+		if (resourceNatureQueryBuilderProcessor != null) {
+			throw new QueryBuilderException("Nature processor already configured");
+		}
+		resourceNatureQueryBuilderProcessor = new ResourceNatureQueryBuilderProcessor();
+		process(resourceNatureQueryBuilderProcessor, resourceVariable, "attr_nature");
+	}
+
+	/**
 	 * Attaches the qname retrieval of the retrieved (IRI) resources.
 	 * 
 	 * @throws QueryBuilderException
@@ -143,6 +158,16 @@ public class QueryBuilder {
 		qnameProcessor = new QNameQueryBuilderProcessor();
 		process(qnameProcessor, resourceVariable, "attr_qname");
 
+	}
+	
+	/**
+	 * Attaches recurring processors computing qname, nature and rendering.
+	 * @throws QueryBuilderException
+	 */
+	public void processStandardAttributes() throws QueryBuilderException {
+		processQName();
+		processNature();
+		processRendering();
 	}
 
 	/**
@@ -279,8 +304,7 @@ public class QueryBuilder {
 			List<BindingSet> projectedResults = QueryResults
 					.asList(projectResults(bindings, variableSubstitutionMapping));
 
-			Map<Value, Literal> processorResults = proc.processBindings(serviceContext,
-					projectedResults);
+			Map<Value, Literal> processorResults = proc.processBindings(serviceContext, projectedResults);
 
 			GraphPatternBinding graphPatternBinding = attachedProcessorsGraphPatternBinding.get(proc);
 
@@ -294,8 +318,8 @@ public class QueryBuilder {
 
 			} else {
 
-				String targetVariable = proc.getGraphPattern(serviceContext).getProjection()
-						.get(0).getTargetVariable();
+				String targetVariable = proc.getGraphPattern(serviceContext).getProjection().get(0)
+						.getTargetVariable();
 				String outputVariable = graphPatternBinding.getOutputVariable();
 
 				for (BindingSet projectedResultsEntry : projectedResults) {
@@ -368,6 +392,9 @@ public class QueryBuilder {
 							.stream().anyMatch(p -> p.getTargetVariable().equals(variableName)));
 
 			try {
+				if (proc.requiresOptionalWrapper()) {
+					renamedGp = renamedGp.optionalWrapped();
+				}
 				queryShallowModel.appendGraphPattern(renamedGp);
 			} catch (IllegalArgumentException e) {
 				throw new QueryBuilderException(e);

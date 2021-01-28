@@ -31,33 +31,33 @@ public class NatureRecognitionOrchestrator {
 		}
 		// @formatter:off
 		sparqlPartText = " \nOPTIONAL { \n" +
-				"  values($st) {(rdfs:Datatype)} \n" +
-				"  graph $go { \n" +
-				" "	+ varName + " a $st . \n" +
+				"  values(?st) {(rdfs:Datatype)} \n" +
+				"  graph ?go { \n" +
+				" "	+ varName + " a ?st . \n" +
 				"  } \n" +
 				" } \n" +
 
 				" OPTIONAL { \n" +
-				"  values($st) {"
+				"  values(?st) {"
 				+ "		(<http://www.w3.org/ns/lemon/lime#Lexicon>)(<http://www.w3.org/ns/lemon/ontolex#LexicalEntry>)"
 				+ "     (<http://www.w3.org/ns/lemon/ontolex#Form>)(skos:Concept)(rdfs:Class)(skosxl:Label)(skos:ConceptScheme)(skos:OrderedCollection)(owl:Ontology)"
 				+ "		(owl:ObjectProperty)(owl:DatatypeProperty)(owl:AnnotationProperty)(owl:OntologyProperty)"+ "} \n" +
-				"  $t rdfs:subClassOf* $st \n" +
-				"  graph $go { \n" +
-				" " + varName + " a $t . \n" +
+				"  ?t rdfs:subClassOf* ?st \n" +
+				"  graph ?go { \n" +
+				" " + varName + " a ?t . \n" +
 				"  } \n" +
 				" } \n" +
 
 				" OPTIONAL { \n" +
-				"  values($st) {(skos:Collection)(rdf:Property)} \n" +
-				"  graph $go { \n" +
-				" " + varName + " a $st . \n" +
+				"  values(?st) {(skos:Collection)(rdf:Property)} \n" +
+				"  graph ?go { \n" +
+				" " + varName + " a ?st . \n" +
 				"  } \n" +
 				" } \n" +
 				// in case of instance (that has no a type among the above) ?st is unboud, so don't constrain
 				// the values of ?st
-				" OPTIONAL { " + "  graph $go { \n" +
-				" " + varName + " a $st . \n" +
+				" OPTIONAL { " + "  graph ?go { \n" +
+				" " + varName + " a ?st . \n" +
 				"  } \n" +
 				" }" +
 				// convert type to role ?st (super type) to ?rt (role type)
@@ -84,7 +84,7 @@ public class NatureRecognitionOrchestrator {
 				+ " owl:deprecated true}, \"true\", \n" + "	      IF(EXISTS {" + varName
 				+ " a owl:DeprecatedClass}, \"true\", \n" + "	       IF(EXISTS {" + varName
 				+ " a owl:DeprecatedProperty}, \"true\", \n" + "	        \"false\"))) \n"
-				+ "	   as $dep ) \n" + "	 } \n";
+				+ "	   as ?dep ) \n" + "	 } \n";
 		// @formatter:on
 		return sparqlPartText;
 	}

@@ -99,4 +99,8 @@ public class GraphPattern {
 				.map(el -> el.renamed(renamingFunction, variableSubstitutionMapping)).collect(toList()),
 				sb.toString());
 	}
+
+	public GraphPattern optionalWrapped() {
+		return new GraphPattern(prefixMapping, projection, "OPTIONAL {\n" + pattern + "\n}\n");
+	}
 }

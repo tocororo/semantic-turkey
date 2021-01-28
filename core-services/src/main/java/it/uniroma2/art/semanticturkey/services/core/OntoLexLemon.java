@@ -406,7 +406,8 @@ public class OntoLexLemon extends STServiceAdapter {
 			triples2Delete.stream().filter(st -> props.contains(st.getPredicate())).map(Statement::getSubject)
 					.forEach(res -> {
 						if (!res.equals(lexicon)) {
-							ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(res);
+							ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+									.addModifiedResource(res);
 						}
 					});
 		} else { // no update of timestamps -> perform a delete update
@@ -693,9 +694,10 @@ public class OntoLexLemon extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'R')")
-	public Integer countLexicalEntriesByAlphabeticIndex(@Length(min = 1) String index, @Optional IRI lexicon) {
+	public Integer countLexicalEntriesByAlphabeticIndex(@Length(min = 1) String index,
+			@Optional IRI lexicon) {
 		String query =
-				// @formatter:off
+		// @formatter:off
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					        \n" +
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						        \n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								        \n" +
@@ -1388,10 +1390,10 @@ public class OntoLexLemon extends STServiceAdapter {
 
 			deletedForms.stream().filter(Resource.class::isInstance).map(form -> {
 				Model removedStatements = new LinkedHashModel();
-				removedStatements.addAll(QueryResults.asModel(
-						repoConnection.getStatements(form, null, null, false, getWorkingGraph())));
-				removedStatements.addAll(QueryResults.asModel(
-						repoConnection.getStatements(null, null, form, false, getWorkingGraph())));
+				removedStatements.addAll(QueryResults
+						.asModel(repoConnection.getStatements(form, null, null, false, getWorkingGraph())));
+				removedStatements.addAll(QueryResults
+						.asModel(repoConnection.getStatements(null, null, form, false, getWorkingGraph())));
 
 				return removedStatements;
 			}).forEach(modelRemovals::addAll);
@@ -1537,7 +1539,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		RepositoryConnection conn = getManagedConnection();
 
 		Resource workingGraph = getWorkingGraph();
-		
+
 		BooleanQuery definedQuery = conn.prepareBooleanQuery(
 		// @formatter:off
 			" ASK {                                 \n" +
@@ -1587,8 +1589,8 @@ public class OntoLexLemon extends STServiceAdapter {
 
 			if (lexicalEntryLocallyDefined) {
 				modelAdditions.add(lexicalEntry, ONTOLEX.DENOTES, reference);
-				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
-						RDFResourceRole.ontolexLexicalEntry);
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+						.addModifiedResource(lexicalEntry, RDFResourceRole.ontolexLexicalEntry);
 				tripleAdded = true;
 			}
 
@@ -1616,8 +1618,8 @@ public class OntoLexLemon extends STServiceAdapter {
 
 			if (lexicalEntryLocallyDefined) {
 				modelAdditions.add(lexicalEntry, ONTOLEX.SENSE, lexicalSenseIRI);
-				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
-						RDFResourceRole.ontolexLexicalEntry);
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+						.addModifiedResource(lexicalEntry, RDFResourceRole.ontolexLexicalEntry);
 			}
 
 			if (referenceLocallyDefined) {
@@ -1695,8 +1697,8 @@ public class OntoLexLemon extends STServiceAdapter {
 		for (Resource lexicalEntry : lexicalEntries) {
 			if (conn.hasStatement(lexicalEntry, ONTOLEX.SENSE, lexicalSense, false, getWorkingGraph())) {
 				conn.remove(lexicalEntry, ONTOLEX.SENSE, lexicalSense, getWorkingGraph());
-				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
-						RDFResourceRole.ontolexLexicalEntry);
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+						.addModifiedResource(lexicalEntry, RDFResourceRole.ontolexLexicalEntry);
 			}
 		}
 
@@ -1724,7 +1726,8 @@ public class OntoLexLemon extends STServiceAdapter {
 					if (conn.hasStatement(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, false,
 							getWorkingGraph())) {
 						conn.remove(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, getWorkingGraph());
-						ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+								.addModifiedResource(reference);
 					}
 				}
 			}
