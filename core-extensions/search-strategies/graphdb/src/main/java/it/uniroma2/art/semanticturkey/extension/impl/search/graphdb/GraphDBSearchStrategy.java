@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.impl.search.graphdb;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -594,35 +595,29 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		if(searchMode == SearchMode.startsWith){
-			query="\n"+variable+" <"+indexToUse+"> '"+valueForIndex+"*' ."+
-					// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the 
+			query= indexPart(variable, indexToUse, valueForIndex, searchMode) +
+					// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the
 					//single word, so filter them afterward
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '^"+valueForRegex+"', 'i')" +
 					"\nBIND('startsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.endsWith){
-			query="\n"+variable+" <"+indexToUse+"> '*"+valueForIndex+"' ."+
-					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the 
+			query= indexPart(variable, indexToUse, valueForIndex, searchMode) +
+					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the
 					//single word, so filter them afterward
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '"+valueForRegex+"$', 'i')" +
 					"\nBIND('endsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.contains){
-			query="\n"+variable+" <"+indexToUse+"> '*"+valueForIndex+"*' ."+
-					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the 
+			query= indexPart(variable, indexToUse, valueForIndex, searchMode) +
+					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the
 					//single word, so filter them afterward
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '"+valueForRegex+"', 'i')" + 
 					"\nBIND('contains' AS ?attr_matchMode)";
 			
 		} else if(searchMode == SearchMode.fuzzy){
-			
-			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements 
-			//having just letter different form the input one
-			List<String> wordForIndex = ServiceForSearches.wordsForFuzzySearch(valueForIndex, "*", false);
-			String wordForIndexAsString = ServiceForSearches.listToStringForQuery(wordForIndex, "", "");
-			query+="\n"+variable+" <"+indexToUse+"> \""+wordForIndexAsString+"\" .";
-			
+			query= indexPart(variable, indexToUse, valueForIndex, searchMode);
 			//in this case case, you cannot use directly valueForRegex, since the service
 			// will generate a list of values, so use value and let wordsForFuzzySearch clean it
 			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", true);
@@ -632,7 +627,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\nBIND('fuzzy' AS ?attr_matchMode)";
 			
 		} else { // searchMode.equals(exact)
-			query="\n"+variable+" <"+indexToUse+"> '"+valueForIndex+"' ." +
+			query= indexPart(variable, indexToUse, valueForIndex, searchMode) +
+					//"\n"+variable+" <"+indexToUse+"> '"+valueForIndex+"' ." +
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '^"+valueForRegex+"$', 'i')" + 
 					"\nBIND('exact' AS ?attr_matchMode)";
@@ -641,6 +637,34 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//if at least one language is specified, then filter the results of the label having such language
 		query += ServiceForSearches.prepareLangFilter(langs, variable, includeLocales);
 		
+		return query;
+	}
+
+	private String indexPart(String variable, String indexToUse, String valueForIndex, SearchMode searchMode){
+		String query = "";
+		// to avoid problem with languages using different alphabets, add the valueForIndex as it is and then with the part depending
+		// on the searchMode
+		// and use the UNION to combine these two parts
+		if(searchMode == SearchMode.startsWith){
+			query="\n"+variable+" <"+indexToUse+"> '("+valueForIndex+")|("+valueForIndex+"*)' . ";
+		} else if(searchMode == SearchMode.endsWith){
+			query="\n"+variable+" <"+indexToUse+"> '("+valueForIndex+")|(*"+valueForIndex+")' . ";
+		} else if(searchMode == SearchMode.contains){
+			query="\n"+variable+" <"+indexToUse+"> '("+valueForIndex+")|(*"+valueForIndex+"*)' . ";
+
+		} else if(searchMode == SearchMode.fuzzy){
+			//first add valueForIndex to wordForIndex
+			List<String> wordForIndex = new ArrayList<>();
+			wordForIndex.add(valueForIndex);
+			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements
+			//having just letter different form the input one
+			wordForIndex.addAll(ServiceForSearches.wordsForFuzzySearch(valueForIndex, "*", false));
+			String wordForIndexAsString = ServiceForSearches.listToStringForQuery(wordForIndex, "", "");
+			query+="\n"+variable+" <"+indexToUse+"> \""+wordForIndexAsString+"\" .";
+
+		} else { // searchMode.equals(exact)
+			query = "\n" + variable + " <" + indexToUse + "> '" + valueForIndex + "' .";
+		}
 		return query;
 	}
 	
