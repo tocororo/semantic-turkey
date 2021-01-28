@@ -18,6 +18,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.BooleanLiteral;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -325,8 +326,19 @@ public class LexicographerView extends STServiceAdapter {
 
 		protected static List<AnnotatedValue<Literal>> parseRepresentations(Context ctx, Model input,
 				Resource form, IRI pred) {
-			return Models.getPropertyLiterals(input, form, pred).stream().map(r -> new AnnotatedValue<>(r))
-					.collect(Collectors.toList());
+			Map<Literal, List<Resource>> objects2Contexts = input.filter(form, pred, null).stream()
+					.filter(s -> s.getObject() instanceof Literal)
+					.collect(Collectors.groupingBy(s -> (Literal) s.getObject(),
+							Collectors.mapping(Statement::getContext, Collectors.toList())));
+
+			ValueFactory vf = SimpleValueFactory.getInstance();
+
+			return objects2Contexts.entrySet().stream().map(entry -> {
+				AnnotatedValue<Literal> rv = new AnnotatedValue<>(entry.getKey());
+				rv.setAttribute("tripleScope", vf.createLiteral(NatureRecognitionOrchestrator
+						.computeTripleScopeFromGraphs(entry.getValue(), ctx.workingGraph).toString()));
+				return rv;
+			}).collect(Collectors.toList());
 		}
 	}
 
