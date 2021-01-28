@@ -365,16 +365,18 @@ public class LexicographerView extends STServiceAdapter {
 	 * Returns the collection of known morphosyntactic properties
 	 * 
 	 * @param role
+	 * @param rootsIncluded
 	 * @return
 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
-	public Collection<AnnotatedValue<Resource>> getMorphosyntacticProperties(@Optional RDFResourceRole role) {
+	public Collection<AnnotatedValue<Resource>> getMorphosyntacticProperties(@Optional RDFResourceRole role,
+			@Optional(defaultValue = "false") boolean rootsIncluded) {
 		QueryBuilder qb = createQueryBuilder(
 		// @formatter:off
 			"SELECT DISTINCT ?resource WHERE {                       \n" +
-			"    ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>+ ?topMorphosyntacticProperty \n" +
+			"    ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>" +  (rootsIncluded ? "*" : "+")+ " ?topMorphosyntacticProperty \n" +
 			"    FILTER(isIRI(?resource))                                                                    \n" +
 			"}                                                                                               \n" +
 			"GROUP BY ?resource "
