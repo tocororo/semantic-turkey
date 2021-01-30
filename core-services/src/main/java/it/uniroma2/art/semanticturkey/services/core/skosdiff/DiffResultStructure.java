@@ -27,8 +27,10 @@ public class DiffResultStructure {
     @JsonCreator
     public DiffResultStructure(@JsonProperty("projectName1")String projectName1, @JsonProperty("versionRepoId1")String versionRepoId1,
             @JsonProperty("sparqlEndpoint1")String sparqlEndpoint1, @JsonProperty("lexicalization1")String lexicalization1,
+            @JsonProperty("username1")String username1, @JsonProperty("password1")String password1,
             @JsonProperty("projectName2")String projectName2, @JsonProperty("versionRepoId2")String versionRepoId2,
             @JsonProperty("sparqlEndpoint2")String sparqlEndpoint2, @JsonProperty("lexicalization2")String lexicalization2,
+            @JsonProperty("username2")String username2, @JsonProperty("password2")String password2,
             @JsonProperty("taskId")String taskId,  @JsonProperty("langList")List<String> langList,
             @JsonProperty("removedResources")List<ResourceWithLexicalization> removedResources,
             @JsonProperty("addedResources")List<ResourceWithLexicalization> addedResources,
@@ -36,8 +38,8 @@ public class DiffResultStructure {
             @JsonProperty("removeLabels")List<LabelWithResAndLitForm> removeLabels,
             @JsonProperty("addedLabels")List<LabelWithResAndLitForm> addedLabels,
             @JsonProperty("changedLabels")List<ChangedLabel> changedLabels) {
-        this.leftDataset = new DatasetInfo(projectName1, versionRepoId1, sparqlEndpoint1, lexicalization1);
-        this.rightDataset = new DatasetInfo(projectName2, versionRepoId2, sparqlEndpoint2, lexicalization2);
+        this.leftDataset = new DatasetInfo(projectName1, versionRepoId1, sparqlEndpoint1, lexicalization1, username1, password1);
+        this.rightDataset = new DatasetInfo(projectName2, versionRepoId2, sparqlEndpoint2, lexicalization2, username2, password2);
         this.taskId = taskId;
         this.langList = langList;
         this.removedResources = removedResources;

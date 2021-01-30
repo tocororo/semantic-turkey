@@ -9,6 +9,7 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -37,6 +38,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
+import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.jsoup.Jsoup;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Document;
@@ -75,6 +77,11 @@ public class SkosDiffing extends STServiceAdapter {
 	private final String PROJECT_NAME_2 = "projectName2";
 	private final String VERSION_REPO_ID_1 = "versionRepoId1";
 	private final String VERSION_REPO_ID_2 = "versionRepoId2";
+	private final String USERNAME1 = "username1";
+	private final String USERNAME2 = "username2";
+	private final String PASSWORD1 = "password1";
+	private final String PASSWORD2 = "password2";
+
 
 	private final String LANG_LIST = "langList";
 
@@ -96,6 +103,8 @@ public class SkosDiffing extends STServiceAdapter {
 		if (leftSparqlEndpoint == null) {
 			throw new IllegalStateException("Missing SPARQL endpoint for the left dataset");
 		}
+		String leftUsername = getUsername(leftProject, leftVersionRepoId);
+		String leftPassword = getPassword(leftProject, leftVersionRepoId);
 		IRI lexModelIRI = leftProject.getLexicalizationModel();
 		//String leftLexicalizationType;
 		if(!lexModelIRI.equals(Project.SKOSXL_LEXICALIZATION_MODEL) && !lexModelIRI.equals(Project.SKOS_LEXICALIZATION_MODEL)){
@@ -107,6 +116,8 @@ public class SkosDiffing extends STServiceAdapter {
 		if (rightSparqlEndpoint == null) {
 			throw new IllegalStateException("Missing SPARQL endpoint for the right dataset");
 		}
+		String rightUsername = getUsername(rightProject, rightVersionRepoId);
+		String rightPassword = getPassword(rightProject, rightVersionRepoId);
 		lexModelIRI = leftProject.getLexicalizationModel();
 		//String rightLexicalizationType;
 
@@ -129,6 +140,10 @@ public class SkosDiffing extends STServiceAdapter {
 		} else {
 			objectNode.set(VERSION_REPO_ID_1, jsonFactory.textNode(leftVersionRepoId));
 		}
+		if(leftUsername!=null && leftPassword !=null){
+			objectNode.set(USERNAME1, jsonFactory.textNode(leftUsername));
+			objectNode.set(PASSWORD1, jsonFactory.textNode(leftPassword));
+		}
 
 		objectNode.set(SPARQL_ENDPOINT_2, jsonFactory.textNode(rightSparqlEndpoint.stringValue()));
 		objectNode.set(LEXICALIZATION_TYPE_2, jsonFactory.textNode(leftProject.getLexicalizationModel().stringValue()));
@@ -137,6 +152,10 @@ public class SkosDiffing extends STServiceAdapter {
 			objectNode.set(VERSION_REPO_ID_2, jsonFactory.textNode(""));
 		} else {
 			objectNode.set(VERSION_REPO_ID_2, jsonFactory.textNode(rightVersionRepoId));
+		}
+		if(rightUsername!=null && rightPassword !=null){
+			objectNode.set(USERNAME2, jsonFactory.textNode(rightUsername));
+			objectNode.set(PASSWORD2, jsonFactory.textNode(rightPassword));
 		}
 
 		ArrayNode arrayNode = jsonFactory.arrayNode();
@@ -227,7 +246,7 @@ public class SkosDiffing extends STServiceAdapter {
 			if (resultType.equals(ResultType.json)) {
 				ObjectMapper obj = new ObjectMapper();
 				String jsonString = obj.writeValueAsString(diffResultStructure);
-				bytes = jsonString.getBytes();
+				bytes = jsonString.getBytes(StandardCharsets.UTF_8);
 				contentType = APPLICATION_JSON;
 			} else if (resultType.equals(ResultType.html)) {
 				String text = createResultInHTML(diffResultStructure);
@@ -240,7 +259,8 @@ public class SkosDiffing extends STServiceAdapter {
 				try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 					PdfRendererBuilder builder = new PdfRendererBuilder();
 					builder.useFastMode();
-					builder.withW3cDocument(doc, "http://example.org/");
+					//builder.withW3cDocument(doc, "http://example.org/");
+					builder.withW3cDocument(doc, "/");
 					builder.toStream(os);
 					builder.run();
 
@@ -630,6 +650,35 @@ public class SkosDiffing extends STServiceAdapter {
 			sparqlEndpoint = SimpleValueFactory.getInstance().createIRI(((HTTPRepositoryConfig) coreRepoImplConfig).getURL());
 		}
 		return sparqlEndpoint;
+	}
+
+	private String getUsername(Project project, String versionId) {
+		String username = null;
+		if (versionId == null) {
+			versionId = Project.CORE_REPOSITORY;
+		}
+		RepositoryImplConfig coreRepoImplConfig = STLocalRepositoryManager.getUnfoldedRepositoryImplConfig(
+				project.getRepositoryManager().getRepositoryConfig(versionId));
+
+		if (coreRepoImplConfig instanceof HTTPRepositoryConfig) {
+			java.util.Optional<STRepositoryInfo> stRepositoryInfo = project.getRepositoryManager().getSTRepositoryInfo(versionId);
+			username = stRepositoryInfo.get().getUsername();
+		}
+		return username;
+	}
+
+	private String getPassword(Project project, String versionId) {
+		String password = null;
+		if (versionId == null) {
+			versionId = Project.CORE_REPOSITORY;
+		}
+		RepositoryImplConfig coreRepoImplConfig = STLocalRepositoryManager.getUnfoldedRepositoryImplConfig(
+				project.getRepositoryManager().getRepositoryConfig(versionId));
+		if (coreRepoImplConfig instanceof HTTPRepositoryConfig) {
+			java.util.Optional<STRepositoryInfo> stRepositoryInfo = project.getRepositoryManager().getSTRepositoryInfo(versionId);
+			password = stRepositoryInfo.get().getPassword();
+		}
+		return password;
 	}
 
 	public enum ResultType{pdf, html, json}
