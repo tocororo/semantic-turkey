@@ -1504,11 +1504,13 @@ public class OntoLexLemon extends STServiceAdapter {
 	 * connecting the lexical entry and the reference is created as follows:
 	 * <ul>
 	 * <li>If {@code lexicalEntry} is defined in the working graph (see {@link STServiceContext#getWGraph()},
-	 * then a triple with the property {@code ontolex:evokes} is asserted;</li>
+	 * then a triple with the property {@code ontolex:denotes} is asserted;</li>
 	 * <li>If {@code reference} is defined in the working graph, then a triple with the property
-	 * {@code ontolex:isEvokedBy} is asserted;</li>
-	 * <li>If neither is defined in the working graph, then an exception is thrown.</li>
-	 * </ul>
+	 * {@code ontolex:isDenoted is asserted;</li>
+	 * 
+	<li>If neither is defined in the working graph, then an exception is thrown.</li>
+	 * 
+	</ul>
 	 * If {@code createSense} is {@code true}, then an {@code ontolex:LexicalSense} is created (possibly in
 	 * addition to the plain lexicalization) and connected to the lexical entry and the reference following a
 	 * policy analogous to the one already described. Differently from the case above, the creation of a sense
@@ -1516,6 +1518,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 * will just create a sense and connect it to both.
 	 * 
 	 * @param lexicalEntry
+	 * 
 	 * @param reference
 	 * @param createPlain
 	 * @param createSense
@@ -1730,6 +1733,273 @@ public class OntoLexLemon extends STServiceAdapter {
 								.addModifiedResource(reference);
 					}
 				}
+			}
+		}
+
+	}
+
+	/* --- Conceptualizations --- */
+
+	/**
+	 * Adds a conceptualization of the RDF resource {@code concept} using the {@code ontolex:LexicalEntry}
+	 * {@code lexicalEntry}. If {@code createPlain} is {@code true}, then a plain conceptualization directly
+	 * connecting the lexical entry and the reference is created as follows:
+	 * <ul>
+	 * <li>If {@code lexicalEntry} is defined in the working graph (see {@link STServiceContext#getWGraph()},
+	 * then a triple with the property {@code ontolex:evokes} is asserted;</li>
+	 * <li>If {@code concept} is defined in the working graph, then a triple with the property
+	 * {@code ontolex:isEvokedBy} is asserted;</li>
+	 * <li>If neither is defined in the working graph, then an exception is thrown.</li>
+	 * </ul>
+	 * If {@code createSense} is {@code true}, then an {@code ontolex:LexicalSense} is created (possibly in
+	 * addition to the plain conceptualization) and connected to the lexical entry and the reference following
+	 * a policy analogous to the one already described. Differently from the case above, the creation of a
+	 * sense does not fail if both the lexical entry and the reference aren't locally defined. Indeed, the
+	 * service will just create a sense and connect it to both.
+	 * 
+	 * @param lexicalEntry
+	 * @param concept
+	 * @param createPlain
+	 * @param createSense
+	 * @param lexicalSenseCls
+	 * @param customFormValue
+	 * @throws URIGenerationException
+	 * @throws CustomFormException
+	 * @throws CODAException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', conceptualization)', 'C')")
+	public void addConceptualization(Resource lexicalEntry, Resource concept, boolean createPlain,
+			boolean createSense,
+			@SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/ontolex#LexicalSense") @Optional IRI lexicalSenseCls,
+			@Optional CustomFormValue customFormValue)
+			throws URIGenerationException, CODAException, CustomFormException {
+		if (!createPlain && !createSense) {
+			throw new IllegalArgumentException("Either <createPlain> or <createSense> shall be enabled");
+		}
+		RepositoryConnection conn = getManagedConnection();
+
+		Resource workingGraph = getWorkingGraph();
+
+		BooleanQuery definedQuery = conn.prepareBooleanQuery(
+		// @formatter:off
+			" ASK {                                 \n" +
+			"   VALUES(?g) {                        \n" +
+			"      (" + RenderUtils.toSPARQL(workingGraph) + ")\n" + 
+			(
+			ValidationUtilities.isValidationEnabled(stServiceContext)
+			?
+			"      (" + RenderUtils.toSPARQL(VALIDATION.stagingAddGraph(workingGraph)) + ")\n" + 
+			"      (" + RenderUtils.toSPARQL(VALIDATION.stagingRemoveGraph(workingGraph)) + ")\n"
+			:
+			""
+			) + 
+			"   }                                   \n" +
+			"   GRAPH ?g {                          \n" +
+			"     ?subject ?p ?o .                  \n" +
+			"   }                                   \n" +
+			" }                                     \n");
+			// @formatter:on
+		definedQuery.setIncludeInferred(false);
+
+		definedQuery.setBinding("subject", lexicalEntry);
+		boolean lexicalEntryLocallyDefined = definedQuery.evaluate();
+
+		definedQuery.setBinding("subject", concept);
+		boolean conceptLocallyDefined = definedQuery.evaluate();
+
+		// BooleanQuery checkQuery = conn.prepareBooleanQuery(
+//		// @formatter:off
+//			" PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>                           \n" +
+//			" SELECT (COALESCE(?plainT) as ?plain) (COALESCE(?reifiedT) as ?reified) {        \n" +
+//			"   {                                                                             \n" +
+//			"     ?lexicalEntry ontolex:evokes|^ontolex:isEvokedBy ?reference .               \n" +
+//			"   } UNION {                                                                     \n" +
+//			"     ?lexicalSense ontolex:reference|^ontolex:isReferenceOf ?reference ;         \n" +
+//			"       ^ontolex:sense|ontolex:isSenseOf ?lexicalEntry .                          \n" +
+//			"   }                                                                             \n" +
+//			" }                                                                               \n"
+//			// @formatter:on
+		// );
+
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+
+		if (createPlain) {
+			boolean tripleAdded = false;
+
+			if (lexicalEntryLocallyDefined) {
+				modelAdditions.add(lexicalEntry, ONTOLEX.EVOKES, concept);
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+						.addModifiedResource(lexicalEntry, RDFResourceRole.ontolexLexicalEntry);
+				tripleAdded = true;
+			}
+
+			if (conceptLocallyDefined) {
+				modelAdditions.add(concept, ONTOLEX.IS_EVOKED_BY, lexicalEntry, getWorkingGraph());
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(concept);
+				tripleAdded = true;
+			}
+
+			if (!tripleAdded) {
+				throw new IllegalArgumentException(
+						"Unable to create a plain conceptualization because neither the lexical entry nor the concept are locally defined");
+			}
+		}
+
+		if (createSense) {
+			IRI lexicalSenseIRI = generateLexicalSenseIRI(lexicalEntry, concept);
+
+			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(lexicalSenseIRI,
+					RDFResourceRole.ontolexLexicalSense);
+
+			modelAdditions.add(lexicalSenseIRI, RDF.TYPE, lexicalSenseCls);
+			modelAdditions.add(lexicalSenseIRI, ONTOLEX.IS_SENSE_OF, lexicalEntry);
+			modelAdditions.add(lexicalSenseIRI, ONTOLEX.IS_LEXICALIZED_SENSE_OF, concept);
+
+			if (lexicalEntryLocallyDefined) {
+				modelAdditions.add(lexicalEntry, ONTOLEX.SENSE, lexicalSenseIRI);
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+						.addModifiedResource(lexicalEntry, RDFResourceRole.ontolexLexicalEntry);
+			}
+
+			if (conceptLocallyDefined) {
+				modelAdditions.add(concept, ONTOLEX.LEXICALIZED_SENSE, lexicalSenseIRI);
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(concept);
+			}
+			// enrich with custom form
+			if (customFormValue != null) {
+				StandardForm stdForm = new StandardForm();
+				stdForm.addFormEntry(StandardForm.Prompt.resource, lexicalSenseIRI.stringValue());
+
+				CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
+				enrichWithCustomForm(getManagedConnection(), modelAdditions, modelRemovals, cForm,
+						customFormValue.getUserPromptMap(), stdForm);
+			}
+
+		}
+
+		conn.remove(modelRemovals, getWorkingGraph());
+		conn.add(modelAdditions, getWorkingGraph());
+	}
+
+	/**
+	 * Removes a plain conceptualization. This operation removes the triples connecting the lexical entry and
+	 * the concpet in both directions.
+	 * 
+	 * @param lexicalEntry
+	 * @param reference
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#reference)+ ', conceptualization)', 'D')")
+	public void removePlainConceptualization(Resource lexicalEntry, Resource concept) {
+		RepositoryConnection conn = getManagedConnection();
+		boolean tripleRemoved = false;
+
+		if (conn.hasStatement(lexicalEntry, ONTOLEX.EVOKES, concept, false, getWorkingGraph())) {
+			tripleRemoved = true;
+			conn.remove(lexicalEntry, ONTOLEX.EVOKES, concept, getWorkingGraph());
+			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry);
+		}
+
+		if (conn.hasStatement(concept, ONTOLEX.IS_EVOKED_BY, lexicalEntry, false, getWorkingGraph())) {
+			tripleRemoved = true;
+			conn.remove(concept, ONTOLEX.IS_EVOKED_BY, lexicalEntry, getWorkingGraph());
+			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(concept);
+		}
+
+		if (!tripleRemoved) {
+			throw new IllegalArgumentException(
+					"Unable to delete a plain conceptualization because neither the lexical entry nor the concept are locally defined");
+		}
+	}
+
+	/* --- Senses --- */
+
+	/**
+	 * Removes a lexical sense (see {@code ontolex:LexicalSense}). Optionally, it is possible to remove the
+	 * corresponding plain lexicalization(s) and conceptualizations.
+	 * 
+	 * @param lexicalSense
+	 * @param removePlain
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, sense)', 'D')")
+	public void removeSense(Resource lexicalSense, boolean removePlain) {
+		RepositoryConnection conn = getManagedConnection();
+
+		Set<Resource> lexicalEntries = Models.objectResources(QueryResults.asModel(
+				conn.getStatements(lexicalSense, ONTOLEX.IS_SENSE_OF, null, false, getWorkingGraph())));
+		Set<Resource> references = Models.objectResources(QueryResults.asModel(
+				conn.getStatements(lexicalSense, ONTOLEX.REFERENCE, null, false, getWorkingGraph())));
+		Set<Resource> concepts = Models.objectResources(QueryResults.asModel(conn.getStatements(lexicalSense,
+				ONTOLEX.IS_LEXICALIZED_SENSE_OF, null, false, getWorkingGraph())));
+
+		conn.remove(lexicalSense, null, null, getWorkingGraph());
+
+		for (Resource lexicalEntry : lexicalEntries) {
+			if (conn.hasStatement(lexicalEntry, ONTOLEX.SENSE, lexicalSense, false, getWorkingGraph())) {
+				conn.remove(lexicalEntry, ONTOLEX.SENSE, lexicalSense, getWorkingGraph());
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+						.addModifiedResource(lexicalEntry, RDFResourceRole.ontolexLexicalEntry);
+			}
+		}
+
+		for (Resource reference : references) {
+			if (conn.hasStatement(reference, ONTOLEX.IS_REFERENCE_OF, lexicalSense, false,
+					getWorkingGraph())) {
+				conn.remove(reference, ONTOLEX.IS_REFERENCE_OF, lexicalSense, getWorkingGraph());
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+			}
+		}
+
+		for (Resource concept : concepts) {
+			if (conn.hasStatement(concept, ONTOLEX.LEXICALIZED_SENSE, lexicalSense, false,
+					getWorkingGraph())) {
+				conn.remove(concept, ONTOLEX.LEXICALIZED_SENSE, lexicalSense, getWorkingGraph());
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(concept);
+			}
+		}
+
+		conn.remove(lexicalSense, null, null, getWorkingGraph());
+		conn.remove((Resource) null, null, lexicalSense, getWorkingGraph());
+
+		if (removePlain) {
+			for (Resource lexicalEntry : lexicalEntries) {
+				for (Resource reference : references) {
+					if (conn.hasStatement(lexicalEntry, ONTOLEX.DENOTES, reference, false,
+							getWorkingGraph())) {
+						conn.remove(lexicalEntry, ONTOLEX.DENOTES, reference, getWorkingGraph());
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+								.addModifiedResource(lexicalEntry);
+					}
+
+					if (conn.hasStatement(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, false,
+							getWorkingGraph())) {
+						conn.remove(reference, ONTOLEX.IS_DENOTED_BY, lexicalEntry, getWorkingGraph());
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+								.addModifiedResource(reference);
+					}
+				}
+
+				for (Resource concept : concepts) {
+					if (conn.hasStatement(lexicalEntry, ONTOLEX.EVOKES, concept, false, getWorkingGraph())) {
+						conn.remove(lexicalEntry, ONTOLEX.EVOKES, concept, getWorkingGraph());
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+								.addModifiedResource(lexicalEntry);
+					}
+
+					if (conn.hasStatement(concept, ONTOLEX.IS_EVOKED_BY, lexicalEntry, false,
+							getWorkingGraph())) {
+						conn.remove(concept, ONTOLEX.IS_EVOKED_BY, lexicalEntry, getWorkingGraph());
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+								.addModifiedResource(concept);
+					}
+				}
+
 			}
 		}
 

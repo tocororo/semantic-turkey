@@ -1,11 +1,13 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -34,8 +36,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.google.common.collect.Lists;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
@@ -184,6 +188,30 @@ public class LexicographerView extends STServiceAdapter {
 			List<Form> lemma = parseForms(ctx, input, lexicalEntry, ONTOLEX.CANONICAL_FORM);
 			List<Form> otherForms = parseForms(ctx, input, lexicalEntry, ONTOLEX.OTHER_FORM);
 
+			Map<Resource, Set<Resource>> plainConcepts2contexts = new HashMap<>();
+			input.filter(lexicalEntry, ONTOLEX.EVOKES, null).stream()
+					.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+							Collectors.mapping(Statement::getContext, Collectors.toSet())))
+					.forEach((c, ctxts) -> plainConcepts2contexts.merge(c, ctxts,
+							(s1, s2) -> Sets.union(s1, s2)));
+			input.filter(null, ONTOLEX.IS_EVOKED_BY, lexicalEntry).stream()
+					.collect(Collectors.groupingBy(s -> s.getSubject(),
+							Collectors.mapping(Statement::getContext, Collectors.toSet())))
+					.forEach((c, ctxts) -> plainConcepts2contexts.merge(c, ctxts,
+							(s1, s2) -> Sets.union(s1, s2)));
+
+			Map<Resource, Set<Resource>> plainReferences2contexts = new HashMap<>();
+			input.filter(lexicalEntry, ONTOLEX.DENOTES, null).stream()
+					.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+							Collectors.mapping(Statement::getContext, Collectors.toSet())))
+					.forEach((c, ctxts) -> plainReferences2contexts.merge(c, ctxts,
+							(s1, s2) -> Sets.union(s1, s2)));
+			input.filter(null, ONTOLEX.IS_DENOTED_BY, lexicalEntry).stream()
+					.collect(Collectors.groupingBy(s -> s.getSubject(),
+							Collectors.mapping(Statement::getContext, Collectors.toSet())))
+					.forEach((c, ctxts) -> plainReferences2contexts.merge(c, ctxts,
+							(s1, s2) -> Sets.union(s1, s2)));
+
 			Map<Resource, Sense> senses = new HashMap<>();
 
 			for (Statement stmt : input.filter(lexicalEntry, ONTOLEX.SENSE, null)) {
@@ -208,51 +236,126 @@ public class LexicographerView extends STServiceAdapter {
 			}
 
 			for (Sense senseObj : senses.values()) {
-				Map<Value, List<Statement>> ref2statements = input
-						.filter(senseObj.id, ONTOLEX.REFERENCE, null).stream()
-						.collect(Collectors.groupingBy(Statement::getObject));
-				Map<Value, List<Statement>> ref2invStatements = input
+				Map<Resource, Set<Resource>> ref2Contexts = input.filter(senseObj.id, ONTOLEX.REFERENCE, null)
+						.stream().collect(Collectors.groupingBy(s -> (Resource)s.getObject(),
+								Collectors.mapping(Statement::getContext, Collectors.toSet())));
+				Map<Resource, Set<Resource>> ref2invContexts = input
 						.filter(null, ONTOLEX.IS_REFERENCE_OF, senseObj.id).stream()
-						.collect(Collectors.groupingBy(Statement::getSubject));
+						.collect(Collectors.groupingBy(Statement::getSubject,
+								Collectors.mapping(Statement::getContext, Collectors.toSet())));
 
-				ref2invStatements.forEach((k, v) -> ref2statements.merge(k, v, (v1, v2) -> {
-					List<Statement> v3 = new ArrayList<>(v1);
-					v3.addAll(v2);
-					return v3;
-				}));
-				senseObj.reference = ref2statements.keySet().stream()
-						.map(r -> new AnnotatedValue<>((Resource) r)).collect(Collectors.toList());
-			}
+				ref2invContexts.forEach((k, v) -> ref2Contexts.merge(k, v, Sets::union));
+				senseObj.reference = ref2Contexts.entrySet().stream()
+						.map(entry -> {
+							AnnotatedValue<Resource> av = new AnnotatedValue<>(entry.getKey());
+							
+							Set<Resource> graphs;
+							if (plainReferences2contexts.containsKey(entry.getKey())) {
+								Set<Resource> additionalContexts = plainReferences2contexts.remove(entry.getKey());
+								graphs = Sets.union(additionalContexts, entry.getValue());
+							} else {
+								graphs = entry.getValue();
+							}
 
-			for (Sense senseObj : senses.values()) {
-				Map<Value, List<Statement>> concept2statements = input
+							av.setAttribute("tripleScope", SimpleValueFactory.getInstance().createLiteral(NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(graphs,
+									ctx.workingGraph).toString()));
+							return av;
+						}).collect(Collectors.toList());
+
+				Map<Resource, Set<Resource>> concept2ctxts = input
 						.filter(senseObj.id, ONTOLEX.IS_LEXICALIZED_SENSE_OF, null).stream()
-						.collect(Collectors.groupingBy(Statement::getObject));
-				Map<Value, List<Statement>> concept2invStatements = input
+						.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+								Collectors.mapping(Statement::getContext, Collectors.toSet())));
+				Map<Resource, Set<Resource>> concept2invCtxts = input
 						.filter(null, ONTOLEX.LEXICALIZED_SENSE, senseObj.id).stream()
-						.collect(Collectors.groupingBy(Statement::getSubject));
+						.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+								Collectors.mapping(Statement::getContext, Collectors.toSet())));
 
-				concept2invStatements.forEach((k, v) -> concept2statements.merge(k, v, (v1, v2) -> {
-					List<Statement> v3 = new ArrayList<>(v1);
-					v3.addAll(v2);
-					return v3;
-				}));
-				senseObj.concept = concept2statements.keySet().stream()
-						.map(c -> new AnnotatedValue<>((Resource) c)).collect(Collectors.toList());
+				concept2invCtxts.forEach((k, v) -> concept2ctxts.merge(k, v, Sets::union));
 
-				for (AnnotatedValue<Resource> c : senseObj.concept) {
-					Map<Value, List<Statement>> def2statements = input
-							.filter(c.getValue(), SKOS.DEFINITION, null).stream()
-							.collect(Collectors.groupingBy(Statement::getObject));
-					senseObj.definition = def2statements.keySet().stream().filter(IRI.class::isInstance)
-							.map(def -> new AnnotatedValue<>((Literal) def)).collect(Collectors.toList());
-				}
+				senseObj.concept = concept2ctxts.entrySet().stream().map(entry -> {
+					ConceptReference ref = new ConceptReference();
+					Resource conceptId = entry.getKey();
+					ref.id = conceptId;
+					
+					Set<Resource> graphs;
+					if (plainConcepts2contexts.containsKey(ref.id)) {
+						Set<Resource> additionalContexts = plainConcepts2contexts.remove(ref.id);
+						graphs = Sets.union(additionalContexts, entry.getValue());
+					} else {
+						graphs = entry.getValue();
+					}
+					ref.scope = NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(graphs,
+							ctx.workingGraph);
+					ref.nature = simplifiedNatureComputation(input, conceptId, RDFResourceRole.concept);
+					Map<Value, List<Resource>> def2statements = input.filter(conceptId, SKOS.DEFINITION, null)
+							.stream().collect(Collectors.groupingBy(Statement::getObject,
+									Collectors.mapping(Statement::getContext, Collectors.toList())));
+
+					ref.definition = def2statements.entrySet().stream()
+							.map(e -> new AnnotatedValue<>(e.getKey())).collect(Collectors.toList());
+					return ref;
+				}).collect(Collectors.toList());
+			}
+			
+			List<Sense> senseList = new ArrayList<>(senses.values());
+
+			for (Map.Entry<Resource, Set<Resource>> entry : plainConcepts2contexts.entrySet()) {
+				Sense senseObj = new Sense();
+				ConceptReference ref = new ConceptReference();
+				Resource conceptId = entry.getKey();
+				ref.id = conceptId;
+				
+				Set<Resource> graphs = entry.getValue();
+				ref.scope = NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(graphs,
+						ctx.workingGraph);
+				ref.nature = simplifiedNatureComputation(input, conceptId, RDFResourceRole.concept);
+				Map<Value, List<Resource>> def2statements = input.filter(conceptId, SKOS.DEFINITION, null)
+						.stream().collect(Collectors.groupingBy(Statement::getObject,
+								Collectors.mapping(Statement::getContext, Collectors.toList())));
+
+				ref.definition = def2statements.entrySet().stream()
+						.map(e -> new AnnotatedValue<>(e.getKey())).collect(Collectors.toList());
+				senseObj.concept = Lists.newArrayList(ref);
+				
+				senseList.add(senseObj);
+			}
+			
+			for (Map.Entry<Resource, Set<Resource>> entry : plainReferences2contexts.entrySet()) {
+				Sense senseObj = new Sense();
+				Resource referenceId = entry.getKey();
+				AnnotatedValue<Resource> av = new AnnotatedValue<>(referenceId);
+				
+				Set<Resource> graphs = entry.getValue();
+
+				av.setAttribute("tripleScope", SimpleValueFactory.getInstance().createLiteral(NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(graphs,
+						ctx.workingGraph).toString()));
+				
+				// senseObj.scope = 
+				senseObj.reference = Arrays.asList(av);
+				
+				senseList.add(senseObj);
 			}
 
+
+			for (Sense senseObj : senseList) {
+				if (senseObj.id != null) {
+					Map<Value, List<Resource>> def2statements = input
+							.filter(senseObj.id, SKOS.DEFINITION, null).stream()
+							.collect(Collectors.groupingBy(Statement::getObject,
+									Collectors.mapping(Statement::getContext, Collectors.toList())));
+
+					senseObj.definition = def2statements.entrySet().stream()
+							.map(e -> new AnnotatedValue<>(e.getKey())).collect(Collectors.toList());
+
+				}
+
+			}
+			
 			lexicalEntryObj.morphosyntacticProps = morphoSyntacticProps;
 			lexicalEntryObj.lemma = lemma;
 			lexicalEntryObj.otherForms = otherForms;
-			lexicalEntryObj.senses = new ArrayList<>(senses.values());
+			lexicalEntryObj.senses = senseList;
 
 			return lexicalEntryObj;
 		}
@@ -345,19 +448,19 @@ public class LexicographerView extends STServiceAdapter {
 	public static class Sense {
 		@JsonSerialize(using = ToStringSerializer.class)
 		private @Nullable Resource id;
-		private List<AnnotatedValue<Literal>> definition;
+		private List<AnnotatedValue<Value>> definition;
 		private List<AnnotatedValue<Resource>> reference;
-		private List<AnnotatedValue<Resource>> concept;
+		private List<ConceptReference> concept;
 
 		public @Nullable Resource getId() {
 			return id;
 		}
 
-		public List<AnnotatedValue<Resource>> getConcept() {
+		public List<ConceptReference> getConcept() {
 			return concept;
 		}
 
-		public List<AnnotatedValue<Literal>> getDefinition() {
+		public List<AnnotatedValue<Value>> getDefinition() {
 			return definition;
 		}
 
@@ -365,6 +468,30 @@ public class LexicographerView extends STServiceAdapter {
 			return reference;
 		}
 
+	}
+
+	public static class ConceptReference {
+		@JsonSerialize(using = ToStringSerializer.class)
+		private Resource id;
+		private String nature;
+		private TripleScopes scope;
+		private List<AnnotatedValue<Value>> definition;
+
+		public Resource getId() {
+			return id;
+		}
+
+		public String getNature() {
+			return nature;
+		}
+
+		public TripleScopes getScope() {
+			return scope;
+		}
+
+		public List<AnnotatedValue<Value>> getDefinition() {
+			return definition;
+		}
 	}
 
 	private static class Context {
@@ -406,10 +533,10 @@ public class LexicographerView extends STServiceAdapter {
 		TupleQuery inputQuery = getManagedConnection().prepareTupleQuery(
 		// @formatter:off
 			"SELECT * WHERE {                                                    \n" +
-			"    ?resource (<http://www.w3.org/ns/lemon/ontolex#canonicalForm>|<http://www.w3.org/ns/lemon/ontolex#otherForm>|(<http://www.w3.org/ns/lemon/ontolex#sense>|^<http://www.w3.org/ns/lemon/ontolex#isSenseOf>)/(<http://www.w3.org/ns/lemon/ontolex#isReferenceOf>|<http://www.w3.org/ns/lemon/ontolex#isLexicalizedSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#lexicalizedSense>)?)? ?s . \n" +
+			"    ?resource (<http://www.w3.org/ns/lemon/ontolex#canonicalForm>|<http://www.w3.org/ns/lemon/ontolex#otherForm>|<http://www.w3.org/ns/lemon/ontolex#reference>|^<http://www.w3.org/ns/lemon/ontolex#isReferenceOf>|<http://www.w3.org/ns/lemon/ontolex#evokes>|^<http://www.w3.org/ns/lemon/ontolex#isEvokedBy>|(<http://www.w3.org/ns/lemon/ontolex#sense>|^<http://www.w3.org/ns/lemon/ontolex#isSenseOf>)/(<http://www.w3.org/ns/lemon/ontolex#isReferenceOf>|<http://www.w3.org/ns/lemon/ontolex#isLexicalizedSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#lexicalizedSense>)?)? ?s . \n" +
 			"    GRAPH ?c {                                                      \n" +
 			"    	?s ?p ?o .                                                   \n" +
-			"    }                                                               \n" +
+			"    }                                                               \n" +		
 			"}                                                                   \n"
 			// @formatter:on
 		);
@@ -418,7 +545,7 @@ public class LexicographerView extends STServiceAdapter {
 		inputQuery.evaluate(new BindingSets2Model(input));
 
 		QueryBuilder morpoSyntacPropQB = createQueryBuilder(
-				"SELECT ?resource WHERE { ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>+ <http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty> } GROUP BY ?resource ");
+				"SELECT ?resource WHERE { ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>* <http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty> } GROUP BY ?resource ");
 		morpoSyntacPropQB.processQName();
 		morpoSyntacPropQB.processRendering();
 		morpoSyntacPropQB.processRole();
