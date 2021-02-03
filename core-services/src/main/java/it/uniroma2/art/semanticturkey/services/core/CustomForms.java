@@ -1627,26 +1627,8 @@ public class CustomForms extends STServiceAdapter {
 				+ "<"+uri+"> rdfs:subClassOf* $st .\n";
 
 		//part taken from NatureRecognitionOrchestrator
-		query += " BIND(" + "IF(!BOUND(?st), \"" + RDFResourceRole.individual + "\","
-				+ "IF(?st = <http://www.w3.org/ns/lemon/lime#Lexicon>, \"" + RDFResourceRole.limeLexicon
-				+ "\"," + "IF(?st = <http://www.w3.org/ns/lemon/ontolex#LexicalEntry>, \""
-				+ RDFResourceRole.ontolexLexicalEntry + "\","
-				+ "IF(?st = <http://www.w3.org/ns/lemon/ontolex#Form>, \"" + RDFResourceRole.ontolexForm
-				+ "\"," + "IF(?st = <http://www.w3.org/ns/lemon/ontolex#LexicalSense>, \""
-				+ RDFResourceRole.ontolexLexicalSense + "\"," + "IF(?st = skos:Concept, \""
-				+ RDFResourceRole.concept + "\"," + "IF(?st = skos:ConceptScheme, \""
-				+ RDFResourceRole.conceptScheme + "\"," + "IF(?st = skos:Collection, \""
-				+ RDFResourceRole.skosCollection + "\"," + "IF(?st = skos:OrderedCollection, \""
-				+ RDFResourceRole.skosOrderedCollection + "\"," + "IF(?st = skosxl:Label, \""
-				+ RDFResourceRole.xLabel + "\"," + "IF(?st = rdf:Property, \"" + RDFResourceRole.property
-				+ "\"," + "IF(?st = owl:ObjectProperty, \"" + RDFResourceRole.objectProperty + "\","
-				+ "IF(?st = owl:DatatypeProperty, \"" + RDFResourceRole.datatypeProperty + "\","
-				+ "IF(?st = owl:AnnotationProperty, \"" + RDFResourceRole.annotationProperty + "\","
-				+ "IF(?st = owl:OntologyProperty, \"" + RDFResourceRole.ontologyProperty + "\","
-				+ "IF(?st = owl:Ontology, \"" + RDFResourceRole.ontology + "\"," + "IF(?st = rdfs:Class, \""
-				+ RDFResourceRole.cls + "\"," + "IF(?st = rdfs:Datatype, \"" + RDFResourceRole.dataRange
-				+ "\"," + "\"" + RDFResourceRole.individual + "\"" + ")))))))))))))))))) as ?rt) \n"
-				+ "}";
+		query += NatureRecognitionOrchestrator.complexIfPartForNature("?st", "?rt")
+				+ "\n}";
 
 		TupleQuery tupleQuery  = managedConnection.prepareTupleQuery(query);
 		tupleQuery.setIncludeInferred(false);
