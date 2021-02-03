@@ -2,6 +2,9 @@ package it.uniroma2.art.semanticturkey.security;
 
 import alice.tuprolog.InvalidTheoryException;
 import alice.tuprolog.MalformedGoalException;
+import alice.tuprolog.Struct;
+import alice.tuprolog.Term;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,6 +53,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * http://stackoverflow.com/a/14904130/5805661
@@ -57,18 +61,17 @@ import java.util.Map;
  * @author Tiziano
  */
 public class STAuthorizationEvaluator {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(STAuthorizationEvaluator.class);
 
 	@Autowired
 	private STServiceContext stServiceContext;
-	
+
 	/**
-	 * Allows request only to system administrator
-	 * To use like follow:
-	 * <code>
-	 * @PreAuthorize("@auth.isAdmin())
+	 * Allows request only to system administrator To use like follow: <code>
+	 * &#64;PreAuthorize("@auth.isAdmin())
 	 * </code>
+	 * 
 	 * @return
 	 */
 	public boolean isAdmin() {
@@ -76,79 +79,78 @@ public class STAuthorizationEvaluator {
 	}
 
 	/**
-	 * To use like follow:
-	 * <code>
-	 * @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
-	 * </code>
-	 * For complete documentation see {@link #isAuthorized(String, String, String)} 
+	 * To use like follow: <code>
+	 * &#64;PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
+	 * </code> For complete documentation see {@link #isAuthorized(String, String, String)}
 	 * 
 	 * @param prologCapability
 	 * @param crudv
 	 * @return
-	 * @throws HarmingGoalException 
-	 * @throws HaltedEngineException 
-	 * @throws TheoryNotFoundException 
-	 * @throws MalformedGoalException 
-	 * @throws InvalidTheoryException 
-	 * @throws STPropertyAccessException 
-	 * @throws JSONException 
+	 * @throws HarmingGoalException
+	 * @throws HaltedEngineException
+	 * @throws TheoryNotFoundException
+	 * @throws MalformedGoalException
+	 * @throws InvalidTheoryException
+	 * @throws STPropertyAccessException
+	 * @throws JSONException
 	 */
 	public boolean isAuthorized(String prologCapability, String crudv) throws MalformedGoalException,
 			HaltedEngineException, HarmingGoalException, STPropertyAccessException, JSONException {
 		return this.isAuthorized(prologCapability, "{}", crudv);
 	}
-	
+
 	/**
 	 * 
-	 * To use like follow:
-	 * <code>
-	 * @PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', '{key1: ''value1'', key2: true}', 'R')")
-	 * </code> 
+	 * To use like follow: <code>
+	 * &#64;PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', '{key1: ''value1'', key2: true}', 'R')")
+	 * </code>
 	 * 
 	 * @param prologCapability
-	 * 		Expressed in this way <code>&lt;area&gt;(&lt;subject&gt;, &lt;scope&gt;)</code>.
+	 *            Expressed in this way <code>&lt;area&gt;(&lt;subject&gt;, &lt;scope&gt;)</code>.
 	 * 
 	 * @param userResponsibility
-	 * 		A String representing a JSON map serialization like <code>{key1: "value1", key2: "value2"}</code>
-	 * 		currently the only handled key is 'lang'
+	 *            A String representing a JSON map serialization like
+	 *            <code>{key1: "value1", key2: "value2"}</code> currently the only handled key is 'lang'
 	 * 
 	 * @param crudv
-	 * 		Following the CRUD paradigma, it could be any of <code>C (create)</code> <code>R (read)</code>
-	 *		<code>U (update)</code> <code>D (delete)</code>, plus <code>V (validation)</code>.
+	 *            Following the CRUD paradigma, it could be any of <code>C (create)</code>
+	 *            <code>R (read)</code> <code>U (update)</code> <code>D (delete)</code>, plus
+	 *            <code>V (validation)</code>.
 	 * 
 	 * @return
-	 * @throws TheoryNotFoundException 
-	 * @throws InvalidTheoryException 
-	 * @throws HarmingGoalException 
-	 * @throws HaltedEngineException 
-	 * @throws MalformedGoalException 
-	 * @throws STPropertyAccessException 
-	 * @throws JSONException 
+	 * @throws TheoryNotFoundException
+	 * @throws InvalidTheoryException
+	 * @throws HarmingGoalException
+	 * @throws HaltedEngineException
+	 * @throws MalformedGoalException
+	 * @throws STPropertyAccessException
+	 * @throws JSONException
 	 */
 	public boolean isAuthorized(String prologCapability, String userResponsibility, String crudv)
 			throws MalformedGoalException, HaltedEngineException, HarmingGoalException,
 			STPropertyAccessException, JSONException {
 		String prologGoal = "auth(" + prologCapability + ", '" + crudv + "').";
-		
-		//parse userResponsibility
+
+		// parse userResponsibility
 		Map<String, Object> userRespMap;
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
 			mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
-			userRespMap = mapper.readValue(userResponsibility, new TypeReference<Map<String, Object>>(){});
+			userRespMap = mapper.readValue(userResponsibility, new TypeReference<Map<String, Object>>() {
+			});
 		} catch (IOException e) {
 			throw new IllegalArgumentException(
 					"Illegal authorization parameter 'userResponsabililty': " + userResponsibility);
 		}
-		
+
 		STUser loggedUser = UsersManager.getLoggedUser();
 		Collection<Role> userRoles = getRoles(loggedUser);
 		Project targetForRBAC = getTargetForRBAC();
 		AccessLevel requestedAccessLevel = computeRequestedAccessLevel(crudv);
 		LockLevel requestedLockLevel = LockLevel.NO;
 		boolean aclSatisfied = checkACL(requestedAccessLevel, requestedLockLevel);
-		
+
 		logger.debug("Role base access control:");
 		logger.debug("\tprolog goal = " + prologGoal);
 		logger.debug("\tuser responsibility map = " + userRespMap);
@@ -162,31 +164,18 @@ public class STAuthorizationEvaluator {
 		if (!aclSatisfied) {
 			return false;
 		}
-		
+
 		boolean authorized;
-		
+
 		authorized = false;
-		if (loggedUser.isAdmin()) { //admin is authorized for every operation
+		if (loggedUser.isAdmin()) { // admin is authorized for every operation
 			authorized = true;
 		} else {
-			for (Role role: userRoles) {
-//				try {
-//					System.out.println("capabilities: " + RBACManager.getRoleCapabilities(targetForRBAC, role.getName()));
-//				} catch (RBACException e) {
-//					System.out.println(e);
-//				}
-				RBACProcessor rbac = RBACManager.getRBACProcessor(targetForRBAC, role.getName());
-				if (rbac.authorizes(prologGoal)) {
-					authorized = true;
-					break;
-				} else {
-					logger.debug("Goal not authorized: " + prologGoal);
-				}
-			}
-			//check on the user responsibilities
-			//at the moment the only check is to the lang capability
+			authorized = evaluatePrologGoal(prologGoal, userRoles, targetForRBAC);
+			// check on the user responsibilities
+			// at the moment the only check is to the lang capability
 			ArrayList<String> langs = new ArrayList<>();
-			
+
 			Object langValue = userRespMap.get("lang");
 			if (langValue instanceof String) {
 				String langString = (String) langValue;
@@ -201,21 +190,21 @@ public class STAuthorizationEvaluator {
 					}
 				}
 			}
-			
+
 			if (!langs.isEmpty()) {
 				logger.debug("checking lang proficiencies on languages: " + langs);
-				Collection<String> assignedLangs = ProjectUserBindingsManager.getPUBinding(
-						loggedUser, targetForRBAC).getLanguages();
-				
-				Collection<Language> projectLangs = STPropertiesUtils.parseLanguages(
-						STPropertiesManager.getProjectSetting(STPropertiesManager.SETTING_PROJ_LANGUAGES, targetForRBAC));
+				Collection<String> assignedLangs = ProjectUserBindingsManager
+						.getPUBinding(loggedUser, targetForRBAC).getLanguages();
+
+				Collection<Language> projectLangs = STPropertiesUtils.parseLanguages(STPropertiesManager
+						.getProjectSetting(STPropertiesManager.SETTING_PROJ_LANGUAGES, targetForRBAC));
 				Collection<String> projLangTags = new ArrayList<>();
 				for (Language l : projectLangs) {
 					projLangTags.add(l.getTag());
 				}
-				
-				//in order to be authorized, all the languages must be among the project languages 
-				//and the languages assigned to the user
+
+				// in order to be authorized, all the languages must be among the project languages
+				// and the languages assigned to the user
 				for (String l : langs) {
 					boolean isAssigned = assignedLangs.stream().anyMatch(l::equalsIgnoreCase);
 					boolean isInProject = projLangTags.stream().anyMatch(l::equalsIgnoreCase);
@@ -224,17 +213,52 @@ public class STAuthorizationEvaluator {
 						authorized = false;
 					}
 				}
-				
+
+			}
+
+			if (!AccessLevel.R.accepts(requestedAccessLevel)) { // if this is not a read-only operation
+				Term termCapability = Term.createTerm(prologCapability);
+				if (termCapability instanceof Struct) {
+					if (Objects.equals(((Struct) termCapability).getName(), "rdf")) { // if the requested
+																						// capability is about
+																						// rdf
+						if (!Objects.equals(stServiceContext.getWGraph().stringValue(),
+								stServiceContext.getProject().getBaseURI())) {
+							authorized &= evaluatePrologGoal("auth(rdf(graph), 'U').", userRoles,
+									targetForRBAC);
+						}
+
+					}
+				}
 			}
 		}
-//		System.out.println("prolog goal satisfied? " + authorized);
+		// System.out.println("prolog goal satisfied? " + authorized);
 		return authorized;
+	}
+
+	protected boolean evaluatePrologGoal(String prologGoal, Collection<Role> userRoles, Project targetForRBAC)
+			throws MalformedGoalException, HaltedEngineException, HarmingGoalException {
+		for (Role role : userRoles) {
+			// try {
+			// System.out.println("capabilities: " + RBACManager.getRoleCapabilities(targetForRBAC,
+			// role.getName()));
+			// } catch (RBACException e) {
+			// System.out.println(e);
+			// }
+			RBACProcessor rbac = RBACManager.getRBACProcessor(targetForRBAC, role.getName());
+			if (rbac.authorizes(prologGoal)) {
+				return true;
+			} else {
+				logger.debug("Goal not authorized: " + prologGoal);
+			}
+		}
+		return false;
 	}
 
 	/**
 	 * Computes the requested <em>access level</em> to the <em>consumed</em> project based on the given
-	 * <em>accessPrivilege</em>, expressed as a <em>crudv</em>. The requested access is <em>R</em> if there
-	 * is no other privilege than <em>R</em>, otherwise it is <em>RW</em>.
+	 * <em>accessPrivilege</em>, expressed as a <em>crudv</em>. The requested access is <em>R</em> if there is
+	 * no other privilege than <em>R</em>, otherwise it is <em>RW</em>.
 	 * 
 	 * @param crudv
 	 * @return
@@ -255,7 +279,8 @@ public class STAuthorizationEvaluator {
 		AbstractProject project = getTargetForRBAC();
 		if (project != null) {
 			ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
-			//puBinding could be null if user tries to access a 2nd project from the project in which is logged
+			// puBinding could be null if user tries to access a 2nd project from the project in which is
+			// logged
 			if (puBinding != null) {
 				roles.addAll(puBinding.getRoles());
 			}
@@ -286,15 +311,16 @@ public class STAuthorizationEvaluator {
 		if (consumer.equals(project)) {
 			return true;
 		} else {
-			return ProjectManager.checkAccessibility(consumer, project, requestedAccessLevel, requestedLockLevel)
+			return ProjectManager
+					.checkAccessibility(consumer, project, requestedAccessLevel, requestedLockLevel)
 					.isAffirmative();
 		}
 	}
-	
+
 	/**
-	 * To use at support of isAuthorized like
-	 * @PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#individual)+ ')', 'R')")
-	 * where individual is a method parameter name 
+	 * To use at support of isAuthorized like @PreAuthorize("@auth.isAuthorized('rdf('
+	 * +@auth.typeof(#individual)+ ')', 'R')") where individual is a method parameter name
+	 * 
 	 * @param resource
 	 * @return
 	 */
@@ -305,7 +331,7 @@ public class STAuthorizationEvaluator {
 			QueryBuilder qb;
 			StringBuilder sb = new StringBuilder();
 			sb.append(
-					// @formatter:off
+			// @formatter:off
 					" SELECT ?resource WHERE {							\n" +
 					" BIND (?temp as ?resource)							\n" +
 					" } 												\n" +
@@ -322,21 +348,23 @@ public class STAuthorizationEvaluator {
 			RDF4JRepositoryUtils.releaseConnection(repoConn, repo);
 		}
 	}
-	
+
 	/**
-	 * To use at support of isAuthorized like 
-	 * @PreAuthorize("@auth.isAuthorized('rdf(concept)', '{lang: ''' +@auth.langof(#label)+ '''}', 'C')")
-	 * the three ''' are required because '' represents the double quotes surrounding the map value, the third '
-	 * closes (or open) the string to evaluate in isAuthorized()
-	 * where literal is a method parameter name of type Literal
+	 * To use at support of isAuthorized like @PreAuthorize("@auth.isAuthorized('rdf(concept)', '{lang: '''
+	 * +@auth.langof(#label)+ '''}', 'C')") the three ''' are required because '' represents the double quotes
+	 * surrounding the map value, the third ' closes (or open) the string to evaluate in isAuthorized() where
+	 * literal is a method parameter name of type Literal
+	 * 
 	 * @param literal
 	 * @return
 	 */
 	public String langof(Literal literal) {
 		return literal.getLanguage().orElse(null);
 	}
+
 	/**
 	 * Same of {@link #langof(Literal)} to use with xLabel
+	 * 
 	 * @param xLabel
 	 * @return
 	 */
@@ -345,11 +373,10 @@ public class STAuthorizationEvaluator {
 		Repository repo = stServiceContext.getProject().getRepository();
 		RepositoryConnection repoConn = RDF4JRepositoryUtils.getConnection(repo);
 		try {
-			String query = 
-					"SELECT ?lang WHERE {															\n" +
-					" 	?xlabel " + NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?lf .	\n" +
-					"	BIND(lang(?lf) as ?lang)													\n" +
-					"} 																				\n";
+			String query = "SELECT ?lang WHERE {															\n"
+					+ " 	?xlabel " + NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?lf .	\n"
+					+ "	BIND(lang(?lf) as ?lang)													\n"
+					+ "} 																				\n";
 			TupleQuery tq = repoConn.prepareTupleQuery(query);
 			tq.setBinding("xlabel", xLabel);
 			TupleQueryResult result = tq.evaluate();
@@ -361,7 +388,7 @@ public class STAuthorizationEvaluator {
 			RDF4JRepositoryUtils.releaseConnection(repoConn, repo);
 		}
 	}
-	
+
 	public String langof(SpecialValue value) {
 		String lang = null;
 		if (value.isCustomFormValue()) {
@@ -371,26 +398,26 @@ public class STAuthorizationEvaluator {
 				if (key.equals("lang") || key.startsWith("lang_")) {
 					lang = (String) userRespMap.get(key);
 				}
-			}			
-		} else { //value.isRdf4jValue()
+			}
+		} else { // value.isRdf4jValue()
 			Value rdf4jValue = value.getRdf4jValue();
 			if (rdf4jValue instanceof Literal) {
-				lang = langof((Literal)rdf4jValue);
+				lang = langof((Literal) rdf4jValue);
 			}
 		}
 		return lang;
 	}
-	
+
 	/**
-	 * Check if the user that is performing the request has the given email.
-	 * Useful to the Preauthorize annotation in those services that allow to edit user related staff.
-	 * This check so is exploited in order to check that the user provided as parameter
-	 * (which is the subject of the changes), is the logged one
+	 * Check if the user that is performing the request has the given email. Useful to the Preauthorize
+	 * annotation in those services that allow to edit user related staff. This check so is exploited in order
+	 * to check that the user provided as parameter (which is the subject of the changes), is the logged one
+	 * 
 	 * @param email
 	 * @return
 	 */
 	public boolean isLoggedUser(String email) {
 		return (UsersManager.getLoggedUser().getEmail().equals(email));
 	}
-	
+
 }
