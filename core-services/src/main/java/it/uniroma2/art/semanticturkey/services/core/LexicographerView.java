@@ -36,12 +36,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import com.google.common.collect.Lists;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.lime.model.vocabulary.VARTRANS;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
@@ -237,7 +238,7 @@ public class LexicographerView extends STServiceAdapter {
 
 			for (Sense senseObj : senses.values()) {
 				Map<Resource, Set<Resource>> ref2Contexts = input.filter(senseObj.id, ONTOLEX.REFERENCE, null)
-						.stream().collect(Collectors.groupingBy(s -> (Resource)s.getObject(),
+						.stream().collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
 								Collectors.mapping(Statement::getContext, Collectors.toSet())));
 				Map<Resource, Set<Resource>> ref2invContexts = input
 						.filter(null, ONTOLEX.IS_REFERENCE_OF, senseObj.id).stream()
@@ -245,22 +246,22 @@ public class LexicographerView extends STServiceAdapter {
 								Collectors.mapping(Statement::getContext, Collectors.toSet())));
 
 				ref2invContexts.forEach((k, v) -> ref2Contexts.merge(k, v, Sets::union));
-				senseObj.reference = ref2Contexts.entrySet().stream()
-						.map(entry -> {
-							AnnotatedValue<Resource> av = new AnnotatedValue<>(entry.getKey());
-							
-							Set<Resource> graphs;
-							if (plainReferences2contexts.containsKey(entry.getKey())) {
-								Set<Resource> additionalContexts = plainReferences2contexts.remove(entry.getKey());
-								graphs = Sets.union(additionalContexts, entry.getValue());
-							} else {
-								graphs = entry.getValue();
-							}
+				senseObj.reference = ref2Contexts.entrySet().stream().map(entry -> {
+					AnnotatedValue<Resource> av = new AnnotatedValue<>(entry.getKey());
 
-							av.setAttribute("tripleScope", SimpleValueFactory.getInstance().createLiteral(NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(graphs,
-									ctx.workingGraph).toString()));
-							return av;
-						}).collect(Collectors.toList());
+					Set<Resource> graphs;
+					if (plainReferences2contexts.containsKey(entry.getKey())) {
+						Set<Resource> additionalContexts = plainReferences2contexts.remove(entry.getKey());
+						graphs = Sets.union(additionalContexts, entry.getValue());
+					} else {
+						graphs = entry.getValue();
+					}
+
+					av.setAttribute("tripleScope",
+							SimpleValueFactory.getInstance().createLiteral(NatureRecognitionOrchestrator
+									.computeTripleScopeFromGraphs(graphs, ctx.workingGraph).toString()));
+					return av;
+				}).collect(Collectors.toList());
 
 				Map<Resource, Set<Resource>> concept2ctxts = input
 						.filter(senseObj.id, ONTOLEX.IS_LEXICALIZED_SENSE_OF, null).stream()
@@ -277,7 +278,7 @@ public class LexicographerView extends STServiceAdapter {
 					ConceptReference ref = new ConceptReference();
 					Resource conceptId = entry.getKey();
 					ref.id = conceptId;
-					
+
 					Set<Resource> graphs;
 					if (plainConcepts2contexts.containsKey(ref.id)) {
 						Set<Resource> additionalContexts = plainConcepts2contexts.remove(ref.id);
@@ -297,7 +298,7 @@ public class LexicographerView extends STServiceAdapter {
 					return ref;
 				}).collect(Collectors.toList());
 			}
-			
+
 			List<Sense> senseList = new ArrayList<>(senses.values());
 
 			for (Map.Entry<Resource, Set<Resource>> entry : plainConcepts2contexts.entrySet()) {
@@ -305,7 +306,7 @@ public class LexicographerView extends STServiceAdapter {
 				ConceptReference ref = new ConceptReference();
 				Resource conceptId = entry.getKey();
 				ref.id = conceptId;
-				
+
 				Set<Resource> graphs = entry.getValue();
 				ref.scope = NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(graphs,
 						ctx.workingGraph);
@@ -314,29 +315,29 @@ public class LexicographerView extends STServiceAdapter {
 						.stream().collect(Collectors.groupingBy(Statement::getObject,
 								Collectors.mapping(Statement::getContext, Collectors.toList())));
 
-				ref.definition = def2statements.entrySet().stream()
-						.map(e -> new AnnotatedValue<>(e.getKey())).collect(Collectors.toList());
+				ref.definition = def2statements.entrySet().stream().map(e -> new AnnotatedValue<>(e.getKey()))
+						.collect(Collectors.toList());
 				senseObj.concept = Lists.newArrayList(ref);
-				
+
 				senseList.add(senseObj);
 			}
-			
+
 			for (Map.Entry<Resource, Set<Resource>> entry : plainReferences2contexts.entrySet()) {
 				Sense senseObj = new Sense();
 				Resource referenceId = entry.getKey();
 				AnnotatedValue<Resource> av = new AnnotatedValue<>(referenceId);
-				
+
 				Set<Resource> graphs = entry.getValue();
 
-				av.setAttribute("tripleScope", SimpleValueFactory.getInstance().createLiteral(NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(graphs,
-						ctx.workingGraph).toString()));
-				
-				// senseObj.scope = 
+				av.setAttribute("tripleScope",
+						SimpleValueFactory.getInstance().createLiteral(NatureRecognitionOrchestrator
+								.computeTripleScopeFromGraphs(graphs, ctx.workingGraph).toString()));
+
+				// senseObj.scope =
 				senseObj.reference = Arrays.asList(av);
-				
+
 				senseList.add(senseObj);
 			}
-
 
 			for (Sense senseObj : senseList) {
 				if (senseObj.id != null) {
@@ -348,10 +349,100 @@ public class LexicographerView extends STServiceAdapter {
 					senseObj.definition = def2statements.entrySet().stream()
 							.map(e -> new AnnotatedValue<>(e.getKey())).collect(Collectors.toList());
 
-				}
+					Map<Resource, Set<Resource>> related2context = input
+							.filter(null, VARTRANS.RELATES, senseObj.id).stream()
+							.collect(Collectors.groupingBy(Statement::getSubject,
+									Collectors.mapping(Statement::getContext, Collectors.toSet())));
+					Map<Resource, Set<Resource>> targeted2context = input
+							.filter(null, VARTRANS.TARGET, senseObj.id).stream()
+							.collect(Collectors.groupingBy(Statement::getSubject,
+									Collectors.mapping(Statement::getContext, Collectors.toSet())));
+					Map<Resource, Set<Resource>> sourced2context = input
+							.filter(null, VARTRANS.SOURCE, senseObj.id).stream()
+							.collect(Collectors.groupingBy(Statement::getSubject,
+									Collectors.mapping(Statement::getContext, Collectors.toSet())));
 
+					Map<Resource, Set<Resource>> reifiedRelations2context = new HashMap<>();
+					related2context
+							.forEach((key, value) -> reifiedRelations2context.merge(key, value, Sets::union));
+					targeted2context
+							.forEach((key, value) -> reifiedRelations2context.merge(key, value, Sets::union));
+					sourced2context
+							.forEach((key, value) -> reifiedRelations2context.merge(key, value, Sets::union));
+
+					List<SenseRelation> related = new ArrayList<>();
+					List<SenseRelation> terminologicallyRelated = new ArrayList<>();
+					List<SenseRelation> translations = new ArrayList<>();
+
+					for (Map.Entry<Resource, Set<Resource>> entry : reifiedRelations2context.entrySet()) {
+						Resource reifiedRelation = entry.getKey();
+						Set<Resource> graphs = entry.getValue();
+
+						String nature = simplifiedNatureComputation(input, reifiedRelation,
+								RDFResourceRole.individual);
+						TripleScopes scope = NatureRecognitionOrchestrator
+								.computeTripleScopeFromGraphs(graphs, ctx.workingGraph);
+
+						Map<Resource, Set<Resource>> category2context = input
+								.filter(reifiedRelation, VARTRANS.CATEGORY, null).stream()
+								.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+										Collectors.mapping(Statement::getContext, Collectors.toSet())));
+
+						List<SenseReference> relatedSenseRefs = parseSenseReferences(ctx, input,
+								reifiedRelation, VARTRANS.RELATES);
+						List<SenseReference> sourceSenseRefs = parseSenseReferences(ctx, input,
+								reifiedRelation, VARTRANS.SOURCE);
+						List<SenseReference> targetSenseRefs = parseSenseReferences(ctx, input,
+								reifiedRelation, VARTRANS.TARGET);
+
+						List<AnnotatedValue<Resource>> category = category2context.entrySet().stream()
+								.map(e -> {
+									Resource cat = e.getKey();
+									AnnotatedValue<Resource> rv = new AnnotatedValue<>(cat);
+									rv.setAttribute("nature", simplifiedNatureComputation(input, cat,
+											RDFResourceRole.individual));
+									rv.setAttribute("tripleScope",
+											SimpleValueFactory.getInstance()
+													.createLiteral(
+															NatureRecognitionOrchestrator
+																	.computeTripleScopeFromGraphs(
+																			e.getValue(), ctx.workingGraph)
+																	.toString()));
+									return rv;
+								}).collect(Collectors.toList());
+
+						SenseRelation relationObj = new SenseRelation();
+						relationObj.id = reifiedRelation;
+						relationObj.nature = nature;
+						relationObj.scope = scope;
+						relationObj.category = category;
+						relationObj.related = relatedSenseRefs;
+						relationObj.source = sourceSenseRefs;
+						relationObj.target = targetSenseRefs;
+
+						boolean relationHandled = false;
+						if (input.contains(reifiedRelation, RDF.TYPE, VARTRANS.TRANSLATION)) {
+							translations.add(relationObj);
+							relationHandled = true;
+						}
+
+						if (input.contains(reifiedRelation, RDF.TYPE, VARTRANS.TERMINOLOGICAL_RELATION)) {
+							terminologicallyRelated.add(relationObj);
+							relationHandled = true;
+						}
+
+						if (!relationHandled) {
+							related.add(relationObj);
+						}
+					}
+
+					senseObj.related = related;
+					senseObj.terminologicallyRelated = terminologicallyRelated;
+					senseObj.translations = translations;
+
+				}
 			}
-			
+
 			lexicalEntryObj.morphosyntacticProps = morphoSyntacticProps;
 			lexicalEntryObj.lemma = lemma;
 			lexicalEntryObj.otherForms = otherForms;
@@ -368,6 +459,46 @@ public class LexicographerView extends STServiceAdapter {
 				formObj.scope = scope;
 
 				return formObj;
+			}).collect(Collectors.toList());
+		}
+
+		protected static List<SenseReference> parseSenseReferences(Context ctx, Model input,
+				Resource reifiedRelation, IRI pred) {
+			Map<Resource, Set<Resource>> related2context = input.filter(reifiedRelation, pred, null).stream()
+					.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+							Collectors.mapping(Statement::getContext, Collectors.toSet())));
+
+			return related2context.entrySet().stream().map(entry -> {
+				SenseReference senseRef = new SenseReference();
+				senseRef.id = entry.getKey();
+				senseRef.nature = simplifiedNatureComputation(input, entry.getKey(),
+						RDFResourceRole.ontolexLexicalSense);
+				senseRef.scope = NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(entry.getValue(),
+						ctx.workingGraph);
+
+				Map<Resource, Set<Resource>> entry2invContext = input
+						.filter(entry.getKey(), ONTOLEX.IS_SENSE_OF, null).stream()
+						.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+								Collectors.mapping(Statement::getContext, Collectors.toSet())));
+				Map<Resource, Set<Resource>> entry2Context = input.filter(null, ONTOLEX.SENSE, entry.getKey())
+						.stream().collect(Collectors.groupingBy(s -> (Resource) s.getSubject(),
+								Collectors.mapping(Statement::getContext, Collectors.toSet())));
+
+				entry2invContext.forEach((key, value) -> entry2Context.merge(key, value, Sets::union));
+
+				senseRef.entry = entry2invContext.entrySet().stream().map(entry2 -> {
+					EntryReference entryRef = new EntryReference();
+					entryRef.id = entry.getKey();
+					entryRef.nature = simplifiedNatureComputation(input, entry2.getKey(),
+							RDFResourceRole.ontolexLexicalEntry);
+					entryRef.scope = NatureRecognitionOrchestrator
+							.computeTripleScopeFromGraphs(entry2.getValue(), ctx.workingGraph);
+					entryRef.lemma = LexicalEntry.parseForms(ctx, input, entry2.getKey(),
+							ONTOLEX.CANONICAL_FORM);
+					return entryRef;
+				}).collect(Collectors.toList());
+
+				return senseRef;
 			}).collect(Collectors.toList());
 		}
 	}
@@ -451,6 +582,9 @@ public class LexicographerView extends STServiceAdapter {
 		private List<AnnotatedValue<Value>> definition;
 		private List<AnnotatedValue<Resource>> reference;
 		private List<ConceptReference> concept;
+		private List<SenseRelation> related;
+		private List<SenseRelation> translations;
+		private List<SenseRelation> terminologicallyRelated;
 
 		public @Nullable Resource getId() {
 			return id;
@@ -468,6 +602,17 @@ public class LexicographerView extends STServiceAdapter {
 			return reference;
 		}
 
+		public List<SenseRelation> getRelated() {
+			return related;
+		}
+
+		public List<SenseRelation> getTranslations() {
+			return translations;
+		}
+
+		public List<SenseRelation> getTerminologicallyRelated() {
+			return terminologicallyRelated;
+		}
 	}
 
 	public static class ConceptReference {
@@ -491,6 +636,92 @@ public class LexicographerView extends STServiceAdapter {
 
 		public List<AnnotatedValue<Value>> getDefinition() {
 			return definition;
+		}
+	}
+
+	public static class SenseRelation {
+		@JsonSerialize(using = ToStringSerializer.class)
+		private @Nullable Resource id;
+		private String nature;
+		private TripleScopes scope;
+		private List<AnnotatedValue<Resource>> category;
+		private List<SenseReference> source;
+		private List<SenseReference> target;
+		private List<SenseReference> related;
+
+		public String getNature() {
+			return nature;
+		}
+
+		public TripleScopes getScope() {
+			return scope;
+		}
+
+		public Resource getId() {
+			return id;
+		}
+
+		public List<AnnotatedValue<Resource>> getCategory() {
+			return category;
+		}
+
+		public List<SenseReference> getSource() {
+			return source;
+		}
+
+		public List<SenseReference> getTarget() {
+			return target;
+		}
+
+		public List<SenseReference> getRelated() {
+			return related;
+		}
+	}
+
+	public static class SenseReference {
+		private Resource id;
+		private String nature;
+		private TripleScopes scope;
+		private List<EntryReference> entry;
+
+		public Resource getId() {
+			return id;
+		}
+
+		public String getNature() {
+			return nature;
+		}
+
+		public TripleScopes getScope() {
+			return scope;
+		}
+
+		public List<EntryReference> getLemma() {
+			return entry;
+		}
+
+	}
+
+	public static class EntryReference {
+		private Resource id;
+		private String nature;
+		private TripleScopes scope;
+		private List<Form> lemma;
+
+		public Resource getId() {
+			return id;
+		}
+
+		public String getNature() {
+			return nature;
+		}
+
+		public TripleScopes getScope() {
+			return scope;
+		}
+
+		public List<Form> getLemma() {
+			return lemma;
 		}
 	}
 
@@ -532,12 +763,39 @@ public class LexicographerView extends STServiceAdapter {
 	public LexicalEntry getLexicalEntryView(Resource lexicalEntry) {
 		TupleQuery inputQuery = getManagedConnection().prepareTupleQuery(
 		// @formatter:off
-			"SELECT * WHERE {                                                    \n" +
-			"    ?resource (<http://www.w3.org/ns/lemon/ontolex#canonicalForm>|<http://www.w3.org/ns/lemon/ontolex#otherForm>|<http://www.w3.org/ns/lemon/ontolex#reference>|^<http://www.w3.org/ns/lemon/ontolex#isReferenceOf>|<http://www.w3.org/ns/lemon/ontolex#evokes>|^<http://www.w3.org/ns/lemon/ontolex#isEvokedBy>|(<http://www.w3.org/ns/lemon/ontolex#sense>|^<http://www.w3.org/ns/lemon/ontolex#isSenseOf>)/(<http://www.w3.org/ns/lemon/ontolex#isReferenceOf>|<http://www.w3.org/ns/lemon/ontolex#isLexicalizedSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#lexicalizedSense>)?)? ?s . \n" +
-			"    GRAPH ?c {                                                      \n" +
-			"    	?s ?p ?o .                                                   \n" +
-			"    }                                                               \n" +		
-			"}                                                                   \n"
+			"SELECT DISTINCT * WHERE {                                                                                                                                                                                          \n" +
+			"    BIND(<http://linguistic.linkeddata.es/id/apertium/lexiconIT/casa-n-it> as ?resource)                                                                                                                           \n" +
+			"    {                                                                                                                                                                                                              \n" +
+			"      ?resource <http://www.w3.org/ns/lemon/ontolex#canonicalForm>|<http://www.w3.org/ns/lemon/ontolex#otherForm> ?form .                                                                                          \n" +
+			"      BIND(?form as ?s)                                                                                                                                                                                            \n" +
+			"    } UNION {                                                                                                                                                                                                      \n" +
+			"      ?resource <http://www.w3.org/ns/lemon/ontolex#denotes>|^<http://www.w3.org/ns/lemon/ontolex#isDenotedBy> ?reference .                                                                                        \n" +
+			"      BIND(?reference as ?s)                                                                                                                                                                                       \n" +
+			"    } UNION {                                                                                                                                                                                                      \n" +
+			"      ?resource <http://www.w3.org/ns/lemon/ontolex#evokes>|^<http://www.w3.org/ns/lemon/ontolex#isEvokedBy> ?lexicalConcept .                                                                                     \n" +
+			"      BIND(?lexicalConcept as ?s)                                                                                                                                                                                  \n" +
+			"    } UNION {                                                                                                                                                                                                      \n" +
+			"      ?resource (<http://www.w3.org/ns/lemon/ontolex#sense>|^<http://www.w3.org/ns/lemon/ontolex#isSenseOf>)/(                                                                                                     \n" +
+			"      <http://www.w3.org/ns/lemon/ontolex#reference>|^<http://www.w3.org/ns/lemon/ontolex#isReferenceOf>|                                                                                                          \n" +
+			"      <http://www.w3.org/ns/lemon/ontolex#isLexicalizedSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#lexicalizedSense>                                                                                             \n" +
+			"      )? ?s.                                                                                                                                                                                                       \n" +
+			"    } UNION {                                                                                                                                                                                                      \n" +
+			"      ?resource (<http://www.w3.org/ns/lemon/ontolex#sense>|^<http://www.w3.org/ns/lemon/ontolex#isSenseOf>) ?lexicalSense.                                                                                        \n" +
+			"      {                                                                                                                                                                                                            \n" +
+			"		?lexicalSense (^<http://www.w3.org/ns/lemon/vartrans#relates>|^<http://www.w3.org/ns/lemon/vartrans#source>|^<http://www.w3.org/ns/lemon/vartrans#target>)/                                                 \n" +
+			"		  ((<http://www.w3.org/ns/lemon/vartrans#relates>|<http://www.w3.org/ns/lemon/vartrans#source>|<http://www.w3.org/ns/lemon/vartrans#target>)/((                                                             \n" +
+			"			<http://www.w3.org/ns/lemon/ontolex#isSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#sense>)/(<http://www.w3.org/ns/lemon/ontolex#canonicalForm>|<http://www.w3.org/ns/lemon/ontolex#otherForm>)?)?)? ?s.\n" +
+			"      } UNION {                                                                                                                                                                                                    \n" +
+			"        ?rel <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>* <http://www.w3.org/ns/lemon/vartrans#senseRel> .                                                                                                \n" +
+			"        ?lexicalSense ?rel ?relatedSense .                                                                                                                                                                         \n" +
+			"        ?relatedSense ((<http://www.w3.org/ns/lemon/ontolex#isSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#sense>)/                                                                                               \n" +
+			"		  (<http://www.w3.org/ns/lemon/ontolex#canonicalForm>|<http://www.w3.org/ns/lemon/ontolex#otherForm>)?)? ?s.                                                                                                \n" +
+			"      }                                                                                                                                                                                                            \n" +
+			"    }                                                                                                                                                                                                              \n" +
+			"  GRAPH ?c {                                                                                                                                                                                                       \n" +
+			"    ?s ?p ?o .                                                                                                                                                                                                     \n" +
+			"  }                                                                                                                                                                                                                \n" +
+			"}                                                                                                                                                                                                                  \n"
 			// @formatter:on
 		);
 		inputQuery.setBinding("resource", lexicalEntry);
