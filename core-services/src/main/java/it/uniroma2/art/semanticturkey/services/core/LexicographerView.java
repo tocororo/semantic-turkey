@@ -696,7 +696,7 @@ public class LexicographerView extends STServiceAdapter {
 			return scope;
 		}
 
-		public List<EntryReference> getLemma() {
+		public List<EntryReference> getEntry() {
 			return entry;
 		}
 
