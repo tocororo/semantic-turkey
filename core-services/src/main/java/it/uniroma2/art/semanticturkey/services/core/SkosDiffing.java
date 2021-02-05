@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import it.uniroma2.art.semanticturkey.font.FontClass;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
@@ -38,7 +39,6 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
 import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
-import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.jsoup.Jsoup;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Document;
@@ -56,6 +56,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
@@ -82,6 +83,7 @@ public class SkosDiffing extends STServiceAdapter {
 	private final String PASSWORD1 = "password1";
 	private final String PASSWORD2 = "password2";
 
+	private final String FOND_FILE_NAME = "arial-unicode-ms.ttf";
 
 	private final String LANG_LIST = "langList";
 
@@ -249,20 +251,24 @@ public class SkosDiffing extends STServiceAdapter {
 				bytes = jsonString.getBytes(StandardCharsets.UTF_8);
 				contentType = APPLICATION_JSON;
 			} else if (resultType.equals(ResultType.html)) {
-				String text = createResultInHTML(diffResultStructure);
+				String text = createResultInHTML(diffResultStructure, false);
 				bytes = text.getBytes(StandardCharsets.UTF_8);
 				contentType = TEXT_HTML;
 			} else { // resultType.equals(ResultType.pdf
-				String text = createResultInHTML(diffResultStructure);
+				String text = createResultInHTML(diffResultStructure, true);
 				Document jsoupDocument = Jsoup.parse(text);
 				org.w3c.dom.Document doc = W3CDom.convert(jsoupDocument);
 				try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 					PdfRendererBuilder builder = new PdfRendererBuilder();
 					builder.useFastMode();
-					//builder.withW3cDocument(doc, "http://example.org/");
-					builder.withW3cDocument(doc, "/");
-					builder.toStream(os);
-					builder.run();
+					FontClass fontClass = new FontClass();
+					try(InputStream inputStream = fontClass.getFontFile(FOND_FILE_NAME);) {
+						builder.useFont(() -> inputStream, "arial unicode ms");
+						//builder.withW3cDocument(doc, "http://example.org/");
+						builder.withW3cDocument(doc, "/");
+						builder.toStream(os);
+						builder.run();
+					}
 
 					bytes = os.toByteArray();
 					contentType = APPLICATION_PDF;
@@ -279,7 +285,7 @@ public class SkosDiffing extends STServiceAdapter {
 	}
 
 
-	private String createResultInHTML(DiffResultStructure diffResultStructure) throws ParserConfigurationException, TransformerException {
+	private String createResultInHTML(DiffResultStructure diffResultStructure, boolean includeFont) throws ParserConfigurationException, TransformerException {
 		DocumentBuilderFactory documentFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder documentBuilder = documentFactory.newDocumentBuilder();
 		org.w3c.dom.Document document = documentBuilder.newDocument();
@@ -296,8 +302,9 @@ public class SkosDiffing extends STServiceAdapter {
 		headElem.appendChild(titleElem);
 
 		//style
+		String fontPart = includeFont ? "font-family:\"arial unicode ms\"" : "";
 		Node styleElem = document.createElement("style");
-		styleElem.setTextContent("body { font-size: 16px; } " +
+		styleElem.setTextContent("body { font-size: 16px; "+fontPart+" } " +
 				".section { margin-bottom: 30px; } " +
 				".modifiedResSection { margin-bottom: 16px; } " +
 				".modifiedResHeader { font-size: 18px; margin-bottom: 6px; } " +

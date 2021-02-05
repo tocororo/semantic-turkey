@@ -143,6 +143,7 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<module>core-services</module>
 		<module>console</module>
 		<module>builder</module>
+		<module>font</module>
 	</modules>
 
 	<build>

@@ -153,6 +153,11 @@
 			<artifactId>openhtmltopdf-slf4j</artifactId>
 			<version>${openhtml.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>it.uniroma2.art.semanticturkey</groupId>
+			<artifactId>st-font</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -212,6 +217,7 @@
 							it.uniroma2.art.semanticturkey.utilities,
 							it.uniroma2.art.semanticturkey.vocabulary,
 							it.uniroma2.art.semanticturkey.l10n,
+							it.uniroma2.art.semanticturkey.font,
 							it.uniroma2.art.sheet2rdf.*,
 							org.springframework.web.servlet.view,
 							org.springframework.web.servlet,

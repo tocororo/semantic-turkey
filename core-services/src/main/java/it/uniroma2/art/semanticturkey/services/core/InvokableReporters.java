@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
@@ -26,6 +27,7 @@ import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.Null;
 
+import it.uniroma2.art.semanticturkey.font.FontClass;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.entity.ContentType;
 import org.jsoup.Jsoup;
@@ -74,6 +76,8 @@ public class InvokableReporters extends STServiceAdapter {
 	private static final String TEXT_HTML = "text/html";
 
 	private static final String APPLICATION_PDF = "application/pdf";
+
+	private final String FOND_FILE_NAME = "arial-unicode-ms.ttf";
 
 	private static Logger logger = LoggerFactory.getLogger(InvokableReporters.class);
 
@@ -542,9 +546,13 @@ public class InvokableReporters extends STServiceAdapter {
 					try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 						PdfRendererBuilder builder = new PdfRendererBuilder();
 						builder.useFastMode();
-						builder.withW3cDocument(doc, "http://example.org/");
-						builder.toStream(os);
-						builder.run();
+						FontClass fontClass = new FontClass();
+						try(InputStream inputStream = fontClass.getFontFile(FOND_FILE_NAME);) {
+							builder.useFont(() -> inputStream, "arial unicode ms");
+							builder.withW3cDocument(doc, "http://example.org/");
+							builder.toStream(os);
+							builder.run();
+						}
 
 						bytes = os.toByteArray();
 						contentType = APPLICATION_PDF;
