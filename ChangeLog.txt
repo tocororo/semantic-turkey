@@ -1,5 +1,6 @@
 version 9.0.
 date: dd/mm/yyyy
+  * fixed a bug in the replaceBaseURI which caused the removal of all Bnode in the working graph
   * added the passing of remote credentials to the skosDiffing tools
   * added the automatic opening of desired projects at startup
   * added the possibility to delete a version dump

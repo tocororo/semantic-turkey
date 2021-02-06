@@ -191,8 +191,8 @@ public class Refactor extends STServiceAdapter  {
 				"	}																						\n" +
 				"}																							\n" +
 				"WHERE {																					\n" +
-				"	BIND(%oldWorkingGraph% AS ?oldGraph)													\n" +
-				"	BIND(%newWorkingGraph% AS ?newGraph)													\n" +
+				"	BIND("+oldWorkingGraph+" AS ?oldGraph)				\n" +
+				"	BIND("+NTriplesUtil.toNTriplesString(getWorkingGraph())+" AS ?newGraph)				\n" +
 				"	GRAPH ?oldGraph {																		\n" +
 				"		?oldS ?oldP ?oldO .																	\n" +
 				//consider only those triples having having as subject or object the sourceBaseURI
@@ -211,18 +211,21 @@ public class Refactor extends STServiceAdapter  {
 				"	AS ?newO) \n" +
     			"}";
 		// @formatter:on
-		query = query.replace("%newBaseURI%", target);
-		query = query.replace("%oldWorkingGraph%", oldWorkingGraph); 
-		query = query.replace("%newWorkingGraph%", NTriplesUtil.toNTriplesString(getWorkingGraph())); 
-		
 		logger.debug(query);
 		
 		RepositoryConnection conn = getManagedConnection();
 		Update update = conn.prepareUpdate(query);
 		update.execute();
-		
-		
+
 		//now update all other resources having the desired namespace
+		if(!source.endsWith("#") && !source.endsWith("/")){
+			//add / or # at the end of source
+			source+="#";
+		}
+
+		if(!target.endsWith("#") && !target.endsWith("/")){
+			target+="#";
+		}
 		// @formatter:off
 		query =
 				"DELETE {																 					\n" +
@@ -236,50 +239,37 @@ public class Refactor extends STServiceAdapter  {
 				"	}																						\n" +
 				"}																							\n" +
 				"WHERE {																					\n" +
-				"	BIND(%oldWorkingGraph% AS ?oldGraph)													\n" +
-				"	BIND(%newWorkingGraph% AS ?newGraph)													\n" +
+				"	BIND("+oldWorkingGraph+" AS ?oldGraph)													\n" +
+				"	BIND("+NTriplesUtil.toNTriplesString(getWorkingGraph())+" AS ?newGraph)					\n" +
 				"	GRAPH ?oldGraph {																		\n" +
 				"		?oldS ?oldP ?oldO .																	\n" +
 				"	}																						\n" +
 				
 				
 				//get the base uri of ?oldS, ?oldP and oldO
-				"	BIND (REPLACE(STR(?oldS), '(^.*(#|/))([^#|^/]*)', '$1') AS ?oldBaseUriS)				\n" + 
+				"	BIND (IF(isIRI(?oldS), REPLACE(STR(?oldS), '(^.*(#|/))([^#|^/]*)', '$1'), \"\")  AS ?oldBaseUriS)\n" +
     			"	BIND (REPLACE(STR(?oldP), '(^.*(#|/))([^#|^/]*)', '$1') AS ?oldBaseUriP)				\n" +
-    			"	BIND (REPLACE(STR(?oldO), '(^.*(#|/))([^#|^/]*)', '$1') AS ?oldBaseUriO)				\n" +
+    			"	BIND (IF(isIRI(?oldO), REPLACE(STR(?oldO), '(^.*(#|/))([^#|^/]*)', '$1'), \"\")  AS ?oldBaseUriO)\n" +
     			
     			//create the new triple, one resource at a time (if is has the oldBaseURI replace it with the
     			// new one, otherwise just copy the old value)
     			"BIND(																						\n "+
-    			"	IF(STR(?oldS)!= '"+source+"' && ?oldBaseUriS = '%oldBaseURI%',							\n" +
-    			"		URI(REPLACE(STR(?oldS), '(^.*(#|/))([^#|^/]*)', '%newBaseURI%$3') ), 				\n" +
+    			"	IF(STR(?oldS)!= '"+source+"' && ?oldBaseUriS = '"+source+"',							\n" +
+    			"		URI(REPLACE(STR(?oldS), '(^.*(#|/))([^#|^/]*)', '"+target+"$3') ), 				\n" +
     			"		?oldS) 																				\n "+
     			"	AS ?newS) \n" +
     			"BIND(																						\n "+
-    			"	IF(?oldBaseUriP = '%oldBaseURI%',														\n" +
-    			"		URI(REPLACE(STR(?oldP), '(^.*(#|/))([^#|^/]*)', '%newBaseURI%$3') ), 				\n" +
+    			"	IF(?oldBaseUriP = '"+source+"',														\n" +
+    			"		URI(REPLACE(STR(?oldP), '(^.*(#|/))([^#|^/]*)', '"+target+"$3') ), 				\n" +
     			"		?oldP) 																				\n "+
     			"	AS ?newP) \n" +
     			"BIND(																						\n "+
-    			"	IF(STR(?oldO)!= '"+source+"' && ?oldBaseUriO = '%oldBaseURI%',							\n" +
-    			"		URI(REPLACE(STR(?oldO), '(^.*(#|/))([^#|^/]*)', '%newBaseURI%$3') ), 				\n" +
+    			"	IF(STR(?oldO)!= '"+source+"' && ?oldBaseUriO = '"+source+"',							\n" +
+    			"		URI(REPLACE(STR(?oldO), '(^.*(#|/))([^#|^/]*)', '"+target+"$3') ), 				\n" +
     			"		?oldO) 																				\n "+
     			"	AS ?newO) \n" +
     			"}";
 		// @formatter:on
-		if(!source.endsWith("#") && !source.endsWith("/")){
-			//add / or # at the end of source
-			source+="#";
-		}
-		query = query.replace("%oldBaseURI%", source);
-		if(!target.endsWith("#") && !target.endsWith("/")){
-			target+="#";
-			//TODO add / or # at the end of target
-		}
-		query = query.replace("%newBaseURI%", target);
-		query = query.replace("%oldWorkingGraph%", oldWorkingGraph); 
-		query = query.replace("%newWorkingGraph%", NTriplesUtil.toNTriplesString(getWorkingGraph())); 
-		
 		logger.debug(query);
 		
 		update = conn.prepareUpdate(query);
