@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import javax.annotation.Nullable;
 
@@ -37,6 +39,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -46,6 +49,7 @@ import it.uniroma2.art.lime.model.vocabulary.VARTRANS;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -68,6 +72,10 @@ public class LexicographerView extends STServiceAdapter {
 
 	private static final IRI MORPHOSYNTACTIC_PROPERTY = SimpleValueFactory.getInstance()
 			.createIRI("http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty");
+
+	private static final IRI SKOS_DEFINITION_PROPERTY = SKOS.DEFINITION;
+	private static final IRI WN_DEFINITION = SimpleValueFactory.getInstance()
+			.createIRI("https://globalwordnet.github.io/schemas/wn#definition");
 
 	public static class BindingSets2Model extends AbstractTupleQueryResultHandler {
 
@@ -296,12 +304,8 @@ public class LexicographerView extends STServiceAdapter {
 					ref.scope = NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(graphs,
 							ctx.workingGraph);
 					ref.nature = simplifiedNatureComputation(input, conceptId, RDFResourceRole.concept);
-					Map<Value, List<Resource>> def2statements = input.filter(conceptId, SKOS.DEFINITION, null)
-							.stream().collect(Collectors.groupingBy(Statement::getObject,
-									Collectors.mapping(Statement::getContext, Collectors.toList())));
-
-					ref.definition = def2statements.entrySet().stream()
-							.map(e -> new AnnotatedValue<>(e.getKey())).collect(Collectors.toList());
+					List<AnnotatedValue<Value>> defs = parseDefinitions(ctx, input, conceptId);
+					ref.definition = defs;
 					return ref;
 				}).collect(Collectors.toList());
 			}
@@ -456,6 +460,34 @@ public class LexicographerView extends STServiceAdapter {
 			lexicalEntryObj.senses = senseList;
 
 			return lexicalEntryObj;
+		}
+
+		protected static List<AnnotatedValue<Value>> parseDefinitions(Context ctx, Model input,
+				Resource subj) {
+			List<AnnotatedValue<Value>> defs = ctx.specialProps.get(SKOS.DEFINITION).keySet()
+					.stream().flatMap(p -> StreamSupport.stream(input.getStatements(subj, (IRI)p, null).spliterator(), false))
+					.collect(Collectors.groupingBy(Statement::getObject,
+							Collectors.mapping(Statement::getContext, Collectors.toList())))
+					.entrySet().stream().map(e -> {
+						AnnotatedValue<Value> av = new AnnotatedValue<>(e.getKey());
+						av.getAttributes().put("tripleScope",
+								SimpleValueFactory.getInstance()
+										.createLiteral(NatureRecognitionOrchestrator
+												.computeTripleScopeFromGraphs(e.getValue(), ctx.workingGraph)
+												.toString()));
+
+						if (e.getKey() instanceof Resource) {
+							Models.getPropertyLiteral(input, (Resource) e.getKey(), RDF.VALUE)
+									.ifPresent(lit -> {
+										av.getAttributes().put("show", SimpleValueFactory.getInstance()
+												.createLiteral(lit.getLabel()));
+										lit.getLanguage().ifPresent(lang -> av.getAttributes().put("lang",
+												SimpleValueFactory.getInstance().createLiteral(lang)));
+									});
+						}
+						return av;
+					}).collect(Collectors.toList());
+			return defs;
 		}
 
 		protected static List<Form> parseForms(Context ctx, Model input, Resource lexicalEntry, IRI pred) {
@@ -772,8 +804,8 @@ public class LexicographerView extends STServiceAdapter {
 		// @formatter:off
 			"SELECT DISTINCT * WHERE {                                                                                                                                                                      \n" +
 			"    {                                                                                                                                                                                          \n" +
-			"      ?resource (<http://www.w3.org/ns/lemon/ontolex#canonicalForm>|<http://www.w3.org/ns/lemon/ontolex#otherForm>)? ?lexicalEntryOrForm .                                                                      \n" +
-			"      BIND(?lexicalEntryOrForm as ?s)                                                                                                                                                                        \n" +
+			"      ?resource (<http://www.w3.org/ns/lemon/ontolex#canonicalForm>|<http://www.w3.org/ns/lemon/ontolex#otherForm>)? ?lexicalEntryOrForm .                                                     \n" +
+			"      BIND(?lexicalEntryOrForm as ?s)                                                                                                                                                          \n" +
 			"    } UNION {                                                                                                                                                                                  \n" +
 			"      ?resource <http://www.w3.org/ns/lemon/ontolex#denotes>|^<http://www.w3.org/ns/lemon/ontolex#isDenotedBy> ?reference .                                                                    \n" +
 			"      BIND(?reference as ?s)                                                                                                                                                                   \n" +
@@ -782,8 +814,9 @@ public class LexicographerView extends STServiceAdapter {
 			"      BIND(?lexicalConcept as ?s)                                                                                                                                                              \n" +
 			"    } UNION {                                                                                                                                                                                  \n" +
 			"      ?resource (<http://www.w3.org/ns/lemon/ontolex#sense>|^<http://www.w3.org/ns/lemon/ontolex#isSenseOf>)/(                                                                                 \n" +
+			"      <https://globalwordnet.github.io/schemas/wn#definition>|<http://www.w3.org/2004/02/skos/core#definition>|                                                                                \n" +
 			"      <http://www.w3.org/ns/lemon/ontolex#reference>|^<http://www.w3.org/ns/lemon/ontolex#isReferenceOf>|                                                                                      \n" +
-			"      <http://www.w3.org/ns/lemon/ontolex#isLexicalizedSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#lexicalizedSense>                                                                         \n" +
+			"      (<http://www.w3.org/ns/lemon/ontolex#isLexicalizedSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#lexicalizedSense>)/(<https://globalwordnet.github.io/schemas/wn#definition>|<http://www.w3.org/2004/02/skos/core#definition>)?\n" +
 			"      )? ?s.                                                                                                                                                                                   \n" +
 			"    } UNION {                                                                                                                                                                                  \n" +
 			"        ?resource (<http://www.w3.org/ns/lemon/ontolex#sense>|^<http://www.w3.org/ns/lemon/ontolex#isSenseOf>) ?lexicalSense.                                                                  \n" +
@@ -824,7 +857,17 @@ public class LexicographerView extends STServiceAdapter {
 		inputQuery.evaluate(new BindingSets2Model(input));
 
 		QueryBuilder morpoSyntacPropQB = createQueryBuilder(
-				"SELECT ?resource (?sup as ?attr_superProp) WHERE { VALUES(?sup) {(<http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty>)(<http://www.w3.org/ns/lemon/vartrans#lexicalRel>)(<http://www.w3.org/ns/lemon/vartrans#senseRel>)} ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>* ?sup } GROUP BY ?resource ?sup ");
+		//@formatter:off
+				"SELECT ?resource (?sup as ?attr_superProp) WHERE {\n" +
+			    "  {\n" +
+				"    VALUES(?sup) {(<http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty>)(<http://www.w3.org/ns/lemon/vartrans#lexicalRel>)(<http://www.w3.org/ns/lemon/vartrans#senseRel>)}\n" +
+				"    ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>* ?sup\n"+
+				"  } UNION  {\n" +
+				"    VALUES(?sup ?resource){(<http://www.w3.org/2004/02/skos/core#definition> <http://www.w3.org/2004/02/skos/core#definition>)\n"+
+				"      (<http://www.w3.org/2004/02/skos/core#definition> <https://globalwordnet.github.io/schemas/wn#definition>)\n" +
+				"      (<http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty> <https://globalwordnet.github.io/schemas/wn#partOfSpeech>)}\n" +
+				"  }\n" +
+				"} GROUP BY ?resource ?sup ");
 		morpoSyntacPropQB.processQName();
 		morpoSyntacPropQB.processRendering();
 		morpoSyntacPropQB.processRole();
