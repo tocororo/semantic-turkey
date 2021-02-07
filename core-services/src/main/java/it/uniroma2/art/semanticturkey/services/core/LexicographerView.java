@@ -103,8 +103,12 @@ public class LexicographerView extends STServiceAdapter {
 				|| input.contains(resource, RDF.TYPE, OWL.DEPRECATEDCLASS)
 				|| input.contains(resource, RDF.TYPE, OWL.DEPRECATEDPROPERTY);
 
-		return input.filter(resource, RDF.TYPE, null).contexts().stream()
-				.map(c -> fixedRole + "," + c + "," + deprecated).collect(Collectors.joining("|_|"));
+		Set<Resource> resourceContexts = input.filter(resource, RDF.TYPE, null).contexts();
+		if (resourceContexts.isEmpty()) {
+			resourceContexts = input.filter(resource, null, null).contexts();
+		}
+		return resourceContexts.stream().map(c -> fixedRole + "," + c + "," + deprecated)
+				.collect(Collectors.joining("|_|"));
 	}
 
 	public static @Nullable String computeQName(Map<String, String> ns2prefix, IRI resource) {
@@ -122,7 +126,10 @@ public class LexicographerView extends STServiceAdapter {
 		Map<IRI, AnnotatedValue<IRI>> propMap = new LinkedHashMap<>();
 		Multimap<IRI, AnnotatedValue<? extends Value>> valueMap = HashMultimap.create();
 
-		for (Resource prop : ctx.morphosyntacticProps.keySet()) {
+		Map<Resource, AnnotatedValue<Resource>> morphosyntacticProperty = ctx.specialProps
+				.get(MORPHOSYNTACTIC_PROPERTY);
+
+		for (Resource prop : morphosyntacticProperty.keySet()) {
 			List<AnnotatedValue<Value>> values = Models.getProperties(input, form, (IRI) prop).stream()
 					.map(value -> {
 						AnnotatedValue<Value> annotatedValue = new AnnotatedValue<>(value);
@@ -134,7 +141,7 @@ public class LexicographerView extends STServiceAdapter {
 						return annotatedValue;
 					}).collect(Collectors.toList());
 			if (!values.isEmpty()) {
-				propMap.put((IRI) prop, (AnnotatedValue<IRI>) (Object) ctx.morphosyntacticProps.get(prop));
+				propMap.put((IRI) prop, (AnnotatedValue<IRI>) (Object) morphosyntacticProperty.get(prop));
 				valueMap.putAll((IRI) prop, values);
 			}
 		}
@@ -726,7 +733,7 @@ public class LexicographerView extends STServiceAdapter {
 	}
 
 	private static class Context {
-		public Map<Resource, AnnotatedValue<Resource>> morphosyntacticProps;
+		public Map<IRI, Map<Resource, AnnotatedValue<Resource>>> specialProps;
 		public Resource workingGraph;
 		public Map<String, String> ns2prefix;
 	}
@@ -763,39 +770,53 @@ public class LexicographerView extends STServiceAdapter {
 	public LexicalEntry getLexicalEntryView(Resource lexicalEntry) {
 		TupleQuery inputQuery = getManagedConnection().prepareTupleQuery(
 		// @formatter:off
-			"SELECT DISTINCT * WHERE {                                                                                                                                                                                          \n" +
-			"    BIND(<http://linguistic.linkeddata.es/id/apertium/lexiconIT/casa-n-it> as ?resource)                                                                                                                           \n" +
-			"    {                                                                                                                                                                                                              \n" +
-			"      ?resource <http://www.w3.org/ns/lemon/ontolex#canonicalForm>|<http://www.w3.org/ns/lemon/ontolex#otherForm> ?form .                                                                                          \n" +
-			"      BIND(?form as ?s)                                                                                                                                                                                            \n" +
-			"    } UNION {                                                                                                                                                                                                      \n" +
-			"      ?resource <http://www.w3.org/ns/lemon/ontolex#denotes>|^<http://www.w3.org/ns/lemon/ontolex#isDenotedBy> ?reference .                                                                                        \n" +
-			"      BIND(?reference as ?s)                                                                                                                                                                                       \n" +
-			"    } UNION {                                                                                                                                                                                                      \n" +
-			"      ?resource <http://www.w3.org/ns/lemon/ontolex#evokes>|^<http://www.w3.org/ns/lemon/ontolex#isEvokedBy> ?lexicalConcept .                                                                                     \n" +
-			"      BIND(?lexicalConcept as ?s)                                                                                                                                                                                  \n" +
-			"    } UNION {                                                                                                                                                                                                      \n" +
-			"      ?resource (<http://www.w3.org/ns/lemon/ontolex#sense>|^<http://www.w3.org/ns/lemon/ontolex#isSenseOf>)/(                                                                                                     \n" +
-			"      <http://www.w3.org/ns/lemon/ontolex#reference>|^<http://www.w3.org/ns/lemon/ontolex#isReferenceOf>|                                                                                                          \n" +
-			"      <http://www.w3.org/ns/lemon/ontolex#isLexicalizedSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#lexicalizedSense>                                                                                             \n" +
-			"      )? ?s.                                                                                                                                                                                                       \n" +
-			"    } UNION {                                                                                                                                                                                                      \n" +
-			"      ?resource (<http://www.w3.org/ns/lemon/ontolex#sense>|^<http://www.w3.org/ns/lemon/ontolex#isSenseOf>) ?lexicalSense.                                                                                        \n" +
-			"      {                                                                                                                                                                                                            \n" +
-			"		?lexicalSense (^<http://www.w3.org/ns/lemon/vartrans#relates>|^<http://www.w3.org/ns/lemon/vartrans#source>|^<http://www.w3.org/ns/lemon/vartrans#target>)/                                                 \n" +
-			"		  ((<http://www.w3.org/ns/lemon/vartrans#relates>|<http://www.w3.org/ns/lemon/vartrans#source>|<http://www.w3.org/ns/lemon/vartrans#target>)/((                                                             \n" +
-			"			<http://www.w3.org/ns/lemon/ontolex#isSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#sense>)/(<http://www.w3.org/ns/lemon/ontolex#canonicalForm>|<http://www.w3.org/ns/lemon/ontolex#otherForm>)?)?)? ?s.\n" +
-			"      } UNION {                                                                                                                                                                                                    \n" +
-			"        ?rel <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>* <http://www.w3.org/ns/lemon/vartrans#senseRel> .                                                                                                \n" +
-			"        ?lexicalSense ?rel ?relatedSense .                                                                                                                                                                         \n" +
-			"        ?relatedSense ((<http://www.w3.org/ns/lemon/ontolex#isSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#sense>)/                                                                                               \n" +
-			"		  (<http://www.w3.org/ns/lemon/ontolex#canonicalForm>|<http://www.w3.org/ns/lemon/ontolex#otherForm>)?)? ?s.                                                                                                \n" +
-			"      }                                                                                                                                                                                                            \n" +
-			"    }                                                                                                                                                                                                              \n" +
-			"  GRAPH ?c {                                                                                                                                                                                                       \n" +
-			"    ?s ?p ?o .                                                                                                                                                                                                     \n" +
-			"  }                                                                                                                                                                                                                \n" +
-			"}                                                                                                                                                                                                                  \n"
+			"SELECT DISTINCT * WHERE {                                                                                                                                                                      \n" +
+			"    {                                                                                                                                                                                          \n" +
+			"      ?resource (<http://www.w3.org/ns/lemon/ontolex#canonicalForm>|<http://www.w3.org/ns/lemon/ontolex#otherForm>)? ?lexicalEntryOrForm .                                                                      \n" +
+			"      BIND(?lexicalEntryOrForm as ?s)                                                                                                                                                                        \n" +
+			"    } UNION {                                                                                                                                                                                  \n" +
+			"      ?resource <http://www.w3.org/ns/lemon/ontolex#denotes>|^<http://www.w3.org/ns/lemon/ontolex#isDenotedBy> ?reference .                                                                    \n" +
+			"      BIND(?reference as ?s)                                                                                                                                                                   \n" +
+			"    } UNION {                                                                                                                                                                                  \n" +
+			"      ?resource <http://www.w3.org/ns/lemon/ontolex#evokes>|^<http://www.w3.org/ns/lemon/ontolex#isEvokedBy> ?lexicalConcept .                                                                 \n" +
+			"      BIND(?lexicalConcept as ?s)                                                                                                                                                              \n" +
+			"    } UNION {                                                                                                                                                                                  \n" +
+			"      ?resource (<http://www.w3.org/ns/lemon/ontolex#sense>|^<http://www.w3.org/ns/lemon/ontolex#isSenseOf>)/(                                                                                 \n" +
+			"      <http://www.w3.org/ns/lemon/ontolex#reference>|^<http://www.w3.org/ns/lemon/ontolex#isReferenceOf>|                                                                                      \n" +
+			"      <http://www.w3.org/ns/lemon/ontolex#isLexicalizedSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#lexicalizedSense>                                                                         \n" +
+			"      )? ?s.                                                                                                                                                                                   \n" +
+			"    } UNION {                                                                                                                                                                                  \n" +
+			"        ?resource (<http://www.w3.org/ns/lemon/ontolex#sense>|^<http://www.w3.org/ns/lemon/ontolex#isSenseOf>) ?lexicalSense.                                                                  \n" +
+			"        ?lexicalSense (^<http://www.w3.org/ns/lemon/vartrans#relates>|^<http://www.w3.org/ns/lemon/vartrans#source>|^<http://www.w3.org/ns/lemon/vartrans#target>) ?reifiedRelation .          \n" +
+			"        {                                                                                                                                                                                      \n" +
+			"           ?lexicalSense2 (^<http://www.w3.org/ns/lemon/vartrans#relates>|^<http://www.w3.org/ns/lemon/vartrans#source>|^<http://www.w3.org/ns/lemon/vartrans#target>) ?reifiedRelation .      \n" +
+			"      		?lexicalSense2 ((<http://www.w3.org/ns/lemon/ontolex#isSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#sense>)/<http://www.w3.org/ns/lemon/ontolex#canonicalForm>?)? ?t .             \n" +
+			"        } UNION {                                                                                                                                                                              \n" +
+			"        }                                                                                                                                                                                      \n" +
+			"        BIND(COALESCE(?t, ?reifiedRelation) as ?s)                                                                                                                                             \n" +
+			"    } UNION {                                                                                                                                                                                  \n" +
+			"   	    ?resource (<http://www.w3.org/ns/lemon/ontolex#sense>|^<http://www.w3.org/ns/lemon/ontolex#isSenseOf>) ?lexicalSense.                                                               \n" +
+			"        ?rel <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>* <http://www.w3.org/ns/lemon/vartrans#senseRel> .                                                                            \n" +
+			"        ?lexicalSense ?rel ?relatedSense .                                                                                                                                                     \n" +
+			"        ?relatedSense ((<http://www.w3.org/ns/lemon/ontolex#isSenseOf>|^<http://www.w3.org/ns/lemon/ontolex#sense>)/                                                                           \n" +
+			"		  <http://www.w3.org/ns/lemon/ontolex#canonicalForm>?)? ?s.                                                                                                                             \n" +
+			"    } UNION {                                                                                                                                                                                  \n" +
+			"        ?resource (^<http://www.w3.org/ns/lemon/vartrans#relates>|^<http://www.w3.org/ns/lemon/vartrans#source>|^<http://www.w3.org/ns/lemon/vartrans#target>) ?reifiedRelation .              \n" +
+			"        {                                                                                                                                                                                      \n" +
+			"           ?lexicalEntry2 (^<http://www.w3.org/ns/lemon/vartrans#relates>|^<http://www.w3.org/ns/lemon/vartrans#source>|^<http://www.w3.org/ns/lemon/vartrans#target>) ?reifiedRelation .      \n" +
+			"      		?lexicalEntry2 <http://www.w3.org/ns/lemon/ontolex#canonicalForm>? ?t .                                                                                                             \n" +
+			"        } UNION {                                                                                                                                                                              \n" +
+			"        }                                                                                                                                                                                      \n" +
+			"        BIND(COALESCE(?t, ?reifiedRelation) as ?s)                                                                                                                                             \n" +
+			"    } UNION {                                                                                                                                                                                  \n" +
+			"        ?rel <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>* <http://www.w3.org/ns/lemon/vartrans#lexicalRel> .                                                                          \n" +
+			"        ?resource ?rel ?relatedLexicalEntry .                                                                                                                                                  \n" +
+			"        ?relatedLexicalEntry <http://www.w3.org/ns/lemon/ontolex#canonicalForm>? ?s.                                                                                                           \n" +
+			"    }                                                                                                                                                                                          \n" +
+			"  GRAPH ?c {                                                                                                                                                                                   \n" +
+			"    ?s ?p ?o .                                                                                                                                                                                 \n" +
+			"  }                                                                                                                                                                                            \n" +
+			"}                                                                                                                                                                                              \n"
 			// @formatter:on
 		);
 		inputQuery.setBinding("resource", lexicalEntry);
@@ -803,15 +824,17 @@ public class LexicographerView extends STServiceAdapter {
 		inputQuery.evaluate(new BindingSets2Model(input));
 
 		QueryBuilder morpoSyntacPropQB = createQueryBuilder(
-				"SELECT ?resource WHERE { ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>* <http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty> } GROUP BY ?resource ");
+				"SELECT ?resource (?sup as ?attr_superProp) WHERE { VALUES(?sup) {(<http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty>)(<http://www.w3.org/ns/lemon/vartrans#lexicalRel>)(<http://www.w3.org/ns/lemon/vartrans#senseRel>)} ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>* ?sup } GROUP BY ?resource ?sup ");
 		morpoSyntacPropQB.processQName();
 		morpoSyntacPropQB.processRendering();
 		morpoSyntacPropQB.processRole();
-		Map<Resource, AnnotatedValue<Resource>> morphoSyntacticProps = morpoSyntacPropQB.runQuery().stream()
-				.collect(Collectors.toMap(AnnotatedValue::getValue, Function.identity()));
+		Map<IRI, Map<Resource, AnnotatedValue<Resource>>> specialProps = morpoSyntacPropQB.runQuery().stream()
+				.collect(Collectors.groupingBy(av -> (IRI) av.getAttributes().get("superProp"),
+						Collectors.toMap(AnnotatedValue::getValue, Function.identity())));
 
 		Context ctx = new Context();
-		ctx.morphosyntacticProps = morphoSyntacticProps;
+
+		ctx.specialProps = specialProps;
 		ctx.workingGraph = getWorkingGraph();
 		ctx.ns2prefix = MapUtils.invertMap(getProject().getNewOntologyManager().getNSPrefixMappings(true));
 
