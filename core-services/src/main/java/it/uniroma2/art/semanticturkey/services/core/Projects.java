@@ -313,6 +313,14 @@ public class Projects extends STServiceAdapter {
 		}
 
 		// check if the lucene dir (for the facets) exists, if not, create the indexes
+		createFacetIndexIfNeeded();
+
+		return listProjInfo;
+	}
+
+	private void createFacetIndexIfNeeded() throws ProjectAccessException, PropertyNotFoundException, ProjectInexistentException,
+			IOException, InvalidProjectNameException {
+		// check if the lucene dir (for the facets) exists, if not, create the indexes
 		if (!ProjectFacetsIndexUtils.isLuceneDirPresent()) {
 			// iterate over the existing projects
 			Collection<AbstractProject> abstractProjectCollection = ProjectManager
@@ -328,8 +336,6 @@ public class Projects extends STServiceAdapter {
 			// create the indexes
 			ProjectFacetsIndexUtils.createFacetIndexAPI(projInfoList);
 		}
-
-		return listProjInfo;
 	}
 
 	/**
@@ -1480,7 +1486,7 @@ public class Projects extends STServiceAdapter {
 			@Optional @JsonSerialized List<List<Map<String, Object>>> orQueryList,
 			@Optional(defaultValue = "false") boolean userDependent,
 			@Optional(defaultValue = "false") boolean onlyOpen) throws IOException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, PropertyNotFoundException {
 		Map<String, List<ProjectInfo>> facetToProjeInfoListMap = new HashMap<>();
 
 		// bagOf and query cannot be both empy/null
@@ -1517,6 +1523,7 @@ public class Projects extends STServiceAdapter {
 			}
 
 			// execute the query
+			createFacetIndexIfNeeded();
 			int maxResults = ProjectFacetsIndexUtils.MAX_RESULT_QUERY_FACETS;
 			IndexSearcher searcher = ProjectFacetsIndexUtils.createSearcher();
 			TopDocs topDocs = searcher.search(queryLuc, maxResults);
