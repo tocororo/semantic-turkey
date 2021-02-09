@@ -284,7 +284,7 @@ public class LexicographerView extends STServiceAdapter {
 								Collectors.mapping(Statement::getContext, Collectors.toSet())));
 				Map<Resource, Set<Resource>> concept2invCtxts = input
 						.filter(null, ONTOLEX.LEXICALIZED_SENSE, senseObj.id).stream()
-						.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+						.collect(Collectors.groupingBy(s -> (Resource) s.getSubject(),
 								Collectors.mapping(Statement::getContext, Collectors.toSet())));
 
 				concept2invCtxts.forEach((k, v) -> concept2ctxts.merge(k, v, Sets::union));
