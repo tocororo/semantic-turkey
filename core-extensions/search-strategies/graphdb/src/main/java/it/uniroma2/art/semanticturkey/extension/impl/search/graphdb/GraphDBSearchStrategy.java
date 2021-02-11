@@ -187,7 +187,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	
 	@Override
 	public String searchLexicalEntry(STServiceContext stServiceContext,
-			String searchString, boolean useLocalName, boolean useLexicalizations,
+			String searchString, boolean useLexicalizations, boolean useLocalName,
 			boolean useURI, boolean useNotes, SearchMode searchMode,
 			List<IRI> lexicons, List<String> langs, boolean includeLocales, IRI lexModel,
 			boolean searchInRDFSLabel, boolean searchInSKOSLabel, boolean searchInSKOSXLLabel,
