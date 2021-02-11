@@ -22,9 +22,84 @@
  */
 package it.uniroma2.art.semanticturkey.services.core;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.reducing;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.http.client.SPARQLProtocolSession;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Namespace;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.Binding;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
+import org.eclipse.rdf4j.repository.util.RDFLoader;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFHandler;
+import org.eclipse.rdf4j.rio.RDFParseException;
+import org.eclipse.rdf4j.rio.RDFParserRegistry;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.eclipse.rdf4j.rio.helpers.StatementCollector;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
@@ -75,61 +150,6 @@ import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.utilities.ErrorRecoveringValueFactory;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
-import org.apache.commons.lang3.mutable.MutableLong;
-import org.eclipse.rdf4j.RDF4JException;
-import org.eclipse.rdf4j.http.client.SPARQLProtocolSession;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Namespace;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOS;
-import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
-import org.eclipse.rdf4j.query.Binding;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.GraphQuery;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
-import org.eclipse.rdf4j.repository.util.RDFLoader;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFParseException;
-import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
-import org.eclipse.rdf4j.rio.helpers.StatementCollector;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static java.util.stream.Collectors.*;
 
 /**
  * This service produces a view showing the details of a resource. This service operates uniformly (as much as
@@ -296,8 +316,7 @@ public class ResourceView extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	public List<AnnotatedValue<IRI>> getLexicalizationProperties(@Optional Resource resource,
-			@Optional ResourcePosition resourcePosition)
-			throws ProjectAccessException {
+			@Optional ResourcePosition resourcePosition) throws ProjectAccessException {
 		if (resourcePosition == null) {
 			resourcePosition = resource != null
 					? resourceLocator.locateResource(getProject(), getRepository(), resource)
@@ -692,7 +711,7 @@ public class ResourceView extends STServiceAdapter {
 				qb.process(LexiconRenderer.INSTANCE_WITHOUT_FALLBACK, "resource",
 						"attr_limeLexiconRendering");
 			}
-			if(!(resource instanceof IRI)) {
+			if (!(resource instanceof IRI)) {
 				qb.setBinding("subjectResource", resource);
 			}
 			qb.setIncludeInferred(includeInferred); // inference is required to properly render / assign
@@ -886,7 +905,8 @@ public class ResourceView extends STServiceAdapter {
 				if (retrievedStatements.contains(subject, predicate, object))
 					return;
 
-				retrievedStatements.add(subject, predicate, object, NatureRecognitionOrchestrator.INFERENCE_GRAPH);
+				retrievedStatements.add(subject, predicate, object,
+						NatureRecognitionOrchestrator.INFERENCE_GRAPH);
 			});
 
 			return retrievedStatements;
@@ -1062,10 +1082,8 @@ public class ResourceView extends STServiceAdapter {
 				boolean includeInferred, boolean ignorePropertyExclusions, MutableLong excludedObjectsCount)
 				throws RDF4JException, IOException {
 			Model retrievedStatements = new LinkedHashModel();
-			RDFLoader rdfLoader = RDF4JUtilities.createRobustRDFLoader();
 			StatementCollector statementCollector = new StatementCollector(retrievedStatements);
-			rdfLoader.load(new URL(resource.stringValue()), null, null, statementCollector);
-
+			load(new URL(resource.stringValue()), null, null, statementCollector);
 			// Move the null context to a graph named after the resource
 			Model nullCtx = new LinkedHashModel(
 					retrievedStatements.filter(null, null, null, (Resource) null));
@@ -1085,6 +1103,58 @@ public class ResourceView extends STServiceAdapter {
 					resource, includeInferred, statements, resourcePredicates, ignorePropertyExclusions);
 		}
 
+	}
+
+	protected void load(URL url, String baseURI, RDFFormat dataFormat, RDFHandler rdfHandler)
+			throws IOException {
+		RDFLoader loader = RDF4JUtilities.createRobustRDFLoader();
+
+		if (baseURI == null) {
+			baseURI = url.toExternalForm();
+		}
+
+		try (CloseableHttpClient client = HttpClientBuilder.create().useSystemProperties().build()) {
+			HttpGet request = new HttpGet(url.toExternalForm());
+			if (dataFormat != null) {
+				for (String mimeType : dataFormat.getMIMETypes()) {
+					request.addHeader("Accept", mimeType);
+				}
+			} else {
+				Set<RDFFormat> rdfFormats = RDFParserRegistry.getInstance().getKeys();
+				List<String> acceptParams = RDFFormat.getAcceptParams(rdfFormats, true, null);
+				for (String acceptParam : acceptParams) {
+					request.addHeader("Accept", acceptParam);
+				}
+			}
+
+			try (CloseableHttpResponse response = client.execute(request)) {
+				HttpEntity entity = response.getEntity();
+				try (InputStream in = entity.getContent()) {
+
+					if (entity == null) {
+						throw new IOException("No representation retrievied for URL: " + url.getPath());
+					}
+					if (dataFormat == null) {
+						// Try to determine the data's MIME type
+						String mimeType = java.util.Optional.ofNullable(ContentType.get(entity))
+								.map(ContentType::getMimeType).orElse("");
+
+						int semiColonIdx = mimeType.indexOf(';');
+						if (semiColonIdx >= 0) {
+							mimeType = mimeType.substring(0, semiColonIdx);
+						}
+						dataFormat = Rio.getParserFormatForMIMEType(mimeType)
+								.orElseGet(() -> Rio.getParserFormatForFileName(url.getPath())
+										.orElseThrow(() -> new UnsupportedRDFormatException(
+												"Could not find RDF format for URL: " + url.getPath())));
+
+					}
+					loader.load(in, baseURI, dataFormat, rdfHandler);
+
+				}
+
+			}
+		}
 	}
 }
 
