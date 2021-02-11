@@ -30,6 +30,9 @@ public class ProjectFacets implements Settings {
 	@STProperty(description = "Category", displayName = "Category")
 	public String category;
 
+	@STProperty(description = "Organization", displayName = "Organization")
+	public String organization;
+
 	@STProperty(description = "{" + MessageKeys.customFacets$description + "}", displayName = "{"
 			+ MessageKeys.customFacets$displayName + "}")
 	@Schema(settingsManager = CustomProjectFacetsSchemaStore.class)
