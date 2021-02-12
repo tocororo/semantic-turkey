@@ -46,6 +46,7 @@ import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -72,10 +73,12 @@ public class CustomFormGraph extends CustomForm {
 	private String annotationTypeName;// UIMA type taken from pearl rule (rule ....)
 
 	private List<IRI> showPropertyChain;
+	private List<IRI> previewTableProperties;
 
-	CustomFormGraph(String id, String name, String description, String ref, List<IRI> showPropChain) {
+	CustomFormGraph(String id, String name, String description, String ref) {
 		super(id, name, description, ref);
-		showPropertyChain = showPropChain;
+		showPropertyChain = new ArrayList<>();
+		previewTableProperties = new ArrayList<>();
 	}
 
 	/**
@@ -89,7 +92,21 @@ public class CustomFormGraph extends CustomForm {
 	}
 
 	public void setShowPropertyChain(List<IRI> propertyChain) {
+		if (propertyChain == null) {
+			propertyChain = new ArrayList<>();
+		}
 		this.showPropertyChain = propertyChain;
+	}
+
+	public List<IRI> getPreviewTableProperties() {
+		return this.previewTableProperties;
+	}
+
+	public void setPreviewTableProperties(List<IRI> properties) {
+		if (properties == null) {
+			properties = new ArrayList<>();
+		}
+		this.previewTableProperties = properties;
 	}
 
 	/**
@@ -548,25 +565,6 @@ public class CustomFormGraph extends CustomForm {
 	}
 
 	/**
-	 * Returns the property chain serialized as list of URIs separated by a comma. Return an empty string if
-	 * the chain is empty
-	 * 
-	 * @return
-	 */
-	public String serializePropertyChain() {
-		String serializedPropChain = "";
-		if (this.showPropertyChain.size() > 0) {
-			for (IRI iri : showPropertyChain) {
-				serializedPropChain += iri.stringValue() + ",";
-			}
-			serializedPropChain = serializedPropChain.substring(0, serializedPropChain.length() - 1); // remove
-																										// last
-																										// ","
-		}
-		return serializedPropChain;
-	}
-
-	/**
 	 * Creates a TypeSystemDescription based on the CODA rule contained in the <code>ref</code> tag. The
 	 * TypeSystemDescription returned contains a top feature structure named <code>userPrompt</code>
 	 * structured following the node section of the CODA rule.
@@ -604,7 +602,6 @@ public class CustomFormGraph extends CustomForm {
 			// stdForm features
 			TypeDescription stdFormType = tsd.addType(STANDARD_FORM_TYPE_PATH, "", CAS.TYPE_NAME_TOP);
 			for (String placeHolderId : placeHolderIds) {
-				// System.out.println("placeHolderId: " + placeHolderId);
 				PlaceholderStruct placeHolderStruct = placeHolderMap.get(placeHolderId);
 				if (placeHolderStruct.hasFeaturePath()) {
 					String featurePath = placeHolderStruct.getFeaturePath();

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -18,6 +19,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +47,9 @@ public class CustomFormXMLHelper {
 	private static final String CUSTOM_FORM_DESCRIPTION_TAG = "description";
 	private static final String CUSTOM_FORM_REF_TAG = "ref";
 	private static final String CUSTOM_FORM_SHOW_PROP_CHAIN_ATTR = "showPropertyChain";
-	
+	private static final String CUSTOM_FORM_TABLE_PREVIEW_TAG = "tablePreview";
+	private static final String CUSTOM_FORM_TABLE_PREVIEW_PROPERTY_TAG = "property";
+
 	private static final String FORM_COLLECTION_ROOT_TAG = "formCollection";
 	private static final String FORM_COLLECTION_ID_ATTR = "id";
 	private static final String FORM_COLLECTION_SUGGESTIONS_ATTR = "suggestions";
@@ -244,7 +248,7 @@ public class CustomFormXMLHelper {
 			id = id.trim();
 			
 			//Forms
-			Collection<String> formIdsList = new ArrayList<String>();
+			Collection<String> formIdsList = new ArrayList<>();
 			NodeList formNodeList = customFormElement.getElementsByTagName(FORM_COLLECTION_FORM_TAG);
 			for (int i = 0; i < formNodeList.getLength(); i++) {
 				Node formNode = formNodeList.item(i);
@@ -317,8 +321,7 @@ public class CustomFormXMLHelper {
 			String description = "";
 			String ref = "";
 			String type;
-			List<IRI> showPropChain = new ArrayList<>();
-			
+
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 			Document doc = dBuilder.parse(cfFile);
@@ -341,6 +344,13 @@ public class CustomFormXMLHelper {
 				throw new CustomFormParseException(CUSTOM_FORM_NAME_ATTR + " attribute missing in " + cfFile.getAbsolutePath());
 			}
 			name = name.trim();
+
+			//type
+			type = customFormElement.getAttribute(CUSTOM_FORM_TYPE_ATTR);
+			if (type == null) {
+				throw new CustomFormParseException(CUSTOM_FORM_TYPE_ATTR + " attribute missing in " + cfFile.getAbsolutePath());
+			}
+			type = type.trim();
 	
 			//description
 			Node descriptionNode = doc.getElementsByTagName(CUSTOM_FORM_DESCRIPTION_TAG).item(0);
@@ -353,38 +363,46 @@ public class CustomFormXMLHelper {
 			}
 			description = description.trim();
 			
-			//type
-			type = customFormElement.getAttribute(CUSTOM_FORM_TYPE_ATTR);
-			if (type == null) {
-				throw new CustomFormParseException(CUSTOM_FORM_TYPE_ATTR + " attribute missing in " + cfFile.getAbsolutePath());
-			}
-			type = type.trim();
-	
 			//ref
 			Node refNode = doc.getElementsByTagName(CUSTOM_FORM_REF_TAG).item(0);
 			if (refNode == null) {
 				throw new CustomFormParseException(CUSTOM_FORM_REF_TAG + " element is missing in " + cfFile.getAbsolutePath());
 			}
-			if (refNode.getNodeType() == Node.ELEMENT_NODE) {
-				Element refElement = (Element) refNode;
-				ref = refElement.getTextContent();
-				ref = ref.trim();
-				
-				if (type.equals(CustomForm.Types.graph.toString())){
-					String showPropChainString = refElement.getAttribute(CUSTOM_FORM_SHOW_PROP_CHAIN_ATTR);
-					//deserialize from string to List<IRI>
-					if (showPropChainString != null && !showPropChainString.isEmpty()) {
-						String[] splittedChain = showPropChainString.split(",");
-						SimpleValueFactory valueFactory = SimpleValueFactory.getInstance();
-						for (String s : splittedChain) {
-							showPropChain.add(valueFactory.createIRI(s));
-						}
+			Element refElement = (Element) refNode;
+			ref = refElement.getTextContent();
+			ref = ref.trim();
+
+			if (type.equals(CustomForm.Types.graph.toString())){
+				CustomFormGraph cf = new CustomFormGraph(id, name, description, ref);
+
+				SimpleValueFactory valueFactory = SimpleValueFactory.getInstance();
+
+				//showPropChain
+				List<IRI> showPropChain = new ArrayList<>();
+				String showPropChainString = refElement.getAttribute(CUSTOM_FORM_SHOW_PROP_CHAIN_ATTR);
+				//from string to List<IRI>
+				if (showPropChainString != null && !showPropChainString.isEmpty()) {
+					String[] splittedChain = showPropChainString.split(",");
+					for (String s : splittedChain) {
+						showPropChain.add(valueFactory.createIRI(s));
 					}
 				}
-			}
-			
-			if (type.equals(CustomForm.Types.graph.toString())){
-				return new CustomFormGraph(id, name, description, ref, showPropChain);
+				cf.setShowPropertyChain(showPropChain);
+
+				//preview table properties
+				List<IRI> previewTableProps = new ArrayList<>();
+				Node tablePreviewNode = doc.getElementsByTagName(CUSTOM_FORM_TABLE_PREVIEW_TAG).item(0);
+				if (tablePreviewNode != null && tablePreviewNode.getNodeType() == Node.ELEMENT_NODE) {
+					Element tablePreviewEl = (Element) tablePreviewNode;
+					NodeList propertyNodes = tablePreviewEl.getElementsByTagName(CUSTOM_FORM_TABLE_PREVIEW_PROPERTY_TAG);
+					for (int i = 0; i < propertyNodes.getLength(); i++) {
+						Node propNode = propertyNodes.item(i);
+						previewTableProps.add(valueFactory.createIRI(propNode.getTextContent()));
+					}
+				}
+				cf.setPreviewTableProperties(previewTableProps);
+
+				return cf;
 			} else if (type.equals(CustomForm.Types.node.toString())){
 				return new CustomFormNode(id, name, description, ref);
 			} else {
@@ -419,7 +437,7 @@ public class CustomFormXMLHelper {
 					+ " is not " + CONFIG_ROOT_TAG);
 			}
 			
-			Collection<FormsMapping> mappings = new ArrayList<FormsMapping>();
+			Collection<FormsMapping> mappings = new ArrayList<>();
 			NodeList mappingList = doc.getElementsByTagName(CONFIG_MAPPING_TAG);
 			for (int i = 0; i < mappingList.getLength(); i++) {
 				Node mappingNode = mappingList.item(i);
@@ -639,26 +657,40 @@ public class CustomFormXMLHelper {
 			DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
 			Document doc = docBuilder.newDocument();
 			
-			Element creElement = doc.createElement("customForm");
+			Element creElement = doc.createElement(CUSTOM_FORM_ROOT_TAG);
 			doc.appendChild(creElement);
 			creElement.setAttribute(CUSTOM_FORM_ID_ATTR, customForm.getId());
 			creElement.setAttribute(CUSTOM_FORM_NAME_ATTR, customForm.getName());
 			creElement.setAttribute(CUSTOM_FORM_TYPE_ATTR, customForm.getType());
 			
-			Element descrElement = doc.createElement("description");
+			Element descrElement = doc.createElement(CUSTOM_FORM_DESCRIPTION_TAG);
 			descrElement.setTextContent(customForm.getDescription());
 			creElement.appendChild(descrElement);
 			
-			Element refElement = doc.createElement("ref"); 
+			Element refElement = doc.createElement(CUSTOM_FORM_REF_TAG);
 			CDATASection cdata = doc.createCDATASection(customForm.getRef());
 			refElement.appendChild(cdata);
 			
-			String propChain = customForm.serializePropertyChain();
-			if (!propChain.isEmpty()) {
-				refElement.setAttribute("showPropertyChain", propChain);
+			List<IRI> propChain = customForm.getShowPropertyChain();
+			if (propChain.size() > 0) {
+				List<String> iriList = propChain.stream()
+						.map(Value::stringValue)
+						.collect(Collectors.toList());
+				refElement.setAttribute(CUSTOM_FORM_SHOW_PROP_CHAIN_ATTR, String.join(",", iriList));
 			}
 			creElement.appendChild(refElement);
-			
+
+			List<IRI> previewTableProps = customForm.getPreviewTableProperties();
+			if (previewTableProps.size() > 0) {
+				Element tablePreviewEl = doc.createElement(CUSTOM_FORM_TABLE_PREVIEW_TAG);
+				for (IRI p: previewTableProps) {
+					Element propEl = doc.createElement(CUSTOM_FORM_TABLE_PREVIEW_PROPERTY_TAG);
+					propEl.setTextContent(p.stringValue());
+					tablePreviewEl.appendChild(propEl);
+				}
+				creElement.appendChild(tablePreviewEl);
+			}
+
 			// write the content into xml file
 			TransformerFactory transformerFactory = TransformerFactory.newInstance();
 			Transformer transformer = transformerFactory.newTransformer();

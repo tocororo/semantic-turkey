@@ -39,6 +39,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormLevel;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.CustomFormParseException;
+import it.uniroma2.art.semanticturkey.customform.CustomFormValueTablePreview;
 import it.uniroma2.art.semanticturkey.customform.CustomFormXMLHelper;
 import it.uniroma2.art.semanticturkey.customform.DuplicateIdException;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
@@ -46,8 +47,8 @@ import it.uniroma2.art.semanticturkey.customform.FormsMapping;
 import it.uniroma2.art.semanticturkey.customform.UserPromptStruct;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.Pair;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
@@ -57,9 +58,13 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsListSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.services.support.QueryResultsProcessors;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -68,10 +73,12 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.URIUtil;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
@@ -97,6 +104,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @STService
 public class CustomForms extends STServiceAdapter {
@@ -180,7 +189,7 @@ public class CustomForms extends STServiceAdapter {
 					// create a "fake" predicate to represent the userPrompt label
 					IRI predResource = vf.createIRI(repoConnection.getNamespace(""), userPrompt);
 
-					AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<IRI>(predResource);
+					AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<>(predResource);
 					annotatedPredicate.setAttribute("role", RDFResourceRole.property.toString());
 					annotatedPredicate.setAttribute("explicit", true);
 					annotatedPredicate.setAttribute("show", userPrompt);
@@ -192,8 +201,6 @@ public class CustomForms extends STServiceAdapter {
 					for (Value pValue: promptValues) {
 						AnnotatedValue<?> annotatedObject = new AnnotatedValue<>(pValue);
 						// I don't know how to retrieve role and other attributes
-						// annotatedObject.setAttribute("role",
-						// vf.createLiteral(RDFResourceRolesEnum.undetermined.toString()));
 						annotatedObject.setAttribute("explicit", true);
 						if (pValue instanceof Literal) {
 							annotatedObject.setAttribute("show",
@@ -213,6 +220,86 @@ public class CustomForms extends STServiceAdapter {
 			shutDownCodaCore(codaCore);
 		}
 		return rv;
+	}
+
+	/**
+	 * Returns a list of table preview. Each table is a Map where the key is the described object and the value
+	 * represents a row of the table. Each row in turn is a list of pred-obj pairs (the predicate will represent
+	 * the header, the object will be the cell content).
+	 * @param predicate
+	 * @param values
+	 * @return
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Read
+	public Collection<CustomFormValueTablePreview> getCustomFormValueTables(IRI predicate, List<Resource> values) {
+		RepositoryConnection repoConnection = getManagedConnection();
+		CODACore codaCore = getInitializedCodaCore(repoConnection);
+
+		/*
+		tables are grouped by the CF that determines the headers (through the preview table properties),
+		so the following map has
+		- key: id of the CF
+		- value: table, that is in turn a Map with
+			- key: described object
+			- value: pred-value pairs (pred represents the header, value the cell content)
+		 */
+		Map<String, CustomFormValueTablePreview> tables = new HashMap<>(); //crId -> table
+
+		try {
+			for (Resource v: values) {
+				// try to identify the CF which has generated the graph rooted on value
+				CustomFormGraph cfGraph = cfManager.getCustomFormGraphSeed(getProject(), codaCore,
+						repoConnection, v, Sets.newHashSet(predicate), false);
+				if (cfGraph != null) {
+					List<IRI> tableProps = cfGraph.getPreviewTableProperties();
+					if (!tableProps.isEmpty()) { //only if table preview is foreseen for this CF
+						List<Pair<AnnotatedValue<IRI>, AnnotatedValue<Value>>> poPairList = new ArrayList<>();
+
+						String propsValues = tableProps.stream()
+								.map(p -> "(" + RenderUtils.toSPARQL(p) + ")")
+								.collect(Collectors.joining(" "));
+						String query = "SELECT ?p ?o WHERE {\n"
+								+ "	GRAPH " + RenderUtils.toSPARQL(getWorkingGraph()) + " {\n"
+								+ "		BIND(" + RenderUtils.toSPARQL(v) + " as ?s)\n"
+								+ "		VALUES(?p) {" + propsValues + "}\n"
+								+ "		OPTIONAL { ?s ?p ?o . }\n"
+								+ "	}\n"
+								+ "}";
+						TupleQuery tq = repoConnection.prepareTupleQuery(query);
+						tq.setIncludeInferred(false);
+						TupleQueryResult results = tq.evaluate();
+
+						while (results.hasNext()) {
+							BindingSet bs = results.next();
+							IRI p = (IRI) bs.getBinding("p").getValue();
+							AnnotatedValue<IRI> annP = new AnnotatedValue<>(p);
+							AnnotatedValue<Value> annO = null;
+							if (bs.hasBinding("o")) {
+								Value o = bs.getBinding("o").getValue();
+								annO = new AnnotatedValue<>(o);
+								//TODO annotate o and optimize with a cache
+							}
+							poPairList.add(new Pair(annP, annO));
+						}
+
+						if (!poPairList.isEmpty()) {
+							CustomFormValueTablePreview table = tables.get(cfGraph.getId());
+							if (table != null) {
+								table.addRow(v, poPairList);
+							} else {
+								table = new CustomFormValueTablePreview();
+								table.addRow(v, poPairList);
+								tables.put(cfGraph.getId(), table);
+							}
+						}
+					}
+				}
+			}
+		} finally {
+			shutDownCodaCore(codaCore);
+		}
+		return tables.values();
 	}
 
 	/**
@@ -281,7 +368,7 @@ public class CustomForms extends STServiceAdapter {
 
 			IRI cfNameProp = vf.createIRI(repoConnection.getNamespace(""), "@metadata-customFormName");
 
-			AnnotatedValue<IRI> CFNameAnnotatedProp = new AnnotatedValue<IRI>(cfNameProp);
+			AnnotatedValue<IRI> CFNameAnnotatedProp = new AnnotatedValue<>(cfNameProp);
 			CFNameAnnotatedProp.setAttribute("role", RDFResourceRole.property.toString());
 			CFNameAnnotatedProp.setAttribute("explicit", true);
 			CFNameAnnotatedProp.setAttribute("show", "Custom form name");
@@ -296,7 +383,7 @@ public class CustomForms extends STServiceAdapter {
 				// create a "fake" predicate to represent the userPrompt label
 				IRI predResource = vf.createIRI(repoConnection.getNamespace(""), promptValue.getKey());
 
-				AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<IRI>(predResource);
+				AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<>(predResource);
 				annotatedPredicate.setAttribute("role", RDFResourceRole.property.toString());
 				annotatedPredicate.setAttribute("explicit", true);
 				annotatedPredicate.setAttribute("show", promptValue.getKey());
@@ -305,8 +392,6 @@ public class CustomForms extends STServiceAdapter {
 
 				AnnotatedValue<?> annotatedObject = new AnnotatedValue<>(promptValue.getValue());
 				// I don't know how to retrieve role and other attributes
-				// annotatedObject.setAttribute("role",
-				// vf.createLiteral(RDFResourceRolesEnum.undetermined.toString()));
 				annotatedObject.setAttribute("explicit", true);
 				if (promptValue.getValue() instanceof Literal) {
 					annotatedObject.setAttribute("show",
@@ -340,53 +425,8 @@ public class CustomForms extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#subject)+ ')', 'D')")
 	public void removeReifiedResource(@Modified IRI subject, IRI predicate, IRI resource)
 			throws PRParserException {
-
 		RepositoryConnection repoConnection = getManagedConnection();
-
 		removeReifiedValue(repoConnection, subject, predicate, resource);
-
-//		//TODO delete the following and restore the previous as soon as removeReifiedValue is restored in STServiceAdapter
-//
-//		// remove resource as object in the triple <s, p, o> for the given subject and predicate
-//		repoConnection.remove(subject, predicate, resource, getWorkingGraph());
-//
-//		CODACore codaCore = getInitializedCodaCore(repoConnection);
-//		CustomFormGraph cf = cfManager.getCustomFormGraphSeed(getProject(), codaCore, repoConnection,
-//				resource, Collections.singleton(predicate), false);
-//
-//		Update update;
-//		if (cf == null) { //
-//			/*
-//			 * If property hasn't a CustomForm simply delete all triples where resource occurs. note: this
-//			 * case should never be verified cause this service should be called only when the predicate has a
-//			 * CustomForm
-//			 */
-//			StringBuilder queryBuilder = new StringBuilder();
-//			queryBuilder.append("delete { ");
-//			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
-//			queryBuilder.append(" <" + resource.stringValue() + "> ?p1 ?o1 . ");
-//			queryBuilder.append(" ?s2 ?p2 <" + resource.stringValue() + "> . ");
-//			queryBuilder.append(" }"); //close graph {}
-//			queryBuilder.append(" } where { ");
-//			queryBuilder.append(" <" + resource.stringValue() + "> ?p1 ?o1 . ");
-//			queryBuilder.append(" ?s2 ?p2 <" + resource.stringValue() + "> . ");
-//			queryBuilder.append(" }");
-//			update = repoConnection.prepareUpdate(queryBuilder.toString());
-//		} else { // otherwise remove with a SPARQL delete the graph defined by the CustomFormGraph
-//			StringBuilder queryBuilder = new StringBuilder();
-//			queryBuilder.append("delete { ");
-//			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
-//			queryBuilder.append(cf.getGraphSectionAsString(codaCore, false));
-//			queryBuilder.append(" }"); //close graph {}
-//			queryBuilder.append(" } where { ");
-//			queryBuilder.append(cf.getGraphSectionAsString(codaCore, true));
-//			queryBuilder.append(" }");
-//			update = repoConnection.prepareUpdate(queryBuilder.toString());
-//			update.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), resource);
-//		}
-//		update.setIncludeInferred(false);
-//		update.execute();
-//		shutDownCodaCore(codaCore);
 	}
 
 	/**
@@ -827,9 +867,20 @@ public class CustomForms extends STServiceAdapter {
 			customFormNode.set("description", jsonFactory.textNode(cf.getDescription()));
 			customFormNode.set("ref", jsonFactory.textNode(cf.getRef()));
 			if (cf.isTypeGraph()) {
-				String propertyChain = cf.asCustomFormGraph().serializePropertyChain();
-				if (!propertyChain.isEmpty()) {
-					customFormNode.set("showPropertyChain", jsonFactory.textNode(propertyChain));
+				List<IRI> showPropChain = cf.asCustomFormGraph().getShowPropertyChain();
+				if (showPropChain.size() > 0) {
+					List<String> iriList = showPropChain.stream()
+							.map(Value::stringValue)
+							.collect(Collectors.toList());
+					customFormNode.set("showPropertyChain", jsonFactory.textNode(String.join(",", iriList)));
+				}
+
+				List<IRI> previewTableProps = cf.asCustomFormGraph().getPreviewTableProperties();
+				if (previewTableProps.size() > 0) {
+					List<String> iriList = previewTableProps.stream()
+							.map(Value::stringValue)
+							.collect(Collectors.toList());
+					customFormNode.set("previewTableProperties", jsonFactory.textNode(String.join(",", iriList)));
 				}
 			}
 			return customFormNode;
@@ -962,10 +1013,14 @@ public class CustomForms extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('cform(form)', 'C')")
 	public void createCustomForm(String type, String id, String name, String description, String ref,
-			@Optional List<IRI> showPropChain) throws DuplicateIdException {
+			@Optional List<IRI> showPropChain, @Optional List<IRI> previewTableProps) throws DuplicateIdException {
 		// avoid proliferation of new line in saved pearl (carriage return character "\r" are added to ref
 		// when calling this service
-		cfManager.createCustomForm(getProject(), type, id, name, description, ref, showPropChain);
+		if (type.equalsIgnoreCase(CustomForm.Types.node.toString())) {
+			cfManager.createCustomFormNode(getProject(), id, name, description, ref);
+		} else {
+			cfManager.createCustomFormGraph(getProject(), id, name, description, ref, showPropChain, previewTableProps);
+		}
 	}
 
 	/**
@@ -994,11 +1049,13 @@ public class CustomForms extends STServiceAdapter {
 			String sourceRuleId = "id:" + sourceId.substring(0, sourceId.lastIndexOf("."));
 			String targetRuleId = "id:" + targetId.substring(0, sourceId.lastIndexOf("."));
 			ref = ref.replace(sourceRuleId, targetRuleId);
-			cfManager.createCustomForm(getProject(), sourceCF.getType(), targetId, sourceCF.getName(),
-					sourceCF.getDescription(), ref, sourceCF.asCustomFormGraph().getShowPropertyChain());
+			cfManager.createCustomFormGraph(getProject(), targetId, sourceCF.getName(),
+					sourceCF.getDescription(), ref,
+					sourceCF.asCustomFormGraph().getShowPropertyChain(),
+					sourceCF.asCustomFormGraph().getPreviewTableProperties());
 		} else { // type "node"
-			cfManager.createCustomForm(getProject(), sourceCF.getType(), targetId, sourceCF.getName(),
-					sourceCF.getDescription(), sourceCF.getRef(), null);
+			cfManager.createCustomFormNode(getProject(), targetId, sourceCF.getName(),
+					sourceCF.getDescription(), sourceCF.getRef());
 		}
 	}
 
@@ -1077,12 +1134,13 @@ public class CustomForms extends STServiceAdapter {
 					newRef = parsedCustomForm.getRef();
 				}
 				if (parsedCustomForm.isTypeGraph()) {
-					cfManager.createCustomForm(getProject(), parsedCustomForm.getType(), newCustomFormId,
+					cfManager.createCustomFormGraph(getProject(), newCustomFormId,
 							parsedCustomForm.getName(), parsedCustomForm.getDescription(), newRef,
-							parsedCustomForm.asCustomFormGraph().getShowPropertyChain());
+							parsedCustomForm.asCustomFormGraph().getShowPropertyChain(),
+							parsedCustomForm.asCustomFormGraph().getPreviewTableProperties());
 				} else { // type "node"
-					cfManager.createCustomForm(getProject(), parsedCustomForm.getType(), newCustomFormId,
-							parsedCustomForm.getName(), parsedCustomForm.getDescription(), newRef, null);
+					cfManager.createCustomFormNode(getProject(), newCustomFormId,
+							parsedCustomForm.getName(), parsedCustomForm.getDescription(), newRef);
 				}
 			} catch (CustomFormParseException e) {
 				throw new CustomFormException("Failed to parse the input file, it may contain some errors.");
@@ -1151,7 +1209,7 @@ public class CustomForms extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('cform(form)', 'U')")
 	public void updateCustomForm(String id, String name, String description, String ref,
-			@Optional List<IRI> showPropChain) throws CustomFormException {
+			@Optional List<IRI> showPropChain, @Optional List<IRI> previewTableProps) throws CustomFormException {
 		CustomForm cf = cfManager.getProjectCustomForm(getProject(), id);
 		if (cf == null) {
 			throw new CustomFormException(
@@ -1160,7 +1218,11 @@ public class CustomForms extends STServiceAdapter {
 		// avoid proliferation of new line in saved pearl (carriage return character "\r" are added to ref
 		// when calling this service
 		ref = ref.replace("\r", "");
-		cfManager.updateCustomForm(getProject(), cf, name, description, ref, showPropChain);
+		if (cf.isTypeGraph()) {
+			cfManager.updateCustomFormGraph(getProject(), cf.asCustomFormGraph(), name, description, ref, showPropChain, previewTableProps);
+		} else {
+			cfManager.updateCustomFormNode(getProject(), cf.asCustomFormNode(), name, description, ref);
+		}
 	}
 
 	/**
@@ -1174,7 +1236,7 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	public List<AnnotatedValue<IRI>> validateShowPropertyChain(String propChain) throws CustomFormException {
-		ArrayList<AnnotatedValue<IRI>> chain = new ArrayList<AnnotatedValue<IRI>>();
+		ArrayList<AnnotatedValue<IRI>> chain = new ArrayList<>();
 		SimpleValueFactory svf = SimpleValueFactory.getInstance();
 		
 		Map<String, String> allMappings = getProject().getNewOntologyManager().getNSPrefixMappings(false);
@@ -1191,16 +1253,16 @@ public class CustomForms extends STServiceAdapter {
 						prefFound = true;
 						break;
 					}
-					if (!prefFound) {
-						throw new CustomFormException("'" + s + "' is not a valid QName. Unkwown prefix '" 
-								+ iri.substring(0, iri.indexOf(":")) + "'.");
-					}
+				}
+				if (!prefFound) {
+					throw new CustomFormException("'" + s + "' is not a valid QName. Unkwown prefix '"
+							+ iri.substring(0, iri.indexOf(":")) + "'.");
 				}
 			}
 			if (!URIUtil.isValidURIReference(s.trim())) {
 				throw new CustomFormException("'" + s + "' is not a valid URI");
 			}
-			chain.add(new AnnotatedValue<IRI>(svf.createIRI(iri)));
+			chain.add(new AnnotatedValue<>(svf.createIRI(iri)));
 		}
 		return chain;
 	}
@@ -1410,7 +1472,7 @@ public class CustomForms extends STServiceAdapter {
 			annDefToExludeList.add("Confidence");
 			annDefToExludeList.addAll(getAnnotationsDefFromFile(ANN_DEF_PATH));
 
-			for(String currPrId : projectionRulesModel.getProjRule().keySet()){
+			for (String currPrId : projectionRulesModel.getProjRule().keySet()){
 				if(prId!=null && !prId.isEmpty() && !prId.equals(currPrId)){
 					//this rule should not be analized
 					continue;
@@ -1424,14 +1486,18 @@ public class CustomForms extends STServiceAdapter {
 
 			String modelAsString = projectionRulesModel.getModelAsString(annDefToExludeList);
 
-			if(save){
+			if (save) {
 				//update the PEARL
-				List<IRI> showPropChain = null;
-				if(cf instanceof CustomFormGraph) {
-					showPropChain = ((CustomFormGraph) cf).getShowPropertyChain();
+				if (cf.isTypeGraph()) {
+					List<IRI> showPropChain = cf.asCustomFormGraph().getShowPropertyChain();
+					List<IRI> previewTableProps = cf.asCustomFormGraph().getPreviewTableProperties();
+					cfManager.updateCustomFormGraph(getProject(), cf.asCustomFormGraph(), cf.getName(),
+							cf.getDescription(), modelAsString, showPropChain, previewTableProps);
+				} else {
+					cfManager.updateCustomFormNode(getProject(), cf.asCustomFormNode(), cf.getName(),
+							cf.getDescription(), modelAsString);
 				}
-				cfManager.updateCustomForm(getProject(), cf, cf.getName(),
-						cf.getDescription(), modelAsString, showPropChain);
+
 			}
 
 			JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
