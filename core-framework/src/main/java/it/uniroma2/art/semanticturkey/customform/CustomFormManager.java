@@ -163,7 +163,7 @@ public class CustomFormManager {
 					if (cfModel != null) {
 						mapping = cfModel.getFormMapping(resource);
 						if (mapping != null) {
-							mapping.getReplace();
+							replace = mapping.getReplace();
 						}
 					}
 				}
@@ -595,16 +595,14 @@ public class CustomFormManager {
 		if (cfModelMap.get(SYSTEM_LEVEL_ID).getFormCollectionById(id) != null) {
 			throw new DuplicateIdException("A FormCollection with id '" + id + "' already exists at system level");
 		}
-		FormCollection formColl = cfModelMap.get(project.getName()).createFormCollection(id);
-		return formColl;
+		return cfModelMap.get(project.getName()).createFormCollection(id);
 	}
 	
 	// CUSTOM FORM
 	
 	/**
-	 * Creates and adds a CustomForm in the given project. If in the project, a {@link CustomForm}
+	 * Creates and adds a CustomFormGraph in the given project. If in the project, a {@link CustomForm}
 	 * with the same ID exists, a {@link DuplicateIdException} is thrown
-	 * @param type
 	 * @param id
 	 * @param name
 	 * @param description
@@ -613,13 +611,32 @@ public class CustomFormManager {
 	 * @return
 	 * @throws DuplicateIdException 
 	 */
-	public CustomForm createCustomForm(Project project, String type, String id, String name, String description, String ref, List<IRI> showPropChain)
+	public CustomFormGraph createCustomFormGraph(Project project, String id, String name, String description, String ref,
+		 	List<IRI> showPropChain, List<IRI> previewTableProps) throws DuplicateIdException {
+		//check if a FormCollection with the same ID already exists at system level
+		if (cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormById(id) != null) {
+			throw new DuplicateIdException("A CustomForm with id '" + id + "' already exists at system level");
+		}
+		return cfModelMap.get(project.getName()).createCustomFormGraph(id, name, description, ref, showPropChain, previewTableProps);
+	}
+
+	/**
+	 * Creates and adds a CustomFormNode in the given project. If in the project, a {@link CustomForm}
+	 * with the same ID exists, a {@link DuplicateIdException} is thrown
+	 * @param id
+	 * @param name
+	 * @param description
+	 * @param ref
+	 * @return
+	 * @throws DuplicateIdException
+	 */
+	public CustomFormNode createCustomFormNode(Project project, String id, String name, String description, String ref)
 			throws DuplicateIdException {
 		//check if a FormCollection with the same ID already exists at system level
 		if (cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormById(id) != null) {
 			throw new DuplicateIdException("A CustomForm with id '" + id + "' already exists at system level");
 		}
-		return cfModelMap.get(project.getName()).createCustomForm(type, id, name, description, ref, showPropChain);
+		return cfModelMap.get(project.getName()).createCustomFormNode(id, name, description, ref);
 	}
 	
 	/* ##################
@@ -659,8 +676,13 @@ public class CustomFormManager {
 	
 	// CUSTOM FORM
 	
-	public void updateCustomForm(Project project, CustomForm customForm, String name, String description, String ref, List<IRI> showPropChain) {
-		cfModelMap.get(project.getName()).updateCustomForm(customForm, name, description, ref, showPropChain);
+	public void updateCustomFormNode(Project project, CustomFormNode customForm, String name, String description, String ref) {
+		cfModelMap.get(project.getName()).updateCustomFormNode(customForm, name, description, ref);
+	}
+
+	public void updateCustomFormGraph(Project project, CustomFormGraph customForm, String name, String description,
+		  String ref, List<IRI> showPropChain, List<IRI> previewTableProps) {
+		cfModelMap.get(project.getName()).updateCustomFormGraph(customForm, name, description, ref, showPropChain, previewTableProps);
 	}
 	
 	/**

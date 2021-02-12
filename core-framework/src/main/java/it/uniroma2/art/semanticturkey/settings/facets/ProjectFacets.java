@@ -19,6 +19,10 @@ public class ProjectFacets implements Settings {
 		public static final String keyBase = "it.uniroma2.art.semanticturkey.settings.project.ProjectFacets";
 
 		public static final String shortName = keyBase + ".shortName";
+		public static final String category$description = keyBase + ".category.description";
+		public static final String category$displayName = keyBase + ".category.displayName";
+		public static final String organization$description = keyBase + ".organization.description";
+		public static final String organization$displayName = keyBase + ".organization.displayName";
 		public static final String customFacets$description = keyBase + ".customFacets.description";
 		public static final String customFacets$displayName = keyBase + ".customFacets.displayName";
 	}
@@ -27,8 +31,13 @@ public class ProjectFacets implements Settings {
 		return "{" + MessageKeys.shortName + "}";
 	}
 
-	@STProperty(description = "Category", displayName = "Category")
+	@STProperty(description = "{" + MessageKeys.category$description + "}", displayName = "{"
+			+ MessageKeys.category$displayName + "}")
 	public String category;
+
+	@STProperty(description = "{" + MessageKeys.organization$description + "}", displayName = "{"
+			+ MessageKeys.organization$displayName + "}")
+	public String organization;
 
 	@STProperty(description = "{" + MessageKeys.customFacets$description + "}", displayName = "{"
 			+ MessageKeys.customFacets$displayName + "}")

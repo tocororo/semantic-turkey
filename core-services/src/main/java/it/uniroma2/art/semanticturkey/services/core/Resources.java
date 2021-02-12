@@ -244,7 +244,7 @@ public class Resources extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	public Collection<AnnotatedValue<Resource>> getResourcesInfo(@JsonSerialized IRI[] resources) {
+	public Collection<AnnotatedValue<Resource>> getResourcesInfo(@JsonSerialized Resource[] resources) {
 
 		QueryBuilder qb;
 		StringBuilder sb = new StringBuilder();
@@ -257,7 +257,7 @@ public class Resources extends STServiceAdapter {
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>					\n" +
 				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {		\n" +
 				"     VALUES(?resource) {");
-		sb.append(Arrays.stream(resources).map(iri -> "(" + RenderUtils.toSPARQL(iri) + ")").collect(joining()));
+		sb.append(Arrays.stream(resources).map(res -> "(" + RenderUtils.toSPARQL(res) + ")").collect(joining()));
 		sb.append("}													 				\n" +
 				generateNatureSPARQLWherePart("?resource") +
 				"} 																		\n" +
