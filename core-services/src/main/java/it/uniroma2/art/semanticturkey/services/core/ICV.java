@@ -702,7 +702,7 @@ public class ICV extends STServiceAdapter {
 			q+=  "?resource " + NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL) +" ?prefLabel . \n" 
 				+ "?prefLabel "+ NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?prefTerm . \n";
 		} else {
-			q+=  "?resource " + NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL) +" ?prefTerm . \n"; 
+			q+=  "?resource " + NTriplesUtil.toNTriplesString(SKOS.PREF_LABEL) +" ?prefTerm . \n";
 		}
 		q += "FILTER(lang(?prefTerm) = ?lang)"
 				+ "}\n"
