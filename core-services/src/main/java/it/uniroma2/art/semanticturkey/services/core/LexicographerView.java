@@ -3,12 +3,12 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -16,6 +16,7 @@ import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -39,7 +40,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -49,13 +49,13 @@ import it.uniroma2.art.lime.model.vocabulary.VARTRANS;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.core.LexicographerView.LexicoSemanticRelation.LexicoSemanticRelationPolicy;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 
@@ -134,15 +134,15 @@ public class LexicographerView extends STServiceAdapter {
 		Map<IRI, AnnotatedValue<IRI>> propMap = new LinkedHashMap<>();
 		Multimap<IRI, AnnotatedValue<? extends Value>> valueMap = HashMultimap.create();
 
-		Map<Resource, AnnotatedValue<Resource>> morphosyntacticProperty = ctx.specialProps
+		Map<IRI, AnnotatedValue<IRI>> morphosyntacticProperty = ctx.specialProps
 				.get(MORPHOSYNTACTIC_PROPERTY);
 
-		for (Resource prop : morphosyntacticProperty.keySet()) {
-			List<AnnotatedValue<Value>> values = Models.getProperties(input, form, (IRI) prop).stream()
+		for (IRI prop : morphosyntacticProperty.keySet()) {
+			List<AnnotatedValue<Value>> values = Models.getProperties(input, form, prop).stream()
 					.map(value -> {
 						AnnotatedValue<Value> annotatedValue = new AnnotatedValue<>(value);
 						TripleScopes tripleScope = NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(
-								input.filter(form, (IRI) prop, value).contexts(), ctx.workingGraph);
+								input.filter(form, prop, value).contexts(), ctx.workingGraph);
 						annotatedValue.getAttributes().put("tripleScope",
 								SimpleValueFactory.getInstance().createLiteral(tripleScope.toString()));
 
@@ -166,6 +166,13 @@ public class LexicographerView extends STServiceAdapter {
 		private List<Form> lemma;
 		private List<Form> otherForms;
 		private List<Sense> senses;
+		private List<LexicalRelation> related;
+		private List<LexicalRelation> translatableAs;
+
+		public LexicalEntry() {
+			this.related = new ArrayList<>();
+			this.translatableAs = new ArrayList<>();
+		}
 
 		@JsonSerialize(using = ToStringSerializer.class)
 		public Resource getID() {
@@ -190,6 +197,14 @@ public class LexicographerView extends STServiceAdapter {
 
 		public List<Sense> getSenses() {
 			return senses;
+		}
+
+		public List<LexicalRelation> getRelated() {
+			return related;
+		}
+
+		public List<LexicalRelation> getTranslatableAs() {
+			return translatableAs;
 		}
 
 		public static LexicalEntry parse(Context ctx, Model input, Resource lexicalEntry) {
@@ -352,107 +367,12 @@ public class LexicographerView extends STServiceAdapter {
 
 			for (Sense senseObj : senseList) {
 				if (senseObj.id != null) {
-					Map<Value, List<Resource>> def2statements = input
-							.filter(senseObj.id, SKOS.DEFINITION, null).stream()
-							.collect(Collectors.groupingBy(Statement::getObject,
-									Collectors.mapping(Statement::getContext, Collectors.toList())));
-
-					senseObj.definition = def2statements.entrySet().stream()
-							.map(e -> new AnnotatedValue<>(e.getKey())).collect(Collectors.toList());
-
-					Map<Resource, Set<Resource>> related2context = input
-							.filter(null, VARTRANS.RELATES, senseObj.id).stream()
-							.collect(Collectors.groupingBy(Statement::getSubject,
-									Collectors.mapping(Statement::getContext, Collectors.toSet())));
-					Map<Resource, Set<Resource>> targeted2context = input
-							.filter(null, VARTRANS.TARGET, senseObj.id).stream()
-							.collect(Collectors.groupingBy(Statement::getSubject,
-									Collectors.mapping(Statement::getContext, Collectors.toSet())));
-					Map<Resource, Set<Resource>> sourced2context = input
-							.filter(null, VARTRANS.SOURCE, senseObj.id).stream()
-							.collect(Collectors.groupingBy(Statement::getSubject,
-									Collectors.mapping(Statement::getContext, Collectors.toSet())));
-
-					Map<Resource, Set<Resource>> reifiedRelations2context = new HashMap<>();
-					related2context
-							.forEach((key, value) -> reifiedRelations2context.merge(key, value, Sets::union));
-					targeted2context
-							.forEach((key, value) -> reifiedRelations2context.merge(key, value, Sets::union));
-					sourced2context
-							.forEach((key, value) -> reifiedRelations2context.merge(key, value, Sets::union));
-
-					List<SenseRelation> related = new ArrayList<>();
-					List<SenseRelation> terminologicallyRelated = new ArrayList<>();
-					List<SenseRelation> translations = new ArrayList<>();
-
-					for (Map.Entry<Resource, Set<Resource>> entry : reifiedRelations2context.entrySet()) {
-						Resource reifiedRelation = entry.getKey();
-						Set<Resource> graphs = entry.getValue();
-
-						String nature = simplifiedNatureComputation(input, reifiedRelation,
-								RDFResourceRole.individual);
-						TripleScopes scope = NatureRecognitionOrchestrator
-								.computeTripleScopeFromGraphs(graphs, ctx.workingGraph);
-
-						Map<Resource, Set<Resource>> category2context = input
-								.filter(reifiedRelation, VARTRANS.CATEGORY, null).stream()
-								.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
-										Collectors.mapping(Statement::getContext, Collectors.toSet())));
-
-						List<SenseReference> relatedSenseRefs = parseSenseReferences(ctx, input,
-								reifiedRelation, VARTRANS.RELATES);
-						List<SenseReference> sourceSenseRefs = parseSenseReferences(ctx, input,
-								reifiedRelation, VARTRANS.SOURCE);
-						List<SenseReference> targetSenseRefs = parseSenseReferences(ctx, input,
-								reifiedRelation, VARTRANS.TARGET);
-
-						List<AnnotatedValue<Resource>> category = category2context.entrySet().stream()
-								.map(e -> {
-									Resource cat = e.getKey();
-									AnnotatedValue<Resource> rv = new AnnotatedValue<>(cat);
-									rv.setAttribute("nature", simplifiedNatureComputation(input, cat,
-											RDFResourceRole.individual));
-									rv.setAttribute("tripleScope",
-											SimpleValueFactory.getInstance()
-													.createLiteral(
-															NatureRecognitionOrchestrator
-																	.computeTripleScopeFromGraphs(
-																			e.getValue(), ctx.workingGraph)
-																	.toString()));
-									return rv;
-								}).collect(Collectors.toList());
-
-						SenseRelation relationObj = new SenseRelation();
-						relationObj.id = reifiedRelation;
-						relationObj.nature = nature;
-						relationObj.scope = scope;
-						relationObj.category = category;
-						relationObj.related = relatedSenseRefs;
-						relationObj.source = sourceSenseRefs;
-						relationObj.target = targetSenseRefs;
-
-						boolean relationHandled = false;
-						if (input.contains(reifiedRelation, RDF.TYPE, VARTRANS.TRANSLATION)) {
-							translations.add(relationObj);
-							relationHandled = true;
-						}
-
-						if (input.contains(reifiedRelation, RDF.TYPE, VARTRANS.TERMINOLOGICAL_RELATION)) {
-							terminologicallyRelated.add(relationObj);
-							relationHandled = true;
-						}
-
-						if (!relationHandled) {
-							related.add(relationObj);
-						}
-					}
-
-					senseObj.related = related;
-					senseObj.terminologicallyRelated = terminologicallyRelated;
-					senseObj.translations = translations;
-
+					senseObj.definition = parseDefinitions(ctx, input, senseObj.id);
+					parseSenseRelations(ctx, input, senseObj);
 				}
 			}
+
+			parseLexicalRelations(ctx, input, lexicalEntryObj);
 
 			lexicalEntryObj.morphosyntacticProps = morphoSyntacticProps;
 			lexicalEntryObj.lemma = lemma;
@@ -462,10 +382,23 @@ public class LexicographerView extends STServiceAdapter {
 			return lexicalEntryObj;
 		}
 
+		protected static void parseSenseRelations(Context ctx, Model input, Sense senseObj) {
+			LexicoSemanticRelationPolicy<SenseReference, SenseRelation> policy = new SenseRelation.SenseRelationPolicy(
+					senseObj);
+			LexicoSemanticRelation.parseLexicoSemanticRelations(ctx, input, senseObj.getId(), policy);
+		}
+
+		public static void parseLexicalRelations(Context ctx, Model input, LexicalEntry lexicalEntryObj) {
+			LexicalRelation.LexicalRelationPolicy policy = new LexicalRelation.LexicalRelationPolicy(
+					lexicalEntryObj);
+			LexicoSemanticRelation.parseLexicoSemanticRelations(ctx, input, lexicalEntryObj.getID(), policy);
+		}
+
 		protected static List<AnnotatedValue<Value>> parseDefinitions(Context ctx, Model input,
 				Resource subj) {
-			List<AnnotatedValue<Value>> defs = ctx.specialProps.get(SKOS.DEFINITION).keySet()
-					.stream().flatMap(p -> StreamSupport.stream(input.getStatements(subj, (IRI)p, null).spliterator(), false))
+			List<AnnotatedValue<Value>> defs = ctx.specialProps.get(SKOS.DEFINITION).keySet().stream()
+					.flatMap(p -> StreamSupport.stream(input.getStatements(subj, (IRI) p, null).spliterator(),
+							false))
 					.collect(Collectors.groupingBy(Statement::getObject,
 							Collectors.mapping(Statement::getContext, Collectors.toList())))
 					.entrySet().stream().map(e -> {
@@ -501,44 +434,40 @@ public class LexicographerView extends STServiceAdapter {
 			}).collect(Collectors.toList());
 		}
 
-		protected static List<SenseReference> parseSenseReferences(Context ctx, Model input,
-				Resource reifiedRelation, IRI pred) {
-			Map<Resource, Set<Resource>> related2context = input.filter(reifiedRelation, pred, null).stream()
-					.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+		protected static SenseReference parseSenseReference(Context ctx, Model input, Resource sense,
+				Set<Resource> referenceCtxs) {
+			SenseReference senseRef = new SenseReference();
+			senseRef.id = sense;
+			senseRef.nature = simplifiedNatureComputation(input, sense, RDFResourceRole.ontolexLexicalSense);
+			senseRef.scope = NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(referenceCtxs,
+					ctx.workingGraph);
+
+			Map<Resource, Set<Resource>> entry2invContext = input.filter(sense, ONTOLEX.IS_SENSE_OF, null)
+					.stream().collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+							Collectors.mapping(Statement::getContext, Collectors.toSet())));
+			Map<Resource, Set<Resource>> entry2Context = input.filter(null, ONTOLEX.SENSE, sense).stream()
+					.collect(Collectors.groupingBy(s -> (Resource) s.getSubject(),
 							Collectors.mapping(Statement::getContext, Collectors.toSet())));
 
-			return related2context.entrySet().stream().map(entry -> {
-				SenseReference senseRef = new SenseReference();
-				senseRef.id = entry.getKey();
-				senseRef.nature = simplifiedNatureComputation(input, entry.getKey(),
-						RDFResourceRole.ontolexLexicalSense);
-				senseRef.scope = NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(entry.getValue(),
-						ctx.workingGraph);
+			entry2invContext.forEach((key, value) -> entry2Context.merge(key, value, Sets::union));
 
-				Map<Resource, Set<Resource>> entry2invContext = input
-						.filter(entry.getKey(), ONTOLEX.IS_SENSE_OF, null).stream()
-						.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
-								Collectors.mapping(Statement::getContext, Collectors.toSet())));
-				Map<Resource, Set<Resource>> entry2Context = input.filter(null, ONTOLEX.SENSE, entry.getKey())
-						.stream().collect(Collectors.groupingBy(s -> (Resource) s.getSubject(),
-								Collectors.mapping(Statement::getContext, Collectors.toSet())));
-
-				entry2invContext.forEach((key, value) -> entry2Context.merge(key, value, Sets::union));
-
-				senseRef.entry = entry2invContext.entrySet().stream().map(entry2 -> {
-					EntryReference entryRef = new EntryReference();
-					entryRef.id = entry.getKey();
-					entryRef.nature = simplifiedNatureComputation(input, entry2.getKey(),
-							RDFResourceRole.ontolexLexicalEntry);
-					entryRef.scope = NatureRecognitionOrchestrator
-							.computeTripleScopeFromGraphs(entry2.getValue(), ctx.workingGraph);
-					entryRef.lemma = LexicalEntry.parseForms(ctx, input, entry2.getKey(),
-							ONTOLEX.CANONICAL_FORM);
-					return entryRef;
-				}).collect(Collectors.toList());
-
-				return senseRef;
+			senseRef.entry = entry2invContext.entrySet().stream().map(entry2 -> {
+				return parseEntryReference(ctx, input, entry2.getKey(), entry2.getValue());
 			}).collect(Collectors.toList());
+
+			return senseRef;
+		}
+
+		protected static EntryReference parseEntryReference(Context ctx, Model input, Resource entry,
+				Set<Resource> referenceCtxs) {
+			EntryReference entryRef = new EntryReference();
+			entryRef.id = entry;
+			entryRef.nature = simplifiedNatureComputation(input, entry, RDFResourceRole.ontolexLexicalEntry);
+			entryRef.scope = NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(referenceCtxs,
+					ctx.workingGraph);
+			entryRef.lemma = LexicalEntry.parseForms(ctx, input, entry, ONTOLEX.CANONICAL_FORM);
+			return entryRef;
+
 		}
 	}
 
@@ -625,6 +554,12 @@ public class LexicographerView extends STServiceAdapter {
 		private List<SenseRelation> translations;
 		private List<SenseRelation> terminologicallyRelated;
 
+		public Sense() {
+			this.related = new ArrayList<>();
+			this.translations = new ArrayList<>();
+			this.terminologicallyRelated = new ArrayList<>();
+		}
+
 		public @Nullable Resource getId() {
 			return id;
 		}
@@ -678,46 +613,313 @@ public class LexicographerView extends STServiceAdapter {
 		}
 	}
 
-	public static class SenseRelation {
+	public static class LexicoSemanticRelation<T> {
 		@JsonSerialize(using = ToStringSerializer.class)
 		private @Nullable Resource id;
 		private String nature;
 		private TripleScopes scope;
 		private List<AnnotatedValue<Resource>> category;
-		private List<SenseReference> source;
-		private List<SenseReference> target;
-		private List<SenseReference> related;
+		private List<T> source = new ArrayList<>();
+		private List<T> target = new ArrayList<>();
+		private List<T> related = new ArrayList<>();
+
+		public void setNature(String nature) {
+			this.nature = nature;
+		}
 
 		public String getNature() {
 			return nature;
+		}
+
+		public void setScope(TripleScopes scope) {
+			this.scope = scope;
 		}
 
 		public TripleScopes getScope() {
 			return scope;
 		}
 
+		public void setId(Resource id) {
+			this.id = id;
+		}
+
 		public Resource getId() {
 			return id;
+		}
+
+		public void setCategory(List<AnnotatedValue<Resource>> category) {
+			this.category = category;
 		}
 
 		public List<AnnotatedValue<Resource>> getCategory() {
 			return category;
 		}
 
-		public List<SenseReference> getSource() {
+		public void setSource(List<T> source) {
+			this.source = source;
+		}
+
+		public List<T> getSource() {
 			return source;
 		}
 
-		public List<SenseReference> getTarget() {
+		public void setTarget(List<T> target) {
+			this.target = target;
+		}
+
+		public List<T> getTarget() {
 			return target;
 		}
 
-		public List<SenseReference> getRelated() {
+		public void setRelated(List<T> related) {
+			this.related = related;
+		}
+
+		public List<T> getRelated() {
 			return related;
+		}
+
+		public static abstract class LexicoSemanticRelationPolicy<T, S extends LexicoSemanticRelation<T>> {
+			public abstract S newRelation();
+
+			public abstract void handleRelation(Context ctx, Model input, S relationObj);
+
+			protected abstract Map<IRI, AnnotatedValue<IRI>> getRelations(Context ctx);
+
+			protected abstract T parseReference(Context ctx, Model input, Resource subjectId,
+					Set<Resource> referenceCtxs);
+
+			@FunctionalInterface
+			public static interface Function4<R, A1, A2, A3, A4> {
+				R apply(A1 a1, A2 a2, A3 a3, A4 a4);
+			}
+		}
+
+		public static <T, S extends LexicoSemanticRelation<T>> void parseLexicoSemanticRelations(Context ctx,
+				Model input, Resource subjectId, LexicoSemanticRelationPolicy<T, S> policy) {
+			Map<Resource, Set<Resource>> related2context = input.filter(null, VARTRANS.RELATES, subjectId)
+					.stream().collect(Collectors.groupingBy(Statement::getSubject,
+							Collectors.mapping(Statement::getContext, Collectors.toSet())));
+			Map<Resource, Set<Resource>> targeted2context = input.filter(null, VARTRANS.TARGET, subjectId)
+					.stream().collect(Collectors.groupingBy(Statement::getSubject,
+							Collectors.mapping(Statement::getContext, Collectors.toSet())));
+			Map<Resource, Set<Resource>> sourced2context = input.filter(null, VARTRANS.SOURCE, subjectId)
+					.stream().collect(Collectors.groupingBy(Statement::getSubject,
+							Collectors.mapping(Statement::getContext, Collectors.toSet())));
+
+			Map<Resource, Set<Resource>> reifiedRelations2context = new HashMap<>();
+			related2context.forEach((key, value) -> reifiedRelations2context.merge(key, value, Sets::union));
+			targeted2context.forEach((key, value) -> reifiedRelations2context.merge(key, value, Sets::union));
+			sourced2context.forEach((key, value) -> reifiedRelations2context.merge(key, value, Sets::union));
+
+			for (Map.Entry<Resource, Set<Resource>> entry : reifiedRelations2context.entrySet()) {
+				Resource reifiedRelation = entry.getKey();
+				Set<Resource> graphs = entry.getValue();
+
+				String nature = simplifiedNatureComputation(input, reifiedRelation,
+						RDFResourceRole.individual);
+				TripleScopes scope = NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(graphs,
+						ctx.workingGraph);
+
+				Map<Resource, Set<Resource>> category2context = input
+						.filter(reifiedRelation, VARTRANS.CATEGORY, null).stream()
+						.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+								Collectors.mapping(Statement::getContext, Collectors.toSet())));
+
+				List<T> relatedRefs = parseReferences(ctx, input, reifiedRelation, VARTRANS.RELATES,
+						policy::parseReference);
+				List<T> sourceRefs = parseReferences(ctx, input, reifiedRelation, VARTRANS.SOURCE,
+						policy::parseReference);
+				List<T> targetRefs = parseReferences(ctx, input, reifiedRelation, VARTRANS.TARGET,
+						policy::parseReference);
+
+				List<AnnotatedValue<Resource>> category = category2context.entrySet().stream().map(e -> {
+					Resource cat = e.getKey();
+					AnnotatedValue<Resource> rv = new AnnotatedValue<>(cat);
+					rv.setAttribute("nature",
+							simplifiedNatureComputation(input, cat, RDFResourceRole.undetermined));
+					rv.setAttribute("tripleScope",
+							SimpleValueFactory.getInstance()
+									.createLiteral(NatureRecognitionOrchestrator
+											.computeTripleScopeFromGraphs(e.getValue(), ctx.workingGraph)
+											.toString()));
+					return rv;
+				}).collect(Collectors.toList());
+
+				S relationObj = policy.newRelation();
+				relationObj.setId(reifiedRelation);
+				relationObj.setNature(nature);
+				relationObj.setScope(scope);
+				relationObj.setCategory(category);
+				relationObj.setRelated(relatedRefs);
+				relationObj.setSource(sourceRefs);
+				relationObj.setTarget(targetRefs);
+
+				policy.handleRelation(ctx, input, relationObj);
+			}
+
+			for (Map.Entry<IRI, AnnotatedValue<IRI>> relPropEntry : policy.getRelations(ctx).entrySet()) {
+
+				IRI relProp = relPropEntry.getKey();
+
+				Stream.concat(input.filter(subjectId, relProp, null).stream(),
+						input.filter(null, relProp, subjectId).stream())
+						.collect(Collectors.groupingBy(
+								s -> ImmutablePair.of(s.getSubject(), (Resource) s.getObject()),
+								Collectors.mapping(Statement::getContext,
+										Collectors.mapping(Resource.class::cast, Collectors.toSet()))))
+						.entrySet().stream().map(entry -> {
+							S reifiedRelation = policy.newRelation();
+							reifiedRelation.setId(null);
+							reifiedRelation.setNature(simplifiedNatureComputation(input, subjectId,
+									RDFResourceRole.individual));
+							reifiedRelation.setScope(NatureRecognitionOrchestrator
+									.computeTripleScopeFromGraphs(entry.getValue(), ctx.workingGraph));
+							AnnotatedValue<Resource> av = new AnnotatedValue<>(relProp);
+							av.setAttribute("nature",
+									simplifiedNatureComputation(input, relProp, RDFResourceRole.property));
+							av.setAttribute("tripleScope", SimpleValueFactory.getInstance()
+									.createLiteral(NatureRecognitionOrchestrator
+											.computeTripleScopeFromGraphs(entry.getValue(), ctx.workingGraph)
+											.toString()));
+							reifiedRelation.setCategory(Lists.newArrayList(av));
+
+							T sourceReference = policy.parseReference(ctx, input, entry.getKey().left,
+									entry.getValue());
+							T targetReference = policy.parseReference(ctx, input, entry.getKey().right,
+									entry.getValue());
+
+							reifiedRelation.setSource(Lists.newArrayList(sourceReference));
+							reifiedRelation.setTarget(Lists.newArrayList(targetReference));
+							reifiedRelation.setRelated(Collections.emptyList());
+							return reifiedRelation;
+						}).forEach(reifiedRelation -> policy.handleRelation(ctx, input, reifiedRelation));
+			}
+
 		}
 	}
 
+	public static <T> List<T> parseReferences(Context ctx, Model input, Resource reifiedRelation, IRI pred,
+			LexicoSemanticRelationPolicy.Function4<T, Context, Model, Resource, Set<Resource>> refereneParser) {
+		Map<Resource, Set<Resource>> related2context = input.filter(reifiedRelation, pred, null).stream()
+				.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+						Collectors.mapping(Statement::getContext, Collectors.toSet())));
+
+		return related2context.entrySet().stream().map(entry -> {
+			return refereneParser.apply(ctx, input, entry.getKey(), entry.getValue());
+		}).collect(Collectors.toList());
+	}
+
+	public static class SenseRelation extends LexicoSemanticRelation<SenseReference> {
+		public static class SenseRelationPolicy
+				extends LexicoSemanticRelation.LexicoSemanticRelationPolicy<SenseReference, SenseRelation> {
+
+			private Sense sense;
+
+			public SenseRelationPolicy(Sense sense) {
+				this.sense = sense;
+			}
+
+			@Override
+			public SenseRelation newRelation() {
+				return new SenseRelation();
+			}
+
+			@Override
+			public void handleRelation(Context ctx, Model input, SenseRelation relationObj) {
+				Resource reifiedRelation = relationObj.getId();
+				if (reifiedRelation != null) {
+					boolean relationHandled = false;
+					if (input.contains(reifiedRelation, RDF.TYPE, VARTRANS.TRANSLATION)) {
+						sense.translations.add(relationObj);
+						relationHandled = true;
+					}
+
+					if (input.contains(reifiedRelation, RDF.TYPE, VARTRANS.TERMINOLOGICAL_RELATION)) {
+						sense.terminologicallyRelated.add(relationObj);
+						relationHandled = true;
+					}
+
+					if (!relationHandled) {
+						sense.related.add(relationObj);
+					}
+				} else {
+					boolean isTranslation = java.util.Optional.ofNullable(relationObj.getCategory())
+							.orElse(Collections.emptyList()).stream().map(AnnotatedValue::getValue)
+							.anyMatch(VARTRANS.HAS_TRANSLATION::equals);
+
+					if (isTranslation) {
+						sense.translations.add(relationObj);
+					} else {
+						sense.terminologicallyRelated.add(relationObj);
+					}
+				}
+			}
+
+			@Override
+			protected Map<IRI, AnnotatedValue<IRI>> getRelations(Context ctx) {
+				return ctx.specialProps.get(VARTRANS.SENSE_REL);
+			}
+
+			@Override
+			protected SenseReference parseReference(Context ctx, Model input, Resource subjectId,
+					Set<Resource> referenceCtxs) {
+				return LexicalEntry.parseSenseReference(ctx, input, subjectId, referenceCtxs);
+			}
+
+		}
+	}
+
+	public static class LexicalRelation extends LexicoSemanticRelation<EntryReference> {
+		public static class LexicalRelationPolicy
+				extends LexicoSemanticRelation.LexicoSemanticRelationPolicy<EntryReference, LexicalRelation> {
+
+			private LexicalEntry entry;
+
+			public LexicalRelationPolicy(LexicalEntry entry) {
+				this.entry = entry;
+			}
+
+			@Override
+			public LexicalRelation newRelation() {
+				return new LexicalRelation();
+			}
+
+			@Override
+			protected EntryReference parseReference(Context ctx, Model input, Resource subjectId,
+					Set<Resource> referenceCtxs) {
+				return LexicalEntry.parseEntryReference(ctx, input, subjectId, referenceCtxs);
+			}
+
+			@Override
+			public void handleRelation(Context ctx, Model input, LexicalRelation relationObj) {
+				Resource reifiedRelation = relationObj.getId();
+				if (reifiedRelation != null) {
+					entry.related.add(relationObj);
+				} else {
+					boolean isTranslation = java.util.Optional.ofNullable(relationObj.getCategory())
+							.orElse(Collections.emptyList()).stream().map(AnnotatedValue::getValue)
+							.anyMatch(VARTRANS.TRANSLATABLE_AS::equals);
+
+					if (isTranslation) {
+						entry.translatableAs.add(relationObj);
+					} else {
+						entry.related.add(relationObj);
+					}
+				}
+			}
+
+			@Override
+			protected Map<IRI, AnnotatedValue<IRI>> getRelations(Context ctx) {
+				return ctx.specialProps.get(VARTRANS.LEXICAL_REL);
+			}
+
+		}
+
+	}
+
 	public static class SenseReference {
+		@JsonSerialize(using = ToStringSerializer.class)
 		private Resource id;
 		private String nature;
 		private TripleScopes scope;
@@ -742,6 +944,7 @@ public class LexicographerView extends STServiceAdapter {
 	}
 
 	public static class EntryReference {
+		@JsonSerialize(using = ToStringSerializer.class)
 		private Resource id;
 		private String nature;
 		private TripleScopes scope;
@@ -765,7 +968,7 @@ public class LexicographerView extends STServiceAdapter {
 	}
 
 	private static class Context {
-		public Map<IRI, Map<Resource, AnnotatedValue<Resource>>> specialProps;
+		public Map<IRI, Map<IRI, AnnotatedValue<IRI>>> specialProps;
 		public Resource workingGraph;
 		public Map<String, String> ns2prefix;
 	}
@@ -871,9 +1074,9 @@ public class LexicographerView extends STServiceAdapter {
 		morpoSyntacPropQB.processQName();
 		morpoSyntacPropQB.processRendering();
 		morpoSyntacPropQB.processRole();
-		Map<IRI, Map<Resource, AnnotatedValue<Resource>>> specialProps = morpoSyntacPropQB.runQuery().stream()
+		Map<IRI, Map<IRI, AnnotatedValue<IRI>>> specialProps = morpoSyntacPropQB.runQuery().stream()
 				.collect(Collectors.groupingBy(av -> (IRI) av.getAttributes().get("superProp"),
-						Collectors.toMap(AnnotatedValue::getValue, Function.identity())));
+						Collectors.toMap(av -> (IRI)av.getValue(), av -> (AnnotatedValue<IRI>)(Object)av)));
 
 		Context ctx = new Context();
 
