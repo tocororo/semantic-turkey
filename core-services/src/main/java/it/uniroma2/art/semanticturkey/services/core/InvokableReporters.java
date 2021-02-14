@@ -33,10 +33,12 @@ import org.apache.http.entity.ContentType;
 import org.jsoup.Jsoup;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.w3c.dom.traversal.DocumentTraversal;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -77,7 +79,7 @@ public class InvokableReporters extends STServiceAdapter {
 
 	private static final String APPLICATION_PDF = "application/pdf";
 
-	private final String FOND_FILE_NAME = "arial-unicode-ms.ttf";
+	private final String FONT_FILE_NAME = "arial-unicode-ms.ttf";
 
 	private static Logger logger = LoggerFactory.getLogger(InvokableReporters.class);
 
@@ -541,13 +543,15 @@ public class InvokableReporters extends STServiceAdapter {
 			if (Objects.equals(targetMimeType, APPLICATION_PDF)) {
 				if (Objects.equals(reportMimeType, TEXT_HTML)) {
 					Document jsoupDocument = Jsoup.parse(rendering);
+					jsoupDocument.head().prepend(
+							"<style type=\"text/css\">body { font-family:\"arial unicode ms\"; }</style>");
 					org.w3c.dom.Document doc = W3CDom.convert(jsoupDocument);
 
 					try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 						PdfRendererBuilder builder = new PdfRendererBuilder();
 						builder.useFastMode();
 						FontClass fontClass = new FontClass();
-						try(InputStream inputStream = fontClass.getFontFile(FOND_FILE_NAME);) {
+						try (InputStream inputStream = fontClass.getFontFile(FONT_FILE_NAME);) {
 							builder.useFont(() -> inputStream, "arial unicode ms");
 							builder.withW3cDocument(doc, "http://example.org/");
 							builder.toStream(os);
