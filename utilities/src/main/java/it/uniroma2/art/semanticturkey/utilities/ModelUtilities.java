@@ -1,6 +1,19 @@
 package it.uniroma2.art.semanticturkey.utilities;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+
 import org.apache.axis.types.NCName;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Namespaces;
+
+import com.github.jsonldjava.shaded.com.google.common.collect.Maps;
 
 public class ModelUtilities {
 
@@ -34,12 +47,13 @@ public class ModelUtilities {
 	}
 
 	/**
-	 * given the candidate prefix <code>prefix</code>, return true it is syntactically valid,
-	 * false otherwise
-	 * @param prefix the prefix to be checked if it is syntactically valid
+	 * given the candidate prefix <code>prefix</code>, return true it is syntactically valid, false otherwise
+	 * 
+	 * @param prefix
+	 *            the prefix to be checked if it is syntactically valid
 	 * @return true if the prefix is syntactically valid, false otherwise
 	 */
-	public static boolean isPrefixSyntValid(String prefix){
+	public static boolean isPrefixSyntValid(String prefix) {
 		return NCName.isValid(prefix);
 	}
 
@@ -71,5 +85,69 @@ public class ModelUtilities {
 		} else {
 			return ns + "/" + ext;
 		}
+	}
+
+	/**
+	 * Converts an RDF4J {@link Value} to a {@link Literal}. This is a convenience overload of
+	 * {@link #toLiteral(Value, Map, ValueFactory)} that uses {@link SimpleValueFactory}.
+	 * 
+	 * @param value
+	 * @param prefixDeclarations
+	 * @return
+	 */
+	public static Literal toLiteral(Value value, Map<String, String> prefixDeclarations) {
+		return toLiteral(value, prefixDeclarations, SimpleValueFactory.getInstance());
+	}
+
+	/**
+	 * Converts an RDF4J {@link Value} to a {@link Literal}.This is a convenience overload of
+	 * {@link #toLiteral(Value, Map, ValueFactory)} that uses no prefix declaration and a
+	 * {@link SimpleValueFactory}.
+	 * 
+	 * @param value
+	 * @param prefixDeclarations
+	 * @param vf
+	 * @return
+	 */
+	public static Literal toLiteral(Value value) {
+		return toLiteral(value, Collections.emptyMap(), SimpleValueFactory.getInstance());
+	}
+
+	/**
+	 * Converts an RDF4J {@link Value} to a {@link Literal}. If the argument is a kind of {@link Resource},
+	 * the {@link Resource#toString()} is used as label of the produced literal, possibly shortening URIs with
+	 * the supplied prefix declarations.
+	 * 
+	 * @param value
+	 * @param prefixDeclarations
+	 * @param vf
+	 * @return
+	 */
+	public static Literal toLiteral(Value value, Map<String, String> prefixDeclarations, ValueFactory vf) {
+		if (value instanceof Literal) {
+			return (Literal) value;
+		} else {
+			String label;
+			if (value instanceof IRI) {
+				label = getQName((IRI) value, prefixDeclarations);
+			} else {
+				label = value.stringValue();
+			}
+			return vf.createLiteral(label);
+		}
+	}
+
+	/**
+	 * Returns a qname representing the supplied IRI. If no prefix declaration applies, then the original IRI
+	 * is returned.
+	 * 
+	 * @param input
+	 * @param prefixDeclarations
+	 * @return
+	 */
+	public static String getQName(IRI input, Map<String, String> prefixDeclarations) {
+		return prefixDeclarations.entrySet().stream()
+				.filter(e -> Objects.equals(input.getNamespace(), e.getValue())).map(Map.Entry::getKey)
+				.map(prefix -> prefix + ":" + input.getLocalName()).findAny().orElse(input.stringValue());
 	}
 }

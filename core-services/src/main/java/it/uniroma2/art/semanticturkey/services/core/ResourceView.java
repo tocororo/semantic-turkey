@@ -65,6 +65,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Namespaces;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
@@ -149,6 +150,7 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.utilities.ErrorRecoveringValueFactory;
+import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 
 /**
@@ -759,7 +761,8 @@ public class ResourceView extends STServiceAdapter {
 					}
 
 					if (bindingName.equals("predattr_creShow")) {
-						Literal bindingValueAsLiteral = (Literal) bindingValue;
+						Literal bindingValueAsLiteral = ModelUtilities.toLiteral(bindingValue,
+								Namespaces.asMap(statements.getNamespaces()));
 
 						if (bindingValueAsLiteral.getLabel().isEmpty())
 							continue;
