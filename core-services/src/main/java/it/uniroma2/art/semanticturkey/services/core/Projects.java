@@ -778,6 +778,50 @@ public class Projects extends STServiceAdapter {
 		ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
 	}
 
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	//public void accessAllProjects() throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException,
+	public void accessAllProjects(@Optional(defaultValue="SYSTEM") ProjectConsumer consumer,
+			@Optional(defaultValue="RW")ProjectACL.AccessLevel requestedAccessLevel,
+			@Optional(defaultValue="R") ProjectACL.LockLevel requestedLockLevel)
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException,
+			ForbiddenProjectAccessException, RBACException {
+		// iterate over the existing projects
+		Collection<AbstractProject> abstractProjectCollection = ProjectManager
+				.listProjects(ProjectConsumer.SYSTEM);
+		List<ProjectInfo> projInfoList = new ArrayList<>();
+		for (AbstractProject abstractProject : abstractProjectCollection) {
+			ProjectInfo projInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, ProjectACL.AccessLevel.R,
+					ProjectACL.LockLevel.NO, false, false, abstractProject);
+			if(!projInfo.isOpen()) {
+				//if the project is closed, open it
+				String projectName = projInfo.getName();
+				//ProjectManager.accessProject(ProjectConsumer.SYSTEM, projectName, AccessLevel.RW, LockLevel.R);
+				ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
+			}
+		}
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void disconnectFromAllProjects() throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException,
+			ForbiddenProjectAccessException, RBACException {
+		// iterate over the existing projects
+		Collection<AbstractProject> abstractProjectCollection = ProjectManager
+				.listProjects(ProjectConsumer.SYSTEM);
+		List<ProjectInfo> projInfoList = new ArrayList<>();
+		for (AbstractProject abstractProject : abstractProjectCollection) {
+			ProjectInfo projInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, ProjectACL.AccessLevel.R,
+					ProjectACL.LockLevel.NO, false, false, abstractProject);
+			if(projInfo.isOpen()) {
+				//if the project is closed, open it
+				String projectName = projInfo.getName();
+				ProjectManager.disconnectFromProject(ProjectConsumer.SYSTEM, projectName);
+			}
+		}
+	}
+
 	/**
 	 * see {@link ProjectManager#disconnectFromProject(ProjectConsumer, String)}
 	 *
