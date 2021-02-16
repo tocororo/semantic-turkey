@@ -781,7 +781,6 @@ public class Projects extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	//public void accessAllProjects() throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException,
 	public void accessAllProjects(@Optional(defaultValue="SYSTEM") ProjectConsumer consumer,
 			@Optional(defaultValue="RW")ProjectACL.AccessLevel requestedAccessLevel,
 			@Optional(defaultValue="R") ProjectACL.LockLevel requestedLockLevel)
@@ -797,7 +796,6 @@ public class Projects extends STServiceAdapter {
 			if(!projInfo.isOpen()) {
 				//if the project is closed, open it
 				String projectName = projInfo.getName();
-				//ProjectManager.accessProject(ProjectConsumer.SYSTEM, projectName, AccessLevel.RW, LockLevel.R);
 				ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
 			}
 		}
@@ -805,7 +803,8 @@ public class Projects extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void disconnectFromAllProjects() throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException,
+	public void disconnectFromAllProjects(@Optional(defaultValue="SYSTEM") ProjectConsumer consumer)
+			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException,
 			ForbiddenProjectAccessException, RBACException {
 		// iterate over the existing projects
 		Collection<AbstractProject> abstractProjectCollection = ProjectManager
@@ -815,9 +814,9 @@ public class Projects extends STServiceAdapter {
 			ProjectInfo projInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, ProjectACL.AccessLevel.R,
 					ProjectACL.LockLevel.NO, false, false, abstractProject);
 			if(projInfo.isOpen()) {
-				//if the project is closed, open it
+				//if the project is opened, close it
 				String projectName = projInfo.getName();
-				ProjectManager.disconnectFromProject(ProjectConsumer.SYSTEM, projectName);
+				ProjectManager.disconnectFromProject(consumer, projectName);
 			}
 		}
 	}
