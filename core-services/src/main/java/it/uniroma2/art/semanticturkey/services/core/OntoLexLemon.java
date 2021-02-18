@@ -31,6 +31,7 @@ import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
@@ -40,6 +41,7 @@ import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.UpdateExecutionException;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
@@ -54,6 +56,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
 
+import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
@@ -73,6 +76,7 @@ import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.NonWorkingGraphUpdateException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
@@ -101,6 +105,17 @@ import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 public class OntoLexLemon extends STServiceAdapter {
 
 	private static final Logger logger = LoggerFactory.getLogger(OntoLexLemon.class);
+	public static final IRI LEXINFO = SimpleValueFactory.getInstance()
+			.createIRI("http://www.lexinfo.net/ontology/3.0/lexinfo");
+	public static final IRI WN = SimpleValueFactory.getInstance()
+			.createIRI("https://globalwordnet.github.io/schemas/wn");
+	public static final IRI MORPHOSYNTACTIC_PROPERTY = SimpleValueFactory.getInstance()
+			.createIRI("http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty");
+	public static final IRI SKOS_DEFINITION_PROPERTY = SKOS.DEFINITION;
+	public static final IRI WN_DEFINITION = SimpleValueFactory.getInstance()
+			.createIRI("https://globalwordnet.github.io/schemas/wn#definition");
+	static final IRI WN_PART_OF_SPEECH = SimpleValueFactory.getInstance()
+			.createIRI("https://globalwordnet.github.io/schemas/wn#partOfSpeech");
 
 	/* --- Lexicons --- */
 
@@ -443,6 +458,112 @@ public class OntoLexLemon extends STServiceAdapter {
 			language = result.get(0).getValue("lexiconLanguage").stringValue();
 		}
 		return language;
+	}
+
+	/* --- Definitions --- */
+
+	/**
+	 * Allows the addition of a definition
+	 * 
+	 * @param resource
+	 * @param value
+	 * @param lexicon
+	 * @throws CODAException
+	 * @throws URIGenerationException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', definitions)','C')")
+	public void addDefinition(@LocallyDefined @Modified Resource resource, Literal value,
+			@Optional @LocallyDefined Resource lexicon) throws CODAException, URIGenerationException {
+		RepositoryConnection con = getManagedConnection();
+		IRI pred = getDefinitionPredicate(lexicon, con);
+		addDefininitionInternal(resource, value, con, pred);
+	}
+
+	protected static IRI getDefinitionPredicate(Resource lexicon, RepositoryConnection con)
+			throws QueryEvaluationException, RepositoryException {
+		IRI pred;
+		Set<IRI> linguisticCatalogs = OntoLexLemon.getLinguisticCatalogs(con, lexicon);
+		if (linguisticCatalogs.contains(WN)) {
+			pred = WN_DEFINITION;
+		} else {
+			pred = SKOS.DEFINITION;
+		}
+		return pred;
+	}
+
+	/**
+	 * Allows the deletion of a definition
+	 * 
+	 * @param resource
+	 * @param value
+	 * @param lexicon
+	 * @throws PRParserException
+	 * @throws URIGenerationException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', definitions)','D')")
+	public void removeNote(@LocallyDefined @Modified Resource resource, Value value,
+			@Optional @LocallyDefined Resource lexicon) throws PRParserException, URIGenerationException {
+		RepositoryConnection con = getManagedConnection();
+		IRI pred = getDefinitionPredicate(lexicon, con);
+
+		if (value instanceof Literal) {
+			con.remove(resource, pred, value, getWorkingGraph());
+			addDefininitionInternal(resource, value, con, pred);
+		} else { // reified definition
+			con.remove(resource, pred, value, getWorkingGraph());
+			con.remove((Resource) value, null, null, getWorkingGraph());
+		}
+	}
+
+	protected void addDefininitionInternal(Resource resource, Value value, RepositoryConnection con, IRI pred)
+			throws URIGenerationException, RepositoryException, MalformedQueryException,
+			UpdateExecutionException {
+		IRI definitionIRI = generateIRI("xNote", Collections.emptyMap());
+
+		Update update = con.prepareUpdate(
+				"INSERT { ?resource ?pred ?def . ?def <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> ?value . } WHERE {}");
+		update.setBinding("resource", resource);
+		update.setBinding("pred", pred);
+		update.setBinding("def", definitionIRI);
+		update.setBinding("value", value);
+
+		SimpleDataset dataset = new SimpleDataset();
+		dataset.setDefaultInsertGraph((IRI) getWorkingGraph());
+		update.setDataset(dataset);
+
+		update.execute();
+	}
+
+	/**
+	 * Allows the update of definitions
+	 * 
+	 * @param resource
+	 * @param value
+	 * @param newValue
+	 * @param lexicon
+	 * @throws PRParserException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', definitions)','U')")
+	public void updateDefinition(@LocallyDefined @Modified Resource resource, Value value, Literal newValue,
+			@Optional @LocallyDefined Resource lexicon) {
+		RepositoryConnection con = getManagedConnection();
+		IRI pred = getDefinitionPredicate(lexicon, con);
+
+		if (value instanceof Literal) {
+			con.remove(resource, pred, value, getWorkingGraph());
+			con.add(resource, pred, newValue, getWorkingGraph());
+		} else {
+			Resource defRes = (Resource) value;
+			con.remove(defRes, RDF.VALUE, null, getWorkingGraph());
+			con.add(defRes, RDF.VALUE, newValue, getWorkingGraph());
+
+		}
 	}
 
 	/* --- Lexical entries --- */
@@ -2002,6 +2123,26 @@ public class OntoLexLemon extends STServiceAdapter {
 			}
 		}
 
+		Update reifiedRelationRemoval = conn.prepareUpdate(
+			//@formatter:off
+			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" + 
+			"PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>\n" + 
+			"DELETE  {\n" + 
+			"	?relation ?p ? o .\n" + 
+			"}\n" + 
+			"WHERE {\n" + 
+			"   ?relatesProp rdfs:subPropertyOf* vartrans:relates.\n" +
+			"	?relation ?relatesProp ?resource .\n" + 
+			"	?relation ?p ? o .\n" + 
+			"}"
+			//@formatter:on
+		);
+		SimpleDataset dataset = new SimpleDataset();
+		dataset.addDefaultRemoveGraph((IRI) getWorkingGraph());
+		reifiedRelationRemoval.setDataset(dataset);
+		reifiedRelationRemoval.setBinding("resource", lexicalSense);
+		reifiedRelationRemoval.execute();
+		
 		conn.remove(lexicalSense, null, null, getWorkingGraph());
 		conn.remove((Resource) null, null, lexicalSense, getWorkingGraph());
 
@@ -2154,6 +2295,23 @@ public class OntoLexLemon extends STServiceAdapter {
 		}
 
 		return generateIRI(URIGenerator.Roles.ontolexLexicalSense, args);
+	}
+
+	static protected Set<IRI> getLinguisticCatalogs(RepositoryConnection con, Resource lexicon)
+			throws QueryEvaluationException, RepositoryException {
+		Set<IRI> linguisticCatalogs = Collections.emptySet();
+
+		if (lexicon != null) {
+			linguisticCatalogs = Models
+					.objectIRIs(
+							QueryResults.asModel(con.getStatements(lexicon, LIME.LINGUISTIC_CATALOG, null)))
+					.stream().map(OntologyManager::computeCanonicalURI).collect(Collectors.toSet());
+		}
+
+		if (linguisticCatalogs.isEmpty()) {
+			linguisticCatalogs = Collections.singleton(OntoLexLemon.LEXINFO);
+		}
+		return linguisticCatalogs;
 	}
 
 	private static final Pattern rdfN_uriPattern = Pattern

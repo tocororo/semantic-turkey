@@ -32,7 +32,6 @@ import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.query.AbstractTupleQueryResultHandler;
-import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
@@ -47,14 +46,12 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
-import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.lime.model.vocabulary.VARTRANS;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -75,20 +72,6 @@ import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 public class LexicographerView extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(LexicographerView.class);
-
-	private static final IRI LEXINFO = SimpleValueFactory.getInstance()
-			.createIRI("http://www.lexinfo.net/ontology/3.0/lexinfo");
-	private static final IRI WN = SimpleValueFactory.getInstance()
-			.createIRI("https://globalwordnet.github.io/schemas/wn");
-
-	private static final IRI MORPHOSYNTACTIC_PROPERTY = SimpleValueFactory.getInstance()
-			.createIRI("http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty");
-
-	private static final IRI SKOS_DEFINITION_PROPERTY = SKOS.DEFINITION;
-	private static final IRI WN_DEFINITION = SimpleValueFactory.getInstance()
-			.createIRI("https://globalwordnet.github.io/schemas/wn#definition");
-	private static final IRI WN_PART_OF_SPEECH = SimpleValueFactory.getInstance()
-			.createIRI("https://globalwordnet.github.io/schemas/wn#partOfSpeech");
 
 	public static class BindingSets2Model extends AbstractTupleQueryResultHandler {
 
@@ -148,7 +131,7 @@ public class LexicographerView extends STServiceAdapter {
 		Multimap<IRI, AnnotatedValue<? extends Value>> valueMap = HashMultimap.create();
 
 		Map<IRI, AnnotatedValue<IRI>> morphosyntacticProperty = ctx.specialProps
-				.get(MORPHOSYNTACTIC_PROPERTY);
+				.get(OntoLexLemon.MORPHOSYNTACTIC_PROPERTY);
 
 		for (IRI prop : morphosyntacticProperty.keySet()) {
 			List<AnnotatedValue<Value>> values = Models.getProperties(input, form, prop).stream()
@@ -1073,21 +1056,10 @@ public class LexicographerView extends STServiceAdapter {
 
 		RepositoryConnection con = getManagedConnection();
 
-		Set<IRI> linguisticCatalogs = Collections.emptySet();
-
-		if (lexicon != null) {
-			linguisticCatalogs = Models
-					.objectIRIs(
-							QueryResults.asModel(con.getStatements(lexicon, LIME.LINGUISTIC_CATALOG, null)))
-					.stream().map(OntologyManager::computeCanonicalURI).collect(Collectors.toSet());
-		}
-
-		if (linguisticCatalogs.isEmpty()) {
-			linguisticCatalogs = Collections.singleton(LEXINFO);
-		}
+		Set<IRI> linguisticCatalogs = OntoLexLemon.getLinguisticCatalogs(con, lexicon);
 
 		List<AnnotatedValue<Resource>> props = new ArrayList<>();
-		if (linguisticCatalogs.contains(LEXINFO)) {
+		if (linguisticCatalogs.contains(OntoLexLemon.LEXINFO)) {
 			QueryBuilder qb = createQueryBuilder(
 		// @formatter:off
 			"SELECT DISTINCT ?resource WHERE {                       \n" +
@@ -1097,12 +1069,12 @@ public class LexicographerView extends STServiceAdapter {
 			"GROUP BY ?resource "
 			// @formatter:on
 			);
-			qb.setBinding("topMorphosyntacticProperty", MORPHOSYNTACTIC_PROPERTY);
+			qb.setBinding("topMorphosyntacticProperty", OntoLexLemon.MORPHOSYNTACTIC_PROPERTY);
 			qb.processStandardAttributes();
 			props.addAll(qb.runQuery());
 		}
 
-		if (linguisticCatalogs.contains(WN)) {
+		if (linguisticCatalogs.contains(OntoLexLemon.WN)) {
 
 			QueryBuilder qb = createQueryBuilder(
 			// @formatter:off
@@ -1117,7 +1089,7 @@ public class LexicographerView extends STServiceAdapter {
 						" GROUP BY ?resource 															\n"
 						// @formatter:on
 			);
-			qb.setBinding("resource", WN_PART_OF_SPEECH);
+			qb.setBinding("resource", OntoLexLemon.WN_PART_OF_SPEECH);
 			qb.processStandardAttributes();
 			props.addAll(qb.runQuery());
 		}
