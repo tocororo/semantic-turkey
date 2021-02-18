@@ -505,7 +505,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', definitions)','D')")
-	public void removeNote(@LocallyDefined @Modified Resource resource, Value value,
+	public void removeDefinition(@LocallyDefined @Modified Resource resource, Value value,
 			@Optional @LocallyDefined Resource lexicon) throws PRParserException, URIGenerationException {
 		RepositoryConnection con = getManagedConnection();
 		IRI pred = getDefinitionPredicate(lexicon, con);
@@ -1931,7 +1931,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', conceptualization)', 'C')")
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, conceptualization)', 'C')")
 	public void addConceptualization(Resource lexicalEntry, Resource concept, boolean createPlain,
 			boolean createSense,
 			@SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/ontolex#LexicalSense") @Optional(defaultValue = "<http://www.w3.org/ns/lemon/ontolex#LexicalSense>") IRI lexicalSenseCls,
@@ -2185,8 +2185,10 @@ public class OntoLexLemon extends STServiceAdapter {
 		Set<Resource> references = Models.objectResources(QueryResults.asModel(
 				conn.getStatements(lexicalSense, ONTOLEX.REFERENCE, null, false, getWorkingGraph())));
 
-		lexicalEntries.forEach(
-				e -> ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(e));
+		lexicalEntries.forEach(e -> {
+			if (isLocallyDefined(e))
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(e);
+		});
 
 		for (Resource reference : references) {
 			if (conn.hasStatement(lexicalSense, ONTOLEX.REFERENCE, reference, false, getWorkingGraph())) {
@@ -2234,9 +2236,97 @@ public class OntoLexLemon extends STServiceAdapter {
 
 					if (locallyDefinedNewReference) {
 						conn.add(newReference, ONTOLEX.IS_DENOTED_BY, entry, getWorkingGraph());
-						ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
-								.addModifiedResource(newReference);
 					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Adds a lexical concept to a lexical sense. Optionally, creates plain conceptualizations.
+	 * 
+	 * @param lexicalSense
+	 * @param newConcept
+	 * @param createPlain
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, conceptualization)', 'U')")
+	public void addConcept(Resource lexicalSense, Resource newConcept, boolean createPlain) {
+		RepositoryConnection conn = getManagedConnection();
+
+		boolean locallyDefinedNewConcept = isLocallyDefined(newConcept);
+
+		Set<Resource> lexicalEntries = Models.objectResources(QueryResults.asModel(
+				conn.getStatements(lexicalSense, ONTOLEX.IS_SENSE_OF, null, false, getWorkingGraph())));
+
+		lexicalEntries.forEach(e -> {
+			if (isLocallyDefined(e))
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(e);
+		});
+
+		conn.add(lexicalSense, ONTOLEX.IS_LEXICALIZED_SENSE_OF, newConcept, getWorkingGraph());
+
+		if (locallyDefinedNewConcept) {
+			conn.add(newConcept, ONTOLEX.LEXICALIZED_SENSE, lexicalSense, getWorkingGraph());
+			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(newConcept);
+		}
+
+		if (createPlain) {
+			for (Resource entry : lexicalEntries) {
+				boolean locallyDefinedEntry = isLocallyDefined(entry);
+
+				if (locallyDefinedEntry) {
+					conn.add(entry, ONTOLEX.EVOKES, newConcept, getWorkingGraph());
+				}
+
+				if (locallyDefinedNewConcept) {
+					conn.add(newConcept, ONTOLEX.IS_EVOKED_BY, entry, getWorkingGraph());
+				}
+			}
+		}
+	}
+
+	/**
+	 * Removes a lexical concept from a lexical sense. Optionally, delete plain conceptualizations.
+	 * 
+	 * @param lexicalSense
+	 * @param newConcept
+	 * @param deletePlain
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, conceptualization)', 'D')")
+	public void removeConcept(Resource lexicalSense, Resource concept, boolean deletePlain) {
+		RepositoryConnection conn = getManagedConnection();
+
+		boolean locallyDefinedConcept = isLocallyDefined(concept);
+
+		Set<Resource> lexicalEntries = Models.objectResources(QueryResults.asModel(
+				conn.getStatements(lexicalSense, ONTOLEX.IS_SENSE_OF, null, false, getWorkingGraph())));
+
+		lexicalEntries.forEach(e -> {
+			if (isLocallyDefined(e))
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(e);
+		});
+
+		conn.remove(lexicalSense, ONTOLEX.IS_LEXICALIZED_SENSE_OF, concept, getWorkingGraph());
+
+		if (locallyDefinedConcept) {
+			conn.remove(concept, ONTOLEX.LEXICALIZED_SENSE, lexicalSense, getWorkingGraph());
+			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(concept);
+		}
+
+		if (deletePlain) {
+			for (Resource entry : lexicalEntries) {
+				boolean locallyDefinedEntry = isLocallyDefined(entry);
+
+				if (locallyDefinedEntry) {
+					conn.remove(entry, ONTOLEX.EVOKES, concept, getWorkingGraph());
+				}
+
+				if (locallyDefinedConcept) {
+					conn.add(concept, ONTOLEX.IS_EVOKED_BY, entry, getWorkingGraph());
 				}
 			}
 		}
