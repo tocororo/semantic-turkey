@@ -1477,14 +1477,14 @@ public class OntoLexLemon extends STServiceAdapter {
 	 * Updates a representation of an {@code ontolex:Form}.
 	 * 
 	 * @param form
-	 * @param oldRepresentation
+	 * @param representation
 	 * @param newRepresentation
 	 * @param property
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexForm, formRepresentations)', 'U')")
-	public void updateFormRepresentation(@LocallyDefined @Modified Resource form, Literal oldRepresentation,
+	public void updateFormRepresentation(@LocallyDefined @Modified Resource form, Literal representation,
 			Literal newRepresentation,
 			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/ns/lemon/ontolex#representation") IRI property) {
 
@@ -1500,7 +1500,7 @@ public class OntoLexLemon extends STServiceAdapter {
 					+ representationLanguage + ") not compatible with the form (" + formLanguage + ")");
 		}
 
-		repConn.remove(form, property, oldRepresentation, getWorkingGraph());
+		repConn.remove(form, property, representation, getWorkingGraph());
 		repConn.add(form, property, newRepresentation, getWorkingGraph());
 	}
 
