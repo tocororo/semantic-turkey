@@ -32,7 +32,9 @@ import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.query.AbstractTupleQueryResultHandler;
+import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -45,11 +47,14 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
+import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.lime.model.vocabulary.VARTRANS;
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -71,12 +76,19 @@ public class LexicographerView extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(LexicographerView.class);
 
+	private static final IRI LEXINFO = SimpleValueFactory.getInstance()
+			.createIRI("http://www.lexinfo.net/ontology/3.0/lexinfo");
+	private static final IRI WN = SimpleValueFactory.getInstance()
+			.createIRI("https://globalwordnet.github.io/schemas/wn");
+
 	private static final IRI MORPHOSYNTACTIC_PROPERTY = SimpleValueFactory.getInstance()
 			.createIRI("http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty");
 
 	private static final IRI SKOS_DEFINITION_PROPERTY = SKOS.DEFINITION;
 	private static final IRI WN_DEFINITION = SimpleValueFactory.getInstance()
 			.createIRI("https://globalwordnet.github.io/schemas/wn#definition");
+	private static final IRI WN_PART_OF_SPEECH = SimpleValueFactory.getInstance()
+			.createIRI("https://globalwordnet.github.io/schemas/wn#partOfSpeech");
 
 	public static class BindingSets2Model extends AbstractTupleQueryResultHandler {
 
@@ -1048,6 +1060,7 @@ public class LexicographerView extends STServiceAdapter {
 	 * Returns the collection of known morphosyntactic properties
 	 * 
 	 * @param role
+	 * @param lexicon
 	 * @param rootsIncluded
 	 * @return
 	 */
@@ -1055,8 +1068,27 @@ public class LexicographerView extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
 	public Collection<AnnotatedValue<Resource>> getMorphosyntacticProperties(@Optional RDFResourceRole role,
+			@LocallyDefined @Optional Resource lexicon,
 			@Optional(defaultValue = "false") boolean rootsIncluded) {
-		QueryBuilder qb = createQueryBuilder(
+
+		RepositoryConnection con = getManagedConnection();
+
+		Set<IRI> linguisticCatalogs = Collections.emptySet();
+
+		if (lexicon != null) {
+			linguisticCatalogs = Models
+					.objectIRIs(
+							QueryResults.asModel(con.getStatements(lexicon, LIME.LINGUISTIC_CATALOG, null)))
+					.stream().map(OntologyManager::computeCanonicalURI).collect(Collectors.toSet());
+		}
+
+		if (linguisticCatalogs.isEmpty()) {
+			linguisticCatalogs = Collections.singleton(LEXINFO);
+		}
+
+		List<AnnotatedValue<Resource>> props = new ArrayList<>();
+		if (linguisticCatalogs.contains(LEXINFO)) {
+			QueryBuilder qb = createQueryBuilder(
 		// @formatter:off
 			"SELECT DISTINCT ?resource WHERE {                       \n" +
 			"    ?resource <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>" +  (rootsIncluded ? "*" : "+")+ " ?topMorphosyntacticProperty \n" +
@@ -1064,10 +1096,33 @@ public class LexicographerView extends STServiceAdapter {
 			"}                                                                                               \n" +
 			"GROUP BY ?resource "
 			// @formatter:on
-		);
-		qb.setBinding("topMorphosyntacticProperty", MORPHOSYNTACTIC_PROPERTY);
-		qb.processStandardAttributes();
-		return qb.runQuery();
+			);
+			qb.setBinding("topMorphosyntacticProperty", MORPHOSYNTACTIC_PROPERTY);
+			qb.processStandardAttributes();
+			props.addAll(qb.runQuery());
+		}
+
+		if (linguisticCatalogs.contains(WN)) {
+
+			QueryBuilder qb = createQueryBuilder(
+			// @formatter:off
+						" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>						\n" +
+						" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>							\n" +
+						" PREFIX owl: <http://www.w3.org/2002/07/owl#>									\n" +
+						" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>							\n" +
+						" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>							\n" +
+						" SELECT ?resource  WHERE {				                                        \n" +
+						"    ?resource ?p ?o .															\n" +
+						" }																				\n" +
+						" GROUP BY ?resource 															\n"
+						// @formatter:on
+			);
+			qb.setBinding("resource", WN_PART_OF_SPEECH);
+			qb.processStandardAttributes();
+			props.addAll(qb.runQuery());
+		}
+
+		return props;
 	}
 
 	@STServiceOperation
