@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 import static java.util.stream.Collectors.toSet;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -2330,6 +2331,128 @@ public class OntoLexLemon extends STServiceAdapter {
 				}
 			}
 		}
+	}
+
+	/* --- LexicoSemanticRelations --- */
+
+	/**
+	 * Returns the categories of lexical relations, possibly filtered based on the linguistic catalogs of the
+	 * supplied lexicon.
+	 * 
+	 * @param lexicalSense
+	 * @param newConcept
+	 * @param deletePlain
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
+	public Collection<AnnotatedValue<IRI>> getLexicalRelationCategories(
+			@Optional @LocallyDefined Resource lexicon) {
+		RepositoryConnection con = getManagedConnection();
+		Set<IRI> linguisticCatalogs = OntoLexLemon.getLinguisticCatalogs(con, lexicon);
+		List<AnnotatedValue<IRI>> categories = new ArrayList<>();
+
+		if (linguisticCatalogs.contains(LEXINFO)) {
+			QueryBuilder qb = createQueryBuilder(
+			//@formatter:off
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" + 
+				"PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>\n" + 
+				"SELECT ?resource WHERE {\n" + 
+				"	?resource rdfs:subPropertyOf+ vartrans:lexicalRel .\n" + 
+				"	FILTER(isIRI(?resource) && STRSTARTS(STR(?resource),\"http://www.lexinfo.net/ontology/3.0/lexinfo#\"))\n" + 
+				"}\n" + 
+				"GROUP BY ?resource "
+				//@formatter:on
+			);
+			qb.processStandardAttributes();
+			qb.runQuery().forEach(r -> categories.add((AnnotatedValue<IRI>) (Object) r));
+		}
+		return categories;
+	}
+
+	/**
+	 * Returns the categories of sense relations, possibly filtered based on the linguistic catalogs of the
+	 * supplied lexicon.
+	 * 
+	 * @param lexicalSense
+	 * @param newConcept
+	 * @param deletePlain
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
+	public Collection<AnnotatedValue<IRI>> getSenseRelationCategories(
+			@Optional @LocallyDefined Resource lexicon) {
+		RepositoryConnection con = getManagedConnection();
+		Set<IRI> linguisticCatalogs = OntoLexLemon.getLinguisticCatalogs(con, lexicon);
+		List<AnnotatedValue<IRI>> categories = new ArrayList<>();
+
+		if (linguisticCatalogs.contains(WN)) {
+			QueryBuilder qb = createQueryBuilder(
+			//@formatter:off
+				"PREFIX wn: <https://globalwordnet.github.io/schemas/wn#>\n" +
+				"SELECT ?resource WHERE {\n" + 
+				"	?resource a wn:SenseRelType.\n" + 
+				"	FILTER(isIRI(?resource) && STRSTARTS(STR(?resource),\"https://globalwordnet.github.io/schemas/wn#\"))\n" + 
+				"}\n" + 
+				"GROUP BY ?resource "
+				//@formatter:on
+			);
+			qb.processStandardAttributes();
+			qb.runQuery().forEach(r -> categories.add((AnnotatedValue<IRI>) (Object) r));
+		}
+
+		if (linguisticCatalogs.contains(LEXINFO)) {
+			QueryBuilder qb = createQueryBuilder(
+			//@formatter:off
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" + 
+				"PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>\n" + 
+				"SELECT ?resource WHERE {\n" + 
+				"	?resource rdfs:subPropertyOf+ vartrans:senseRel .\n" + 
+				"	FILTER(isIRI(?resource) && STRSTARTS(STR(?resource),\"http://www.lexinfo.net/ontology/3.0/lexinfo#\"))\n" + 
+				"}\n" + 
+				"GROUP BY ?resource "
+				//@formatter:on
+			);
+			qb.processStandardAttributes();
+			qb.runQuery().forEach(r -> categories.add((AnnotatedValue<IRI>) (Object) r));
+		}
+		return categories;
+	}
+
+	/**
+	 * Returns the categories of conceptual relations, possibly filtered based on the linguistic catalogs of the
+	 * supplied lexicon.
+	 * 
+	 * @param lexicalSense
+	 * @param newConcept
+	 * @param deletePlain
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
+	public Collection<AnnotatedValue<IRI>> getConceptualRelationCategories(
+			@Optional @LocallyDefined Resource lexicon) {
+		RepositoryConnection con = getManagedConnection();
+		Set<IRI> linguisticCatalogs = OntoLexLemon.getLinguisticCatalogs(con, lexicon);
+		List<AnnotatedValue<IRI>> categories = new ArrayList<>();
+
+		if (linguisticCatalogs.contains(WN)) {
+			QueryBuilder qb = createQueryBuilder(
+			//@formatter:off
+				"PREFIX wn: <https://globalwordnet.github.io/schemas/wn#>\n" +
+				"SELECT ?resource WHERE {\n" + 
+				"	?resource a wn:SynsetRelType .\n" + 
+				"	FILTER(isIRI(?resource) && STRSTARTS(STR(?resource),\"https://globalwordnet.github.io/schemas/wn#\"))\n" + 
+				"}\n" + 
+				"GROUP BY ?resource "
+				//@formatter:on
+			);
+			qb.processStandardAttributes();
+			qb.runQuery().forEach(r -> categories.add((AnnotatedValue<IRI>) (Object) r));
+		}
+
+		return categories;
 	}
 
 	/**

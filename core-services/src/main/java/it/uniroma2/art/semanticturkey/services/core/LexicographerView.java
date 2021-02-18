@@ -1139,8 +1139,8 @@ public class LexicographerView extends STServiceAdapter {
 			"        }                                                                                               \n" +
 			"        BIND(COALESCE(?t, ?reifiedRelation) as ?s)                                                      \n" +
 			"    } UNION {                                                                                           \n" +
-			"   	    ?resource (ontolex:sense|^ontolex:isSenseOf) ?lexicalSense.                                  \n" +
-			"        ?rel rdfs:subPropertyOf* vartrans:senseRel .                                                    \n" +
+			"   	 ?resource (ontolex:sense|^ontolex:isSenseOf) ?lexicalSense.                                     \n" +
+			"        { ?rel rdfs:subPropertyOf* vartrans:senseRel . } UNION { ?rel a wn:SenseRelType . }             \n" +
 			"        ?lexicalSense ?rel ?relatedSense .                                                              \n" +
 			"        ?relatedSense ((ontolex:isSenseOf|^ontolex:sense)/                                              \n" +
 			"		  ontolex:canonicalForm?)? ?s.                                                                   \n" +
