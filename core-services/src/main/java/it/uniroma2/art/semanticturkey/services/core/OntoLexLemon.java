@@ -1533,7 +1533,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#reference)+ ', lexicalization)', 'C')")
 	public void addLexicalization(Resource lexicalEntry, Resource reference, boolean createPlain,
 			boolean createSense,
-			@SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/ontolex#LexicalSense") @Optional IRI lexicalSenseCls,
+			@SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/ontolex#LexicalSense") @Optional(defaultValue = "<http://www.w3.org/ns/lemon/ontolex#LexicalSense>") IRI lexicalSenseCls,
 			@Optional CustomFormValue customFormValue)
 			throws URIGenerationException, CODAException, CustomFormException {
 		if (!createPlain && !createSense) {
@@ -1772,7 +1772,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', conceptualization)', 'C')")
 	public void addConceptualization(Resource lexicalEntry, Resource concept, boolean createPlain,
 			boolean createSense,
-			@SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/ontolex#LexicalSense") @Optional IRI lexicalSenseCls,
+			@SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/ontolex#LexicalSense") @Optional(defaultValue = "<http://www.w3.org/ns/lemon/ontolex#LexicalSense>") IRI lexicalSenseCls,
 			@Optional CustomFormValue customFormValue)
 			throws URIGenerationException, CODAException, CustomFormException {
 		if (!createPlain && !createSense) {
