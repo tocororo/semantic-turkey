@@ -35,6 +35,7 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 
+import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 
@@ -49,7 +50,9 @@ import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
  */
 public enum RDFResourceRole {
 
-	undetermined, cls, individual, property, objectProperty, datatypeProperty, annotationProperty, ontologyProperty, ontology, dataRange, concept, conceptScheme, xLabel, skosCollection, skosOrderedCollection, limeLexicon, ontolexLexicalEntry, ontolexForm, ontolexLexicalSense;
+	undetermined, cls, individual, property, objectProperty, datatypeProperty, annotationProperty,
+	ontologyProperty, ontology, dataRange, concept, conceptScheme, xLabel, skosCollection,
+	skosOrderedCollection, limeLexicon, ontolexLexicalEntry, ontolexForm, ontolexLexicalSense, decompComponent;
 
 	static Map<RDFResourceRole, IRI> map;
 	static {
@@ -71,6 +74,7 @@ public enum RDFResourceRole {
 		map.put(ontolexLexicalEntry, ONTOLEX.LEXICAL_ENTRY);
 		map.put(ontolexForm, ONTOLEX.FORM);
 		map.put(ontolexLexicalSense, ONTOLEX.LEXICAL_SENSE);
+		map.put(decompComponent, DECOMP.COMPONENT);
 	}
 
 	public IRI getIRI() {
@@ -115,7 +119,7 @@ public enum RDFResourceRole {
 		if (subsumer == skosCollection && subsumee == skosOrderedCollection) {
 			return true;
 		}
-		
+
 		if (subsumer == cls && subsumee == dataRange) {
 			return true;
 		}

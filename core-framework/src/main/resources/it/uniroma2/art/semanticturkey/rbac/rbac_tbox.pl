@@ -221,6 +221,7 @@ role(skosCollection).
 role(ontolexForm).
 role(ontolexLexicalEntry).
 role(limeLexicon).
+role(decompComponent).
 	
 vocabulary(concept, skos).
 vocabulary(conceptScheme, skos).
@@ -229,8 +230,7 @@ vocabulary(skosCollection, skos).
 vocabulary(ontolexForm, ontolex).
 vocabulary(ontolexLexicalEntry, ontolex).
 vocabulary(limeLexicon, ontolex).
-
-
+vocabulary(decompComponent, ontolex).
 	
 /****************************
  ** INTERACTION PREDICATES **
