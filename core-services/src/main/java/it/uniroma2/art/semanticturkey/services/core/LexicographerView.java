@@ -167,6 +167,7 @@ public class LexicographerView extends STServiceAdapter {
 		private List<Form> lemma;
 		private List<Form> otherForms;
 		private List<EntryReference> subterms;
+		private List<Component> constituents;
 		private List<Sense> senses;
 		private List<LexicalRelation> related;
 		private List<LexicalRelation> translatableAs;
@@ -201,6 +202,10 @@ public class LexicographerView extends STServiceAdapter {
 			return subterms;
 		}
 
+		public List<Component> getConstituents() {
+			return constituents;
+		}
+
 		public List<Sense> getSenses() {
 			return senses;
 		}
@@ -226,6 +231,7 @@ public class LexicographerView extends STServiceAdapter {
 			List<Form> otherForms = parseForms(ctx, input, lexicalEntry, ONTOLEX.OTHER_FORM);
 
 			List<EntryReference> subterms = parseSubterms(ctx, input, lexicalEntry);
+			List<Component> constituents = parseConstituents(ctx, input, lexicalEntry);
 
 			Map<Resource, Set<Resource>> plainConcepts2contexts = new HashMap<>();
 			input.filter(lexicalEntry, ONTOLEX.EVOKES, null).stream()
@@ -385,6 +391,7 @@ public class LexicographerView extends STServiceAdapter {
 			lexicalEntryObj.morphosyntacticProps = morphoSyntacticProps;
 			lexicalEntryObj.lemma = lemma;
 			lexicalEntryObj.subterms = subterms;
+			lexicalEntryObj.constituents = constituents;
 			lexicalEntryObj.otherForms = otherForms;
 			lexicalEntryObj.senses = senseList;
 
@@ -828,6 +835,52 @@ public class LexicographerView extends STServiceAdapter {
 				.collect(Collectors.toList());
 	}
 
+	public static List<Component> parseConstituents(Context ctx, Model input, Resource lexicalEntry) {
+		Map<Resource, Set<Resource>> constituent2Contexts = input
+				.filter(lexicalEntry, DECOMP.CONSTITUENT, null).stream()
+				.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+						Collectors.mapping(Statement::getContext, Collectors.toSet())));
+		List<Component> constituents = constituent2Contexts.entrySet().stream()
+				.map(entry -> Component.parseComponent(ctx, input, entry.getKey(), lexicalEntry))
+				.collect(Collectors.toList());
+
+		OntoLexLemon.sortConstituents(constituents, Component::getId, input, lexicalEntry);
+
+		return constituents;
+	}
+
+	public static class Component {
+		@JsonSerialize(using = ToStringSerializer.class)
+		private Resource id;
+		private List<EntryReference> correspondingLexicalEntry;
+		private PredicateObjectsList features;
+
+		public Resource getId() {
+			return id;
+		}
+
+		public List<EntryReference> getCorrespondingLexicalEntry() {
+			return correspondingLexicalEntry;
+		}
+
+		public PredicateObjectsList getFeatures() {
+			return features;
+		}
+
+		public static Component parseComponent(Context ctx, Model input, Resource component, Resource owner) {
+			Component comp = new Component();
+			comp.id = component;
+			comp.features = parseMorphosyntacticProperties(ctx, input, component);
+			comp.correspondingLexicalEntry = input.filter(component, DECOMP.CORRESPONDS_TO, null).stream()
+					.collect(Collectors.groupingBy(s -> (Resource) s.getObject(),
+							Collectors.mapping(Statement::getContext, Collectors.toSet())))
+					.entrySet().stream().map(entry -> LexicalEntry.parseEntryReference(ctx, input,
+							entry.getKey(), entry.getValue()))
+					.collect(Collectors.toList());
+			return comp;
+		}
+	}
+
 	public static class SenseRelation extends LexicoSemanticRelation<SenseReference> {
 		public static class SenseRelationPolicy
 				extends LexicoSemanticRelation.LexicoSemanticRelationPolicy<SenseReference, SenseRelation> {
@@ -1034,7 +1087,9 @@ public class LexicographerView extends STServiceAdapter {
 			"      ?resource (ontolex:canonicalForm|ontolex:otherForm)? ?lexicalEntryOrForm .                        \n" +
 			"      BIND(?lexicalEntryOrForm as ?s)                                                                   \n" +
 			"    } UNION {                                                                                           \n" +
-			"      ?resource (decomp:subterm|decomp:constituent)/ontolex:canonicalForm? ?s .                         \n" +
+			"      ?resource decomp:subterm/ontolex:canonicalForm? ?s .                                              \n" +
+			"    } UNION {                                                                                           \n" +
+			"      ?resource decomp:constituent/(decomp:correspondsTo/ontolex:canonicalForm?)? ?s .                  \n" +
 			"    } UNION {                                                                                           \n" +
 			"      ?resource ontolex:denotes|^ontolex:isDenotedBy ?reference .                                       \n" +
 			"      BIND(?reference as ?s)                                                                            \n" +

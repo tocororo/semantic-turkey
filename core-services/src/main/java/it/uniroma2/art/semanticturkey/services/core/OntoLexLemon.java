@@ -1,7 +1,59 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import static java.util.stream.Collectors.toSet;
+
+import java.math.BigInteger;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Literals;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.MalformedQueryException;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.UpdateExecutionException;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.hibernate.validator.constraints.Length;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
+
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
@@ -39,51 +91,6 @@ import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRen
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexiconRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.Literals;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.BooleanQuery;
-import org.eclipse.rdf4j.query.GraphQuery;
-import org.eclipse.rdf4j.query.MalformedQueryException;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.UpdateExecutionException;
-import org.eclipse.rdf4j.query.impl.SimpleDataset;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
-import org.hibernate.validator.constraints.Length;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.access.prepost.PreAuthorize;
-
-import javax.annotation.Nullable;
-import java.math.BigInteger;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toSet;
 
 /**
  * This class provides services for manipulating data based on the W3C OntoLex-Lemon Model.
@@ -1893,7 +1900,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#reference)+ ', conceptualization)', 'D')")
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, conceptualization)', 'D')")
 	public void removePlainConceptualization(Resource lexicalEntry, Resource concept) {
 		RepositoryConnection conn = getManagedConnection();
 		boolean tripleRemoved = false;
@@ -2116,6 +2123,54 @@ public class OntoLexLemon extends STServiceAdapter {
 		}
 
 		return generateIRI(URIGenerator.Roles.ontolexLexicalSense, args);
+	}
+
+	private static final Pattern rdfN_uriPattern = Pattern
+			.compile("^http://www\\.w3\\.org/1999/02/22-rdf-syntax-ns#_\\d+$");
+
+	public static <T> boolean sortConstituents(List<T> values, Function<T, Resource> valueExtractor,
+			Model statements, Resource subjectResource) {
+		boolean allOrdered = true;
+
+		Map<Value, Long> value2Position = new LinkedHashMap<>();
+
+		for (Value value : values.stream().map(valueExtractor).collect(Collectors.toList())) {
+
+			/*
+			 * if a value is bound to different rdf:_n, then reduce those value to just one by considering the
+			 * following priority: add graph > remove graph > other graph. If there are multiple positions
+			 * with the same priority, just pick one arbitrarily.
+			 */
+			java.util.Optional<Long> positionHolder = statements.filter(subjectResource, null, value).stream()
+					.filter(stmt -> rdfN_uriPattern.matcher(stmt.getPredicate().stringValue()).matches())
+					.reduce((s1, s2) -> {
+						Resource c1 = s1.getContext();
+						Resource c2 = s2.getContext();
+
+						if (VALIDATION.isAddGraph(c2)) {
+							return s2;
+						} else if (VALIDATION.isRemoveGraph(c2) && !VALIDATION.isAddGraph(c1)) {
+							return s2;
+						} else {
+							return s1;
+						}
+					}).map(stmt -> (Long) Long.parseLong(stmt.getPredicate().stringValue()
+							.substring("http://www.w3.org/1999/02/22-rdf-syntax-ns#_".length())));
+
+			if (positionHolder.isPresent()) {
+				value2Position.put(value, positionHolder.get());
+			} else {
+				allOrdered = false;
+			}
+		}
+
+		if (allOrdered) {
+			values.sort((a1, a2) -> java.util.Objects.compare(value2Position.get(valueExtractor.apply(a1)),
+					value2Position.get(valueExtractor.apply(a2)), Comparator.naturalOrder()));
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 }
