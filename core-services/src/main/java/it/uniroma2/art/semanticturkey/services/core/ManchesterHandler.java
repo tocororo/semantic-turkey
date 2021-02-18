@@ -572,15 +572,24 @@ public class ManchesterHandler extends STServiceAdapter {
 		while (iter.hasNext()) {
 			Statement stat = iter.next();
 			if (stat.getSubject().equals(newBNode)) {
+				// the new bnode is the subject of the triple, so create a new triple with the old bnode as subject
+				// but having the same predicate and same object
 				tempStatList.add(
 						conn.getValueFactory().createStatement(bnode, stat.getPredicate(), stat.getObject()));
+				// remove the triple with the newBnode
 				iter.remove();
 			} else if (stat.getObject().equals(newBNode)) {
+				// the new bnode is the object of the triple, so create a new triple with the old bnode as subject
+				// but having the same predicate and same subject
 				tempStatList.add(conn.getValueFactory().createStatement(stat.getSubject(),
 						stat.getPredicate(), bnode));
+				// remove the triple with the newBnode
 				iter.remove();
 			}
 		}
+
+		// now add the newly created triples (in which the newBnode was replaced with the old one) to the
+		// list of triples to be added
 		statList.addAll(tempStatList);
 
 		conn.add(statList, getWorkingGraph());

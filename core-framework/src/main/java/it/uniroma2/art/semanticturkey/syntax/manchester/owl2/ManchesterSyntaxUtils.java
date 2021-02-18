@@ -835,7 +835,7 @@ public class ManchesterSyntaxUtils {
 		graphQuery.setDataset(dataset);
 		GraphQueryResult graphQueryResult = graphQuery.evaluate();
 		Model model = QueryResults.asModel(graphQueryResult);
-		return getManchClassFromBNode(bnode, graphs, tripleList, model);
+ 		return getManchClassFromBNode(bnode, graphs, tripleList, model);
 
 	}
 
@@ -852,7 +852,6 @@ public class ManchesterSyntaxUtils {
 	public static ManchesterClassInterface getManchClassFromBNode(BNode bnode, Resource[] graphs,
 			List<Statement> tripleList, Model model) throws NotClassAxiomException {
 		// get all the triples having the input bnode as subject
-		// RepositoryResult<Statement> statements = conn.getStatements(bnode, null, null, graphs);
 		Model filteredModel = model.filter(bnode, null, null, graphs);
 
 		// check the predicate, which can be:
@@ -891,6 +890,7 @@ public class ManchesterSyntaxUtils {
 		for (Statement stat : filteredModel) {
 			// Statement stat = statements.next();
 			if (tripleList != null) {
+				//add the current statement to the List of triples regarding this Manchester expression
 				tripleList.add(stat);
 			}
 			IRI pred = stat.getPredicate();
@@ -1049,7 +1049,7 @@ public class ManchesterSyntaxUtils {
 			}
 
 		} else if (type.equals(PossType.OR)) {
-			//two restrictions use the PossType.AND, so distinguish among them
+			//two restrictions use the PossType.OR, so distinguish among them
 			List<ManchesterClassInterface> orResourceList = new ArrayList<ManchesterClassInterface>();
 			parseListFirstRestForManchesterAxiom(objBnode, orResourceList, graphs, tripleList, model);
 			if(typeInRDF.equals(OWL.CLASS)){
@@ -1155,12 +1155,14 @@ public class ManchesterSyntaxUtils {
 	private static void parseListFirstRestForManchesterAxiom(BNode bnode,
 			List<ManchesterClassInterface> manchClassList, Resource[] graphs, List<Statement> tripleList,
 			Model model) throws NotClassAxiomException {
-		// RepositoryResult<Statement> statements = conn.getStatements(bnode, null, null, graphs);
-		// while (statements.hasNext()) {
 
 		Model firstModel = model.filter(bnode, RDF.FIRST, null, graphs);
 		Model restModel = model.filter(bnode, RDF.REST, null, graphs);
 
+		if(tripleList!=null) {
+			//add to tripleList all the triples having bnode as subject
+			tripleList.addAll(model.filter(bnode, null, null, graphs));
+		}
 		if (firstModel.isEmpty() || restModel.isEmpty()) {
 			throw new NotClassAxiomException(bnode, graphs);
 		}
@@ -1191,8 +1193,12 @@ public class ManchesterSyntaxUtils {
 
 	private static List<Value> parseListFirstRest(Resource bnode, Resource[] graphs,
 			List<Statement> tripleList, Model model) {
+
+		if(tripleList!=null) {
+			//add to tripleList all the triples having bnode as subject
+			tripleList.addAll(model.filter(bnode, null, null, graphs));
+		}
 		List<Value> valueList = new ArrayList<>();
-		// while (statements.hasNext()) {
 		for (Statement stat : model.filter(bnode, null, null, graphs)) {
 			if (tripleList != null) {
 				tripleList.add(stat);
@@ -1221,6 +1227,11 @@ public class ManchesterSyntaxUtils {
 			List<Literal> literalList, Resource[] graphs, List<Statement> tripleList, Model model) throws NotClassAxiomException {
 		Model firstModel = model.filter(bnode, RDF.FIRST, null, graphs);
 		Model restModel = model.filter(bnode, RDF.REST, null, graphs);
+
+		if(tripleList != null) {
+			//add to tripleList all the triples having bnode as subject
+			tripleList.addAll(model.filter(bnode, null, null, graphs));
+		}
 		if (firstModel.isEmpty() || restModel.isEmpty()) {
 			throw new NotClassAxiomException(bnode, graphs);
 		}

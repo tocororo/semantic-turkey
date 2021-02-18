@@ -204,7 +204,8 @@ public class FreedcampBackend implements CollaborationBackend {
 		if(tagId!=null){
 			existingTagResourceList.add(tagId);
 		} else {
-			newTagResourceList.add("_"+resource); //TODO temporary solution, the _ will be removed when fixed in the freedcamp API server
+			//newTagResourceList.add("_"+resource); //TODO temporary solution, the _ will be removed when fixed in the freedcamp API server
+			newTagResourceList.add(resource);
 		}
 		String postJsonData = preparePostData(nameValueMap, newTagResourceList, existingTagResourceList);
 
@@ -438,7 +439,7 @@ public class FreedcampBackend implements CollaborationBackend {
 		List<String> newTagResourceList = new ArrayList<>();
 		List<String> existingTagResourceList = new ArrayList<>();
 
-		//add the already assocaited tags
+		//add the already associated tags
 		for(String alreadyAssocaitedTagId : alreadyAssociatedTagsList){
 			existingTagResourceList.add(alreadyAssocaitedTagId);
 		}
@@ -446,7 +447,8 @@ public class FreedcampBackend implements CollaborationBackend {
 		if(tagId!=null){
 			existingTagResourceList.add(tagId);
 		} else {
-			newTagResourceList.add("_"+resource); //TODO temporary solution, the _ will be removed when fixed in the freedcamp API server
+			//newTagResourceList.add("_"+resource.stringValue()); //TODO temporary solution, the _ will be removed when fixed in the freedcamp API server
+			newTagResourceList.add(resource.stringValue());
 		}
 		String postJsonData = preparePostData(nameValueMap, newTagResourceList, existingTagResourceList);
 
