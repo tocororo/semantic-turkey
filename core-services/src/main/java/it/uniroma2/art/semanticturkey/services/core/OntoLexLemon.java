@@ -1474,6 +1474,37 @@ public class OntoLexLemon extends STServiceAdapter {
 	}
 
 	/**
+	 * Updates a representation of an {@code ontolex:Form}.
+	 * 
+	 * @param form
+	 * @param oldRepresentation
+	 * @param newRepresentation
+	 * @param property
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexForm, formRepresentations)', 'U')")
+	public void updateFormRepresentation(@LocallyDefined @Modified Resource form, Literal oldRepresentation,
+			Literal newRepresentation,
+			@SubPropertyOf(superPropertyIRI = "http://www.w3.org/ns/lemon/ontolex#representation") IRI property) {
+
+		RepositoryConnection repConn = getManagedConnection();
+
+		String formLanguage = getFormLanguageInternal(repConn, form)
+				.orElseThrow(() -> new RuntimeException("The form does not declare any language"));
+		String representationLanguage = newRepresentation.getLanguage()
+				.orElseThrow(() -> new RuntimeException("The representation does not declare any language"));
+
+		if (!langMatches(representationLanguage, formLanguage)) {
+			throw new IllegalArgumentException("The representation is expressed in a natural language ("
+					+ representationLanguage + ") not compatible with the form (" + formLanguage + ")");
+		}
+
+		repConn.remove(form, property, oldRepresentation, getWorkingGraph());
+		repConn.add(form, property, newRepresentation, getWorkingGraph());
+	}
+
+	/**
 	 * Removes a representations from an {@code ontolex:Form}.
 	 * 
 	 * @param form
