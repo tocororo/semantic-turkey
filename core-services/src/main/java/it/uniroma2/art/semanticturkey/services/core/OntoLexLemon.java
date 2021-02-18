@@ -1702,32 +1702,8 @@ public class OntoLexLemon extends STServiceAdapter {
 
 		Resource workingGraph = getWorkingGraph();
 
-		BooleanQuery definedQuery = conn.prepareBooleanQuery(
-		// @formatter:off
-			" ASK {                                 \n" +
-			"   VALUES(?g) {                        \n" +
-			"      (" + RenderUtils.toSPARQL(workingGraph) + ")\n" + 
-			(
-			ValidationUtilities.isValidationEnabled(stServiceContext)
-			?
-			"      (" + RenderUtils.toSPARQL(VALIDATION.stagingAddGraph(workingGraph)) + ")\n" + 
-			"      (" + RenderUtils.toSPARQL(VALIDATION.stagingRemoveGraph(workingGraph)) + ")\n"
-			:
-			""
-			) + 
-			"   }                                   \n" +
-			"   GRAPH ?g {                          \n" +
-			"     ?subject ?p ?o .                  \n" +
-			"   }                                   \n" +
-			" }                                     \n");
-			// @formatter:on
-		definedQuery.setIncludeInferred(false);
-
-		definedQuery.setBinding("subject", lexicalEntry);
-		boolean lexicalEntryLocallyDefined = definedQuery.evaluate();
-
-		definedQuery.setBinding("subject", reference);
-		boolean referenceLocallyDefined = definedQuery.evaluate();
+		boolean lexicalEntryLocallyDefined = isLocallyDefined(lexicalEntry);
+		boolean referenceLocallyDefined = isLocallyDefined(reference);
 
 		// BooleanQuery checkQuery = conn.prepareBooleanQuery(
 //		// @formatter:off
@@ -1802,6 +1778,33 @@ public class OntoLexLemon extends STServiceAdapter {
 
 		conn.remove(modelRemovals, getWorkingGraph());
 		conn.add(modelAdditions, getWorkingGraph());
+	}
+
+	protected boolean isLocallyDefined(Resource resource)
+			throws RepositoryException, MalformedQueryException {
+		Resource workingGraph = getWorkingGraph();
+		BooleanQuery definedQuery = getManagedConnection().prepareBooleanQuery(
+		// @formatter:off
+			" ASK {                                 \n" +
+			"   VALUES(?g) {                        \n" +
+			"      (" + RenderUtils.toSPARQL(workingGraph) + ")\n" + 
+			(
+			ValidationUtilities.isValidationEnabled(stServiceContext)
+			?
+			"      (" + RenderUtils.toSPARQL(VALIDATION.stagingAddGraph(workingGraph)) + ")\n" + 
+			"      (" + RenderUtils.toSPARQL(VALIDATION.stagingRemoveGraph(workingGraph)) + ")\n"
+			:
+			""
+			) + 
+			"   }                                   \n" +
+			"   GRAPH ?g {                          \n" +
+			"     ?subject ?p ?o .                  \n" +
+			"   }                                   \n" +
+			" }                                     \n");
+			// @formatter:on
+		definedQuery.setIncludeInferred(false);
+		definedQuery.setBinding("subject", resource);
+		return definedQuery.evaluate();
 	}
 
 	/**
@@ -1939,34 +1942,9 @@ public class OntoLexLemon extends STServiceAdapter {
 		}
 		RepositoryConnection conn = getManagedConnection();
 
-		Resource workingGraph = getWorkingGraph();
+		boolean lexicalEntryLocallyDefined = isLocallyDefined(lexicalEntry);
 
-		BooleanQuery definedQuery = conn.prepareBooleanQuery(
-		// @formatter:off
-			" ASK {                                 \n" +
-			"   VALUES(?g) {                        \n" +
-			"      (" + RenderUtils.toSPARQL(workingGraph) + ")\n" + 
-			(
-			ValidationUtilities.isValidationEnabled(stServiceContext)
-			?
-			"      (" + RenderUtils.toSPARQL(VALIDATION.stagingAddGraph(workingGraph)) + ")\n" + 
-			"      (" + RenderUtils.toSPARQL(VALIDATION.stagingRemoveGraph(workingGraph)) + ")\n"
-			:
-			""
-			) + 
-			"   }                                   \n" +
-			"   GRAPH ?g {                          \n" +
-			"     ?subject ?p ?o .                  \n" +
-			"   }                                   \n" +
-			" }                                     \n");
-			// @formatter:on
-		definedQuery.setIncludeInferred(false);
-
-		definedQuery.setBinding("subject", lexicalEntry);
-		boolean lexicalEntryLocallyDefined = definedQuery.evaluate();
-
-		definedQuery.setBinding("subject", concept);
-		boolean conceptLocallyDefined = definedQuery.evaluate();
+		boolean conceptLocallyDefined = isLocallyDefined(concept);
 
 		// BooleanQuery checkQuery = conn.prepareBooleanQuery(
 //		// @formatter:off
@@ -2124,7 +2102,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		}
 
 		Update reifiedRelationRemoval = conn.prepareUpdate(
-			//@formatter:off
+		//@formatter:off
 			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" + 
 			"PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>\n" + 
 			"DELETE  {\n" + 
@@ -2142,7 +2120,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		reifiedRelationRemoval.setDataset(dataset);
 		reifiedRelationRemoval.setBinding("resource", lexicalSense);
 		reifiedRelationRemoval.execute();
-		
+
 		conn.remove(lexicalSense, null, null, getWorkingGraph());
 		conn.remove((Resource) null, null, lexicalSense, getWorkingGraph());
 
@@ -2182,6 +2160,86 @@ public class OntoLexLemon extends STServiceAdapter {
 			}
 		}
 
+	}
+
+	/**
+	 * Sets the reference of a lexical sense. Optionally, deletes plain references and, if specified, creates
+	 * new ones.
+	 * 
+	 * @param lexicalSense
+	 * @param newReference
+	 * @param deletePlain
+	 * @param createPlain
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(resource, sense)', 'U')")
+	public void setReference(Resource lexicalSense, Resource newReference, boolean deletePlain,
+			boolean createPlain) {
+		RepositoryConnection conn = getManagedConnection();
+
+		boolean locallyDefinedNewReference = isLocallyDefined(newReference);
+
+		Set<Resource> lexicalEntries = Models.objectResources(QueryResults.asModel(
+				conn.getStatements(lexicalSense, ONTOLEX.IS_SENSE_OF, null, false, getWorkingGraph())));
+		Set<Resource> references = Models.objectResources(QueryResults.asModel(
+				conn.getStatements(lexicalSense, ONTOLEX.REFERENCE, null, false, getWorkingGraph())));
+
+		lexicalEntries.forEach(
+				e -> ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(e));
+
+		for (Resource reference : references) {
+			if (conn.hasStatement(lexicalSense, ONTOLEX.REFERENCE, reference, false, getWorkingGraph())) {
+				conn.remove(lexicalSense, ONTOLEX.REFERENCE, reference, getWorkingGraph());
+			}
+
+			if (conn.hasStatement(reference, ONTOLEX.IS_REFERENCE_OF, lexicalSense, false,
+					getWorkingGraph())) {
+				conn.remove(reference, ONTOLEX.IS_REFERENCE_OF, lexicalSense, getWorkingGraph());
+				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+			}
+		}
+
+		conn.add(lexicalSense, ONTOLEX.REFERENCE, newReference, getWorkingGraph());
+
+		if (locallyDefinedNewReference) {
+			conn.add(newReference, ONTOLEX.IS_REFERENCE_OF, lexicalSense, getWorkingGraph());
+			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(newReference);
+		}
+
+		if (deletePlain) {
+			for (Resource entry : lexicalEntries) {
+				for (Resource reference : references) {
+					if (conn.hasStatement(entry, ONTOLEX.DENOTES, reference, false, getWorkingGraph())) {
+						conn.remove(entry, ONTOLEX.DENOTES, reference, getWorkingGraph());
+					}
+
+					if (conn.hasStatement(reference, ONTOLEX.IS_DENOTED_BY, entry, false,
+							getWorkingGraph())) {
+						conn.remove(reference, ONTOLEX.IS_DENOTED_BY, entry, getWorkingGraph());
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+								.addModifiedResource(reference);
+					}
+
+				}
+			}
+
+			if (createPlain) {
+				for (Resource entry : lexicalEntries) {
+					boolean locallyDefinedEntry = isLocallyDefined(entry);
+
+					if (locallyDefinedEntry) {
+						conn.add(entry, ONTOLEX.DENOTES, newReference, getWorkingGraph());
+					}
+
+					if (locallyDefinedNewReference) {
+						conn.add(newReference, ONTOLEX.IS_DENOTED_BY, entry, getWorkingGraph());
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+								.addModifiedResource(newReference);
+					}
+				}
+			}
+		}
 	}
 
 	/**
