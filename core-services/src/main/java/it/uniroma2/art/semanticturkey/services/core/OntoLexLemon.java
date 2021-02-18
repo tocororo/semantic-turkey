@@ -61,6 +61,7 @@ import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.lime.model.vocabulary.VARTRANS;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
@@ -2421,8 +2422,8 @@ public class OntoLexLemon extends STServiceAdapter {
 	}
 
 	/**
-	 * Returns the categories of conceptual relations, possibly filtered based on the linguistic catalogs of the
-	 * supplied lexicon.
+	 * Returns the categories of conceptual relations, possibly filtered based on the linguistic catalogs of
+	 * the supplied lexicon.
 	 * 
 	 * @param lexicalSense
 	 * @param newConcept
@@ -2453,6 +2454,52 @@ public class OntoLexLemon extends STServiceAdapter {
 		}
 
 		return categories;
+	}
+
+	/**
+	 * Creates a lexico-semantic relation.
+	 * 
+	 * @param source
+	 * @param target
+	 * @param undirectional
+	 * @param category
+	 * @param relationClass
+	 * @throws URIGenerationException
+	 */
+	@STServiceOperation
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf', 'W')") // TODO define access control
+	public void createLexicoSemanticRelation(Resource source, Resource target, boolean undirectional,
+			@Optional IRI category,
+			@SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/vartrans#LexicoSemanticRelation") IRI relationClass,
+			@Optional @LocallyDefined Resource translationSet) throws URIGenerationException {
+		RepositoryConnection con = getManagedConnection();
+		Update update = con.prepareUpdate(
+		//@formatter:off
+			"PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>\n" + 
+			"INSERT {\n" + 
+			"	?rel a ?relationClass ;\n" + 
+			"		?sourcePred ?source ;\n" + 
+			"		?targetPred ?target ;\n" + 
+			"		?category vartrans:category ?category .\n" + 
+			"		\r\n" + 
+			"	?translationSet vartrans:trans ?rel .\n" + 
+			"}\n" + 
+			"WHERE {\n" + 
+			"}"
+			//@formatter:on
+		);
+		update.setBinding("rel", generateIRI("individual", Collections.emptyMap()));
+		update.setBinding("relationClass", relationClass);
+		update.setBinding("sourcePred", undirectional ? VARTRANS.RELATES : VARTRANS.SOURCE);
+		update.setBinding("targetPred", undirectional ? VARTRANS.RELATES : VARTRANS.TARGET);
+		if (category != null) {
+			update.setBinding("category", category);
+		}
+		if (translationSet != null) {
+			update.setBinding("translationSet", translationSet);
+		}
+
 	}
 
 	/**
