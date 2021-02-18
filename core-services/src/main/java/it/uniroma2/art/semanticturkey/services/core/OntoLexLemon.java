@@ -2499,7 +2499,10 @@ public class OntoLexLemon extends STServiceAdapter {
 		if (translationSet != null) {
 			update.setBinding("translationSet", translationSet);
 		}
-
+		SimpleDataset dataset = new SimpleDataset();
+		dataset.setDefaultInsertGraph((IRI) getWorkingGraph());
+		update.setDataset(dataset);
+		update.execute();
 	}
 
 	/**
