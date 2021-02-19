@@ -51,12 +51,15 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
@@ -70,10 +73,15 @@ import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
 import org.eclipse.rdf4j.repository.manager.RepositoryInfo;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
+import org.eclipse.rdf4j.repository.sail.config.SailRepositorySchema;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.sail.config.SailConfigSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
 
@@ -169,8 +177,8 @@ public abstract class Project extends AbstractProject {
 	protected IRI lexicalizationModel;
 
 	protected String description;
-	
-	protected  String createdAt;
+
+	protected String createdAt;
 
 	public static final String INFOFILENAME = "project.info";
 
@@ -500,7 +508,7 @@ public abstract class Project extends AbstractProject {
 				loadingCoreVocabularies();
 
 				conn.begin();
-				
+
 				ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (connection) -> {
 					// always guarantee that there is an owl:Ontology named after the base URI
 					IRI baseURIasIRI = conn.getValueFactory().createIRI(baseURI);
@@ -509,7 +517,7 @@ public abstract class Project extends AbstractProject {
 						conn.add(baseURIasIRI, RDF.TYPE, OWL.ONTOLOGY, baseURIasIRI);
 					}
 				});
-				
+
 				conn.commit();
 
 				logger.debug("defaultnamespace set to: " + defaultNamespace);
@@ -1098,7 +1106,7 @@ public abstract class Project extends AbstractProject {
 	 * @throws RepositoryNotExistingException
 	 */
 	public Repository createRepository(@Nullable RepositoryAccess repositoryAccess,
-			@Nullable String repositoryId, PluginSpecification repoConfigurerSpecification,
+			@Nullable String repositoryId, @Nullable PluginSpecification repoConfigurerSpecification,
 			String localRepostoryId, boolean readOnlyWrapper, @Nullable String backendType,
 			boolean customizeSearch)
 			throws AlreadyExistingRepositoryException, RepositoryNotExistingException {
@@ -1126,6 +1134,41 @@ public abstract class Project extends AbstractProject {
 		}
 
 		try {
+			MutableObject<PluginSpecification> guessedPluginSpec = new MutableObject<>();
+			repositoryManager.operateOnUnfoldedManager(CORE_REPOSITORY, (actualRepoMgr, actualRepoId) -> {
+				Model repoConfig = actualRepoMgr.getRepositoryConfig(actualRepoId);
+				Resource sailImpl = Models.objectResource(repoConfig.filter(null, SailRepositorySchema.SAILIMPL, null))
+						.orElseThrow(() -> new IllegalStateException("Unable to determine top Sail"));
+				Optional<Resource> delegate;
+				do {
+					delegate = Models.getPropertyResource(repoConfig, sailImpl, SailConfigSchema.DELEGATE);
+					sailImpl = delegate.orElse(sailImpl);
+				} while (delegate.isPresent());
+
+				String sailType = Models.getProperty(repoConfig, sailImpl, SailConfigSchema.SAILTYPE)
+						.orElseThrow(() -> new IllegalStateException("Unable to determine sail type"))
+						.stringValue();
+
+				ObjectNode configNode = JsonNodeFactory.instance.objectNode();
+				if (sailType.startsWith("openrdf:") || sailType.startsWith("rdf4j:")) { // rdf4j backend ->
+																						// NativeStore
+					configNode.put("@type",
+							"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfiguration");
+				} else if (sailType.startsWith("graphdb:")) { // GDB Free
+					configNode.put("@type",
+							"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.GraphDBFreeConfiguration");
+				} else if (sailType.startsWith("owlim:")) { // GDB SE
+					configNode.put("@type",
+							"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.GraphDBSEConfiguration");
+				} else {
+					throw new IllegalStateException(
+							"Unable to determine the technology stack from the bottom sail-type: "
+									+ sailType);
+				}
+				guessedPluginSpec.setValue(new PluginSpecification(
+						"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryConfigurer",
+						null, null, configNode));
+			});
 			if (repositoryAccess.isRemote()) {
 				if (repositoryId == null) {
 					throw new IllegalArgumentException("The name of a remote repository must be non-null");
@@ -1138,8 +1181,9 @@ public abstract class Project extends AbstractProject {
 						repositoryAccess2.getPassword());
 
 				if (repositoryAccess instanceof CreateRemote) { // Create remote
-					RepositoryImplConfigurer repoConfigurer = exptManager.instantiateExtension(
-							RepositoryImplConfigurer.class, repoConfigurerSpecification);
+					RepositoryImplConfigurer repoConfigurer = exptManager
+							.instantiateExtension(RepositoryImplConfigurer.class, MoreObjects
+									.firstNonNull(repoConfigurerSpecification, guessedPluginSpec.getValue()));
 					RepositoryImplConfig remoteRepositoryImplConfig = repoConfigurer
 							.buildRepositoryImplConfig(null);
 					if (backendType == null) {
@@ -1170,8 +1214,9 @@ public abstract class Project extends AbstractProject {
 				localRepositoryImplConfig2.setPassword(repositoryAccess2.getPassword());
 				localRepositoryImplConfig = localRepositoryImplConfig2;
 			} else {
-				RepositoryImplConfigurer repoConfigurer = exptManager
-						.instantiateExtension(RepositoryImplConfigurer.class, repoConfigurerSpecification);
+				RepositoryImplConfigurer repoConfigurer = exptManager.instantiateExtension(
+						RepositoryImplConfigurer.class,
+						MoreObjects.firstNonNull(repoConfigurerSpecification, guessedPluginSpec.getValue()));
 				localRepositoryImplConfig = repoConfigurer.buildRepositoryImplConfig(null);
 			}
 
@@ -1267,7 +1312,7 @@ public abstract class Project extends AbstractProject {
 		return createdAt;
 	}
 
-	public boolean isOpenAtStartupEnabled(){
+	public boolean isOpenAtStartupEnabled() {
 		return Boolean.parseBoolean(ObjectUtils.firstNonNull(getProperty(OPEN_AT_STARTUP_PROP), "false"));
 	}
 
