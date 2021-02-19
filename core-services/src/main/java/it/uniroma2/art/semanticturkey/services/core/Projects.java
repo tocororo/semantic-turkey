@@ -783,20 +783,26 @@ public class Projects extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	public void accessAllProjects(@Optional(defaultValue="SYSTEM") ProjectConsumer consumer,
 			@Optional(defaultValue="RW")ProjectACL.AccessLevel requestedAccessLevel,
-			@Optional(defaultValue="R") ProjectACL.LockLevel requestedLockLevel)
+			@Optional(defaultValue="R") ProjectACL.LockLevel requestedLockLevel,
+			@Optional(defaultValue="false") boolean openProjectFromStartup)
 			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException,
 			ForbiddenProjectAccessException, RBACException {
 		// iterate over the existing projects
 		Collection<AbstractProject> abstractProjectCollection = ProjectManager
 				.listProjects(ProjectConsumer.SYSTEM);
-		List<ProjectInfo> projInfoList = new ArrayList<>();
 		for (AbstractProject abstractProject : abstractProjectCollection) {
 			ProjectInfo projInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, ProjectACL.AccessLevel.R,
 					ProjectACL.LockLevel.NO, false, false, abstractProject);
 			if(!projInfo.isOpen()) {
-				//if the project is closed, open it
-				String projectName = projInfo.getName();
-				ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
+				//if the project is closed, open it, if requested
+				if(openProjectFromStartup) {
+					//check if this is one of the project that should be open at startup, is so, open in
+					if(projInfo.isOpenAtStartup()) {
+						ProjectManager.accessProject(consumer, projInfo.getName(), requestedAccessLevel, requestedLockLevel);
+					}
+				} else {
+					ProjectManager.accessProject(consumer, projInfo.getName(), requestedAccessLevel, requestedLockLevel);
+				}
 			}
 		}
 	}
@@ -804,8 +810,7 @@ public class Projects extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void disconnectFromAllProjects(@Optional(defaultValue="SYSTEM") ProjectConsumer consumer)
-			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException,
-			ForbiddenProjectAccessException, RBACException {
+			throws ProjectAccessException {
 		// iterate over the existing projects
 		Collection<AbstractProject> abstractProjectCollection = ProjectManager
 				.listProjects(ProjectConsumer.SYSTEM);
