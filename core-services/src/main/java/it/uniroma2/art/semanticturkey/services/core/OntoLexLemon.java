@@ -2481,7 +2481,7 @@ public class OntoLexLemon extends STServiceAdapter {
 			"	?rel a ?relationClass ;\n" + 
 			"		?sourcePred ?source ;\n" + 
 			"		?targetPred ?target ;\n" + 
-			"		?category vartrans:category ?category .\n" + 
+			"		vartrans:category ?category .\n" + 
 			"		\r\n" + 
 			"	?translationSet vartrans:trans ?rel .\n" + 
 			"}\n" + 
