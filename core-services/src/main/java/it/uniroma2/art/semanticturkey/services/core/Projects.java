@@ -781,7 +781,7 @@ public class Projects extends STServiceAdapter {
 	public Map<String, ExceptionDAO> accessAllProjects(@Optional(defaultValue="SYSTEM") ProjectConsumer consumer,
 		   @Optional(defaultValue="RW")ProjectACL.AccessLevel requestedAccessLevel,
 		   @Optional(defaultValue="R") ProjectACL.LockLevel requestedLockLevel,
-		   @Optional(defaultValue="false") boolean openProjectFromStartup) throws ProjectAccessException {
+		   @Optional(defaultValue="false") boolean onlyProjectsAtStartup) throws ProjectAccessException {
 
 		Map<String, ExceptionDAO> projectExceptionMap = new HashMap<>();
 
@@ -794,7 +794,7 @@ public class Projects extends STServiceAdapter {
 			if(!projInfo.isOpen()) {
 				//if the project is closed, open it, if requested
 				try {
-					if(openProjectFromStartup) {
+					if(onlyProjectsAtStartup) {
 						//check if this is one of the project that should be open at startup, is so, open in
 						if(projInfo.isOpenAtStartup()) {
 							ProjectManager.accessProject(consumer, projInfo.getName(), requestedAccessLevel, requestedLockLevel);
