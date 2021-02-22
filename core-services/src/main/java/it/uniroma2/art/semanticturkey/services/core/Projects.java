@@ -781,12 +781,14 @@ public class Projects extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void accessAllProjects(@Optional(defaultValue="SYSTEM") ProjectConsumer consumer,
+	public JsonNode accessAllProjects(@Optional(defaultValue="SYSTEM") ProjectConsumer consumer,
 			@Optional(defaultValue="RW")ProjectACL.AccessLevel requestedAccessLevel,
 			@Optional(defaultValue="R") ProjectACL.LockLevel requestedLockLevel,
-			@Optional(defaultValue="false") boolean openProjectFromStartup)
-			throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException,
-			ForbiddenProjectAccessException, RBACException {
+			@Optional(defaultValue="false") boolean openProjectFromStartup) throws ProjectAccessException {
+
+		Map<String, String> projectExceptionNameMap = new HashMap<>();
+		Map<String, String> projectExceptionMsgMap = new HashMap<>();
+
 		// iterate over the existing projects
 		Collection<AbstractProject> abstractProjectCollection = ProjectManager
 				.listProjects(ProjectConsumer.SYSTEM);
@@ -795,16 +797,47 @@ public class Projects extends STServiceAdapter {
 					ProjectACL.LockLevel.NO, false, false, abstractProject);
 			if(!projInfo.isOpen()) {
 				//if the project is closed, open it, if requested
-				if(openProjectFromStartup) {
-					//check if this is one of the project that should be open at startup, is so, open in
-					if(projInfo.isOpenAtStartup()) {
+				System.out.println("OPENING: "+projInfo.getName()); //da cancellare
+				try {
+					if(openProjectFromStartup) {
+						//check if this is one of the project that should be open at startup, is so, open in
+						if(projInfo.isOpenAtStartup()) {
+							ProjectManager.accessProject(consumer, projInfo.getName(), requestedAccessLevel, requestedLockLevel);
+						}
+					} else {
 						ProjectManager.accessProject(consumer, projInfo.getName(), requestedAccessLevel, requestedLockLevel);
 					}
-				} else {
-					ProjectManager.accessProject(consumer, projInfo.getName(), requestedAccessLevel, requestedLockLevel);
+				} catch (InvalidProjectNameException | ProjectInexistentException | ProjectAccessException | ForbiddenProjectAccessException | RBACException e) {
+					// take note of the problematic project
+					projectExceptionNameMap.put(projInfo.getName(), e.getClass().getName());
+					projectExceptionMsgMap.put(projInfo.getName(), e.getLocalizedMessage());
 				}
 			}
 		}
+		//prepare the response containing the list of problematic projects
+		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+		ObjectNode mainNode = jsonFactory.objectNode();
+
+		ArrayNode problematicProjectArrayNode = jsonFactory.arrayNode();
+
+		//{ project: PROJ_NAME, error: { exception: EXC_NAME, msg: MESSAGE } }
+		for(String projectName : projectExceptionMsgMap.keySet()){
+			String className = projectExceptionNameMap.get(projectName);
+			String msg = projectExceptionMsgMap.get(projectName);
+
+			ObjectNode classAndMsgNode = jsonFactory.objectNode();
+			classAndMsgNode.set("exception", jsonFactory.textNode(className));
+			classAndMsgNode.set("msg", jsonFactory.textNode(msg));
+
+			ObjectNode problematicProjectNode = jsonFactory.objectNode();
+			problematicProjectNode.set("project", jsonFactory.textNode(projectName));
+			problematicProjectNode.set("error", classAndMsgNode);
+
+			problematicProjectArrayNode.add(problematicProjectNode);
+		}
+		mainNode.set("problematicProjects", problematicProjectArrayNode);
+
+		return mainNode;
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)

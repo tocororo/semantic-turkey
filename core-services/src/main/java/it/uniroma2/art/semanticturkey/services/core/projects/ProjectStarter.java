@@ -19,21 +19,25 @@ public class ProjectStarter {
 	@PostConstruct
 	public void openProjects()  {
 
+		Collection<AbstractProject> abstractProjectCollection = null;
 		try {
-			Collection<AbstractProject> abstractProjectCollection = ProjectManager
+			abstractProjectCollection = ProjectManager
 					.listProjects(ProjectConsumer.SYSTEM);
-			for (AbstractProject abstractProject : abstractProjectCollection) {
-				if (abstractProject instanceof Project) {
-					Project project = (Project) abstractProject;
-					boolean openAtStart = project.isOpenAtStartupEnabled();
-					if (openAtStart) {
+		} catch (ProjectAccessException e) {
+			e.printStackTrace();
+		}
+		for (AbstractProject abstractProject : abstractProjectCollection) {
+			if (abstractProject instanceof Project) {
+				Project project = (Project) abstractProject;
+				boolean openAtStart = project.isOpenAtStartupEnabled();
+				if (openAtStart) {
+					try {
 						ProjectManager.accessProject(ProjectConsumer.SYSTEM, project.getName(), ProjectACL.AccessLevel.R, ProjectACL.LockLevel.NO);
+					} catch (InvalidProjectNameException | ProjectInexistentException | ProjectAccessException | ForbiddenProjectAccessException | RBACException e) {
+						// do nothing, so just skip this project and continue opening the other projects
 					}
 				}
 			}
-		} catch (ProjectAccessException | InvalidProjectNameException | ProjectInexistentException | ForbiddenProjectAccessException | RBACException e) {
-			// TODO decide what to do in this case, as it is now, if there is any problem in opening a project, then the other sequential projects
-			// are not opened as well
 		}
 	}
 }
