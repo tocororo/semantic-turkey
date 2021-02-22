@@ -2466,7 +2466,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 * @param relationClass
 	 * @throws URIGenerationException
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf', 'W')") // TODO define access control
 	public void createLexicoSemanticRelation(Resource source, Resource target, boolean undirectional,
