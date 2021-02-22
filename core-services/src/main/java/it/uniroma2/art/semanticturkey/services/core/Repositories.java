@@ -1,12 +1,14 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
+import it.uniroma2.art.semanticturkey.exceptions.ExceptionDAO;
+import it.uniroma2.art.semanticturkey.project.RepositorySummary;
+import it.uniroma2.art.semanticturkey.project.RepositorySummary.RemoteRepositorySummary;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.config.RepositoryConfigException;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
@@ -16,14 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.project.RepositorySummary;
-import it.uniroma2.art.semanticturkey.project.RepositorySummary.RemoteRepositorySummary;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * This class provides services for accessing remote repositories.
@@ -34,54 +32,6 @@ import it.uniroma2.art.semanticturkey.project.RepositorySummary.RemoteRepository
 public class Repositories extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(Repositories.class);
-
-	public static final class ExceptionDAO {
-		private final String type;
-		private final String message;
-		private final String stacktrace;
-
-		/**
-		 * @param type
-		 * @param message
-		 * @param stacktrace
-		 */
-		public ExceptionDAO(String type, String message, String stacktrace) {
-			this.type = type;
-			this.message = message;
-			this.stacktrace = stacktrace;
-		}
-
-		/**
-		 * @return the type
-		 */
-		public String getType() {
-			return type;
-		}
-
-		/**
-		 * @return the message
-		 */
-		public String getMessage() {
-			return message;
-		}
-
-		/**
-		 * @return the stacktrace
-		 */
-		public String getStacktrace() {
-			return stacktrace;
-		}
-
-		public static ExceptionDAO valueOf(Exception e) {
-			if (e == null) {
-				return null;
-			}
-			StringWriter writer = new StringWriter();
-			e.printStackTrace(new PrintWriter(writer));
-			return new ExceptionDAO(e.getClass().getSimpleName(), e.getMessage(), writer.toString());
-		}
-
-	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	// TODO: establish authorization @PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'R')")
