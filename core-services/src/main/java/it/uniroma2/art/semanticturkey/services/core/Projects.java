@@ -12,6 +12,7 @@ import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerFactory;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
@@ -197,7 +198,7 @@ public class Projects extends STServiceAdapter {
 			@Optional String rightDataset, @Optional boolean shaclEnabled,
 			@Optional @JsonSerialized SHACLSettings shaclSettings, @Optional boolean trivialInferenceEnabled,
 			@Optional(defaultValue = "false") boolean openAtStartup,
-		    @Optional(defaultValue = "false") boolean globallyAccessible)
+			@Optional(defaultValue = "false") boolean globallyAccessible)
 			throws ProjectInconsistentException, InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
 			ProjectCreationException, ClassNotFoundException, WrongPropertiesException,
@@ -282,9 +283,11 @@ public class Projects extends STServiceAdapter {
 	 * @param consumer
 	 * @param requestedAccessLevel
 	 * @param requestedLockLevel
-	 * @param userDependent        if true, returns only the projects accessible by the logged user (the user has a role
-	 *                             assigned in it)
-	 * @param onlyOpen             if true, return only the open projects
+	 * @param userDependent
+	 *            if true, returns only the projects accessible by the logged user (the user has a role
+	 *            assigned in it)
+	 * @param onlyOpen
+	 *            if true, return only the open projects
 	 * @return
 	 * @throws ProjectAccessException
 	 */
@@ -316,8 +319,8 @@ public class Projects extends STServiceAdapter {
 		return listProjInfo;
 	}
 
-	private void createFacetIndexIfNeeded() throws ProjectAccessException, PropertyNotFoundException, ProjectInexistentException,
-			IOException, InvalidProjectNameException {
+	private void createFacetIndexIfNeeded() throws ProjectAccessException, PropertyNotFoundException,
+			ProjectInexistentException, IOException, InvalidProjectNameException {
 		// check if the lucene dir (for the facets) exists, if not, create the indexes
 		if (!ProjectFacetsIndexUtils.isLuceneDirPresent()) {
 			// iterate over the existing projects
@@ -403,9 +406,11 @@ public class Projects extends STServiceAdapter {
 	 * @param consumer
 	 * @param requestedAccessLevel
 	 * @param requestedLockLevel
-	 * @param userDependent        if true, returns only the projects accessible by the logged user (the user has a role
-	 *                             assigned in it)
-	 * @param onlyOpen             if true, return only the open projects
+	 * @param userDependent
+	 *            if true, returns only the projects accessible by the logged user (the user has a role
+	 *            assigned in it)
+	 * @param onlyOpen
+	 *            if true, return only the open projects
 	 * @param absProj
 	 * @return
 	 * @throws ProjectAccessException
@@ -616,7 +621,8 @@ public class Projects extends STServiceAdapter {
 	 * Update the AccessLevel of the current project
 	 *
 	 * @param consumerName
-	 * @param accessLevel  if not provided revoke any access level assigned from the project to the consumer
+	 * @param accessLevel
+	 *            if not provided revoke any access level assigned from the project to the consumer
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
 	 * @throws ProjectAccessException
@@ -639,7 +645,8 @@ public class Projects extends STServiceAdapter {
 	/**
 	 * @param projectName
 	 * @param consumerName
-	 * @param accessLevel  if not provided revoke any access level assigned from the project to the consumer
+	 * @param accessLevel
+	 *            if not provided revoke any access level assigned from the project to the consumer
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
 	 * @throws ProjectAccessException
@@ -662,7 +669,8 @@ public class Projects extends STServiceAdapter {
 	/**
 	 * Update the universal (for every consumer) AccessLevel of the current project
 	 *
-	 * @param accessLevel if not provided revoke any universal access level assigned from the project
+	 * @param accessLevel
+	 *            if not provided revoke any universal access level assigned from the project
 	 * @throws ProjectUpdateException
 	 * @throws ReservedPropertyUpdateException
 	 */
@@ -682,7 +690,8 @@ public class Projects extends STServiceAdapter {
 	 * Update the universal (for every consumer) AccessLevel of the given project
 	 *
 	 * @param projectName
-	 * @param accessLevel if not provided revoke any universal access level assigned from the project
+	 * @param accessLevel
+	 *            if not provided revoke any universal access level assigned from the project
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
 	 * @throws ProjectAccessException
@@ -778,10 +787,11 @@ public class Projects extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public Map<String, ExceptionDAO> accessAllProjects(@Optional(defaultValue="SYSTEM") ProjectConsumer consumer,
-		   @Optional(defaultValue="RW")ProjectACL.AccessLevel requestedAccessLevel,
-		   @Optional(defaultValue="R") ProjectACL.LockLevel requestedLockLevel,
-		   @Optional(defaultValue="false") boolean onlyProjectsAtStartup) throws ProjectAccessException {
+	public Map<String, ExceptionDAO> accessAllProjects(
+			@Optional(defaultValue = "SYSTEM") ProjectConsumer consumer,
+			@Optional(defaultValue = "RW") ProjectACL.AccessLevel requestedAccessLevel,
+			@Optional(defaultValue = "R") ProjectACL.LockLevel requestedLockLevel,
+			@Optional(defaultValue = "false") boolean onlyProjectsAtStartup) throws ProjectAccessException {
 
 		Map<String, ExceptionDAO> projectExceptionMap = new HashMap<>();
 
@@ -791,18 +801,21 @@ public class Projects extends STServiceAdapter {
 		for (AbstractProject abstractProject : abstractProjectCollection) {
 			ProjectInfo projInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, ProjectACL.AccessLevel.R,
 					ProjectACL.LockLevel.NO, false, false, abstractProject);
-			if(!projInfo.isOpen()) {
-				//if the project is closed, open it, if requested
+			if (!projInfo.isOpen()) {
+				// if the project is closed, open it, if requested
 				try {
-					if(onlyProjectsAtStartup) {
-						//check if this is one of the project that should be open at startup, is so, open in
-						if(projInfo.isOpenAtStartup()) {
-							ProjectManager.accessProject(consumer, projInfo.getName(), requestedAccessLevel, requestedLockLevel);
+					if (onlyProjectsAtStartup) {
+						// check if this is one of the project that should be open at startup, is so, open in
+						if (projInfo.isOpenAtStartup()) {
+							ProjectManager.accessProject(consumer, projInfo.getName(), requestedAccessLevel,
+									requestedLockLevel);
 						}
 					} else {
-						ProjectManager.accessProject(consumer, projInfo.getName(), requestedAccessLevel, requestedLockLevel);
+						ProjectManager.accessProject(consumer, projInfo.getName(), requestedAccessLevel,
+								requestedLockLevel);
 					}
-				} catch (InvalidProjectNameException | ProjectInexistentException | ProjectAccessException | ForbiddenProjectAccessException | RBACException e) {
+				} catch (InvalidProjectNameException | ProjectInexistentException | ProjectAccessException
+						| ForbiddenProjectAccessException | RBACException e) {
 					// take note of the problematic project
 					projectExceptionMap.put(projInfo.getName(), ExceptionDAO.valueOf(e));
 				}
@@ -813,7 +826,7 @@ public class Projects extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void disconnectFromAllProjects(@Optional(defaultValue="SYSTEM") ProjectConsumer consumer)
+	public void disconnectFromAllProjects(@Optional(defaultValue = "SYSTEM") ProjectConsumer consumer)
 			throws ProjectAccessException {
 		// iterate over the existing projects
 		Collection<AbstractProject> abstractProjectCollection = ProjectManager
@@ -822,8 +835,8 @@ public class Projects extends STServiceAdapter {
 		for (AbstractProject abstractProject : abstractProjectCollection) {
 			ProjectInfo projInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, ProjectACL.AccessLevel.R,
 					ProjectACL.LockLevel.NO, false, false, abstractProject);
-			if(projInfo.isOpen()) {
-				//if the project is opened, close it
+			if (projInfo.isOpen()) {
+				// if the project is opened, close it
 				String projectName = projInfo.getName();
 				ProjectManager.disconnectFromProject(consumer, projectName);
 			}
@@ -920,7 +933,8 @@ public class Projects extends STServiceAdapter {
 	 * this service returns a list name-value for all the property of a given project. Returns a response with
 	 * elements called {@code propertyTag} with attributes {@code propNameAttr} for property name and
 	 *
-	 * @param projectName (optional)the project queried for properties
+	 * @param projectName
+	 *            (optional)the project queried for properties
 	 * @return
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
@@ -941,7 +955,8 @@ public class Projects extends STServiceAdapter {
 	 * this service returns a list name-value for all the property of a given project. Returns a response with
 	 * elements called {@code propertyTag} with attributes {@code propNameAttr} for property name and
 	 *
-	 * @param projectName (optional)the project queried for properties
+	 * @param projectName
+	 *            (optional)the project queried for properties
 	 * @return
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectInexistentException
@@ -1370,7 +1385,7 @@ public class Projects extends STServiceAdapter {
 
 					try (LIMERepositoryConnectionWrapper metadataConn = new LIMERepositoryConnectionWrapper(
 							metadataRepo, metadataRepo.getConnection());
-						 RepositoryConnection dataConn = dataRepo.getConnection()) {
+							RepositoryConnection dataConn = dataRepo.getConnection()) {
 						ValueFactory vf = dataConn.getValueFactory();
 
 						IRI metadataBaseURI = vf.createIRI(
@@ -1425,7 +1440,7 @@ public class Projects extends STServiceAdapter {
 							baseURI = baseURIHolder.get().stringValue();
 						} else { // otherwise, determine the base URI from the data
 							TupleQuery nsQuery = dataConn.prepareTupleQuery(
-									// @formatter:off
+							// @formatter:off
 									"SELECT ?ns (COUNT(*) as ?count)  WHERE {\n" +
 											"    GRAPH ?dataGraph {\n" +
 											"    	?s ?p ?o .\n" +
@@ -1537,8 +1552,9 @@ public class Projects extends STServiceAdapter {
 	public Map<String, List<ProjectInfo>> retrieveProjects(@Optional String bagOf,
 			@Optional @JsonSerialized List<List<Map<String, Object>>> orQueryList,
 			@Optional(defaultValue = "false") boolean userDependent,
-			@Optional(defaultValue = "false") boolean onlyOpen) throws IOException,
-			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, PropertyNotFoundException {
+			@Optional(defaultValue = "false") boolean onlyOpen)
+			throws IOException, InvalidProjectNameException, ProjectInexistentException,
+			ProjectAccessException, PropertyNotFoundException {
 		Map<String, List<ProjectInfo>> facetToProjeInfoListMap = new HashMap<>();
 
 		// bagOf and query cannot be both empy/null
@@ -1652,10 +1668,11 @@ public class Projects extends STServiceAdapter {
 					Models.setProperty(configModel, changeTrackerSailHolder,
 							ChangeTrackerSchema.BLACKLISTING_ENABLED, vf.createLiteral(blacklistingEnabled));
 					if (blacklistingEnabled) {
-						if (Objects.equals(
-								Models.getPropertyIRI(configModel, changeTrackerSailHolder,
-										ChangeTrackerSchema.BLACKLIST_GRAPH).orElse(SESAME.NIL),
-								SESAME.NIL)) {
+						if (CHANGELOG
+								.isNull(Models
+										.getPropertyIRI(configModel, changeTrackerSailHolder,
+												ChangeTrackerSchema.BLACKLIST_GRAPH)
+										.orElse(CHANGELOG.NULL))) {
 							Models.setProperty(configModel, changeTrackerSailHolder,
 									ChangeTrackerSchema.BLACKLIST_GRAPH, SUPPORT.BLACKLIST);
 						}
@@ -1690,14 +1707,16 @@ public class Projects extends STServiceAdapter {
 	 * @throws ProjectUpdateException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	public void setOpenAtStartup(String projectName, boolean openAtStartup) throws InvalidProjectNameException, ProjectInexistentException,
-			ProjectAccessException, ProjectUpdateException {
+	public void setOpenAtStartup(String projectName, boolean openAtStartup)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ProjectUpdateException {
 		Project project = ProjectManager.getProject(projectName, true);
 		project.setReservedProperty(Project.OPEN_AT_STARTUP_PROP, String.valueOf(openAtStartup));
 	}
 
 	@STServiceOperation
-	public Boolean getOpenAtStartup(String projectName) throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
+	public Boolean getOpenAtStartup(String projectName)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 		Project project = ProjectManager.getProject(projectName, true);
 		return project.isOpenAtStartupEnabled();
 	}

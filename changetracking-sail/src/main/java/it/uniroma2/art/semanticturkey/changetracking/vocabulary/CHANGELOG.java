@@ -2,9 +2,12 @@ package it.uniroma2.art.semanticturkey.changetracking.vocabulary;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
+
+import java.util.Objects;
 
 /**
  * Constant for the Changelog vocabulary used to represent the history of a repository. After the first
@@ -124,7 +127,13 @@ public abstract class CHANGELOG {
 	public static final IRI MASTER;
 	public static final IRI TIP;
 
+	public static final IRI NULL;
+
 	public static final IRI REVISION_NUMBER;
+
+	public static boolean isNull(Value v) {
+		return Objects.equals(v, SESAME.NIL) || Objects.equals(v, NULL);
+	}
 
 	static {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
@@ -144,6 +153,8 @@ public abstract class CHANGELOG {
 
 		MASTER = vf.createIRI(NAMESPACE, "MASTER");
 		TIP = vf.createIRI(NAMESPACE, "tip");
+
+		NULL = vf.createIRI(NAMESPACE, "null");
 
 		REVISION_NUMBER = vf.createIRI(NAMESPACE, "revisionNumber");
 	}

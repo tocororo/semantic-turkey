@@ -59,7 +59,7 @@ public abstract class HistoryRepositories {
 	public static Optional<Resource> getTip(RepositoryConnection conn, IRI historyGraph)
 			throws IllegalStateException, RDF4JException {
 		TupleQuery tipQuery = conn.prepareTupleQuery(
-			// @formatter:off
+		// @formatter:off
 			" PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                   \n" +
 			" SELECT ?tip                                                                    \n" +
 			" WHERE {                                                                        \n" +
@@ -128,7 +128,7 @@ public abstract class HistoryRepositories {
 	private static QueryResult<Statement> getCommitStaments(RepositoryConnection conn, Resource commit,
 			IRI statementPredicate, IRI historyGraph) {
 		TupleQuery tipQuery = conn.prepareTupleQuery(
-			// @formatter:off
+		// @formatter:off
 			" PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>                   \n" +
 			" PREFIX prov: <http://www.w3.org/ns/prov#>                                      \n" +
 			" SELECT ?s ?p ?o ?c                                                             \n" +
@@ -286,7 +286,7 @@ class TupleBinding2StatementIteration
 		Value object = Objects.requireNonNull(sourceObject.getValue("o"), "variable ?o may not be null");
 		Resource context = (Resource) Objects.requireNonNull(sourceObject.getValue("c"),
 				"variable ?c may not be null");
-		if (SESAME.NIL.equals(context)) {
+		if (CHANGELOG.isNull(context)) {
 			context = null;
 		}
 

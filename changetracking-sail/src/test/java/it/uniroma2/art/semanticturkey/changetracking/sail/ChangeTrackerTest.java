@@ -479,7 +479,7 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 					.objects();
 
 			assertTrue(defaultInclusions.isEmpty());
-			assertTrue(defaultExclusions.equals(Collections.singleton(SESAME.NIL)));
+			assertTrue(defaultExclusions.equals(Collections.singleton(CHANGELOG.NULL)));
 		});
 	}
 
@@ -554,7 +554,7 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 				conn.remove(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.EXCLUDE_GRAPH, null,
 						CHANGETRACKER.GRAPH_MANAGEMENT);
 
-				conn.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.INCLUDE_GRAPH, SESAME.NIL,
+				conn.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.INCLUDE_GRAPH, CHANGELOG.NULL,
 						CHANGETRACKER.GRAPH_MANAGEMENT);
 
 				conn.add(socrates, RDF.TYPE, FOAF.PERSON);

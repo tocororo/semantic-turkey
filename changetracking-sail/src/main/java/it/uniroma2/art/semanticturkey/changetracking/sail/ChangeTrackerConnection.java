@@ -214,7 +214,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
 			Resource ctx = stmt.getContext();
 			if (ctx == null) {
-				ctx = SESAME.NIL;
+				ctx = CHANGELOG.NULL;
 			}
 
 			conn.add(stmtRes, CHANGELOG.CONTEXT,
@@ -232,28 +232,28 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 			if (subj != null) {
 				subj = HistoryRepositories.cloneValue(subj, conn.getValueFactory(), null);
 			} else {
-				subj = SESAME.NIL;
+				subj = CHANGELOG.NULL;
 			}
 
 			IRI pred = quad.getPredicate();
 			if (pred != null) {
 				pred = HistoryRepositories.cloneValue(pred, conn.getValueFactory(), null);
 			} else {
-				pred = SESAME.NIL;
+				pred = CHANGELOG.NULL;
 			}
 
 			Value obj = quad.getObject();
 			if (obj != null) {
 				obj = HistoryRepositories.cloneValue(obj, conn.getValueFactory(), null);
 			} else {
-				obj = SESAME.NIL;
+				obj = CHANGELOG.NULL;
 			}
 
 			Resource ctx = quad.getContext();
 			if (ctx != null) {
 				ctx = HistoryRepositories.cloneValue(ctx, conn.getValueFactory(), null);
 			} else {
-				ctx = SESAME.NIL;
+				ctx = CHANGELOG.NULL;
 			}
 			conn.add(stmtRes, CHANGELOG.SUBJECT, subj, sail.validationGraph);
 			conn.add(stmtRes, CHANGELOG.PREDICATE, pred, sail.validationGraph);
@@ -949,7 +949,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 		Resource context = st.getContext();
 
 		if (context == null) {
-			context = SESAME.NIL;
+			context = CHANGELOG.NULL;
 		}
 
 		String contextString = context.stringValue();

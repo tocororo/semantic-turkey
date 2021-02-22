@@ -31,6 +31,7 @@ import org.eclipse.rdf4j.sail.config.SailConfigException;
 import org.eclipse.rdf4j.sail.config.SailImplConfig;
 
 import it.uniroma2.art.semanticturkey.changetracking.sail.ChangeTracker;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 
 /**
  * A configuration class for the {@link ChangeTracker} sail.
@@ -63,7 +64,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		metadataNS = null;
 		historyGraph = null;
 		includeGraph = Collections.emptySet();
-		excludeGraph = Collections.singleton(SESAME.NIL);
+		excludeGraph = Collections.singleton(CHANGELOG.NULL);
 		interactiveNotifications = null;
 		validationGraph = null;
 		blacklistGraph = null;
@@ -182,19 +183,19 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		if (historyGraph != null) {
 			graph.add(implNode, HISTORY_GRAPH, historyGraph);
 		} else {
-			graph.add(implNode, HISTORY_GRAPH, SESAME.NIL);
+			graph.add(implNode, HISTORY_GRAPH, CHANGELOG.NULL);
 		}
 
 		if (validationGraph != null) {
 			graph.add(implNode, VALIDATION_GRAPH, validationGraph);
 		} else {
-			graph.add(implNode, VALIDATION_GRAPH, SESAME.NIL);
+			graph.add(implNode, VALIDATION_GRAPH, CHANGELOG.NULL);
 		}
 
 		if (blacklistGraph != null) {
 			graph.add(implNode, BLACKLIST_GRAPH, blacklistGraph);
 		} else {
-			graph.add(implNode, BLACKLIST_GRAPH, SESAME.NIL);
+			graph.add(implNode, BLACKLIST_GRAPH, CHANGELOG.NULL);
 		}
 
 		for (IRI g : includeGraph) {
@@ -225,7 +226,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 				.ifPresent(this::setSupportRepositoryID);
 		Models.objectString(graph.filter(implNode, METADATA_NS, null)).ifPresent(this::setMetadataNS);
 		Models.objectIRI(graph.filter(implNode, HISTORY_GRAPH, null))
-				.map(v -> SESAME.NIL.equals(v) ? null : v).ifPresent(this::setHistoryGraph);
+				.map(v -> CHANGELOG.isNull(v)? null : v).ifPresent(this::setHistoryGraph);
 		Set<IRI> newIncludeGraph = new HashSet<IRI>();
 		graph.filter(implNode, INCLUDE_GRAPH, null).stream().forEach(st -> {
 			Value obj = st.getObject();
@@ -244,9 +245,9 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		});
 		excludeGraph = newExcludeGraph;
 		Models.objectIRI(graph.filter(implNode, VALIDATION_GRAPH, null))
-				.map(v -> SESAME.NIL.equals(v) ? null : v).ifPresent(this::setValidationGraph);
+				.map(v -> CHANGELOG.isNull(v) ? null : v).ifPresent(this::setValidationGraph);
 		Models.objectIRI(graph.filter(implNode, BLACKLIST_GRAPH, null))
-				.map(v -> SESAME.NIL.equals(v) ? null : v).ifPresent(this::setBlacklistGraph);
+				.map(v -> CHANGELOG.isNull(v) ? null : v).ifPresent(this::setBlacklistGraph);
 
 		historyEnabled = graph
 				.filter(implNode, HISTORY_ENABLED, SimpleValueFactory.getInstance().createLiteral(false))

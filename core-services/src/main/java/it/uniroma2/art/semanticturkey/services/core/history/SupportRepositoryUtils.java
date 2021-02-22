@@ -22,6 +22,7 @@ import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.core.History.SortingDirection;
@@ -43,8 +44,8 @@ public abstract class SupportRepositoryUtils {
 		}
 	}
 
-	public static String addInnerPatter(boolean addPatter, String innerPatter){
-		if(addPatter){
+	public static String addInnerPatter(boolean addPatter, String innerPatter) {
+		if (addPatter) {
 			return innerPatter;
 		} else {
 			return "";
@@ -52,8 +53,7 @@ public abstract class SupportRepositoryUtils {
 	}
 
 	public static String computeTimeBoundsSPARQLFilter(String timeLowerBound, String timeUpperBound,
-			String timeLowerBoundeVar, String timeUpperBoundVar)
-			throws IllegalArgumentException {
+			String timeLowerBoundeVar, String timeUpperBoundVar) throws IllegalArgumentException {
 		String timeLowerBoundSPARQLFilter;
 		if (timeLowerBound != null) {
 			if (!XMLDatatypeUtil.isValidDateTime(timeLowerBound)) {
@@ -61,7 +61,7 @@ public abstract class SupportRepositoryUtils {
 						"Time lower bound is not a valid xsd:dateTime lexical form: " + timeLowerBound);
 			}
 
-			timeLowerBoundSPARQLFilter = "FILTER("+timeLowerBoundeVar+" >= " + RenderUtils.toSPARQL(
+			timeLowerBoundSPARQLFilter = "FILTER(" + timeLowerBoundeVar + " >= " + RenderUtils.toSPARQL(
 					SimpleValueFactory.getInstance().createLiteral(timeLowerBound, XMLSchema.DATETIME))
 					+ ")\n";
 
@@ -76,7 +76,7 @@ public abstract class SupportRepositoryUtils {
 						"Time lower bound is not a valid xsd:dateTime lexical form: " + timeUpperBound);
 			}
 
-			timeUpperBoundSPARQLFilter = "FILTER("+timeUpperBoundVar+" <= " + RenderUtils.toSPARQL(
+			timeUpperBoundSPARQLFilter = "FILTER(" + timeUpperBoundVar + " <= " + RenderUtils.toSPARQL(
 					SimpleValueFactory.getInstance().createLiteral(timeUpperBound, XMLSchema.DATETIME))
 					+ ")\n";
 
@@ -119,13 +119,12 @@ public abstract class SupportRepositoryUtils {
 		return orderBy;
 	}
 
-	/*public static String computeOperationSPARQLFilter(IRI[] operationFilter) {
-		String operationSPARQLFilter = operationFilter.length != 0
-				? "FILTER(?operationT IN " + Arrays.stream(operationFilter).map(RenderUtils::toSPARQL)
-						.collect(Collectors.joining(", ", "(", ")")) + ")\n"
-				: "";
-		return operationSPARQLFilter;
-	}*/
+	/*
+	 * public static String computeOperationSPARQLFilter(IRI[] operationFilter) { String operationSPARQLFilter
+	 * = operationFilter.length != 0 ? "FILTER(?operationT IN " +
+	 * Arrays.stream(operationFilter).map(RenderUtils::toSPARQL) .collect(Collectors.joining(", ", "(", ")"))
+	 * + ")\n" : ""; return operationSPARQLFilter; }
+	 */
 
 	public static String computeInCollectionSPARQLFilter(Value[] values, String variableName) {
 		return values.length == 0 ? ""
@@ -207,7 +206,7 @@ public abstract class SupportRepositoryUtils {
 
 			String pValue = splits[i + 1].replaceAll("\\\\\\$", Matcher.quoteReplacement("$"))
 					.replaceAll("\\\\\\\\", Matcher.quoteReplacement("\\"));
-			if (SESAME.NIL.stringValue().equals(pValue)) {
+			if (StringUtils.equalsAny(pValue, CHANGELOG.NULL.stringValue(), SESAME.NIL.stringValue())) {
 				pValue = null;
 			}
 

@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.MoreObjects;
 
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 
 /**
@@ -55,8 +56,8 @@ import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
  * recorded into the history only if its context is a graph such that it satisfies the inclusion criterion and
  * it does not satisfy the exclusion criterion. An empty set of included graphs is equivalent to include all
  * graphs, while an empty set of excluded graphs is equivalent to not rejecting any graph. The resource
- * {@link SESAME#NIL} represents the <code>null</code> context, while {@link SESAME#WILDCARD} is another
- * mechanism to specify all graphs.
+ * {@link CHANGELOG#NULL} (formerly {@link SESAME#NIL}) represents the <code>null</code> context, while
+ * {@link SESAME#WILDCARD} is another mechanism to specify all graphs.
  * <p>
  * By default, the history ignores the <code>null</code> context and includes other contexts. Excluding the
  * <code>null</code> context is a simple mechanism to ignore inferred triples.

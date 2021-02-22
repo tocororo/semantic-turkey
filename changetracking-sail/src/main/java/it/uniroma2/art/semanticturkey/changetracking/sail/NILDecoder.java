@@ -8,6 +8,8 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
+
 /**
  * Maps a statement in which {@link SESAME#NIL} encodes {@code null} into a {@link QuadPattern}.
  * 
@@ -21,22 +23,22 @@ public class NILDecoder implements Function<Statement, QuadPattern> {
 	@Override
 	public QuadPattern apply(Statement t) {
 		Resource subj = t.getSubject();
-		if (SESAME.NIL.equals(subj)) {
+		if (CHANGELOG.isNull(subj)) {
 			subj = null;
 		}
 		
 		IRI pred = t.getPredicate();
-		if (SESAME.NIL.equals(pred)) {
+		if (CHANGELOG.isNull(pred)) {
 			pred = null;
 		}
 
 		Value obj = t.getObject();
-		if (SESAME.NIL.equals(obj)) {
+		if (CHANGELOG.isNull(obj)) {
 			obj = null;
 		}
 		
 		Resource ctx = t.getContext();
-		if (SESAME.NIL.equals(ctx)) {
+		if (CHANGELOG.isNull(ctx)) {
 			ctx = null;
 		}
 		

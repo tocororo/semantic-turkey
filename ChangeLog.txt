@@ -1,5 +1,6 @@
 version 9.0.
 date: dd/mm/yyyy
+  * replaced sesame:nil with cl:null to fix incompatibility with recent versions of GDB (for sure, 9.6)
   * added the possibility to open/close all projects with a single service
   * added support for guessing a default repository configuration when creating a version dump in the default
     location (i.e. same as the core repository)

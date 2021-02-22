@@ -11,6 +11,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
 import it.uniroma2.art.semanticturkey.vocabulary.STCHANGELOG;
@@ -77,7 +78,7 @@ public class OperationMetadata {
 					Value rdfPv;
 
 					if (pv == null) {
-						rdfPv = SESAME.NIL;
+						rdfPv = CHANGELOG.NULL;
 					} else {
 						rdfPv = vf.createLiteral(pv);
 					}
