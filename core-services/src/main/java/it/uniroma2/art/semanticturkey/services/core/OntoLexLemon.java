@@ -2108,12 +2108,12 @@ public class OntoLexLemon extends STServiceAdapter {
 			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" + 
 			"PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>\n" + 
 			"DELETE  {\n" + 
-			"	?relation ?p ? o .\n" + 
+			"	?relation ?p ?o .\n" + 
 			"}\n" + 
 			"WHERE {\n" + 
 			"   ?relatesProp rdfs:subPropertyOf* vartrans:relates.\n" +
 			"	?relation ?relatesProp ?resource .\n" + 
-			"	?relation ?p ? o .\n" + 
+			"	?relation ?p ?o .\n" + 
 			"}"
 			//@formatter:on
 		);
