@@ -2482,7 +2482,6 @@ public class OntoLexLemon extends STServiceAdapter {
 			"		?sourcePred ?source ;\n" + 
 			"		?targetPred ?target ;\n" + 
 			"		vartrans:category ?category .\n" + 
-			"		\r\n" + 
 			"	?translationSet vartrans:trans ?rel .\n" + 
 			"}\n" + 
 			"WHERE {\n" + 
@@ -2505,6 +2504,116 @@ public class OntoLexLemon extends STServiceAdapter {
 		dataset.setDefaultInsertGraph((IRI) getWorkingGraph());
 		update.setDataset(dataset);
 		update.execute();
+	}
+
+	/* --- TranslationSets --- */
+
+	/**
+	 * Creates a new vartrans:TranslationSet.
+	 * 
+	 * @param newTranslationSet
+	 * @param language
+	 * @param title
+	 * @param customFormValue
+	 * @return
+	 * @throws CustomFormException
+	 * @throws CODAException
+	 * @throws URIGenerationException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(vartransTranslationSet)', 'C')")
+	public AnnotatedValue<IRI> createTranslationSet(@Optional @NotLocallyDefined IRI newTranslationSet,
+			@Optional CustomFormValue customFormValue)
+			throws CODAException, CustomFormException, URIGenerationException {
+
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+
+		IRI newTranslationSetIRI;
+
+		if (newTranslationSet == null) {
+			newTranslationSetIRI = generateTranslationSetURI();
+		} else {
+			newTranslationSetIRI = newTranslationSet;
+		}
+
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+				.addCreatedResource(newTranslationSetIRI, RDFResourceRole.vartransTranslationSet); // set
+																									// created
+																									// for
+																									// versioning
+
+		modelAdditions.add(newTranslationSetIRI, RDF.TYPE, VARTRANS.TRANSLATION_SET);
+
+		RepositoryConnection repoConnection = getManagedConnection();
+
+		// enrich with custom form
+		if (customFormValue != null) {
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.resource, newTranslationSetIRI.stringValue());
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
+			enrichWithCustomForm(getManagedConnection(), modelAdditions, modelRemovals, cForm,
+					customFormValue.getUserPromptMap(), stdForm);
+		}
+
+		repoConnection.add(modelAdditions, getWorkingGraph());
+		repoConnection.remove(modelRemovals, getWorkingGraph());
+
+		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<>(newTranslationSetIRI);
+		annotatedValue.setAttribute("role", RDFResourceRole.vartransTranslationSet.name());
+		annotatedValue.setAttribute("explicit", true);
+		return annotatedValue;
+	}
+
+	/**
+	 * Returns lexicons.
+	 * 
+	 * @return
+	 */
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(vartransTranslationSet)', 'R')")
+	public Collection<AnnotatedValue<Resource>> getTranslationSets() {
+		QueryBuilder qb = createQueryBuilder(
+		// @formatter:off
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>			        \n" +
+				"                                                                           \n" +
+				" SELECT ?resource WHERE {		                                         	\n" +
+				"     ?resource rdf:type vartrans:TranslationSet .                          \n" +
+				" }                                                                         \n" +
+				" GROUP BY ?resource                                                        \n"
+				// @formatter:on
+		);
+		qb.processStandardAttributes();
+		return qb.runQuery();
+	}
+
+	/**
+	 * Deletes a translation set.
+	 * 
+	 * @param translationSet
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(vartransTranslationSet)', 'D')")
+	public void deleteTranslationSet(@LocallyDefined IRI vartransTranslationSet) {
+		Update deletionUpdate = getManagedConnection().prepareUpdate(
+			//@formatter:off
+			"PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>\n" + 
+			"DELETE WHERE {\n" + 
+			" ?s ?p ?o ;\n" + 
+			"    vartrans:trans ?trans .\n" + 
+			" ?trans ?transP ?transO .\n" + 
+			"}"
+			//@formatter:on
+			);
+		SimpleDataset dataset = new SimpleDataset();
+		dataset.addDefaultGraph((IRI)getWorkingGraph());
+		dataset.addDefaultRemoveGraph((IRI)getWorkingGraph());
+		deletionUpdate.setDataset(dataset);
+		deletionUpdate.execute();
 	}
 
 	/**
@@ -2533,6 +2642,16 @@ public class OntoLexLemon extends STServiceAdapter {
 			args.put(URIGenerator.Parameters.lexicon, lexicon);
 		}
 		return generateIRI(URIGenerator.Roles.ontolexLexicalEntry, args);
+	}
+
+	/**
+	 * Generates a new URI for a vartrans:TranslationSet.
+	 * 
+	 * @return
+	 * @throws URIGenerationException
+	 */
+	public IRI generateTranslationSetURI() throws URIGenerationException {
+		return generateIRI(RDFResourceRole.vartransTranslationSet.name(), Collections.emptyMap());
 	}
 
 	/**

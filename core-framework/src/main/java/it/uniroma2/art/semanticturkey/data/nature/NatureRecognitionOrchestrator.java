@@ -39,7 +39,7 @@ public class NatureRecognitionOrchestrator {
 
 				" OPTIONAL { \n" +
 				"  values(?st) {" +
-				"		(<http://www.w3.org/ns/lemon/lime#Lexicon>)(<http://www.w3.org/ns/lemon/ontolex#LexicalEntry>)" +
+				"		(<http://www.w3.org/ns/lemon/decomp#Component>)(<http://www.w3.org/ns/lemon/vartrans#TranslationSet>)(<http://www.w3.org/ns/lemon/lime#Lexicon>)(<http://www.w3.org/ns/lemon/ontolex#LexicalEntry>)" +
 				"     (<http://www.w3.org/ns/lemon/ontolex#Form>)(skos:Concept)(rdfs:Class)(skosxl:Label)(skos:ConceptScheme)(skos:OrderedCollection)(owl:Ontology)" +
 				"		(owl:ObjectProperty)(owl:DatatypeProperty)(owl:AnnotationProperty)(owl:OntologyProperty)" + "} \n" +
 				"  ?t rdfs:subClassOf* ?st \n" +
@@ -81,6 +81,8 @@ public class NatureRecognitionOrchestrator {
 		//DO NOT FORMAT THE FOLLOWING CODE, OTHERWISE IT IS DIFFICULT TO MAINTAIN IT
 		queryPart = " BIND(" +
 				"IF(!BOUND(" + var1 + "), \"" + RDFResourceRole.individual + "\"," +
+				"IF(" + var1 + " = <http://www.w3.org/ns/lemon/decomp#Component>, \"" + RDFResourceRole.decompComponent + "\"," +
+				"IF(" + var1 + " = <http://www.w3.org/ns/lemon/vartrans#TranslationSet>, \"" + RDFResourceRole.vartransTranslationSet + "\"," +
 				"IF(" + var1 + " = <http://www.w3.org/ns/lemon/lime#Lexicon>, \"" + RDFResourceRole.limeLexicon + "\"," +
 				"IF(" + var1 + " = <http://www.w3.org/ns/lemon/ontolex#LexicalEntry>, \"" + RDFResourceRole.ontolexLexicalEntry + "\"," +
 				"IF(" + var1 + " = <http://www.w3.org/ns/lemon/ontolex#Form>, \"" + RDFResourceRole.ontolexForm + "\"," +
@@ -100,7 +102,7 @@ public class NatureRecognitionOrchestrator {
 				"IF(" + var1 + " = owl:Class, \"" + RDFResourceRole.cls + "\"," +
 				"IF(" + var1 + " = rdfs:Datatype, \"" + RDFResourceRole.dataRange + "\"," +
 				"\"" + RDFResourceRole.individual + "\"" +
-				"))))))))))))))))))) " +// number of IF
+				"))))))))))))))))))))) " +// number of IF
 				"as " + var2 + ") \n"; // closing the BIND
 		// @formatter:on
 

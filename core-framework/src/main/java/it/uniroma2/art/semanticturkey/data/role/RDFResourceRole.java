@@ -38,6 +38,7 @@ import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.lime.model.vocabulary.VARTRANS;
 
 /**
  * this enum class provides a closed list of resource types according to the OWL vocabulary. Can be used as a
@@ -52,7 +53,8 @@ public enum RDFResourceRole {
 
 	undetermined, cls, individual, property, objectProperty, datatypeProperty, annotationProperty,
 	ontologyProperty, ontology, dataRange, concept, conceptScheme, xLabel, skosCollection,
-	skosOrderedCollection, limeLexicon, ontolexLexicalEntry, ontolexForm, ontolexLexicalSense, decompComponent;
+	skosOrderedCollection, limeLexicon, ontolexLexicalEntry, ontolexForm, ontolexLexicalSense, decompComponent,
+	vartransTranslationSet;
 
 	static Map<RDFResourceRole, IRI> map;
 	static {
@@ -75,6 +77,7 @@ public enum RDFResourceRole {
 		map.put(ontolexForm, ONTOLEX.FORM);
 		map.put(ontolexLexicalSense, ONTOLEX.LEXICAL_SENSE);
 		map.put(decompComponent, DECOMP.COMPONENT);
+		map.put(vartransTranslationSet, VARTRANS.TRANSLATION_SET);
 	}
 
 	public IRI getIRI() {
