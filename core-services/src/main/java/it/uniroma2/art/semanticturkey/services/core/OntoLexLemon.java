@@ -2490,6 +2490,8 @@ public class OntoLexLemon extends STServiceAdapter {
 			//@formatter:on
 		);
 		update.setBinding("rel", generateIRI("individual", Collections.emptyMap()));
+		update.setBinding("source", source);
+		update.setBinding("target", target);
 		update.setBinding("relationClass", relationClass);
 		update.setBinding("sourcePred", undirectional ? VARTRANS.RELATES : VARTRANS.SOURCE);
 		update.setBinding("targetPred", undirectional ? VARTRANS.RELATES : VARTRANS.TARGET);
