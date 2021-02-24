@@ -17,7 +17,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.Clos
 import it.uniroma2.art.semanticturkey.ontology.OntologyImport;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 import it.uniroma2.art.semanticturkey.project.ClearDataReport;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;

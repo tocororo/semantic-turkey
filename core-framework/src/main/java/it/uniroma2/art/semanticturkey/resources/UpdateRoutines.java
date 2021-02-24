@@ -25,7 +25,9 @@ package it.uniroma2.art.semanticturkey.resources;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,9 +37,14 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import javax.annotation.Nullable;
 
 import it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociationStore;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
@@ -47,7 +54,9 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
 
+import org.apache.commons.collections4.EnumerationUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -65,10 +74,15 @@ import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
 import it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefinitionStore;
 import it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporterStore;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.plugin.Plugin;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -134,6 +148,10 @@ public class UpdateRoutines {
 			if (stDataVersionNumber.compareTo(new VersionNumber(8, 0, 1)) < 0) {
 				alignFrom8To801();
 			}
+			if (stDataVersionNumber.compareTo(new VersionNumber(9, 0, 0)) < 0) {
+				alignFrom801To90();
+			}
+
 			Config.setSTDataVersionNumber(stVersionNumber);
 		}
 
@@ -240,9 +258,7 @@ public class UpdateRoutines {
 
 	private static void alignFrom7To8()
 			throws UnsupportedRDFormatException, IOException, ProjectAccessException {
-		logger.debug(
-				"Version 8.0 changed the namespace "
-						+ "associated with the metadata registry");
+		logger.debug("Version 8.0 changed the namespace " + "associated with the metadata registry");
 		File catalogFile = new File(Config.getDataDir(), "metadataRegistry/catalog.ttl");
 		if (catalogFile.exists()) {
 			replaceNamespaceDefinition(
@@ -250,7 +266,8 @@ public class UpdateRoutines {
 					new SimpleNamespace("mdr", "http://semanticturkey.uniroma2.it/ns/mdr#"), catalogFile);
 		}
 
-		logger.debug("Version 8.0 added capabilities about customService, invokableReporter and resourceMetadata");
+		logger.debug(
+				"Version 8.0 added capabilities about customService, invokableReporter and resourceMetadata");
 		Role[] roles = { DefaultRole.LEXICOGRAPHER, DefaultRole.LURKER, DefaultRole.MAPPER,
 				DefaultRole.ONTOLOGIST, DefaultRole.PROJECTMANAGER, DefaultRole.RDF_GEEK,
 				DefaultRole.THESAURUS_EDITOR, DefaultRole.VALIDATOR };
@@ -264,23 +281,24 @@ public class UpdateRoutines {
 				"it.uniroma2.art.semanticturkey.invokablereporter.OWLReport",
 				"it.uniroma2.art.semanticturkey.invokablereporter.SKOSReport");
 
-		//set the default <undetermined, DublinCore metadata> association if project has
-		//updateForRoles: resource, and DC properties as creation and modification properties
+		// set the default <undetermined, DublinCore metadata> association if project has
+		// updateForRoles: resource, and DC properties as creation and modification properties
 		logger.debug("Version 8.0 replaced updateForRoles with the resource metadata mechanism");
 
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
-		for (AbstractProject absProj: ProjectManager.listProjects()) {
+		for (AbstractProject absProj : ProjectManager.listProjects()) {
 			if (absProj instanceof Project) {
 				Project proj = (Project) absProj;
 				Set<RDFResourceRole> updateForRoles = proj.getUpdateForRoles();
 				String modificationDateProp = proj.getProperty(Project.MODIFICATION_DATE_PROP_DEPRECATED);
 				String creationDateProp = proj.getProperty(Project.CREATION_DATE_PROP_DEPRECATED);
-				if (
-					updateForRoles.size() == 1 && updateForRoles.contains(RDFResourceRole.undetermined) &&
-					modificationDateProp != null && modificationDateProp.equals("http://purl.org/dc/terms/modified") &&
-					creationDateProp != null && creationDateProp.equals("http://purl.org/dc/terms/created")
-				) {
-					File configFolder = STPropertiesManager.getProjectPropertyFolder(proj, ResourceMetadataAssociationStore.class.getName());
+				if (updateForRoles.size() == 1 && updateForRoles.contains(RDFResourceRole.undetermined)
+						&& modificationDateProp != null
+						&& modificationDateProp.equals("http://purl.org/dc/terms/modified")
+						&& creationDateProp != null
+						&& creationDateProp.equals("http://purl.org/dc/terms/created")) {
+					File configFolder = STPropertiesManager.getProjectPropertyFolder(proj,
+							ResourceMetadataAssociationStore.class.getName());
 					FileUtils.forceMkdir(configFolder);
 					String configName = "default dc association.cfg";
 					try (InputStream is = UpdateRoutines.class.getResourceAsStream(
@@ -295,6 +313,78 @@ public class UpdateRoutines {
 	private static void alignFrom8To801() throws IOException {
 		logger.debug("Version 8.0.1 updated the languages in the project-settings-defaults");
 		updateProjectSettingsDefaults();
+	}
+
+	private static void alignFrom801To90() throws FileNotFoundException, IOException {
+		logger.debug("Version 9.0 updated the URIGenerator to the new style");
+
+		ObjectMapper objectMapper = STPropertiesManager.createObjectMapper();
+
+		for (File projectDir : listSubFolders(Resources.getProjectsDir())) {
+			File projectFile = new File(projectDir, Project.INFOFILENAME);
+			if (!projectFile.exists()) continue; // skip corrupted projects
+			
+			File oldUriGenConfigFile = new File(projectDir, "urigen.config");
+			if (oldUriGenConfigFile.exists()) {
+				Properties oldUriGenConfig = new Properties();
+				oldUriGenConfig.load(new FileInputStream(oldUriGenConfigFile));
+
+				Properties projectProperties = new Properties();
+				boolean projectEdited = false;
+				projectProperties.load(new FileInputStream(projectFile));
+
+				String uriGenFactoryID = projectProperties
+						.getProperty(Project.URI_GENERATOR_FACTORY_ID_PROP);
+
+				String newUriGenFactoryID = null;
+				
+				if (uriGenFactoryID.equals("it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory")) {
+					newUriGenFactoryID = "it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGenerator";
+				} else if (uriGenFactoryID.equals("it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODAURIGeneratorFactory")) {
+					newUriGenFactoryID = "it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAURIGenerator";
+				}
+				
+				if (newUriGenFactoryID != null) {
+					uriGenFactoryID = newUriGenFactoryID;
+					projectProperties.setProperty(Project.URI_GENERATOR_FACTORY_ID_PROP, uriGenFactoryID);
+					projectEdited = true;
+				}
+				
+				@Nullable
+				String uriGenConfigType = projectProperties
+						.getProperty(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP);
+
+				if (uriGenConfigType != null) {
+					projectProperties.remove(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP);
+					projectEdited = true;
+				}
+				
+				if (projectEdited) {
+					projectProperties.store(new FileWriter(projectFile),"");
+				}
+				
+				ObjectNode uriGenConfigObject = JsonNodeFactory.instance.objectNode();
+				Collections.list(oldUriGenConfig.propertyNames()).stream().filter(String.class::isInstance)
+						.map(String.class::cast)
+						.forEach(n -> uriGenConfigObject.put(n, oldUriGenConfig.getProperty(n)));
+				if (uriGenConfigType != null) {
+					if (uriGenConfigType.equals("it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.NativeTemplateBasedURIGeneratorConfiguration")) {
+						uriGenConfigType = "it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorConfiguration";
+					} else if (uriGenConfigType.equals("it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODATemplateBasedURIGeneratorConfiguration")) {
+						uriGenConfigType = "it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODATemplateBasedURIGeneratorConfiguration";
+					} else if (uriGenConfigType.equals("it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAAnyURIGeneratorConfiguration")) {
+						uriGenConfigType = "it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAAnyURIGeneratorConfiguration";
+					}
+					
+					uriGenConfigObject.put("@type", uriGenConfigType);
+				}
+
+				File newUriGenConfigFile = new File(projectDir, Project.URI_GENERATOR_CONFIG_FILENAME);
+				objectMapper.writeValue(newUriGenConfigFile, oldUriGenConfig);
+				oldUriGenConfigFile.delete();
+			}
+		}
+
 	}
 
 	private static void updateCustomServices(String... serviceID) throws IOException {

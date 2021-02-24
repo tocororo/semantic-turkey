@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LifterContext;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 import it.uniroma2.art.semanticturkey.project.Project;
 
 public class ZthesToRdfMapper {

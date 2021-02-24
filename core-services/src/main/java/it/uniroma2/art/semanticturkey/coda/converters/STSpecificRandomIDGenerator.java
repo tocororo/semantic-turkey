@@ -10,8 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import it.uniroma2.art.coda.converters.contracts.RandomIdGenerator;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.interfaces.CODAContext;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 
 /**

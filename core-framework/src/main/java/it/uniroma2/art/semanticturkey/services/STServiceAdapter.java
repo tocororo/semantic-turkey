@@ -53,7 +53,7 @@ import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfo.SearchStrategies;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;

@@ -25,8 +25,8 @@ import it.uniroma2.art.semanticturkey.exceptions.ElementNotInCollectionException
 import it.uniroma2.art.semanticturkey.exceptions.EmptyCollectionException;
 import it.uniroma2.art.semanticturkey.exceptions.PrefAltLabelClashException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;

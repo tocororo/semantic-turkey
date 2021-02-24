@@ -57,33 +57,6 @@
 	<osgi:reference id="codaOSGiFactory"
 		interface="it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory" />
 
-	<!-- Publishes the CODA-based implementation of the extension point URIGenerator -->
-	<bean id="codaURIGeneratorFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODAURIGeneratorFactory" />
-
-	<osgi:service
-		interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
-		ref="codaURIGeneratorFactory">
-		<osgi:service-properties>
-			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
-				value="it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator" />
-		</osgi:service-properties>
-	</osgi:service>
-
-	<!-- Publishes the native template-based implementation of the extension 
-		point URIGenerator -->
-	<bean id="nativeTemplateBasedURIGeneratorFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory" />
-
-	<osgi:service
-		interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
-		ref="nativeTemplateBasedURIGeneratorFactory">
-		<osgi:service-properties>
-			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
-				value="it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator" />
-		</osgi:service-properties>
-	</osgi:service>
-
 	<!-- Publishes the RDFS-based implementation of the extension point RenderingEngine -->
 	<bean id="rdfsRenderingEngineFactory"
 		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory" />

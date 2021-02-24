@@ -105,6 +105,7 @@ import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurer;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerImpl;
@@ -114,14 +115,13 @@ import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerator;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory;
-import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory;
 import it.uniroma2.art.semanticturkey.project.RepositorySummary.RemoteRepositorySummary;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.repository.ReadOnlyRepositoryWrapper;
@@ -182,7 +182,7 @@ public abstract class Project extends AbstractProject {
 
 	public static final String INFOFILENAME = "project.info";
 
-	public static final String URI_GENERATOR_CONFIG_FILENAME = "urigen.config";
+	public static final String URI_GENERATOR_CONFIG_FILENAME = "urigen.cfg";
 	public static final String RENDERING_ENGINE_CONFIG_FILENAME = "rendering.config";
 
 	public static final String TIMESTAMP_PROP = "timeStamp";
@@ -211,11 +211,10 @@ public abstract class Project extends AbstractProject {
 
 	public static final String URI_GENERATOR_PROP_PREFIX = MANDATORY_PLUGINS_PROP_PREFIX + ".urigen";
 	public static final String URI_GENERATOR_FACTORY_ID_PROP = URI_GENERATOR_PROP_PREFIX + ".factoryID";
-	public static final String URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE = NativeTemplateBasedURIGeneratorFactory.class
-			.getName();
+	public static final String URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE = "it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGenerator";
 	public static final String URI_GENERATOR_CONFIGURATION_TYPE_PROP = URI_GENERATOR_PROP_PREFIX
 			+ ".configType";
-
+	
 	public static final String RENDERING_ENGINE_PROP_PREFIX = MANDATORY_PLUGINS_PROP_PREFIX + ".rendering";
 	public static final String RENDERING_ENGINE_FACTORY_ID_PROP = RENDERING_ENGINE_PROP_PREFIX + ".factoryID";
 	public static final String RENDERING_ENGINE_FACTORY_ID_DEFAULT_PROP_VALUE = RDFSRenderingEngineFactory.class
@@ -387,30 +386,26 @@ public abstract class Project extends AbstractProject {
 
 			// Activation of the URI Generator for this project
 			String uriGenFactoryID = getProperty(URI_GENERATOR_FACTORY_ID_PROP);
-			String uriGenConfigType = getProperty(URI_GENERATOR_CONFIGURATION_TYPE_PROP);
 
 			if (uriGenFactoryID == null) {
 				uriGenFactoryID = URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE;
 			}
 
 			try {
-				PluginFactory<?, ?, ?, ?, ?> uriGenFactory = PluginManager.getPluginFactory(uriGenFactoryID);
-				STProperties uriGenConfig;
+				PluginSpecification uriGenSpec;
 
-				if (uriGenConfigType != null) {
-					uriGenConfig = uriGenFactory.createPluginConfiguration(uriGenConfigType);
-					uriGenConfig.loadProperties(new File(_projectDir, URI_GENERATOR_CONFIG_FILENAME));
+				File uriGenConfigFile = new File(_projectDir, URI_GENERATOR_CONFIG_FILENAME);
+				if (uriGenConfigFile.exists()) {
+					uriGenSpec = new PluginSpecification(uriGenFactoryID, null, null,
+							(ObjectNode) STPropertiesManager.createObjectMapper().readTree(uriGenConfigFile));
 				} else {
-					uriGenConfig = uriGenFactory.createDefaultPluginConfiguration();
+					uriGenSpec = new PluginSpecification(uriGenFactoryID, null, null, null);
 				}
 
-				logger.debug(
-						"instantiating URIGenerator. PluginFactory.getID() = {} // PluginConfiguration = {}",
-						uriGenFactory.getID(), uriGenConfig);
+				logger.debug("instantiating URIGenerator. Specification = {}", uriGenSpec);
 
-				this.uriGenerator = (URIGenerator) uriGenFactory.createInstance(uriGenConfig);
-			} catch (IOException | ClassNotFoundException | UnsupportedPluginConfigurationException
-					| UnloadablePluginConfigurationException e) {
+				this.uriGenerator = exptManager.instantiateExtension(URIGenerator.class, uriGenSpec);
+			} catch (IOException e) {
 				throw new ProjectAccessException(e);
 			}
 
@@ -1137,7 +1132,8 @@ public abstract class Project extends AbstractProject {
 			MutableObject<PluginSpecification> guessedPluginSpec = new MutableObject<>();
 			repositoryManager.operateOnUnfoldedManager(CORE_REPOSITORY, (actualRepoMgr, actualRepoId) -> {
 				Model repoConfig = actualRepoMgr.getRepositoryConfig(actualRepoId);
-				Resource sailImpl = Models.objectResource(repoConfig.filter(null, SailRepositorySchema.SAILIMPL, null))
+				Resource sailImpl = Models
+						.objectResource(repoConfig.filter(null, SailRepositorySchema.SAILIMPL, null))
 						.orElseThrow(() -> new IllegalStateException("Unable to determine top Sail"));
 				Optional<Resource> delegate;
 				do {

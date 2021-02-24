@@ -13,7 +13,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LifterContext;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LiftingException;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.RDFLifter;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ClosableFormattedResource;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 import it.uniroma2.art.semanticturkey.zthes.XmlReader;
 import it.uniroma2.art.semanticturkey.zthes.Zthes;
 import it.uniroma2.art.semanticturkey.zthes.ZthesException;

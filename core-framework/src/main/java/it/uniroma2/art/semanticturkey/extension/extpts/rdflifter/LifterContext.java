@@ -6,7 +6,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
-import it.uniroma2.art.semanticturkey.plugin.extpts.URIGenerationException;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 
 /**
  * This class represents the context of execution of an {@link RDFLifter}. An object of this class is not

@@ -68,8 +68,6 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfi
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSRenderingEngineConfiguration;
-import it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory;
-import it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.NativeTemplateBasedURIGeneratorConfiguration;
 import it.uniroma2.art.semanticturkey.project.CreateLocal;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -111,8 +109,6 @@ public class BaseRenderingEngineTest {
 		// loads PU bindings
 		ProjectUserBindingsManager.loadPUBindings();
 		PluginManager.setDirectAccessTest(true);
-		PluginManager.setTestPluginFactoryImpls(Arrays.asList(new NativeTemplateBasedURIGeneratorFactory(),
-				new SKOSRenderingEngineFactory()));
 
 		ProjectManager.setExtensionPointManager(new ExtensionPointManagerImpl() {
 			@Override
@@ -270,15 +266,16 @@ public class BaseRenderingEngineTest {
 
 		Project project = ProjectManager.createProject(ProjectConsumer.SYSTEM, "Test", Project.SKOS_MODEL,
 				Project.SKOS_MODEL, "http://example.org/", false, false, false, new CreateLocal(), "core",
-				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null, null, null, null,
-				new PluginSpecification(NativeTemplateBasedURIGeneratorFactory.class.getName(),
-				NativeTemplateBasedURIGeneratorConfiguration.class.getName(), null,
-				JsonNodeFactory.instance.objectNode()),
+				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null, null, null,
+				null,
+				new PluginSpecification(
+						"it.uniroma2.art.semanticturkey.rendering.NativeTemplateBasedURIGeneratorFactory",
+						"it.uniroma2.art.semanticturkey.rendering.NativeTemplateBasedURIGeneratorConfiguration",
+						null, JsonNodeFactory.instance.objectNode()),
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
-				SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
-				JsonNodeFactory.instance.objectNode()),
-				null, null, null, null, null, null, null, false, null,
-				false, false, false);
+						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
+						JsonNodeFactory.instance.objectNode()),
+				null, null, null, null, null, null, null, false, null, false, false, false);
 		try {
 			Repository repo = new SailRepository(new MemoryStore());
 			repo.init();
@@ -402,7 +399,8 @@ public class BaseRenderingEngineTest {
 			UnloadablePluginConfigurationException, WrongPropertiesException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, ProjectInconsistentException,
 			InvalidConfigurationException, STPropertyAccessException, IOException,
-			ReservedPropertyUpdateException, ProjectUpdateException, STPropertyUpdateException, NoSuchConfigurationManager {
+			ReservedPropertyUpdateException, ProjectUpdateException, STPropertyUpdateException,
+			NoSuchConfigurationManager {
 
 		Properties renderingEngineConfiguration = new Properties();
 		renderingEngineConfiguration.setProperty("template", "(\\(${notation}\\) )?${show}");
@@ -413,14 +411,13 @@ public class BaseRenderingEngineTest {
 				Project.SKOS_MODEL, "http://example.org/", false, true, false, new CreateLocal(), "core",
 				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null, "support",
 				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null,
-				new PluginSpecification(NativeTemplateBasedURIGeneratorFactory.class.getName(),
-				NativeTemplateBasedURIGeneratorConfiguration.class.getName(), null,
-				JsonNodeFactory.instance.objectNode()),
+				new PluginSpecification("it.uniroma2.art.semanticturkey.rendering.NativeTemplateBasedURIGeneratorFactory",
+						"it.uniroma2.art.semanticturkey.rendering.NativeTemplateBasedURIGeneratorConfiguration, null,
+						JsonNodeFactory.instance.objectNode()),
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
-				SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
-				JsonNodeFactory.instance.objectNode()),
-				null, null, null, null, null, null, null, false, null,
-				false, false, false);
+						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
+						JsonNodeFactory.instance.objectNode()),
+				null, null, null, null, null, null, null, false, null, false, false, false);
 		try {
 			STServiceContext stServiceContext = new STServiceContext() {
 

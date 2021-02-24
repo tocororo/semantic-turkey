@@ -33,7 +33,7 @@ public class NativeTemplateBasedURIGenerator implements URIGenerator {
 
 	private Properties convProps;
 
-	public NativeTemplateBasedURIGenerator(NativeTemplateBasedURIGeneratorSettings conf) {
+	public NativeTemplateBasedURIGenerator(NativeTemplateBasedURIGeneratorConfiguration conf) {
 		this.converter = new TemplateBasedRandomIdGenerator();
 
 		convProps = new Properties();

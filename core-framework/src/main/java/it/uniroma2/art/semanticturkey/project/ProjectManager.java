@@ -84,6 +84,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerFactory;
@@ -117,6 +118,7 @@ import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConf
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.properties.Pair;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -244,7 +246,7 @@ public class ProjectManager {
 				try {
 					proj = getProjectDescription(projDir.getName());
 					ProjectACL acl = ((Project) proj).getACL();
-					//check if project is accessible by the consumer (or any consumer)
+					// check if project is accessible by the consumer (or any consumer)
 					if (acl.hasInACL(consumer) || acl.isUniversallyAccessible()) {
 						projects.add(proj);
 					}
@@ -1363,10 +1365,9 @@ public class ProjectManager {
 			RDFFormat preloadedDataFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
 			Set<IRI> failedImports, String leftDataset, String rightDataset, boolean shaclEnabled,
 			SHACLSettings shaclSettings, boolean trivialInferenceEnabled, boolean openAtStartup,
-			boolean globallyAccessible)
-			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, DuplicatedResourceException, ProjectCreationException,
-			ClassNotFoundException, UnsupportedPluginConfigurationException,
+			boolean globallyAccessible) throws InvalidProjectNameException, ProjectInexistentException,
+			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
+			ProjectCreationException, ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, ProjectInconsistentException,
 			InvalidConfigurationException, STPropertyAccessException, IOException,
@@ -1775,8 +1776,7 @@ public class ProjectManager {
 			RepositoryConfig supportRepoConfig, String supportBackendType,
 			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
 			String leftDataset, String rightDataset, boolean enableSHACL, boolean trivialInferenceEnabled,
-			boolean openAtStartup)
-			throws ProjectCreationException {
+			boolean openAtStartup) throws ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
 		try {
@@ -1792,8 +1792,6 @@ public class ProjectManager {
 			projProp.setProperty(Project.BLACKLISTING_ENABLED_PROP, String.valueOf(blacklistingEnabled));
 			projProp.setProperty(Project.URI_GENERATOR_FACTORY_ID_PROP,
 					uriGeneratorSpecification.getFactoryId());
-			projProp.setProperty(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP,
-					uriGeneratorSpecification.getConfigType());
 			projProp.setProperty(Project.RENDERING_ENGINE_FACTORY_ID_PROP,
 					renderingEngineSpecification.getFactoryId());
 			projProp.setProperty(Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP,
@@ -1821,13 +1819,13 @@ public class ProjectManager {
 				projProp.setProperty(Project.TRIVIAL_INFERENCER_ENABLED_PROP,
 						String.valueOf(trivialInferenceEnabled));
 			}
-			//add the time of the creation
+			// add the time of the creation
 			GregorianCalendar calendar = new GregorianCalendar();
 			XMLGregorianCalendar currentDateTimeXML;
 			currentDateTimeXML = DatatypeFactory.newInstance().newXMLGregorianCalendar(calendar);
 			projProp.setProperty(Project.CREATED_AT_PROP, currentDateTimeXML.toString());
 
-			//add the openAtStartup value
+			// add the openAtStartup value
 			projProp.setProperty(Project.OPEN_AT_STARTUP_PROP, String.valueOf(openAtStartup));
 
 			try (FileOutputStream os = new FileOutputStream(info_stp)) {
@@ -1840,11 +1838,14 @@ public class ProjectManager {
 			File prefixMappingFile = new File(projectDir, NSPrefixMappings.prefixMappingFileName);
 			prefixMappingFile.createNewFile();
 
-			File uriGenConfigurationFile = new File(projectDir, Project.URI_GENERATOR_CONFIG_FILENAME);
-			uriGenConfigurationFile.createNewFile();
-			try (FileWriter fw = new FileWriter(uriGenConfigurationFile)) {
-				uriGeneratorSpecification.getProperties().store(fw,
-						"uri generator configuration, initialized from project initialization");
+			ObjectNode uriGenConfig = uriGeneratorSpecification.getConfiguration();
+			if (uriGenConfig != null) {
+				File uriGenConfigurationFile = new File(projectDir, Project.URI_GENERATOR_CONFIG_FILENAME);
+				uriGenConfigurationFile.createNewFile();
+
+				try (FileWriter fw = new FileWriter(uriGenConfigurationFile)) {
+					STPropertiesManager.createObjectMapper().writeValue(fw, uriGenConfig);
+				}
 			}
 
 			File renderingEngineConfigurationFile = new File(projectDir,
