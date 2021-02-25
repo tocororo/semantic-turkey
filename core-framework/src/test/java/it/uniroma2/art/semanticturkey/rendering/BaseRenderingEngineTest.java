@@ -412,7 +412,7 @@ public class BaseRenderingEngineTest {
 				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null, "support",
 				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null,
 				new PluginSpecification("it.uniroma2.art.semanticturkey.rendering.NativeTemplateBasedURIGeneratorFactory",
-						"it.uniroma2.art.semanticturkey.rendering.NativeTemplateBasedURIGeneratorConfiguration, null,
+						"it.uniroma2.art.semanticturkey.rendering.NativeTemplateBasedURIGeneratorConfiguration", null,
 						JsonNodeFactory.instance.objectNode()),
 				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
 						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
