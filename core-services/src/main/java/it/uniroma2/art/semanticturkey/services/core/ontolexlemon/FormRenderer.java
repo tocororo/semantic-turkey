@@ -1,7 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core.ontolexlemon;
 
-import it.uniroma2.art.semanticturkey.rendering.AbstractLabelBasedRenderingEngineConfiguration;
-import it.uniroma2.art.semanticturkey.rendering.BaseRenderingEngine;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.AbstractLabelBasedRenderingEngineConfiguration;
 
 public class FormRenderer extends BaseRenderingEngine {
 
@@ -16,7 +16,7 @@ public class FormRenderer extends BaseRenderingEngine {
 			}
 
 		};
-		conf.languages = null;
+//		conf.languages = null;
 	}
 
 	private FormRenderer() {

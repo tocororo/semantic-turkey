@@ -28,7 +28,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
 import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;

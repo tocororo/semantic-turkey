@@ -4,7 +4,8 @@ import java.util.List;
 
 import org.eclipse.rdf4j.model.IRI;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 /**
  * Definition of a variable to be used inside a rendering template
@@ -12,14 +13,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  *
  */
-public class VariableDefinition {
-	private List<IRI> propertyPath;
-
-	public VariableDefinition(@JsonProperty("propertyPath") List<IRI> propertyPath) {
-		this.propertyPath = propertyPath;
+public class VariableDefinition implements STProperties {
+	@Override
+	public String getShortName() {
+		return "Variable definition";
 	}
 
-	public List<IRI> getPropertyPath() {
-		return propertyPath;
-	}
+	@STProperty(description = "", displayName =  "Property path")
+	public List<IRI> propertyPath;
+
 }

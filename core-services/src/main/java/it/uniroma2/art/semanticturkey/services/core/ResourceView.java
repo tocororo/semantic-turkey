@@ -114,19 +114,19 @@ import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.AbstractLabelBasedRenderingEngineConfiguration;
 import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.METADATAREGISTRY;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
-import it.uniroma2.art.semanticturkey.rendering.AbstractLabelBasedRenderingEngineConfiguration;
-import it.uniroma2.art.semanticturkey.rendering.BaseRenderingEngine;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
@@ -1062,7 +1062,7 @@ public class ResourceView extends STServiceAdapter {
 				java.util.Optional<IRI> lexicalizationModel = mediationFramework
 						.assessLexicalizationModel(dataset, metadataRegistryBackend.extractProfile(dataset));
 				RenderingEngine renderingEngine = BaseRenderingEngine
-						.getRenderingEngineForLexicalizationModel(
+						.getRenderingEngineForLexicalizationModel(exptManager,
 								lexicalizationModel.orElse(Project.RDFS_LEXICALIZATION_MODEL))
 						.orElse(null);
 				return super.retrieveSubjectAndObjectsAddtionalInformationFromConnection(conn, statements,
@@ -1204,7 +1204,7 @@ class DecompComponentRenderer extends BaseRenderingEngine {
 			}
 
 		};
-		conf.languages = null;
+		// conf.languages = null;
 	}
 
 	private DecompComponentRenderer() {

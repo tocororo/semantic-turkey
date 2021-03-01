@@ -103,24 +103,16 @@ import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelE
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
+import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
 import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurer;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.impl.OntologyManagerImpl;
-import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngineFactory;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory;
 import it.uniroma2.art.semanticturkey.project.RepositorySummary.RemoteRepositorySummary;
-import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -183,7 +175,7 @@ public abstract class Project extends AbstractProject {
 	public static final String INFOFILENAME = "project.info";
 
 	public static final String URI_GENERATOR_CONFIG_FILENAME = "urigen.cfg";
-	public static final String RENDERING_ENGINE_CONFIG_FILENAME = "rendering.config";
+	public static final String RENDERING_ENGINE_CONFIG_FILENAME = "rendering.cfg";
 
 	public static final String TIMESTAMP_PROP = "timeStamp";
 	public static final String CREATED_AT_PROP = "created_at";
@@ -214,11 +206,10 @@ public abstract class Project extends AbstractProject {
 	public static final String URI_GENERATOR_FACTORY_ID_DEFAULT_PROP_VALUE = "it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGenerator";
 	public static final String URI_GENERATOR_CONFIGURATION_TYPE_PROP = URI_GENERATOR_PROP_PREFIX
 			+ ".configType";
-	
+
 	public static final String RENDERING_ENGINE_PROP_PREFIX = MANDATORY_PLUGINS_PROP_PREFIX + ".rendering";
 	public static final String RENDERING_ENGINE_FACTORY_ID_PROP = RENDERING_ENGINE_PROP_PREFIX + ".factoryID";
-	public static final String RENDERING_ENGINE_FACTORY_ID_DEFAULT_PROP_VALUE = RDFSRenderingEngineFactory.class
-			.getName();
+	public static final String RENDERING_ENGINE_FACTORY_ID_DEFAULT_PROP_VALUE = "it.uniroma2.art.semanticturkey.extension.impl.rendering.rdfs.RDFSRenderingEngine";
 	public static final String RENDERING_ENGINE_CONFIGURATION_TYPE_PROP = RENDERING_ENGINE_PROP_PREFIX
 			+ ".configType";
 
@@ -411,34 +402,30 @@ public abstract class Project extends AbstractProject {
 
 			// Activation of the rendering engine for this project
 			String renderingEngineFactoryID = getProperty(RENDERING_ENGINE_FACTORY_ID_PROP);
-			String renderingEngineConfigType = getProperty(RENDERING_ENGINE_CONFIGURATION_TYPE_PROP);
 
 			if (renderingEngineFactoryID == null) {
-				renderingEngineFactoryID = determineBestRenderingEngine(lexicalizationModel);
+				PluginSpecification renderingEngineSpec = BaseRenderingEngine
+						.getRenderingEngineSpecificationForLexicalModel(lexicalizationModel)
+						.orElseThrow(() -> new IllegalArgumentException(
+								"Unsupported lexicalization model: " + lexicalizationModel));
+				renderingEngineFactoryID = renderingEngineSpec.getFactoryId();
 			}
 
 			try {
-				PluginFactory<?, ?, ?, ?, ?> renderingEngineFactory = PluginManager
-						.getPluginFactory(renderingEngineFactoryID);
-				STProperties renderingEngineConfig;
+				PluginSpecification renderingEngineSpec;
 
-				if (renderingEngineConfigType != null) {
-					renderingEngineConfig = renderingEngineFactory
-							.createPluginConfiguration(renderingEngineConfigType);
-					renderingEngineConfig
-							.loadProperties(new File(_projectDir, RENDERING_ENGINE_CONFIG_FILENAME));
+				File renderingEngineConfigFile = new File(_projectDir, RENDERING_ENGINE_CONFIG_FILENAME);
+				if (renderingEngineConfigFile.exists()) {
+					renderingEngineSpec = new PluginSpecification(renderingEngineFactoryID, null, null,
+							(ObjectNode) STPropertiesManager.createObjectMapper().readTree(renderingEngineConfigFile));
 				} else {
-					renderingEngineConfig = renderingEngineFactory.createDefaultPluginConfiguration();
+					renderingEngineSpec = new PluginSpecification(renderingEngineFactoryID, null, null, null);
 				}
 
-				logger.debug(
-						"instantiating RenderingEngine. PluginFactory.getID() = {} // PluginConfiguration = {}",
-						renderingEngineFactory.getID(), renderingEngineConfig);
+				logger.debug("instantiating RenderingEngine. Specification = {}", renderingEngineSpec);
 
-				this.renderingEngine = (RenderingEngine) renderingEngineFactory
-						.createInstance(renderingEngineConfig);
-			} catch (IOException | ClassNotFoundException | UnsupportedPluginConfigurationException
-					| UnloadablePluginConfigurationException e) {
+				this.renderingEngine = exptManager.instantiateExtension(RenderingEngine.class, renderingEngineSpec);
+			} catch (IOException e) {
 				throw new ProjectAccessException(e);
 			}
 
@@ -665,20 +652,6 @@ public abstract class Project extends AbstractProject {
 		}
 
 		return coreVocabularies;
-	}
-
-	public static String determineBestRenderingEngine(IRI lexicalizationModel) {
-		if (lexicalizationModel.stringValue().equals("http://www.w3.org/2004/02/skos/core")) {
-			return SKOSRenderingEngineFactory.class.getName();
-		} else if (lexicalizationModel.stringValue().equals("http://www.w3.org/2008/05/skos-xl")) {
-			return SKOSXLRenderingEngineFactory.class.getName();
-		} else if (lexicalizationModel.stringValue().equals("http://www.w3.org/2000/01/rdf-schema")) {
-			return RDFSRenderingEngineFactory.class.getName();
-		} else if (lexicalizationModel.stringValue().equals(ONTOLEXLEMON_LEXICALIZATION_MODEL_STRING)) {
-			return OntoLexLemonRenderingEngineFactory.class.getName();
-		} else {
-			throw new IllegalArgumentException("Unsupported lexicalization model: " + lexicalizationModel);
-		}
 	}
 
 	public void deactivate() {

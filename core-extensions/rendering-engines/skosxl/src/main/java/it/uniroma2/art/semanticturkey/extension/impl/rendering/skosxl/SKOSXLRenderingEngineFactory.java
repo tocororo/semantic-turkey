@@ -1,14 +1,17 @@
 package it.uniroma2.art.semanticturkey.extension.impl.rendering.skosxl;
 
-import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
-import it.uniroma2.art.semanticturkey.extension.settings.PUSettingsManager;
+import java.util.Arrays;
+import java.util.Collection;
+
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
  * Factory for the instantiation of {@link SKOSXLRenderingEngine}.
  */
-public class SKOSXLRenderingEngineFactory implements NonConfigurableExtensionFactory<SKOSXLRenderingEngine>,
-		PUSettingsManager<SKOSXLRenderingEnginePUSettings> {
+public class SKOSXLRenderingEngineFactory
+		implements ConfigurableExtensionFactory<SKOSXLRenderingEngine, SKOSXLRenderingEngineConfiguration> {
 
 	public static class MessageKeys {
 		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rendering.skosxl.SKOSXLRenderingEngineFactory";
@@ -27,7 +30,13 @@ public class SKOSXLRenderingEngineFactory implements NonConfigurableExtensionFac
 	}
 
 	@Override
-	public SKOSXLRenderingEngine createInstance() {
-		return new SKOSXLRenderingEngine(this);
+	public SKOSXLRenderingEngine createInstance(SKOSXLRenderingEngineConfiguration conf)
+			throws InvalidConfigurationException {
+		return new SKOSXLRenderingEngine(conf);
+	}
+
+	@Override
+	public Collection<SKOSXLRenderingEngineConfiguration> getConfigurations() {
+		return Arrays.asList(new SKOSXLRenderingEngineConfiguration());
 	}
 }

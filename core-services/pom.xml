@@ -209,8 +209,6 @@
 							it.uniroma2.art.semanticturkey.history,
 							it.uniroma2.art.semanticturkey.exceptions,
 							it.uniroma2.art.semanticturkey.ontology,
-							it.uniroma2.art.semanticturkey.plugin,
-							it.uniroma2.art.semanticturkey.plugin.extpts,
 							it.uniroma2.art.semanticturkey.project,
 							it.uniroma2.art.semanticturkey.resources,
 							it.uniroma2.art.semanticturkey.servlet,

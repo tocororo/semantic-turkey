@@ -24,6 +24,7 @@
 package it.uniroma2.art.semanticturkey.resources;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -32,31 +33,25 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import javax.annotation.Nullable;
 
-import it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociationStore;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.project.AbstractProject;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
-
-import org.apache.commons.collections4.EnumerationUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.filefilter.DirectoryFileFilter;
+import org.apache.commons.lang3.Functions.FailableConsumer;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -74,19 +69,31 @@ import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableMap;
 
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
+import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefinitionStore;
 import it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporterStore;
+import it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociationStore;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.plugin.Plugin;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
+import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 
@@ -167,7 +174,7 @@ public class UpdateRoutines {
 
 		logger.debug("Version 3.0.0 added new properties to the default project preferences");
 		updatePUSettingsSystemDefaults(STPropertiesManager.CORE_PLUGIN_ID);
-		updatePUSettingsSystemDefaults(RenderingEngine.class.getName());
+		updatePUSettingsSystemDefaults("it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
 	}
 
 	private static void alignFrom3To4() throws IOException {
@@ -238,7 +245,7 @@ public class UpdateRoutines {
 
 		logger.debug("Version 5.0.0 removed a property from the default project preferences");
 		updatePUSettingsSystemDefaults(STPropertiesManager.CORE_PLUGIN_ID);
-		updatePUSettingsSystemDefaults(RenderingEngine.class.getName());
+		updatePUSettingsSystemDefaults("it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
 	}
 
 	private static void alignFrom5To6() throws IOException {
@@ -247,7 +254,7 @@ public class UpdateRoutines {
 
 		logger.debug("Version 6.0.0 changed a property from the default project preferences");
 		updatePUSettingsSystemDefaults(STPropertiesManager.CORE_PLUGIN_ID);
-		updatePUSettingsSystemDefaults(RenderingEngine.class.getName());
+		updatePUSettingsSystemDefaults("it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
 	}
 
 	private static void alignFrom6To7() throws IOException {
@@ -316,75 +323,231 @@ public class UpdateRoutines {
 	}
 
 	private static void alignFrom801To90() throws FileNotFoundException, IOException {
-		logger.debug("Version 9.0 updated the URIGenerator to the new style");
+		logger.debug(
+				"Version 9.0 updated the URIGenerator and the RenderingEngine to the new style (including persistence of properties as YAML). Upgrade deferred on the fist attempt to obtain the description of the project, because we need the extension point manager");
 
-		ObjectMapper objectMapper = STPropertiesManager.createObjectMapper();
+		updateStoredPropertiesForComponentRenaming(
+				"it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine",
+				"it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine");
 
-		for (File projectDir : listSubFolders(Resources.getProjectsDir())) {
-			File projectFile = new File(projectDir, Project.INFOFILENAME);
-			if (!projectFile.exists()) continue; // skip corrupted projects
-			
-			File oldUriGenConfigFile = new File(projectDir, "urigen.config");
-			if (oldUriGenConfigFile.exists()) {
-				Properties oldUriGenConfig = new Properties();
-				oldUriGenConfig.load(new FileInputStream(oldUriGenConfigFile));
+	}
 
-				Properties projectProperties = new Properties();
-				boolean projectEdited = false;
-				projectProperties.load(new FileInputStream(projectFile));
+	public static void upgradeURIGeneratorAndRenderingEngine(ExtensionPointManager exptMgr, File projectDir)
+			throws IOException {
+		File projectFile = new File(projectDir, Project.INFOFILENAME);
+		Properties projectProperties = new Properties();
+		boolean projectEdited = false;
+		try (FileInputStream is = new FileInputStream(projectFile)) {
+			projectProperties.load(is);
+		}
 
-				String uriGenFactoryID = projectProperties
-						.getProperty(Project.URI_GENERATOR_FACTORY_ID_PROP);
+		String oldUriGenFactoryIDProp = Project.URI_GENERATOR_FACTORY_ID_PROP;
+		String oldUriGenConfigTypeProp = Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP;
+		String oldUriGenConfigFilename = "urigen.config";
+		String newUriGenConfigFilename = "urigen.cfg";
+		Map<String, String> uriGenFactoryMapping = ImmutableMap.of(
+				"it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory",
+				"it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGenerator",
+				"it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODAURIGeneratorFactory",
+				"it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAURIGenerator");
+		Map<String, String> uriGenConfigMapping = ImmutableMap.of(
+				"it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.NativeTemplateBasedURIGeneratorConfiguration",
+				"it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorConfiguration",
+				"it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODATemplateBasedURIGeneratorConfiguration",
+				"it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODATemplateBasedURIGeneratorConfiguration",
+				"it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAAnyURIGeneratorConfiguration",
+				"it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAAnyURIGeneratorConfiguration");
 
-				String newUriGenFactoryID = null;
-				
-				if (uriGenFactoryID.equals("it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory")) {
-					newUriGenFactoryID = "it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGenerator";
-				} else if (uriGenFactoryID.equals("it.uniroma2.art.semanticturkey.plugin.impls.urigen.CODAURIGeneratorFactory")) {
-					newUriGenFactoryID = "it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAURIGenerator";
+		projectEdited |= upgradeAndRenameProjectBoundComponent(exptMgr, projectDir, projectProperties,
+				oldUriGenFactoryIDProp, oldUriGenConfigTypeProp, oldUriGenConfigFilename,
+				newUriGenConfigFilename, uriGenFactoryMapping, uriGenConfigMapping);
+
+		String oldRendEngFactoryIDProp = Project.RENDERING_ENGINE_FACTORY_ID_PROP;
+		String oldRendEngConfigTypeProp = Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP;
+		String oldRendEngConfigFilename = "rendering.config";
+		String newRendEngConfigFilename = "rendering.cfg";
+		Map<String, String> rendEngFactoryMapping = ImmutableMap.of(
+				"it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory",
+				"it.uniroma2.art.semanticturkey.extension.impl.rendering.rdfs.RDFSRenderingEngine",
+				"it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory",
+				"it.uniroma2.art.semanticturkey.extension.impl.rendering.skos.SKOSRenderingEngine",
+				"it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory",
+				"it.uniroma2.art.semanticturkey.extension.impl.rendering.skosxl.SKOSXLRenderingEngine",
+				"it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngineFactory",
+				"it.uniroma2.art.semanticturkey.extension.impl.rendering.ontolexlemon.OntoLexLemonRenderingEngine");
+		Map<String, String> rendEngConfigMapping = ImmutableMap.of(
+				"it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.RDFSRenderingEngineConfiguration",
+				"it.uniroma2.art.semanticturkey.extension.impl.rendering.rdfs.RDFSRenderingEngineConfiguration",
+				"it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSRenderingEngineConfiguration",
+				"it.uniroma2.art.semanticturkey.extension.impl.rendering.skos.SKOSRenderingEngineConfiguration",
+				"it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSXLRenderingEngineConfiguration",
+				"it.uniroma2.art.semanticturkey.extension.impl.rendering.skosxl.SKOSXLRenderingEngineConfiguration",
+				"it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.OntoLexLemonRenderingEngineConfiguration",
+				"it.uniroma2.art.semanticturkey.extension.impl.rendering.ontolexlemon.OntoLexLemonRenderingEngineConfiguration");
+
+		projectEdited |= upgradeAndRenameProjectBoundComponent(exptMgr, projectDir, projectProperties,
+				oldRendEngFactoryIDProp, oldRendEngConfigTypeProp, oldRendEngConfigFilename,
+				newRendEngConfigFilename, rendEngFactoryMapping, rendEngConfigMapping);
+
+		if (projectEdited) {
+			projectProperties.store(new FileWriter(projectFile), "");
+		}
+	}
+
+	private static boolean upgradeAndRenameProjectBoundComponent(ExtensionPointManager exptMgr,
+			File projectDir, Properties projectProperties, String factoryIDProp, String configTypeProp,
+			String oldConfigFilename, String newConfigFilename, Map<String, String> factoryMapping,
+			Map<String, String> configMapping) throws IOException {
+		boolean projectEdited = false;
+
+		String factoryID = projectProperties.getProperty(factoryIDProp);
+
+		String newFactoryID = factoryMapping.get(factoryID);
+		if (newFactoryID != null) {
+			factoryID = newFactoryID;
+			projectProperties.setProperty(factoryIDProp, factoryID);
+			projectEdited = true;
+		}
+
+		File oldConfigFile = new File(projectDir, oldConfigFilename);
+		if (oldConfigFile.exists()) {
+			Properties oldConfig = new Properties();
+			try (FileInputStream is = new FileInputStream(oldConfigFile)) {
+				oldConfig.load(is);
+			}
+
+			@Nullable
+			String configType = projectProperties.getProperty(configTypeProp);
+
+			if (configType != null) {
+				projectProperties.remove(configTypeProp);
+				projectEdited = true;
+			}
+
+			ConfigurationManager<?> configMgr;
+			ObjectNode configJson = JsonNodeFactory.instance.objectNode();
+			ObjectMapper objectMapper = STPropertiesManager.createObjectMapper();
+
+			try {
+				configMgr = exptMgr.getConfigurationManager(factoryID);
+				Class<?> configClass = configMgr.getClass().getClassLoader().loadClass(configType);
+				if (!Configuration.class.isAssignableFrom(configClass)) {
+					throw new IllegalArgumentException("Not a configuration class: " + configClass);
 				}
-				
-				if (newUriGenFactoryID != null) {
-					uriGenFactoryID = newUriGenFactoryID;
-					projectProperties.setProperty(Project.URI_GENERATOR_FACTORY_ID_PROP, uriGenFactoryID);
-					projectEdited = true;
-				}
-				
-				@Nullable
-				String uriGenConfigType = projectProperties
-						.getProperty(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP);
 
-				if (uriGenConfigType != null) {
-					projectProperties.remove(Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP);
-					projectEdited = true;
-				}
-				
-				if (projectEdited) {
-					projectProperties.store(new FileWriter(projectFile),"");
-				}
-				
-				ObjectNode uriGenConfigObject = JsonNodeFactory.instance.objectNode();
-				Collections.list(oldUriGenConfig.propertyNames()).stream().filter(String.class::isInstance)
-						.map(String.class::cast)
-						.forEach(n -> uriGenConfigObject.put(n, oldUriGenConfig.getProperty(n)));
-				if (uriGenConfigType != null) {
-					if (uriGenConfigType.equals("it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.NativeTemplateBasedURIGeneratorConfiguration")) {
-						uriGenConfigType = "it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorConfiguration";
-					} else if (uriGenConfigType.equals("it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODATemplateBasedURIGeneratorConfiguration")) {
-						uriGenConfigType = "it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODATemplateBasedURIGeneratorConfiguration";
-					} else if (uriGenConfigType.equals("it.uniroma2.art.semanticturkey.plugin.impls.urigen.conf.CODAAnyURIGeneratorConfiguration")) {
-						uriGenConfigType = "it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAAnyURIGeneratorConfiguration";
+				Configuration configObj = (Configuration) configClass.newInstance();
+				for (String propName : configObj.getProperties()) {
+					String propValue = (String) oldConfig.get(propName);
+					JsonNode jsonPropValue;
+
+					if (propValue == null)
+						continue;
+
+					Type propType = configObj.getPropertyType(propName);
+					if (TypeUtils.isAssignable(propType, Map.class)
+							|| TypeUtils.isAssignable(propType, Collection.class)
+							|| TypeUtils.isArrayType(propType)
+							|| TypeUtils.isAssignable(propType, STProperties.class)) {
+						jsonPropValue = objectMapper.readTree(propValue);
+					} else if (TypeUtils.isAssignable(propType, Number.class)) {
+						try {
+							jsonPropValue = objectMapper.getNodeFactory().numberNode(Long.valueOf(propValue));
+						} catch (NumberFormatException e) {
+							try {
+								jsonPropValue = objectMapper.getNodeFactory()
+										.numberNode(Double.valueOf(propValue));
+							} catch (NumberFormatException e2) {
+								e2.addSuppressed(e);
+								throw e2;
+							}
+						}
+					} else if (TypeUtils.isAssignable(propType, Boolean.class)) {
+						jsonPropValue = objectMapper.getNodeFactory()
+								.booleanNode(Boolean.parseBoolean(propValue));
+					} else {
+						jsonPropValue = objectMapper.getNodeFactory().textNode(propValue);
 					}
-					
-					uriGenConfigObject.put("@type", uriGenConfigType);
+
+					configJson.set(propName, jsonPropValue);
 				}
 
-				File newUriGenConfigFile = new File(projectDir, Project.URI_GENERATOR_CONFIG_FILENAME);
-				objectMapper.writeValue(newUriGenConfigFile, oldUriGenConfig);
-				oldUriGenConfigFile.delete();
+			} catch (NoSuchConfigurationManager | ClassNotFoundException | InstantiationException
+					| IllegalAccessException | PropertyNotFoundException e) {
+				throw new IOException(e);
+			}
+
+			if (configType != null) {
+				configType = configMapping.getOrDefault(configType, configType); // if not mapped, returns the
+																					// original value
+				configJson.put("@type", configType);
+			}
+
+			File newConfigFile = new File(oldConfigFile.getParentFile(), newConfigFilename);
+			if (!newConfigFile.exists()) { // don't overwrite existing files (e.g. because the update routine
+											// has been forced to run twice)
+				STPropertiesManager.storeObjectNodeInYAML(configJson, newConfigFile);
+			}
+			oldConfigFile.delete();
+		}
+
+		return projectEdited;
+	}
+
+	private static void applyToComponentFolders(String componentID,
+			FailableConsumer<File, IOException> consumer) throws IOException {
+		File componentDir;
+
+		// apply to folders at scope system
+		componentDir = STPropertiesManager.getSystemPropertyFolder(componentID);
+		if (componentDir.exists()) {
+			consumer.accept(componentDir);
+		}
+
+		// apply to folders at scope user
+		for (File userDir : Resources.getUsersDir().listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
+			componentDir = FileUtils.getFile(userDir, "plugins", componentID);
+			if (componentDir.exists()) {
+				consumer.accept(componentDir);
 			}
 		}
 
+		// apply to folders at scope project
+		for (File projectDir : Resources.getProjectsDir()
+				.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
+			componentDir = FileUtils.getFile(projectDir, "plugins", componentID);
+			if (componentDir.exists()) {
+				consumer.accept(componentDir);
+			}
+		}
+
+		// apply to folders at pu-scope
+		for (File projectBindingsDir : Resources.getProjectUserBindingsDir()
+				.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
+			for (File puBindingsDir : projectBindingsDir
+					.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
+				componentDir = FileUtils.getFile(puBindingsDir, "plugins", componentID);
+				if (componentDir.exists()) {
+					consumer.accept(componentDir);
+				}
+			}
+		}
+
+		// apply to folders at pg-scope
+		for (File projectBindingsDir : Resources.getProjectGroupBindingsDir()
+				.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
+			for (File pgBindingsDir : projectBindingsDir
+					.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
+				componentDir = FileUtils.getFile(pgBindingsDir, "plugins", componentID);
+				if (componentDir.exists()) {
+					consumer.accept(componentDir);
+				}
+			}
+		}
+	}
+
+	private static void updateStoredPropertiesForComponentRenaming(String oldName, String newName)
+			throws IOException {
+		applyToComponentFolders(oldName, d -> d.renameTo(new File(d.getParentFile(), newName)));
 	}
 
 	private static void updateCustomServices(String... serviceID) throws IOException {

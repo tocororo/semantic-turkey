@@ -1,14 +1,17 @@
 package it.uniroma2.art.semanticturkey.extension.impl.rendering.rdfs;
 
-import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
-import it.uniroma2.art.semanticturkey.extension.settings.PUSettingsManager;
+import java.util.Arrays;
+import java.util.Collection;
+
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
  * Factory for the instantiation of {@link RDFSRenderingEngine}.
  */
 public class RDFSRenderingEngineFactory
-		implements NonConfigurableExtensionFactory<RDFSRenderingEngine>, PUSettingsManager<RDFSRenderingEnginePUSettings> {
+		implements ConfigurableExtensionFactory<RDFSRenderingEngine, RDFSRenderingEngineConfiguration> {
 
 	public static class MessageKeys {
 		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rendering.rdfs.RDFSRenderingEngineFactory";
@@ -27,7 +30,14 @@ public class RDFSRenderingEngineFactory
 	}
 
 	@Override
-	public RDFSRenderingEngine createInstance() {
-		return new RDFSRenderingEngine(this);
+	public RDFSRenderingEngine createInstance(RDFSRenderingEngineConfiguration conf)
+			throws InvalidConfigurationException {
+		return new RDFSRenderingEngine(conf);
 	}
+
+	@Override
+	public Collection<RDFSRenderingEngineConfiguration> getConfigurations() {
+		return Arrays.asList(new RDFSRenderingEngineConfiguration());
+	}
+
 }

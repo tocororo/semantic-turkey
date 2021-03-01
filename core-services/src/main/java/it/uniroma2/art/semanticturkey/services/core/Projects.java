@@ -1,10 +1,91 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.StringWriter;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.eclipse.rdf4j.common.iteration.Iterations;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParseException;
+import org.eclipse.rdf4j.rio.RDFParserRegistry;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.helpers.StatementCollector;
+import org.eclipse.rdf4j.sail.config.SailConfigSchema;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.Closer;
+
 import it.uniroma2.art.lime.model.repo.LIMERepositoryConnectionWrapper;
 import it.uniroma2.art.lime.profiler.LIMEProfiler;
 import it.uniroma2.art.lime.profiler.ProfilerException;
@@ -13,6 +94,8 @@ import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerFactory;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
+import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
@@ -33,9 +116,8 @@ import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDescription;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
-import it.uniroma2.art.semanticturkey.plugin.PluginFactory;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
@@ -85,88 +167,8 @@ import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 import it.uniroma2.art.semanticturkey.vocabulary.SUPPORT;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
-import org.eclipse.rdf4j.common.iteration.Iterations;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
-import org.eclipse.rdf4j.model.vocabulary.OWL;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.SESAME;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFParseException;
-import org.eclipse.rdf4j.rio.RDFParserRegistry;
-import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.rio.helpers.StatementCollector;
-import org.eclipse.rdf4j.sail.config.SailConfigSchema;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
-
-import javax.annotation.Nullable;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.StringWriter;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @STService
 public class Projects extends STServiceAdapter {
@@ -190,7 +192,7 @@ public class Projects extends STServiceAdapter {
 			@Optional String coreBackendType, String supportRepoID,
 			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfigurerConfiguration\"}}") PluginSpecification supportRepoSailConfigurerSpecification,
 			@Optional String supportBackendType,
-			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory\"}") PluginSpecification uriGeneratorSpecification,
+			@Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGenerator\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorConfiguration\"}}") PluginSpecification uriGeneratorSpecification,
 			@Optional PluginSpecification renderingEngineSpecification,
 			@Optional @JsonSerialized List<Pair<RDFResourceRole, String>> resourceMetadataAssociations,
 			@Optional String preloadedDataFileName, @Optional RDFFormat preloadedDataFormat,
@@ -217,9 +219,10 @@ public class Projects extends STServiceAdapter {
 
 		// If no rendering engine has been configured, guess the best one based on the model type
 		if (renderingEngineSpecification == null) {
-			String renderingEngineFactoryID = Project.determineBestRenderingEngine(lexicalizationModel);
-			renderingEngineSpecification = new PluginSpecification(renderingEngineFactoryID, null,
-					new Properties(), null);
+			renderingEngineSpecification = BaseRenderingEngine
+					.getRenderingEngineSpecificationForLexicalModel(lexicalizationModel)
+					.orElseThrow(() -> new IllegalArgumentException(
+							"Unsupported lexicalization model: " + lexicalizationModel));
 		}
 
 		if (shaclSettings != null) {
@@ -1739,7 +1742,6 @@ public class Projects extends STServiceAdapter {
 		ProjectManager.handleProjectExclusively(projectName, project -> {
 			org.apache.commons.lang3.tuple.Pair<String, STProperties> pair = getBoundComponentConfiguration(
 					project, Project.RENDERING_ENGINE_FACTORY_ID_PROP,
-					Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP,
 					Project.RENDERING_ENGINE_CONFIG_FILENAME);
 
 			rv.setValue(pair);
@@ -1790,8 +1792,7 @@ public class Projects extends STServiceAdapter {
 		MutableObject<org.apache.commons.lang3.tuple.Pair<String, STProperties>> rv = new MutableObject<>();
 		ProjectManager.handleProjectExclusively(projectName, project -> {
 			org.apache.commons.lang3.tuple.Pair<String, STProperties> pair = getBoundComponentConfiguration(
-					project, Project.URI_GENERATOR_FACTORY_ID_PROP,
-					Project.URI_GENERATOR_CONFIGURATION_TYPE_PROP, Project.URI_GENERATOR_CONFIG_FILENAME);
+					project, Project.URI_GENERATOR_FACTORY_ID_PROP, Project.URI_GENERATOR_CONFIG_FILENAME);
 
 			rv.setValue(pair);
 
@@ -1825,46 +1826,42 @@ public class Projects extends STServiceAdapter {
 	}
 
 	protected org.apache.commons.lang3.tuple.Pair<String, STProperties> getBoundComponentConfiguration(
-			Project project, String factoryIdProp, String configTypeProp, String configFilenameProp)
-			throws RuntimeException {
-		String factoryID = project.getProperty(factoryIdProp);
+			Project project, String factoryIdProp, String configFilename) throws RuntimeException {
+		try {
+			String componentID = project.getProperty(factoryIdProp);
 
-		@Nullable
-		String configType = project.getProperty(configTypeProp);
-		@Nullable
-		STProperties renderingEngineConfig;
+			@Nullable
+			STProperties config;
 
-		if (configType != null) {
-			PluginFactory<?, ?, ?, ?, ?> renderingEngineFactory = PluginManager.getPluginFactory(factoryID);
-			String configFileName = configFilenameProp;
-			File configFile = new File(project.getProjectDirectory(), configFileName);
-			try {
-				renderingEngineConfig = renderingEngineFactory.createPluginConfiguration(configType);
-				renderingEngineConfig.loadProperties(configFile);
+			File configFile = new File(project.getProjectDirectory(), configFilename);
 
-			} catch (ClassNotFoundException | UnsupportedPluginConfigurationException
-					| UnloadablePluginConfigurationException | WrongPropertiesException | IOException e) {
-				throw new RuntimeException(e);
+			if (configFile.exists()) {
+				ConfigurationManager<?> cm = exptManager.getConfigurationManager(componentID);
+
+				Class<? extends Configuration> configBaseClass = ReflectionUtilities
+						.getInterfaceArgumentTypeAsClass(cm.getClass(), ConfigurationManager.class, 0);
+				config = STPropertiesManager.loadSTPropertiesFromYAMLFiles(configBaseClass, true, configFile);
+			} else {
+				config = null;
 			}
-		} else {
-			renderingEngineConfig = null;
-		}
 
-		return ImmutablePair.of(factoryID, renderingEngineConfig);
+			return ImmutablePair.of(componentID, config);
+		} catch (NoSuchConfigurationManager | STPropertyAccessException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private void updateBoundComponentConfiguration(Project project, String factoryIdProp,
-			String configTypeProp, String configFilenameProp, PluginSpecification componentSpec)
+			String configTypeProp, String configFilename, PluginSpecification componentSpec)
 			throws IOException, ProjectUpdateException {
 		project.setReservedProperty(factoryIdProp, componentSpec.getFactoryId());
-		File componentConfigurationFile = new File(project.getProjectDirectory(), configFilenameProp);
-		if (componentSpec.getProperties() != null) {
+		File componentConfigurationFile = new File(project.getProjectDirectory(), configFilename);
+		if (componentSpec.getConfiguration() != null) {
 			try (FileWriter fw = new FileWriter(componentConfigurationFile)) {
-				project.setReservedProperty(configTypeProp, componentSpec.getConfigType());
-				componentSpec.getProperties().store(fw, "configuration updated after project creation");
+				STPropertiesManager.storeObjectNodeInYAML(componentSpec.getConfiguration(),
+						componentConfigurationFile);
 			}
 		} else {
-			project.deleteReservedProperty(factoryIdProp);
 			componentConfigurationFile.delete();
 		}
 	}

@@ -9,12 +9,12 @@ import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngi
  */
 public class SKOSRenderingEngine extends BaseRenderingEngine implements RenderingEngine {
 
-	public SKOSRenderingEngine(SKOSRenderingEngineFactory extensionFactory) {
-		super(extensionFactory);
+	public SKOSRenderingEngine(SKOSRenderingEngineConfiguration conf) {
+		super(conf);
 	}
 
 	@Override
-	protected void getGraphPatternInternal(StringBuilder gp) {
+	public void getGraphPatternInternal(StringBuilder gp) {
 		gp.append("\n?resource <http://www.w3.org/2004/02/skos/core#prefLabel> ?labelInternal .\n");
 	}
 

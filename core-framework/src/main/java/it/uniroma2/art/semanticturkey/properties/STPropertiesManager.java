@@ -738,13 +738,18 @@ public class STPropertiesManager {
 
 	public static void storeSTPropertiesInYAML(STProperties properties, File propertiesFile,
 			boolean storeObjType) throws IOException {
+		ObjectMapper mapper = createObjectMapper();
+		ObjectNode objectNode = storeSTPropertiesToObjectNode(mapper, properties, storeObjType);
+
+		storeObjectNodeInYAML(objectNode, propertiesFile);
+	}
+	
+	public static void storeObjectNodeInYAML(ObjectNode objectNode, File propertiesFile) throws IOException {
 		if (!propertiesFile.getParentFile().exists()) { // if path doesn't exist, first create it
 			propertiesFile.getParentFile().mkdirs();
 		}
 
 		ObjectMapper mapper = createObjectMapper();
-		ObjectNode objectNode = storeSTPropertiesToObjectNode(mapper, properties, storeObjType);
-
 		mapper.writeValue(propertiesFile, objectNode);
 	}
 

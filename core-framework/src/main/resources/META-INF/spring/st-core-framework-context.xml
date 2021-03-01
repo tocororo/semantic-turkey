@@ -57,59 +57,6 @@
 	<osgi:reference id="codaOSGiFactory"
 		interface="it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory" />
 
-	<!-- Publishes the RDFS-based implementation of the extension point RenderingEngine -->
-	<bean id="rdfsRenderingEngineFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.RDFSRenderingEngineFactory" />
-
-	<osgi:service
-		interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
-		ref="rdfsRenderingEngineFactory">
-		<osgi:service-properties>
-			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
-				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
-		</osgi:service-properties>
-	</osgi:service>
-
-	<!-- Publishes the SKOS-based implementation of the extension point RenderingEngine -->
-	<bean id="skosRenderingEngineFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory" />
-
-	<osgi:service
-		interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
-		ref="skosRenderingEngineFactory">
-		<osgi:service-properties>
-			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
-				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
-		</osgi:service-properties>
-	</osgi:service>
-
-	<!-- Publishes the SKOSXL-based implementation of the extension point RenderingEngine -->
-	<bean id="skosxlRenderingEngineFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSXLRenderingEngineFactory" />
-
-	<osgi:service
-		interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
-		ref="skosxlRenderingEngineFactory">
-		<osgi:service-properties>
-			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
-				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
-		</osgi:service-properties>
-	</osgi:service>
-
-	<!-- Publishes the OntoLex-Lemon-based implementation of the extension point 
-		RenderingEngine -->
-	<bean id="ontolexLemonRenderingEngineFactory"
-		class="it.uniroma2.art.semanticturkey.plugin.impls.rendering.OntoLexLemonRenderingEngineFactory" />
-
-	<osgi:service
-		interface="it.uniroma2.art.semanticturkey.plugin.PluginFactory"
-		ref="ontolexLemonRenderingEngineFactory">
-		<osgi:service-properties>
-			<entry key="it.uniroma2.art.semanticturkey.extensionpoint"
-				value="it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine" />
-		</osgi:service-properties>
-	</osgi:service>
-
 	<!-- the following reference was made optional (cardinality = 0..1) because 
 		of a circular dependency between st-core-framework and st-metadata-registry-bindings 
 		(that prevented the initialization of the application context associated 

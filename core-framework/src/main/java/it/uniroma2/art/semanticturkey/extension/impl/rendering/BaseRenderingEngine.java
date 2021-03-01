@@ -1,22 +1,27 @@
 package it.uniroma2.art.semanticturkey.extension.impl.rendering;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.TreeMultimap;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
-import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
-import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
-import it.uniroma2.art.semanticturkey.extension.settings.PUSettingsManager;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.services.STServiceContext;
-import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
-import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElement;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
-import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
@@ -36,31 +41,37 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
 
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
+import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElement;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 public abstract class BaseRenderingEngine implements RenderingEngine {
 
 	@Autowired
 	private ExtensionPointManager exptManager;
 	private boolean fallbackToTerm;
-	private PUSettingsManager<? extends BaseRenderingEnginePUSettings> puSettingsManager;
+	private AbstractLabelBasedRenderingEngineConfiguration conf;
+	protected String languages;
 
 	private static final Logger logger = LoggerFactory.getLogger(BaseRenderingEngine.class);
 
@@ -69,6 +80,9 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 	private static final Pattern aggregationSplittingPattern = Pattern
 			.compile("(?<!\\\\)(\\\\\\\\)*(?<splitter>,)");
+
+	private static final Pattern propPattern = Pattern
+			.compile("\\$\\{" + Pattern.quote(STPropertiesManager.PREF_LANGUAGES) + "\\}");
 
 	private static enum ValueStatus {
 		ADDED, REMOVED, COMMITTED;
@@ -86,9 +100,17 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		}
 	}
 
-	public BaseRenderingEngine(PUSettingsManager<? extends BaseRenderingEnginePUSettings> puSettingsManager) {
-		this.fallbackToTerm = true;
-		this.puSettingsManager = puSettingsManager;
+	public BaseRenderingEngine(AbstractLabelBasedRenderingEngineConfiguration conf) {
+		this(conf, true);
+	}
+
+	public BaseRenderingEngine(AbstractLabelBasedRenderingEngineConfiguration conf, boolean fallbackToTerm) {
+		this.fallbackToTerm = fallbackToTerm;
+		this.conf = conf;
+		this.languages = conf.languages;
+		if (this.languages == null) {
+			this.languages = "*";
+		}
 	}
 
 	/**
@@ -100,22 +122,31 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	 * @return
 	 */
 	private List<String> computeLanguages(STServiceContext context) {
-		String languagesStringRep = context.getLanguages();
-		if (languagesStringRep == null) {
-			try {
-				Project currentProject = context.getProject();
-				languagesStringRep = exptManager.getRenderingEngine().getProjectSettings(currentProject,
-						UsersManager.getLoggedUser()).languages;
-			} catch (STPropertyAccessException e) {
-				logger.debug("Could not access property: " + STPropertiesManager.PREF_LANGUAGES, e);
-				languagesStringRep = "*";
+		StringBuffer sb = new StringBuffer();
+		Matcher m = propPattern.matcher(languages);
+		String languagesPropValue = context.getLanguages();
+		while (m.find()) {
+			if (languagesPropValue == null) {
+				try {
+					languagesPropValue = STPropertiesManager.getPUSetting(STPropertiesManager.PREF_LANGUAGES,
+							context.getProject(), UsersManager.getLoggedUser(),
+							RenderingEngine.class.getName());
+				} catch (STPropertyAccessException e) {
+					logger.debug("Could not access property: " + STPropertiesManager.PREF_LANGUAGES, e);
+				}
+				if (languagesPropValue == null) {
+					languagesPropValue = "*";
+				}
 			}
+			m.appendReplacement(sb, languagesPropValue);
 		}
+		m.appendTail(sb);
 
-		if (languagesStringRep.isEmpty() || languagesStringRep.equals("*")) {
+		String interpolatedLanguages = sb.toString();
+		if (interpolatedLanguages.isEmpty() || interpolatedLanguages.equals("*")) {
 			return Collections.emptyList();
 		} else {
-			return Arrays.stream(languagesStringRep.split(",")).map(String::trim).collect(toList());
+			return Arrays.stream(interpolatedLanguages.split(",")).map(String::trim).collect(toList());
 		}
 	}
 
@@ -140,23 +171,16 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		List<ProjectionElement> projection = new ArrayList<>();
 		projection.add(ProjectionElementBuilder.groupConcat("labelInternal2", "label"));
 
-		BaseRenderingEnginePUSettings puSettings;
-		try {
-			puSettings = puSettingsManager.getProjectSettings(currentProject, UsersManager.getLoggedUser());
-		} catch (IllegalStateException | STPropertyAccessException e) {
-			throw new RuntimeException(e);
-		}
-
-		boolean isValidationEnabled = !Boolean.TRUE.equals(puSettings.ignoreValidation)
+		boolean isValidationEnabled = !Boolean.TRUE.equals(conf.ignoreValidation)
 				&& currentProject.isValidationEnabled();
 
-		if (!puSettings.variables.isEmpty()) {
+		if (!CollectionUtils.sizeIsEmpty(conf.variables)) {
 			StringBuilder gp2 = new StringBuilder();
 			gp2.append("{\n");
 			gp2.append(gp.toString());
 			gp2.append("}");
 
-			for (Entry<String, VariableDefinition> entry : puSettings.variables.entrySet()) {
+			for (Entry<String, VariableDefinition> entry : conf.variables.entrySet()) {
 				gp2.append(" UNION {\n");
 				String variableName = entry.getKey();
 				String sparqlVarName = "v_" + variableName;
@@ -167,14 +191,14 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 				String subjectOfProp = "?" + getBindingVariable();
 
-				if (variableDefinition.getPropertyPath().isEmpty()) {
+				if (CollectionUtils.isEmpty(variableDefinition.propertyPath)) {
 					throw new IllegalStateException("Empty property path not allowed");
 				}
 
 				int count = 0;
 
 				String undefVariable = "?v_" + variableName + "_internal_undef";
-				for (IRI prop : variableDefinition.getPropertyPath()) {
+				for (IRI prop : variableDefinition.propertyPath) {
 					count++;
 
 					String sparqlInternalVarName = "v_" + variableName + "_internal_" + count;
@@ -204,10 +228,11 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 				}
 
 				if (!acceptedLanguges.isEmpty()) {
-					gp2.append(String.format(" FILTER(LANG(%1$s) = \"\" || LANG(%1$s) IN (%2$s))",
-							subjectOfProp,
-							acceptedLanguges.stream().map(lang -> "\"" + SPARQLUtil.encodeString(lang) + "\"")
-									.collect(joining(", "))));
+					gp2.append(
+							String.format(" FILTER(LANG(%1$s) = \"\" || LANG(%1$s) IN (%2$s))", subjectOfProp,
+									acceptedLanguges.stream()
+											.map(lang -> "\"" + SPARQLUtil.encodeString(lang) + "\"")
+											.collect(joining(", "))));
 				}
 
 				if (isValidationEnabled) {
@@ -250,7 +275,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 	}
 
-	protected abstract void getGraphPatternInternal(StringBuilder gp);
+	public abstract void getGraphPatternInternal(StringBuilder gp);
 
 	@Override
 	public boolean introducesDuplicates() {
@@ -288,16 +313,14 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		Template template;
 		boolean isValidationEnabled;
 		try {
-			BaseRenderingEnginePUSettings puSettings = puSettingsManager.getProjectSettings(currentProject,
-					UsersManager.getLoggedUser());
-			if (puSettings.template != null) {
-				template = parseTemplate(puSettings.template);
+			if (conf.template != null) {
+				template = parseTemplate(conf.template);
 			} else {
 				template = null;
 			}
-			isValidationEnabled = !Boolean.TRUE.equals(puSettings.ignoreValidation)
+			isValidationEnabled = !Boolean.TRUE.equals(conf.ignoreValidation)
 					&& currentProject.isValidationEnabled();
-		} catch (STPropertyAccessException | TemplateParsingException | IOException e) {
+		} catch (TemplateParsingException | IOException e) {
 			throw new RuntimeException(e);
 		}
 
@@ -617,4 +640,47 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		throw new TemplateParsingException(originalInput, consumedCodePointsCounter.getValue(),
 				"Missing '}' before the end of input");
 	}
+
+	public static Optional<RenderingEngine> getRenderingEngineForLexicalizationModel(
+			ExtensionPointManager exptMgr, IRI lexicalizationModel) {
+
+		Optional<PluginSpecification> spec = getRenderingEngineSpecificationForLexicalModel(
+				lexicalizationModel);
+
+		return spec.map(s -> {
+			try {
+				return exptMgr.instantiateExtension(RenderingEngine.class, s);
+			} catch (IllegalArgumentException | NoSuchExtensionException | WrongPropertiesException
+					| STPropertyAccessException | InvalidConfigurationException e) {
+				throw new RuntimeException(e);
+			}
+		});
+	}
+
+	public static Optional<PluginSpecification> getRenderingEngineSpecificationForLexicalModel(
+			IRI lexicalizationModel) {
+		String extensionID;
+		String configType;
+		if (lexicalizationModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
+			extensionID = "it.uniroma2.art.semanticturkey.extension.impl.rendering.rdfs.RDFSRenderingEngine";
+			configType = "it.uniroma2.art.semanticturkey.extension.impl.rendering.rdfs.RDFSRenderingEngineConfiguration";
+		} else if (lexicalizationModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) {
+			extensionID = "it.uniroma2.art.semanticturkey.extension.impl.rendering.skos.SKOSRenderingEngine";
+			configType = "it.uniroma2.art.semanticturkey.extension.impl.rendering.skos.SKOSRenderingEngineConfiguration";
+		} else if (lexicalizationModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
+			extensionID = "it.uniroma2.art.semanticturkey.extension.impl.rendering.skosxl.SKOSXLRenderingEngine";
+			configType = "it.uniroma2.art.semanticturkey.extension.impl.rendering.skosxl.SKOSXLRenderingEngineConfiguration";
+		} else if (lexicalizationModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
+			extensionID = "it.uniroma2.art.semanticturkey.extension.impl.rendering.ontolexlemon.OntoLexLemonRenderingEngine";
+			configType = "it.uniroma2.art.semanticturkey.extension.impl.rendering.ontolexlemon.OntoLexLemonRenderingEngineConfiguration";
+		} else {
+			return Optional.empty();
+		}
+
+		ObjectNode configObj = JsonNodeFactory.instance.objectNode();
+		configObj.put("@type", configType);
+		PluginSpecification spec = new PluginSpecification(extensionID, null, null, configObj);
+		return Optional.of(spec);
+	}
+
 }

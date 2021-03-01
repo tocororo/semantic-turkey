@@ -41,7 +41,7 @@ import it.uniroma2.art.semanticturkey.config.customservice.CustomServiceDefiniti
 import it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporterStore;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.exceptions.STInitializationException;
-import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
+import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.user.Role;
@@ -390,7 +390,7 @@ public class Resources {
 				propFile.getParentFile().mkdirs();
 			}
 			Utilities.copy(Resources.class.getResourceAsStream(
-					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine/pu-settings-defaults.props"),
+					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine/pu-settings-defaults.props"),
 					propFile);
 		} catch (IOException e) {
 			throw new STInitializationException(e);

@@ -1,14 +1,17 @@
 package it.uniroma2.art.semanticturkey.extension.impl.rendering.skos;
 
-import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
-import it.uniroma2.art.semanticturkey.extension.settings.PUSettingsManager;
+import java.util.Arrays;
+import java.util.Collection;
+
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 
 /**
  * Factory for the instantiation of {@link SKOSRenderingEngine}.
  */
 public class SKOSRenderingEngineFactory
-		implements NonConfigurableExtensionFactory<SKOSRenderingEngine>, PUSettingsManager<SKOSRenderingEnginePUSettings> {
+		implements ConfigurableExtensionFactory<SKOSRenderingEngine, SKOSRenderingEngineConfiguration> {
 
 	public static class MessageKeys {
 		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rendering.skos.SKOSRenderingEngineFactory";
@@ -27,9 +30,15 @@ public class SKOSRenderingEngineFactory
 	}
 
 	@Override
-	public SKOSRenderingEngine createInstance() {
-		return new SKOSRenderingEngine(this);
+	public SKOSRenderingEngine createInstance(SKOSRenderingEngineConfiguration conf)
+			throws InvalidConfigurationException {
+		return new SKOSRenderingEngine(conf);
 	}
-	
+
+	@Override
+	public Collection<SKOSRenderingEngineConfiguration> getConfigurations() {
+		return Arrays.asList(new SKOSRenderingEngineConfiguration());
+	}
+
 	
 }

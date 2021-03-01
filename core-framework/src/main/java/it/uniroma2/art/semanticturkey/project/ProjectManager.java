@@ -32,7 +32,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -126,6 +125,7 @@ import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
 import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
 import it.uniroma2.art.semanticturkey.trivialinference.sail.config.TrivialInferencerConfig;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
@@ -645,6 +645,9 @@ public class ProjectManager {
 		Project proj;
 
 		try {
+			logger.debug("upgrading URIGenerators and RenderingEngines, if needed: " + projectName);
+			UpdateRoutines.upgradeURIGeneratorAndRenderingEngine(exptManager, projectDir);
+
 			proj = new PersistentStoreProject(projectName, projectDir);
 			logger.debug("created project description for: " + proj);
 			return proj;
@@ -1751,7 +1754,7 @@ public class ProjectManager {
 					logger.debug("Swallowed exception", e1);
 				}
 			} finally {
-				Utilities.deleteDir(projectDir); // if something fails, deletes everything
+//				Utilities.deleteDir(projectDir); // if something fails, deletes everything
 			}
 			throw e;
 		}
@@ -1794,8 +1797,6 @@ public class ProjectManager {
 					uriGeneratorSpecification.getFactoryId());
 			projProp.setProperty(Project.RENDERING_ENGINE_FACTORY_ID_PROP,
 					renderingEngineSpecification.getFactoryId());
-			projProp.setProperty(Project.RENDERING_ENGINE_CONFIGURATION_TYPE_PROP,
-					renderingEngineSpecification.getConfigType());
 			projProp.setProperty(Project.BASEURI_PROP, baseURI);
 			projProp.setProperty(Project.DEF_NS_PROP, defaultNamespace);
 			projProp.setProperty(Project.MODEL_PROP, model.stringValue());
@@ -1841,19 +1842,15 @@ public class ProjectManager {
 			ObjectNode uriGenConfig = uriGeneratorSpecification.getConfiguration();
 			if (uriGenConfig != null) {
 				File uriGenConfigurationFile = new File(projectDir, Project.URI_GENERATOR_CONFIG_FILENAME);
-				uriGenConfigurationFile.createNewFile();
-
-				try (FileWriter fw = new FileWriter(uriGenConfigurationFile)) {
-					STPropertiesManager.createObjectMapper().writeValue(fw, uriGenConfig);
-				}
+				STPropertiesManager.storeObjectNodeInYAML(uriGenConfig, uriGenConfigurationFile);
 			}
 
-			File renderingEngineConfigurationFile = new File(projectDir,
-					Project.RENDERING_ENGINE_CONFIG_FILENAME);
-			renderingEngineConfigurationFile.createNewFile();
-			try (FileWriter fw = new FileWriter(renderingEngineConfigurationFile)) {
-				renderingEngineSpecification.getProperties().store(fw,
-						"rendering engine configuration, initialized from project initialization");
+			ObjectNode renderingEngineConfig = renderingEngineSpecification.getConfiguration();
+			if (renderingEngineConfig != null) {
+				File renderingEngineConfigurationFile = new File(projectDir,
+						Project.RENDERING_ENGINE_CONFIG_FILENAME);
+				STPropertiesManager.storeObjectNodeInYAML(renderingEngineConfig,
+						renderingEngineConfigurationFile);
 			}
 
 			logger.debug("all project info have been built");
