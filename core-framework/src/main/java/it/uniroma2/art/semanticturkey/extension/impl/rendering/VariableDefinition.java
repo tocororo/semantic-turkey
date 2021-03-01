@@ -14,12 +14,21 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
  *
  */
 public class VariableDefinition implements STProperties {
-	@Override
-	public String getShortName() {
-		return "Variable definition";
+	
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rendering.VariableDefinition";
+
+		public static final String shortName = keyBase + ".shortName";
+		public static final String propertyPath$description = keyBase + ".propertyPath.description";
+		public static final String propertyPath$displayName = keyBase + ".propertyPath.displayName";
 	}
 
-	@STProperty(description = "", displayName =  "Property path")
+	@Override
+	public String getShortName() {
+		return "{" + MessageKeys.shortName + "}";
+	}
+
+	@STProperty(description = "{" + MessageKeys.propertyPath$description + "}", displayName =  "{" + MessageKeys.propertyPath$description + "}")
 	public List<IRI> propertyPath;
 
 }

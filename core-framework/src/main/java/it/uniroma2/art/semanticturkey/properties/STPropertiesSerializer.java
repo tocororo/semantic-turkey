@@ -28,7 +28,10 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import javax.validation.Constraint;
 
+import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
+import org.apache.commons.text.StringSubstitutor;
+import org.apache.http.util.TextUtils;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -43,6 +46,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.google.common.base.Strings;
 
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
@@ -59,7 +63,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 
 	private static final Logger logger = LoggerFactory.getLogger(STPropertiesSerializer.class);
 
-	private Pattern templatePattern = Pattern.compile("\\{(.*?)\\}");
+	private Pattern templatePattern = Pattern.compile("^\\{(.*?)\\}$");
 	private static final long serialVersionUID = 1L;
 	private ExtensionPointManager exptManager;
 
@@ -82,14 +86,11 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 		}
 
 		Matcher m = templatePattern.matcher(template);
-		StringBuffer sb = new StringBuffer();
-
-		while (m.find()) {
-			m.appendReplacement(sb, STMessageSource.getMessage(m.group(1)));
+		if (m.find()) {
+			return STMessageSource.getMessage(m.group(1));
+		} else {
+			return template;
 		}
-		m.appendTail(sb);
-
-		return sb.toString();
 	}
 
 	/*
