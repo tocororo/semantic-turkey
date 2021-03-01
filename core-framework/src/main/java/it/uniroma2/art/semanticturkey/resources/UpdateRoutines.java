@@ -50,7 +50,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.lang3.Functions.FailableConsumer;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -332,8 +331,8 @@ public class UpdateRoutines {
 
 	}
 
-	public static void upgradeURIGeneratorAndRenderingEngine(ExtensionPointManager exptMgr, File projectDir)
-			throws IOException {
+	public static synchronized void upgradeURIGeneratorAndRenderingEngine(ExtensionPointManager exptMgr,
+			File projectDir) throws IOException {
 		File projectFile = new File(projectDir, Project.INFOFILENAME);
 		Properties projectProperties = new Properties();
 		boolean projectEdited = false;
@@ -410,81 +409,84 @@ public class UpdateRoutines {
 		}
 
 		File oldConfigFile = new File(projectDir, oldConfigFilename);
+
 		if (oldConfigFile.exists()) {
-			Properties oldConfig = new Properties();
-			try (FileInputStream is = new FileInputStream(oldConfigFile)) {
-				oldConfig.load(is);
-			}
-
-			@Nullable
-			String configType = projectProperties.getProperty(configTypeProp);
-
-			if (configType != null) {
-				projectProperties.remove(configTypeProp);
-				projectEdited = true;
-			}
-
-			ConfigurationManager<?> configMgr;
-			ObjectNode configJson = JsonNodeFactory.instance.objectNode();
-			ObjectMapper objectMapper = STPropertiesManager.createObjectMapper();
-
-			try {
-				configMgr = exptMgr.getConfigurationManager(factoryID);
-				Class<?> configClass = configMgr.getClass().getClassLoader().loadClass(configType);
-				if (!Configuration.class.isAssignableFrom(configClass)) {
-					throw new IllegalArgumentException("Not a configuration class: " + configClass);
+			File newConfigFile = new File(oldConfigFile.getParentFile(), newConfigFilename);
+			if (!newConfigFile.exists()) { // if the new configuration file exists, do not repeat the
+											// conversion
+				Properties oldConfig = new Properties();
+				try (FileInputStream is = new FileInputStream(oldConfigFile)) {
+					oldConfig.load(is);
 				}
 
-				Configuration configObj = (Configuration) configClass.newInstance();
-				for (String propName : configObj.getProperties()) {
-					String propValue = (String) oldConfig.get(propName);
-					JsonNode jsonPropValue;
+				@Nullable
+				String configType = projectProperties.getProperty(configTypeProp);
 
-					if (propValue == null)
-						continue;
+				if (configType != null) {
+					projectProperties.remove(configTypeProp);
+					projectEdited = true;
+				}
 
-					Type propType = configObj.getPropertyType(propName);
-					if (TypeUtils.isAssignable(propType, Map.class)
-							|| TypeUtils.isAssignable(propType, Collection.class)
-							|| TypeUtils.isArrayType(propType)
-							|| TypeUtils.isAssignable(propType, STProperties.class)) {
-						jsonPropValue = objectMapper.readTree(propValue);
-					} else if (TypeUtils.isAssignable(propType, Number.class)) {
-						try {
-							jsonPropValue = objectMapper.getNodeFactory().numberNode(Long.valueOf(propValue));
-						} catch (NumberFormatException e) {
-							try {
-								jsonPropValue = objectMapper.getNodeFactory()
-										.numberNode(Double.valueOf(propValue));
-							} catch (NumberFormatException e2) {
-								e2.addSuppressed(e);
-								throw e2;
-							}
-						}
-					} else if (TypeUtils.isAssignable(propType, Boolean.class)) {
-						jsonPropValue = objectMapper.getNodeFactory()
-								.booleanNode(Boolean.parseBoolean(propValue));
-					} else {
-						jsonPropValue = objectMapper.getNodeFactory().textNode(propValue);
+				configType = configMapping.getOrDefault(configType, configType); // if not mapped, returns
+																					// the original value
+
+				ConfigurationManager<?> configMgr;
+				ObjectNode configJson = JsonNodeFactory.instance.objectNode();
+				ObjectMapper objectMapper = STPropertiesManager.createObjectMapper();
+
+				try {
+					configMgr = exptMgr.getConfigurationManager(factoryID);
+					Class<?> configClass = configMgr.getClass().getClassLoader().loadClass(configType);
+					if (!Configuration.class.isAssignableFrom(configClass)) {
+						throw new IllegalArgumentException("Not a configuration class: " + configClass);
 					}
 
-					configJson.set(propName, jsonPropValue);
+					Configuration configObj = (Configuration) configClass.newInstance();
+					for (String propName : configObj.getProperties()) {
+						String propValue = (String) oldConfig.get(propName);
+						JsonNode jsonPropValue;
+
+						if (propValue == null)
+							continue;
+
+						Type propType = configObj.getPropertyType(propName);
+						if (TypeUtils.isAssignable(propType, Map.class)
+								|| TypeUtils.isAssignable(propType, Collection.class)
+								|| TypeUtils.isArrayType(propType)
+								|| TypeUtils.isAssignable(propType, STProperties.class)) {
+							jsonPropValue = objectMapper.readTree(propValue);
+						} else if (TypeUtils.isAssignable(propType, Number.class)) {
+							try {
+								jsonPropValue = objectMapper.getNodeFactory()
+										.numberNode(Long.valueOf(propValue));
+							} catch (NumberFormatException e) {
+								try {
+									jsonPropValue = objectMapper.getNodeFactory()
+											.numberNode(Double.valueOf(propValue));
+								} catch (NumberFormatException e2) {
+									e2.addSuppressed(e);
+									throw e2;
+								}
+							}
+						} else if (TypeUtils.isAssignable(propType, Boolean.class)) {
+							jsonPropValue = objectMapper.getNodeFactory()
+									.booleanNode(Boolean.parseBoolean(propValue));
+						} else {
+							jsonPropValue = objectMapper.getNodeFactory().textNode(propValue);
+						}
+
+						configJson.set(propName, jsonPropValue);
+					}
+
+				} catch (NoSuchConfigurationManager | ClassNotFoundException | InstantiationException
+						| IllegalAccessException | PropertyNotFoundException e) {
+					throw new IOException(e);
 				}
 
-			} catch (NoSuchConfigurationManager | ClassNotFoundException | InstantiationException
-					| IllegalAccessException | PropertyNotFoundException e) {
-				throw new IOException(e);
-			}
+				if (configType != null) {
+					configJson.put("@type", configType);
+				}
 
-			if (configType != null) {
-				configType = configMapping.getOrDefault(configType, configType); // if not mapped, returns the
-																					// original value
-				configJson.put("@type", configType);
-			}
-
-			File newConfigFile = new File(oldConfigFile.getParentFile(), newConfigFilename);
-			if (!newConfigFile.exists()) { // don't overwrite existing files (e.g. because the update routine
-											// has been forced to run twice)
 				STPropertiesManager.storeObjectNodeInYAML(configJson, newConfigFile);
 			}
 			oldConfigFile.delete();
