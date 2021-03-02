@@ -77,9 +77,9 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.NonWorkingGraphUpdateException;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
-import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 import it.uniroma2.art.semanticturkey.search.SearchMode;
 import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -2598,20 +2598,29 @@ public class OntoLexLemon extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(vartransTranslationSet)', 'D')")
-	public void deleteTranslationSet(@LocallyDefined IRI vartransTranslationSet) {
+	public void deleteTranslationSet(@LocallyDefined IRI translationSet) {
 		Update deletionUpdate = getManagedConnection().prepareUpdate(
-			//@formatter:off
-			"PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>\n" + 
-			"DELETE WHERE {\n" + 
-			" ?s ?p ?o ;\n" + 
-			"    vartrans:trans ?trans .\n" + 
-			" ?trans ?transP ?transO .\n" + 
-			"}"
+		//@formatter:off
+			"PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>            \n" +   
+			"                                                                   \n" +
+			"DELETE {                                                           \n" +
+			"  ?translationSet ?translationSetP ?translationSetO .              \n" +
+			"  ?translation ?translationP ?translationO .                       \n" +
+			"}                                                                  \n" +
+			"WHERE {                                                            \n" +
+			"  {                                                                \n" +
+			"    ?translationSet ?translationSetP ?translationSetO .            \n" +
+			"  } UNION {                                                        \n" +
+			"    ?translationSet vartrans:trans ?translation .                  \n" +
+			"    ?translation ?translationP ?translationO .                     \n" +
+			"  }                                                                \n" +
+			"}                                                                  \n"
 			//@formatter:on
-			);
+		);
+		deletionUpdate.setBinding("translationSet", translationSet);
 		SimpleDataset dataset = new SimpleDataset();
-		dataset.addDefaultGraph((IRI)getWorkingGraph());
-		dataset.addDefaultRemoveGraph((IRI)getWorkingGraph());
+		dataset.addDefaultGraph((IRI) getWorkingGraph());
+		dataset.addDefaultRemoveGraph((IRI) getWorkingGraph());
 		deletionUpdate.setDataset(dataset);
 		deletionUpdate.execute();
 	}
