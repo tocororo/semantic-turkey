@@ -1754,7 +1754,7 @@ public class ProjectManager {
 					logger.debug("Swallowed exception", e1);
 				}
 			} finally {
-//				Utilities.deleteDir(projectDir); // if something fails, deletes everything
+				Utilities.deleteDir(projectDir); // if something fails, deletes everything
 			}
 			throw e;
 		}
@@ -1764,11 +1764,7 @@ public class ProjectManager {
 			throws ClassNotFoundException, UnsupportedPluginConfigurationException,
 			UnloadablePluginConfigurationException, WrongPropertiesException, IllegalArgumentException,
 			STPropertyAccessException, InvalidConfigurationException {
-		try {
-			return exptManager.instantiateExtension(RepositoryImplConfigurer.class, spec);
-		} catch (NoSuchExtensionException e) {
-			return (RepositoryImplConfigurer) spec.instatiatePlugin();
-		}
+		return exptManager.instantiateExtension(RepositoryImplConfigurer.class, spec);
 	}
 
 	private static void prepareProjectFiles(ProjectConsumer consumer, String projectName, IRI model,

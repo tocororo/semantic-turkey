@@ -1,6 +1,5 @@
 package it.uniroma2.art.semanticturkey.plugin;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -8,11 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
-
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.properties.STProperties;
-import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 
 /**
  * Holds a pluginFactoryId, its configuration type (if not the default) and any configuration parameter
@@ -63,46 +57,6 @@ public class PluginSpecification {
 
 	public ObjectNode getConfiguration() {
 		return this.configuration;
-	}
-
-	public Object instatiatePlugin() throws ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, WrongPropertiesException {
-		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryId);
-
-		STProperties config;
-		if (configTypeHolder.isPresent()) {
-			config = pluginFactory.createPluginConfiguration(configTypeHolder.get());
-		} else {
-			config = pluginFactory.createDefaultPluginConfiguration();
-		}
-
-		if (!properties.isEmpty()) {
-			config.setProperties(properties);
-		}
-
-		return pluginFactory.createInstance(config);
-	}
-
-	public void expandDefaults() throws ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException {
-		PluginFactory<?, ?, ?, ?, ?> pluginFactory = PluginManager.getPluginFactory(factoryId);
-
-		if (pluginFactory != null) {
-			if (!configTypeHolder.isPresent()) {
-				configTypeHolder = Optional
-						.of(pluginFactory.createDefaultPluginConfiguration().getClass().getName());
-			}
-
-			if (properties == null || properties.isEmpty()) {
-				properties = new Properties();
-				try {
-					pluginFactory.createPluginConfiguration(configTypeHolder.get())
-							.storeProperties(properties);
-				} catch (IOException | WrongPropertiesException e) {
-					throw new UnloadablePluginConfigurationException(e);
-				}
-			}
-		}
 	}
 
 }

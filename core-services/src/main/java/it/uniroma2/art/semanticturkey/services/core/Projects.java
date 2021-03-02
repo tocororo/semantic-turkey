@@ -237,9 +237,6 @@ public class Projects extends STServiceAdapter {
 			}
 		}
 
-		uriGeneratorSpecification.expandDefaults();
-		renderingEngineSpecification.expandDefaults();
-
 		Set<IRI> failedImports = new HashSet<>();
 
 		File preloadedDataFile = preloadedDataFileName != null

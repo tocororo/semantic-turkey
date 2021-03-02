@@ -289,7 +289,6 @@ public class PMKI extends STServiceAdapter {
 			PluginSpecification uriGeneratorSpecification = new PluginSpecification(
 					"it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory",
 					null, new Properties(), null);
-			uriGeneratorSpecification.expandDefaults();
 
 			String renderingEngineFactoryID = BaseRenderingEngine
 					.getRenderingEngineSpecificationForLexicalModel(lexicalizationModel)
@@ -297,7 +296,6 @@ public class PMKI extends STServiceAdapter {
 							"Unsupported lexicalization model: " + lexicalizationModel));
 			PluginSpecification renderingEngineSpecification = new PluginSpecification(
 					renderingEngineFactoryID, null, new Properties(), null);
-			renderingEngineSpecification.expandDefaults();
 
 			List<Pair<RDFResourceRole, String>> resourceMetadataAssociations = null;
 			File preloadedDataFile = null;

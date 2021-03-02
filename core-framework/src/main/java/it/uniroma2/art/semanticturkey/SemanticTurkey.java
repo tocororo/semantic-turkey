@@ -33,7 +33,6 @@ import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 
@@ -53,7 +52,7 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
  * 
  */
 public class SemanticTurkey implements BundleActivator {
-	
+
 	protected static Logger logger = LoggerFactory.getLogger(SemanticTurkey.class);
 
 	/**
@@ -94,36 +93,30 @@ public class SemanticTurkey implements BundleActivator {
 
 		logger.debug("userDataPath: " + extensionDir.getAbsolutePath());
 
-		
-		//Inizialize the part related to the proxy (usefull only if the proxy's parameters are passed to the JVM)
+		// Inizialize the part related to the proxy (usefull only if the proxy's parameters are passed to the
+		// JVM)
 		initializeProxyAuthenticatorHTTP();
-		
+
 		// createWebServer();
 		// PluginManager.loadOntManagersImpl();
 		// // SemanticTurkey.class.getResource("log4j.properties").toString();
 		return null;
 	}
-	
-	private static void initializeProxyAuthenticatorHTTP() {
-	    final String proxyUser = System.getProperty("http.proxyUser");
-	    final String proxyPassword = System.getProperty("http.proxyPassword");
 
-	    if (proxyUser != null && proxyPassword != null) {
-	        Authenticator.setDefault(
-	          new Authenticator() {
-	            public PasswordAuthentication getPasswordAuthentication() {
-	              return new PasswordAuthentication(
-	                proxyUser, proxyPassword.toCharArray()
-	              );
-	            }
-	          }
-	        );
-	    }
+	private static void initializeProxyAuthenticatorHTTP() {
+		final String proxyUser = System.getProperty("http.proxyUser");
+		final String proxyPassword = System.getProperty("http.proxyPassword");
+
+		if (proxyUser != null && proxyPassword != null) {
+			Authenticator.setDefault(new Authenticator() {
+				public PasswordAuthentication getPasswordAuthentication() {
+					return new PasswordAuthentication(proxyUser, proxyPassword.toCharArray());
+				}
+			});
+		}
 	}
 
-
 	public void start(BundleContext arg0) throws Exception {
-		PluginManager.setContext(arg0);
 		String extensionDir = new File(System.getProperty("user.dir")).toURI().toString();
 		System.out.println("ST Home Directory: " + extensionDir);
 		initialize(extensionDir);

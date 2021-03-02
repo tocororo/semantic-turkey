@@ -6,15 +6,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import java.util.UUID;
 import java.util.function.Function;
 
-import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.repository.Repository;
@@ -35,7 +34,7 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextImpl;
 
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.google.common.collect.ImmutableMap;
 
 import static org.junit.Assert.assertThat;
 
@@ -55,26 +54,32 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
+import it.uniroma2.art.semanticturkey.extension.ConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
+import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurer;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.extension.impl.ExtensionPointManagerImpl;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.AbstractLabelBasedRenderingEngineConfiguration;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.VariableDefinition;
 import it.uniroma2.art.semanticturkey.ontology.STEnviroment;
-import it.uniroma2.art.semanticturkey.plugin.PluginManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
 import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.SKOSRenderingEngineFactory;
-import it.uniroma2.art.semanticturkey.plugin.impls.rendering.conf.SKOSRenderingEngineConfiguration;
 import it.uniroma2.art.semanticturkey.project.CreateLocal;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.Pair;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.TripleForSearch;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
@@ -92,9 +97,63 @@ public class BaseRenderingEngineTest {
 
 	public static final String TEST_REPOSTORY_IMPL_CONFIGURER = "org.example.TestRepositoryImplConfigurer";
 	public static final String REGEX_SEARCH_STRATEGY = "it.uniroma2.art.semanticturkey.extension.impl.search.regex.RegexSearchStrategy";
+	public static final String TEST_RENDERING_ENGINE = "org.example.TestRenderingEngine";
+	public static final String TEST_URI_GENERATOR = "org.example.TestURIGenerator";
 
 	@Rule
 	public STEnviroment stEnv = new STEnviroment(false);
+
+	public static class TestRenderingEngineConfiguration
+			extends AbstractLabelBasedRenderingEngineConfiguration {
+
+		@Override
+		public String getShortName() {
+			return "Test rendering engine";
+		}
+	}
+
+	public static class TestRenderingEngine extends BaseRenderingEngine {
+
+		public TestRenderingEngine(TestRenderingEngineConfiguration conf) {
+			super(conf);
+		}
+
+		@Override
+		public void getGraphPatternInternal(StringBuilder gp) {
+			gp.append("\n?resource <http://www.w3.org/2004/02/skos/core#prefLabel> ?labelInternal .\n");
+		}
+	}
+
+	public static class TestRenderingEngineFactory
+			implements ConfigurableExtensionFactory<TestRenderingEngine, TestRenderingEngineConfiguration> {
+
+		@Override
+		public String getId() {
+			return TEST_RENDERING_ENGINE;
+		}
+
+		@Override
+		public String getName() {
+			return "Test rendering engine";
+		}
+
+		@Override
+		public String getDescription() {
+			return null;
+		}
+
+		@Override
+		public TestRenderingEngine createInstance(TestRenderingEngineConfiguration conf)
+				throws InvalidConfigurationException {
+			return new TestRenderingEngine(conf);
+		}
+
+		@Override
+		public Collection<TestRenderingEngineConfiguration> getConfigurations() {
+			return Arrays.asList(new TestRenderingEngineConfiguration());
+		}
+
+	}
 
 	@Before
 	public void tearUp() throws RDFParseException, RepositoryException, IOException, ProjectAccessException {
@@ -108,12 +167,12 @@ public class BaseRenderingEngineTest {
 
 		// loads PU bindings
 		ProjectUserBindingsManager.loadPUBindings();
-		PluginManager.setDirectAccessTest(true);
 
 		ProjectManager.setExtensionPointManager(new ExtensionPointManagerImpl() {
 			@Override
 			public ExtensionFactory<?> getExtension(String componentID) throws NoSuchExtensionException {
-				if (componentID.equals(TEST_REPOSTORY_IMPL_CONFIGURER)) {
+				switch (componentID) {
+				case TEST_REPOSTORY_IMPL_CONFIGURER:
 					return new NonConfigurableExtensionFactory<RepositoryImplConfigurer>() {
 
 						@Override
@@ -146,7 +205,7 @@ public class BaseRenderingEngineTest {
 						}
 
 					};
-				} else if (componentID.equals(REGEX_SEARCH_STRATEGY)) {
+				case REGEX_SEARCH_STRATEGY:
 					return new NonConfigurableExtensionFactory<SearchStrategy>() {
 						@Override
 						public String getName() {
@@ -242,11 +301,41 @@ public class BaseRenderingEngineTest {
 							};
 						}
 					};
-				} else {
+				case TEST_RENDERING_ENGINE:
+					return new TestRenderingEngineFactory();
+				case TEST_URI_GENERATOR:
+					return new NonConfigurableExtensionFactory<URIGenerator>() {
+
+						@Override
+						public String getName() {
+							return "Test URI Geneator";
+						}
+
+						@Override
+						public String getDescription() {
+							return null;
+						}
+
+						@Override
+						public URIGenerator createInstance() {
+							return new URIGenerator() {
+
+								@Override
+								public IRI generateIRI(STServiceContext stServiceContext, String xRole,
+										Map<String, Value> args) throws URIGenerationException {
+									return SimpleValueFactory.getInstance().createIRI(
+											stServiceContext.getProject().getBaseURI() + UUID.randomUUID());
+								}
+
+							};
+						}
+					};
+				default:
 					throw new IllegalArgumentException("Unsupported extension: " + componentID);
 				}
 			}
 		});
+
 	}
 
 	@Test
@@ -259,22 +348,18 @@ public class BaseRenderingEngineTest {
 			ReservedPropertyUpdateException, ProjectUpdateException, STPropertyUpdateException,
 			NoSuchConfigurationManager {
 
-		Properties renderingEngineConfiguration = new Properties();
-		renderingEngineConfiguration.setProperty("template", "(\\(${notation}\\) )?${show}");
-		renderingEngineConfiguration.setProperty("variables",
-				"{\"notation\" : {\"propertyPath\" : [\"<http://www.w3.org/2004/02/skos/core#notation>\"]}}");
-
+		TestRenderingEngineConfiguration rendEngConf = new TestRenderingEngineConfiguration();
+		rendEngConf.template = "(\\(${notation}\\) )?${show}";
+		VariableDefinition notationVar = new VariableDefinition();
+		notationVar.propertyPath = Arrays.asList(
+				SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2004/02/skos/core#notation"));
+		rendEngConf.variables = ImmutableMap.of("notation", notationVar);
 		Project project = ProjectManager.createProject(ProjectConsumer.SYSTEM, "Test", Project.SKOS_MODEL,
 				Project.SKOS_MODEL, "http://example.org/", false, false, false, new CreateLocal(), "core",
 				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null, null, null,
-				null,
-				new PluginSpecification(
-						"it.uniroma2.art.semanticturkey.rendering.NativeTemplateBasedURIGeneratorFactory",
-						"it.uniroma2.art.semanticturkey.rendering.NativeTemplateBasedURIGeneratorConfiguration",
-						null, JsonNodeFactory.instance.objectNode()),
-				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
-						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
-						JsonNodeFactory.instance.objectNode()),
+				null, new PluginSpecification(TEST_URI_GENERATOR, null, null, null),
+				new PluginSpecification(TEST_RENDERING_ENGINE, null, null,
+						STPropertiesManager.storeSTPropertiesToObjectNode(rendEngConf, true)),
 				null, null, null, null, null, null, null, false, null, false, false, false);
 		try {
 			Repository repo = new SailRepository(new MemoryStore());
@@ -402,21 +487,19 @@ public class BaseRenderingEngineTest {
 			ReservedPropertyUpdateException, ProjectUpdateException, STPropertyUpdateException,
 			NoSuchConfigurationManager {
 
-		Properties renderingEngineConfiguration = new Properties();
-		renderingEngineConfiguration.setProperty("template", "(\\(${notation}\\) )?${show}");
-		renderingEngineConfiguration.setProperty("variables",
-				"{\"notation\" : {\"propertyPath\" : [\"<http://www.w3.org/2004/02/skos/core#notation>\"]}}");
-
+		TestRenderingEngineConfiguration rendEngConf = new TestRenderingEngineConfiguration();
+		rendEngConf.template = "(\\(${notation}\\) )?${show}";
+		VariableDefinition notationVar = new VariableDefinition();
+		notationVar.propertyPath = Arrays.asList(
+				SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2004/02/skos/core#notation"));
+		rendEngConf.variables = ImmutableMap.of("notation", notationVar);
 		Project project = ProjectManager.createProject(ProjectConsumer.SYSTEM, "Test", Project.SKOS_MODEL,
 				Project.SKOS_MODEL, "http://example.org/", false, true, false, new CreateLocal(), "core",
 				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null, "support",
 				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null,
-				new PluginSpecification("it.uniroma2.art.semanticturkey.rendering.NativeTemplateBasedURIGeneratorFactory",
-						"it.uniroma2.art.semanticturkey.rendering.NativeTemplateBasedURIGeneratorConfiguration", null,
-						JsonNodeFactory.instance.objectNode()),
-				new PluginSpecification(SKOSRenderingEngineFactory.class.getName(),
-						SKOSRenderingEngineConfiguration.class.getName(), renderingEngineConfiguration,
-						JsonNodeFactory.instance.objectNode()),
+				new PluginSpecification(TEST_URI_GENERATOR, null, null, null),
+				new PluginSpecification(TEST_RENDERING_ENGINE, null, null,
+						STPropertiesManager.storeSTPropertiesToObjectNode(rendEngConf, true)),
 				null, null, null, null, null, null, null, false, null, false, false, false);
 		try {
 			STServiceContext stServiceContext = new STServiceContext() {
