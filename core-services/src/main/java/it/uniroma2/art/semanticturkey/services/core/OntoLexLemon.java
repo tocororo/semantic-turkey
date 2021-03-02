@@ -2468,7 +2468,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf', 'W')") // TODO define access control
+	@PreAuthorize("@auth.isAuthorized('rdf', 'U')") // TODO define access control
 	public void createLexicoSemanticRelation(Resource source, Resource target, boolean undirectional,
 			@Optional IRI category,
 			@SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/vartrans#LexicoSemanticRelation") IRI relationClass,
@@ -2505,6 +2505,36 @@ public class OntoLexLemon extends STServiceAdapter {
 		update.setDataset(dataset);
 		update.execute();
 	}
+	
+	/**
+	 * Deletes a lexico-semantic relation.
+	 * 
+	 * @param source
+	 * @param target
+	 * @param undirectional
+	 * @param category
+	 * @param relationClass
+	 * @throws URIGenerationException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf', 'D')") // TODO define access control
+	public void deleteLexicoSemanticRelation(Resource relation) {
+		Update deletionUpdate = getManagedConnection().prepareUpdate(
+			//@formatter:off
+			"DELETE WHERE {\n" +
+			"  ?s ?p ?o .  \n" +
+			"}             \n"
+			//@formatter:on
+		);
+		deletionUpdate.setBinding("s", relation);
+		SimpleDataset dataset = new SimpleDataset();
+		dataset.addDefaultGraph((IRI) getWorkingGraph());
+		dataset.addDefaultRemoveGraph((IRI) getWorkingGraph());
+		deletionUpdate.setDataset(dataset);
+		deletionUpdate.execute();
+	}
+
 
 	/* --- TranslationSets --- */
 
