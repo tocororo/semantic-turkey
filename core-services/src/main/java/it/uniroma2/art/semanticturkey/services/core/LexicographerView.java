@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,9 @@ import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -61,6 +64,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.LexicographerView.LexicoSemanticRelation.LexicoSemanticRelationPolicy;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsList;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
 
 /**
  * This class provides services related to the lexicographer view, which provides a simplified, streamlined
@@ -158,6 +162,7 @@ public class LexicographerView extends STServiceAdapter {
 
 		private Resource id;
 		private String nature;
+		private String show;
 		private PredicateObjectsList morphosyntacticProps;
 		private List<Form> lemma;
 		private List<Form> otherForms;
@@ -179,6 +184,10 @@ public class LexicographerView extends STServiceAdapter {
 
 		public String getNature() {
 			return nature;
+		}
+
+		public String getShow() {
+			return show;
 		}
 
 		public PredicateObjectsList getMorphosyntacticProps() {
@@ -224,6 +233,8 @@ public class LexicographerView extends STServiceAdapter {
 
 			List<Form> lemma = parseForms(ctx, input, lexicalEntry, ONTOLEX.CANONICAL_FORM);
 			List<Form> otherForms = parseForms(ctx, input, lexicalEntry, ONTOLEX.OTHER_FORM);
+
+			String show = computeShow(ctx, lexicalEntry, lemma);
 
 			List<EntryReference> subterms = parseSubterms(ctx, input, lexicalEntry);
 			List<Component> constituents = parseConstituents(ctx, input, lexicalEntry);
@@ -385,12 +396,28 @@ public class LexicographerView extends STServiceAdapter {
 
 			lexicalEntryObj.morphosyntacticProps = morphoSyntacticProps;
 			lexicalEntryObj.lemma = lemma;
+			lexicalEntryObj.show = show;
 			lexicalEntryObj.subterms = subterms;
 			lexicalEntryObj.constituents = constituents;
 			lexicalEntryObj.otherForms = otherForms;
 			lexicalEntryObj.senses = senseList;
 
 			return lexicalEntryObj;
+		}
+
+		private static String computeShow(Context ctx, Resource lexicalEntry, List<Form> lemma) {
+			String show = lemma.stream()
+					.flatMap(f -> f.getWrittenRep().stream().map(AnnotatedValue::getValue))
+					.map(Value::stringValue).collect(Collectors.joining(", "));
+			if (StringUtils.isAllBlank(show)) {
+				if (lexicalEntry instanceof BNode) {
+					return lexicalEntry.toString();
+				} else {
+					return ModelUtilities.getQName((IRI) lexicalEntry, ctx.prefix2ns);
+				}
+			} else {
+				return show;
+			}
 		}
 
 		protected static void parseSenseRelations(Context ctx, Model input, Sense senseObj) {
@@ -1037,6 +1064,7 @@ public class LexicographerView extends STServiceAdapter {
 		public Map<IRI, Map<IRI, AnnotatedValue<IRI>>> specialProps;
 		public Resource workingGraph;
 		public Map<String, String> ns2prefix;
+		public Map<String, String> prefix2ns;
 	}
 
 	/**
@@ -1190,7 +1218,8 @@ public class LexicographerView extends STServiceAdapter {
 
 		ctx.specialProps = specialProps;
 		ctx.workingGraph = getWorkingGraph();
-		ctx.ns2prefix = MapUtils.invertMap(getProject().getNewOntologyManager().getNSPrefixMappings(true));
+		ctx.prefix2ns = getProject().getNewOntologyManager().getNSPrefixMappings(true);
+		ctx.ns2prefix = MapUtils.invertMap(ctx.prefix2ns);
 
 		return LexicalEntry.parse(ctx, input, lexicalEntry);
 	}
