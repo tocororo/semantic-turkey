@@ -63,6 +63,7 @@ import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.lime.model.vocabulary.VARTRANS;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
+import it.uniroma2.art.semanticturkey.constraints.HasType;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
@@ -2468,7 +2469,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf', 'U')") // TODO define access control
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#source)+ ', values)', 'C')")
 	public void createLexicoSemanticRelation(Resource source, Resource target, boolean undirectional,
 			@Optional IRI category,
 			@SubClassOf(superClassIRI = "http://www.w3.org/ns/lemon/vartrans#LexicoSemanticRelation") IRI relationClass,
@@ -2505,23 +2506,36 @@ public class OntoLexLemon extends STServiceAdapter {
 		update.setDataset(dataset);
 		update.execute();
 	}
-	
+
 	/**
-	 * Deletes a lexico-semantic relation.
+	 * Deletes a lexical relation between two lexical entries.
 	 * 
-	 * @param source
-	 * @param target
-	 * @param undirectional
-	 * @param category
-	 * @param relationClass
-	 * @throws URIGenerationException
+	 * @param relation
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@PreAuthorize("@auth.isAuthorized('rdf', 'D')") // TODO define access control
-	public void deleteLexicoSemanticRelation(Resource relation) {
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry, values)', 'D')")
+	public void deleteLexicalRelation(
+			@LocallyDefined @HasType("http://www.w3.org/ns/lemon/vartrans#LexicalRelation") Resource relation) {
+		deleteLexicoSemanticRelationInternal(relation);
+	}
+
+	/**
+	 * Deletes a sense relation between two lexical senses.
+	 * 
+	 * @param relation
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalSense, values)', 'D')")
+	public void deleteSenseRelation(
+			@LocallyDefined @HasType("http://www.w3.org/ns/lemon/vartrans#SenseRelation") Resource relation) {
+		deleteLexicoSemanticRelationInternal(relation);
+	}
+
+	protected void deleteLexicoSemanticRelationInternal(Resource relation) {
 		Update deletionUpdate = getManagedConnection().prepareUpdate(
-			//@formatter:off
+		//@formatter:off
 			"DELETE WHERE {\n" +
 			"  ?s ?p ?o .  \n" +
 			"}             \n"
@@ -2534,7 +2548,6 @@ public class OntoLexLemon extends STServiceAdapter {
 		deletionUpdate.setDataset(dataset);
 		deletionUpdate.execute();
 	}
-
 
 	/* --- TranslationSets --- */
 
