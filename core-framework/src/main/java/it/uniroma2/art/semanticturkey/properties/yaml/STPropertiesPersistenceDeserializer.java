@@ -11,6 +11,7 @@ import org.apache.commons.lang3.reflect.TypeUtils;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -135,9 +136,14 @@ public class STPropertiesPersistenceDeserializer extends StdDeserializer<STPrope
 
 				BeanProperty prop = createBeanProperty(ctxt, target, stProp, jsonPropName, targetType);
 				JsonParser treeAsTokens = p.getCodec().treeAsTokens(jsonPropValue);
-				treeAsTokens.nextToken();
-				Object targetValue = ctxt.readPropertyValue(treeAsTokens, prop,
-						ctxt.constructType(targetType.getType()));
+				JsonToken jsonToken = treeAsTokens.nextToken();
+				Object targetValue;
+				if (jsonToken == JsonToken.VALUE_NULL) {
+					targetValue = null;
+				} else {
+					targetValue = ctxt.readPropertyValue(treeAsTokens, prop,
+							ctxt.constructType(targetType.getType()));
+				}
 				if (targetValue != null) {
 					stProp.setPropertyValue(jsonPropName, targetValue);
 				}
