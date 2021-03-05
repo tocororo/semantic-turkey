@@ -332,7 +332,7 @@ public class Datatypes extends STServiceAdapter {
 			throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
 		RepositoryConnection conn = getManagedConnection();
 		deleteDatatypeRestrictionImpl(conn, datatype); //delete the previous
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+		Map<String, String> prefixToNamespacesMap = getProject().getOntologyManager()
 				.getNSPrefixMappings(false);
 		ManchesterClassInterface mci = ManchesterSyntaxUtils.parseDatatypeRestrictionExpression(manchExpr,
 				conn.getValueFactory(), prefixToNamespacesMap);

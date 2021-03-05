@@ -1621,7 +1621,7 @@ public class ProjectManager {
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 
 			if (preloadedDataFile != null) {
-				Repository repository = project.getNewOntologyManager().getRepository();
+				Repository repository = project.getOntologyManager().getRepository();
 				RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repository);
 				try {
 					SearchStrategy searchStrategy = SearchStrategyUtils.instantiateSearchStrategy(exptManager,
@@ -1629,7 +1629,7 @@ public class ProjectManager {
 									project.getRepositoryManager().getSTRepositoryInfo("core")));
 
 					ValidationUtilities.executeWithoutValidation(validationEnabled, conn, (_conn) -> {
-						project.getNewOntologyManager().loadOntologyData(conn, preloadedDataFile, baseURI,
+						project.getOntologyManager().loadOntologyData(conn, preloadedDataFile, baseURI,
 								preloadedDataFormat, SimpleValueFactory.getInstance().createIRI(baseURI),
 								transitiveImportAllowance, failedImports);
 						try {

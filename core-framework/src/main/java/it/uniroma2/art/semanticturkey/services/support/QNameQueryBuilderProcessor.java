@@ -47,7 +47,7 @@ public class QNameQueryBuilderProcessor implements QueryBuilderProcessor {
 
 		try {
 			Project currentProject = context.getProject();
-			Map<String, String> prefix2ns = currentProject.getNewOntologyManager().getNSPrefixMappings(false);
+			Map<String, String> prefix2ns = currentProject.getOntologyManager().getNSPrefixMappings(false);
 
 			Map<String, String> ns2prefix = new HashMap<>();
 			prefix2ns.forEach((prefix, ns) -> ns2prefix.put(ns, prefix));

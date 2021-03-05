@@ -82,7 +82,7 @@ public class ManchesterHandler extends STServiceAdapter {
 				subClassBNodeList.add((BNode) obj);
 			}
 		}
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+		Map<String, String> prefixToNamespacesMap = getProject().getOntologyManager()
 				.getNSPrefixMappings(false);
 		Map<String, String> namespaceToPrefixsMap = new HashMap<String, String>();
 		for (String prefix : prefixToNamespacesMap.keySet()) {
@@ -138,7 +138,7 @@ public class ManchesterHandler extends STServiceAdapter {
 			@Optional(defaultValue = "true") boolean useUppercaseSyntax) throws NotClassAxiomException {
 
 		List<Statement> statList = new ArrayList<>();
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+		Map<String, String> prefixToNamespacesMap = getProject().getOntologyManager()
 				.getNSPrefixMappings(false);
 		Map<String, String> namespaceToPrefixsMap = new HashMap<String, String>();
 		for (String prefix : prefixToNamespacesMap.keySet()) {
@@ -197,7 +197,7 @@ public class ManchesterHandler extends STServiceAdapter {
 		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
 		boolean isValid = true;
 		RepositoryConnection conn = getManagedConnection();
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+		Map<String, String> prefixToNamespacesMap = getProject().getOntologyManager()
 				.getNSPrefixMappings(false);
 		try {
 			ManchesterClassInterface mci = ManchesterSyntaxUtils.parseCompleteExpression(manchExpr, conn.getValueFactory(),
@@ -288,7 +288,7 @@ public class ManchesterHandler extends STServiceAdapter {
 		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
 		boolean isValid = true;
 		RepositoryConnection conn = getManagedConnection();
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+		Map<String, String> prefixToNamespacesMap = getProject().getOntologyManager()
 				.getNSPrefixMappings(false);
 		try {
 			ManchesterSyntaxUtils.parseDatatypeRestrictionExpression(manchExpr, conn.getValueFactory(),
@@ -333,7 +333,7 @@ public class ManchesterHandler extends STServiceAdapter {
 		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
 		boolean isValid = true;
 		RepositoryConnection conn = getManagedConnection();
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+		Map<String, String> prefixToNamespacesMap = getProject().getOntologyManager()
 				.getNSPrefixMappings(false);
 		try {
 			ManchesterSyntaxUtils.parseLiteralEnumerationExpression(manchExpr, conn.getValueFactory(),
@@ -380,7 +380,7 @@ public class ManchesterHandler extends STServiceAdapter {
 		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
 		boolean isValid = true;
 		RepositoryConnection conn = getManagedConnection();
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+		Map<String, String> prefixToNamespacesMap = getProject().getOntologyManager()
 				.getNSPrefixMappings(false);
 		try {
 			ManchesterSyntaxUtils.parseObjectPropertyExpression(manchExpr, conn.getValueFactory(),
@@ -433,7 +433,7 @@ public class ManchesterHandler extends STServiceAdapter {
 			throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException,
 			ManchesterSemanticException {
 		RepositoryConnection conn = getManagedConnection();
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+		Map<String, String> prefixToNamespacesMap = getProject().getOntologyManager()
 				.getNSPrefixMappings(false);
 		ManchesterClassInterface mci = ManchesterSyntaxUtils.parseCompleteExpression(manchExpr,
 				conn.getValueFactory(), prefixToNamespacesMap);
@@ -529,7 +529,7 @@ public class ManchesterHandler extends STServiceAdapter {
 			ManchesterPrefixNotDefinedException, ManchesterSemanticException {
 		// first of all, parse the new Expression to be sure that it is a valid one
 		RepositoryConnection conn = getManagedConnection();
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+		Map<String, String> prefixToNamespacesMap = getProject().getOntologyManager()
 				.getNSPrefixMappings(false);
 		ManchesterClassInterface mci = ManchesterSyntaxUtils.parseCompleteExpression(newManchExpr,
 				conn.getValueFactory(), prefixToNamespacesMap);

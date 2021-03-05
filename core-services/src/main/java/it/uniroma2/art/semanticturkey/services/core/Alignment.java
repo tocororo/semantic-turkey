@@ -672,7 +672,7 @@ public class Alignment extends STServiceAdapter {
 		}
 		
 		// removes final / or # from baseURIs in order to avoid failing of the check on the baseURIs match
-		String leftProjectBaseURI = leftProject.getNewOntologyManager().getBaseURI();
+		String leftProjectBaseURI = leftProject.getOntologyManager().getBaseURI();
 		if (leftProjectBaseURI.endsWith("/") || leftProjectBaseURI.endsWith("#")) {
 			leftProjectBaseURI = leftProjectBaseURI.substring(0, leftProjectBaseURI.length() - 1);
 		}
@@ -685,7 +685,7 @@ public class Alignment extends STServiceAdapter {
 		
 		if (rightProject != null) {
 			//EDOAL => both the aligned ontologies (1 and 2) must refer to the two datasets of the EDOAL project
-			String rightProjectBaseURI = rightProject.getNewOntologyManager().getBaseURI();
+			String rightProjectBaseURI = rightProject.getOntologyManager().getBaseURI();
 			if (rightProjectBaseURI.endsWith("/") || rightProjectBaseURI.endsWith("#")) {
 				rightProjectBaseURI = rightProjectBaseURI.substring(0, rightProjectBaseURI.length() - 1);
 			}

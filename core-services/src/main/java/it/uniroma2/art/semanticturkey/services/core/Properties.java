@@ -941,7 +941,7 @@ public class Properties extends STServiceAdapter {
 			@Optional(defaultValue = "<http://www.w3.org/2002/07/owl#propertyChainAxiom>") IRI linkingPredicate) throws ManchesterParserException,
             ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
 		
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Map<String, String> prefixToNamespacesMap = getProject().getOntologyManager().getNSPrefixMappings(false);
 
 		RepositoryConnection conn = getManagedConnection();
 		ValueFactory vf = conn.getValueFactory();

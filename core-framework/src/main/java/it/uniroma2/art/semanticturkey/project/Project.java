@@ -162,7 +162,7 @@ public abstract class Project extends AbstractProject {
 	protected File renderingConfigFile;
 	protected File uriGenConfigFile;
 
-	protected OntologyManager newOntManager;
+	protected OntologyManager ontManager;
 	protected OntologyManagerImpl supportOntManager;
 
 	protected IRI model;
@@ -369,7 +369,7 @@ public abstract class Project extends AbstractProject {
 			}
 
 			Repository coreRepository = repositoryManager.getRepository("core");
-			newOntManager = new OntologyManagerImpl(coreRepository, isValidationEnabled());
+			ontManager = new OntologyManagerImpl(coreRepository, isValidationEnabled());
 
 			String baseURI = getBaseURI();
 			if (baseURI == null)
@@ -485,7 +485,7 @@ public abstract class Project extends AbstractProject {
 
 				// nsPrefixMappingsPersistence must have been already created by constructor of Project
 				// subclasses
-				newOntManager.initializeMappingsPersistence(nsPrefixMappingsPersistence);
+				ontManager.initializeMappingsPersistence(nsPrefixMappingsPersistence);
 
 				loadingCoreVocabularies();
 
@@ -520,7 +520,7 @@ public abstract class Project extends AbstractProject {
 	}
 
 	protected void loadingCoreVocabularies() throws Exception {
-		try (RepositoryConnection conn = newOntManager.getRepository().getConnection()) {
+		try (RepositoryConnection conn = ontManager.getRepository().getConnection()) {
 			conn.begin();
 
 			Set<Resource> contexts = QueryResults.stream(conn.getContextIDs()).filter(IRI.class::isInstance)
@@ -542,7 +542,7 @@ public abstract class Project extends AbstractProject {
 					RDFFormat coreOntDocumentFormat = entry.getValue().getValue();
 
 					logger.debug("Declaring core vocabulary: " + coreOnt);
-					newOntManager.declareSupportOntology(coreOnt, true, false, false);
+					ontManager.declareSupportOntology(coreOnt, true, false, false);
 
 					if (!contexts.contains(OntologyManager.computeCanonicalURI(coreOnt))) {
 						logger.debug("Loading vocabulary: " + coreOnt);
@@ -662,7 +662,7 @@ public abstract class Project extends AbstractProject {
 
 	public void clearData() throws Exception {
 		// clear core repository
-		newOntManager.clearData();
+		ontManager.clearData();
 		// reload core vocabularies
 		loadingCoreVocabularies();
 
@@ -853,7 +853,7 @@ public abstract class Project extends AbstractProject {
 	public void setBaseURI(String baseURI) throws ProjectUpdateException {
 		try {
 			// getOntModel().setBaseURI(baseURI);
-			newOntManager.setBaseURI(baseURI);
+			ontManager.setBaseURI(baseURI);
 			stp_properties.setProperty(BASEURI_PROP, baseURI);
 			updateProjectProperties();
 		} catch (Exception e) {
@@ -1004,7 +1004,7 @@ public abstract class Project extends AbstractProject {
 	 * @return
 	 */
 	public Repository getRepository() {
-		return newOntManager.getRepository();
+		return ontManager.getRepository();
 	}
 
 	public RDF4JRepositoryTransactionManager getRepositoryTransactionManager(String repositoryId) {
@@ -1047,8 +1047,8 @@ public abstract class Project extends AbstractProject {
 				+ extensionPathComponent + AUXILIARY_METADATA_GRAPH_SUFFIX);
 	}
 
-	public OntologyManager getNewOntologyManager() {
-		return newOntManager;
+	public OntologyManager getOntologyManager() {
+		return ontManager;
 	}
 
 	public STLocalRepositoryManager getRepositoryManager() {

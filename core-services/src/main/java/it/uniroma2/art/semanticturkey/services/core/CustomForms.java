@@ -1239,7 +1239,7 @@ public class CustomForms extends STServiceAdapter {
 		ArrayList<AnnotatedValue<IRI>> chain = new ArrayList<>();
 		SimpleValueFactory svf = SimpleValueFactory.getInstance();
 		
-		Map<String, String> allMappings = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Map<String, String> allMappings = getProject().getOntologyManager().getNSPrefixMappings(false);
 		
 		String[] splitted = propChain.split(",");
 		for (String s : splitted) {

@@ -51,7 +51,7 @@ public class PersistentStoreProject extends Project {
 		if (supportOntManager != null) {
 			supportOntManager.startOntModel("http://example.org/history", null, null);
 		}
-		newOntManager.startOntModel(getBaseURI(), null, null);
+		ontManager.startOntModel(getBaseURI(), null, null);
 	}
 
 }

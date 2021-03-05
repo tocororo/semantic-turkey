@@ -1218,7 +1218,7 @@ public class LexicographerView extends STServiceAdapter {
 
 		ctx.specialProps = specialProps;
 		ctx.workingGraph = getWorkingGraph();
-		ctx.prefix2ns = getProject().getNewOntologyManager().getNSPrefixMappings(true);
+		ctx.prefix2ns = getProject().getOntologyManager().getNSPrefixMappings(true);
 		ctx.ns2prefix = MapUtils.invertMap(ctx.prefix2ns);
 
 		return LexicalEntry.parse(ctx, input, lexicalEntry);

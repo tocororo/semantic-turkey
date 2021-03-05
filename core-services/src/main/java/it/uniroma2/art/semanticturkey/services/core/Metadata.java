@@ -483,6 +483,6 @@ public class Metadata extends STServiceAdapter {
 	}
 
 	protected OntologyManager getOntologyManager() {
-		return getProject().getNewOntologyManager();
+		return getProject().getOntologyManager();
 	}
 }

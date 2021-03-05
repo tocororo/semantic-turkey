@@ -179,7 +179,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 		}
 
 		for (IRI predicate : relevantProperties) {
-			if (STVocabUtilities.isHiddenResource(predicate, project.getNewOntologyManager())) {
+			if (STVocabUtilities.isHiddenResource(predicate, project.getOntologyManager())) {
 				continue;
 			}
 

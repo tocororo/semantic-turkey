@@ -489,7 +489,7 @@ public class Classes extends STServiceAdapter {
 	public void addIntersectionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
 			List<String> clsDescriptions) throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
 		RepositoryConnection repoConnection = getManagedConnection();
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+		Map<String, String> prefixToNamespacesMap = getProject().getOntologyManager()
 				.getNSPrefixMappings(false);
 		Model modelAdditions = new LinkedHashModel();
 		addCollectionBasedClassAxiom(cls, OWL.INTERSECTIONOF, clsDescriptions, modelAdditions, repoConnection,
@@ -525,7 +525,7 @@ public class Classes extends STServiceAdapter {
 	public void addUnionOf(@LocallyDefined @Modified(role = RDFResourceRole.cls) IRI cls,
 			List<String> clsDescriptions) throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException {
 		RepositoryConnection repoConnection = getManagedConnection();
-		Map<String, String> prefixToNamespacesMap = getProject().getNewOntologyManager()
+		Map<String, String> prefixToNamespacesMap = getProject().getOntologyManager()
 				.getNSPrefixMappings(false);
 		Model modelAdditions = new LinkedHashModel();
 		addCollectionBasedClassAxiom(cls, OWL.UNIONOF, clsDescriptions, modelAdditions, repoConnection,

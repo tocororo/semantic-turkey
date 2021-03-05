@@ -223,7 +223,7 @@ public class InputOutput extends STServiceAdapter {
 				workingRepoInserter = tempInserter;
 			} else { // special RDFHandler provided by the OntologyManger, if directly writing to the
 						// repository
-				workingRepoInserter = getProject().getNewOntologyManager().getRDFHandlerForLoadData(conn,
+				workingRepoInserter = getProject().getOntologyManager().getRDFHandlerForLoadData(conn,
 						baseURI, getWorkingGraph(), transitiveImportAllowance, failedImports);
 			}
 
@@ -365,7 +365,7 @@ public class InputOutput extends STServiceAdapter {
 			}
 
 			if (workingConn != conn) {
-				RDFHandler rdfInserter = getProject().getNewOntologyManager().getRDFHandlerForLoadData(conn,
+				RDFHandler rdfInserter = getProject().getOntologyManager().getRDFHandlerForLoadData(conn,
 						baseURI, getWorkingGraph(), transitiveImportAllowance, failedImports);
 				workingConn.export(rdfInserter);
 			}

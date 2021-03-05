@@ -172,7 +172,7 @@ public class Refactor extends STServiceAdapter  {
 		}
 		//if the source baseURI is the default one, set the new baseURI of the project
 		if (source.equals(getProject().getBaseURI())) {
-			getProject().getNewOntologyManager().setBaseURI(target);
+			getProject().getOntologyManager().setBaseURI(target);
 			getProject().setBaseURI(target);
 			//TODO update working graph
 		}

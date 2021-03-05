@@ -289,7 +289,7 @@ public class Search extends STServiceAdapter {
 		}
 
 		//prepare the namespace map
-		Map<String, String> prefixToNamespaceMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Map<String, String> prefixToNamespaceMap = getProject().getOntologyManager().getNSPrefixMappings(false);
 
 		String query= ServiceForSearches.getPrefixes() +
 				"\nSELECT DISTINCT ?resource ?attr_nature ?attr_scheme" +
@@ -396,7 +396,7 @@ public class Search extends STServiceAdapter {
 		}
 
 		//prepare the namespace map
-		Map <String, String> prefixToNamespaceMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Map <String, String> prefixToNamespaceMap = getProject().getOntologyManager().getNSPrefixMappings(false);
 
 		String query = ServiceForSearches.getPrefixes() + "\n"
 				+ instantiateSearchStrategy().searchResource(stServiceContext, searchString, rolesArray, useLexicalizations,
@@ -471,7 +471,7 @@ public class Search extends STServiceAdapter {
 			throws IllegalStateException, STPropertyAccessException {
 
 		//prepare the namespace map
-		Map <String, String> prefixToNamespaceMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Map <String, String> prefixToNamespaceMap = getProject().getOntologyManager().getNSPrefixMappings(false);
 
 		return instantiateSearchStrategy().searchURIList(stServiceContext, searchString, rolesArray,
 				searchMode, schemes, schemeFilter, cls, prefixToNamespaceMap, maxNumResults);
@@ -507,7 +507,7 @@ public class Search extends STServiceAdapter {
 			throws IllegalStateException, STPropertyAccessException {
 
 		//prepare the namespace map
-		Map <String, String> prefixToNamespaceMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Map <String, String> prefixToNamespaceMap = getProject().getOntologyManager().getNSPrefixMappings(false);
 
 		IRI lexModel = getProject().getLexicalizationModel();
 		List<IRI> clsList = new ArrayList<>();
@@ -568,7 +568,7 @@ public class Search extends STServiceAdapter {
 			throws IllegalStateException, STPropertyAccessException {
 
 		//prepare the namespace map
-		Map <String, String> prefixToNamespaceMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Map <String, String> prefixToNamespaceMap = getProject().getOntologyManager().getNSPrefixMappings(false);
 
 		String query = ServiceForSearches.getPrefixes() + "\n"
 				+ instantiateSearchStrategy().searchLexicalEntry(stServiceContext, searchString,
@@ -1223,7 +1223,7 @@ public class Search extends STServiceAdapter {
 		List<String> prefixList = new ArrayList<>();
 
 		//prepare the namespace map
-		Map <String, String> prefixToNamespaceMap = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+		Map <String, String> prefixToNamespaceMap = getProject().getOntologyManager().getNSPrefixMappings(false);
 
 		//iterate over the prefixToNamespaceMap to get the desired prefixes according to the
 		// searchString and searchMode

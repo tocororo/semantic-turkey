@@ -351,7 +351,7 @@ public class Resources extends STServiceAdapter {
 		try {
 			writer.startRDF();
 			//write prefix mappings
-			Map<String, String> prefixMappings = getProject().getNewOntologyManager().getNSPrefixMappings(false);
+			Map<String, String> prefixMappings = getProject().getOntologyManager().getNSPrefixMappings(false);
 			for (String prefix: prefixMappings.keySet()) {
 				writer.handleNamespace(prefix, prefixMappings.get(prefix));
 			}
@@ -382,7 +382,7 @@ public class Resources extends STServiceAdapter {
 		RDFParser rdfParser = Rio.createParser(format);
 		rdfParser.getParserConfig().set(BasicParserSettings.PRESERVE_BNODE_IDS, true);
 		rdfParser.setRDFHandler(new StatementCollector(newDescriptionModel));
-		rdfParser.parse(triplesStream, getProject().getNewOntologyManager().getBaseURI());
+		rdfParser.parse(triplesStream, getProject().getOntologyManager().getBaseURI());
 
 		//if new description contains statements with a different subject throws an exception
 		Statement diffSubjStmt = newDescriptionModel.stream()
