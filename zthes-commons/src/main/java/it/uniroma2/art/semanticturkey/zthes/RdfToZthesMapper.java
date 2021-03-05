@@ -48,7 +48,7 @@ public class RdfToZthesMapper {
 	
 	public RdfToZthesMapper(RepositoryConnection connection, ExporterContext exporterContext) {
 		this.sourceConnection = connection;
-		this.lexicalizationModel = exporterContext.getLexicalizationModel();
+		this.lexicalizationModel = exporterContext.getProject().getLexicalizationModel();
 		conceptTermIdMap = new HashMap<String, String>();
 	}
 	

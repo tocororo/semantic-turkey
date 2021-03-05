@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter;
 
+import it.uniroma2.art.semanticturkey.project.Project;
 import org.eclipse.rdf4j.model.IRI;
 
 /**
@@ -9,9 +10,10 @@ import org.eclipse.rdf4j.model.IRI;
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
 public interface ExporterContext {
+
 	/**
-	 * Returns the lexicalization model of the source
-	 * @return the lexicalization model of the source
+	 * Returns the Project of the soruce
+	 * @return the Project of the source
 	 */
-	IRI getLexicalizationModel();
+	Project getProject();
 }

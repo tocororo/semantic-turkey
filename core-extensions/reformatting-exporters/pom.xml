@@ -10,5 +10,6 @@
   <modules>
   	<module>rdf</module>
   	<module>zthes</module>
+  	<module>spreadsheet</module>
   </modules>
 </project>

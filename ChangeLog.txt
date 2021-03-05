@@ -1,5 +1,6 @@
 version 9.0.
 date: dd/mm/yyyy
+  * implemented a new exporter to create a Spreadsheet of a SKOS project
   * updated URIGenerators and RenderingEngines to the new extension mechanism (including the use of YAML to 
     persist their configurations/settings)
   * replaced sesame:nil with cl:null to fix incompatibility with recent versions of GDB (for sure, 9.6)

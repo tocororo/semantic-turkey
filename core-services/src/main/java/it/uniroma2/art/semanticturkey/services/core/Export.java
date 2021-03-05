@@ -287,7 +287,7 @@ public class Export extends STServiceAdapter {
 
 		try (ClosableFormattedResource formattedResource = reformattingExporter == null ? null
 				: reformattingExporter.export(workingRepositoryConnection, graphs, outputFormat,
-						() -> stServiceContext.getProject().getLexicalizationModel())) {
+						() -> stServiceContext.getProject())) {
 
 			Source source;
 			if (formattedResource != null) {
