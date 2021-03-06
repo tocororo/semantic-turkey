@@ -1,6 +1,6 @@
 version 9.0.
 date: dd/mm/yyyy
-  * added two new exception for the converters: ReformattingWrongLexModelException and ReformattingException
+  * added two new exception for the converters: ReformattingWrongLexModelException and ReformattingWrongModelException
   * renamed Project#getNewOntologyManager() to Project#getOntologyManager()
   * implemented a new exporter to create a Spreadsheet of a SKOS project
   * updated URIGenerators and RenderingEngines to the new extension mechanism (including the use of YAML to 
