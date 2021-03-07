@@ -1082,11 +1082,13 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 			if (reifiedNote && propNoteList.contains(prop) && !(valueValue instanceof Literal)) {
 				//check if this property_value was already added as being part of a reified note value
 				PropInfoAndValues propInfoAndValues = resourceInfo.getPropInfoAndValues(toQName(prop));
-				for (String lang : propInfoAndValues.getLangTagList()) {
-					for (ValueForProp valueForProp : propInfoAndValues.getValueForPropListFromLang(lang)) {
-						if (valueForProp instanceof ReifiedValue && ((ReifiedValue) valueForProp).getIriValue().equals(valueValueString)) {
-							//this value as already being added as the IRI/Bnode of reified note, so do not add it as a SimpleValue
-							addPropValue = false;
+				if(propInfoAndValues!=null) {
+					for (String lang : propInfoAndValues.getLangTagList()) {
+						for (ValueForProp valueForProp : propInfoAndValues.getValueForPropListFromLang(lang)) {
+							if (valueForProp instanceof ReifiedValue && ((ReifiedValue) valueForProp).getIriValue().equals(valueValueString)) {
+								//this value as already being added as the IRI/Bnode of reified note, so do not add it as a SimpleValue
+								addPropValue = false;
+							}
 						}
 					}
 				}
