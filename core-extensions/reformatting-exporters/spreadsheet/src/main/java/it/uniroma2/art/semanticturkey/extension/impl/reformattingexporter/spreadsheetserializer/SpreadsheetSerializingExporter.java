@@ -1041,7 +1041,7 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 			String lang;
 			String noteValueString;
 			if(noteValue instanceof  Literal) {
-				lang = ((Literal) noteValue).getLanguage().isPresent() ? label.getLanguage().get() : PropInfoAndValues.NO_LANG_TAG;
+				lang = ((Literal) noteValue).getLanguage().isPresent() ? ((Literal) noteValue).getLanguage().get() : PropInfoAndValues.NO_LANG_TAG;
 				noteValueString = literalToNT((Literal) noteValue);
 			} else {
 				lang = PropInfoAndValues.NO_LANG_TAG;
