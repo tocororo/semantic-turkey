@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeSet;
 
 /**
  * A {@link ReformattingExporter} that serializes RDF data in Spreadsheet format
@@ -267,7 +268,7 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 				"\n}" +
 				"\nFILTER NOT EXISTS {" +
 				addValuesPart("?narrowerProp", narrowerPropList)+
-				"\n?concept ?narrowerProp ?narrowerConcept ." +
+				"\n?narrowerConcept ?narrowerProp ?concept ." +
 				"\n}" +
 				"\n}";
 		// @formatter:on
@@ -281,7 +282,6 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 				topConceptList.add((IRI) concept);
 			}
 		}
-
 
 		// do a SPARQL query to get the hierarchy of the concepts
 		Map<IRI, List<IRI>> conceptToNarrowerConceptListMap = new HashMap<>();
@@ -340,7 +340,7 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 		//create the hierarchy, starting from the top concept
 		int maxDepth = 1;
 		for(IRI conceptIri : topConceptList) {
-			int depth = createConceptHierarchy(conceptIri, conceptToNarrowerConceptListMap, conceptIriToConceptInfoMap, 1, new ArrayList<>());
+			int depth = createConceptHierarchy(conceptIri, conceptToNarrowerConceptListMap, conceptIriToConceptInfoMap, 1, new TreeSet<>());
 			maxDepth = Math.max(maxDepth, depth);
 		}
 
@@ -467,12 +467,15 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 	}
 
 	private int createConceptHierarchy(IRI concept, Map<IRI, List<IRI>> conceptToNarrowerConceptMap,
-			Map<IRI, ConceptInfo> conceptIriToConceptInfoMap, int currentDepth, List<String> alreadyAddedConceptList) {
+			Map<IRI, ConceptInfo> conceptIriToConceptInfoMap, int currentDepth, TreeSet<String> alreadyAddedConceptList) {
 		int maxDepth = currentDepth;
 		if(!conceptIriToConceptInfoMap.containsKey(concept)){
 			conceptIriToConceptInfoMap.put(concept, new ConceptInfo(concept));
 		}
 		ConceptInfo conceptInfo = conceptIriToConceptInfoMap.get(concept);
+
+		TreeSet<String> newAlreadyAddedConceptList = new TreeSet<>(alreadyAddedConceptList);
+		newAlreadyAddedConceptList.add(toQName(conceptInfo.getResourceIRI()));
 
 		List<IRI> narrowerList = conceptToNarrowerConceptMap.get(concept);
 		if(narrowerList!=null) {
@@ -482,10 +485,12 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 				}
 				ConceptInfo narrowerConcept = conceptIriToConceptInfoMap.get(narrower);
 				boolean added = conceptInfo.addNarrower(narrowerConcept);
+
 				//if the narrower concept was already added in this hierarchy previously, it means that there is a cycle, so do not continue
 				// with this hierarchy (but add as a narrower of the current concept)
-				if (added && !alreadyAddedConceptList.contains(narrower)) {
-					List<String> newAlreadyAddedConceptList = new ArrayList<>(alreadyAddedConceptList);
+				// WARNING: even if this concept is not expanded further, since the ConceptInfo is considered, it means that its
+				// narrower concepts are already present in it, so be careful when this structure is analyzed for example to construct the xlsx file
+				if (added && !newAlreadyAddedConceptList.contains(toQName(narrower))) {
 					int depth = createConceptHierarchy(narrower, conceptToNarrowerConceptMap, conceptIriToConceptInfoMap, currentDepth + 1,
 							newAlreadyAddedConceptList);
 					maxDepth = Math.max(maxDepth, depth);
@@ -822,7 +827,7 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 		//create the hierarchy, starting from the top collections
 		int maxDepth = 1;
 		for(IRI conceptIri : topCollectionList) {
-			int depth = createCollectionHierarchy(conceptIri, collectionToMemberListMap, collectionIriToConceptInfoMap, 1, new ArrayList<>());
+			int depth = createCollectionHierarchy(conceptIri, collectionToMemberListMap, collectionIriToConceptInfoMap, 1, new TreeSet<>());
 			maxDepth = Math.max(maxDepth, depth);
 		}
 
@@ -947,12 +952,15 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 	}
 
 	private int createCollectionHierarchy(IRI collection, Map<IRI, List<IRI>> collectionToMemberListMap,
-			Map<IRI, CollectionInfo> collectionIriToConceptInfoMap, int currentDepth, List<String> alreadyAddedollectiononceptList) {
+			Map<IRI, CollectionInfo> collectionIriToConceptInfoMap, int currentDepth, TreeSet<String> alreadyAddedCollectionSet) {
 		int maxDepth = currentDepth;
 		if(!collectionIriToConceptInfoMap.containsKey(collection)){
 			collectionIriToConceptInfoMap.put(collection, new CollectionInfo(collection));
 		}
 		CollectionInfo collectionInfo = collectionIriToConceptInfoMap.get(collection);
+
+		TreeSet<String> newAlreadyAddedCollectionSet = new TreeSet<>(alreadyAddedCollectionSet);
+		newAlreadyAddedCollectionSet.add(toQName(collectionInfo.getResourceIRI()));
 
 		List<IRI> memberList = collectionToMemberListMap.get(collection);
 		if(memberList!=null) {
@@ -964,10 +972,11 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 				boolean added = collectionInfo.addMember(memberCollection);
 				//if the member was already added in this hierarchy previously, it means that there is a cycle, so do not continue
 				// with this hierarchy (but add it as a member of the current collection)
-				if (added && !alreadyAddedollectiononceptList.contains(member)) {
-					List<String> newAlreadyAddedCollectionList = new ArrayList<>(alreadyAddedollectiononceptList);
+				// WARNING: even if this collection is not expanded further, since the CollectionInfo is considered, it means that its
+				// members are already present in it, so be careful when this structure is analyzed for example to construct the xlsx file
+				if (added && !newAlreadyAddedCollectionSet.contains(toQName(member))) {
 					int depth = createCollectionHierarchy(member, collectionToMemberListMap, collectionIriToConceptInfoMap, currentDepth + 1,
-							newAlreadyAddedCollectionList);
+							newAlreadyAddedCollectionSet);
 					maxDepth = Math.max(maxDepth, depth);
 				}
 			}

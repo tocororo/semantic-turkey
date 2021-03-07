@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 
 public class XlsxStructureAndUtils {
 
@@ -225,13 +226,14 @@ public class XlsxStructureAndUtils {
 		for(IRI conceptIri : topConcept){
 			ConceptInfo conceptInfo = conceptIriToConceptInfoMap.get(conceptIri);
 			posRow = createConceptHierarchyAndInfoInExcel(sheet, posRow, 0, conceptInfo, maxDepth, headerWhole, prefPropList, altPropList,
-					hiddenPropList, isSkosxlLex, reifiedNote, notePropList);
+					hiddenPropList, isSkosxlLex, reifiedNote, notePropList, new TreeSet<String>());
 		}
 		return posRow;
 	}
 
 	private int createConceptHierarchyAndInfoInExcel(Sheet sheet, int posRow, int postCol, ConceptInfo conceptInfo, int maxDepth, HeaderWhole headerWhole,
-			List<IRI> prefPropList, List<IRI> altPropList, List<IRI> hiddenPropList, boolean isSkosxlLex, boolean reifiedNote, List<IRI> notePropList) {
+			List<IRI> prefPropList, List<IRI> altPropList, List<IRI> hiddenPropList, boolean isSkosxlLex, boolean reifiedNote, List<IRI> notePropList,
+			TreeSet<String>alreadyAddedConceptSet) {
 		Row row = sheet.createRow(posRow++);
 
 		addResourceIriAndSinglePrefLabel(conceptInfo, row, postCol++, prefPropList);
@@ -241,9 +243,17 @@ public class XlsxStructureAndUtils {
 		//create all the info associated to the excel
 		createResourceInfo(conceptInfo, headerWhole, maxDepth, prefPropList, altPropList, hiddenPropList, isSkosxlLex, row, reifiedNote, notePropList);
 
+		if(alreadyAddedConceptSet.contains(toQName(conceptInfo.getResourceIRI()))) {
+			//this concept was already expanded before, so just return
+			return posRow;
+		}
+
+		TreeSet <String>newAlreadyAddedConceptSet = new TreeSet<>(alreadyAddedConceptSet);
+		newAlreadyAddedConceptSet.add(toQName(conceptInfo.getResourceIRI()));
+
 		for(ConceptInfo narrowerConcept : conceptInfo.getNarrowerList()){
 			posRow = createConceptHierarchyAndInfoInExcel(sheet, posRow, postCol, narrowerConcept, maxDepth, headerWhole, prefPropList, altPropList,
-					hiddenPropList, isSkosxlLex, reifiedNote, notePropList);
+					hiddenPropList, isSkosxlLex, reifiedNote, notePropList, newAlreadyAddedConceptSet);
 		}
 		return posRow;
 	}
@@ -278,13 +288,14 @@ public class XlsxStructureAndUtils {
 		for(IRI conceptIri : topCollection){
 			CollectionInfo collectionInfo = collectionIriToCollectionInfoMap.get(conceptIri);
 			posRow = createCollectionHierarchyAndInfoInExcel(sheet, posRow, 0, collectionInfo, maxDepth, headerWhole, prefPropList, altPropList,
-					hiddenPropList, isSkosxlLex, reifiedNote, notePropList);
+					hiddenPropList, isSkosxlLex, reifiedNote, notePropList, new TreeSet<String>());
 		}
 		return posRow;
 	}
 
 	private int createCollectionHierarchyAndInfoInExcel(Sheet sheet, int posRow, int postCol, ResourceInfo resourceInfo, int maxDepth, HeaderWhole headerWhole,
-			List<IRI> prefPropList, List<IRI> altPropList, List<IRI> hiddenPropList, boolean isSkosxlLex, boolean reifiedNote, List<IRI> notePropList) {
+			List<IRI> prefPropList, List<IRI> altPropList, List<IRI> hiddenPropList, boolean isSkosxlLex, boolean reifiedNote, List<IRI> notePropList,
+			TreeSet<String> alreadyAddedCollectionSet) {
 		Row row = sheet.createRow(posRow++);
 		addResourceIriAndSinglePrefLabel(resourceInfo, row, postCol++, prefPropList);
 
@@ -293,10 +304,18 @@ public class XlsxStructureAndUtils {
 
 		addSeparator(row, maxDepth);
 
+		if(alreadyAddedCollectionSet.contains(toQName(resourceInfo.getResourceIRI()))) {
+			//this resource was already expanded before, so just return
+			return posRow;
+		}
+
+		TreeSet <String>newAlreadyAddedCollectionSet = new TreeSet<>(alreadyAddedCollectionSet);
+		newAlreadyAddedCollectionSet.add(toQName(resourceInfo.getResourceIRI()));
+
 		if(resourceInfo instanceof CollectionInfo){
 			for(ResourceInfo memberCollection : ((CollectionInfo) resourceInfo).getMemeberList()){
 				posRow = createCollectionHierarchyAndInfoInExcel(sheet, posRow, postCol, memberCollection, maxDepth, headerWhole, prefPropList, altPropList,
-						hiddenPropList, isSkosxlLex, reifiedNote, notePropList);
+						hiddenPropList, isSkosxlLex, reifiedNote, notePropList, newAlreadyAddedCollectionSet);
 			}
 		}
 
