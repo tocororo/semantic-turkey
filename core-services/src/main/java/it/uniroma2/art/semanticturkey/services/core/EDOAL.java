@@ -11,6 +11,7 @@ import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngi
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -23,10 +24,12 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -53,10 +56,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.toList;
 
@@ -415,6 +421,39 @@ public class EDOAL extends STServiceAdapter {
 		IRI leftRepoEndpoint = SimpleValueFactory.getInstance()
 				.createIRI(((HTTPRepositoryConfig) repoImpl).getURL());
 
+		boolean internalFederation = false;
+
+		String thisRepostoryId = STServiceContextUtils.getRepostoryId(stServiceContext);
+		@Nullable
+		STRepositoryInfo thisRepoInfo = thisProject.getRepositoryManager().getSTRepositoryInfo(thisRepostoryId)
+				.orElse(null);
+		// if this is a GDB repo
+		if (thisRepoInfo != null && STLocalRepositoryManager.isGraphDBBackEnd(thisRepoInfo.getBackendType())) {
+			@Nullable
+			STRepositoryInfo leftRepoInfo = leftDataset.getRepositoryManager()
+					.getSTRepositoryInfo(Project.CORE_REPOSITORY).orElse(null);
+
+			// and also the left dataset is a GDB repo
+			if (leftRepoInfo != null
+					&& STLocalRepositoryManager.isGraphDBBackEnd(leftRepoInfo.getBackendType())) {
+
+				RepositoryConfig thisRepositoryConfig = thisProject.getRepositoryManager()
+						.getRepositoryConfig(thisRepostoryId);
+				RepositoryImplConfig thisRepoImpl = STLocalRepositoryManager
+						.getUnfoldedRepositoryImplConfig(thisRepositoryConfig);
+				if (thisRepoImpl instanceof HTTPRepositoryConfig) { // then, use internal federation if both
+																	// are hosted on the same repository
+					String thisRepoServer = Protocol
+							.getServerLocation(((HTTPRepositoryConfig) thisRepoImpl).getURL());
+					String leftRepoServer = Protocol.getServerLocation(leftRepoEndpoint.stringValue());
+					if (Objects.equals(thisRepoServer, leftRepoServer)) {
+						internalFederation = true;
+					}
+				}
+
+			}
+		}
+
 		String queryString =
 		//@formatter:off
 			"prefix align: <http://knowledgeweb.semanticweb.org/heterogeneity/alignment#>\n" + 
@@ -444,7 +483,7 @@ public class EDOAL extends STServiceAdapter {
 			"    }\n" + 
 			"    ?al align:map ?x.\n" +
 			"    FILTER(sameTerm(?al, ?alignment))\n" +
-			"    service " + NTriplesUtil.toNTriplesString(leftRepoEndpoint) + " {\n" + 
+			"    service " + (internalFederation ? "<repository:" + Protocol.getRepositoryID(leftRepoEndpoint.stringValue()) + ">" : NTriplesUtil.toNTriplesString(leftRepoEndpoint)) + " {\n" + 
 			"      optional {\n" + 
 			computeIndexingGraphPattern(leftDataset) +
 			"      }\n" + 
@@ -477,7 +516,7 @@ public class EDOAL extends STServiceAdapter {
 
 	private String computeIndexingGraphPattern(Project keyProject) throws IndexingLanguageNotFound {
 		RenderingEngine renderingEngine = keyProject.getRenderingEngine();
-		
+
 		if (renderingEngine instanceof BaseRenderingEngine) {
 			// a BaseRenderingEngine can provide a label pattern using variables ?resource and ?labelInternal
 			StringBuilder sb = new StringBuilder();

@@ -1,5 +1,7 @@
 version 9.0.
 date: dd/mm/yyyy
+  * enable the use of internal federation in the EDOAL data view when both the alignment project and the left
+    dataset are hosted on the same Ontotext GraphDB server
   * added two new exception for the converters: ReformattingWrongLexModelException and ReformattingWrongModelException
   * renamed Project#getNewOntologyManager() to Project#getOntologyManager()
   * implemented a new exporter to create a Spreadsheet of a SKOS project
