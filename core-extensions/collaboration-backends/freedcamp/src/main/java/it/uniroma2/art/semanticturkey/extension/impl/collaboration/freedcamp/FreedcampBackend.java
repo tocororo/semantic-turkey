@@ -78,6 +78,12 @@ public class FreedcampBackend implements CollaborationBackend {
 		FreedcampBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
 				UsersManager.getLoggedUser());
 
+		//if the current Project is null, do not perform any check on the project id, so just return
+		if(projectSettings.freedcampPrjId == null || projectSettings.freedcampPrjId.isEmpty()){
+			return;
+		}
+
+
 		//check that there is a Freedcamp Project with such id and that thare is a list, in this project
 		//  with the specified list_id is present
 		// then such group should belong to the selected project.
@@ -640,7 +646,7 @@ public class FreedcampBackend implements CollaborationBackend {
 		int maxResult = 100;
 		int startAt = pageOffset*maxResult;
 		//TODO check how to do the limit + offset
-		String more="";
+		String more="false";
 		int total=0;
 		int numPagesTotal=0;
 		
@@ -656,69 +662,70 @@ public class FreedcampBackend implements CollaborationBackend {
 
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 
-		//get the mapping of tags_id-tags_name
-		Map<String, String > tagsidToResourceMap = new HashMap<>();
-		String urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/tags?"+setSecureOrNot(projectPreferences);
-
-		HttpURLConnection httpcon = prepareHttpURLConnection(ConnType.GET, urlString,
-				"application/json;charset=UTF-8", projectPreferences);
-
-		// Send post request
-		executeAndCheckError(httpcon);
-
-		String responseTags = readRsponse(httpcon, true);
-		ObjectMapper objectMapper = new ObjectMapper();
-		JsonNode freedCampResponseNode = objectMapper.readTree(responseTags);
-		ArrayNode tagsFromFreedcampArray = (ArrayNode)freedCampResponseNode.get("data").get("tags");
-		for(JsonNode tagNode : tagsFromFreedcampArray){
-			String tagId = tagNode.get("id").asText();
-			String tagTitle = tagNode.get("title").asText();
-			tagsidToResourceMap.put(tagId, tagTitle);
-		}
-
-		//get the list of tasks
-		urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/tasks/?project_id="
-				+projId+"&limit="+maxResult+"&offset="+startAt+"&f_include_tags=1"+setSecureOrNot(projectPreferences);
-
-		httpcon = prepareHttpURLConnection(ConnType.GET, urlString,
-				"application/json;charset=UTF-8", projectPreferences);
-
-		executeAndCheckError(httpcon);
-
-		String responseTasks = readRsponse(httpcon, true);
-
-
-		//process the results
-		objectMapper = new ObjectMapper();
-		freedCampResponseNode = objectMapper.readTree(responseTasks);
-		ArrayNode taskFromFreedcampArray = (ArrayNode)freedCampResponseNode.get("data").get("tasks");
 		List<ObjectNode> taskReduxNodeList = new ArrayList<>();
-		int count = 0;
-		for(JsonNode taskFromFreedcampNode : taskFromFreedcampArray){
+
+		if(projectSettings.freedcampPrjId != null && !projectSettings.freedcampPrjId.isEmpty()) {
+			//get the mapping of tags_id-tags_name
+			Map<String, String> tagsidToResourceMap = new HashMap<>();
+			String urlString = normalizeServerUrl(projectSettings.serverURL) + "api/v1/tags?" + setSecureOrNot(projectPreferences);
+
+			HttpURLConnection httpcon = prepareHttpURLConnection(ConnType.GET, urlString,
+					"application/json;charset=UTF-8", projectPreferences);
+
+			// Send post request
+			executeAndCheckError(httpcon);
+
+			String responseTags = readRsponse(httpcon, true);
+			ObjectMapper objectMapper = new ObjectMapper();
+			JsonNode freedCampResponseNode = objectMapper.readTree(responseTags);
+			ArrayNode tagsFromFreedcampArray = (ArrayNode) freedCampResponseNode.get("data").get("tags");
+			for (JsonNode tagNode : tagsFromFreedcampArray) {
+				String tagId = tagNode.get("id").asText();
+				String tagTitle = tagNode.get("title").asText();
+				tagsidToResourceMap.put(tagId, tagTitle);
+			}
+
+			//get the list of tasks
+			urlString = normalizeServerUrl(projectSettings.serverURL) + "api/v1/tasks/?project_id="
+					+ projId + "&limit=" + maxResult + "&offset=" + startAt + "&f_include_tags=1" + setSecureOrNot(projectPreferences);
+
+			httpcon = prepareHttpURLConnection(ConnType.GET, urlString,
+					"application/json;charset=UTF-8", projectPreferences);
+
+			executeAndCheckError(httpcon);
+
+			String responseTasks = readRsponse(httpcon, true);
+
+
+			//process the results
+			objectMapper = new ObjectMapper();
+			freedCampResponseNode = objectMapper.readTree(responseTasks);
+			ArrayNode taskFromFreedcampArray = (ArrayNode) freedCampResponseNode.get("data").get("tasks");
+			int count = 0;
+			for (JsonNode taskFromFreedcampNode : taskFromFreedcampArray) {
 			/*if(!taskFromFreedcampNode.get("task_group_id").asText().equals(listId)){
 				//the task belong to a different task_list, so do not consider it
 				continue;
 			}*/
-			ObjectNode taskRedux = parseTask(taskFromFreedcampNode, tagsidToResourceMap);
-			taskReduxNodeList.add(taskRedux);
-			++count;
+				ObjectNode taskRedux = parseTask(taskFromFreedcampNode, tagsidToResourceMap);
+				taskReduxNodeList.add(taskRedux);
+				++count;
+			}
+
+			JsonNode metaNode = freedCampResponseNode.get("data").get("meta");
+			more = metaNode.get("has_more").asText();
+			total = metaNode.get("total_count") != null ? Integer.parseInt(metaNode.get("total_count").asText()) : count;
+			numPagesTotal = (total / maxResult);
+			if (total % maxResult != 0) {
+				++numPagesTotal;
+			}
 		}
 
-		JsonNode metaNode = freedCampResponseNode.get("data").get("meta");
-		more = metaNode.get("has_more").asText();
-		total = metaNode.get("total_count") != null ? Integer.parseInt(metaNode.get("total_count").asText()) : count;
-		numPagesTotal = (total/maxResult);
-		if(total%maxResult != 0) {
-			++numPagesTotal;
-		}
-
-
-
-		//now construct the response using the issue contained in the issueNodeList
-		ArrayNode arrayNode = jsonFactory.arrayNode();
-		for(ObjectNode issueRedux : taskReduxNodeList) {
-			arrayNode.add(issueRedux);
-		}
+			//now construct the response using the issue contained in the issueNodeList
+			ArrayNode arrayNode = jsonFactory.arrayNode();
+			for (ObjectNode issueRedux : taskReduxNodeList) {
+				arrayNode.add(issueRedux);
+			}
 
 		ObjectNode objectNode = jsonFactory.objectNode();
 		objectNode.set("more", jsonFactory.textNode(more));

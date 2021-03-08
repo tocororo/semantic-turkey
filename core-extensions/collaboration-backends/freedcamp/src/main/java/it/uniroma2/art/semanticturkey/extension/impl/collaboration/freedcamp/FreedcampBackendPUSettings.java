@@ -8,7 +8,7 @@ public class FreedcampBackendPUSettings implements Settings {
 
 	@Override
 	public String getShortName() {
-		return "JIRA User Information";
+		return "Freedcamp User Information";
 	}
 	
 	@Override
