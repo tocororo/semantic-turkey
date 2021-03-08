@@ -275,6 +275,8 @@ public class Resources {
 			initializeSystemProperties();
 			initializePredefinedCustomServices();
 			initializePredefinedInvokableReporters();
+
+			Config.setSTDataVersionNumber(Config.getVersionNumber());
 		} else {
 			throw new STInitializationException("Unable to create the main data folder");
 		}
