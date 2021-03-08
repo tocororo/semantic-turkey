@@ -84,14 +84,20 @@ public class STMetadataRegistryBackendImpl extends MetadataRegistryBackendImpl
 
 	@Override
 	public Project findProjectForDataset(IRI dataset) {
+		return findProjectForDataset(dataset, false);
+	}
+
+	@Override
+	public Project findProjectForDataset(IRI dataset, boolean allowSubset) {
 		try (RepositoryConnection conn = getConnection()) {
 			TupleQuery query = conn.prepareTupleQuery(
 			//@formatter:off
 				"PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" +
+				"PREFIX void: <http://rdfs.org/ns/void#>\n" +
 				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
 				"SELECT ?graph WHERE {\n" +
 				"  GRAPH ?graph {\n" +
-				"    ?catalog dcat:record [ foaf:primaryTopic ?dataset ] . \n" +
+				"    ?dataset " + (allowSubset ? "^void:subset*/" : "") + "^foaf:primaryTopic/^dcat:record ?catalog . \n" +
 				"  }\n" +
 				"}\n" +
 				"LIMIT 1\n"

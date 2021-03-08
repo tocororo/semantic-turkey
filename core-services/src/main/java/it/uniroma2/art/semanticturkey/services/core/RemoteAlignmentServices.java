@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -72,6 +73,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 
+import it.uniroma2.art.maple.scenario.DataService;
 import it.uniroma2.art.maple.scenario.Dataset;
 import it.uniroma2.art.maple.scenario.ScenarioDefinition;
 import it.uniroma2.art.semanticturkey.alignment.AlignmentInitializationException;
@@ -87,6 +89,7 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -564,6 +567,36 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			}
 		}
 
+		Consumer<Dataset> credentialAdder = ds -> {
+			java.util.Optional<DataService> dataServiceHolder = ds.getSparqlEndpoint();
+
+			if (!dataServiceHolder.isPresent())
+				return;
+
+			DataService dataService = dataServiceHolder.get();
+			if (dataService.getUsername().isPresent())
+				return;
+
+			@Nullable
+			Project owningProject = metadataRegistryBackend.findProjectForDataset(ds.getId(), true);
+			if (owningProject != null) {
+				java.util.Optional<STRepositoryInfo> coreRepoConfig = owningProject.getRepositoryManager()
+						.getSTRepositoryInfo(Project.CORE_REPOSITORY);
+				coreRepoConfig.ifPresent(info -> {
+					String username = info.getUsername();
+					String password = info.getPassword();
+					if (!StringUtils.isBlank(username) || !StringUtils.isBlank(password)) {
+						dataService.setUsername(username);
+						dataService.setPassword(password);
+					}
+				});
+			}
+		};
+
+		credentialAdder.accept(leftDataset);
+		credentialAdder.accept(rightDataset);
+		scenarioDefinition.getSupportDatasets().forEach(credentialAdder::accept);
+
 		// There is at least a pairing of lexicalization sets
 
 		/// End of integrity checks
@@ -693,15 +726,15 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	 */
 	@PreAuthorize("@auth.isAdmin()")
 	@STServiceOperation(method = RequestMethod.POST)
-	public synchronized void deleteRemoteAlignmentService(String id)
-			throws ConfigurationNotFoundException, NoSuchConfigurationManager, STPropertyAccessException, STPropertyUpdateException {
+	public synchronized void deleteRemoteAlignmentService(String id) throws ConfigurationNotFoundException,
+			NoSuchConfigurationManager, STPropertyAccessException, STPropertyUpdateException {
 		RemoteAlignmentServicesStore cm = (RemoteAlignmentServicesStore) exptManager
 				.getConfigurationManager(RemoteAlignmentServicesStore.class.getName());
 		cm.deleteSystemConfiguration(id);
-		//check if the deleted configuration is referenced in the default setting, in case delete the default
+		// check if the deleted configuration is referenced in the default setting, in case delete the default
 		String defaultConfigId = STPropertiesManager.getProjectSettingDefault("configID",
 				RemoteAlignmentServiceProjectSettingsManager.class.getName());
-		if (defaultConfigId.equals(id)) { //remove default
+		if (defaultConfigId.equals(id)) { // remove default
 			STPropertiesManager.setProjectSettingsDefault("configID", null,
 					RemoteAlignmentServiceProjectSettingsManager.class.getName());
 		}

@@ -22,12 +22,22 @@ public interface STMetadataRegistryBackend extends MetadataRegistryBackend {
 
 	/**
 	 * Returns the project associated with the given dataset. If no project is found, then the method returns
-	 * <code>null</code>.
+	 * <code>null</code>. This is a convenience overload for {@link #findProjectForDataset(IRI, boolean)} with
+	 * the second parameter set to <code>false</code>.
 	 * 
 	 * @param dataset
 	 * @return
 	 */
 	Project findProjectForDataset(IRI dataset);
+
+	/**
+	 * Returns the project associated with the given dataset, optionally allowing the lookup of subsets. If no
+	 * project is found, then the method returns <code>null</code>.
+	 * 
+	 * @param dataset
+	 * @return
+	 */
+	Project findProjectForDataset(IRI dataset, boolean allowSubset);
 
 	/**
 	 * Registers the metadata associated with a project (see {@link StoredProjectMetadata}). If the project
