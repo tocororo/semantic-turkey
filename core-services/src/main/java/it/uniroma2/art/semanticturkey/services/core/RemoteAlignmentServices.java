@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -567,31 +568,40 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 			}
 		}
 
-		Consumer<Dataset> credentialAdder = ds -> {
-			java.util.Optional<DataService> dataServiceHolder = ds.getSparqlEndpoint();
+		RemoteAlignmentServiceConfiguration endpoint = getAlignmentServiceEndpoint();
 
-			if (!dataServiceHolder.isPresent())
-				return;
+		Consumer<Dataset> credentialAdder;
 
-			DataService dataService = dataServiceHolder.get();
-			if (dataService.getUsername().isPresent())
-				return;
+		if (endpoint.forwardCredentials) {
+			credentialAdder = ds -> {
+				java.util.Optional<DataService> dataServiceHolder = ds.getSparqlEndpoint();
 
-			@Nullable
-			Project owningProject = metadataRegistryBackend.findProjectForDataset(ds.getId(), true);
-			if (owningProject != null) {
-				java.util.Optional<STRepositoryInfo> coreRepoConfig = owningProject.getRepositoryManager()
-						.getSTRepositoryInfo(Project.CORE_REPOSITORY);
-				coreRepoConfig.ifPresent(info -> {
-					String username = info.getUsername();
-					String password = info.getPassword();
-					if (!StringUtils.isBlank(username) || !StringUtils.isBlank(password)) {
-						dataService.setUsername(username);
-						dataService.setPassword(password);
-					}
-				});
-			}
-		};
+				if (!dataServiceHolder.isPresent())
+					return;
+
+				DataService dataService = dataServiceHolder.get();
+				if (dataService.getUsername().isPresent())
+					return;
+
+				@Nullable
+				Project owningProject = metadataRegistryBackend.findProjectForDataset(ds.getId(), true);
+				if (owningProject != null) {
+					java.util.Optional<STRepositoryInfo> coreRepoConfig = owningProject.getRepositoryManager()
+							.getSTRepositoryInfo(Project.CORE_REPOSITORY);
+					coreRepoConfig.ifPresent(info -> {
+						String username = info.getUsername();
+						String password = info.getPassword();
+						if (!StringUtils.isBlank(username) || !StringUtils.isBlank(password)) {
+							dataService.setUsername(username);
+							dataService.setPassword(password);
+						}
+					});
+				}
+			};
+		} else {
+			credentialAdder = ds -> {
+			};
+		}
 
 		credentialAdder.accept(leftDataset);
 		credentialAdder.accept(rightDataset);
@@ -659,7 +669,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	@STServiceOperation(method = RequestMethod.POST)
 	public synchronized void addRemoteAlignmentService(String id, URL serverURL, @Optional String username,
-			@Optional String password, @Optional(defaultValue = "false") boolean asDefault)
+			@Optional String password, @Optional(defaultValue = "false") boolean asDefault,
+			@Optional(defaultValue = "false") boolean forwardCredentials)
 			throws IOException, WrongPropertiesException, STPropertyUpdateException,
 			NoSuchConfigurationManager, DuplicatedResourceException {
 		RemoteAlignmentServicesStore cm = (RemoteAlignmentServicesStore) exptManager
@@ -674,6 +685,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 		config.serverURL = serverURL;
 		config.username = username;
 		config.password = password;
+		config.forwardCredentials = forwardCredentials;
 
 		cm.storeSystemConfiguration(id, config);
 
@@ -689,7 +701,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	@STServiceOperation(method = RequestMethod.POST)
 	public synchronized void updateRemoteAlignmentService(String id, URL serverURL, @Optional String username,
-			@Optional String password, @Optional boolean asDefault)
+			@Optional String password, @Optional boolean asDefault,
+			@Optional(defaultValue = "false") boolean forwardCredentials)
 			throws IOException, WrongPropertiesException, STPropertyUpdateException,
 			NoSuchConfigurationManager, STPropertyAccessException {
 		RemoteAlignmentServicesStore cm = (RemoteAlignmentServicesStore) exptManager
@@ -698,6 +711,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 		config.serverURL = serverURL;
 		config.username = username;
 		config.password = password;
+		config.forwardCredentials = forwardCredentials;
 		cm.storeSystemConfiguration(id, config);
 
 		if (asDefault) {

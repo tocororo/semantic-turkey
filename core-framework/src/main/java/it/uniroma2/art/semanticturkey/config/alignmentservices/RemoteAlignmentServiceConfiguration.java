@@ -44,5 +44,5 @@ public class RemoteAlignmentServiceConfiguration implements Configuration {
 	public String password;
 	
 	@STProperty(description = "{" + MessageKeys.forwardCredentials$description + "}", displayName = "{" + MessageKeys.forwardCredentials$displayName+ "}")
-	public String forwardCredentials;
+	public boolean forwardCredentials;
 }
