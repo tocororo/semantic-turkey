@@ -217,7 +217,7 @@ public class Datatypes extends STServiceAdapter {
 						"                                                                             \n" +
 						//adding the nature in the SELECT, which should be removed when the appropriate processor is used
 						" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE { 		  \n" +
-						"   ?resource a rdfs:Datatype .                                               \n" +
+						"   ?resource a/rdfs:subClassOf* rdfs:Datatype .							  \n" +
 						"   FILTER(isIRI(?resource))                                                  \n" +
 						generateNatureSPARQLWherePart("?resource") +
 						" }                                                                           \n" +
@@ -519,13 +519,11 @@ public class Datatypes extends STServiceAdapter {
 				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
 				"PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
 				"SELECT ?datatype ?r WHERE { \n" +
-				"GRAPH " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{\n" +
-				"?datatype a rdfs:Datatype .\n" +
+				"?datatype a/rdfs:subClassOf* rdfs:Datatype. \n" +
 				"?datatype owl:equivalentClass ?r .\n" +
 				"?r a rdfs:Datatype .\n" +
 				"FILTER(isURI(?datatype))\n" +
 				"FILTER(isBlank(?r))\n" +
-				"}\n" +
 				"}";
 		TupleQuery tq = conn.prepareTupleQuery(query);
 		TupleQueryResult results = tq.evaluate();
