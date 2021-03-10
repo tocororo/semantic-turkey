@@ -26,16 +26,17 @@
   */
 package it.uniroma2.art.semanticturkey.exceptions;
 
+import it.uniroma2.art.semanticturkey.i18n.InternationalizedException;
+
 /**
  * @author Armando Stellato
  *
  */
 @SuppressWarnings("serial")
-public class DuplicatedResourceException extends Exception {
+public class DuplicatedResourceException extends InternationalizedException {
 
-
-    public DuplicatedResourceException(String message) {
-        super(message);
-    }
+	public DuplicatedResourceException(String key, Object[] args) {
+		super(key, args);
+	}
 
 }

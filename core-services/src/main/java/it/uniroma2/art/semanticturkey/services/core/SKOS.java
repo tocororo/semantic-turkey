@@ -1,6 +1,40 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import it.uniroma2.art.coda.core.CODACore;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.validation.constraints.Min;
+
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
@@ -10,7 +44,6 @@ import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
-import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.SpecialValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
@@ -51,39 +84,6 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.BooleanQuery;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryResult;
-import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.access.prepost.PreAuthorize;
-
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * This class provides services for manipulating SKOS constructs.
@@ -95,6 +95,14 @@ import java.util.Map;
 public class SKOS extends STServiceAdapter {
 
 	private final static Logger logger = LoggerFactory.getLogger(SKOS.class);
+	
+	public static final class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.services.core.SKOS";
+		public static final String exceptionUnableToAddPrefLabelForNew$message = keyBase + ".exceptionUnableToAddPrefLabelForNew.message";
+		public static final String exceptionUnableToAddPrefLabel$message = keyBase + ".exceptionUnableToAddPrefLabel.message";
+		public static final String exceptionUnableToAddAltLabel$message = keyBase + ".exceptionUnableToAddAltLabel.message";
+		public static final String exceptionAltLabelClash$message = keyBase + ".exceptionAltLabelClash.message";
+	}
 	
 	/**
 	 * Returns the list of top concepts
@@ -1134,14 +1142,10 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection)', 'U')")
 	public void addInPositionToOrderedCollection(
 			@LocallyDefined @Modified(role = RDFResourceRole.skosCollection) Resource collection,
-			@LocallyDefined Resource element, int index) throws DeniedOperationException {
+			@LocallyDefined Resource element, @Min(1) int index) throws DeniedOperationException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
-
-		if (index < 1) {
-			throw new IllegalArgumentException("The postion should be a positive value bigger than 0");
-		}
 
 		Resource list = getFirstElemOfOrderedCollection(collection, repoConnection);
 		if (list.equals(RDF.NIL)) {
@@ -2364,16 +2368,10 @@ public class SKOS extends STServiceAdapter {
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
-			String text;
-			if(!newResource) {
-				text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since either "
-					+ "there is already a resource with the same prefLabel or this resource has already an altLabel "
-					+ "with the same value";
-			} else {
-				text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since "
-						+ "there is already a resource with the same prefLabel";
-			}
-			throw new AlreadyExistingLiteralFormForResourceException(text);
+			throw new AlreadyExistingLiteralFormForResourceException(
+					newResource ? MessageKeys.exceptionUnableToAddPrefLabelForNew$message
+							: MessageKeys.exceptionUnableToAddPrefLabel$message,
+					new Object[] { NTriplesUtil.toNTriplesString(newLabel) });
 		}
 	}
 	
@@ -2388,9 +2386,8 @@ public class SKOS extends STServiceAdapter {
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
-			String text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since "
-					+ "there is already a resource with the same altLabel.";
-			throw new PrefAltLabelClashException(text);
+			throw new PrefAltLabelClashException(MessageKeys.exceptionAltLabelClash$message,
+					new Object[] { NTriplesUtil.toNTriplesString(newLabel) });
 		}
 	}
 	
@@ -2407,9 +2404,9 @@ public class SKOS extends STServiceAdapter {
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
-			String text = "altLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since this "
-					+ "resource has already a prefLabel with the same value";
-			throw new AlreadyExistingLiteralFormForResourceException(text);
+			throw new AlreadyExistingLiteralFormForResourceException(
+					MessageKeys.exceptionUnableToAddAltLabel$message,
+					new Object[] { NTriplesUtil.toNTriplesString(newLabel) });
 		}
 	}
 	

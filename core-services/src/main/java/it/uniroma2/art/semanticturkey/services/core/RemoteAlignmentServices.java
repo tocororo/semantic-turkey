@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -128,6 +127,12 @@ import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 public class RemoteAlignmentServices extends STServiceAdapter {
 
 	private static final Logger logger = LoggerFactory.getLogger(RemoteAlignmentServices.class);
+
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.services.core.RemoteAlignmentServices";
+		public static final String exceptionConfigurationAlreadyExists$message = keyBase
+				+ ".exceptionConfigurationAlreadyExists.message";
+	};
 
 	@Autowired
 	private STMetadataRegistryBackend metadataRegistryBackend;
@@ -677,8 +682,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 				.getConfigurationManager(RemoteAlignmentServicesStore.class.getName());
 		Collection<String> existingIds = cm.getSystemConfigurationIdentifiers();
 		if (existingIds.contains(id)) {
-			throw new DuplicatedResourceException(
-					"A configuration with this identifier already exists: " + id);
+			throw new DuplicatedResourceException(MessageKeys.exceptionConfigurationAlreadyExists$message,
+					new Object[] { id });
 		}
 
 		RemoteAlignmentServiceConfiguration config = new RemoteAlignmentServiceConfiguration();

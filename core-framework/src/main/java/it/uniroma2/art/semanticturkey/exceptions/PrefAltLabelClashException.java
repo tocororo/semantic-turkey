@@ -1,18 +1,15 @@
 package it.uniroma2.art.semanticturkey.exceptions;
 
-public class PrefAltLabelClashException extends Exception {
+import it.uniroma2.art.semanticturkey.i18n.InternationalizedException;
+
+public class PrefAltLabelClashException extends InternationalizedException {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -7470247664805672183L;
 
-	/**
-	 * construct this exception with the uri of the resource which has not been found
-	 * 
-	 * @param uri
-	 */
-	public PrefAltLabelClashException(String text) {
-		super(text);
+	public PrefAltLabelClashException(String key, Object[] args) {
+		super(key, args);
 	}
 }

@@ -47,6 +47,7 @@ import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.hibernate.validator.constraints.NotEmpty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -371,7 +372,7 @@ public class Datatypes extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(datatype)', 'C')")
 	public void setDatatypeFacetsRestriction(@LocallyDefined @Modified(role = RDFResourceRole.dataRange) IRI datatype,
-			IRI base, Map<IRI, Literal> facets) {
+			IRI base, @NotEmpty Map<IRI, Literal> facets) {
 		RepositoryConnection conn = getManagedConnection();
 		deleteDatatypeRestrictionImpl(conn, datatype); //first remove the old restriction
 		String query =
@@ -385,11 +386,8 @@ public class Datatypes extends STServiceAdapter {
 						"_:restriction owl:onDatatype " + NTriplesUtil.toNTriplesString(base) + " .\n" +
 						"_:restriction owl:withRestrictions _:facetsList .\n";
 		Iterator<Entry<IRI, Literal>> facetsIterator = facets.entrySet().iterator();
-		if (facetsIterator.hasNext()) {
-			query += buildFacetsSparqlInsert("", facetsIterator, "_:facetsList", 0);
-		} else {
-			throw new IllegalArgumentException("Facets map cannot be empty");
-		}
+		query += buildFacetsSparqlInsert("", facetsIterator, "_:facetsList", 0);
+		
 		query += "}\n}"; //close graph and insert brackets
 		conn.prepareUpdate(query).execute();
 	}

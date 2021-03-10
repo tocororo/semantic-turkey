@@ -6,6 +6,7 @@ import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.i18n.InternationalizedRuntimeException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -20,6 +21,7 @@ import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
+
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -68,6 +70,12 @@ public class Resources extends STServiceAdapter {
 
 	private static final Logger logger = LoggerFactory.getLogger(Resources.class);
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.services.core.Resources";
+		public static final String exceptionDifferentSubject$message = keyBase + ".exceptionDifferentSubject.message";
+		public static final String exceptionCannotDeleteAll$message = keyBase + ".exceptionCannotDeleteAll.message";
+	};
+	
 	@Autowired
 	private ResourceLocator resourceLocator;
 
@@ -388,9 +396,7 @@ public class Resources extends STServiceAdapter {
 		Statement diffSubjStmt = newDescriptionModel.stream()
 				.filter(stmt -> !stmt.getSubject().equals(resource)).findAny().orElse(null);
 		if (diffSubjStmt != null) {
-			throw new IllegalArgumentException(
-					"Invalid resource description: it includes statement about a different resource " +
-							NTriplesUtil.toNTriplesString(diffSubjStmt.getSubject()));
+			throw new InternationalizedRuntimeException(MessageKeys.exceptionDifferentSubject$message, new Object[] {NTriplesUtil.toNTriplesString(diffSubjStmt.getSubject())});
 		}
 
 		//get the statements of the old description
@@ -423,7 +429,7 @@ public class Resources extends STServiceAdapter {
 
 		//prevent to delete the whole description
 		if (modelRemovals.size() == oldDescriptionModel.size()) {
-			throw new IllegalArgumentException("Cannot delete all the resource triples");
+			throw new InternationalizedRuntimeException(MessageKeys.exceptionCannotDeleteAll$message, new Object[0]);
 		}
 
 

@@ -17,7 +17,7 @@ public class STMessageSource {
 	private static final MessageSource msgSource;
 	static {
 		ResourceBundleMessageSource tmpMsgSource = new ResourceBundleMessageSource();
-		tmpMsgSource.setBasename(ResourceBundles.ST_PROPERTIES_MESSAGES_BUNDLE);
+		tmpMsgSource.setBasename(ResourceBundles.MESSAGES_BUNDLE);
 		tmpMsgSource.setBeanClassLoader(STMessageSource.class.getClassLoader());
 		tmpMsgSource.setDefaultEncoding(StandardCharsets.UTF_8.name());
 		tmpMsgSource.setFallbackToSystemLocale(false);

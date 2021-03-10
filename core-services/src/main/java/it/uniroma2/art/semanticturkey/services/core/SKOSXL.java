@@ -45,6 +45,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation;
 import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation.Facets;
 import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
+import it.uniroma2.art.semanticturkey.services.core.SKOS.MessageKeys;
 
 /**
  * This class provides services for manipulating SKOSXL constructs.
@@ -585,16 +586,10 @@ public class SKOSXL extends STServiceAdapter {
 		booleanQuery.setIncludeInferred(false);
 		boolean check = booleanQuery.evaluate();
 		if(check){
-			String text;
-			if(!newResource) {
-				text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since either "
-					+ "there is already a resource with the same prefLabel or this resource has already an altLabel "
-					+ "with the same value";
-			} else {
-				text = "prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since "
-						+ "there is already a resource with the same prefLabel";
-			}
-			throw new AlreadyExistingLiteralFormForResourceException(text);
+			throw new AlreadyExistingLiteralFormForResourceException(
+					newResource ? MessageKeys.exceptionUnableToAddPrefLabelForNew$message
+							: MessageKeys.exceptionUnableToAddPrefLabel$message,
+					new Object[] { NTriplesUtil.toNTriplesString(newLabel) });
 		}
 	}
 	
@@ -612,9 +607,8 @@ public class SKOSXL extends STServiceAdapter {
 		booleanQuery.setIncludeInferred(false);
 		boolean check = booleanQuery.evaluate();
 		if(check){
-			String text = "WARNING: prefLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since "
-					+ "there is already a resource with the same altLabel.";
-			throw new PrefAltLabelClashException(text);
+			throw new PrefAltLabelClashException(MessageKeys.exceptionAltLabelClash$message,
+					new Object[] { NTriplesUtil.toNTriplesString(newLabel) });
 		}
 	}
 	
@@ -640,9 +634,9 @@ public class SKOSXL extends STServiceAdapter {
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
-			String text = "altLabel "+NTriplesUtil.toNTriplesString(newLabel)+" cannot be created since this "
-					+ "resource already has a prefLabel or an altLabel with the same value";
-			throw new AlreadyExistingLiteralFormForResourceException(text);
+			throw new AlreadyExistingLiteralFormForResourceException(
+					MessageKeys.exceptionUnableToAddAltLabel$message,
+					new Object[] { NTriplesUtil.toNTriplesString(newLabel) });
 		}
 	}
 	

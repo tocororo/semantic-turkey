@@ -43,6 +43,7 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.hibernate.validator.constraints.NotEmpty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -709,18 +710,10 @@ public class GlobalSearch extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	// TODO decide the @PreAuthorize
-	public JsonNode translation(String searchString, List<String> searchLangs,
-			List<String> transLangs,
+	public JsonNode translation(String searchString, @NotEmpty List<String> searchLangs,
+			@NotEmpty List<String> transLangs,
 			@Optional(defaultValue="false") boolean caseSensitive,
 			@Optional(defaultValue="false") boolean debug) throws Exception {
-
-		if(searchLangs.isEmpty()){
-			throw new IllegalArgumentException("searchLangs cannot be empty");
-		}
-
-		if(transLangs.isEmpty()){
-			throw new IllegalArgumentException("transLangs cannot be empty");
-		}
 
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ArrayNode response = jsonFactory.arrayNode();

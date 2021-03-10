@@ -4,19 +4,16 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 public class SHACLNoTargetShapeFromClassIriException extends SHACLGenericException {
-    private IRI classIri;
+	private static final long serialVersionUID = 4637975120202463678L;
+	private IRI classIri;
 
-    public SHACLNoTargetShapeFromClassIriException(IRI classIri) {
-        this.classIri = classIri;
-    }
+	public SHACLNoTargetShapeFromClassIriException(IRI classIri) {
+		super(SHACLNoTargetShapeFromClassIriException.class.getName() + ".message",
+				new Object[] { NTriplesUtil.toNTriplesString(classIri) });
+		this.classIri = classIri;
+	}
 
-
-    @Override
-    public String getMessage() {
-        return NTriplesUtil.toNTriplesString(classIri)+" does not exist";
-    }
-
-    public IRI getClassIri() {
-        return classIri;
-    }
+	public IRI getClassIri() {
+		return classIri;
+	}
 }

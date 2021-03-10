@@ -2,14 +2,14 @@ package it.uniroma2.art.semanticturkey.exceptions.shacl;
 
 public class SHACLNotEnabledException extends SHACLGenericException {
 
-    public SHACLNotEnabledException() {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -6823740185761531331L;
 
-    }
 
-
-    @Override
-    public String getMessage() {
-        return "SHACL is not enabled in the selected Project";
+	public SHACLNotEnabledException() {
+    	super(SHACLNotEnabledException.class.getName() + ".message", new Object[0]);
     }
 
 }

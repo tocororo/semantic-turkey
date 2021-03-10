@@ -175,6 +175,16 @@ import it.uniroma2.art.semanticturkey.vocabulary.SUPPORT;
  */
 public class ProjectManager {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.project.ProjectManager";
+		public static final String exceptionImportToDuplicated$message = keyBase
+				+ ".exceptionImportToDuplicated.message";
+		public static final String exceptionCloneToDuplicated$message = keyBase
+				+ ".exceptionCloneToDuplicated.message";
+		public static final String exceptionNewDuplicated$message = keyBase
+				+ ".exceptionNewDuplicated.message";
+	}
+
 	public interface ProjectEventHandler {
 		void afterProjectInitialization(Project project);
 
@@ -496,8 +506,7 @@ public class ProjectManager {
 		File newProjectDir = resolveProjectNameToDir(newProjectName);
 
 		if (newProjectDir.exists())
-			throw new DuplicatedResourceException("project: " + projectName
-					+ " already exists; choose a different project name for a new project");
+			throw new DuplicatedResourceException(MessageKeys.exceptionCloneToDuplicated$message, new Object[] {projectName});
 
 		Utilities.recursiveCopy(oldProjectDir, newProjectDir);
 		setProjectProperty(newProjectName, Project.PROJECT_NAME_PROP, newProjectName);
@@ -581,8 +590,7 @@ public class ProjectManager {
 		// copy temporary unzipped project to new import position
 		File newProjDir = new File(Resources.getProjectsDir(), name);
 		if (newProjDir.exists())
-			throw new DuplicatedResourceException("project with name: " + name
-					+ " already exists, please choose another name for the imported project");
+			throw new DuplicatedResourceException(MessageKeys.exceptionImportToDuplicated$message, new Object[] {name});
 		else if (!newProjDir.mkdirs())
 			throw new ProjectCreationException("unable to create project with name: " + name);
 
@@ -1395,8 +1403,7 @@ public class ProjectManager {
 		Project.checkModels(model, lexicalizationModel);
 
 		if (projectDir.exists()) {
-			throw new DuplicatedResourceException("Project: " + projectName
-					+ " already exists; choose a different project name for a new project");
+			throw new DuplicatedResourceException(MessageKeys.exceptionNewDuplicated$message, new Object[] {projectName});
 		}
 
 		// Creates the directory for the project, checking whether it already existed

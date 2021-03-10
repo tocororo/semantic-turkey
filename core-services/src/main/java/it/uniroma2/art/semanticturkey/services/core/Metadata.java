@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
@@ -24,10 +23,12 @@ import org.springframework.web.multipart.MultipartFile;
 import it.uniroma2.art.semanticturkey.exceptions.ImportManagementException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.ImportModality;
+import it.uniroma2.art.semanticturkey.ontology.InvalidPrefixException;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappingUpdateException;
 import it.uniroma2.art.semanticturkey.ontology.OntologyImport;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
+import it.uniroma2.art.semanticturkey.ontology.PrefixNotDefinedException;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -37,6 +38,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
 
 /**
  * This class provides services for manipulating metadata associated with a project.
@@ -114,10 +116,11 @@ public class Metadata extends STServiceAdapter {
 	 * @return
 	 * @throws IllegalArgumentException
 	 *             if the provided qname has problems such as missing colon or undefined prefix
+	 * @throws PrefixNotDefinedException
 	 */
 	@STServiceOperation
 	@Read
-	public String expandQName(String qname) throws IllegalArgumentException {
+	public String expandQName(String qname) throws IllegalArgumentException, PrefixNotDefinedException {
 		String[] parts = qname.split(":");
 
 		if (parts.length == 0) {
@@ -132,7 +135,7 @@ public class Metadata extends STServiceAdapter {
 			String ns = getManagedConnection().getNamespace(prefix);
 
 			if (ns == null) {
-				throw new IllegalArgumentException("Prefixed not defined: " + prefix);
+				throw new PrefixNotDefinedException(prefix);
 			}
 
 			return ns + parts[1];
@@ -145,12 +148,14 @@ public class Metadata extends STServiceAdapter {
 	 * @param prefix
 	 * @param namespace
 	 * @throws NSPrefixMappingUpdateException
+	 * @throws InvalidPrefixException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'U')")
-	public void setNSPrefixMapping(String prefix, String namespace) throws NSPrefixMappingUpdateException {
-		if(!ModelUtilities.isPrefixSyntValid(prefix)){
-			throw new NSPrefixMappingUpdateException("The prefix "+prefix+" is not valid, please try a different one");
+	public void setNSPrefixMapping(String prefix, String namespace)
+			throws NSPrefixMappingUpdateException, InvalidPrefixException {
+		if (!ModelUtilities.isPrefixSyntValid(prefix)) {
+			throw new InvalidPrefixException(prefix);
 		}
 		getOntologyManager().setNSPrefixMapping(prefix, namespace);
 	}
@@ -160,12 +165,15 @@ public class Metadata extends STServiceAdapter {
 	 * will ever use this (there is typically only a setNamespaceMapping method) we have not included a
 	 * changeNamespaceMapping in the API and consequently we delegate here setNamespaceMapping. Should this
 	 * situation change, this method will require a proper implementation.
+	 * 
+	 * @throws InvalidPrefixException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('pm(project, prefixMapping)', 'U')")
-	public void changeNSPrefixMapping(String prefix, String namespace) throws NSPrefixMappingUpdateException {
-		if(!ModelUtilities.isPrefixSyntValid(prefix)){
-			throw new NSPrefixMappingUpdateException("The prefix "+prefix+" is not valid, please try a different one");
+	public void changeNSPrefixMapping(String prefix, String namespace)
+			throws NSPrefixMappingUpdateException, InvalidPrefixException {
+		if (!ModelUtilities.isPrefixSyntValid(prefix)) {
+			throw new InvalidPrefixException(prefix);
 		}
 		getOntologyManager().setNSPrefixMapping(prefix, namespace);
 	}

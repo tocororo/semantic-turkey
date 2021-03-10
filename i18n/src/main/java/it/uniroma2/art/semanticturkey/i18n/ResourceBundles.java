@@ -8,5 +8,5 @@ package it.uniroma2.art.semanticturkey.i18n;
  */
 public abstract class ResourceBundles {
 
-	public static final String ST_PROPERTIES_MESSAGES_BUNDLE = "it.uniroma2.art.semanticturkey.l10n.STPropertiesMessages";
+	public static final String MESSAGES_BUNDLE = "it.uniroma2.art.semanticturkey.l10n.Messages";
 }

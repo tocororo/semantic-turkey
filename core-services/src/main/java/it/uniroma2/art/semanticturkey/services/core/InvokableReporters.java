@@ -27,18 +27,15 @@ import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.Null;
 
-import it.uniroma2.art.semanticturkey.font.FontClass;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.entity.ContentType;
 import org.jsoup.Jsoup;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.w3c.dom.traversal.DocumentTraversal;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,6 +54,7 @@ import it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter
 import it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation;
 import it.uniroma2.art.semanticturkey.customservice.CustomServiceHandlerMapping;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.font.FontClass;
 import it.uniroma2.art.semanticturkey.mvc.RequestMappingHandlerAdapterPostProcessor;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;

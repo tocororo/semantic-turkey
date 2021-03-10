@@ -138,6 +138,7 @@ import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexiconRenderer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.DatasetNotAccessibleException;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsumer;
@@ -274,16 +275,15 @@ public class ResourceView extends STServiceAdapter {
 		}
 	}
 
-	protected AccessMethod computeAccessMethod(ResourcePosition resourcePosition) {
+	protected AccessMethod computeAccessMethod(ResourcePosition resourcePosition)
+			throws DatasetNotAccessibleException {
 		if (resourcePosition instanceof LocalResourcePosition) {
 			return new LocalProjectAccessMethod(((LocalResourcePosition) resourcePosition).getProject());
 		} else if (resourcePosition instanceof RemoteResourcePosition) {
 			DatasetMetadata datasetMetadata = ((RemoteResourcePosition) resourcePosition)
 					.getDatasetMetadata();
 			if (!datasetMetadata.isAccessible()) {
-				throw new IllegalArgumentException(String.format("Dataset %s is not accessible. "
-						+ "Please verify that in the Metadata Registry there is the SPARQL endpoint of this dataset or it is dereferenceable.",
-						datasetMetadata.getIdentity()));
+				throw new DatasetNotAccessibleException(datasetMetadata.getIdentity());
 			}
 
 			return datasetMetadata.getSparqlEndpointMetadata()

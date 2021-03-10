@@ -40,7 +40,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -91,7 +90,6 @@ import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingRepositoryException;
-import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
@@ -184,7 +182,6 @@ public abstract class Project extends AbstractProject {
 	public static final String DEF_NS_PROP = "defaultNamespace";
 	public static final String MODEL_PROP = "model";
 	public static final String LEXICALIZATION_MODEL_PROP = "lexicalizationModel";
-	public static final String PLUGINS_PROP = "plugins";
 
 	public static final String OPEN_AT_STARTUP_PROP = "openAtStartup";
 
@@ -228,7 +225,6 @@ public abstract class Project extends AbstractProject {
 		reservedProperties.add(DEF_NS_PROP);
 		reservedProperties.add(MODEL_PROP);
 		reservedProperties.add(LEXICALIZATION_MODEL_PROP);
-		reservedProperties.add(PLUGINS_PROP);
 		reservedProperties.add(HISTORY_ENABLED_PROP);
 		reservedProperties.add(VALIDATION_ENABLED_PROP);
 		reservedProperties.add(BLACKLISTING_ENABLED_PROP);
@@ -889,110 +885,6 @@ public abstract class Project extends AbstractProject {
 			updateProjectProperties();
 		} catch (IOException e) {
 			throw new ProjectUpdateException(e);
-		}
-	}
-
-	/**
-	 * Registers the plugin with name <code>pluginName</code> to this project.<br/>
-	 * The plugin is registered by adding its name to the column-separated property "plugins" stored in the
-	 * project property file.
-	 * 
-	 * @param pluginName
-	 * @throws DuplicatedResourceException
-	 * @throws ProjectUpdateException
-	 */
-	public void registerPlugin(String pluginName) throws DuplicatedResourceException, ProjectUpdateException {
-
-		// loads the string with all previously registered plugin names, and if there is no plugin,
-		// istantiates the string with the new one, otherwise reparses this string to get all previous
-		// plugins (to check that the new plugin to be registered is not already present among any of the
-		// previous ones), then adds the new one and then stores again the string
-		String pluginsString = stp_properties.getProperty(PLUGINS_PROP);
-		if (pluginsString == null) {
-			pluginsString = pluginName;
-		} else {
-			String[] plugins = pluginsString.split(SEPARATION_SYMBOL);
-			if (plugins.length == 0)
-				pluginsString = pluginName;
-			// checks that the plugin has not already been registered for this project
-			else {
-				for (String plugin : plugins) {
-					if (plugin.equals(pluginName))
-						throw new DuplicatedResourceException(
-								"a plugin with this name is already associated to this project; this may be due to a naming conflict between two plugins or an incorrect deregistration of the same one");
-				}
-				pluginsString += SEPARATION_SYMBOL + pluginName;
-			}
-		}
-		stp_properties.setProperty(PLUGINS_PROP, pluginsString);
-		try {
-			updateProjectProperties();
-		} catch (IOException e) {
-			throw new ProjectUpdateException(e);
-		}
-	}
-
-	private String addPluginToPropertyValue(String pluginName, String propValue) {
-		if (propValue.equals(""))
-			return pluginName;
-		else
-			return propValue + SEPARATION_SYMBOL + pluginName;
-	}
-
-	/**
-	 * removes the plugin with name <code>pluginName</code> from this project. If the project does not contain
-	 * any registered plugin, or if the plugin is not registered among the reigistered ones, than a
-	 * {@link ProjectUpdateException} is thrown, with an appropriate message
-	 * 
-	 * @param pluginName
-	 * @throws ProjectUpdateException
-	 */
-	public void deregisterPlugin(String pluginName) throws ProjectUpdateException {
-
-		boolean modified = false;
-		String pluginsString = stp_properties.getProperty(PLUGINS_PROP);
-
-		if (pluginsString == null)
-			throw new ProjectUpdateException("unable to deregister plugin: " + pluginName
-					+ " actually it seems there is no plugin associated to this project");
-
-		String[] plugins = pluginsString.split(SEPARATION_SYMBOL);
-
-		if (plugins.length == 0)
-			throw new ProjectUpdateException("unable to deregister plugin: " + pluginName
-					+ " actually it seems there is no plugin associated to this project");
-
-		pluginsString = "";
-		for (String plugin : plugins) {
-			if (!plugin.equals(pluginName))
-				pluginsString = addPluginToPropertyValue(plugin, pluginsString);
-			else
-				modified = true;
-		}
-
-		if (!modified)
-			throw new ProjectUpdateException("unable to deregister plugin: " + pluginName
-					+ " because it does not appear to be associated to this project");
-		stp_properties.setProperty(PLUGINS_PROP, pluginsString);
-		try {
-			updateProjectProperties();
-		} catch (IOException e) {
-			throw new ProjectUpdateException(e);
-		}
-	}
-
-	/**
-	 * returns the list of registered plugins
-	 * 
-	 * @return a List containing the names of the registered plugins
-	 */
-	public List<String> getRegisteredPlugins() {
-		String pluginsString = stp_properties.getProperty(PLUGINS_PROP);
-		if (pluginsString == null) {
-			return new ArrayList<String>();
-		} else {
-			String[] plugins = pluginsString.split(SEPARATION_SYMBOL);
-			return Arrays.asList(plugins);
 		}
 	}
 

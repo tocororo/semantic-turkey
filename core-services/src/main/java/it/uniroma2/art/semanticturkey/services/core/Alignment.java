@@ -10,6 +10,9 @@ import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.DatasetMetadataException;
+import it.uniroma2.art.semanticturkey.exceptions.MissingDatasetMetadataException;
+import it.uniroma2.art.semanticturkey.exceptions.NoSPARQLEndpointMetadataException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
@@ -177,7 +180,7 @@ public class Alignment extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchResources(IRI inputRes,
 			ResourcePosition resourcePosition, String[] rolesArray, @Optional List<SearchMode> searchModeList,
-			Map<String, IRI> langToLexModel) throws IllegalStateException, STPropertyAccessException {
+			Map<String, IRI> langToLexModel) throws IllegalStateException, STPropertyAccessException, DatasetMetadataException {
 
 		SearchStrategy regexSearchStrategy = instantiateSearchStrategy(SearchStrategies.REGEX);
 
@@ -307,15 +310,13 @@ public class Alignment extends STServiceAdapter {
 			
 			DatasetMetadata datasetMetadata = ((RemoteResourcePosition) resourcePosition).getDatasetMetadata();
 			if(datasetMetadata==null) {
-				throw new IllegalArgumentException("dataset "+resourcePosition.getPosition()+" has no datasetMetadata "
-						+ "associated");
+				throw new MissingDatasetMetadataException(resourcePosition.getPosition());
 			}
 			
 			//get the SPARQL endpoint from metadataRegistryBackend
 			java.util.Optional<IRI> sparqlEndPoint = datasetMetadata.getSparqlEndpoint();
 			if(!sparqlEndPoint.isPresent()) {
-				throw new IllegalArgumentException("dataset "+datasetMetadata.getIdentity()+" has no SPARQL endpoint "
-						+ "associated");
+				throw new NoSPARQLEndpointMetadataException(datasetMetadata.getIdentity());
 			}
 			
 			logger.debug("SPARQL endpoint = "+sparqlEndPoint.get().stringValue());
