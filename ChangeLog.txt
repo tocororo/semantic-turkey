@@ -50,7 +50,7 @@ date: dd/mm/yyyy
   * reimplemented STPropertiesChecker using Hibernate to support additional property constraints
   * updated StoredExportConfiguration to make transformationPipeline optional
   * allowed to manipulate namespace prefixes in project using validation
-  * updated dependency on Sheet2RDF 4.0.2
+  * updated dependency on Sheet2RDF 4.1.0
   * updated dependency on Coda 1.7.1
 
 version 8.0.1
