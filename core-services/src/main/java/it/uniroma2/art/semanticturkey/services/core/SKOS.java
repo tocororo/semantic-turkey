@@ -2608,13 +2608,15 @@ public class SKOS extends STServiceAdapter {
 				BindingSet bindingSet = tupleQueryResult.next();
 				if(bindingSet.hasBinding("subProp")) {
 					Value value = bindingSet.getValue("subProp");
-					if(value instanceof IRI && !subPropList.contains(value)) {
+					if(value instanceof IRI && !subPropList.contains(value) &&
+							!value.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.BROAD_MATCH)) {
 						subPropList.add((IRI)value);
 					}
 				}
 				if(bindingSet.hasBinding("subInverseProp")) {
 					Value value = bindingSet.getValue("subInverseProp");
-					if(value instanceof IRI && !inverseSubPropList.contains(value)) {
+					if(value instanceof IRI && !inverseSubPropList.contains(value) &&
+							!value.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.NARROW_MATCH)) {
 						inverseSubPropList.add((IRI)value);
 					}
 				}

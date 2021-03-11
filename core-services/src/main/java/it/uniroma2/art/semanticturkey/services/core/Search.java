@@ -685,9 +685,9 @@ public class Search extends STServiceAdapter {
 					+ "> | ^<"+SKOS.HAS_TOP_CONCEPT+">";
 			
 			//@formatter:off
-			query = "SELECT DISTINCT ?broader ?broaderOfBroader ?isTopConcept ?isTop" + 
+			query = "SELECT DISTINCT ?broader ?broaderOfBroader ?isTopConcept ?isTop" +
 					"\nWHERE{" +
-					
+
 					"\nBIND("+ NTriplesUtil.toNTriplesString(resourceURI)+" AS ?resource )" +
 					"\n?subConceptClass <"+RDFS.SUBCLASSOF+">* <"+SKOS.CONCEPT+">.";
 					
@@ -707,7 +707,7 @@ public class Search extends STServiceAdapter {
 					}
 				}
 			}
-			query += "\n{" + 
+			query += "\n{" +
 					"\n"+it.uniroma2.art.semanticturkey.services.core.SKOS
 					.combinePathWithVarOrIri("?resource", "?broader", broaderNarrowerPath, true)+
 					"\n?broader a ?typeB ."; //to get only those resources defined in this project
@@ -737,7 +737,7 @@ public class Search extends STServiceAdapter {
 							ServiceForSearches.filterWithOrValues(schemesIRI, "?scheme2") +
 							"\n}";
 				}
-			} else if(schemesIRI==null || schemesIRI.size()==0) { //the schemes is either null or an empty list
+			} else { // (schemesIRI==null || schemesIRI.size()==0)  //the schemes is either null or an empty list
 				//check if the selected broader has no brother itself, in this case it is consider a topConcept
 				query +="\nOPTIONAL{" +
 						"\nBIND (\"true\" AS ?isTopConcept)" +
@@ -749,7 +749,7 @@ public class Search extends STServiceAdapter {
 			}
 			query += "\nOPTIONAL{" +
 					"\n"+it.uniroma2.art.semanticturkey.services.core.SKOS
-					.combinePathWithVarOrIri("?broader", "?broaderOfBroader", broaderNarrowerPath, false) + 
+					.combinePathWithVarOrIri("?broader", "?broaderOfBroader", broaderNarrowerPath, false) +
 					"\n?broaderOfBroader a ?typeBB ."; //to get only those resources defined in this project
 			if (schemesIRI != null && schemesIRI.size()==1) {
 				query += "\n?broaderOfBroader " + inSchemeOrTopConcept + " <" + schemesIRI.get(0).stringValue() + "> . ";
@@ -763,30 +763,30 @@ public class Search extends STServiceAdapter {
 							ServiceForSearches.filterWithOrValues(schemesIRI, "?scheme3");
 				}
 			}
-			query +="\n}" + 
+			query +="\n}" +
 					"\n}" +
 					"\nUNION" +
 					"\n{";
 			//this union is used when the first part does not return anything, so when the desired concept
 			// does not have any broader, but it is defined as topConcept (to either a specified scheme or
 			// to at least one)
-			query+= "\n<" + resourceURI + "> a ?subConceptClass .";
+			query+= "\n?resource a ?subConceptClass .";
 			if(schemesIRI != null && schemesIRI.size()==1){
-					query+="\n<"+resourceURI+"> " +
+					query+="\n?resource " +
 							"(<"+SKOS.TOP_CONCEPT_OF+"> | ^<"+SKOS.HAS_TOP_CONCEPT+">) <"+schemesIRI.get(0)+"> .";
 			} else if(schemesIRI != null && schemesIRI.size()>1){
 				if(schemeFilter.equals("and")){
 					for(IRI scheme : schemesIRI){
-						query += "\n"+NTriplesUtil.toNTriplesString(resourceURI)+ " (<" + SKOS.TOP_CONCEPT_OF + "> | ^<" + SKOS.HAS_TOP_CONCEPT + ">)"
+						query += "\n?resource (<" + SKOS.TOP_CONCEPT_OF + "> | ^<" + SKOS.HAS_TOP_CONCEPT + ">)"
 								+ NTriplesUtil.toNTriplesString(scheme)+" . ";
 					}
 				} else {// 'or' case
-					query += "\n<" + resourceURI + "> " +
+					query += "\n?resource " +
 							"(<" + SKOS.TOP_CONCEPT_OF + "> | ^<" + SKOS.HAS_TOP_CONCEPT + ">) ?scheme4 ." +
 							ServiceForSearches.filterWithOrValues(schemesIRI, "?scheme4");
 				}
 			} else{
-				query+="\n<"+resourceURI+"> " +
+				query+="\n?resource " +
 						"(<"+SKOS.TOP_CONCEPT_OF+"> | ^<"+SKOS.HAS_TOP_CONCEPT+">) _:b1";
 			}
 			query+="\nBIND(\"true\" AS ?isTop )" +
@@ -797,13 +797,13 @@ public class Search extends STServiceAdapter {
 			if(schemesIRI == null || schemesIRI.size()==0){
 				query+="\nUNION" +
 						"\n{" +
-						"\n<" + resourceURI + "> a ?subConceptClass ." +
+						"\n?resource a ?subConceptClass ." +
 						"\nMINUS{" +
 						it.uniroma2.art.semanticturkey.services.core.SKOS
-						.combinePathWithVarOrIri(resourceURI, "?genericConcept", broaderNarrowerPath, false)+"\n" +
+								.combinePathWithVarOrIri("?resource", "?genericConcept", broaderNarrowerPath, false)+"\n" +
 						"\n ?genericConcept a/<"+RDFS.SUBCLASSOF+">* <"+SKOS.CONCEPT+"> ." +
 						"\n}" +
-						"\nFILTER (NOT EXISTS{ <"+resourceURI+"> "
+						"\nFILTER (NOT EXISTS{ ?resource "
 								+ "(<"+SKOS.TOP_CONCEPT_OF+"> | ^<"+SKOS.HAS_TOP_CONCEPT+"> ) ?genericScheme})" +
 						"\nBIND(\"true\" AS ?isTop )" +
 						"\n}";
@@ -815,15 +815,15 @@ public class Search extends STServiceAdapter {
 			superResourceVar = "superProperty";
 			superSuperResourceVar = "superSuperProperty";
 			//@formatter:off
-			query = "SELECT DISTINCT ?superProperty ?superSuperProperty ?isTop" + 
-					"\nWHERE{" + 
-					"\n{" + 
+			query = "SELECT DISTINCT ?superProperty ?superSuperProperty ?isTop" +
+					"\nWHERE{" +
+					"\n{" +
 					"\n<" + resourceURI + "> <" + RDFS.SUBPROPERTYOF + ">* ?superProperty ." +
 					"\n?superProperty a ?type ."+ //to get only those properties defined in this project
 					"\nOPTIONAL{" +
 					"\n?superProperty <" + RDFS.SUBPROPERTYOF + "> ?superSuperProperty ." +
 					"\n?superSuperProperty a ?type2 ."+ //to get only those properties defined in this project
-					"\n}" + 
+					"\n}" +
 					"\n}" +
 					"\nUNION" +
 					"\n{" +
@@ -844,11 +844,11 @@ public class Search extends STServiceAdapter {
 			superResourceVar = "superClass";
 			superSuperResourceVar = "superSuperClass";
 			//@formatter:off
-			query = "SELECT DISTINCT ?superClass ?superSuperClass ?isTop" + 
-					"\nWHERE{" + 
-					"\n{" + 
+			query = "SELECT DISTINCT ?superClass ?superSuperClass ?isTop" +
+					"\nWHERE{" +
+					"\n{" +
 					"\n<" + resourceURI + "> <" + RDFS.SUBCLASSOF + ">* ?superClass ." +
-					"\nFILTER(isIRI(?superClass))"; 
+					"\nFILTER(isIRI(?superClass))";
 			
 			//if the input root is different from owl:Thing e rdfs:Resource the ?superClass should be 
 			// rdfs:subClass* of such root
@@ -859,7 +859,7 @@ public class Search extends STServiceAdapter {
 					//check that the superClass belong to the default graph
 			query +="\n?metaClass1 <" + RDFS.SUBCLASSOF + ">* <"+RDFS.CLASS+"> ." +
 					"\n?superClass a ?metaClass1 ."+
-					
+
 					"\nOPTIONAL{" +
 					"\n?superClass <" + RDFS.SUBCLASSOF + "> ?superSuperClass ." +
 					"\nFILTER(isIRI(?superSuperClass))";
@@ -872,8 +872,8 @@ public class Search extends STServiceAdapter {
 					//check that the superSuperClass belong to the default graph
 			query +="\n?metaClass2 <" + RDFS.SUBCLASSOF + ">* <"+RDFS.CLASS+"> ." +
 					"\n?superSuperClass a ?metaClass2 ."+
-					
-					"\n}" + 
+
+					"\n}" +
 					"\n}" +
 					"\nUNION" +
 					"\n{";
