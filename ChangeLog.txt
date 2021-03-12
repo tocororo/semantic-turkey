@@ -52,6 +52,7 @@ date: dd/mm/yyyy
   * allowed to manipulate namespace prefixes in project using validation
   * updated dependency on Sheet2RDF 4.1.0
   * updated dependency on Coda 1.7.1
+  * updated dependency on maple 0.0.7
 
 version 8.0.1
 date: 08/10/2020
