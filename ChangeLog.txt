@@ -33,7 +33,7 @@ date: dd/mm/yyyy
     credentials
   * added the possibility to remove a resource from an issue (Collaboration system: Jira and Freedcamp)
   * implemented project facets
-  * added support for the Freecamp collaboration system
+  * added support for the Freedcamp collaboration system
   * added support for internationalization (i18n)
   * added data type information in the single-value custom form preview
   * added mapping property to the descriptions of correspondences in the EDOAL data view

@@ -49,6 +49,7 @@ public class FreedcampBackend implements CollaborationBackend {
 	
 	private static final String USER_AGENT = "Fake client";
 	private static final String X_APP_VERSION= "vocbench_001";
+	private static final String F_USE_CACHE = "f_use_cache=1";
 
 	private static final String LIST_FOR_VB3_RESOURCES = "List for VB3 resources";
 
@@ -147,6 +148,7 @@ public class FreedcampBackend implements CollaborationBackend {
 			throw new CollaborationBackendException("Invalid Configuration: in project "+prjId+" there is no task list with id:"+
 					listId);
 		}
+
 	}
 	
 	@Override
@@ -196,7 +198,7 @@ public class FreedcampBackend implements CollaborationBackend {
 
 		//now create the task
 		String title = escapeString(issueCreationForm.get("title").textValue());
-		urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/tasks?"+setSecureOrNot(projectPreferences);
+		urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/tasks?"+F_USE_CACHE+setSecureOrNot(projectPreferences);
 		httpcon = prepareHttpURLConnection(ConnType.POST, urlString,
 				"application/x-www-form-urlencoded", projectPreferences);
 		Map<String, String> nameValueMap = new HashMap<>();
@@ -210,7 +212,7 @@ public class FreedcampBackend implements CollaborationBackend {
 		if(tagId!=null){
 			existingTagResourceList.add(tagId);
 		} else {
-			//newTagResourceList.add("_"+resource); //TODO temporary solution, the _ will be removed when fixed in the freedcamp API server
+			//newTagResourceList.add("_"+resource); //OLD temporary solution, the _ will be removed when fixed in the freedcamp API server
 			newTagResourceList.add(resource);
 		}
 		String postJsonData = preparePostData(nameValueMap, newTagResourceList, existingTagResourceList);
@@ -408,7 +410,7 @@ public class FreedcampBackend implements CollaborationBackend {
 		}
 
 		//get the tags already associated to the task having id taskId
-		urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/tasks/"+taskId+"?f_use_cache=1"+
+		urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/tasks/"+taskId+"?"+ F_USE_CACHE +
 				setSecureOrNot(projectPreferences);
 		httpcon = prepareHttpURLConnection(ConnType.GET, urlString,
 				"application/json;charset=UTF-8", projectPreferences);
@@ -435,9 +437,9 @@ public class FreedcampBackend implements CollaborationBackend {
 			return;
 		}
 
-		//now add the new tag to the task (maintaining the already existign tags)
+		//now add the new tag to the task (maintaining the already existing tags)
 		urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/item_tags/2/"+
-				taskId+"/?"+setSecureOrNot(projectPreferences);
+				taskId+"/?"+ F_USE_CACHE +setSecureOrNot(projectPreferences);
 		httpcon = prepareHttpURLConnection(ConnType.POST, urlString,
 				"application/x-www-form-urlencoded", projectPreferences);
 
@@ -453,7 +455,7 @@ public class FreedcampBackend implements CollaborationBackend {
 		if(tagId!=null){
 			existingTagResourceList.add(tagId);
 		} else {
-			//newTagResourceList.add("_"+resource.stringValue()); //TODO temporary solution, the _ will be removed when fixed in the freedcamp API server
+			//newTagResourceList.add("_"+resource.stringValue()); //OLD temporary solution, the _ will be removed when fixed in the freedcamp API server
 			newTagResourceList.add(resource.stringValue());
 		}
 		String postJsonData = preparePostData(nameValueMap, newTagResourceList, existingTagResourceList);
@@ -508,7 +510,7 @@ public class FreedcampBackend implements CollaborationBackend {
 		}
 
 		//get the tags already associated to the task having id taskId
-		urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/tasks/"+taskId+"?f_use_cache=1"+
+		urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/tasks/"+taskId+"?"+F_USE_CACHE+
 				setSecureOrNot(projectPreferences);
 		httpcon = prepareHttpURLConnection(ConnType.GET, urlString,
 				"application/json;charset=UTF-8", projectPreferences);
@@ -539,7 +541,7 @@ public class FreedcampBackend implements CollaborationBackend {
 
 		//now add to the task all the tags that were already present (except the one that has been removed)
 		urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/item_tags/2/"+
-				taskId+"/?"+setSecureOrNot(projectPreferences);
+				taskId+"/?"+ F_USE_CACHE +setSecureOrNot(projectPreferences);
 		httpcon = prepareHttpURLConnection(ConnType.POST, urlString,
 				"application/x-www-form-urlencoded", projectPreferences);
 
@@ -547,7 +549,7 @@ public class FreedcampBackend implements CollaborationBackend {
 		List<String> newTagResourceList = new ArrayList<>();
 		List<String> existingTagResourceList = new ArrayList<>();
 
-		//add the already assocaited tags
+		//add the already associated tags
 		for(String tagsToMaintain : tagsToMaintainList){
 			existingTagResourceList.add(tagsToMaintain);
 		}
@@ -562,8 +564,8 @@ public class FreedcampBackend implements CollaborationBackend {
 	@Override
 	public JsonNode listIssuesAssignedToResource(IRI resource) throws STPropertyAccessException, IOException, 
 			CollaborationBackendException {
-		//first of all, check that there is a valid associated Freedcamp Project
-		checkPrjConfiguration();
+		// first of all, check that there is a valid associated Freedcamp Project
+		// checkPrjConfiguration(); // commented to avoid to many connections to Freedcamp server
 
 		FreedcampBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
 		FreedcampBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
@@ -578,7 +580,7 @@ public class FreedcampBackend implements CollaborationBackend {
 		//get the tag_id having the resource uri as name (if any)
 		Map<String, String > resourceToTagsidMap = new HashMap<>();
 		Map<String, String> tagsidToResourceMap = new HashMap<>();
-		String urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/tags?"+setSecureOrNot(projectPreferences);
+		String urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/tags?"+ F_USE_CACHE +setSecureOrNot(projectPreferences);
 
 		HttpURLConnection httpcon = prepareHttpURLConnection(ConnType.GET, urlString,
 				"application/json;charset=UTF-8", projectPreferences);
@@ -605,10 +607,9 @@ public class FreedcampBackend implements CollaborationBackend {
 			return taskArrayResponse;
 		}
 
-
 		//now get all task having the desired tagId
 		urlString = normalizeServerUrl(projectSettings.serverURL)+"api/v1/tasks?project_id="+projId+
-				"&filter={\"tag_id\":[\""+tagId+"\"]}&f_fiu=1&f_json=1&f_use_cache=1&f_include_tags=1"+setSecureOrNot(projectPreferences);
+				"&filter={\"tag_id\":[\""+tagId+"\"]}&f_fiu=1&f_json=1&"+F_USE_CACHE+"&f_include_tags=1"+setSecureOrNot(projectPreferences);
 
 		httpcon = prepareHttpURLConnection(ConnType.GET, urlString,
 				"application/json;charset=UTF-8", projectPreferences);
@@ -651,7 +652,7 @@ public class FreedcampBackend implements CollaborationBackend {
 		int numPagesTotal=0;
 		
 		//first of all, check that there is a valid associated Freedcamp Project
-		checkPrjConfiguration();
+		// checkPrjConfiguration(); // commented to avoid to many connections to Freedcamp server
 
 		FreedcampBackendProjectSettings projectSettings = factory.getProjectSettings(stProject);
 		FreedcampBackendPUSettings projectPreferences = factory.getProjectSettings(stProject,
@@ -783,7 +784,6 @@ public class FreedcampBackend implements CollaborationBackend {
 
 		JsonNode freedCampResponseNode = objectMapper.readTree(response);
 
-		//ArrayNode prjFromFreedcampArray = (ArrayNode) objectMapper.readTree(response);
 		ArrayNode prjFromFreedcampArray = (ArrayNode)freedCampResponseNode.get("data").get("projects");
 
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
@@ -907,8 +907,9 @@ public class FreedcampBackend implements CollaborationBackend {
 			postJsonData += "\n\""+key+"\":\""+nameValueMap.get(key)+"\",";
 		}
 		// if tagList is not null and not empty, add the custom field
+		postJsonData +=  "\n\"tags\":[";
 		if((tagNameList != null && !tagNameList.isEmpty()) || (tagIdList != null && !tagIdList.isEmpty())){
-			postJsonData +=  "\n\"tags\":[";
+			assert tagNameList != null;
 			for(String tagName : tagNameList){
 				postJsonData += "\""+tagName+"\",";
 				//postJsonData += ""+tag+",";
@@ -919,12 +920,10 @@ public class FreedcampBackend implements CollaborationBackend {
 			}
 			//remove the last ,
 			postJsonData = postJsonData.substring(0, postJsonData.length()-1);
-			postJsonData += "],";
 
 		}
-		//remove the last ,
-		postJsonData = postJsonData.substring(0, postJsonData.length()-1);
-		postJsonData += "\n}";
+		postJsonData += "]"+
+				"\n}";
 		return  postJsonData;
 	}
 
