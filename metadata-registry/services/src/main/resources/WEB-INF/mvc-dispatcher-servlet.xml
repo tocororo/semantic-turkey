@@ -27,6 +27,12 @@
 		</mvc:interceptor>
 	</mvc:interceptors>
 
+	<bean id="localeResolver" class="org.springframework.web.servlet.i18n.CookieLocaleResolver">
+	    <property name="cookieName" value="#{T(it.uniroma2.art.semanticturkey.i18n.I18NConstants).LANG_COOKIE_NAME}"/>
+	    <!-- 10 years (in seconds) as in the client -->
+	    <property name="cookieMaxAge" value="315400000" />
+	</bean>
+
 	<context:component-scan
 		base-package="it.uniroma2.art.semanticturkey.mdr.services,it.uniroma2.art.semanticturkey.mvc">
 	</context:component-scan>

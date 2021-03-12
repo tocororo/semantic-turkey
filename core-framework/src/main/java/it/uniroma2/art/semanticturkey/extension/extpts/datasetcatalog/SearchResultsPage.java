@@ -3,6 +3,8 @@ package it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog;
 import java.util.Collection;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 
 public class SearchResultsPage<T> {
@@ -13,8 +15,11 @@ public class SearchResultsPage<T> {
 	private Collection<T> content;
 	private List<FacetAggregation> facetAggregations;
 
-	private SearchResultsPage(int totalResults, int pageSize, int page, boolean tail, Collection<T> content,
-			List<FacetAggregation> facetAggregations) {
+	@JsonCreator
+	private SearchResultsPage(@JsonProperty("totalResults") int totalResults,
+			@JsonProperty("pageSize") int pageSize, @JsonProperty("page") int page,
+			@JsonProperty("tail") boolean tail, @JsonProperty("content") Collection<T> content,
+			@JsonProperty("facetAggregations") List<FacetAggregation> facetAggregations) {
 		this.totalResults = totalResults;
 		this.pageSize = pageSize;
 		this.page = page;
@@ -52,7 +57,7 @@ public class SearchResultsPage<T> {
 	public boolean isTail() {
 		return tail;
 	}
-	
+
 	public List<FacetAggregation> getFacetAggregations() {
 		return facetAggregations;
 	}

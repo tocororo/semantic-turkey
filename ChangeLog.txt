@@ -1,5 +1,6 @@
 version 9.0.
 date: dd/mm/yyyy
+  * fixed authorization issues in the PMKI connector and implemented faceted search
   * update to MAPLE's remote alignment service API version 3:
     - possibility to forward credentials for accessing the datasets
   * enable the use of internal federation in the EDOAL data view when both the alignment project and the left

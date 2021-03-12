@@ -319,7 +319,7 @@ public class Projects extends STServiceAdapter {
 		return listProjInfo;
 	}
 
-	private void createFacetIndexIfNeeded() throws ProjectAccessException, PropertyNotFoundException,
+	protected void createFacetIndexIfNeeded() throws ProjectAccessException, PropertyNotFoundException,
 			ProjectInexistentException, IOException, InvalidProjectNameException {
 		// check if the lucene dir (for the facets) exists, if not, create the indexes
 		if (!ProjectFacetsIndexUtils.isLuceneDirPresent()) {

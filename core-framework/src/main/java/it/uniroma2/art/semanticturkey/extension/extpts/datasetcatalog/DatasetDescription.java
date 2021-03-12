@@ -7,6 +7,8 @@ import java.util.Map;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 
 public class DatasetDescription {
@@ -22,9 +24,15 @@ public class DatasetDescription {
 	private IRI model;
 	private IRI lexicalizationModel;
 
-	public DatasetDescription(String id, IRI ontologyIRI, URL datasetPage, List<Literal> titles,
-			List<Literal> descriptions, Map<String, List<String>> facets, String uriPrefix,
-			List<DownloadDescription> dataDumps, URL sparqlEndpoint, IRI model, IRI lexicalizationModel) {
+	@JsonCreator
+	public DatasetDescription(@JsonProperty("id") String id, @JsonProperty("ontologyIRI") IRI ontologyIRI,
+			@JsonProperty("datasetPage") URL datasetPage, @JsonProperty("titles") List<Literal> titles,
+			@JsonProperty("descriptions") List<Literal> descriptions,
+			@JsonProperty("facets") Map<String, List<String>> facets,
+			@JsonProperty("uriPrefix") String uriPrefix,
+			@JsonProperty("dataDumps") List<DownloadDescription> dataDumps,
+			@JsonProperty("sparqlEndpoint") URL sparqlEndpoint, @JsonProperty("model") IRI model,
+			@JsonProperty("lexicalizationModel") IRI lexicalizationModel) {
 		this.id = id;
 		this.ontologyIRI = ontologyIRI;
 		this.datasetPage = datasetPage;

@@ -11,6 +11,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.SpecialValue;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.pmki.PmkiConstants;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
@@ -34,6 +38,7 @@ import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
@@ -76,6 +81,42 @@ public class STAuthorizationEvaluator {
 	 */
 	public boolean isAdmin() {
 		return UsersManager.getLoggedUser().isAdmin();
+	}
+
+	/**
+	 * Allows request only when the contextual project is public (i.e. {@link PmkiConstants#PMKI_VISITOR_EMAIL} has role
+	 * {@link PmkiConstants.PmkiRole#PUBLIC}. To use like the following: <code>
+	 * &#64;PreAuthorize("@auth.isCtxProjectPublic()")
+	 * </code>
+	 * 
+	 * @return
+	 * @throws UserException
+	 */
+	public boolean isCtxProjectPublic() throws UserException {
+		return ProjectUserBindingsManager
+				.getPUBinding(UsersManager.getUser(PmkiConstants.PMKI_VISITOR_EMAIL), stServiceContext.getProject()).getRoles()
+				.contains(PmkiConstants.PmkiRole.PUBLIC);
+	}
+	
+	/**
+	 * Allows request only when the given project is public (i.e.
+	 * {@link PmkiConstants#PMKI_VISITOR_EMAIL} has role {@link PmkiConstants.PmkiRole#PUBLIC}. To use like
+	 * the following: <code>
+	 * &#64;PreAuthorize("@auth.isProjectPublic(#projectNameParam"))
+	 * </code>
+	 * 
+	 * @return
+	 * @throws UserException
+	 * @throws ProjectAccessException
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 */
+	public boolean isProjectPublic(String id) throws UserException, InvalidProjectNameException,
+			ProjectInexistentException, ProjectAccessException {
+		return ProjectUserBindingsManager
+				.getPUBinding(UsersManager.getUser(PmkiConstants.PMKI_VISITOR_EMAIL),
+						ProjectManager.getProjectDescription(id))
+				.getRoles().contains(PmkiConstants.PmkiRole.PUBLIC);
 	}
 
 	/**

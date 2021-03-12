@@ -133,6 +133,7 @@
 							it.uniroma2.art.semanticturkey.resources,
 							it.uniroma2.art.semanticturkey.plugin,
 							it.uniroma2.art.semanticturkey.extension.extpts.urigen,
+							it.uniroma2.art.semanticturkey.i18n,						
 							com.fasterxml.jackson.databind.node,
 							javax.persistence,
 							org.joda.time,

@@ -3,23 +3,46 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.mail.MessagingException;
+import javax.servlet.http.HttpServletResponse;
 
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.properties.Pair;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.reflect.TypeUtils;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BooleanQuery.Builder;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -30,8 +53,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.config.contribution.ContributionStore;
@@ -39,6 +64,7 @@ import it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConf
 import it.uniroma2.art.semanticturkey.config.contribution.StoredDevResourceContributionConfiguration;
 import it.uniroma2.art.semanticturkey.config.contribution.StoredMetadataContributionConfiguration;
 import it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.email.PmkiEmailService;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
@@ -53,6 +79,14 @@ import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelE
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetSearchResult;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDescription;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.FacetAggregation;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.FacetAggregation.Bucket;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchResultsPage;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SelectionMode;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LiftingException;
 import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
 import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
@@ -73,6 +107,10 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
+import it.uniroma2.art.semanticturkey.properties.Pair;
+import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesSerializer;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -81,13 +119,19 @@ import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipeline;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationStep;
+import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacets;
+import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsIndexUtils;
+import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsStore;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
@@ -109,6 +153,8 @@ public class PMKI extends STServiceAdapter {
 	private STMetadataRegistryBackend metadataRegistryBackend;
 	@Autowired
 	private InputOutput inputOutputService;
+	@Autowired
+	private Projects projectsService;
 
 	/* ADMINISTRATION */
 
@@ -633,4 +679,262 @@ public class PMKI extends STServiceAdapter {
 		}
 	}
 
+	public static final int PAGE_SIZE = 10;
+
+	// @STServiceOperation /* No @PreAuthorize("...") since ST doesn't support project-less capabilities */
+	// public SearchResultsPage<DatasetSearchResult> searchDataset(String query,
+	// @it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "{}") @JsonSerialized
+	// Map<String, List<String>> facets,
+	// @it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "1") int page)
+	// throws ProjectBindingException, InvalidProjectNameException, ProjectInexistentException,
+	// ProjectAccessException, UserException {
+	// query = query.trim();
+	// if (StringUtils.isAllBlank(query)) {
+	// return new SearchResultsPage<>(0, PAGE_SIZE, page + 1, Collections.emptyList(),
+	// Collections.emptyList());
+	// }
+	//
+	// List<String> tokens = Arrays.stream(query.split("\\s+")).map(String::toLowerCase)
+	// .collect(Collectors.toList());
+	//
+	// Collection<CatalogRecord> catalogRecords = metadataRegistryBackend.getCatalogRecords();
+	//
+	// List<DatasetSearchResult> searchResults = new ArrayList<>();
+	//
+	// for (CatalogRecord record : catalogRecords) {
+	// DatasetMetadata datasetMetadata = record.getAbstractDataset();
+	// @Nullable
+	// Project project = metadataRegistryBackend.findProjectForDataset(datasetMetadata.getIdentity());
+	//
+	// System.out.println("id = " + datasetMetadata.getIdentity() + " // project = " + project + " // "
+	// + ProjectUserBindingsManager.getPUBinding(UsersManager.getLoggedUser(), project)
+	// .getRoles().contains(PmkiConstants.PmkiRole.PUBLIC));
+	// if (project != null
+	// && !ProjectUserBindingsManager.getPUBinding(UsersManager.getLoggedUser(), project)
+	// .getRoles().contains(PmkiConstants.PmkiRole.PUBLIC)) {
+	// continue; // skip non-public datasets
+	// }
+	// String title = datasetMetadata.getTitle().map(String::toLowerCase).orElse("");
+	// String description = datasetMetadata.getDescription().map(String::toLowerCase).orElse("");
+	//
+	// int matches = 0;
+	// for (String token : tokens) {
+	// if (title.contains(token) || description.contains(token)) {
+	// matches += 1;
+	// }
+	// }
+	//
+	// if (matches > 0) {
+	// IRI id = datasetMetadata.getIdentity();
+	//
+	// IRI ontologyIRI = null;
+	// double score = (double) matches / tokens.size();
+	//
+	// URL datasetPage = null;
+	// List<Literal> titles = datasetMetadata.getTitle().map(
+	// s -> Collections.singletonList(SimpleValueFactory.getInstance().createLiteral(s)))
+	// .orElse(Collections.emptyList());
+	// List<Literal> descriptions = datasetMetadata.getDescription().map(
+	// s -> Collections.singletonList(SimpleValueFactory.getInstance().createLiteral(s)))
+	// .orElse(Collections.emptyList());
+	// Map<String, List<String>> facets2 = Collections.emptyMap();
+	//
+	// DatasetSearchResult datasetSearchResult = new DatasetSearchResult(id.toString(), ontologyIRI,
+	// score, datasetPage, titles, descriptions, facets2);
+	//
+	// searchResults.add(datasetSearchResult);
+	// }
+	// }
+
+	@STServiceOperation /* No @PreAuthorize("...") since ST doesn't support project-less capabilities */
+	public SearchResultsPage<DatasetSearchResult> searchDataset(String query,
+			@it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "{}") @JsonSerialized Map<String, List<String>> facets,
+			@it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "1") int page)
+			throws IOException, InvalidProjectNameException, ProjectInexistentException,
+			ProjectAccessException, PropertyNotFoundException, IllegalStateException,
+			STPropertyAccessException, NoSuchSettingsManager {
+		query = query.trim();
+		if (StringUtils.isAllBlank(query)) {
+			return new SearchResultsPage<>(0, PAGE_SIZE, page + 1, Collections.emptyList(),
+					Collections.emptyList());
+		}
+
+		// classloader magic
+		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
+		try {
+			Builder queryBuilder = new BooleanQuery.Builder(); // (0, BooleanClause.Occur.SHOULD);
+
+			String[] queryTokens = query.split(" ");
+			for (String tok : queryTokens) {
+				queryBuilder.add(new TermQuery(new Term(ProjectFacetsIndexUtils.PROJECT_NAME, tok)),
+						Occur.SHOULD);
+				queryBuilder.add(new TermQuery(new Term(ProjectFacetsIndexUtils.PROJECT_DESCRIPTION, tok)),
+						Occur.SHOULD);
+			}
+
+			for (String facet : facets.keySet()) {
+				Builder facetQueryBuilder = new BooleanQuery.Builder(); // (0, BooleanClause.Occur.SHOULD);
+				for (String fv : facets.get(facet)) {
+					facetQueryBuilder.add(new TermQuery(new Term(facet, fv)), Occur.SHOULD);
+				}
+				BooleanClause facetClause = new BooleanClause(facetQueryBuilder.build(), Occur.MUST);
+				queryBuilder.add(facetClause);
+			}
+
+			BooleanQuery luceneQuery = queryBuilder.build();
+
+			projectsService.createFacetIndexIfNeeded();
+
+			int maxResults = ProjectFacetsIndexUtils.MAX_RESULT_QUERY_FACETS;
+			IndexSearcher searcher = ProjectFacetsIndexUtils.createSearcher();
+			TopDocs topDocs = searcher.search(luceneQuery, maxResults);
+
+			List<DatasetSearchResult> searchResults = new ArrayList<>();
+
+			ValueFactory vf = SimpleValueFactory.getInstance();
+
+			Map<String, FacetAggregation> facetAggregations = new HashMap<>();
+
+			for (ScoreDoc sd : topDocs.scoreDocs) {
+				Document doc = searcher.doc(sd.doc);
+
+				String id = doc.get(ProjectFacetsIndexUtils.PROJECT_NAME);
+
+				Project proj = ProjectManager.getProject(id);
+				ProjectFacets projFacets = (ProjectFacets) exptManager.getSettings(proj,
+						UsersManager.getLoggedUser(), ProjectFacetsStore.class.getName(), Scope.PROJECT);
+
+				Map<String, List<String>> facetValues = new HashMap<>();
+				extractFacetsValues(facetAggregations, facetValues, projFacets);
+
+				if (proj == null)
+					continue; // skip closed projects
+
+				IRI ontologyIRI = vf.createIRI(proj.getBaseURI());
+				double score = sd.score;
+				URL datasetPage = null;
+				List<Literal> titles = Collections.singletonList(vf.createLiteral(proj.getName()));
+				List<Literal> descriptions = StringUtils.isNoneBlank(proj.getDescription())
+						? Collections.singletonList(vf.createLiteral(proj.getDescription()))
+						: Collections.emptyList();
+				DatasetSearchResult result = new DatasetSearchResult(id, ontologyIRI, score, datasetPage,
+						titles, descriptions, facetValues);
+
+				searchResults.add(result);
+			}
+
+			int totalResults = searchResults.size();
+			List<DatasetSearchResult> searchResultsPage = searchResults.stream().skip(page * PAGE_SIZE)
+					.limit(PAGE_SIZE).collect(Collectors.toList());
+			return new SearchResultsPage<>(totalResults, PAGE_SIZE, page + 1, searchResultsPage,
+					facetAggregations.values().stream().collect(Collectors.toList()));
+		} finally {
+			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
+		}
+	}
+
+	private void extractFacetsValues(Map<String, FacetAggregation> facetAggregations,
+			Map<String, List<String>> facetValues, STProperties projFacets) throws PropertyNotFoundException {
+		for (String prop : projFacets.getProperties()) {
+			Object propertyValue = projFacets.getPropertyValue(prop);
+			if (propertyValue == null)
+				continue;
+
+			if (TypeUtils.isAssignable(projFacets.getPropertyType(prop), STProperties.class)) {
+				extractFacetsValues(facetAggregations, facetValues, (STProperties) propertyValue);
+			} else {
+				String normalized = ProjectFacetsIndexUtils.normalizeFacetValue(propertyValue);
+
+				FacetAggregation aggregation = facetAggregations.computeIfAbsent(prop, n -> {
+					try {
+						String display = projFacets.getPropertyDisplayName(n);
+						if (display != null) {
+							display = STPropertiesSerializer.interpolate(display);
+						} else {
+							display = n;
+						}
+						FacetAggregation aggr = new FacetAggregation(n, display, SelectionMode.single,
+								new ArrayList<>(), false);
+						return aggr;
+					} catch (Exception e) {
+						ExceptionUtils.rethrow(e);
+						return null;
+					}
+				});
+				List<Bucket> buckets = aggregation.getBuckets();
+				Bucket bucket = buckets.stream().filter(b -> Objects.equals(b.getName(), normalized))
+						.findAny().orElseGet(() -> {
+							Bucket newB = new Bucket(normalized, normalized, 0);
+							buckets.add(newB);
+							return newB;
+						});
+				bucket.setCount(bucket.getCount() + 1);
+
+				facetValues.put(aggregation.getDisplayName(), Collections.singletonList(normalized));
+			}
+		}
+	}
+
+	@STServiceOperation
+	@PreAuthorize("@auth.isProjectPublic(#id)") /*
+												 * No capability check in @PreAuthorize("...") since ST
+												 * doesn't support project-less capabilities
+												 */
+	public DatasetDescription describeDataset(String id,
+			@it.uniroma2.art.semanticturkey.services.annotations.Optional String apiBaseURL,
+			@it.uniroma2.art.semanticturkey.services.annotations.Optional String frontendBaseURL)
+			throws MalformedURLException, STPropertyAccessException, NoSuchSettingsManager,
+			PropertyNotFoundException {
+		Project proj = ProjectManager.getProject(id);
+		if (proj == null) {
+			throw new IllegalArgumentException("Invalid id: " + id);
+		}
+
+		ValueFactory vf = SimpleValueFactory.getInstance();
+
+		IRI ontologyIRI = vf.createIRI(proj.getBaseURI());
+		URL datasetPage = StringUtils.isNoneBlank(frontendBaseURL, proj.getName())
+				? new URL(frontendBaseURL + "#/datasets/" + proj.getName())
+				: null;
+		List<Literal> titles = Collections.singletonList(vf.createLiteral(proj.getName()));
+		List<Literal> descriptions = StringUtils.isNoneBlank(proj.getDescription())
+				? Collections.singletonList(vf.createLiteral(proj.getDescription()))
+				: Collections.emptyList();
+		ProjectFacets projFacets = (ProjectFacets) exptManager.getSettings(proj, UsersManager.getLoggedUser(),
+				ProjectFacetsStore.class.getName(), Scope.PROJECT);
+		Map<String, List<String>> facetValues = new HashMap<>();
+		extractFacetsValues(new HashMap<>(), facetValues, projFacets);
+		String uriPrefix = proj.getDefaultNamespace();
+		List<DownloadDescription> dataDumps;
+		if (apiBaseURL != null) {
+			dataDumps = Collections.singletonList(new DownloadDescription(
+					UriComponentsBuilder
+							.fromHttpUrl(apiBaseURL + "it.uniroma2.art.semanticturkey/st-core-services/"
+									+ "PMKI/dataDump")
+							.queryParam("ctx_project", proj.getName()).queryParam("format", "Turtle")
+							.build(false).encode().toUri().toURL(),
+					Collections.emptyList(), Collections.emptyList(), RDFFormat.TURTLE.getDefaultMIMEType()));
+		} else {
+			dataDumps = Collections.emptyList();
+		}
+		URL sparqlEndpoint = null;
+		IRI model = proj.getModel();
+		IRI lexicalizationModel = proj.getLexicalizationModel();
+		DatasetDescription datasetDescription = new DatasetDescription(id, ontologyIRI, datasetPage, titles,
+				descriptions, facetValues, uriPrefix, dataDumps, sparqlEndpoint, model, lexicalizationModel);
+
+		return datasetDescription;
+	}
+
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isCtxProjectPublic()")
+	public void dataDump(HttpServletResponse oRes,
+			@it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "Turtle") RDFFormat format)
+			throws Exception {
+		Export.exportHelper(exptManager, stServiceContext, oRes, getManagedConnection(),
+				new IRI[] { (IRI) getWorkingGraph() }, new TransformationPipeline(new TransformationStep[0]),
+				false, format.getName(), true, null, null);
+	}
 }

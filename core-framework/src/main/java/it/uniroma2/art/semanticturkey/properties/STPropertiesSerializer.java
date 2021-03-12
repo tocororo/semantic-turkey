@@ -63,7 +63,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 
 	private static final Logger logger = LoggerFactory.getLogger(STPropertiesSerializer.class);
 
-	private Pattern templatePattern = Pattern.compile("^\\{(.*?)\\}$");
+	private static Pattern templatePattern = Pattern.compile("^\\{(.*?)\\}$");
 	private static final long serialVersionUID = 1L;
 	private ExtensionPointManager exptManager;
 
@@ -80,7 +80,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 		this.exptManager = exptManager;
 	}
 
-	protected String interpolate(String template) {
+	public static String interpolate(String template) {
 		if (template == null) {
 			return template;
 		}

@@ -7,6 +7,8 @@ import java.util.Map;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 
 public class DatasetSearchResult {
@@ -18,8 +20,12 @@ public class DatasetSearchResult {
 	private List<Literal> descriptions;
 	private Map<String, List<String>> facets;
 
-	public DatasetSearchResult(String id, IRI ontologyIRI, double score, URL datasetPage,
-			List<Literal> titles, List<Literal> descriptions, Map<String, List<String>> facets) {
+	@JsonCreator
+	public DatasetSearchResult(@JsonProperty("id") String id, @JsonProperty("ontologyIRI") IRI ontologyIRI,
+			@JsonProperty("score") double score, @JsonProperty("datasetPage") URL datasetPage,
+			@JsonProperty("titles") List<Literal> titles,
+			@JsonProperty("descriptions") List<Literal> descriptions,
+			@JsonProperty("facets") Map<String, List<String>> facets) {
 		this.id = id;
 		this.ontologyIRI = ontologyIRI;
 		this.score = score;
