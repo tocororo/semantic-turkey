@@ -190,9 +190,6 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 				topCollectionList, collectionIriToConceptInfoMap, maxDepth, headerWhole, isSkosxlLex, prefPropList, altPropList, hiddenPropList,
 				notePropList, reifiedNote, prefLang);
 
-		//createExcelFile(tempServerFile, topConceptList, conceptIriToConceptInfoMap, maxDepth, headerWhole, isSkosxlLex, prefPropList, altPropList,
-		//		hiddenPropList, notePropList, reifiedNote);
-
 		return new ClosableFormattedResource(tempServerFile, "xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 				StandardCharsets.UTF_8, null);
 	}
@@ -316,7 +313,6 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 		tupleQueryResult = tupleQuery.evaluate();
 		while(tupleQueryResult.hasNext()){
 			BindingSet bindingSet = tupleQueryResult.next();
-			String concept = null;
 			Value conceptValue = bindingSet.getBinding("concept").getValue();
 			if(!(conceptValue instanceof IRI) ) {
 				continue;
@@ -327,12 +323,10 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 					addNarrower(conceptToNarrowerConceptListMap, (IRI)broaderValue, (IRI)conceptValue);
 				}
 			}
-			String narrower = null;
 			if(bindingSet.hasBinding("narrowerConcept")){
 				Value narrowerValue = bindingSet.getBinding("narrowerConcept").getValue();
 				if (narrowerValue instanceof IRI){
-					narrower = narrowerValue.stringValue();
-					addNarrower(conceptToNarrowerConceptListMap, (IRI)conceptValue, (IRI)narrowerValue);
+					addNarrower(conceptToNarrowerConceptListMap, (IRI)narrowerValue, (IRI)conceptValue);
 				}
 			}
 		}
@@ -344,26 +338,22 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 			maxDepth = Math.max(maxDepth, depth);
 		}
 
-
-		// do a SPAQRL query to get all the concepts and the associated data (special case for reified data, such as SKOSXL labels and skos:note
-		// and its subProperties)
+		// do a SPARQL query to get the lexicalization
+		List<IRI> propLexList = new ArrayList<>();
+		propLexList.addAll(prefPropList);
+		propLexList.addAll(altPropList);
+		propLexList.addAll(hiddenPropList);
 		// @formatter:off
 		query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>" +
 				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
 				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
 				"\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-				"\nSELECT ?concept ?type ?propLex ?xlabel ?label ?propNote ?xNote ?note ?prop ?value " +
+				"\nSELECT ?concept ?type ?propLex ?xlabel ?label " +
 				"\nWHERE {" +
 				addValuesPart("?type", conceptClassList) +
 				"\n?concept a ?type ." +
 				"\nFILTER(isIRI(?concept)) ";
-
 		//add the part about the lexicalization
-		List<IRI> propLexList = new ArrayList<>();
-		propLexList.addAll(prefPropList);
-		propLexList.addAll(altPropList);
-		propLexList.addAll(hiddenPropList);
-		query+="\nOPTIONAL{";
 		if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)){
 			query+= addValuesPart("?propLex", propLexList) +
 					"\n?concept ?propLex ?label . " +
@@ -375,23 +365,7 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 					"\nFILTER(isLiteral(?label))";
 		}
 		query+="\n}";
-
-		//add the reified note part
-		if(reifiedNote){
-			query+="\nOPTIONAL{" +
-					addValuesPart("?propNote", notePropList) +
-					"\n?concept ?propNote ?xNote ." +
-					"\n?xNote rdf:value ?note ." +
-					"\n}";
-		}
-
-		//add the generic property part (only if reifiedNote is false, if it is true, a second query is needed to avoid problems with reified notes)
-		if(!reifiedNote) {
-			query += "\n?concept ?prop ?value .";
-		}
-		query+="\n}";
 		// @formatter:on
-
 		tupleQuery = sourceRepositoryConnection.prepareTupleQuery(query);
 		tupleQuery.setIncludeInferred(false);
 		tupleQueryResult = tupleQuery.evaluate();
@@ -408,29 +382,26 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 			IRI propLex = bindingSet.hasBinding("propLex") ? (IRI) bindingSet.getValue("propLex") : null;
 			Value xLabelValue = bindingSet.hasBinding("xlabel") ? bindingSet.getValue("xlabel") : null;
 			Literal label = bindingSet.hasBinding("label") ? (Literal) bindingSet.getValue("label") : null;
-			IRI propNote = bindingSet.hasBinding("propNote") ? (IRI) bindingSet.getValue("propNote") : null;
-			Value xNoteValue = bindingSet.hasBinding("xNote") ? bindingSet.getValue("xNote") : null;
-			Value noteValue = bindingSet.hasBinding("note") ? bindingSet.getValue("note") : null;
-			IRI prop = bindingSet.hasBinding("prop") ? (IRI)bindingSet.getValue("prop") : null;
-			Value valueValue = bindingSet.hasBinding("value") ? bindingSet.getValue("value") : null;
-			addConceptInfo(isSkosxlLex, concept, type, propLex, xLabelValue, label, propNote, xNoteValue, noteValue, prop, valueValue,
+			addConceptInfo(isSkosxlLex, concept, type, propLex, xLabelValue, label, null, null, null, null, null,
 					conceptIriToConceptInfoMap, headerWhole, propLexList, notePropList, reifiedNote);
 
 		}
 
-		//if reified note was true, then a second query was needed
-		if(reifiedNote){
+		// do a SPARQL query to get the reified note (if reified note are preset)
+		if(reifiedNote) {
 			// @formatter:off
 			query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>" +
 					"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
 					"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
 					"\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-					"\nSELECT ?concept ?type ?propLex ?xlabel ?label ?propNote ?xNote ?note ?prop ?value " +
+					"\nSELECT ?concept ?type ?propNote ?xNote ?note  " +
 					"\nWHERE {" +
 					addValuesPart("?type", conceptClassList) +
 					"\n?concept a ?type ." +
-					"\nFILTER(isIRI(?concept)) " +
-					"\n?concept ?prop ?value ." +
+					"\nFILTER(isIRI(?concept)) "+
+					addValuesPart("?propNote", notePropList) +
+					"\n?concept ?propNote ?xNote ." +
+					"\n?xNote rdf:value ?note ." +
 					"\n}";
 			// @formatter:on
 			tupleQuery = sourceRepositoryConnection.prepareTupleQuery(query);
@@ -445,11 +416,48 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 					continue;
 				}
 				IRI concept = (IRI) conceptValue;
-				IRI prop = bindingSet.hasBinding("prop") ? (IRI)bindingSet.getValue("prop") : null;
-				Value valueValue = bindingSet.hasBinding("value") ? bindingSet.getValue("value") : null;
-				addConceptInfo(isSkosxlLex, concept, null, null, null, null, null, null,
-						null, prop, valueValue, conceptIriToConceptInfoMap, headerWhole, propLexList, notePropList, true);
+				IRI type = (IRI) bindingSet.getValue("type");
+				IRI propNote = (IRI) bindingSet.getValue("propNote") ;
+				Value xNoteValue =  bindingSet.getValue("xNote") ;
+				Value noteValue = bindingSet.getValue("note") ;
+				addConceptInfo(isSkosxlLex, concept, type, null, null, null, propNote, xNoteValue, noteValue, null, null,
+						conceptIriToConceptInfoMap, headerWhole, propLexList, notePropList, true);
+
 			}
+		}
+
+
+		// do a SPARQL query to get all the data directly associated to the concepts
+		// @formatter:off
+		query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>" +
+				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
+				"\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+				"\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+				"\nSELECT ?concept ?type ?prop ?value  " +
+				"\nWHERE {" +
+				addValuesPart("?type", conceptClassList) +
+				"\n?concept a ?type ." +
+				"\nFILTER(isIRI(?concept)) " +
+				"\n?concept ?prop ?value ." +
+				"\n}";
+		// @formatter:on
+		tupleQuery = sourceRepositoryConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		tupleQueryResult = tupleQuery.evaluate();
+
+		while(tupleQueryResult.hasNext()) {
+			BindingSet bindingSet = tupleQueryResult.next();
+			Value conceptValue = bindingSet.getValue("concept");
+			if(!(conceptValue instanceof IRI)){
+				//skip this tuple, since the concept is not an IRI (this should never happen)
+				continue;
+			}
+			IRI concept = (IRI) conceptValue;
+			IRI type = (IRI) bindingSet.getValue("type");
+			IRI prop = (IRI)bindingSet.getValue("prop") ;
+			Value valueValue = bindingSet.getValue("value") ;
+			addConceptInfo(isSkosxlLex, concept, type, null, null, null, null, null,
+					null, prop, valueValue, conceptIriToConceptInfoMap, headerWhole, propLexList, notePropList, reifiedNote);
 		}
 
 		return maxDepth;
