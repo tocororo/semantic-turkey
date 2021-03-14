@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.SecureRandom;
@@ -20,15 +19,16 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.commons.lang3.reflect.TypeUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -89,6 +89,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchResu
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SelectionMode;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LiftingException;
 import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryWritingException;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.METADATAREGISTRY;
@@ -114,6 +115,7 @@ import it.uniroma2.art.semanticturkey.properties.STPropertiesSerializer;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.properties.dynamic.STPropertiesSchema;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
@@ -129,9 +131,9 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipeline;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationStep;
+import it.uniroma2.art.semanticturkey.settings.facets.CustomProjectFacetsSchemaStore;
 import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacets;
 import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsIndexUtils;
-import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsStore;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
@@ -146,6 +148,13 @@ import it.uniroma2.art.semanticturkey.utilities.Utilities;
 public class PMKI extends STServiceAdapter {
 
 	private static Logger logger = LoggerFactory.getLogger(PMKI.class);
+
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.services.core.PMKI";
+		public static final String model$displayName = keyBase + ".model.displayName";
+		public static final String lexicalizationModel$displayName = keyBase
+				+ ".lexicalizationModel.displayName";
+	}
 
 	@Autowired
 	private ExtensionPointManager exptManager;
@@ -752,7 +761,7 @@ public class PMKI extends STServiceAdapter {
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "1") int page)
 			throws IOException, InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, PropertyNotFoundException, IllegalStateException,
-			STPropertyAccessException, NoSuchSettingsManager {
+			STPropertyAccessException, NoSuchSettingsManager, UserException {
 		query = query.trim();
 		if (StringUtils.isAllBlank(query)) {
 			return new SearchResultsPage<>(0, PAGE_SIZE, page + 1, Collections.emptyList(),
@@ -763,15 +772,20 @@ public class PMKI extends STServiceAdapter {
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
 		try {
-			Builder queryBuilder = new BooleanQuery.Builder(); // (0, BooleanClause.Occur.SHOULD);
+			Builder tokenQueryBuilder = new BooleanQuery.Builder(); // (0, BooleanClause.Occur.SHOULD);
 
 			String[] queryTokens = query.split(" ");
 			for (String tok : queryTokens) {
-				queryBuilder.add(new TermQuery(new Term(ProjectFacetsIndexUtils.PROJECT_NAME, tok)),
+				tokenQueryBuilder.add(new TermQuery(new Term(ProjectFacetsIndexUtils.PROJECT_NAME, tok)),
 						Occur.SHOULD);
-				queryBuilder.add(new TermQuery(new Term(ProjectFacetsIndexUtils.PROJECT_DESCRIPTION, tok)),
+				tokenQueryBuilder.add(
+						new TermQuery(new Term(ProjectFacetsIndexUtils.PROJECT_DESCRIPTION, tok)),
 						Occur.SHOULD);
 			}
+
+			BooleanQuery tokenQuery = tokenQueryBuilder.build();
+			Builder overallQueryBuilder = new BooleanQuery.Builder(); // (0, BooleanClause.Occur.SHOULD);
+			overallQueryBuilder.add(tokenQuery, Occur.MUST);
 
 			for (String facet : facets.keySet()) {
 				Builder facetQueryBuilder = new BooleanQuery.Builder(); // (0, BooleanClause.Occur.SHOULD);
@@ -779,16 +793,16 @@ public class PMKI extends STServiceAdapter {
 					facetQueryBuilder.add(new TermQuery(new Term(facet, fv)), Occur.SHOULD);
 				}
 				BooleanClause facetClause = new BooleanClause(facetQueryBuilder.build(), Occur.MUST);
-				queryBuilder.add(facetClause);
+				overallQueryBuilder.add(facetClause);
 			}
 
-			BooleanQuery luceneQuery = queryBuilder.build();
+			BooleanQuery overallQuery = overallQueryBuilder.build();
 
 			projectsService.createFacetIndexIfNeeded();
 
 			int maxResults = ProjectFacetsIndexUtils.MAX_RESULT_QUERY_FACETS;
 			IndexSearcher searcher = ProjectFacetsIndexUtils.createSearcher();
-			TopDocs topDocs = searcher.search(luceneQuery, maxResults);
+			TopDocs topDocs = searcher.search(overallQuery, maxResults);
 
 			List<DatasetSearchResult> searchResults = new ArrayList<>();
 
@@ -802,11 +816,16 @@ public class PMKI extends STServiceAdapter {
 				String id = doc.get(ProjectFacetsIndexUtils.PROJECT_NAME);
 
 				Project proj = ProjectManager.getProject(id);
-				ProjectFacets projFacets = (ProjectFacets) exptManager.getSettings(proj,
-						UsersManager.getLoggedUser(), ProjectFacetsStore.class.getName(), Scope.PROJECT);
+
+				boolean isPublic = ProjectUserBindingsManager
+						.getPUBinding(UsersManager.getUser(PmkiConstants.PMKI_VISITOR_EMAIL), proj).getRoles()
+						.contains(PmkiConstants.PmkiRole.PUBLIC);
+
+				if (!isPublic)
+					continue; // skip non public projects
 
 				Map<String, List<String>> facetValues = new HashMap<>();
-				extractFacetsValues(facetAggregations, facetValues, projFacets);
+				extractFacetsValues(facetAggregations, facetValues, doc);
 
 				if (proj == null)
 					continue; // skip closed projects
@@ -835,44 +854,69 @@ public class PMKI extends STServiceAdapter {
 	}
 
 	private void extractFacetsValues(Map<String, FacetAggregation> facetAggregations,
-			Map<String, List<String>> facetValues, STProperties projFacets) throws PropertyNotFoundException {
-		for (String prop : projFacets.getProperties()) {
-			Object propertyValue = projFacets.getPropertyValue(prop);
-			if (propertyValue == null)
-				continue;
+			Map<String, List<String>> facetValues, Document doc)
+			throws PropertyNotFoundException, STPropertyAccessException, NoSuchSettingsManager {
+		STPropertiesSchema customFacetsSchema = (STPropertiesSchema) exptManager.getSettings(null,
+				UsersManager.getLoggedUser(), CustomProjectFacetsSchemaStore.class.getName(), Scope.SYSTEM);
+		STProperties customProjectsFacetsForm = customFacetsSchema.toSTProperties();
+		STProperties stdProjectFacetsForm = new ProjectFacets();
 
-			if (TypeUtils.isAssignable(projFacets.getPropertyType(prop), STProperties.class)) {
-				extractFacetsValues(facetAggregations, facetValues, (STProperties) propertyValue);
+		extractFacetsValues(facetAggregations, facetValues, doc, stdProjectFacetsForm,
+				customProjectsFacetsForm);
+	}
+
+	private void extractFacetsValues(Map<String, FacetAggregation> facetAggregations,
+			Map<String, List<String>> facetValues, Document doc, STProperties stdProjectFactsForm,
+			STProperties customProjectFacetsForm) throws PropertyNotFoundException {
+
+		Collection<String> stdFacetNames = stdProjectFactsForm.getProperties();
+		Collection<String> customFacetNames = customProjectFacetsForm.getProperties();
+
+		for (IndexableField field : doc.getFields()) {
+			@Nullable
+			String fieldValue = field.stringValue();
+			if (StringUtils.isAllBlank(fieldValue))
+				continue; // skip blank field
+
+			String fieldName = field.name();
+
+			String display;
+
+			if (Objects.equals(fieldName, ProjectFacetsIndexUtils.PROJECT_MODEL)) {
+				display = STMessageSource.getMessage(MessageKeys.model$displayName);
+			} else if (Objects.equals(fieldName, ProjectFacetsIndexUtils.PROJECT_LEX_MODEL)) {
+				display = STMessageSource.getMessage(MessageKeys.lexicalizationModel$displayName);
+			} else if (stdFacetNames.contains(fieldName)) {
+				display = STPropertiesSerializer
+						.interpolate(stdProjectFactsForm.getPropertyDisplayName(fieldName));
+			} else if (customFacetNames.contains(fieldName)) {
+				display = STPropertiesSerializer
+						.interpolate(customProjectFacetsForm.getPropertyDisplayName(fieldName));
 			} else {
-				String normalized = ProjectFacetsIndexUtils.normalizeFacetValue(propertyValue);
-
-				FacetAggregation aggregation = facetAggregations.computeIfAbsent(prop, n -> {
-					try {
-						String display = projFacets.getPropertyDisplayName(n);
-						if (display != null) {
-							display = STPropertiesSerializer.interpolate(display);
-						} else {
-							display = n;
-						}
-						FacetAggregation aggr = new FacetAggregation(n, display, SelectionMode.single,
-								new ArrayList<>(), false);
-						return aggr;
-					} catch (Exception e) {
-						ExceptionUtils.rethrow(e);
-						return null;
-					}
-				});
-				List<Bucket> buckets = aggregation.getBuckets();
-				Bucket bucket = buckets.stream().filter(b -> Objects.equals(b.getName(), normalized))
-						.findAny().orElseGet(() -> {
-							Bucket newB = new Bucket(normalized, normalized, 0);
-							buckets.add(newB);
-							return newB;
-						});
-				bucket.setCount(bucket.getCount() + 1);
-
-				facetValues.put(aggregation.getDisplayName(), Collections.singletonList(normalized));
+				continue; // skip unrecognized facet
 			}
+
+			FacetAggregation aggregation = facetAggregations.computeIfAbsent(fieldName, n -> {
+				try {
+					FacetAggregation aggr = new FacetAggregation(n, display, SelectionMode.single,
+							new ArrayList<>(), false);
+					return aggr;
+				} catch (Exception e) {
+					ExceptionUtils.rethrow(e);
+					return null;
+				}
+			});
+			List<Bucket> buckets = aggregation.getBuckets();
+			Bucket bucket = buckets.stream().filter(b -> Objects.equals(b.getName(), fieldValue)).findAny()
+					.orElseGet(() -> {
+						Bucket newB = new Bucket(fieldValue, fieldValue, 0);
+						buckets.add(newB);
+						return newB;
+					});
+			bucket.setCount(bucket.getCount() + 1);
+
+			facetValues.put(aggregation.getDisplayName(), Collections.singletonList(fieldValue));
+
 		}
 	}
 
@@ -884,8 +928,8 @@ public class PMKI extends STServiceAdapter {
 	public DatasetDescription describeDataset(String id,
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional String apiBaseURL,
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional String frontendBaseURL)
-			throws MalformedURLException, STPropertyAccessException, NoSuchSettingsManager,
-			PropertyNotFoundException {
+			throws STPropertyAccessException, NoSuchSettingsManager, PropertyNotFoundException,
+			IllegalArgumentException, IOException {
 		Project proj = ProjectManager.getProject(id);
 		if (proj == null) {
 			throw new IllegalArgumentException("Invalid id: " + id);
@@ -901,10 +945,12 @@ public class PMKI extends STServiceAdapter {
 		List<Literal> descriptions = StringUtils.isNoneBlank(proj.getDescription())
 				? Collections.singletonList(vf.createLiteral(proj.getDescription()))
 				: Collections.emptyList();
-		ProjectFacets projFacets = (ProjectFacets) exptManager.getSettings(proj, UsersManager.getLoggedUser(),
-				ProjectFacetsStore.class.getName(), Scope.PROJECT);
 		Map<String, List<String>> facetValues = new HashMap<>();
-		extractFacetsValues(new HashMap<>(), facetValues, projFacets);
+
+		Document doc = ProjectFacetsIndexUtils.getDocumentForProject(id)
+				.orElseThrow(() -> new IllegalArgumentException("Dataset not indexed: " + id));
+
+		extractFacetsValues(new HashMap<>(), facetValues, doc);
 		String uriPrefix = proj.getDefaultNamespace();
 		List<DownloadDescription> dataDumps;
 		if (apiBaseURL != null) {
