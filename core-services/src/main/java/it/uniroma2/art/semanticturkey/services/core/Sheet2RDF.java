@@ -207,14 +207,14 @@ public class Sheet2RDF extends STServiceAdapter {
      * @param type     the optional rdf:type of the node
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void addSimpleGraphApplicationToHeader(String headerId, IRI property, String nodeId, @Optional Resource type) {
+    public void addSimpleGraphApplicationToHeader(String headerId, IRI property, String nodeId, @Optional IRI type) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
         SimpleGraphApplication g = new SimpleGraphApplication();
         g.setProperty(property);
         g.setNodeId(nodeId);
-        g.setValue(type);
+        g.setType(type);
         h.addGraphApplication(g);
     }
 
@@ -242,7 +242,7 @@ public class Sheet2RDF extends STServiceAdapter {
      * @param type     the optional rdf:type of the node
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void updateSimpleGraphApplication(String headerId, String graphId, IRI property, String nodeId, @Optional Resource type) {
+    public void updateSimpleGraphApplication(String headerId, String graphId, IRI property, String nodeId, @Optional IRI type) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
@@ -251,7 +251,7 @@ public class Sheet2RDF extends STServiceAdapter {
                 SimpleGraphApplication sga = (SimpleGraphApplication) g;
                 sga.setProperty(property);
                 sga.setNodeId(nodeId);
-                sga.setValue(type);
+                sga.setType(type);
                 break;
             }
         }
