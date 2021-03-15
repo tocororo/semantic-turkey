@@ -1,6 +1,7 @@
 version 9.0.
 date: dd/mm/yyyy
   * added support for internationalization (i18n)
+    - added localization (l10n) for italian
   * introduced project facets
   * added project's facets to the global Lucene index (using it for global search)  
   * introduced multiple graph management
