@@ -8,6 +8,7 @@ date: dd/mm/yyyy
   * added support for the Freedcamp collaboration system
   * in the collaboration system it is now possible to remove a resource from an issue
   * most project characteristics can now be modified even after project creation
+  * introduced global access in the ACL for a given project, allowing any consumer to access the project content
   * update to MAPLE's remote alignment service API to version 3:
     - possibility to forward credentials for accessing the datasets
   * enable the use of internal federation in the EDOAL data view when both the alignment project and the left
