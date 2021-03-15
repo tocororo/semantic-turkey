@@ -1629,8 +1629,8 @@ public class ProjectManager {
 
 			if (preloadedDataFile != null) {
 				Repository repository = project.getOntologyManager().getRepository();
-				RepositoryConnection conn = RDF4JRepositoryUtils.getConnection(repository);
-				try {
+				try (RepositoryConnection conn = repository.getConnection()) {
+					conn.begin();
 					SearchStrategy searchStrategy = SearchStrategyUtils.instantiateSearchStrategy(exptManager,
 							STRepositoryInfoUtils.getSearchStrategy(
 									project.getRepositoryManager().getSTRepositoryInfo("core")));
@@ -1646,8 +1646,7 @@ public class ProjectManager {
 									e);
 						}
 					});
-				} finally {
-					RDF4JRepositoryUtils.releaseConnection(conn, repository);
+					conn.commit();
 				}
 			}
 
