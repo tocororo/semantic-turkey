@@ -40,7 +40,7 @@ public class SpreadsheetSerializingExporterFactory
 
 	@Override
 	public List<DataFormat> getFormats() {
-		return Arrays.asList(new DataFormat("XLSX", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xml"));
+		return Arrays.asList(new DataFormat("XLSX", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"));
 	}
 
 	@Override

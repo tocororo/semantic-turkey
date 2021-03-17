@@ -190,7 +190,7 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 				topCollectionList, collectionIriToConceptInfoMap, maxDepth, headerWhole, isSkosxlLex, prefPropList, altPropList, hiddenPropList,
 				notePropList, reifiedNote, prefLang);
 
-		return new ClosableFormattedResource(tempServerFile, "xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		return new ClosableFormattedResource(tempServerFile, "xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 				StandardCharsets.UTF_8, null);
 	}
 
