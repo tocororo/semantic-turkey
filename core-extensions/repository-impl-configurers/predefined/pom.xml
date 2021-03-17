@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>it.uniroma2.art.semanticturkey</groupId>
 		<artifactId>st-repository-impl-configurers</artifactId>
-		<version>9.0-SNAPSHOT</version>
+		<version>9.0</version>
 	</parent>
 	<artifactId>st-predefined-repository-impl-configurer</artifactId>
 	<packaging>bundle</packaging>

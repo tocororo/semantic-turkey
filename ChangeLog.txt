@@ -1,5 +1,5 @@
 version 9.0.
-date: dd/mm/yyyy
+date: 17/03/2021
   * added support for internationalization (i18n)
     - added localization (l10n) for italian
   * introduced project facets
