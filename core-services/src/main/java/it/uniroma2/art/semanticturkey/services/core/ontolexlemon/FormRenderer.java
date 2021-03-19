@@ -16,7 +16,7 @@ public class FormRenderer extends BaseRenderingEngine {
 			}
 
 		};
-//		conf.languages = null;
+		conf.languages = null;
 	}
 
 	private FormRenderer() {

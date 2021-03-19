@@ -16,7 +16,7 @@ public class LexicalEntryRenderer extends BaseRenderingEngine {
 			}
 
 		};
-//		conf.languages = null;
+		conf.languages = null;
 	}
 
 	private LexicalEntryRenderer() {

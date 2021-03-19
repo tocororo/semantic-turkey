@@ -1204,7 +1204,7 @@ class DecompComponentRenderer extends BaseRenderingEngine {
 			}
 
 		};
-		// conf.languages = null;
+		conf.languages = null;
 	}
 
 	private DecompComponentRenderer() {
