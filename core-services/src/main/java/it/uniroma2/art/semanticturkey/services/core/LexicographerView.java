@@ -737,16 +737,16 @@ public class LexicographerView extends STServiceAdapter {
 			Map<Resource, Set<Resource>> related2context = input.filter(null, VARTRANS.RELATES, subjectId)
 					.stream().collect(Collectors.groupingBy(Statement::getSubject,
 							Collectors.mapping(Statement::getContext, Collectors.toSet())));
-			Map<Resource, Set<Resource>> targeted2context = input.filter(null, VARTRANS.TARGET, subjectId)
-					.stream().collect(Collectors.groupingBy(Statement::getSubject,
-							Collectors.mapping(Statement::getContext, Collectors.toSet())));
+//			Map<Resource, Set<Resource>> targeted2context = input.filter(null, VARTRANS.TARGET, subjectId)
+//					.stream().collect(Collectors.groupingBy(Statement::getSubject,
+//							Collectors.mapping(Statement::getContext, Collectors.toSet())));
 			Map<Resource, Set<Resource>> sourced2context = input.filter(null, VARTRANS.SOURCE, subjectId)
 					.stream().collect(Collectors.groupingBy(Statement::getSubject,
 							Collectors.mapping(Statement::getContext, Collectors.toSet())));
 
 			Map<Resource, Set<Resource>> reifiedRelations2context = new HashMap<>();
 			related2context.forEach((key, value) -> reifiedRelations2context.merge(key, value, Sets::union));
-			targeted2context.forEach((key, value) -> reifiedRelations2context.merge(key, value, Sets::union));
+//			targeted2context.forEach((key, value) -> reifiedRelations2context.merge(key, value, Sets::union));
 			sourced2context.forEach((key, value) -> reifiedRelations2context.merge(key, value, Sets::union));
 
 			for (Map.Entry<Resource, Set<Resource>> entry : reifiedRelations2context.entrySet()) {
@@ -1158,9 +1158,9 @@ public class LexicographerView extends STServiceAdapter {
 			"      )? ?s.                                                                                            \n" +
 			"    } UNION {                                                                                           \n" +
 			"        ?resource (ontolex:sense|^ontolex:isSenseOf) ?lexicalSense.                                     \n" +
-			"        ?lexicalSense (^vartrans:relates|^vartrans:source|^vartrans:target) ?reifiedRelation .          \n" +
+			"        ?lexicalSense (^vartrans:relates|^vartrans:source) ?reifiedRelation .          \n" +
 			"        {                                                                                               \n" +
-			"           ?lexicalSense2 (^vartrans:relates|^vartrans:source|^vartrans:target) ?reifiedRelation .      \n" +
+			"           ?lexicalSense2 (^vartrans:relates|^vartrans:target) ?reifiedRelation .      \n" +
 			"      		?lexicalSense2 ((ontolex:isSenseOf|^ontolex:sense)/ontolex:canonicalForm?)? ?t .             \n" +
 			"        } UNION {                                                                                       \n" +
 			"        }                                                                                               \n" +
@@ -1172,9 +1172,9 @@ public class LexicographerView extends STServiceAdapter {
 			"        ?relatedSense ((ontolex:isSenseOf|^ontolex:sense)/                                              \n" +
 			"		  ontolex:canonicalForm?)? ?s.                                                                   \n" +
 			"    } UNION {                                                                                           \n" +
-			"        ?resource (^vartrans:relates|^vartrans:source|^vartrans:target) ?reifiedRelation .              \n" +
+			"        ?resource (^vartrans:relates|^vartrans:source) ?reifiedRelation .              \n" +
 			"        {                                                                                               \n" +
-			"           ?lexicalEntry2 (^vartrans:relates|^vartrans:source|^vartrans:target) ?reifiedRelation .      \n" +
+			"           ?lexicalEntry2 (^vartrans:relates|^vartrans:target) ?reifiedRelation .      \n" +
 			"      		?lexicalEntry2 ontolex:canonicalForm? ?t .                                                   \n" +
 			"        } UNION {                                                                                       \n" +
 			"        }                                                                                               \n" +
