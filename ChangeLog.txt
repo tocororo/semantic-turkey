@@ -1,7 +1,10 @@
 version 9.0.1
 date: dd/mm/yyyy
   * added support for "no language tagged" labels in rendering engine
-
+  * made the rendering of decomp:Component, ontolex:LexicalEntry, ontolex:Form and skosxl:Label of the choice
+    of languages for rendering
+  * made the LexicographerView only contain outgoing lexico-semantic relationships
+  
 version 9.0.
 date: 17/03/2021
   * added support for internationalization (i18n)
