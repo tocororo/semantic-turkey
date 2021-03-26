@@ -146,7 +146,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		if (interpolatedLanguages.isEmpty() || interpolatedLanguages.equals("*")) {
 			return Collections.emptyList();
 		} else {
-			return Arrays.stream(interpolatedLanguages.split(",")).map(String::trim).collect(toList());
+			return Arrays.stream(interpolatedLanguages.split(",")).map(String::trim).map(lang -> lang.replace("--", "")).collect(toList());
 		}
 	}
 
