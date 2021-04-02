@@ -129,8 +129,8 @@ public class RemoteVBConnector {
 		return processResponse(response);
 	}
 
-	public ObjectNode registerUser(String email, String password, String givenName, String familyName, String organization) throws IOException {
-		String requestUrl = stHost + "semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/Users/registerUser";
+	public ObjectNode createUser(String email, String password, String givenName, String familyName, String organization) throws IOException {
+		String requestUrl = stHost + "semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/Users/createUser";
 		HttpPost httpPost = new HttpPost(requestUrl);
 
 		List<NameValuePair> params = new ArrayList<>();
@@ -139,7 +139,6 @@ public class RemoteVBConnector {
 		params.add(new BasicNameValuePair("givenName", givenName));
 		params.add(new BasicNameValuePair("familyName", familyName));
 		params.add(new BasicNameValuePair("affiliation", organization));
-		params.add(new BasicNameValuePair("sendNotification", "false"));
 
 		httpPost.addHeader(HttpHeaders.ACCEPT, "application/json");
 		httpPost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));

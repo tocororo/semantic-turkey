@@ -32,6 +32,7 @@ public class UserVocabulary {
 	public static final IRI COUNTRY;
 	public static final IRI ADDRESS;
 	public static final IRI REGISTRATION_DATE;
+	public static final IRI VERIFICATION_TOKEN;
 	public static final IRI STATUS;
 	public static final IRI LANGUAGE_PROFICIENCIES;
 	
@@ -66,6 +67,7 @@ public class UserVocabulary {
     	COUNTRY = fact.createIRI(UserVocabulary.PUVOC_NS, "country");
     	ADDRESS = fact.createIRI(UserVocabulary.PUVOC_NS, "address");
     	REGISTRATION_DATE = fact.createIRI(UserVocabulary.PUVOC_NS, "registration_date");
+		VERIFICATION_TOKEN = fact.createIRI(UserVocabulary.PUVOC_NS, "verification_token");
     	STATUS = fact.createIRI(UserVocabulary.PUVOC_NS, "status");
     	LANGUAGE_PROFICIENCIES = fact.createIRI(UserVocabulary.PUVOC_NS, "language_proficencies");
     	

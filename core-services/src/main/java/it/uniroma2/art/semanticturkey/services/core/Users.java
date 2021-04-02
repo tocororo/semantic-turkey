@@ -1,43 +1,13 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.mail.MessagingException;
-import javax.servlet.http.HttpServletRequest;
-
-import org.eclipse.rdf4j.model.IRI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.session.SessionInformation;
-import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.RequestParam;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import it.uniroma2.art.semanticturkey.email.EmailApplicationContext;
 import it.uniroma2.art.semanticturkey.email.EmailService;
-import it.uniroma2.art.semanticturkey.email.PmkiEmailService;
+import it.uniroma2.art.semanticturkey.email.EmailServiceFactory;
 import it.uniroma2.art.semanticturkey.email.VbEmailService;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.OldPasswordMismatchException;
@@ -67,6 +37,32 @@ import it.uniroma2.art.semanticturkey.user.UserFormCustomField;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
+import org.eclipse.rdf4j.model.IRI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.session.SessionInformation;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import javax.mail.MessagingException;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 @STService
 public class Users extends STServiceAdapter {
@@ -203,7 +199,7 @@ public class Users extends STServiceAdapter {
 	}
 	
 	/**
-	 * Registers a new user
+	 * Create a new user
 	 * @param email this will be used as id
 	 * @param password password not encoded, it is encoded here
 	 * @param givenName
@@ -213,18 +209,15 @@ public class Users extends STServiceAdapter {
 	 * @param url
 	 * @param phone
 	 * @return
-	 * @throws MessagingException 
-	 * @throws ProjectAccessException 
-	 * @throws ParseException
-	 * @throws ProjectBindingException 
-	 * @throws STPropertyUpdateException 
+	 * @throws ProjectAccessException
+	 * @throws UserException
 	 */
+	@PreAuthorize("@auth.isAdmin()")
 	@STServiceOperation(method = RequestMethod.POST)
-	public void registerUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
-			@Optional String address, @Optional String affiliation, @Optional String url, @Optional String avatarUrl,
-			@Optional String phone, @Optional Collection<String> languageProficiencies, @Optional Map<IRI, String> customProperties,
-			@Optional (defaultValue = "true") boolean sendNotification)
-			throws ProjectAccessException, UserException, STPropertyUpdateException, JsonProcessingException {
+	public void createUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
+			 @Optional String address, @Optional String affiliation, @Optional String url, @Optional String avatarUrl,
+			 @Optional String phone, @Optional Collection<String> languageProficiencies, @Optional Map<IRI, String> customProperties)
+			throws ProjectAccessException, UserException, IOException, InterruptedException {
 		STUser user;
 		if (iri != null) {
 			user = new STUser(iri, email, password, givenName, familyName);
@@ -254,26 +247,92 @@ public class Users extends STServiceAdapter {
 				user.setCustomProperty(entry.getKey(), entry.getValue());
 			}
 		}
-		
+		UsersManager.clearExpiredUnverifiedUser();
+		UsersManager.registerUser(user);
+	}
+
+	/**
+	 *
+	 * @param email
+	 * @param password
+	 * @param givenName
+	 * @param familyName
+	 * @param iri
+	 * @param address
+	 * @param affiliation
+	 * @param url
+	 * @param avatarUrl
+	 * @param phone
+	 * @param languageProficiencies
+	 * @param customProperties
+	 * @param vbHostAddress required if it is going to register a "standard" user (not admin) so it needs to send the
+	 *         verification link in the email
+	 * @throws ProjectAccessException
+	 * @throws UserException
+	 * @throws STPropertyUpdateException
+	 * @throws IOException
+	 * @throws STPropertyAccessException
+	 * @throws MessagingException
+	 * @throws InterruptedException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void registerUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
+			@Optional String address, @Optional String affiliation, @Optional String url, @Optional String avatarUrl,
+			@Optional String phone, @Optional Collection<String> languageProficiencies, @Optional Map<IRI, String> customProperties,
+		 	@Optional String vbHostAddress)
+			throws ProjectAccessException, UserException, STPropertyUpdateException, IOException,
+			STPropertyAccessException, MessagingException, InterruptedException {
+
+		STUser user;
+		if (iri != null) {
+			user = new STUser(iri, email, password, givenName, familyName);
+		} else {
+			user = new STUser(email, password, givenName, familyName);
+		}
+		user.setAddress(address);
+		user.setAffiliation(affiliation);
+		user.setUrl(url);
+		user.setAvatarUrl(avatarUrl);
+		user.setPhone(phone);
+		if (languageProficiencies != null) {
+			user.setLanguageProficiencies(languageProficiencies);
+		}
+		if (customProperties != null) {
+			for (Entry<IRI, String> entry : customProperties.entrySet()) {
+				user.setCustomProperty(entry.getKey(), entry.getValue());
+			}
+		}
+
+		//if no user registered yet, it means that it is the first access, so activate it and set it as admin
 		if (UsersManager.listUsers().isEmpty()) {
-			//if this is the first registered user, it means that it is the first access, so activate it and set it as admin
 			user.setStatus(UserStatus.ACTIVE);
 			UsersManager.registerUser(user);
 			UsersManager.addAdmin(user);
-		} else {
-			//otherwise activate it and send the email notifications
+		} else { //not the first user
+			UsersManager.clearExpiredUnverifiedUser();
+			user.setStatus(UserStatus.UNVERIFIED);
+			user.setVerificationToken(new BigInteger(130, new SecureRandom()).toString(32));
 			UsersManager.registerUser(user);
-			if (sendNotification) {
-				try {
-					VbEmailService vbEmailService = new VbEmailService();
-					vbEmailService.sendRegistrationMailToUser(user);
-					vbEmailService.sendRegistrationMailToAdmin(user);
-				} catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {
-					logger.error(Utilities.printFullStackTrace(e));
-				}
+			//only if registration succeeds (no duplicated email/iri exception) sends verification email
+			try {
+				new VbEmailService().sendRegistrationVerificationMailToUser(user, vbHostAddress, user.getVerificationToken());
+			} catch (MessagingException | UnsupportedEncodingException | STPropertyAccessException e) {
+				//if exception is raised while sending the verification email, undo the user creation
+				UsersManager.deleteUser(user);
+				throw e;
 			}
+
 		}
-		
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	public void verifyUserEmail(String email, String token) throws UserException, UnsupportedEncodingException, MessagingException, STPropertyAccessException {
+		UsersManager.verifyUser(email, token);
+		STUser user = UsersManager.getUser(email);
+		VbEmailService emailService = new VbEmailService();
+		//user now verified => notify the admin and the user itself
+		emailService.sendVerifiedMailToUser(user);
+		emailService.sendRegistrationMailToAdmin(user);
 	}
 	
 	/**
@@ -287,7 +346,7 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserGivenName(String email, String givenName) throws UserException {
 		STUser user = UsersManager.getUser(email);
-		user = UsersManager.updateUserGivenName(user, givenName);
+		UsersManager.updateUserGivenName(user, givenName);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
@@ -303,7 +362,7 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserFamilyName(String email, String familyName) throws UserException {
 		STUser user = UsersManager.getUser(email);
-		user = UsersManager.updateUserFamilyName(user, familyName);
+		UsersManager.updateUserFamilyName(user, familyName);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
@@ -324,7 +383,7 @@ public class Users extends STServiceAdapter {
 		if (UsersManager.isEmailUsed(newEmail)) {
 			throw new UpdateEmailAlreadyUsedException(email, newEmail);
 		}
-		user = UsersManager.updateUserEmail(user, newEmail);
+		UsersManager.updateUserEmail(user, newEmail);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
@@ -340,7 +399,7 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserPhone(String email, @Optional String phone) throws UserException {
 		STUser user = UsersManager.getUser(email);
-		user = UsersManager.updateUserPhone(user, phone);
+		UsersManager.updateUserPhone(user, phone);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
@@ -356,7 +415,7 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserAddress(String email, @Optional String address) throws UserException {
 		STUser user = UsersManager.getUser(email);
-		user = UsersManager.updateUserAddress(user, address);
+		UsersManager.updateUserAddress(user, address);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
@@ -372,7 +431,7 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserAffiliation(String email, @Optional String affiliation) throws UserException {
 		STUser user = UsersManager.getUser(email);
-		user = UsersManager.updateUserAffiliation(user, affiliation);
+		UsersManager.updateUserAffiliation(user, affiliation);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
@@ -388,7 +447,7 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserUrl(String email, @Optional String url) throws UserException {
 		STUser user = UsersManager.getUser(email);
-		user = UsersManager.updateUserUrl(user, url);
+		UsersManager.updateUserUrl(user, url);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
@@ -404,7 +463,7 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserAvatarUrl(String email, @Optional String avatarUrl) throws UserException {
 		STUser user = UsersManager.getUser(email);
-		user = UsersManager.updateUserAvatarUrl(user, avatarUrl);
+		UsersManager.updateUserAvatarUrl(user, avatarUrl);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
@@ -421,7 +480,7 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserLanguageProficiencies(String email, Collection<String> languageProficiencies) throws UserException {
 		STUser user = UsersManager.getUser(email);
-		user = UsersManager.updateUserLanguageProficiencies(user, languageProficiencies);
+		UsersManager.updateUserLanguageProficiencies(user, languageProficiencies);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}
@@ -443,7 +502,7 @@ public class Users extends STServiceAdapter {
 		}
 		STUser user = UsersManager.getUser(email);
 		if (enabled) {
-			user = UsersManager.updateUserStatus(user, UserStatus.ACTIVE);
+			UsersManager.updateUserStatus(user, UserStatus.ACTIVE);
 			if (sendNotification) {
 				try {
 					new VbEmailService().sendEnabledMailToUser(user);
@@ -452,7 +511,7 @@ public class Users extends STServiceAdapter {
 				}
 			}
 		} else {
-			user = UsersManager.updateUserStatus(user, UserStatus.INACTIVE);
+			UsersManager.updateUserStatus(user, UserStatus.INACTIVE);
 		}
 		return user.getAsJsonObject();
 	}
@@ -466,9 +525,6 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'D')")
 	public void deleteUser(@RequestParam("email") String email) throws Exception {
 		STUser user = UsersManager.getUser(email);
-		if (user == null) {
-			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
-		}
 		if (UsersManager.getLoggedUser().getEmail().equals(email)) {
 			throw new UserSelfDeletionException();
 		}
@@ -479,9 +535,6 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isLoggedUser(#email)")
 	public void changePassword(String email, String oldPassword, String newPassword) throws Exception {
 		STUser user = UsersManager.getUser(email);
-		if (user == null) {
-			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
-		}
 		BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 		if (passwordEncoder.matches(oldPassword, user.getPassword())) {
 			UsersManager.updateUserPassword(user, newPassword);
@@ -500,18 +553,12 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	public void forcePassword(String email, String password) throws Exception {
 		STUser user = UsersManager.getUser(email);
-		if (user == null) {
-			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
-		}
 		UsersManager.updateUserPassword(user, password);
 	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	public void forgotPassword(HttpServletRequest request, String email, String vbHostAddress, @Optional EmailApplicationContext appCtx) throws Exception {
 		STUser user = UsersManager.getUser(email);
-		if (user == null) {
-			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
-		}
 		//generate a random token
 		SecureRandom random = new SecureRandom();
 		String token = new BigInteger(130, random).toString(32);
@@ -520,7 +567,7 @@ public class Users extends STServiceAdapter {
 		//try to send the e-mail containing the link. If it fails, throw an exception
 		try {
 			request.getSession().setAttribute("reset_password_token", email+token);
-			EmailService emailService = (appCtx == EmailApplicationContext.PMKI) ?  new PmkiEmailService() : new VbEmailService();
+			EmailService emailService = EmailServiceFactory.getService(appCtx);
 			emailService.sendResetPasswordRequestedMail(user, resetLink);
 		} catch (UnsupportedEncodingException | MessagingException e) {
 			logger.error(Utilities.printFullStackTrace(e));
@@ -535,9 +582,6 @@ public class Users extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	public void resetPassword(HttpServletRequest request, String email, String token, @Optional EmailApplicationContext appCtx) throws Exception {
 		STUser user = UsersManager.getUser(email);
-		if (user == null) {
-			throw new IllegalArgumentException("User with email " + email + " doesn't exist");
-		}
 		String storedToken = (String) request.getSession().getAttribute("reset_password_token");
 		if (!(email + token).equals(storedToken)) {
 			throw new Exception("Cannot reset password for email " + email + 
@@ -551,7 +595,7 @@ public class Users extends STServiceAdapter {
 		
 		try {
 			UsersManager.updateUserPassword(user, tempPwd);
-			EmailService emailService = (appCtx == EmailApplicationContext.PMKI) ?  new PmkiEmailService() : new VbEmailService();
+			EmailService emailService = EmailServiceFactory.getService(appCtx);
 			emailService.sendResetPasswordConfirmedMail(user, tempPwd);
 		} catch (IOException e) {
 			throw new Exception(e);
@@ -629,7 +673,7 @@ public class Users extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
 	public ObjectNode updateUserCustomField(String email, IRI property, @Optional String value) throws UserException {
 		STUser user = UsersManager.getUser(email);
-		user = UsersManager.updateUserCustomProperty(user, property, value);
+		UsersManager.updateUserCustomProperty(user, property, value);
 		updateUserInSecurityContext(user);
 		return user.getAsJsonObject();
 	}

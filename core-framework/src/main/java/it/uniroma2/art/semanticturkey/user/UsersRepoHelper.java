@@ -64,6 +64,7 @@ public class UsersRepoHelper {
 	private String BINDING_PHONE = "phone";
 	private String BINDING_AFFILIATION = "affiliation";
 	private String BINDING_ADDRESS = "address";
+	private String BINDING_VERIFICATION_TOKEN = "verificationToken";
 	private String BINDING_REGISTRATION_DATE = "registrationDate";
 	private String BINDING_STATUS = "status";
 	private String BINDING_LANGUAGE_PROFICIENCIES = "languageProficiencies";
@@ -111,6 +112,9 @@ public class UsersRepoHelper {
 		if (user.getAddress() != null) {
 			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.ADDRESS) + " '" + user.getAddress() + "' .";
 		}
+		if (user.getVerificationToken() != null) {
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.VERIFICATION_TOKEN) + " '" + user.getVerificationToken() + "' .";
+		}
 		for (String lang : user.getLanguageProficiencies()) {
 			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROFICIENCIES) + 
 					" '" + lang + "' .";
@@ -147,6 +151,7 @@ public class UsersRepoHelper {
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.PHONE) + " ?" + BINDING_PHONE + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(ORG.MEMBER_OF) + " ?" + BINDING_AFFILIATION + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.ADDRESS) + " ?" + BINDING_ADDRESS + " . }"
+				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.VERIFICATION_TOKEN) + " ?" + BINDING_VERIFICATION_TOKEN + " . }"
 				+ " OPTIONAL { ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROFICIENCIES) 
 					+ " ?" + BINDING_LANGUAGE_PROFICIENCIES + " . }";
 		for (int i = 0; i < UserForm.customFieldsProperties.size(); i++) {
@@ -213,6 +218,9 @@ public class UsersRepoHelper {
 			}
 			if (tuple.getBinding(BINDING_ADDRESS) != null) {
 				user.setAddress(tuple.getValue(BINDING_ADDRESS).stringValue());
+			}
+			if (tuple.getBinding(BINDING_VERIFICATION_TOKEN) != null) {
+				user.setVerificationToken(tuple.getValue(BINDING_VERIFICATION_TOKEN).stringValue());
 			}
 			
 			String lang = null;

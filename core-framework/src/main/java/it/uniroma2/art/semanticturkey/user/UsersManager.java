@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -30,16 +31,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class UsersManager {
 
 	private static final String USERS_DETAILS_FILE_NAME = "details.ttl";
 	private static final String USER_FORM_FIELDS_FILE_NAME = "fields.ttl";
 
+	public static final int EMAIL_VERIFICATION_EXPIRATION_HOURS = 48;
+
 	private static Collection<STUser> userList = new ArrayList<>();
 	private static Set<String> adminSet = new HashSet<>();
 
 	private static UserForm userForm;
+
+	private static volatile ExtensionPointManager exptManager;
 
 	/**
 	 * Loads all the users into the repository Protected since the load should be done just once by
@@ -95,7 +102,7 @@ public class UsersManager {
 		user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword())); // encode password
 		user.setRegistrationDate(new Date());
 		userList.add(user);
-		createOrUpdateUserDetailsFolder(user); // serialize user detials
+		createOrUpdateUserDetailsFolder(user); // serialize user details
 		ProjectUserBindingsManager.createPUBindingsOfUser(user);
 	}
 
@@ -105,7 +112,7 @@ public class UsersManager {
 	 * @return
 	 */
 	public static Collection<STUser> listUsers() {
-		return userList;
+		return userList.stream().filter(u -> !u.getStatus().equals(UserStatus.UNVERIFIED)).collect(Collectors.toList());
 	}
 
 	/**
@@ -248,10 +255,9 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserPassword(STUser user, String newPassword) throws UserException {
+	public static void updateUserPassword(STUser user, String newPassword) throws UserException {
 		user.setPassword(new BCryptPasswordEncoder().encode(newPassword));
 		createOrUpdateUserDetailsFolder(user);
-		return user;
 	}
 
 	/**
@@ -262,10 +268,9 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserGivenName(STUser user, String newValue) throws UserException {
+	public static void updateUserGivenName(STUser user, String newValue) throws UserException {
 		user.setGivenName(newValue);
 		createOrUpdateUserDetailsFolder(user);
-		return user;
 	}
 
 	/**
@@ -276,10 +281,9 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserFamilyName(STUser user, String newValue) throws UserException {
+	public static void updateUserFamilyName(STUser user, String newValue) throws UserException {
 		user.setFamilyName(newValue);
 		createOrUpdateUserDetailsFolder(user);
-		return user;
 	}
 
 	/**
@@ -290,7 +294,7 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserEmail(STUser user, String newValue)
+	public static void updateUserEmail(STUser user, String newValue)
 			throws UserException, STPropertyUpdateException, JsonProcessingException {
 		// if user was admin, update also the admin setting
 		if (adminSet.contains(user.getEmail())) {
@@ -300,7 +304,6 @@ public class UsersManager {
 		}
 		user.setEmail(newValue);
 		createOrUpdateUserDetailsFolder(user);
-		return user;
 	}
 
 	/**
@@ -311,10 +314,9 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserPhone(STUser user, String newValue) throws UserException {
+	public static void updateUserPhone(STUser user, String newValue) throws UserException {
 		user.setPhone(newValue);
 		createOrUpdateUserDetailsFolder(user);
-		return user;
 	}
 
 	/**
@@ -325,10 +327,9 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserAddress(STUser user, String newValue) throws UserException {
+	public static void updateUserAddress(STUser user, String newValue) throws UserException {
 		user.setAddress(newValue);
 		createOrUpdateUserDetailsFolder(user);
-		return user;
 	}
 
 	/**
@@ -339,10 +340,9 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserAffiliation(STUser user, String newValue) throws UserException {
+	public static void updateUserAffiliation(STUser user, String newValue) throws UserException {
 		user.setAffiliation(newValue);
 		createOrUpdateUserDetailsFolder(user);
-		return user;
 	}
 
 	/**
@@ -353,10 +353,9 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserUrl(STUser user, String newValue) throws UserException {
+	public static void updateUserUrl(STUser user, String newValue) throws UserException {
 		user.setUrl(newValue);
 		createOrUpdateUserDetailsFolder(user);
-		return user;
 	}
 
 	/**
@@ -367,10 +366,9 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserAvatarUrl(STUser user, String newValue) throws UserException {
+	public static void updateUserAvatarUrl(STUser user, String newValue) throws UserException {
 		user.setAvatarUrl(newValue);
 		createOrUpdateUserDetailsFolder(user);
-		return user;
 	}
 
 	/**
@@ -381,11 +379,10 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserLanguageProficiencies(STUser user, Collection<String> newValue)
+	public static void updateUserLanguageProficiencies(STUser user, Collection<String> newValue)
 			throws UserException {
 		user.setLanguageProficiencies(newValue);
 		createOrUpdateUserDetailsFolder(user);
-		return user;
 	}
 
 	/**
@@ -396,10 +393,9 @@ public class UsersManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public static STUser updateUserStatus(STUser user, UserStatus newValue) throws UserException {
+	public static void updateUserStatus(STUser user, UserStatus newValue) throws UserException {
 		user.setStatus(newValue);
 		createOrUpdateUserDetailsFolder(user);
-		return user;
 	}
 
 	/**
@@ -594,4 +590,50 @@ public class UsersManager {
 		return f;
 	}
 
+
+	/*
+	 * Pending Users (waiting to be verified) methods
+	 */
+
+	/**
+	 * Returns a list of users which email still need to be verified (status {@link UserStatus#UNVERIFIED})
+	 * @return
+	 */
+	public static Collection<STUser> listUnverifiedUsers() {
+		return userList.stream().filter(u -> u.getStatus().equals(UserStatus.UNVERIFIED)).collect(Collectors.toList());
+	}
+
+	public static STUser getUnverifiedUser(String email, String token) {
+		return userList.stream()
+			.filter(u -> u.getStatus().equals(UserStatus.UNVERIFIED) && u.getEmail().equals(email) && u.getVerificationToken().equals(token))
+			.findAny().orElse(null);
+	}
+
+	public static void verifyUser(String email, String token) throws UserException {
+		STUser user = getUnverifiedUser(email, token);
+		if (user != null) {
+			user.setStatus(UserStatus.NEW);
+			user.setVerificationToken(null);
+			createOrUpdateUserDetailsFolder(user); // serialize user details
+		} else {
+			throw new EmailVerificationExpiredException(email);
+		}
+	}
+
+	/**
+	 * Delete the user that have not been verified after 48 hours of the registration
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	public static void clearExpiredUnverifiedUser() throws IOException, InterruptedException {
+		long nowMs = new Date().getTime();
+		Collection<STUser> unverifiedUsers = listUnverifiedUsers();
+		for (STUser user: unverifiedUsers) {
+			long registrationMs = user.getRegistrationDate().getTime();
+			long diffHours = TimeUnit.HOURS.convert(nowMs - registrationMs, TimeUnit.MILLISECONDS);
+			if (diffHours > EMAIL_VERIFICATION_EXPIRATION_HOURS) { //in the unverified user is registered more than 48h ago, delete it
+				UsersManager.deleteUser(user);
+			}
+		}
+	}
 }

@@ -8,10 +8,10 @@ import java.io.UnsupportedEncodingException;
 
 public abstract class EmailService {
 
-	private String app;
+	private String appName;
 
 	EmailService(EmailApplicationContext ctx) {
-		app = ctx == EmailApplicationContext.VB ? "VocBench" : "PMKI";
+		appName = ctx == EmailApplicationContext.VB ? "VocBench" : "PMKI";
 	}
 
 	/**
@@ -32,9 +32,9 @@ public abstract class EmailService {
 	 * @param mailTo
 	 */
 	public void sendMailServiceConfigurationTest(String mailTo) throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
-		String text = "This message has been sent in order to check the configuration of the " + app + " email service.<br>" +
+		String text = "This message has been sent in order to check the configuration of the " + appName + " email service.<br>" +
 				"If you did not request to send this email, please ignore it.<br><br>Regards.";
-		EmailSender.sendMail(mailTo, app + " email service configuration check", text);
+		EmailSender.sendMail(mailTo, appName + " email service configuration check", text);
 	}
 
 	/**
@@ -52,7 +52,7 @@ public abstract class EmailService {
 				+ "<br>This is your new temporary password:"
 				+ "<br><br>"+ tempPassword
 				+ "<br><br>After the login we strongly recommend you to change the password.";
-		EmailSender.sendMail(user.getEmail(), app + " password reset", text);
+		EmailSender.sendMail(user.getEmail(), appName + " password reset", text);
 	}
 
 	/**
@@ -66,14 +66,14 @@ public abstract class EmailService {
 	public void sendResetPasswordRequestedMail(STUser user, String forgotPasswordLink)
 			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
 		String text = "Dear " + user.getGivenName() + " " + user.getFamilyName() + ","
-				+ "<br>we've received a request to reset the password for the " + app
+				+ "<br>we've received a request to reset the password for the " + appName
 				+ " account associated to this email address."
 				+ "<br>Click the link below to be redirected to the reset password page."
 				+ " This password reset is only valid for a limited time."
 				+ "<br><br>" + forgotPasswordLink
 				+ "<br><br>If you did not request a password reset, please ignore this email"
 				+ " or report this to the system administrator.";
-		EmailSender.sendMail(user.getEmail(), app + " password reset", text);
+		EmailSender.sendMail(user.getEmail(), appName + " password reset", text);
 	}
 
 

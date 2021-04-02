@@ -654,7 +654,7 @@ public class PMKI extends STServiceAdapter {
 				// registered
 			String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*?";
 			String tempUserPwd = RandomStringUtils.random(15, characters);
-			vbConnector.registerUser(email, tempUserPwd, givenName, familyName, organization);
+			vbConnector.createUser(email, tempUserPwd, givenName, familyName, organization);
 			vbConnector.enableUser(email);
 			userPassword = tempUserPwd;
 		} catch (IOException e) {

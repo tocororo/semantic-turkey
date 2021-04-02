@@ -1,5 +1,6 @@
 version 9.0.1
 date: dd/mm/yyyy
+  * Implemented support for email verification procedure during the user registration
   * added support for "no language tagged" labels in rendering engine
   * made the rendering of decomp:Component, ontolex:LexicalEntry, ontolex:Form and skosxl:Label of the choice
     of languages for rendering

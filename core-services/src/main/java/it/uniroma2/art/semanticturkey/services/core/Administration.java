@@ -14,6 +14,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.email.EmailApplicationContext;
 import it.uniroma2.art.semanticturkey.email.EmailService;
+import it.uniroma2.art.semanticturkey.email.EmailServiceFactory;
 import it.uniroma2.art.semanticturkey.email.PmkiEmailService;
 import it.uniroma2.art.semanticturkey.email.VbEmailService;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
@@ -182,7 +183,7 @@ public class Administration extends STServiceAdapter {
 	@STServiceOperation
 	@PreAuthorize("@auth.isAdmin()")
 	public void testEmailConfig(String mailTo, @Optional EmailApplicationContext appCtx) throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
-		EmailService emailService = (appCtx == EmailApplicationContext.PMKI) ?  new PmkiEmailService() : new VbEmailService();
+		EmailService emailService = EmailServiceFactory.getService(appCtx);
 		emailService.sendMailServiceConfigurationTest(mailTo);
 	}
 	

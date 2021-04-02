@@ -1,15 +1,12 @@
 package it.uniroma2.art.semanticturkey.security;
 
-import java.io.IOException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
 
-import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.stereotype.Component;
+import java.io.IOException;
 
 /**
  * 
@@ -22,7 +19,7 @@ import org.springframework.stereotype.Component;
 public class STAuthenticationEntryPoint implements AuthenticationEntryPoint {
 	
 	public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
-            throws IOException, ServletException {
+            throws IOException {
 
 		response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 		response.setContentType("text/plain");

@@ -1,5 +1,14 @@
 package it.uniroma2.art.semanticturkey.user;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.DateFormat;
@@ -9,17 +18,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 
 public class STUser implements UserDetails {
 
@@ -40,11 +38,12 @@ public class STUser implements UserDetails {
 	private UserStatus status;
 	private Collection<String> languageProficiencies;
 	private Map<IRI, String> customProps;
-	
+	private String verificationToken;
+
 	public static String USER_DATE_FORMAT = "yyyy-MM-dd";
 	
 	public STUser(String email, String password, String givenName, String familyName) {
-		this(SimpleValueFactory.getInstance().createIRI(UserVocabulary.USERSBASEURI, email), email, password, givenName, familyName);
+		this(generateUserIri(email), email, password, givenName, familyName);
 	}
 	
 	public STUser(IRI iri, String email, String password, String givenName, String familyName) {
@@ -214,6 +213,14 @@ public class STUser implements UserDetails {
 		customProps.remove(prop);
 	}
 
+	public String getVerificationToken() {
+		return verificationToken;
+	}
+
+	public void setVerificationToken(String verificationToken) {
+		this.verificationToken = verificationToken;
+	}
+
 	public boolean isAdmin() {
 		return UsersManager.getAdminEmailList().contains(this.email);
 	}
@@ -287,6 +294,10 @@ public class STUser implements UserDetails {
 			e.printStackTrace();
 		}
 		return replaced;
+	}
+
+	public static IRI generateUserIri(String email) {
+		return SimpleValueFactory.getInstance().createIRI(UserVocabulary.USERSBASEURI, email);
 	}
 
 }

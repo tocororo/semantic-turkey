@@ -31,47 +31,57 @@ public class VbEmailService extends EmailService {
 	}
 
 	/**
-	 * Sends an email to the registered user
+	 * Sends an email to a just registered user asking for email verification
 	 * @param user
+	 * @param vbHostAddress
+	 * @param token
 	 * @throws MessagingException
 	 * @throws UnsupportedEncodingException
 	 * @throws STPropertyAccessException
 	 */
-	public void sendRegistrationMailToUser(STUser user) throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
-		String text = STPropertiesManager.getSystemSetting(SETTING_MAIL_CONTENT_REGISTRATION_TO_USER);
-		if (text == null) {
-			text = "Dear {{user.givenName}} {{user.familyName}},<br>" +
-					"thank you for registering to VocBench. Your request has been received. " +
-					"Please wait for the administrator to approve it.<br>" +
-					"After the approval, you can log into VocBench with the e-mail {{user.email}} and your chosen password.<br>" +
-					"Thanks for your interest.<br><br>" +
-					"If you want to unregister, please send an email with your e-mail address and the subject: " +
-					"'<i>VocBench - Unregister</i>' to one of the administrators ({{adminList}}).<br><br>" +
-					"Regards,<br>The VocBench Team.";
-		}
+	public void sendRegistrationVerificationMailToUser(STUser user, String vbHostAddress, String token)
+			throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
+		String text = "Dear {{user.givenName}} {{user.familyName}},<br>" +
+				"thank you for registering to VocBench. " +
+				"Before being able to use your account you need to verify that this is your email address by clicking on the link below:<br><br>" +
+				"{{verificationLink}}<br><br>" +
+				"The above link will expire after " + UsersManager.EMAIL_VERIFICATION_EXPIRATION_HOURS + " hours. " +
+				"If this occurs, you can register again and then activate your account using the activation link in the new email.<br>" +
+				"If you receive this email without signing up, please ignore this message<br><br>" +
+				"Regards,<br>The VocBench Team.";
 		text = replaceUserPlaceholders(text, user);
-		text = replaceGenericPlaceholders(text);
+
+		if (!vbHostAddress.endsWith("/")) {
+			vbHostAddress += "/";
+		}
+		String verificationUrl = vbHostAddress + "#/VerifyEmail?token=" + token + "&email=" + user.getEmail() ;
+		String verificationLink = "<a href=\"" + verificationUrl + "\">Verifiy</a>";
+		text = text.replace("{{verificationLink}}", verificationLink);
+
 		EmailSender.sendMail(user.getEmail(), "VocBench registration", text);
 	}
 
 	/**
-	 * Sends an email to a user to inform that his/her account has been enabled
+	 * Sends an email to the verified user
 	 * @param user
 	 * @throws MessagingException
 	 * @throws UnsupportedEncodingException
 	 * @throws STPropertyAccessException
 	 */
-	public void sendEnabledMailToUser(STUser user) throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
-		String text = STPropertiesManager.getSystemSetting(SETTING_MAIL_CONTENT_ENABLED);
+	public void sendVerifiedMailToUser(STUser user) throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
+		String text = STPropertiesManager.getSystemSetting(SETTING_MAIL_CONTENT_REGISTRATION_TO_USER);
 		if (text == null) {
 			text = "Dear {{user.givenName}} {{user.familyName}},<br>" +
-					"the administrator has enabled your account. You can now log into VocBench with the email " +
-					"<i>{{user.email}}</i> and your chosen password.<br><br>" +
+					"your email has been verified. Your registration has been now notified to the administrator. " +
+					"Please wait for the administrator to approve it.<br>" +
+					"After the approval, you can log into VocBench with the e-mail {{user.email}} and your chosen password.<br>" +
+					"Thanks for your interest.<br><br>" +
+					"If you want to unregister, please contact one of the administrators ({{adminList}}).<br><br>" +
 					"Regards,<br>The VocBench Team.";
 		}
 		text = replaceUserPlaceholders(text, user);
 		text = replaceGenericPlaceholders(text);
-		EmailSender.sendMail(user.getEmail(), "VocBench account enabled", text);
+		EmailSender.sendMail(user.getEmail(), "VocBench email verified", text);
 	}
 
 	/**
@@ -96,8 +106,28 @@ public class VbEmailService extends EmailService {
 			text = replaceUserPlaceholders(text, user);
 			text = replaceAdminPlaceholders(text, admin);
 			text = replaceGenericPlaceholders(text);
-			EmailSender.sendMail(adminEmail, "VocBench registration", text);
+			EmailSender.sendMail(adminEmail, "VocBench: new user registered", text);
 		}
+	}
+
+	/**
+	 * Sends an email to a user to inform that his/her account has been enabled
+	 * @param user
+	 * @throws MessagingException
+	 * @throws UnsupportedEncodingException
+	 * @throws STPropertyAccessException
+	 */
+	public void sendEnabledMailToUser(STUser user) throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
+		String text = STPropertiesManager.getSystemSetting(SETTING_MAIL_CONTENT_ENABLED);
+		if (text == null) {
+			text = "Dear {{user.givenName}} {{user.familyName}},<br>" +
+					"the administrator has enabled your account. You can now log into VocBench with the email " +
+					"<i>{{user.email}}</i> and your chosen password.<br><br>" +
+					"Regards,<br>The VocBench Team.";
+		}
+		text = replaceUserPlaceholders(text, user);
+		text = replaceGenericPlaceholders(text);
+		EmailSender.sendMail(user.getEmail(), "VocBench account enabled", text);
 	}
 
 	/**
