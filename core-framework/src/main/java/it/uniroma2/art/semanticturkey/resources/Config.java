@@ -83,7 +83,7 @@ public class Config {
 			return new File(choice);
 	}
 
-	public static void initialize(File propFile) throws FileNotFoundException, IOException {
+	public static void initialize(File propFile) throws IOException {
 		Config.propFile = propFile;
 		stProperties = new Properties();
 		stProperties.load(new FileInputStream(propFile));
@@ -94,10 +94,7 @@ public class Config {
 	 */
 	public static boolean isAdminStatus() {
 		String adminStatusString = stProperties.getProperty(adminStatusPropName);
-		if (adminStatusString.equals("true"))
-			return true;
-		else
-			return false;
+		return adminStatusString.equals("true");
 	}
 
 	/**
@@ -147,7 +144,7 @@ public class Config {
 		return new File(stProperties.getProperty(dataDirPropName));
 	}
 
-	public static void setDataDirProp(String dataDirPath) throws ConfigurationUpdateException {
+	public static void setDataDirProp(String dataDirPath) {
 		stProperties.setProperty(dataDirPropName, dataDirPath);
 		updatePropertyFile();
 	}

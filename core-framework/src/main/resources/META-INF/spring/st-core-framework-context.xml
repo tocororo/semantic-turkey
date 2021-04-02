@@ -42,12 +42,12 @@
 	<bean id="resourceMetadataManager"
 		class="it.uniroma2.art.semanticturkey.versioning.ResourceMetadataManager" />
 	<osgi:service ref="resourceMetadataManager"
-				  interface="it.uniroma2.art.semanticturkey.versioning.ResourceMetadataManager"></osgi:service>
+  		interface="it.uniroma2.art.semanticturkey.versioning.ResourceMetadataManager"/>
 
 	<bean id="resourceChangeNotificationManager"
 		class="it.uniroma2.art.semanticturkey.notification.ResourceChangeNotificationManager" />
 	<osgi:service ref="resourceChangeNotificationManager"
-		interface="it.uniroma2.art.semanticturkey.notification.ResourceChangeNotificationManager"></osgi:service>
+		interface="it.uniroma2.art.semanticturkey.notification.ResourceChangeNotificationManager"/>
 
 	<!-- Imports the MAPALE façade -->
 	<osgi:reference id="mediationFramework"
