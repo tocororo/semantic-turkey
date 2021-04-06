@@ -23,6 +23,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -614,6 +616,7 @@ public class UsersManager {
 		if (user != null) {
 			user.setStatus(UserStatus.NEW);
 			user.setVerificationToken(null);
+			user.setActivationToken(new BigInteger(130, new SecureRandom()).toString(32));
 			createOrUpdateUserDetailsFolder(user); // serialize user details
 		} else {
 			throw new EmailVerificationExpiredException(email);
@@ -634,6 +637,19 @@ public class UsersManager {
 			if (diffHours > EMAIL_VERIFICATION_EXPIRATION_HOURS) { //in the unverified user is registered more than 48h ago, delete it
 				UsersManager.deleteUser(user);
 			}
+		}
+	}
+
+	public static void activateNewRegisteredUser(String email, String token) throws UserException {
+		STUser user = userList.stream()
+				.filter(u -> u.getStatus().equals(UserStatus.NEW) && u.getEmail().equals(email) && u.getActivationToken().equals(token))
+				.findAny().orElse(null);
+		if (user != null) {
+			user.setStatus(UserStatus.ACTIVE);
+			user.setActivationToken(null);
+			createOrUpdateUserDetailsFolder(user); // serialize user details
+		} else {
+			throw new UserActivationExpiredException(email);
 		}
 	}
 }

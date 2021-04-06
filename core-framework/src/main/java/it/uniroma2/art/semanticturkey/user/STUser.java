@@ -39,6 +39,7 @@ public class STUser implements UserDetails {
 	private Collection<String> languageProficiencies;
 	private Map<IRI, String> customProps;
 	private String verificationToken;
+	private String activationToken;
 
 	public static String USER_DATE_FORMAT = "yyyy-MM-dd";
 	
@@ -219,6 +220,14 @@ public class STUser implements UserDetails {
 
 	public void setVerificationToken(String verificationToken) {
 		this.verificationToken = verificationToken;
+	}
+
+	public String getActivationToken() {
+		return activationToken;
+	}
+
+	public void setActivationToken(String activationToken) {
+		this.activationToken = activationToken;
 	}
 
 	public boolean isAdmin() {

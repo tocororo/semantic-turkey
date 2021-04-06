@@ -57,6 +57,9 @@
 			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/verifyUserEmail"
 			access="permitAll" />
 		<intercept-url
+			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/activateRegisteredUser"
+			access="permitAll" />
+		<intercept-url
 			pattern="/it.uniroma2.art.semanticturkey/st-core-services/PreferencesSettings/getStartupSystemSettings"
 			access="permitAll" />
 		<intercept-url

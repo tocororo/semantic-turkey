@@ -315,7 +315,7 @@ public class Users extends STServiceAdapter {
 			UsersManager.registerUser(user);
 			//only if registration succeeds (no duplicated email/iri exception) sends verification email
 			try {
-				new VbEmailService().sendRegistrationVerificationMailToUser(user, vbHostAddress, user.getVerificationToken());
+				new VbEmailService().sendRegistrationVerificationMailToUser(user, vbHostAddress);
 			} catch (MessagingException | UnsupportedEncodingException | STPropertyAccessException e) {
 				//if exception is raised while sending the verification email, undo the user creation
 				UsersManager.deleteUser(user);
@@ -326,13 +326,23 @@ public class Users extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.POST)
-	public void verifyUserEmail(String email, String token) throws UserException, UnsupportedEncodingException, MessagingException, STPropertyAccessException {
+	public void verifyUserEmail(String email, String token, String vbHostAddress)
+			throws UserException, IOException, MessagingException, STPropertyAccessException, InterruptedException {
+		UsersManager.clearExpiredUnverifiedUser();
 		UsersManager.verifyUser(email, token);
 		STUser user = UsersManager.getUser(email);
-		VbEmailService emailService = new VbEmailService();
 		//user now verified => notify the admin and the user itself
+		VbEmailService emailService = new VbEmailService();
 		emailService.sendVerifiedMailToUser(user);
-		emailService.sendRegistrationMailToAdmin(user);
+		emailService.sendRegistrationMailToAdmin(user, vbHostAddress);
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	public void activateRegisteredUser(String email, String token) throws UserException, UnsupportedEncodingException, MessagingException, STPropertyAccessException {
+		UsersManager.activateNewRegisteredUser(email, token);
+		STUser user = UsersManager.getUser(email);
+		VbEmailService emailService = new VbEmailService();
+		emailService.sendEnabledMailToUser(user);
 	}
 	
 	/**
@@ -495,15 +505,15 @@ public class Users extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('um(user)', 'C')")
-	public ObjectNode enableUser(String email, boolean enabled, @Optional (defaultValue = "true") boolean sendNotification)
-			throws UserException, ProjectBindingException {
+	public ObjectNode enableUser(String email, boolean enabled) throws UserException, ProjectBindingException {
 		if (UsersManager.getLoggedUser().getEmail().equals(email)) {
 			throw new ProjectBindingException(Users.class.getName() + ".messages.cant_disable_current_user", null);
 		}
 		STUser user = UsersManager.getUser(email);
 		if (enabled) {
+			UserStatus oldStatus = user.getStatus();
 			UsersManager.updateUserStatus(user, UserStatus.ACTIVE);
-			if (sendNotification) {
+			if (oldStatus.equals(UserStatus.NEW)) { //if enabled for the first time send notification
 				try {
 					new VbEmailService().sendEnabledMailToUser(user);
 				} catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {

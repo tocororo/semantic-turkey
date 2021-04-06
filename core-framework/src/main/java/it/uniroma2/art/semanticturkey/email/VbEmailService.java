@@ -14,7 +14,6 @@ public class VbEmailService extends EmailService {
 
 	//Settings
 	public static final String SETTING_MAIL_CONTENT_REGISTRATION_TO_USER = "mail.content.user_registered.user";
-	public static final String SETTING_MAIL_CONTENT_REGISTRATION_TO_ADMIN = "mail.content.user_registered.admin";
 	public static final String SETTING_MAIL_CONTENT_ENABLED = "mail.content.user_enabled";
 
 	//placeholders
@@ -26,6 +25,10 @@ public class VbEmailService extends EmailService {
 	private static final String ADMIN_FAMILY_NAME_PLACEHOLDER = "{{admin.familyName}}";
 	private static final String ADMIN_LIST_PLACEHOLDER = "{{adminList}}";
 
+	private static final String VB_ACTIONS_ROUTE = "UserActions";
+	private static final String VB_ACTIONS_VERIFY = "verify";
+	private static final String VB_ACTIONS_ACTIVATE = "activate";
+
 	public VbEmailService() {
 		super(EmailApplicationContext.VB);
 	}
@@ -34,27 +37,29 @@ public class VbEmailService extends EmailService {
 	 * Sends an email to a just registered user asking for email verification
 	 * @param user
 	 * @param vbHostAddress
-	 * @param token
 	 * @throws MessagingException
 	 * @throws UnsupportedEncodingException
 	 * @throws STPropertyAccessException
 	 */
-	public void sendRegistrationVerificationMailToUser(STUser user, String vbHostAddress, String token)
+	public void sendRegistrationVerificationMailToUser(STUser user, String vbHostAddress)
 			throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
 		String text = "Dear {{user.givenName}} {{user.familyName}},<br>" +
 				"thank you for registering to VocBench. " +
-				"Before being able to use your account you need to verify that this is your email address by clicking on the link below:<br><br>" +
+				"In order to complete the registration you need to verify your email address by clicking on the link below:<br><br>" +
 				"{{verificationLink}}<br><br>" +
 				"The above link will expire after " + UsersManager.EMAIL_VERIFICATION_EXPIRATION_HOURS + " hours. " +
 				"If this occurs, you can register again and then activate your account using the activation link in the new email.<br>" +
 				"If you receive this email without signing up, please ignore this message<br><br>" +
-				"Regards,<br>The VocBench Team.";
+				"Regards,<br>The VocBench team.";
 		text = replaceUserPlaceholders(text, user);
 
 		if (!vbHostAddress.endsWith("/")) {
 			vbHostAddress += "/";
 		}
-		String verificationUrl = vbHostAddress + "#/VerifyEmail?token=" + token + "&email=" + user.getEmail() ;
+		String verificationUrl = vbHostAddress + "#/" + VB_ACTIONS_ROUTE +
+				"?action=" + VB_ACTIONS_VERIFY +
+				"&token=" + user.getVerificationToken() +
+				"&email=" + user.getEmail() ;
 		String verificationLink = "<a href=\"" + verificationUrl + "\">Verifiy</a>";
 		text = text.replace("{{verificationLink}}", verificationLink);
 
@@ -77,7 +82,7 @@ public class VbEmailService extends EmailService {
 					"After the approval, you can log into VocBench with the e-mail {{user.email}} and your chosen password.<br>" +
 					"Thanks for your interest.<br><br>" +
 					"If you want to unregister, please contact one of the administrators ({{adminList}}).<br><br>" +
-					"Regards,<br>The VocBench Team.";
+					"Regards,<br>The VocBench team.";
 		}
 		text = replaceUserPlaceholders(text, user);
 		text = replaceGenericPlaceholders(text);
@@ -90,22 +95,32 @@ public class VbEmailService extends EmailService {
 	 * @throws UnsupportedEncodingException
 	 * @throws STPropertyAccessException
 	 */
-	public void sendRegistrationMailToAdmin(STUser user)
+	public void sendRegistrationMailToAdmin(STUser user, String vbHostAddress)
 			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException, UserException {
 		for (String adminEmail: UsersManager.getAdminEmailList()) {
 			STUser admin = UsersManager.getUser(adminEmail);
-			String text = STPropertiesManager.getSystemSetting(SETTING_MAIL_CONTENT_REGISTRATION_TO_USER);
-			if (text == null) {
-				text = "Dear {{admin.givenName}} {{admin.familyName}},<br>" +
-						"there is a new user registered to VocBench.<br>" +
-						"Given Name: <i>{{user.givenName}}</i><br>" +
-						"Family Name: <i>{{user.familyName}}</i><br>" +
-						"Email: <i>{{user.email}}</i><br>" +
-						"Please, activate the account.<br><br>Regards.";
-			}
+			String text = "Dear {{admin.givenName}} {{admin.familyName}},<br>" +
+					"there is a new user registered to VocBench.<br>" +
+					"Given Name: <i>{{user.givenName}}</i><br>" +
+					"Family Name: <i>{{user.familyName}}</i><br>" +
+					"Email: <i>{{user.email}}</i><br>" +
+					"You can activate the account from the administration page in VB or by clicking on the link below:<br><br>" +
+					"{{activationLink}}<br><br>" +
+					"Regards,<br>The VocBench team.";
 			text = replaceUserPlaceholders(text, user);
 			text = replaceAdminPlaceholders(text, admin);
 			text = replaceGenericPlaceholders(text);
+
+			if (!vbHostAddress.endsWith("/")) {
+				vbHostAddress += "/";
+			}
+			String activationUrl = vbHostAddress + "#/" + VB_ACTIONS_ROUTE +
+					"?action=" + VB_ACTIONS_ACTIVATE +
+					"&token=" + user.getActivationToken() +
+					"&email=" + user.getEmail();
+			String activationLink = "<a href=\"" + activationUrl + "\">Activate</a>";
+			text = text.replace("{{activationLink}}", activationLink);
+
 			EmailSender.sendMail(adminEmail, "VocBench: new user registered", text);
 		}
 	}
@@ -123,7 +138,7 @@ public class VbEmailService extends EmailService {
 			text = "Dear {{user.givenName}} {{user.familyName}},<br>" +
 					"the administrator has enabled your account. You can now log into VocBench with the email " +
 					"<i>{{user.email}}</i> and your chosen password.<br><br>" +
-					"Regards,<br>The VocBench Team.";
+					"Regards,<br>The VocBench team.";
 		}
 		text = replaceUserPlaceholders(text, user);
 		text = replaceGenericPlaceholders(text);
