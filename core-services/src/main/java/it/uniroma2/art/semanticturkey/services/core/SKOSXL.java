@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import it.uniroma2.art.semanticturkey.exceptions.AltPrefLabelClashException;
+import it.uniroma2.art.semanticturkey.exceptions.PrefPrefLabelClashException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -28,7 +30,6 @@ import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingLiteralFormForResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.PrefAltLabelClashException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
@@ -226,7 +227,7 @@ public class SKOSXL extends STServiceAdapter {
 	 *            bnode or uri: if uri a URI generator is used to create the URI for the xlabel
 	 * @return
 	 * @throws URIGenerationException 
-	 * @throws AlreadyExistingLiteralFormForResourceException 
+	 * @throws PrefPrefLabelClashException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
@@ -236,7 +237,7 @@ public class SKOSXL extends STServiceAdapter {
 	public void addAltLabel(@LocallyDefined @Modified IRI concept, @LanguageTaggedString Literal literal,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2008/05/skos-xl#Label") IRI labelCls,
 			XLabelCreationMode mode) 
-			throws URIGenerationException, AlreadyExistingLiteralFormForResourceException {
+			throws URIGenerationException, AltPrefLabelClashException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		checkIfAddAltLabelIsPossible(repoConnection, literal, concept);
 		Model modelAdditions = new LinkedHashModel();
@@ -366,16 +367,20 @@ public class SKOSXL extends STServiceAdapter {
 	@DisplayName("set preferred label")
 	@TermCreation(label="literal", concept="concept", facet=Facets.PREF_LABEL)
 	public void setPrefLabel(@LocallyDefined @Modified IRI concept, @LanguageTaggedString Literal literal,
-			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2008/05/skos-xl#Label") IRI labelCls,
-			XLabelCreationMode mode, @Optional(defaultValue="true") boolean checkExistingAltLabel) 
-					throws URIGenerationException, AlreadyExistingLiteralFormForResourceException, PrefAltLabelClashException{
+			 @Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2008/05/skos-xl#Label") IRI labelCls,
+			 XLabelCreationMode mode, @Optional(defaultValue="true") boolean checkExistingAltLabel,
+			 @Optional(defaultValue="true") boolean checkExistingPrefLabel)
+					throws URIGenerationException, PrefPrefLabelClashException, PrefAltLabelClashException{
 		RepositoryConnection repoConnection = getManagedConnection();
+		if(checkExistingPrefLabel){
+			List<IRI> conceptSchemeList = SKOS.getAllSchemesForConcept(concept, repoConnection);
+			checkIfAddPrefLabelIsPossible(repoConnection, literal, false, conceptSchemeList);
+		}
 		if(checkExistingAltLabel) {
 			checkIfPrefAltLabelClash(repoConnection, literal, concept);
 		}
 		
-		List<IRI> conceptSchemeList = SKOS.getAllSchemesForConcept(concept, repoConnection);
-		checkIfAddPrefLabelIsPossible(repoConnection, literal, concept, false, conceptSchemeList);
+
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		
@@ -537,14 +542,13 @@ public class SKOSXL extends STServiceAdapter {
 		
 	}
 	
-	public static void checkIfAddPrefLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
-			Resource resource, boolean newResource, List<IRI> conceptSchemes) 
-					throws AlreadyExistingLiteralFormForResourceException{
-		//see if there is no other resource that has a prefLabel with the same Literal or that the resource 
-		// to which the Literal will be added has not already an alternative label with the input
+	public static void checkIfAddPrefLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel,
+													 boolean newResource, List<IRI> conceptSchemes)
+					throws PrefPrefLabelClashException {
+		//see if there is no other resource that has a prefLabel with the same Literal in the same Scheme
 		// @formatter:off
-		String query = "ASK {"+
-				"\n{?resource "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL)+" "+
+		String query = "SELECT ?resource {"+
+				"\n?resource "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.PREF_LABEL)+" "+
 					"?xlabel ."+
 				"\n?xlabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" "+
 					NTriplesUtil.toNTriplesString(newLabel)+" .";
@@ -571,25 +575,21 @@ public class SKOSXL extends STServiceAdapter {
 				query+=")";
 			}
 		}
-		query+="\n}"+
-				"\nUNION"+
-				"\n{"+NTriplesUtil.toNTriplesString(resource)+" "+
-					NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL)+" "+
-					"?xlabel ."+
-				"\n?xlabel "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.LITERAL_FORM)+" "+
-					NTriplesUtil.toNTriplesString(newLabel)+" . }";	
-				//see the type to check
-		query+="\n}";
+		query+="\n}" +
+		"\nLIMIT 1";
 		// @formatter:on
 		logger.debug("query: " + query);
-		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
-		booleanQuery.setIncludeInferred(false);
-		boolean check = booleanQuery.evaluate();
-		if(check){
-			throw new AlreadyExistingLiteralFormForResourceException(
+
+		TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+		if(tupleQueryResult.hasNext()){
+			Value otherResource = tupleQueryResult.next().getValue("resource");
+			throw new PrefPrefLabelClashException(
 					newResource ? MessageKeys.exceptionUnableToAddPrefLabelForNew$message
 							: MessageKeys.exceptionUnableToAddPrefLabel$message,
-					new Object[] { NTriplesUtil.toNTriplesString(newLabel) });
+					new Object[] { NTriplesUtil.toNTriplesString(newLabel),
+							NTriplesUtil.toNTriplesString(otherResource) });
 		}
 	}
 	
@@ -613,7 +613,7 @@ public class SKOSXL extends STServiceAdapter {
 	}
 	
 	public static void checkIfAddAltLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
-			Resource resource) throws AlreadyExistingLiteralFormForResourceException{
+			Resource resource) throws AltPrefLabelClashException {
 		//see if the resource to which the Literal will be added has not already a pref label or an  
 		// alternative label with the input
 		String query = "ASK {"+
@@ -634,7 +634,7 @@ public class SKOSXL extends STServiceAdapter {
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
-			throw new AlreadyExistingLiteralFormForResourceException(
+			throw new AltPrefLabelClashException(
 					MessageKeys.exceptionUnableToAddAltLabel$message,
 					new Object[] { NTriplesUtil.toNTriplesString(newLabel) });
 		}

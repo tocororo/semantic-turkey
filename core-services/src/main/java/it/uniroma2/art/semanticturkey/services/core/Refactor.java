@@ -8,12 +8,12 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.AlreadyExistingLiteralFormForResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.NonExistingLiteralFormForResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.NonExistingLiteralFormForResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.PrefPrefLabelClashException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -749,7 +749,7 @@ public class Refactor extends STServiceAdapter {
 			@LocallyDefined Resource xLabel, @LocallyDefined Resource targetResource,
 			@Optional(defaultValue = "false") Boolean force)
 			throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException,
-			NonExistingLiteralFormForResourceException, AlreadyExistingLiteralFormForResourceException {
+			NonExistingLiteralFormForResourceException, PrefPrefLabelClashException {
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		RepositoryConnection repoConnection = getManagedConnection();
@@ -775,7 +775,7 @@ public class Refactor extends STServiceAdapter {
 					Value otherConcept = bindingSet.getValue("otherConcept");
 					Value literal = bindingSet.getValue("literalForm");
 					if (!force) {
-						throw new AlreadyExistingLiteralFormForResourceException(
+						throw new PrefPrefLabelClashException(
 								MessageKeys.exceptionMoveXLabelAlreadyExisting$message,
 								new Object[] { NTriplesUtil.toNTriplesString(literal),
 										NTriplesUtil.toNTriplesString(targetResource),
@@ -806,7 +806,7 @@ public class Refactor extends STServiceAdapter {
 					BindingSet bindingSet = tupleQueryResult.next();
 					if (!force) {
 						Literal literal = (Literal) bindingSet.getValue("literalForm1");
-						throw new AlreadyExistingLiteralFormForResourceException(
+						throw new PrefPrefLabelClashException(
 								MessageKeys.exceptionMoveXLabelAlreadyExisting2$message,
 								new Object[] { NTriplesUtil.toNTriplesString(literal),
 										NTriplesUtil.toNTriplesString(targetResource),
