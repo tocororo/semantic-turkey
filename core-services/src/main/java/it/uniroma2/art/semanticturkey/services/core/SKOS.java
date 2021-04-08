@@ -1,51 +1,5 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.validation.constraints.Min;
-
-import it.uniroma2.art.semanticturkey.exceptions.AltPrefLabelClashException;
-import it.uniroma2.art.semanticturkey.exceptions.CODAException;
-import it.uniroma2.art.semanticturkey.exceptions.CollectionWithNestedCollectionsException;
-import it.uniroma2.art.semanticturkey.exceptions.ConceptWithNarrowerConceptsException;
-import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
-import it.uniroma2.art.semanticturkey.exceptions.ElementAlreadyContainedInCollectionException;
-import it.uniroma2.art.semanticturkey.exceptions.ElementNotInCollectionException;
-import it.uniroma2.art.semanticturkey.exceptions.EmptyCollectionException;
-import it.uniroma2.art.semanticturkey.exceptions.PrefAltLabelClashException;
-import it.uniroma2.art.semanticturkey.exceptions.PrefPrefLabelClashException;
-import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.BooleanQuery;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryResult;
-import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.access.prepost.PreAuthorize;
-
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
@@ -59,6 +13,16 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.SpecialValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import it.uniroma2.art.semanticturkey.exceptions.CollectionWithNestedCollectionsException;
+import it.uniroma2.art.semanticturkey.exceptions.ConceptWithNarrowerConceptsException;
+import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
+import it.uniroma2.art.semanticturkey.exceptions.ElementAlreadyContainedInCollectionException;
+import it.uniroma2.art.semanticturkey.exceptions.ElementNotInCollectionException;
+import it.uniroma2.art.semanticturkey.exceptions.EmptyCollectionException;
+import it.uniroma2.art.semanticturkey.exceptions.PrefAltLabelClashException;
+import it.uniroma2.art.semanticturkey.exceptions.PrefPrefLabelClashException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -85,6 +49,39 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.utilities.TurtleHelp;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import javax.validation.constraints.Min;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class provides services for manipulating SKOS constructs.
@@ -707,7 +704,7 @@ public class SKOS extends STServiceAdapter {
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 		
-		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newConceptIRI);
+		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<>(newConceptIRI);
 		annotatedValue.setAttribute("role", RDFResourceRole.concept.name());
 		annotatedValue.setAttribute("explicit", true);
 		return annotatedValue; 
@@ -765,7 +762,7 @@ public class SKOS extends STServiceAdapter {
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 		
-		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newSchemeIRI);
+		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<>(newSchemeIRI);
 		annotatedValue.setAttribute("role", RDFResourceRole.conceptScheme.name());
 		annotatedValue.setAttribute("explicit", true);
 		return annotatedValue; 
@@ -853,7 +850,7 @@ public class SKOS extends STServiceAdapter {
 	@DisplayName("add alternative label")
 	@TermCreation(label="literal", concept="concept", facet=Facets.ALT_LABEL)
 	public void addAltLabel(@LocallyDefined @Modified IRI concept,
-			@LanguageTaggedString Literal literal) throws AltPrefLabelClashException {
+			@LanguageTaggedString Literal literal) throws PrefAltLabelClashException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		checkIfAddAltLabelIsPossible(repoConnection, literal, concept);
 		Model modelAdditions = new LinkedHashModel();
@@ -1402,7 +1399,7 @@ public class SKOS extends STServiceAdapter {
 			while (repositoryResult.hasNext()) {
 				Value value = repositoryResult.next().getObject();
 				if (value instanceof Literal) {
-					AnnotatedValue<Literal> annotatedValue = new AnnotatedValue<Literal>((Literal) value);
+					AnnotatedValue<Literal> annotatedValue = new AnnotatedValue<>((Literal) value);
 					literalList.add(annotatedValue);
 				}
 			}
@@ -1721,7 +1718,7 @@ public class SKOS extends STServiceAdapter {
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 		
-		AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(newCollectionRes);
+		AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<>(newCollectionRes);
 		if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION)) {
 			annotatedValue.setAttribute("role", RDFResourceRole.skosCollection.name());
 		} else { //ORDERED
@@ -2399,7 +2396,7 @@ public class SKOS extends STServiceAdapter {
 	}
 	
 	public static void checkIfAddAltLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
-			Resource resource) throws AltPrefLabelClashException {
+			Resource resource) throws PrefAltLabelClashException {
 		//see if the resource to which the Literal will be added has not already a pref label with this value
 		String query = "ASK {"+
 				"\n"+NTriplesUtil.toNTriplesString(resource)+" "+
@@ -2410,7 +2407,7 @@ public class SKOS extends STServiceAdapter {
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
-			throw new AltPrefLabelClashException(
+			throw new PrefAltLabelClashException(
 					MessageKeys.exceptionUnableToAddAltLabel$message,
 					new Object[] { NTriplesUtil.toNTriplesString(newLabel) });
 		}
@@ -2538,7 +2535,7 @@ public class SKOS extends STServiceAdapter {
 			return "";
 		}
 		String queryPart = "";
-		if(schemeFilter.toLowerCase().equals("and")){
+		if(schemeFilter.equalsIgnoreCase("and")){
 			if(forInScheme){
 				queryPart+= "\n"+propForInScheme+" rdfs:subPropertyOf* skos:inScheme .";
 				for(IRI scheme : schemes){

@@ -10,10 +10,9 @@ import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
 import it.uniroma2.art.semanticturkey.exceptions.NonExistingLiteralFormForResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.PrefPrefLabelClashException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -75,7 +74,7 @@ public class Refactor extends STServiceAdapter {
 		public static final String exceptionRenameToDuplicated$message = keyBase + ".exceptionRenameToDuplicated.message";
 		public static final String exceptionMoveXLabelAlreadyExisting$message = keyBase + ".exceptionMoveXLabelAlreadyExisting.message";
 		public static final String exceptionMoveXLabelAlreadyExisting2$message = keyBase + ".exceptionMoveXLabelAlreadyExisting2.message";
-	};
+	}
 
 	@STServiceOperation
 	@Write
@@ -629,7 +628,7 @@ public class Refactor extends STServiceAdapter {
 			@LocallyDefined Resource xLabel, @Optional @LocallyDefined IRI oldConcept,
 			@Optional @LocallyDefined @Selection Resource broaderConcept,
 			@LocallyDefinedResources List<IRI> conceptSchemes, @Optional CustomFormValue customFormValue)
-			throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException,
+			throws URIGenerationException, CustomFormException, CODAException,
 			NonExistingLiteralFormForResourceException {
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -748,14 +747,13 @@ public class Refactor extends STServiceAdapter {
 	public void moveXLabelToResource(@LocallyDefined Resource sourceResource, IRI predicate,
 			@LocallyDefined Resource xLabel, @LocallyDefined Resource targetResource,
 			@Optional(defaultValue = "false") Boolean force)
-			throws URIGenerationException, ProjectInconsistentException, CustomFormException, CODAException,
-			NonExistingLiteralFormForResourceException, PrefPrefLabelClashException {
+			throws PrefPrefLabelClashException {
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 		RepositoryConnection repoConnection = getManagedConnection();
 
 		// first found out the predicate used in the sourceResource
-		IRI oldPredicate = (IRI) repoConnection.getStatements(sourceResource, null, xLabel).next()
+		IRI oldPredicate = repoConnection.getStatements(sourceResource, null, xLabel).next()
 				.getPredicate();
 
 		// if the new predicate is skosxl:prefLabel (and the old one is not skosxl:prefLabel) check that

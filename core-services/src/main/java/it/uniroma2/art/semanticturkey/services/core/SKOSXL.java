@@ -1,13 +1,27 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import it.uniroma2.art.semanticturkey.exceptions.AltPrefLabelClashException;
+import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.PrefAltLabelClashException;
 import it.uniroma2.art.semanticturkey.exceptions.PrefPrefLabelClashException;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
+import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.DisplayName;
+import it.uniroma2.art.semanticturkey.services.annotations.Modified;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation;
+import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation.Facets;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
+import it.uniroma2.art.semanticturkey.services.core.SKOS.MessageKeys;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -26,27 +40,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
-import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
-import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.PrefAltLabelClashException;
-import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
-import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.DisplayName;
-import it.uniroma2.art.semanticturkey.services.annotations.Modified;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
-import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation;
-import it.uniroma2.art.semanticturkey.services.annotations.logging.TermCreation.Facets;
-import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
-import it.uniroma2.art.semanticturkey.services.core.SKOS.MessageKeys;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class provides services for manipulating SKOSXL constructs.
@@ -64,7 +62,7 @@ public class SKOSXL extends STServiceAdapter {
 
 	private static final Logger logger = LoggerFactory.getLogger(SKOSXL.class);
 	
-	public static enum XLabelCreationMode {
+	public enum XLabelCreationMode {
 		bnode, uri
 	}
 	
@@ -135,7 +133,7 @@ public class SKOSXL extends STServiceAdapter {
 			Resource prefLabel = (Resource) bindingSet.getBinding("prefLabel").getValue();
 			Literal label = (Literal) bindingSet.getBinding("label").getValue();
 			if(lang.equals("*") || (label.getLanguage().isPresent() && label.getLanguage().get().equals(lang))){
-				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(prefLabel);
+				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<>(prefLabel);
 				annotatedValue.setAttribute("role", RDFResourceRole.xLabel.name());
 				if(label.getLanguage().isPresent()){
 					annotatedValue.setAttribute("lang", label.getLanguage().get());
@@ -170,7 +168,7 @@ public class SKOSXL extends STServiceAdapter {
 			Resource prefLabel = (Resource) bindingSet.getBinding("prefLabel").getValue();
 			Literal label = (Literal) bindingSet.getBinding("label").getValue();
 			if(lang.equals("*") || (label.getLanguage().isPresent() && label.getLanguage().get().equals(lang))){
-				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(prefLabel);
+				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<>(prefLabel);
 				annotatedValue.setAttribute("role", RDFResourceRole.xLabel.name());
 				if(label.getLanguage().isPresent()){
 					annotatedValue.setAttribute("lang", label.getLanguage().get());
@@ -205,7 +203,7 @@ public class SKOSXL extends STServiceAdapter {
 			Resource prefLabel = (Resource) bindingSet.getBinding("prefLabel").getValue();
 			Literal label = (Literal) bindingSet.getBinding("label").getValue();
 			if(lang.equals("*") || (label.getLanguage().isPresent() && label.getLanguage().get().equals(lang))){
-				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(prefLabel);
+				AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<>(prefLabel);
 				annotatedValue.setAttribute("role", RDFResourceRole.xLabel.name());
 				if(label.getLanguage().isPresent()){
 					annotatedValue.setAttribute("lang", label.getLanguage().get());
@@ -237,7 +235,7 @@ public class SKOSXL extends STServiceAdapter {
 	public void addAltLabel(@LocallyDefined @Modified IRI concept, @LanguageTaggedString Literal literal,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2008/05/skos-xl#Label") IRI labelCls,
 			XLabelCreationMode mode) 
-			throws URIGenerationException, AltPrefLabelClashException {
+			throws URIGenerationException, PrefAltLabelClashException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		checkIfAddAltLabelIsPossible(repoConnection, literal, concept);
 		Model modelAdditions = new LinkedHashModel();
@@ -613,7 +611,7 @@ public class SKOSXL extends STServiceAdapter {
 	}
 	
 	public static void checkIfAddAltLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
-			Resource resource) throws AltPrefLabelClashException {
+			Resource resource) throws PrefAltLabelClashException {
 		//see if the resource to which the Literal will be added has not already a pref label or an  
 		// alternative label with the input
 		String query = "ASK {"+
@@ -634,7 +632,7 @@ public class SKOSXL extends STServiceAdapter {
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
-			throw new AltPrefLabelClashException(
+			throw new PrefAltLabelClashException(
 					MessageKeys.exceptionUnableToAddAltLabel$message,
 					new Object[] { NTriplesUtil.toNTriplesString(newLabel) });
 		}
