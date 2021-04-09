@@ -759,11 +759,14 @@ public class Refactor extends STServiceAdapter {
 		// if the new predicate is skosxl:prefLabel (and the old one is not skosxl:prefLabel) check that
 		// there are no other concept having the label associated to this xLabel
 		if (predicate.equals(SKOSXL.PREF_LABEL) && !oldPredicate.equals(SKOSXL.PREF_LABEL)) {
-			String query = "SELECT ?otherConcept ?otherXLabel ?literalForm" + "\nWHERE{" + "\n?xLabel "
-					+ NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?literalForm ."
-					+ "\n?otherConcept " + NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL)
-					+ " ?otherXLabel ." + "\n?otherXLabel "
-					+ NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?literalForm ." + "\n}";
+			// @formatter:off
+			String query = "SELECT ?otherConcept ?otherXLabel ?literalForm" +
+					"\nWHERE{" +
+					"\n?xLabel " + NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?literalForm ."+
+					"\n?otherConcept " + NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL) + " ?otherXLabel ." +
+					"\n?otherXLabel "+ NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?literalForm ." +
+					"\n}";
+			// @formatter:on
 			TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
 			tupleQuery.setIncludeInferred(false);
 			tupleQuery.setBinding("xLabel", xLabel);
@@ -790,12 +793,15 @@ public class Refactor extends STServiceAdapter {
 		// - if force is true, then transform the already existing xlabel (the current skosxl:prefLabel) into
 		// a skosxl:altLabel
 		if (predicate.equals(SKOSXL.PREF_LABEL)) {
-			String query = "SELECT ?otherXLabel ?literalForm1" + "\nWHERE{" + "\n?xLabel "
-					+ NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?literalForm1 ." + "\n"
-					+ NTriplesUtil.toNTriplesString(targetResource) + " "
-					+ NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL) + " ?otherXLabel ." + "\n?otherXLabel "
-					+ NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?literalForm2 ."
-					+ "\nFILTER(lang(?literalForm1) = lang(?literalForm2))" + "\n}";
+			// @formatter:off
+			String query = "SELECT ?otherXLabel ?literalForm1" +
+					"\nWHERE{" +
+					"\n?xLabel " + NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?literalForm1 ." +
+					"\n" + NTriplesUtil.toNTriplesString(targetResource) + " " + NTriplesUtil.toNTriplesString(SKOSXL.PREF_LABEL) + " ?otherXLabel ." +
+					"\n?otherXLabel " + NTriplesUtil.toNTriplesString(SKOSXL.LITERAL_FORM) + " ?literalForm2 ." +
+					"\nFILTER(lang(?literalForm1) = lang(?literalForm2))" +
+					"\n}";
+			// @formatter:on
 			TupleQuery tupleQuery = repoConnection.prepareTupleQuery(query);
 			tupleQuery.setIncludeInferred(false);
 			tupleQuery.setBinding("xLabel", xLabel);
