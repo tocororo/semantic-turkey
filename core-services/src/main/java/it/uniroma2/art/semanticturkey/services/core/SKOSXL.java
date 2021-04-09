@@ -4,6 +4,7 @@ import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.AltPrefLabelClashException;
 import it.uniroma2.art.semanticturkey.exceptions.PrefAltLabelClashException;
 import it.uniroma2.art.semanticturkey.exceptions.PrefPrefLabelClashException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
@@ -235,7 +236,7 @@ public class SKOSXL extends STServiceAdapter {
 	public void addAltLabel(@LocallyDefined @Modified IRI concept, @LanguageTaggedString Literal literal,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2008/05/skos-xl#Label") IRI labelCls,
 			XLabelCreationMode mode) 
-			throws URIGenerationException, PrefAltLabelClashException {
+			throws URIGenerationException, AltPrefLabelClashException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		checkIfAddAltLabelIsPossible(repoConnection, literal, concept);
 		Model modelAdditions = new LinkedHashModel();
@@ -611,7 +612,7 @@ public class SKOSXL extends STServiceAdapter {
 	}
 	
 	public static void checkIfAddAltLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
-			Resource resource) throws PrefAltLabelClashException {
+			Resource resource) throws AltPrefLabelClashException {
 		//see if the resource to which the Literal will be added has not already a pref label or an  
 		// alternative label with the input
 		String query = "ASK {"+
@@ -632,7 +633,7 @@ public class SKOSXL extends STServiceAdapter {
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
-			throw new PrefAltLabelClashException(
+			throw new AltPrefLabelClashException(
 					MessageKeys.exceptionUnableToAddAltLabel$message,
 					new Object[] { NTriplesUtil.toNTriplesString(newLabel) });
 		}

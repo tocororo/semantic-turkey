@@ -13,6 +13,7 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.SpecialValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.AltPrefLabelClashException;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.CollectionWithNestedCollectionsException;
 import it.uniroma2.art.semanticturkey.exceptions.ConceptWithNarrowerConceptsException;
@@ -850,7 +851,7 @@ public class SKOS extends STServiceAdapter {
 	@DisplayName("add alternative label")
 	@TermCreation(label="literal", concept="concept", facet=Facets.ALT_LABEL)
 	public void addAltLabel(@LocallyDefined @Modified IRI concept,
-			@LanguageTaggedString Literal literal) throws PrefAltLabelClashException {
+			@LanguageTaggedString Literal literal) throws AltPrefLabelClashException {
 		RepositoryConnection repoConnection = getManagedConnection();
 		checkIfAddAltLabelIsPossible(repoConnection, literal, concept);
 		Model modelAdditions = new LinkedHashModel();
@@ -2396,7 +2397,7 @@ public class SKOS extends STServiceAdapter {
 	}
 	
 	public static void checkIfAddAltLabelIsPossible(RepositoryConnection repoConnection, Literal newLabel, 
-			Resource resource) throws PrefAltLabelClashException {
+			Resource resource) throws AltPrefLabelClashException {
 		//see if the resource to which the Literal will be added has not already a pref label with this value
 		String query = "ASK {"+
 				"\n"+NTriplesUtil.toNTriplesString(resource)+" "+
@@ -2407,7 +2408,7 @@ public class SKOS extends STServiceAdapter {
 		BooleanQuery booleanQuery = repoConnection.prepareBooleanQuery(query);
 		booleanQuery.setIncludeInferred(false);
 		if(booleanQuery.evaluate()){
-			throw new PrefAltLabelClashException(
+			throw new AltPrefLabelClashException(
 					MessageKeys.exceptionUnableToAddAltLabel$message,
 					new Object[] { NTriplesUtil.toNTriplesString(newLabel) });
 		}
