@@ -28,7 +28,7 @@ public class VariableDefinition implements STProperties {
 		return "{" + MessageKeys.shortName + "}";
 	}
 
-	@STProperty(description = "{" + MessageKeys.propertyPath$description + "}", displayName =  "{" + MessageKeys.propertyPath$description + "}")
+	@STProperty(description = "{" + MessageKeys.propertyPath$description + "}", displayName =  "{" + MessageKeys.propertyPath$displayName + "}")
 	public List<IRI> propertyPath;
 
 }
