@@ -264,6 +264,12 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	}
 
 	@Override
+	public Collection<SettingsManager> getSettingsManagers() {
+		return Arrays.stream(settingsManagerTracker.getServices()).map(o -> (SettingsManager) o)
+				.collect(toList());
+	}
+
+	@Override
 	public Collection<Scope> getSettingsScopes(String componentIdentifier) throws NoSuchSettingsManager {
 		return getSettingsManager(componentIdentifier).getSettingsScopes();
 	}

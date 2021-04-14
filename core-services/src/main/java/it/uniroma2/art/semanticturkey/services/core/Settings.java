@@ -2,6 +2,8 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.util.Collection;
 
+import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,11 @@ public class Settings extends STServiceAdapter {
 
 	@Autowired
 	private ExtensionPointManager exptManager;
+
+	@STServiceOperation
+	public Collection<SettingsManager> getSettingManagers() {
+		return exptManager.getSettingsManagers();
+	}
 
 	/**
 	 * Returns the settings scopes supported by a component

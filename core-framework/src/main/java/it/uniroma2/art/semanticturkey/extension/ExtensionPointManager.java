@@ -72,6 +72,8 @@ public interface ExtensionPointManager {
 
 	SettingsManager getSettingsManager(String componentID) throws NoSuchSettingsManager;
 
+	Collection<SettingsManager> getSettingsManagers();
+
 	/**
 	 * Returns the stored configurations associated with a given component
 	 * 
