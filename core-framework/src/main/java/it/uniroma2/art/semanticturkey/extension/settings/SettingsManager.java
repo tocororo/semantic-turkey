@@ -9,7 +9,9 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.resources.Scope;
+import it.uniroma2.art.semanticturkey.settings.PGSettingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersGroup;
 
 /**
  * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;
@@ -32,14 +34,17 @@ public interface SettingsManager extends IdentifiableComponent {
 		if (this instanceof PUSettingsManager<?>) {
 			scopes.add(Scope.PROJECT_USER);
 		}
+		if (this instanceof PGSettingsManager<?>) {
+			scopes.add(Scope.PROJECT_GROUP);
+		}
 		return scopes;
 	}
 
-	default Settings getSettings(Project project, STUser user, Scope scope) throws STPropertyAccessException {
-		return this.getSettings(project, user, scope, false);
+	default Settings getSettings(Project project, STUser user, UsersGroup group, Scope scope) throws STPropertyAccessException {
+		return this.getSettings(project, user, group, scope, false);
 	}
 
-	default Settings getSettings(Project project, STUser user, Scope scope, boolean explicit)
+	default Settings getSettings(Project project, STUser user, UsersGroup group, Scope scope, boolean explicit)
 			throws STPropertyAccessException {
 		switch (scope) {
 		case SYSTEM:
@@ -50,13 +55,15 @@ public interface SettingsManager extends IdentifiableComponent {
 			return ((UserSettingsManager<?>) this).getUserSettings(user, explicit);
 		case PROJECT_USER:
 			return ((PUSettingsManager<?>) this).getProjectSettings(project, user, explicit);
+		case PROJECT_GROUP:
+			return ((PGSettingsManager<?>) this).getProjectSettings(project, group, explicit);
 		default:
 			throw new IllegalArgumentException("Unrecognized scope: " + scope); // it should not happen
 		}
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	default void storeSettings(Project project, STUser user, Scope scope, Settings settings)
+	default void storeSettings(Project project, STUser user, UsersGroup group, Scope scope, Settings settings)
 			throws STPropertyUpdateException {
 		switch (scope) {
 		case SYSTEM:
@@ -70,6 +77,9 @@ public interface SettingsManager extends IdentifiableComponent {
 			break;
 		case PROJECT_USER:
 			((PUSettingsManager) this).storeProjectSettings(project, user, settings);
+			break;
+		case PROJECT_GROUP:
+				((PGSettingsManager) this).storeProjectSettings(project, group, settings);
 			break;
 		default:
 			throw new IllegalArgumentException("Unrecognized scope: " + scope); // it should not happen

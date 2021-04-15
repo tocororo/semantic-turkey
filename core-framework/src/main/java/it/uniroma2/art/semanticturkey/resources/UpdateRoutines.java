@@ -23,40 +23,36 @@
 
 package it.uniroma2.art.semanticturkey.resources;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.annotation.JsonAppend;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.IterableUtils;
+import org.apache.commons.collections4.IteratorUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
+import org.apache.commons.lang3.Functions;
 import org.apache.commons.lang3.Functions.FailableConsumer;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.query.parser.sparql.SPARQLUtil;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.RDFHandlerException;
@@ -65,6 +61,7 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,6 +92,8 @@ import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * This class contains various integrity checks which are launched when Semantic Turkey is being started and
@@ -157,6 +156,11 @@ public class UpdateRoutines {
 			if (stDataVersionNumber.compareTo(new VersionNumber(9, 0, 0)) < 0) {
 				alignFrom801To90();
 			}
+
+			if (stDataVersionNumber.compareTo(new VersionNumber(9, 0, 1)) < 0) {
+				alignFrom90To10();
+			}
+
 
 			Config.setSTDataVersionNumber(stVersionNumber);
 		}
@@ -329,6 +333,232 @@ public class UpdateRoutines {
 				"it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine",
 				"it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine");
 
+	}
+
+	private static void alignFrom90To10() throws IOException {
+		logger.debug(
+				"Version 9.0.1 updated Semantic Turkey core settings to the new style (including persistence of properties as YAML)");
+
+		ObjectMapper om = STPropertiesManager.createObjectMapper();
+
+		// upgrade system settings
+		File oldCoreSystemSettingsFile = STPropertiesManager.getSystemSettingsFile("it.uniroma2.art.semanticturkey");
+		File newCoreSystemSettingsFile = STPropertiesManager.getSystemSettingsFile(SemanticTurkeyCoreSettingsManager.class.getName());
+		alignFrom90to10_upgradeCoreSystemSettings(om, oldCoreSystemSettingsFile, newCoreSystemSettingsFile);
+
+		// upgrade pu settings system defaults
+		File oldCorePUSettingsSystemDefaultsFile = STPropertiesManager.getPUSettingsSystemDefaultsFile("it.uniroma2.art.semanticturkey");
+		File newCorePUSettingsSystemDefaultsFile = STPropertiesManager.getPUSettingsSystemDefaultsFile(SemanticTurkeyCoreSettingsManager.class.getName());
+
+		alignFrom90to10_upgradeCorePUSettings(om, oldCorePUSettingsSystemDefaultsFile, newCorePUSettingsSystemDefaultsFile);
+
+		for (File projectDir : Resources.getProjectsDir()
+				.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
+			// upgrade project settings
+			File oldCoreProjectSettingsFile = FileUtils.getFile(projectDir, "plugins", "it.uniroma2.art.semanticturkey", "settings.props");
+			File newCoreProjectSettingsFile = FileUtils.getFile(projectDir, "plugins", SemanticTurkeyCoreSettingsManager.class.getName(), "settings.props");
+			alignFrom90to10_upgradeCoreProjectSettings(om, oldCoreProjectSettingsFile, newCoreProjectSettingsFile);
+
+			// upgrade pu settings project default
+			File oldCorePUSettingsProjectDefaultsFile = FileUtils.getFile(projectDir, "plugins", "it.uniroma2.art.semanticturkey", "pu-settings-defaults.props");
+			File newCorePUSettingsProjectDefaultsFile = FileUtils.getFile(projectDir, "plugins", SemanticTurkeyCoreSettingsManager.class.getName(), "pu-settings-defaults.props");
+
+			alignFrom90to10_upgradeCorePUSettings(om, oldCorePUSettingsProjectDefaultsFile, newCorePUSettingsProjectDefaultsFile);
+		}
+
+		// upgrade project settings system defaults
+		File oldCoreProjectSettingsDefaultFile = STPropertiesManager.getProjectSettingsDefaultsFile("it.uniroma2.art.semanticturkey");
+		File newCoreProjectSettingsDefaultFile = STPropertiesManager.getProjectSettingsDefaultsFile(SemanticTurkeyCoreSettingsManager.class.getName());
+		alignFrom90to10_upgradeCoreProjectSettings(om, oldCoreProjectSettingsDefaultFile, newCoreProjectSettingsDefaultFile);
+
+		for (File userDir : Resources.getUsersDir()
+				.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
+			// upgrade pu settings user defaults
+			File oldCorePUSettingsUserDefaultsFile = FileUtils.getFile(userDir, "plugins", "it.uniroma2.art.semanticturkey", "pu-settings-defaults.props");
+			File newCorePUSettingsUserDefaultsFile = FileUtils.getFile(userDir, "plugins", SemanticTurkeyCoreSettingsManager.class.getName(), "pu-settings-defaults.props");
+			alignFrom90to10_upgradeCorePUSettings(om, oldCorePUSettingsUserDefaultsFile, newCorePUSettingsUserDefaultsFile);
+		}
+
+
+		for (File projectBindingsDir : Resources.getProjectUserBindingsDir()
+				.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
+			for (File puBindingsDir : projectBindingsDir
+					.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
+				// upgrade pu settings
+				File oldCorePUSettingsFile = FileUtils.getFile(puBindingsDir, "plugins", "it.uniroma2.art.semanticturkey", "settings.props");
+				File newCorePUSettingsFile = FileUtils.getFile(puBindingsDir, "plugins", "it.uniroma2.art.semanticturkey", "settings.props");
+
+				alignFrom90to10_upgradeCorePUSettings(om, oldCorePUSettingsFile, newCorePUSettingsFile);
+			}
+		}
+
+		for (File projectBindingsDir : Resources.getProjectGroupBindingsDir()
+				.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
+			for (File pgBindingsDir : projectBindingsDir
+					.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
+				// upgrade pg settings
+				File oldCorePUSettingsFile = FileUtils.getFile(pgBindingsDir, "plugins", "it.uniroma2.art.semanticturkey", "settings.props");
+				File newCorePUSettingsFile = FileUtils.getFile(pgBindingsDir, "plugins", "it.uniroma2.art.semanticturkey", "settings.props");
+
+				alignFrom90to10_upgradeCorePUSettings(om, oldCorePUSettingsFile, newCorePUSettingsFile); // core pg settings are handled the same as pu settings
+			}
+		}
+
+	}
+
+	private static void alignFrom90to10_upgradeCorePUSettings(ObjectMapper om, File oldCorePUSettingsFile, File newCorePUSettingsFile) throws IOException {
+		if (oldCorePUSettingsFile.isFile()) {
+			Properties properties = new Properties();
+			try (FileInputStream fis = new FileInputStream(oldCorePUSettingsFile)) {
+				properties.load(fis);
+			}
+
+			ValueFactory vf = SimpleValueFactory.getInstance();
+
+			ObjectNode newCorePUSettingsNode = JsonNodeFactory.instance.objectNode();
+			convertPropertiesSettingToYAML(properties, "editing_language", newCorePUSettingsNode, "editingLanguage", String::valueOf);
+			convertPropertiesSettingToYAML(properties, "filter_value_languages", newCorePUSettingsNode, "filterValueLanguages", v -> om.readTree(new StringReader(v)));
+			convertPropertiesSettingToYAML(properties, "active_schemes", newCorePUSettingsNode, "activeSchemes", v -> Arrays.stream(v.split(",")).filter(StringUtils::isNotBlank).map(vf::createIRI).collect(toList()));
+			convertPropertiesSettingToYAML(properties, "active_lexicon", newCorePUSettingsNode, "activeLexicon", vf::createIRI);
+			convertPropertiesSettingToYAML(properties, "show_flags", newCorePUSettingsNode, "showFlags", Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "project_theme", newCorePUSettingsNode, "projectTheme", String::valueOf);
+			convertPropertiesSettingToYAML(properties, "class_tree_root", newCorePUSettingsNode, Arrays.asList("classTree", "rootClass"), vf::createIRI);
+			convertPropertiesSettingToYAML(properties, "class_tree_filter", newCorePUSettingsNode, Arrays.asList("classTree", "filter"), v -> om.readTree(new StringReader(v)));
+			convertPropertiesSettingToYAML(properties, "show_instances_number", newCorePUSettingsNode, Arrays.asList("classTree", "showInstancesNumber"), Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "instance_list_visualization", newCorePUSettingsNode, Arrays.asList("instanceList", "visualization"), String::valueOf);
+			convertPropertiesSettingToYAML(properties, "instance_list_safe_to_go_limit", newCorePUSettingsNode, Arrays.asList("instanceList", "safeToGoLimit"), Integer::valueOf);
+			convertPropertiesSettingToYAML(properties, "concept_tree_base_broader_prop", newCorePUSettingsNode, Arrays.asList("conceptTree", "baseBroaderProp"), vf::createIRI);
+			convertPropertiesSettingToYAML(properties, "concept_tree_broader_props", newCorePUSettingsNode, Arrays.asList("conceptTree", "broaderProps"), v -> Arrays.stream(v.split(",")).filter(StringUtils::isNotBlank).map(vf::createIRI).collect(toList()));
+			convertPropertiesSettingToYAML(properties, "concept_tree_narrower_props", newCorePUSettingsNode, Arrays.asList("conceptTree", "narrowerProps"), v -> Arrays.stream(v.split(",")).filter(StringUtils::isNotBlank).map(vf::createIRI).collect(toList()));
+			convertPropertiesSettingToYAML(properties, "concept_tree_include_subprops", newCorePUSettingsNode, Arrays.asList("conceptTree", "includeSubProps"), Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "concept_tree_sync_inverse", newCorePUSettingsNode, Arrays.asList("conceptTree", "syncInverse"), Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "concept_tree_visualization", newCorePUSettingsNode, Arrays.asList("conceptTree", "visualization"), String::valueOf);
+			convertPropertiesSettingToYAML(properties, "concept_tree_multischeme_mode", newCorePUSettingsNode, Arrays.asList("conceptTree", "multischemeMode"), String::valueOf);
+			convertPropertiesSettingToYAML(properties, "concept_tree_safe_to_go_limit", newCorePUSettingsNode, Arrays.asList("conceptTree", "safeToGoLimit"), Integer::valueOf);
+			convertPropertiesSettingToYAML(properties, "lex_entry_list_visualization", newCorePUSettingsNode, Arrays.asList("lexEntryList", "visualization"), String::valueOf);
+			convertPropertiesSettingToYAML(properties, "lex_entry_list_index_lenght", newCorePUSettingsNode, Arrays.asList("lexEntryList", "indexLength"), Integer::valueOf);
+			convertPropertiesSettingToYAML(properties, "lex_entry_list_safe_to_go_limit", newCorePUSettingsNode, Arrays.asList("lexEntryList", "safeToGoLimit"), Integer::valueOf);
+			convertPropertiesSettingToYAML(properties, "res_view_default_concept_type", newCorePUSettingsNode, Arrays.asList("resourceView", "defaultConceptType"), String::valueOf);
+			convertPropertiesSettingToYAML(properties, "res_view_default_concept_type", newCorePUSettingsNode, Arrays.asList("resourceView", "defaultLexEntryType"), String::valueOf);
+			convertPropertiesSettingToYAML(properties, "res_view_default_lexentry_type", newCorePUSettingsNode, Arrays.asList("resourceView", "resViewPartitionFilter"), v -> om.readTree(new StringReader(v)));
+			convertPropertiesSettingToYAML(properties, "graph_partition_filter", newCorePUSettingsNode, "graphViewPartitionFilter", v -> om.readTree(new StringReader(v)));
+			convertPropertiesSettingToYAML(properties, "hide_literal_graph_nodes", newCorePUSettingsNode, "hideLiteralGraphNodes", Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "search_restrict_lang", newCorePUSettingsNode, Arrays.asList("searchSettings", "restrictLang"), Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "search_languages", newCorePUSettingsNode, Arrays.asList("searchSettings", "languages"), v -> om.readTree(new StringReader(v)));
+			convertPropertiesSettingToYAML(properties, "search_include_locales", newCorePUSettingsNode, Arrays.asList("searchSettings", "includeLocales"), Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "search_use_autocomplete", newCorePUSettingsNode, Arrays.asList("searchSettings", "useAutocompletion"), Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "notifications_status", newCorePUSettingsNode, Arrays.asList("searchSettings", "notificationsStatus"), String::valueOf);
+
+			if (newCorePUSettingsNode.fields().hasNext()) {
+				STPropertiesManager.storeObjectNodeInYAML(newCorePUSettingsNode, newCorePUSettingsFile);
+			}
+
+		}
+
+	}
+
+	private static void alignFrom90to10_upgradeCoreProjectSettings(ObjectMapper om, File oldCoreProjectSettingsFile, File newCoreProjectSettingsFile) throws IOException {
+		if (oldCoreProjectSettingsFile.isFile()) {
+			Properties properties = new Properties();
+			try (FileInputStream fis = new FileInputStream(oldCoreProjectSettingsFile)) {
+				properties.load(fis);
+			}
+
+			ObjectNode newCoreProjectSettingsNode = JsonNodeFactory.instance.objectNode();
+			convertPropertiesSettingToYAML(properties, "languages", newCoreProjectSettingsNode, "languages", v -> om.readTree(new StringReader(v)));
+			convertPropertiesSettingToYAML(properties, "label_clash_mode", newCoreProjectSettingsNode, "labelClashMode", String::valueOf);
+
+			if (newCoreProjectSettingsNode.fields().hasNext()) {
+				STPropertiesManager.storeObjectNodeInYAML(newCoreProjectSettingsNode, newCoreProjectSettingsFile);
+			}
+
+		}
+	}
+
+	private static void alignFrom90to10_upgradeCoreSystemSettings(ObjectMapper om, File oldCoreSystemSettingsFile, File newCoreSystemSettingsFile) throws IOException {
+		if (oldCoreSystemSettingsFile.isFile()) {
+			Properties properties = new Properties();
+			try (FileInputStream fis = new FileInputStream(oldCoreSystemSettingsFile)) {
+				properties.load(fis);
+			}
+
+			ObjectNode newCoreSystemSettingsNode = JsonNodeFactory.instance.objectNode();
+
+			convertPropertiesSettingToYAML(properties, "remote_configs", newCoreSystemSettingsNode, "remoteConfigs", v -> om.readTree(new StringReader(v)));
+			convertPropertiesSettingToYAML(properties, "experimental_features_enabled", newCoreSystemSettingsNode, "experimentalFeaturesEnabled", Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "privacy_statement_available", newCoreSystemSettingsNode, "privacyStatementAvailable", Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "show_flags", newCoreSystemSettingsNode, "showFlags", Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "home_content", newCoreSystemSettingsNode, "homeContent", String::valueOf);
+			convertPropertiesSettingToYAML(properties, "proj_creation_default_acl_set_universal_access", newCoreSystemSettingsNode, Arrays.asList("projectCreation", "aclUniversalAccessDefault"), Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "proj_creation_default_open_at_startup", newCoreSystemSettingsNode, Arrays.asList("projectCreation", "openAtStartUpDefault"), Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "preload.profiler.treshold_bytes", newCoreSystemSettingsNode, Arrays.asList("preload", "profiler", "threshold"), v -> v + " B");
+
+			convertPropertiesSettingToYAML(properties, "stDataVersion", newCoreSystemSettingsNode, "stDataVersion", String::valueOf);
+			convertPropertiesSettingToYAML(properties, "mail.admin.address", newCoreSystemSettingsNode, Arrays.asList("mail", "admin", "address"), v -> {
+				v = v.trim();
+				return v.startsWith("[")
+						? new ObjectMapper().readValue(v, new TypeReference<Set<String>>() {
+				})
+						: new HashSet<>(Collections.singletonList(v));
+			});
+			convertPropertiesSettingToYAML(properties, "mail.smtp.host", newCoreSystemSettingsNode, Arrays.asList("mail", "smtp", "host"), String::valueOf);
+			convertPropertiesSettingToYAML(properties, "mail.smtp.port", newCoreSystemSettingsNode, Arrays.asList("mail", "smtp", "port"), Integer::valueOf);
+			convertPropertiesSettingToYAML(properties, "mail.smtp.auth", newCoreSystemSettingsNode, Arrays.asList("mail", "smtp", "auth"), Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "mail.smtp.ssl.enable", newCoreSystemSettingsNode, Arrays.asList("mail", "smtp", "ssl", "enable"), Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "mail.smtp.starttls.enable", newCoreSystemSettingsNode, Arrays.asList("mail", "smtp", "starttls", "enable"), Boolean::valueOf);
+
+			convertPropertiesSettingToYAML(properties, "mail.from.address", newCoreSystemSettingsNode, Arrays.asList("mail", "from", "address"), String::valueOf);
+			convertPropertiesSettingToYAML(properties, "mail.from.password", newCoreSystemSettingsNode, Arrays.asList("mail", "from", "password"), String::valueOf);
+			convertPropertiesSettingToYAML(properties, "mail.from.alias", newCoreSystemSettingsNode, Arrays.asList("mail", "from", "alias"), String::valueOf);
+
+			convertPropertiesSettingToYAML(properties, "pmki.vb_connection_config", newCoreSystemSettingsNode, Arrays.asList("pmki", "vbConnectionConfig"), v -> {
+				JsonNode jsonNode = om.readTree(new StringReader(v));
+				if (jsonNode instanceof ObjectNode) {
+					ObjectNode jsonObject = (ObjectNode) jsonNode;
+					// rename vbUrl to vbURL
+					JsonNode vbURL = jsonObject.remove("vbUrl");
+					if (vbURL != null) {
+						jsonObject.set("vbURL", vbURL);
+					}
+				}
+				return jsonNode;
+			});
+
+			if (newCoreSystemSettingsNode.fields().hasNext()) {
+				STPropertiesManager.storeObjectNodeInYAML(newCoreSystemSettingsNode, newCoreSystemSettingsFile);
+			}
+		}
+	}
+
+	private static <T> void convertPropertiesSettingToYAML(Properties properties, String oldProp, ObjectNode settingsObjectNode, String yamlProp, Functions.FailableFunction<String, T, IOException> propValueCoverter) throws IOException {
+		convertPropertiesSettingToYAML(properties, oldProp, settingsObjectNode, Collections.singletonList(yamlProp), propValueCoverter);
+	}
+
+
+	private static <T> void convertPropertiesSettingToYAML(Properties properties, String oldProp, ObjectNode settingsObjectNode, List<String> yamlPropPath, Functions.FailableFunction<String, T, IOException> propValueCoverter) throws IOException {
+		String oldPropValue = properties.getProperty(oldProp);
+
+		if (StringUtils.isNoneEmpty(oldPropValue)) {
+			T yamlValue = propValueCoverter.apply(oldPropValue);
+
+			ObjectNode ctxObj = settingsObjectNode;
+
+			for (String yamlProp : Iterables.limit(yamlPropPath, yamlPropPath.size() - 1)) {
+				JsonNode intermediateNode = ctxObj.get(yamlProp);
+				if (intermediateNode instanceof ObjectNode) {
+					ctxObj = (ObjectNode) intermediateNode;
+				} else {
+					ctxObj = ctxObj.putObject(yamlProp);
+				}
+			}
+
+			String leaveYamlProp = Iterables.getLast(yamlPropPath);
+			if (yamlValue instanceof JsonNode) {
+				ctxObj.set(leaveYamlProp, (JsonNode) yamlValue);
+			} else {
+				ctxObj.putPOJO(leaveYamlProp, yamlValue);
+			}
+		}
 	}
 
 	public static synchronized void upgradeURIGeneratorAndRenderingEngine(ExtensionPointManager exptMgr,
@@ -556,7 +786,7 @@ public class UpdateRoutines {
 		File configFolder = STPropertiesManager
 				.getSystemPropertyFolder(CustomServiceDefinitionStore.class.getName());
 		FileUtils.forceMkdir(configFolder);
-		for (String configName : Arrays.stream(serviceID).map(s -> s + ".cfg").collect(Collectors.toList())) {
+		for (String configName : Arrays.stream(serviceID).map(s -> s + ".cfg").collect(toList())) {
 			try (InputStream is = UpdateRoutines.class.getResourceAsStream(
 					"/it/uniroma2/art/semanticturkey/config/customservice/" + configName)) {
 				FileUtils.copyInputStreamToFile(is, new File(configFolder, configName));
@@ -569,7 +799,7 @@ public class UpdateRoutines {
 				.getSystemPropertyFolder(InvokableReporterStore.class.getName());
 		FileUtils.forceMkdir(configFolder);
 		for (String configName : Arrays.stream(reporterID).map(s -> s + ".cfg")
-				.collect(Collectors.toList())) {
+				.collect(toList())) {
 			try (InputStream is = UpdateRoutines.class.getResourceAsStream(
 					"/it/uniroma2/art/semanticturkey/config/invokablereporter/" + configName)) {
 				FileUtils.copyInputStreamToFile(is, new File(configFolder, configName));

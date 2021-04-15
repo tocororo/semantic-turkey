@@ -302,6 +302,27 @@ public class STPropertiesManager {
 	}
 
 	/**
+	 * Returns the pu_settings about a plugin. See {@link #getPGSetting(String, Project, UsersGroup, String)} for
+	 * details about the lookup procedure.
+	 *
+	 * @param valueType
+	 * @param project
+	 * @param group
+	 * @param pluginID
+	 * @throws STPropertyAccessException
+	 */
+	public static <T extends STProperties> T getPGSettings(Class<T> valueType, Project project, UsersGroup group,
+														   String pluginID) throws STPropertyAccessException {
+		return getPGSettings(valueType, project, group, pluginID, false);
+	}
+
+	public static <T extends STProperties> T getPGSettings(Class<T> valueType, Project project, UsersGroup group,
+														   String pluginID, boolean explicit) throws STPropertyAccessException {
+		File propFile = getPGSettingsFile(project, group, pluginID);
+		return loadSettings(valueType, propFile);
+
+	}
+	/**
 	 * Sets the value of a project pu_setting for the given project-group
 	 * 
 	 * @param project

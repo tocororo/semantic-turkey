@@ -6,9 +6,9 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.user.STUser;
 
 public enum Scope {
-	PROJECT("proj"), SYSTEM("sys"), USER("usr"), PROJECT_USER("pu");
+	PROJECT("proj"), SYSTEM("sys"), USER("usr"), PROJECT_USER("pu"), PROJECT_GROUP("pg");
 
-	private String serializationCode;
+    private String serializationCode;
 
 	private Scope(String serializationCode) {
 		this.serializationCode = serializationCode;
@@ -28,6 +28,8 @@ public enum Scope {
 			return USER;
 		case "pu":
 			return PROJECT_USER;
+		case "pg":
+			return PROJECT_GROUP;
 		default:
 			throw new IllegalArgumentException("Invalid serialization code: " + serializationCode);
 		}

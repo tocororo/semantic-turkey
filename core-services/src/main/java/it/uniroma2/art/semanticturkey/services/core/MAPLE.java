@@ -153,10 +153,10 @@ public class MAPLE extends STServiceAdapter {
 				SettingsManager settingsManager = exptManager
 						.getSettingsManager(ProjectMetadataStore.class.getName());
 				StoredProjectMetadata settings = (StoredProjectMetadata) settingsManager
-						.getSettings(getProject(), UsersManager.getLoggedUser(), Scope.PROJECT);
+						.getSettings(getProject(), UsersManager.getLoggedUser(), null, Scope.PROJECT);
 				settings.datasetDescription = new it.uniroma2.art.semanticturkey.properties.Pair<>(datasetIRI,
 						stringWriter.toString().replace("\r\n", "\n").replace("\t", "  "));
-				settingsManager.storeSettings(getProject(), UsersManager.getLoggedUser(), Scope.PROJECT,
+				settingsManager.storeSettings(getProject(), UsersManager.getLoggedUser(), null, Scope.PROJECT,
 						settings);
 
 				// updates the metadata stored in the metadata registry
@@ -182,7 +182,7 @@ public class MAPLE extends STServiceAdapter {
 		SettingsManager settingsManager = exptManager
 				.getSettingsManager(ProjectMetadataStore.class.getName());
 		StoredProjectMetadata settings = (StoredProjectMetadata) settingsManager.getSettings(getProject(),
-				UsersManager.getLoggedUser(), Scope.PROJECT);
+				UsersManager.getLoggedUser(), null, Scope.PROJECT);
 		return STPropertiesChecker.getModelConfigurationChecker(settings).isValid();
 	}
 

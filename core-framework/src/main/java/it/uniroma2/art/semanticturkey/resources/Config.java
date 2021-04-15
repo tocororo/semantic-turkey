@@ -33,6 +33,8 @@ import java.util.Properties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 
 /**
  * Generic Configuration Properties for Semantic Turkey. These include:
@@ -135,7 +137,10 @@ public class Config {
 	public static void setSTDataVersionNumber(VersionNumber vn) {
 		try {
 			STPropertiesManager.setSystemSetting(stDataVersionNumberPropName, vn.toString());
-		} catch (STPropertyUpdateException e) {
+			CoreSystemSettings coreSystemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
+			coreSystemSettings.stDataVersion = vn.toString();
+			STPropertiesManager.setSystemSettings(coreSystemSettings, SemanticTurkeyCoreSettingsManager.class.getName(), true);
+		} catch (STPropertyUpdateException | STPropertyAccessException e) {
 			e.printStackTrace();
 		}
 	}

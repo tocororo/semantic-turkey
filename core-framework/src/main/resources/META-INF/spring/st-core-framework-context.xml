@@ -339,4 +339,12 @@
 		<bean
 			class="it.uniroma2.art.semanticturkey.settings.alignmentservices.RemoteAlignmentServiceProjectSettingsManager" />
 	</osgi:service>
+
+	<!-- Publishes Semantic Turkey core settings managers -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+				class="it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager" />
+	</osgi:service>
+
 </beans>

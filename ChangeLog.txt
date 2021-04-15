@@ -1,5 +1,6 @@
 version 9.0.1
 date: dd/mm/yyyy
+  * update core settings to the new settings management framework (including the use of YAML to persist them)
   * implemented support for email verification during the user registration procedure
   * allowed administrator to activate a new registered user through a link sent via email
   * added support for "no language tagged" labels in rendering engine
@@ -25,7 +26,7 @@ date: 17/03/2021
     dataset are hosted on the same Ontotext GraphDB server
   * added two new exception for the converters: ReformattingWrongLexModelException and ReformattingWrongModelException
   * renamed Project#getNewOntologyManager() to Project#getOntologyManager()
-  * addded a spreadsheet exporter for SKOS/SKOS-XL projects
+  * added a spreadsheet exporter for SKOS/SKOS-XL projects
   * updated URIGenerators and RenderingEngines to the new extension mechanism (including the use of YAML to 
     persist their configurations/settings)
   * added the possibility to open/close all projects with a single service

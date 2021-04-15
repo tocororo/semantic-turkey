@@ -277,7 +277,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 	@Override
 	public Settings getSettings(Project project, STUser user, String componentIdentifier, Scope scope)
 			throws STPropertyAccessException, NoSuchSettingsManager {
-		return getSettingsManager(componentIdentifier).getSettings(project, user, scope);
+		return getSettingsManager(componentIdentifier).getSettings(project, user, null, scope);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -308,7 +308,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
 			WrongPropertiesException, STPropertyAccessException {
 		SettingsManager settingsManager = getSettingsManager(componentIdentifier);
 		Settings settingsObj = SettingsSupport.createSettings(settingsManager, scope, settings);
-		settingsManager.storeSettings(project, user, scope, settingsObj);
+		settingsManager.storeSettings(project, user, null, scope, settingsObj);
 	}
 
 	@Override
