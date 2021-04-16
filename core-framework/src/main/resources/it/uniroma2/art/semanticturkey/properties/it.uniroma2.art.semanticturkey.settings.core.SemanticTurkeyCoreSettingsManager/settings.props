@@ -1,0 +1,15 @@
+mail:
+  admin:
+    address: []
+  from:
+    address: xxxx@gmail.com
+    password: xxxx
+    alias: System Admin
+  smtp:
+    host: smtp.gmail.com
+    port: 465
+    auth: true
+    ssl:
+      enable: true
+    starttls:
+      enable: true

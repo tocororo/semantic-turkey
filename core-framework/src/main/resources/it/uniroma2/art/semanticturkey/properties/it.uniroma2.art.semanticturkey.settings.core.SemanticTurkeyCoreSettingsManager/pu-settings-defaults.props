@@ -1,0 +1,22 @@
+classTree:
+  filter:
+    map:
+      http://www.w3.org/2000/01/rdf-schema#Resource:
+      - http://www.w3.org/2002/07/owl#AllDifferent
+      - http://www.w3.org/2002/07/owl#AllDisjointClasses
+      - http://www.w3.org/2002/07/owl#AllDisjointProperties
+      - http://www.w3.org/2002/07/owl#Annotation
+      - http://www.w3.org/2002/07/owl#Axiom
+      - http://www.w3.org/2002/07/owl#NegativePropertyAssertion
+      - http://www.w3.org/2002/07/owl#Ontology
+      - http://www.w3.org/1999/02/22-rdf-syntax-ns#List
+      - http://www.w3.org/1999/02/22-rdf-syntax-ns#Property
+      - http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement
+      - http://www.w3.org/2000/01/rdf-schema#Class
+      - http://www.w3.org/2000/01/rdf-schema#Container
+      - http://www.w3.org/2000/01/rdf-schema#Literal
+      http://www.w3.org/2002/07/owl#Thing:
+      - http://www.w3.org/2002/07/owl#Nothing
+      - http://www.w3.org/2002/07/owl#NamedIndividual
+    enabled: true
+showFlags: true
