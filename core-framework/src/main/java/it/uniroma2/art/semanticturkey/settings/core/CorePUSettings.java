@@ -57,7 +57,7 @@ public class CorePUSettings implements Settings {
 
     @STProperty(description = "{" + MessageKeys.filterValueLanguages$description
             + "}", displayName = "{" + MessageKeys.filterValueLanguages$displayName + "}")
-    public List<ValueFilterLanguages> filterValueLanguages;
+    public ValueFilterLanguages filterValueLanguages;
 
     @STProperty(description = "{" + MessageKeys.activeSchemes$description
             + "}", displayName = "{" + MessageKeys.activeSchemes$displayName + "}")
