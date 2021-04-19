@@ -386,7 +386,7 @@ public class UpdateRoutines {
 					.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
 				// upgrade pu settings
 				File oldCorePUSettingsFile = FileUtils.getFile(puBindingsDir, "plugins", "it.uniroma2.art.semanticturkey", "settings.props");
-				File newCorePUSettingsFile = FileUtils.getFile(puBindingsDir, "plugins", "it.uniroma2.art.semanticturkey", "settings.props");
+				File newCorePUSettingsFile = FileUtils.getFile(puBindingsDir, "plugins", SemanticTurkeyCoreSettingsManager.class.getName(), "settings.props");
 
 				alignFrom90to10_upgradeCorePUSettings(om, oldCorePUSettingsFile, newCorePUSettingsFile);
 			}
@@ -398,7 +398,7 @@ public class UpdateRoutines {
 					.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
 				// upgrade pg settings
 				File oldCorePUSettingsFile = FileUtils.getFile(pgBindingsDir, "plugins", "it.uniroma2.art.semanticturkey", "settings.props");
-				File newCorePUSettingsFile = FileUtils.getFile(pgBindingsDir, "plugins", "it.uniroma2.art.semanticturkey", "settings.props");
+				File newCorePUSettingsFile = FileUtils.getFile(pgBindingsDir, "plugins", SemanticTurkeyCoreSettingsManager.class.getName(), "settings.props");
 
 				alignFrom90to10_upgradeCorePUSettings(om, oldCorePUSettingsFile, newCorePUSettingsFile); // core pg settings are handled the same as pu settings
 			}
