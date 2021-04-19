@@ -34,4 +34,17 @@ public interface PUSettingsManager<T extends Settings> extends SettingsManager {
 		STPropertiesManager.setPUSettings(settings, project, user, getId(), true);
 	}
 
+	default void storePUSettingsUserDefault(STUser user, T settings) throws STPropertyUpdateException {
+		STPropertiesManager.setPUSettingsUserDefault(settings, user, getId(), true);
+	}
+
+	default void storePUSettingsProjectDefault(Project project, T settings) throws STPropertyUpdateException {
+		STPropertiesManager.setPUSettingsProjectDefault(settings, project, getId(), true);
+	}
+
+	default void storePUSettingsSystemDefault(T settings) throws STPropertyUpdateException {
+		STPropertiesManager.setPUSettingsSystemDefault(settings, getId(), true);
+	}
+
+
 }

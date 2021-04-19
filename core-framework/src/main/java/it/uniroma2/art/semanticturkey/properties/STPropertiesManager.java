@@ -481,6 +481,32 @@ public class STPropertiesManager {
 		}
 	}
 
+	/**
+	 * Sets the value of a default pu-setting at project level.
+	 *
+	 * @param settings
+	 * @param project
+	 * @param pluginID
+	 * @param allowIncompletePropValueSet
+	 */
+	public static void setPUSettingsProjectDefault(STProperties settings, Project project, String pluginID,
+												boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
+		try {
+			if (!allowIncompletePropValueSet) {
+				STPropertiesChecker settingsChecker = STPropertiesChecker
+						.getModelConfigurationChecker(settings);
+				if (!settingsChecker.isValid()) {
+					throw new STPropertyUpdateException(
+							"Settings not valid: " + settingsChecker.getErrorMessage());
+				}
+			}
+			File settingsFile = getPUSettingsProjectDefaultsFile(project, pluginID);
+			storeSTPropertiesInYAML(settings, settingsFile, false);
+		} catch (IOException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+
 	/*
 	 * Getter/Setter <STData>/users/<username>/plugins/<plugin>/pu_settings-defaults.props
 	 */
@@ -545,6 +571,32 @@ public class STPropertiesManager {
 		}
 	}
 
+	/**
+	 * Sets the value of a default pu-setting at user level.
+	 *
+	 * @param settings
+	 * @param user
+	 * @param pluginID
+	 * @param allowIncompletePropValueSet
+	 */
+	public static void setPUSettingsUserDefault(STProperties settings, STUser user, String pluginID,
+												  boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
+		try {
+			if (!allowIncompletePropValueSet) {
+				STPropertiesChecker settingsChecker = STPropertiesChecker
+						.getModelConfigurationChecker(settings);
+				if (!settingsChecker.isValid()) {
+					throw new STPropertyUpdateException(
+							"Settings not valid: " + settingsChecker.getErrorMessage());
+				}
+			}
+			File settingsFile = getPUSettingsUserDefaultsFile(user, pluginID);
+			storeSTPropertiesInYAML(settings, settingsFile, false);
+		} catch (IOException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+
 	/*
 	 * Getter/Setter <STData>/system/plugins/<plugin>/project-preference-defaults.props
 	 */
@@ -602,6 +654,31 @@ public class STPropertiesManager {
 			setProperty(properties, propName, propValue);
 			updatePropertyFile(properties, propFile);
 		} catch (STPropertyAccessException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+
+	/**
+	 * Sets the value of a default pu-setting at system level.
+	 *
+	 * @param settings
+	 * @param pluginID
+	 * @param allowIncompletePropValueSet
+	 */
+	public static void setPUSettingsSystemDefault(STProperties settings, String pluginID,
+												  boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
+		try {
+			if (!allowIncompletePropValueSet) {
+				STPropertiesChecker settingsChecker = STPropertiesChecker
+						.getModelConfigurationChecker(settings);
+				if (!settingsChecker.isValid()) {
+					throw new STPropertyUpdateException(
+							"Settings not valid: " + settingsChecker.getErrorMessage());
+				}
+			}
+			File settingsFile = getPUSettingsSystemDefaultsFile(pluginID);
+			storeSTPropertiesInYAML(settings, settingsFile, false);
+		} catch (IOException e) {
 			throw new STPropertyUpdateException(e);
 		}
 	}
@@ -913,6 +990,32 @@ public class STPropertiesManager {
 		}
 	}
 
+	/**
+	 * Sets the value of a default user setting at system level.
+	 *
+	 * @param settings
+	 * @param pluginID
+	 * @param allowIncompletePropValueSet
+	 */
+	public static void setUserSettingsDefault(STProperties settings, String pluginID,
+												 boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
+		try {
+			if (!allowIncompletePropValueSet) {
+				STPropertiesChecker settingsChecker = STPropertiesChecker
+						.getModelConfigurationChecker(settings);
+				if (!settingsChecker.isValid()) {
+					throw new STPropertyUpdateException(
+							"Settings not valid: " + settingsChecker.getErrorMessage());
+				}
+			}
+			File settingsFile = getUserSettingsDefaultsFile(pluginID);
+			storeSTPropertiesInYAML(settings, settingsFile, false);
+		} catch (IOException e) {
+			throw new STPropertyUpdateException(e);
+		}
+	}
+
+
 	/*
 	 * Getter/Setter <STData>/projects/<projectname>/plugins/<plugin>/settings.props
 	 */
@@ -997,6 +1100,23 @@ public class STPropertiesManager {
 			return loadSettings(valueType, defaultPropFile, propFile);
 		}
 	}
+
+	/**
+	 * Returns the value of a default project settings at system level
+	 *
+	 * @param valueType
+	 * @param project
+	 * @param pluginID
+	 *
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static <T extends STProperties> T getProjectSettingsDefault(Class<T> valueType, Project project, String pluginID) throws STPropertyAccessException {
+		File defaultPropFile = getProjectSettingsDefaultsFile(pluginID);
+
+		return loadSettings(valueType, defaultPropFile);
+	}
+
 
 	/**
 	 * Sets the value of a project setting
@@ -1137,7 +1257,6 @@ public class STPropertiesManager {
 	 * Sets the value of a default project setting at system level.
 	 * 
 	 * @param settings
-	 * @param project
 	 * @param pluginID
 	 * @param allowIncompletePropValueSet
 	 */

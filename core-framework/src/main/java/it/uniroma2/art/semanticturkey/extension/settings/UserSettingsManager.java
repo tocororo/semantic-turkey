@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.settings;
 
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -27,5 +28,10 @@ public interface UserSettingsManager<T extends Settings> extends SettingsManager
 	default void storeUserSettings(STUser user, T settings) throws STPropertyUpdateException {
 		STPropertiesManager.setUserSettings(settings, user, getId(), true);
 	}
+
+	default void storeUserSettingsDefault(T settings) throws STPropertyUpdateException {
+		STPropertiesManager.setUserSettingsDefault(settings, getId(), true);
+	}
+
 
 }

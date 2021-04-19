@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.extension.settings;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import it.uniroma2.art.semanticturkey.extension.IdentifiableComponent;
 import it.uniroma2.art.semanticturkey.project.Project;

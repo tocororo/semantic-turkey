@@ -1,6 +1,11 @@
 package it.uniroma2.art.semanticturkey.extension;
 
 import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
+import org.apache.commons.lang3.ClassUtils;
+
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * An ExtensionFactory provides instances of a given {@link Extension}. The metadata provided by the factory
@@ -22,6 +27,10 @@ public interface ExtensionFactory<EXTTYPE extends Extension> extends Identifiabl
 	default Class<EXTTYPE> getExtensionType() {
 		return ReflectionUtilities.getInterfaceArgumentTypeAsClass(this.getClass(), ExtensionFactory.class,
 				0);
+	}
+
+	default List<Class<? extends Extension>> getInterfaces() {
+		return ClassUtils.getAllInterfaces(getExtensionType()).stream().filter(Extension.class::isAssignableFrom).map(c -> (Class<? extends Extension>)c).collect(toList());
 	}
 
 	/**
