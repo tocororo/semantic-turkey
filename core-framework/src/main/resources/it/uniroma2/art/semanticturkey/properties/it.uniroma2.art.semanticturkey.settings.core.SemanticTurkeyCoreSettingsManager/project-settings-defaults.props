@@ -3,6 +3,12 @@ languages:
   tag: ar
 - name: Bulgarian
   tag: bg
+- name: Bengali
+  tag: bn
+- name: Bosnian
+  tag: bs
+- name: Catalan
+  tag: ca
 - name: Czech
   tag: cs
 - name: Danish
@@ -13,10 +19,10 @@ languages:
   tag: el
 - name: English
   tag: en
-- name: English American
-  tag: en-US
-- name: English British
+- name: British English
   tag: en-GB
+- name: American English
+  tag: en-US
 - name: Spanish
   tag: es
 - name: Estonian
@@ -25,6 +31,8 @@ languages:
   tag: fa
 - name: Finnish
   tag: fi
+- name: Fijian
+  tag: fj
 - name: French
   tag: fr
 - name: Irish
@@ -37,6 +45,8 @@ languages:
   tag: hu
 - name: Indonesian
   tag: id
+- name: Icelandic
+  tag: is
 - name: Italian
   tag: it
 - name: Japanese
@@ -47,6 +57,8 @@ languages:
   tag: km
 - name: Korean
   tag: ko
+- name: Latin
+  tag: la
 - name: Lithuanian
   tag: lt
 - name: Lao
@@ -55,10 +67,20 @@ languages:
   tag: lv
 - name: Macedonian
   tag: mk
+- name: Malayalam
+  tag: ml
 - name: Moldavian
   tag: mo
+- name: Marati
+  tag: mr
+- name: Malaysian
+  tag: ms
 - name: Maltese
   tag: mt
+- name: Burmese
+  tag: my
+- name: Nepali
+  tag: ne
 - name: Dutch
   tag: nl
 - name: Norwegian
@@ -67,20 +89,28 @@ languages:
   tag: pl
 - name: Portuguese
   tag: pt
+- name: Brazilian Portuguese
+  tag: pt-BR
 - name: Romanian
   tag: ro
 - name: Russian
   tag: ru
+- name: Sinhala
+  tag: si
 - name: Slovak
   tag: sk
 - name: Slovenian
   tag: sl
 - name: Albanian
   tag: sq
-- name: Serbain
+- name: Serbian
   tag: sr
-- name: Svedish
+- name: Swedish
   tag: sv
+- name: Swahili
+  tag: sw
+- name: Telugu
+  tag: te
 - name: Thai
   tag: th
 - name: Turkish
