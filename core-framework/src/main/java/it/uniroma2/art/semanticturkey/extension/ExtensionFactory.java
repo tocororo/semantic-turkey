@@ -30,7 +30,10 @@ public interface ExtensionFactory<EXTTYPE extends Extension> extends Identifiabl
 	}
 
 	default List<Class<? extends Extension>> getInterfaces() {
-		return ClassUtils.getAllInterfaces(getExtensionType()).stream().filter(Extension.class::isAssignableFrom).map(c -> (Class<? extends Extension>)c).collect(toList());
+		return ClassUtils.getAllInterfaces(getExtensionType()).stream()
+				.filter(Extension.class::isAssignableFrom)
+				.filter(c -> !c.equals(Extension.class))
+				.map(c -> (Class<? extends Extension>)c).collect(toList());
 	}
 
 	/**
