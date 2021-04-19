@@ -26,9 +26,11 @@ public class Language implements STProperties {
 
 	@STProperty(description = "{" +MessageKeys.tag$description + "}", displayName = "{" + MessageKeys.tag$displayName + "}")
 	public String tag;
-	
+
+	public Language() {
+	}
+
 	public Language(String name, String tag) {
-		super();
 		this.name = name;
 		this.tag = tag;
 	}
