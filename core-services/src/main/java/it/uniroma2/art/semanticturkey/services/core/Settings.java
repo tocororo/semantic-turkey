@@ -1,18 +1,14 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.util.Collection;
-
-import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
+import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -22,6 +18,11 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Collection;
 
 /**
  * This class provides services for handling settings.
@@ -64,6 +65,25 @@ public class Settings extends STServiceAdapter {
 			Scope scope) throws NoSuchSettingsManager, STPropertyAccessException {
 		Project project = (scope == Scope.SYSTEM) ? null : getProject();
 		return exptManager.getSettings(project, UsersManager.getLoggedUser(), componentID, scope);
+	}
+
+	/**
+	 * Returns the project settings of a specific project
+	 * @param componentID
+	 * @param projectName
+	 * @return
+	 * @throws NoSuchSettingsManager
+	 * @throws STPropertyAccessException
+	 * @throws ProjectAccessException
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 */
+	//TODO: find a way to apply the @PreAuthorize to the project provided as parameter, not to the context one
+	@STServiceOperation
+	public it.uniroma2.art.semanticturkey.extension.settings.Settings getProjectSettings(String componentID,
+			String projectName) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
+			ProjectInexistentException, InvalidProjectNameException {
+		return exptManager.getSettings(ProjectManager.getProjectDescription(projectName), null, componentID, Scope.PROJECT);
 	}
 
 	/**

@@ -44,6 +44,8 @@ public class CorePUSettings implements Settings {
 		public static final String searchSettings$displayName = keyBase + ".searchSettings.displayName";
 		public static final String notificationsStatus$description = keyBase + ".notificationsStatus.description";
 		public static final String notificationsStatus$displayName = keyBase + ".notificationsStatus.displayName";
+		public static final String sheet2rdfSettings$description = keyBase + ".sheet2rdfSettings.description";
+		public static final String sheet2rdfSettings$displayName = keyBase + ".sheet2rdfSettings.displayName";
 	}
 
 	@Override
@@ -111,5 +113,9 @@ public class CorePUSettings implements Settings {
 			+ "}", displayName = "{" + MessageKeys.notificationsStatus$displayName + "}")
 	@Enumeration({"no_notifications", "in_app_only", "email_instant", "email_daily_digest"})
 	public String notificationsStatus;
+
+	@STProperty(description = "{" + MessageKeys.sheet2rdfSettings$description
+			+ "}", displayName = "{" + MessageKeys.sheet2rdfSettings$displayName + "}")
+	public SearchSettings sheet2rdfSettings;
 
 }
