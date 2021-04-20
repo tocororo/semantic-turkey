@@ -17,7 +17,10 @@ import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,6 +87,29 @@ public class Settings extends STServiceAdapter {
 			String projectName) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
 			ProjectInexistentException, InvalidProjectNameException {
 		return exptManager.getSettings(ProjectManager.getProjectDescription(projectName), null, componentID, Scope.PROJECT);
+	}
+
+	/**
+	 * Returns the PU settings of a specific project-user pair
+	 * @param componentID
+	 * @param projectName
+	 * @param userIri
+	 * @return
+	 * @throws NoSuchSettingsManager
+	 * @throws STPropertyAccessException
+	 * @throws ProjectAccessException
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 * @throws UserException
+	 */
+	//TODO: find a way to apply the @PreAuthorize to the project provided as parameter, not to the context one
+	@STServiceOperation
+	public it.uniroma2.art.semanticturkey.extension.settings.Settings getPUSettingsOfUser(String componentID,
+			String projectName, IRI userIri) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
+			ProjectInexistentException, InvalidProjectNameException, UserException {
+		Project project = ProjectManager.getProjectDescription(projectName);
+		STUser user = UsersManager.getUser(userIri);
+		return exptManager.getSettings(project, user, componentID, Scope.PROJECT_USER);
 	}
 
 	/**
