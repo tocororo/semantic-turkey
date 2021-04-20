@@ -439,8 +439,8 @@ public class UpdateRoutines {
 			convertPropertiesSettingToYAML(properties, "lex_entry_list_index_lenght", newCorePUSettingsNode, Arrays.asList("lexEntryList", "indexLength"), Integer::valueOf);
 			convertPropertiesSettingToYAML(properties, "lex_entry_list_safe_to_go_limit", newCorePUSettingsNode, Arrays.asList("lexEntryList", "safeToGoLimit"), Integer::valueOf);
 			convertPropertiesSettingToYAML(properties, "res_view_default_concept_type", newCorePUSettingsNode, Arrays.asList("resourceView", "defaultConceptType"), String::valueOf);
-			convertPropertiesSettingToYAML(properties, "res_view_default_concept_type", newCorePUSettingsNode, Arrays.asList("resourceView", "defaultLexEntryType"), String::valueOf);
-			convertPropertiesSettingToYAML(properties, "res_view_default_lexentry_type", newCorePUSettingsNode, Arrays.asList("resourceView", "resViewPartitionFilter"), v -> om.readTree(new StringReader(v)));
+			convertPropertiesSettingToYAML(properties, "res_view_default_lexentry_type", newCorePUSettingsNode, Arrays.asList("resourceView", "defaultLexEntryType"), String::valueOf);
+			convertPropertiesSettingToYAML(properties, "resViewPartitionFilter", newCorePUSettingsNode, Arrays.asList("resourceView", "resViewPartitionFilter"), v -> om.readTree(new StringReader(v)));
 			convertPropertiesSettingToYAML(properties, "graph_partition_filter", newCorePUSettingsNode, "graphViewPartitionFilter", v -> om.readTree(new StringReader(v)));
 			convertPropertiesSettingToYAML(properties, "hide_literal_graph_nodes", newCorePUSettingsNode, "hideLiteralGraphNodes", Boolean::valueOf);
 			convertPropertiesSettingToYAML(properties, "search_restrict_lang", newCorePUSettingsNode, Arrays.asList("searchSettings", "restrictLang"), Boolean::valueOf);
