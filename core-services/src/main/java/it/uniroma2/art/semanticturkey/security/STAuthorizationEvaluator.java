@@ -4,7 +4,6 @@ import alice.tuprolog.InvalidTheoryException;
 import alice.tuprolog.MalformedGoalException;
 import alice.tuprolog.Struct;
 import alice.tuprolog.Term;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -62,7 +61,7 @@ import java.util.Objects;
 
 /**
  * http://stackoverflow.com/a/14904130/5805661
- * 
+ *
  * @author Tiziano
  */
 public class STAuthorizationEvaluator {
@@ -76,7 +75,7 @@ public class STAuthorizationEvaluator {
 	 * Allows request only to system administrator To use like follow: <code>
 	 * &#64;PreAuthorize("@auth.isAdmin())
 	 * </code>
-	 * 
+	 *
 	 * @return
 	 */
 	public boolean isAdmin() {
@@ -88,7 +87,7 @@ public class STAuthorizationEvaluator {
 	 * {@link PmkiConstants.PmkiRole#PUBLIC}. To use like the following: <code>
 	 * &#64;PreAuthorize("@auth.isCtxProjectPublic()")
 	 * </code>
-	 * 
+	 *
 	 * @return
 	 * @throws UserException
 	 */
@@ -97,14 +96,14 @@ public class STAuthorizationEvaluator {
 				.getPUBinding(UsersManager.getUser(PmkiConstants.PMKI_VISITOR_EMAIL), stServiceContext.getProject()).getRoles()
 				.contains(PmkiConstants.PmkiRole.PUBLIC);
 	}
-	
+
 	/**
 	 * Allows request only when the given project is public (i.e.
 	 * {@link PmkiConstants#PMKI_VISITOR_EMAIL} has role {@link PmkiConstants.PmkiRole#PUBLIC}. To use like
 	 * the following: <code>
 	 * &#64;PreAuthorize("@auth.isProjectPublic(#projectNameParam"))
 	 * </code>
-	 * 
+	 *
 	 * @return
 	 * @throws UserException
 	 * @throws ProjectAccessException
@@ -120,10 +119,32 @@ public class STAuthorizationEvaluator {
 	}
 
 	/**
+	 * This is useful for evaluating authorization for a project different from the one indicated in the context
+	 * @param prologCapability
+	 * @param crudv
+	 * @param projectName
+	 * @return
+	 * @throws MalformedGoalException
+	 * @throws HaltedEngineException
+	 * @throws HarmingGoalException
+	 * @throws STPropertyAccessException
+	 * @throws JSONException
+	 * @throws ProjectAccessException
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 */
+	public boolean isAuthorizedInProject(String prologCapability, String crudv, String projectName)
+			throws MalformedGoalException, HaltedEngineException, HarmingGoalException,
+			STPropertyAccessException, JSONException, ProjectAccessException, ProjectInexistentException,
+			InvalidProjectNameException {
+		return this.isAuthorized(prologCapability, "{}", crudv, projectName);
+	}
+
+	/**
 	 * To use like follow: <code>
 	 * &#64;PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'R')")
 	 * </code> For complete documentation see {@link #isAuthorized(String, String, String)}
-	 * 
+	 *
 	 * @param prologCapability
 	 * @param crudv
 	 * @return
@@ -136,28 +157,40 @@ public class STAuthorizationEvaluator {
 	 * @throws JSONException
 	 */
 	public boolean isAuthorized(String prologCapability, String crudv) throws MalformedGoalException,
-			HaltedEngineException, HarmingGoalException, STPropertyAccessException, JSONException {
+            HaltedEngineException, HarmingGoalException, STPropertyAccessException, JSONException,
+            ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
 		return this.isAuthorized(prologCapability, "{}", crudv);
 	}
 
+	public boolean isAuthorized(String prologCapability, String userResponsibility, String crudv)
+            throws HarmingGoalException, JSONException, HaltedEngineException, MalformedGoalException,
+            STPropertyAccessException, ProjectAccessException, ProjectInexistentException,
+            InvalidProjectNameException {
+		return this.isAuthorized(prologCapability, userResponsibility, crudv, null);
+	}
+
 	/**
-	 * 
+	 *
 	 * To use like follow: <code>
 	 * &#64;PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', '{key1: ''value1'', key2: true}', 'R')")
 	 * </code>
-	 * 
+	 *
 	 * @param prologCapability
 	 *            Expressed in this way <code>&lt;area&gt;(&lt;subject&gt;, &lt;scope&gt;)</code>.
-	 * 
+	 *
 	 * @param userResponsibility
 	 *            A String representing a JSON map serialization like
 	 *            <code>{key1: "value1", key2: "value2"}</code> currently the only handled key is 'lang'
-	 * 
+	 *
 	 * @param crudv
 	 *            Following the CRUD paradigma, it could be any of <code>C (create)</code>
 	 *            <code>R (read)</code> <code>U (update)</code> <code>D (delete)</code>, plus
 	 *            <code>V (validation)</code>.
-	 * 
+	 *
+	 * @param projectName
+	 * 			  Name of the project where the capability will be evaluated. If null is provided, it will
+	 * 			  be considered the context project
+	 *
 	 * @return
 	 * @throws TheoryNotFoundException
 	 * @throws InvalidTheoryException
@@ -167,9 +200,10 @@ public class STAuthorizationEvaluator {
 	 * @throws STPropertyAccessException
 	 * @throws JSONException
 	 */
-	public boolean isAuthorized(String prologCapability, String userResponsibility, String crudv)
+	public boolean isAuthorized(String prologCapability, String userResponsibility, String crudv, String projectName)
 			throws MalformedGoalException, HaltedEngineException, HarmingGoalException,
-			STPropertyAccessException, JSONException {
+			STPropertyAccessException, JSONException, ProjectAccessException, ProjectInexistentException,
+            InvalidProjectNameException {
 		String prologGoal = "auth(" + prologCapability + ", '" + crudv + "').";
 
 		// parse userResponsibility
@@ -186,8 +220,8 @@ public class STAuthorizationEvaluator {
 		}
 
 		STUser loggedUser = UsersManager.getLoggedUser();
-		Collection<Role> userRoles = getRoles(loggedUser);
-		Project targetForRBAC = getTargetForRBAC();
+		Collection<Role> userRoles = getRoles(loggedUser, projectName);
+		Project targetForRBAC = getTargetForRBAC(projectName);
 		AccessLevel requestedAccessLevel = computeRequestedAccessLevel(crudv);
 		LockLevel requestedLockLevel = LockLevel.NO;
 		boolean aclSatisfied = checkACL(requestedAccessLevel, requestedLockLevel);
@@ -208,7 +242,6 @@ public class STAuthorizationEvaluator {
 
 		boolean authorized;
 
-		authorized = false;
 		if (loggedUser.isAdmin()) { // admin is authorized for every operation
 			authorized = true;
 		} else {
@@ -300,7 +333,7 @@ public class STAuthorizationEvaluator {
 	 * Computes the requested <em>access level</em> to the <em>consumed</em> project based on the given
 	 * <em>accessPrivilege</em>, expressed as a <em>crudv</em>. The requested access is <em>R</em> if there is
 	 * no other privilege than <em>R</em>, otherwise it is <em>RW</em>.
-	 * 
+	 *
 	 * @param crudv
 	 * @return
 	 */
@@ -311,13 +344,13 @@ public class STAuthorizationEvaluator {
 	/**
 	 * Retrieves the capabilities of the user for the current project. Returns an empty collection the project
 	 * param is not present in the service request
-	 * 
+	 *
 	 * @param user
 	 * @return
 	 */
-	private Collection<Role> getRoles(STUser user) {
+	private Collection<Role> getRoles(STUser user, String projectName) throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
 		Collection<Role> roles = new ArrayList<>();
-		AbstractProject project = getTargetForRBAC();
+		AbstractProject project = getTargetForRBAC(projectName);
 		if (project != null) {
 			ProjectUserBinding puBinding = ProjectUserBindingsManager.getPUBinding(user, project);
 			// puBinding could be null if user tries to access a 2nd project from the project in which is
@@ -329,17 +362,30 @@ public class STAuthorizationEvaluator {
 		return roles;
 	}
 
-	private Project getTargetForRBAC() {
-		if (stServiceContext.hasContextParameter("project")) {
-			Project project = stServiceContext.getProject();
-			ProjectConsumer consumer = stServiceContext.getProjectConsumer();
-			if (consumer.equals(ProjectConsumer.SYSTEM)) {
-				return project;
-			} else {
-				return (Project) consumer;
-			}
+	/**
+	 * Returns the Project subject of the authorization checks.
+	 * If a projectName is provided returns the related Project, otherwise returns the ctx_project (if any)
+	 * @param projectName
+	 * @return
+	 * @throws ProjectAccessException
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 */
+	private Project getTargetForRBAC(String projectName) throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
+		if (projectName != null) {
+			return ProjectManager.getProject(projectName, true);
 		} else {
-			return null;
+			if (stServiceContext.hasContextParameter("project")) {
+				Project project = stServiceContext.getProject();
+				ProjectConsumer consumer = stServiceContext.getProjectConsumer();
+				if (consumer.equals(ProjectConsumer.SYSTEM)) {
+					return project;
+				} else {
+					return (Project) consumer;
+				}
+			} else {
+				return null;
+			}
 		}
 	}
 
@@ -361,7 +407,7 @@ public class STAuthorizationEvaluator {
 	/**
 	 * To use at support of isAuthorized like @PreAuthorize("@auth.isAuthorized('rdf('
 	 * +@auth.typeof(#individual)+ ')', 'R')") where individual is a method parameter name
-	 * 
+	 *
 	 * @param resource
 	 * @return
 	 */
@@ -395,7 +441,7 @@ public class STAuthorizationEvaluator {
 	 * +@auth.langof(#label)+ '''}', 'C')") the three ''' are required because '' represents the double quotes
 	 * surrounding the map value, the third ' closes (or open) the string to evaluate in isAuthorized() where
 	 * literal is a method parameter name of type Literal
-	 * 
+	 *
 	 * @param literal
 	 * @return
 	 */
@@ -405,7 +451,7 @@ public class STAuthorizationEvaluator {
 
 	/**
 	 * Same of {@link #langof(Literal)} to use with xLabel
-	 * 
+	 *
 	 * @param xLabel
 	 * @return
 	 */
@@ -453,7 +499,7 @@ public class STAuthorizationEvaluator {
 	 * Check if the user that is performing the request has the given email. Useful to the Preauthorize
 	 * annotation in those services that allow to edit user related staff. This check so is exploited in order
 	 * to check that the user provided as parameter (which is the subject of the changes), is the logged one
-	 * 
+	 *
 	 * @param email
 	 * @return
 	 */

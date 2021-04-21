@@ -26,6 +26,87 @@
  */
 package it.uniroma2.art.semanticturkey.project;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerFactory;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociation;
+import it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociationStore;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectDeletionException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurer;
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
+import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
+import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
+import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
+import it.uniroma2.art.semanticturkey.properties.Pair;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.rbac.RBACException;
+import it.uniroma2.art.semanticturkey.rbac.RBACManager;
+import it.uniroma2.art.semanticturkey.resources.Reference;
+import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
+import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
+import it.uniroma2.art.semanticturkey.trivialinference.sail.config.TrivialInferencerConfig;
+import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.utilities.ModelBasedRepositoryManager;
+import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
+import it.uniroma2.art.semanticturkey.utilities.Utilities;
+import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
+import it.uniroma2.art.semanticturkey.vocabulary.SUPPORT;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.rdf4j.RDF4JException;
+import org.eclipse.rdf4j.http.protocol.Protocol;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.config.RepositoryConfig;
+import org.eclipse.rdf4j.repository.config.RepositoryConfigUtil;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
+import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
+import org.eclipse.rdf4j.repository.manager.RepositoryManager;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.sail.config.SailConfigSchema;
+import org.eclipse.rdf4j.sail.config.SailImplConfig;
+import org.eclipse.rdf4j.sail.shacl.config.ShaclSailConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.XMLGregorianCalendar;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -51,92 +132,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import javax.annotation.Nullable;
-import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.datatype.DatatypeFactory;
-import javax.xml.datatype.XMLGregorianCalendar;
-
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.rdf4j.RDF4JException;
-import org.eclipse.rdf4j.http.protocol.Protocol;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.config.RepositoryConfig;
-import org.eclipse.rdf4j.repository.config.RepositoryConfigUtil;
-import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
-import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
-import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
-import org.eclipse.rdf4j.repository.manager.RepositoryManager;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.sail.config.SailConfigSchema;
-import org.eclipse.rdf4j.sail.config.SailImplConfig;
-import org.eclipse.rdf4j.sail.shacl.config.ShaclSailConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
-import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerFactory;
-import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
-import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
-import it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociation;
-import it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociationStore;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectDeletionException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
-import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
-import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
-import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
-import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
-import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
-import it.uniroma2.art.semanticturkey.extension.extpts.repositoryimplconfigurer.RepositoryImplConfigurer;
-import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
-import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
-import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
-import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
-import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
-import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
-import it.uniroma2.art.semanticturkey.properties.Pair;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
-import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
-import it.uniroma2.art.semanticturkey.rbac.RBACException;
-import it.uniroma2.art.semanticturkey.rbac.RBACManager;
-import it.uniroma2.art.semanticturkey.resources.Reference;
-import it.uniroma2.art.semanticturkey.resources.Resources;
-import it.uniroma2.art.semanticturkey.resources.UpdateRoutines;
-import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
-import it.uniroma2.art.semanticturkey.trivialinference.sail.config.TrivialInferencerConfig;
-import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
-import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
-import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
-import it.uniroma2.art.semanticturkey.utilities.ModelBasedRepositoryManager;
-import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
-import it.uniroma2.art.semanticturkey.utilities.Utilities;
-import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
-import it.uniroma2.art.semanticturkey.vocabulary.SUPPORT;
 
 /**
  * <p>
@@ -232,7 +227,7 @@ public class ProjectManager {
 	 */
 	public static Collection<AbstractProject> listProjects(ProjectConsumer consumer)
 			throws ProjectAccessException {
-		ArrayList<AbstractProject> projects = new ArrayList<AbstractProject>();
+		ArrayList<AbstractProject> projects = new ArrayList<>();
 		List<File> projectDirs;
 		try {
 			projectDirs = Utilities.listDirectoryContentAsFiles(Resources.getProjectsDir(), false, true,
@@ -319,6 +314,9 @@ public class ProjectManager {
 
 		if (!Utilities.deleteDir(projectDir))
 			throw new ProjectDeletionException("unable to delete project: " + projectName);
+
+		//unload the RBAC processor
+		RBACManager.unloadRBACProcessor(projectName);
 	}
 
 	private static Project activateProject(String projectName)
@@ -743,7 +741,7 @@ public class ProjectManager {
 		FileInputStream fis = new FileInputStream(infoSTPFile);
 		stp_properties.load(fis);
 		fis.close();
-		Map<String, String> map = new HashMap<String, String>();
+		Map<String, String> map = new HashMap<>();
 		Set<String> propList = stp_properties.stringPropertyNames();
 		for (String p : propList) {
 			map.put(p, stp_properties.getProperty(p));
@@ -963,12 +961,11 @@ public class ProjectManager {
 	 * @throws ProjectAccessException
 	 * @throws ForbiddenProjectAccessException
 	 * @throws ProjectBindingException
-	 * @throws RBACException
 	 */
 	public static Project accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, RBACException {
+			ForbiddenProjectAccessException {
 
 		Project project = getProjectDescription(projectName);
 
@@ -999,7 +996,6 @@ public class ProjectManager {
 				if (!ProjectGroupBindingsManager.existsPGBindingsOfProject(project)) {
 					ProjectGroupBindingsManager.createPGBindingsOfProject(project);
 				}
-				RBACManager.loadRBACProcessor(project);
 
 				for (ProjectEventHandler h : projectEventHandlers) {
 					h.afterProjectInitialization(project);
@@ -1059,7 +1055,6 @@ public class ProjectManager {
 		logger.debug("closing project: " + project);
 		project.deactivate();
 		CustomFormManager.getInstance().unregisterCustomFormModelOfProject(project);
-		RBACManager.unloadRBACProcessor(project);
 		for (ProjectEventHandler h : projectEventHandlers) {
 			h.beforeProjectTearDown(project);
 		}
@@ -1160,9 +1155,9 @@ public class ProjectManager {
 		// project is open)
 		// the third map returns the lock status; note that a "no lock" is represented by a LockStatus pair
 		// with <null, LockLevel.NO>
-		private Map<String, Project> projects = new HashMap<String, Project>();
-		private Map<Project, Map<ProjectConsumer, ProjectACL.AccessLevel>> projectsAccessStatus = new HashMap<Project, Map<ProjectConsumer, ProjectACL.AccessLevel>>();
-		private Map<Project, LockStatus> projectsLockStatus = new HashMap<Project, LockStatus>();
+		private Map<String, Project> projects = new HashMap<>();
+		private Map<Project, Map<ProjectConsumer, ProjectACL.AccessLevel>> projectsAccessStatus = new HashMap<>();
+		private Map<Project, LockStatus> projectsLockStatus = new HashMap<>();
 
 		public Project getProject(String projectName) {
 			return projects.get(projectName);
@@ -1244,7 +1239,7 @@ public class ProjectManager {
 				ProjectACL.LockLevel lockLevel) {
 			// TODO foresee a check for existing project (it should not exist, so in case throw an exception)
 			projects.put(project.getName(), project);
-			Map<ProjectConsumer, ProjectACL.AccessLevel> accessStatusMap = new HashMap<ProjectConsumer, ProjectACL.AccessLevel>();
+			Map<ProjectConsumer, ProjectACL.AccessLevel> accessStatusMap = new HashMap<>();
 			accessStatusMap.put(consumer, accessLevel);
 			projectsAccessStatus.put(project, accessStatusMap);
 			setLock(project, consumer, lockLevel);
@@ -1304,7 +1299,7 @@ public class ProjectManager {
 		 * @return
 		 */
 		public Set<Project> listAccessedProjects(ProjectConsumer consumer) {
-			HashSet<Project> accessedProjects = new HashSet<Project>();
+			HashSet<Project> accessedProjects = new HashSet<>();
 			for (Entry<Project, Map<ProjectConsumer, ProjectACL.AccessLevel>> mapEntry : projectsAccessStatus
 					.entrySet()) {
 				if (mapEntry.getValue().containsKey(consumer))
@@ -1626,6 +1621,7 @@ public class ProjectManager {
 					trivialInferenceEnabled, openAtStartup);
 
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
+			RBACManager.loadRBACProcessor(project);
 
 			if (preloadedDataFile != null) {
 				Repository repository = project.getOntologyManager().getRepository();
@@ -1767,8 +1763,7 @@ public class ProjectManager {
 	}
 
 	private static RepositoryImplConfigurer instantiateRepositoryImplConfigurer(PluginSpecification spec)
-			throws ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, WrongPropertiesException, IllegalArgumentException,
+			throws WrongPropertiesException, IllegalArgumentException,
 			STPropertyAccessException, InvalidConfigurationException {
 		return exptManager.instantiateExtension(RepositoryImplConfigurer.class, spec);
 	}

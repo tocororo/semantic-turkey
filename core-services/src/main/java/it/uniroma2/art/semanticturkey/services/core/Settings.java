@@ -24,6 +24,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.Collection;
 
@@ -71,7 +72,11 @@ public class Settings extends STServiceAdapter {
 	}
 
 	/**
-	 * Returns the project settings of a specific project
+	 * Returns the project settings of a specific project.
+	 * Useful for administration purposes (e.g. Admin that want to manage project settings for a project
+	 * different from ctx_project).
+	 * This service can still be used by PM providing as projectName the same ctx_project.
+	 *
 	 * @param componentID
 	 * @param projectName
 	 * @return
@@ -81,7 +86,7 @@ public class Settings extends STServiceAdapter {
 	 * @throws ProjectInexistentException
 	 * @throws InvalidProjectNameException
 	 */
-	//TODO: find a way to apply the @PreAuthorize to the project provided as parameter, not to the context one
+	@PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'U', #projectName)")
 	@STServiceOperation
 	public it.uniroma2.art.semanticturkey.extension.settings.Settings getProjectSettings(String componentID,
 			String projectName) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
@@ -90,7 +95,11 @@ public class Settings extends STServiceAdapter {
 	}
 
 	/**
-	 * Returns the PU settings of a specific project-user pair
+	 * Returns the PU settings of a specific project-user pair.
+	 * Useful for administration purposes (e.g. Admin or PMs that want to manage user settings for different
+	 * users/projects and not for themself in the ctx_project).
+	 * Users that wants to get their PUSettings can still use {@link #getSettings} with the proper scope.
+	 *
 	 * @param componentID
 	 * @param projectName
 	 * @param userIri
@@ -102,7 +111,7 @@ public class Settings extends STServiceAdapter {
 	 * @throws InvalidProjectNameException
 	 * @throws UserException
 	 */
-	//TODO: find a way to apply the @PreAuthorize to the project provided as parameter, not to the context one
+	@PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'U', #projectName)")
 	@STServiceOperation
 	public it.uniroma2.art.semanticturkey.extension.settings.Settings getPUSettingsOfUser(String componentID,
 			String projectName, IRI userIri) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,

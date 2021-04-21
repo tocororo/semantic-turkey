@@ -91,12 +91,8 @@ public class RBACManager {
 		}
 	}
 	
-	/**
-	 * 
-	 * @param project
-	 */
-	public static void unloadRBACProcessor(Project project) {
-		Map<String, RBACProcessor> roleRBacMap = rbacMap.get(project.getName());
+	public static void unloadRBACProcessor(String projectName) {
+		Map<String, RBACProcessor> roleRBacMap = rbacMap.get(projectName);
 		roleRBacMap.replaceAll((k, v) -> null);
 	}
 	
