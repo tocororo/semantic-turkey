@@ -815,7 +815,7 @@ public class Projects extends STServiceAdapter {
 								requestedLockLevel);
 					}
 				} catch (InvalidProjectNameException | ProjectInexistentException | ProjectAccessException
-						| ForbiddenProjectAccessException | RBACException e) {
+						| ForbiddenProjectAccessException e) {
 					// take note of the problematic project
 					projectExceptionMap.put(projInfo.getName(), ExceptionDAO.valueOf(e));
 				}
