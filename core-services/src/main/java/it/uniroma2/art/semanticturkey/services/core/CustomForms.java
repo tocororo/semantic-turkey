@@ -261,12 +261,12 @@ public class CustomForms extends STServiceAdapter {
 								.collect(Collectors.joining(" "));
 						String query = "SELECT ?p ?o WHERE {\n"
 								+ "	GRAPH " + RenderUtils.toSPARQL(getWorkingGraph()) + " {\n"
-								+ "		BIND(" + RenderUtils.toSPARQL(v) + " as ?s)\n"
 								+ "		VALUES(?p) {" + propsValues + "}\n"
 								+ "		OPTIONAL { ?s ?p ?o . }\n"
 								+ "	}\n"
 								+ "}";
 						TupleQuery tq = repoConnection.prepareTupleQuery(query);
+						tq.setBinding("s", v);
 						tq.setIncludeInferred(false);
 						TupleQueryResult results = tq.evaluate();
 
