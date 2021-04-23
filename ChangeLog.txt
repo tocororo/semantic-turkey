@@ -8,6 +8,8 @@ date: dd/mm/yyyy
   * fixed issue in validation that loses null-valued operation parameters inside the history
   * fixed NullPointerException in CODAURIGenerator
   * fixed bug in NativeTemplateBasedURIGenerator that ignores the configured templates
+  * fixed bug in operations within the service class Project causing losing the configuration type when updating bound
+    components (e.g. URI Generators and Rendering Engines)
 
 version 9.0
 date: 17/03/2021

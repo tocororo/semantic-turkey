@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -1855,7 +1856,12 @@ public class Projects extends STServiceAdapter {
 		File componentConfigurationFile = new File(project.getProjectDirectory(), configFilename);
 		if (componentSpec.getConfiguration() != null) {
 			try (FileWriter fw = new FileWriter(componentConfigurationFile)) {
-				STPropertiesManager.storeObjectNodeInYAML(componentSpec.getConfiguration(),
+				ObjectNode configuration = componentSpec.getConfiguration();
+				if (StringUtils.isNoneBlank(componentSpec.getConfigType())) {
+					configuration = configuration.deepCopy();
+					configuration.put(STPropertiesManager.SETTINGS_TYPE_PROPERTY, componentSpec.getConfigType());
+				}
+				STPropertiesManager.storeObjectNodeInYAML(configuration,
 						componentConfigurationFile);
 			}
 		} else {
