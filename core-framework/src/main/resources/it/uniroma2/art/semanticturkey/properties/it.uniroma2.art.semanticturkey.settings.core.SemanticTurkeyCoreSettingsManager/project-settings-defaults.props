@@ -11,6 +11,8 @@ languages:
   tag: ca
 - name: Czech
   tag: cs
+- name: Welsh
+  tag: cy
 - name: Danish
   tag: da
 - name: German
@@ -37,6 +39,8 @@ languages:
   tag: fr
 - name: Irish
   tag: ga
+- name: Scottish Gaelic
+  tag: gd
 - name: Hindi
   tag: hi
 - name: Croatian
