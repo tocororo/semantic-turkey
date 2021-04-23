@@ -7,6 +7,7 @@ date: dd/mm/yyyy
   * made the rendering of decomp:Component, ontolex:LexicalEntry, ontolex:Form and skosxl:Label of the choice
     of languages for rendering
   * made the LexicographerView only contain outgoing lexico-semantic relationships
+  * added Scottish Gaelic and Welsh to the system languages
   
 version 9.0.
 date: 17/03/2021
