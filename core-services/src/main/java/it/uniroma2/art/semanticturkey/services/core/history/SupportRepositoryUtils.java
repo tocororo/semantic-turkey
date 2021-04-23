@@ -1,9 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core.history;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -190,10 +187,7 @@ public abstract class SupportRepositoryUtils {
 
 		int nParams = splits.length / 2;
 
-		ArrayList<ParameterInfo> rv = new ArrayList<>(nParams);
-		for (int i = 0; i < nParams; i++) {
-			rv.add(null);
-		}
+		Map<Integer, ParameterInfo> rv = new TreeMap<>();
 		for (int i = 0; i < splits.length; i += 2) {
 			String pIRI = splits[i].replaceAll("\\\\\\$", Matcher.quoteReplacement("$"))
 					.replaceAll("\\\\\\\\", Matcher.quoteReplacement("\\"));
@@ -210,10 +204,10 @@ public abstract class SupportRepositoryUtils {
 				pValue = null;
 			}
 
-			rv.set(pIndex, new ParameterInfo(pName, pValue));
+			rv.put(pIndex, new ParameterInfo(pName, pValue));
 		}
 
-		return rv;
+		return new ArrayList<>(rv.values());
 	}
 
 	public static void computeOperationDisplay(STServiceTracker stServiceTracker,

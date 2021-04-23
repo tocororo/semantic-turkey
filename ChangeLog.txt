@@ -1,11 +1,13 @@
-version 9.0.1
+version 9.1
 date: dd/mm/yyyy
   * added support for "no language tagged" labels in rendering engine
-  * made the rendering of decomp:Component, ontolex:LexicalEntry, ontolex:Form and skosxl:Label of the choice
+  * made the rendering of decomp:Component, ontolex:LexicalEntry, ontolex:Form and skosxl:Label independent of the choice
     of languages for rendering
   * made the LexicographerView only contain outgoing lexico-semantic relationships
-  
-version 9.0.
+  * fixed IndexOutBoundException thrown by the history tab in projects with validation enabled
+  * fixed issue in validation that loses null-valued operation parameters inside the history
+
+version 9.0
 date: 17/03/2021
   * added support for internationalization (i18n)
     - added localization (l10n) for italian
