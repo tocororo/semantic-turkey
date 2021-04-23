@@ -7,6 +7,7 @@ date: dd/mm/yyyy
   * fixed IndexOutBoundException thrown by the history tab in projects with validation enabled
   * fixed issue in validation that loses null-valued operation parameters inside the history
   * fixed NullPointerException in CODAURIGenerator
+  * fixed bug in NativeTemplateBasedURIGenerator that ignores the configured templates
 
 version 9.0
 date: 17/03/2021
