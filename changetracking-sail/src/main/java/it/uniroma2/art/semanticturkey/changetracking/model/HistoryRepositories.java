@@ -186,7 +186,7 @@ public abstract class HistoryRepositories {
 				Value obj = statement.getObject();
 
 				if (obj instanceof IRI) {
-					if (((IRI) obj).getNamespace().equals(CHANGELOG.NAMESPACE))
+					if (((IRI) obj).getNamespace().equals(CHANGELOG.NAMESPACE) && !CHANGELOG.isNull(obj))
 						continue;
 				}
 
