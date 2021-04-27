@@ -775,10 +775,10 @@ public class Alignment extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#entity1)+ ', alignment)', 'C')")
-	public JsonNode acceptAlignment(IRI entity1, IRI entity2, String relation, @Optional IRI forcedProperty,
-			@Optional(defaultValue = "false") boolean setAsDefault) {
+	public JsonNode acceptAlignment(IRI entity1, IRI entity2, String relation, @Optional RDFResourceRole entity1Role,
+			@Optional IRI forcedProperty, @Optional(defaultValue = "false") boolean setAsDefault) {
 		AlignmentModel alignModel = modelsMap.get(stServiceContext.getSessionToken());
-		alignModel.acceptAlignment(entity1, entity2, relation, forcedProperty, setAsDefault,
+		alignModel.acceptAlignment(entity1, entity2, relation, entity1Role, forcedProperty, setAsDefault,
 				getManagedConnection());
 		Cell c = alignModel.getCell(entity1, entity2, relation);
 		return createCellJsonNode(c);
@@ -824,7 +824,7 @@ public class Alignment extends STServiceAdapter {
 				IRI entity1 = cell.getEntity1();
 				IRI entity2 = cell.getEntity2();
 				String relation = cell.getRelation();
-				alignModel.acceptAlignment(entity1, entity2, relation, null, false, getManagedConnection());
+				alignModel.acceptAlignment(entity1, entity2, relation, null, null, false, getManagedConnection());
 				Cell updatedCell = alignModel.getCell(entity1, entity2, relation);
 				cellsArrayNode.add(createCellJsonNode(updatedCell));
 			}

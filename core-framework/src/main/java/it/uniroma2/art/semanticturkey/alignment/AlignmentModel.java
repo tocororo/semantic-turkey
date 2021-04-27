@@ -554,8 +554,8 @@ public class AlignmentModel {
 	 * @return
 	 * @throws InvalidAlignmentRelationException
 	 */
-	public void acceptAlignment(IRI entity1, IRI entity2, String relation, IRI forcedProperty,
-			boolean setAsDefault, RepositoryConnection projRepoConn) {
+	public void acceptAlignment(IRI entity1, IRI entity2, String relation, @Nullable RDFResourceRole entity1Role,
+			@Nullable IRI forcedProperty, boolean setAsDefault, RepositoryConnection projRepoConn) {
 		String query;
 		IRI prop;
 
@@ -566,7 +566,12 @@ public class AlignmentModel {
 					relationPropertyMap.put(relation, forcedProperty);
 				}
 			} else { // otherwise infer the mapping proprety from relation
-				List<IRI> suggProps = suggestPropertiesForRelation(entity1, relation, true, projRepoConn);
+				List<IRI> suggProps;
+				if (entity1Role == null) {
+					suggProps = suggestPropertiesForRelation(entity1, relation, true, projRepoConn);
+				} else {
+					suggProps = suggestPropertiesForRelation(entity1Role, relation, true);
+				}
 				prop = suggProps.get(0);
 			}
 			//@formatter:off
@@ -740,7 +745,7 @@ public class AlignmentModel {
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.STATUS) + " ?s .\n"
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.COMMENT) + " ?c .\n"
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " ?m .\n"
-				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " ?oldRelation .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + oldRelation + "' .\n"
 				+ "} INSERT {\n"
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + newRelation + "' .\n"
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + String.format("%s", measure)	+ "'^^" + NTriplesUtil.toNTriplesString(XMLSchema.FLOAT) + " .\n"
