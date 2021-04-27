@@ -36,6 +36,10 @@ import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.query.AbstractTupleQueryResultHandler;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.WriterConfig;
+import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -1135,7 +1139,7 @@ public class LexicographerView extends STServiceAdapter {
 		    "PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>                                                 \n" +				
 		    "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                                                    \n" +				
 		    "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                                     \n" +				
-		    "PREFIX wn: <://globalwordnet.github.io/schemas/wn#>                                                     \n" +				
+		    "PREFIX wn: <https://globalwordnet.github.io/schemas/wn#>                                                 \n" +
 		    "SELECT DISTINCT * WHERE {                                                                               \n" +
 
 

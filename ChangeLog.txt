@@ -4,6 +4,9 @@ date: dd/mm/yyyy
   * made the rendering of decomp:Component, ontolex:LexicalEntry, ontolex:Form and skosxl:Label independent of the choice
     of languages for rendering
   * made the LexicographerView only contain outgoing lexico-semantic relationships
+  * sped up the lexicographer view on Ontotext GraphDB
+  * fixed bug in the lexicographer that prevented the rendering of reified definitions modeled using the Global WordNet
+    Association ontology
   * fixed IndexOutBoundException thrown by the history tab in projects with validation enabled
   * fixed issue in validation that loses null-valued operation parameters inside the history
   * fixed NullPointerException in CODAURIGenerator
