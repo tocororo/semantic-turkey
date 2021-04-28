@@ -158,7 +158,6 @@
 							org.eclipse.rdf4j.query,
 							it.uniroma2.art.semanticturkey.services.support,
 							it.uniroma2.art.semanticturkey.extension.extpts.search,
-							it.uniroma2.art.semanticturkey.plugin.extpts,
 							org.springframework.validation,
 							javax.validation.metadata,
 							javax.validation.executable,
