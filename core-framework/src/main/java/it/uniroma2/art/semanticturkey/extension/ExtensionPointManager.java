@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
@@ -22,6 +23,7 @@ import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -31,123 +33,124 @@ import it.uniroma2.art.semanticturkey.user.STUser;
 
 public interface ExtensionPointManager {
 
-	/**
-	 * Returns known extension points.
-	 * 
-	 * @param scopes
-	 *            if not empty, indicates the scopes we are interested in. Otherwise, every scope is
-	 *            considered.
-	 * @return
-	 */
-	Collection<ExtensionPoint> getExtensionPoints(Scope... scopes);
+    /**
+     * Returns known extension points.
+     *
+     * @param scopes if not empty, indicates the scopes we are interested in. Otherwise, every scope is
+     *               considered.
+     * @return
+     */
+    Collection<ExtensionPoint> getExtensionPoints(Scope... scopes);
 
-	/**
-	 * Returns an extension point given its identifier
-	 * 
-	 * @param identifier
-	 * @return
-	 * @throws NoSuchExtensionPointException
-	 */
-	ExtensionPoint getExtensionPoint(String identifier) throws NoSuchExtensionPointException;
+    /**
+     * Returns an extension point given its identifier
+     *
+     * @param identifier
+     * @return
+     * @throws NoSuchExtensionPointException
+     */
+    ExtensionPoint getExtensionPoint(String identifier) throws NoSuchExtensionPointException;
 
-	CollaborationBackendExtensionPoint getCollaborationBackend();
-	
-	DatasetCatalogConnectorExtensionPoint getDatasetCatalogConnector();
+    CollaborationBackendExtensionPoint getCollaborationBackend();
 
-	DatasetMetadataExporterExtensionPoint getDatasetMetadataExporter();
+    DatasetCatalogConnectorExtensionPoint getDatasetCatalogConnector();
 
-	RenderingEngineExtensionPoint getRenderingEngine();
+    DatasetMetadataExporterExtensionPoint getDatasetMetadataExporter();
 
-	RDFTransformerExtensionPoint getRDFTransformer();
+    RenderingEngineExtensionPoint getRenderingEngine();
 
-	RepositoryImplConfigurerExtensionPoint getRepositoryImplConfigurer();
+    RDFTransformerExtensionPoint getRDFTransformer();
 
-	SearchStrategyExtensionPoint getSearchStrategy();
+    RepositoryImplConfigurerExtensionPoint getRepositoryImplConfigurer();
 
-	URIGeneratorExtensionPoint getURIGenerator();
+    SearchStrategyExtensionPoint getSearchStrategy();
 
-	Collection<ConfigurationManager<?>> getConfigurationManagers();
+    URIGeneratorExtensionPoint getURIGenerator();
 
-	ConfigurationManager<?> getConfigurationManager(String componentID) throws NoSuchConfigurationManager;
+    Collection<ConfigurationManager<?>> getConfigurationManagers();
 
-	SettingsManager getSettingsManager(String componentID) throws NoSuchSettingsManager;
+    ConfigurationManager<?> getConfigurationManager(String componentID) throws NoSuchConfigurationManager;
 
-	Collection<SettingsManager> getSettingsManagers();
+    SettingsManager getSettingsManager(String componentID) throws NoSuchSettingsManager;
 
-	/**
-	 * Returns the stored configurations associated with a given component
-	 * 
-	 * @param project
-	 * @param user
-	 * @param componentIdentifier
-	 * 
-	 * @return
-	 * @throws NoSuchConfigurationManager
-	 */
-	Collection<Reference> getConfigurationReferences(Project project, STUser user, String componentIdentifier)
-			throws NoSuchConfigurationManager;
+    Collection<SettingsManager> getSettingsManagers();
 
-	/**
-	 * Returns a stored configuration located with the supplied identifier
-	 * 
-	 * @param componentIdentifier
-	 * @param reference
-	 * @return
-	 * @throws NoSuchConfigurationManager
-	 * @throws WrongPropertiesException
-	 * @throws ConfigurationNotFoundException
-	 * @throws IOException
-	 * @throws STPropertyAccessException
-	 */
-	Configuration getConfiguration(String componentIdentifier, Reference reference)
-			throws IOException, ConfigurationNotFoundException, WrongPropertiesException,
-			NoSuchConfigurationManager, STPropertyAccessException;
+    /**
+     * Returns the stored configurations associated with a given component
+     *
+     * @param project
+     * @param user
+     * @param componentIdentifier
+     * @return
+     * @throws NoSuchConfigurationManager
+     */
+    Collection<Reference> getConfigurationReferences(Project project, STUser user, String componentIdentifier)
+            throws NoSuchConfigurationManager;
 
-	void storeConfiguration(String componentIdentifier, Reference reference, ObjectNode configuration)
-			throws IOException, WrongPropertiesException, NoSuchConfigurationManager,
-			STPropertyUpdateException, STPropertyAccessException;
+    /**
+     * Returns a stored configuration located with the supplied identifier
+     *
+     * @param componentIdentifier
+     * @param reference
+     * @return
+     * @throws NoSuchConfigurationManager
+     * @throws WrongPropertiesException
+     * @throws ConfigurationNotFoundException
+     * @throws IOException
+     * @throws STPropertyAccessException
+     */
+    Configuration getConfiguration(String componentIdentifier, Reference reference)
+            throws IOException, ConfigurationNotFoundException, WrongPropertiesException,
+            NoSuchConfigurationManager, STPropertyAccessException;
 
-	void deleteConfiguraton(String componentIdentifier, Reference reference)
-			throws NoSuchConfigurationManager, ConfigurationNotFoundException;
+    void storeConfiguration(String componentIdentifier, Reference reference, ObjectNode configuration)
+            throws IOException, WrongPropertiesException, NoSuchConfigurationManager,
+            STPropertyUpdateException, STPropertyAccessException;
 
-	Settings getSettings(Project project, STUser user, String componentIdentifier, Scope scope)
-			throws STPropertyAccessException, NoSuchSettingsManager;
+    void deleteConfiguraton(String componentIdentifier, Reference reference)
+            throws NoSuchConfigurationManager, ConfigurationNotFoundException;
 
-	Collection<Scope> getSettingsScopes(String componentIdentifier) throws NoSuchSettingsManager;
+    Settings getSettings(Project project, STUser user, String componentIdentifier, Scope scope)
+            throws STPropertyAccessException, NoSuchSettingsManager;
 
-	void storeSettings(String componentIdentifier, Project project, STUser user, Scope scope,
-			ObjectNode settings)
-			throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException,
-			STPropertyAccessException;
+    Collection<Scope> getSettingsScopes(String componentIdentifier) throws NoSuchSettingsManager;
 
-	Collection<ExtensionFactory<?>> getExtensions(String extensionPoint);
+    void storeSettings(String componentIdentifier, Project project, STUser user, Scope scope,
+                       ObjectNode settings)
+            throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException,
+            STPropertyAccessException;
 
-	/**
-	 * Returns the {@link ExtensionFactory} matching the given <em>component identifier</code>
-	 * 
-	 * @param componentID
-	 * @return
-	 * @throws NoSuchExtensionException
-	 */
-	ExtensionFactory<?> getExtension(String componentID) throws NoSuchExtensionException;
+    void storeSetting(String componentID, Project project, STUser loggedUser, Scope scope, String property, JsonNode propertyValue)
+            throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException, STPropertyAccessException, PropertyNotFoundException, IOException;
 
-	/**
-	 * Create an instance of an extension that conforms to {@code targetInterface}, following the provided
-	 * {@code spec}
-	 * 
-	 * @param targetInterface
-	 * @param spec
-	 * @return
-	 * @throws IllegalArgumentException
-	 * @throws NoSuchExtensionException
-	 * @throws WrongPropertiesException
-	 * @throws STPropertyAccessException
-	 * @throws InvalidConfigurationException
-	 */
-	public <T extends Extension> T instantiateExtension(Class<T> targetInterface, PluginSpecification spec)
-			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
-			STPropertyAccessException, InvalidConfigurationException;
+    Collection<ExtensionFactory<?>> getExtensions(String extensionPoint);
 
-	Optional<Class<?>> getConfigurationClassFromName(String propsType);
+    /**
+     * Returns the {@link ExtensionFactory} matching the given <em>component identifier</code>
+     *
+     * @param componentID
+     * @return
+     * @throws NoSuchExtensionException
+     */
+    ExtensionFactory<?> getExtension(String componentID) throws NoSuchExtensionException;
+
+    /**
+     * Create an instance of an extension that conforms to {@code targetInterface}, following the provided
+     * {@code spec}
+     *
+     * @param targetInterface
+     * @param spec
+     * @return
+     * @throws IllegalArgumentException
+     * @throws NoSuchExtensionException
+     * @throws WrongPropertiesException
+     * @throws STPropertyAccessException
+     * @throws InvalidConfigurationException
+     */
+    public <T extends Extension> T instantiateExtension(Class<T> targetInterface, PluginSpecification spec)
+            throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
+            STPropertyAccessException, InvalidConfigurationException;
+
+    Optional<Class<?>> getConfigurationClassFromName(String propsType);
 
 }
