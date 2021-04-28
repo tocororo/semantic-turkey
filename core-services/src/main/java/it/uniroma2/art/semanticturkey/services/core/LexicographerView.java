@@ -1135,7 +1135,7 @@ public class LexicographerView extends STServiceAdapter {
 		    "PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>                                                 \n" +				
 		    "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                                                    \n" +				
 		    "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                                                     \n" +				
-		    "PREFIX wn: <://globalwordnet.github.io/schemas/wn#>                                                     \n" +				
+		    "PREFIX wn: <https://globalwordnet.github.io/schemas/wn#>                                                 \n" +
 		    "SELECT DISTINCT * WHERE {                                                                               \n" +
 
 
