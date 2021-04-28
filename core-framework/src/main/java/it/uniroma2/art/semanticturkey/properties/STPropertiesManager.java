@@ -430,6 +430,51 @@ public class STPropertiesManager {
 	}
 
 	/**
+	 * Returns the value of a default pu_settings at project level
+	 *
+	 * @param valueType
+	 * @param pluginID
+	 *
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static <T extends STProperties> T getPUSettingsProjectDefault(Class<T> valueType, Project project, String pluginID) throws STPropertyAccessException {
+		File defaultPropFile = getPUSettingsProjectDefaultsFile(project, pluginID);
+
+		return loadSettings(valueType, defaultPropFile);
+	}
+
+	/**
+	 * Returns the value of a default pu_settings at user level
+	 *
+	 * @param valueType
+	 * @param pluginID
+	 *
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static <T extends STProperties> T getPUSettingsUserDefault(Class<T> valueType, STUser user, String pluginID) throws STPropertyAccessException {
+		File defaultPropFile = getPUSettingsUserDefaultsFile(user, pluginID);
+
+		return loadSettings(valueType, defaultPropFile);
+	}
+
+	/**
+	 * Returns the value of a default pu_settings at system level
+	 *
+	 * @param valueType
+	 * @param pluginID
+	 *
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static <T extends STProperties> T getPUSettingsSystemDefault(Class<T> valueType, String pluginID) throws STPropertyAccessException {
+		File defaultPropFile = getPUSettingsSystemDefaultsFile(pluginID);
+
+		return loadSettings(valueType, defaultPropFile);
+	}
+
+	/**
 	 * Sets the value of a default pu_setting for the given project
 	 * 
 	 * @param propName
@@ -959,6 +1004,21 @@ public class STPropertiesManager {
 	}
 
 	/**
+	 * Returns the value of a default user settings at system level
+	 *
+	 * @param valueType
+	 * @param pluginID
+	 *
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	public static <T extends STProperties> T getUserSettingsDefault(Class<T> valueType, String pluginID) throws STPropertyAccessException {
+		File defaultPropFile = getUserSettingsDefaultsFile(pluginID);
+
+		return loadSettings(valueType, defaultPropFile);
+	}
+
+	/**
 	 * Sets the value of a default user setting
 	 * 
 	 * @param propName
@@ -1105,18 +1165,16 @@ public class STPropertiesManager {
 	 * Returns the value of a default project settings at system level
 	 *
 	 * @param valueType
-	 * @param project
 	 * @param pluginID
 	 *
 	 * @return
 	 * @throws STPropertyAccessException
 	 */
-	public static <T extends STProperties> T getProjectSettingsDefault(Class<T> valueType, Project project, String pluginID) throws STPropertyAccessException {
+	public static <T extends STProperties> T getProjectSettingsDefault(Class<T> valueType, String pluginID) throws STPropertyAccessException {
 		File defaultPropFile = getProjectSettingsDefaultsFile(pluginID);
 
 		return loadSettings(valueType, defaultPropFile);
 	}
-
 
 	/**
 	 * Sets the value of a project setting

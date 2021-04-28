@@ -24,9 +24,9 @@ public interface ProjectSettingsManager<T extends Settings> extends SettingsMana
 
 	}
 
-	default T getProjectSettingsDefault(Project project) throws STPropertyAccessException {
+	default T getProjectSettingsDefault() throws STPropertyAccessException {
 		return STPropertiesManager.getProjectSettingsDefault(ReflectionUtilities.getInterfaceArgumentTypeAsClass(
-				getClass(), ProjectSettingsManager.class, 0), project, getId());
+				getClass(), ProjectSettingsManager.class, 0), getId());
 	}
 
 	default void storeProjectSettings(Project project, T settings) throws STPropertyUpdateException {

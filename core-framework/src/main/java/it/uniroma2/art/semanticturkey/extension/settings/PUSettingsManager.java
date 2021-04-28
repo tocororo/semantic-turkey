@@ -28,7 +28,23 @@ public interface PUSettingsManager<T extends Settings> extends SettingsManager {
 				project, user, getId(), explicit);
 	}
 
-	
+	default T getPUSettingsProjectDefault(Project project) throws STPropertyAccessException {
+		return STPropertiesManager.getPUSettingsProjectDefault(
+				ReflectionUtilities.getInterfaceArgumentTypeAsClass(getClass(), PUSettingsManager.class, 0),
+				project, getId());
+	}
+
+	default T getPUSettingsUserDefault(STUser user) throws STPropertyAccessException {
+		return STPropertiesManager.getPUSettingsUserDefault(
+				ReflectionUtilities.getInterfaceArgumentTypeAsClass(getClass(), PUSettingsManager.class, 0),
+				user, getId());
+	}
+
+	default T getPUSettingsSystemDefault() throws STPropertyAccessException {
+		return STPropertiesManager.getPUSettingsSystemDefault(
+				ReflectionUtilities.getInterfaceArgumentTypeAsClass(getClass(), PUSettingsManager.class, 0), getId());
+	}
+
 	default void storeProjectSettings(Project project, STUser user, T settings)
 			throws STPropertyUpdateException {
 		STPropertiesManager.setPUSettings(settings, project, user, getId(), true);
@@ -45,6 +61,5 @@ public interface PUSettingsManager<T extends Settings> extends SettingsManager {
 	default void storePUSettingsSystemDefault(T settings) throws STPropertyUpdateException {
 		STPropertiesManager.setPUSettingsSystemDefault(settings, getId(), true);
 	}
-
 
 }

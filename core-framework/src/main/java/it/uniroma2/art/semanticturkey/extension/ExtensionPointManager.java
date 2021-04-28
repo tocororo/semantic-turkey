@@ -113,6 +113,8 @@ public interface ExtensionPointManager {
     Settings getSettings(Project project, STUser user, String componentIdentifier, Scope scope)
             throws STPropertyAccessException, NoSuchSettingsManager;
 
+    Settings getSettingsDefault(Project project, STUser loggedUser, String componentID, Scope scope, Scope defaultScope) throws STPropertyAccessException, NoSuchSettingsManager;
+
     Collection<Scope> getSettingsScopes(String componentIdentifier) throws NoSuchSettingsManager;
 
     void storeSettings(String componentIdentifier, Project project, STUser user, Scope scope,
@@ -122,6 +124,14 @@ public interface ExtensionPointManager {
 
     void storeSetting(String componentID, Project project, STUser loggedUser, Scope scope, String property, JsonNode propertyValue)
             throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException, STPropertyAccessException, PropertyNotFoundException, IOException;
+
+    void storeSettingsDefault(String componentIdentifier, Project project, STUser user, Scope scope, Scope defaultScope,
+                              ObjectNode settings) throws NoSuchSettingsManager, STPropertyUpdateException,
+            WrongPropertiesException, STPropertyAccessException;
+
+    void storeSettingDefault(String componentIdentifier, Project project, STUser user, Scope scope, Scope defaultScope,
+                             String property, JsonNode propertyValue) throws NoSuchSettingsManager, STPropertyUpdateException,
+            WrongPropertiesException, STPropertyAccessException, PropertyNotFoundException, IOException;
 
     Collection<ExtensionFactory<?>> getExtensions(String extensionPoint);
 

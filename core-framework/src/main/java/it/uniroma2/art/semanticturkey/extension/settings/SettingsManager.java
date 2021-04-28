@@ -63,6 +63,29 @@ public interface SettingsManager extends IdentifiableComponent {
 		}
 	}
 
+	default Settings getSettingsDefault(Project project, STUser user, UsersGroup group, Scope scope, Scope defaultScope)
+			throws STPropertyAccessException {
+		switch (scope) {
+			case PROJECT:
+				return ((ProjectSettingsManager<?>) this).getProjectSettingsDefault();
+			case USER:
+				return ((UserSettingsManager<?>) this).getUserSettingsDefault();
+			case PROJECT_USER:
+				switch (defaultScope) {
+					case PROJECT:
+						return ((PUSettingsManager<?>) this).getPUSettingsProjectDefault(project);
+					case USER:
+						return ((PUSettingsManager<?>) this).getPUSettingsUserDefault(user);
+					case SYSTEM:
+						return ((PUSettingsManager<?>) this).getPUSettingsSystemDefault();
+					default:
+						throw new IllegalArgumentException("Unrecognized scope for PU settings default: " + defaultScope); // it should not happen
+				}
+			default:
+				throw new IllegalArgumentException("Unrecognized scope: " + scope); // it should not happen
+		}
+	}
+
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	default void storeSettings(Project project, STUser user, UsersGroup group, Scope scope, Settings settings)
 			throws STPropertyUpdateException {
@@ -86,4 +109,34 @@ public interface SettingsManager extends IdentifiableComponent {
 			throw new IllegalArgumentException("Unrecognized scope: " + scope); // it should not happen
 		}
 	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	default void storeSettingsDefault(Project project, STUser user, UsersGroup group, Scope scope, Scope defaultScope, Settings settings)
+			throws STPropertyUpdateException {
+		switch (scope) {
+			case PROJECT:
+				((ProjectSettingsManager) this).storeProjectSettingsDefault(settings);
+				break;
+			case USER:
+				((UserSettingsManager) this).storeUserSettingsDefault(settings);
+				break;
+			case PROJECT_USER:
+				switch (defaultScope) {
+					case PROJECT:
+						((PUSettingsManager) this).storePUSettingsProjectDefault(project, settings);
+						break;
+					case USER:
+						((PUSettingsManager) this).storePUSettingsUserDefault(user, settings);
+						break;
+					case SYSTEM:
+						((PUSettingsManager) this).storePUSettingsSystemDefault(settings);
+						break;
+					default:
+						throw new IllegalArgumentException("Unrecognized scope for PU settings default: " + defaultScope); // it should not happen
+				}
+			default:
+				throw new IllegalArgumentException("Unrecognized scope: " + scope); // it should not happen
+		}
+	}
+
 }

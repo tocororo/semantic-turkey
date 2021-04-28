@@ -16,10 +16,7 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
-import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.*;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -73,6 +70,23 @@ public class Settings extends STServiceAdapter {
                                                                                   Scope scope) throws NoSuchSettingsManager, STPropertyAccessException {
         Project project = (scope == Scope.SYSTEM) ? null : getProject();
         return exptManager.getSettings(project, UsersManager.getLoggedUser(), componentID, scope);
+    }
+
+    /**
+     * Returns the default settings stored in a given scope for a component
+     *
+     * @param componentID
+     * @param scope
+     * @param defaultScope
+     * @return
+     * @throws NoSuchSettingsManager
+     * @throws STPropertyAccessException
+     */
+    @STServiceOperation
+    public it.uniroma2.art.semanticturkey.extension.settings.Settings getSettingsDefault(String componentID, Scope scope, @Optional Scope defaultScope) throws NoSuchSettingsManager, STPropertyAccessException {
+        Project project = (scope == Scope.SYSTEM) ? null : getProject();
+
+        return exptManager.getSettingsDefault(project, UsersManager.getLoggedUser(), componentID, scope, defaultScope);
     }
 
     /**
@@ -165,4 +179,47 @@ public class Settings extends STServiceAdapter {
 		Project project = (scope == Scope.SYSTEM) ? null : getProject();
 		exptManager.storeSetting(componentID, project, UsersManager.getLoggedUser(), scope, property, propertyValue);
 	}
+
+    /**
+     * Stores the default settings in a given scope for a component
+     *
+     * @param componentID
+     * @param scope
+     * @param defaultScope
+     * @param settings
+     * @throws NoSuchSettingsManager
+     * @throws STPropertyAccessException
+     * @throws IllegalStateException
+     * @throws STPropertyUpdateException
+     * @throws WrongPropertiesException
+     */
+    @STServiceOperation(method = RequestMethod.POST)
+    public void storeSettingsDefault(String componentID, Scope scope, Scope defaultScope, ObjectNode settings)
+            throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
+            STPropertyUpdateException, WrongPropertiesException {
+        Project project = (scope == Scope.SYSTEM) ? null : getProject();
+        exptManager.storeSettingsDefault(componentID, project, UsersManager.getLoggedUser(), scope, defaultScope, settings);
+    }
+
+    /**
+     * Stores the default settings property in a given scope for a component
+     *
+     * @param componentID
+     * @param scope
+     * @param defaultScope
+     * @param propertyName
+     * @param propertyValue
+     * @throws NoSuchSettingsManager
+     * @throws STPropertyAccessException
+     * @throws IllegalStateException
+     * @throws STPropertyUpdateException
+     * @throws WrongPropertiesException
+     */
+    @STServiceOperation(method = RequestMethod.POST)
+    public void storeSettingDefault(String componentID, Scope scope, Scope defaultScope, String propertyName, @JsonSerialized  JsonNode propertyValue)
+            throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
+            STPropertyUpdateException, WrongPropertiesException, PropertyNotFoundException, IOException {
+        Project project = (scope == Scope.SYSTEM) ? null : getProject();
+        exptManager.storeSettingDefault(componentID, project, UsersManager.getLoggedUser(), scope, defaultScope, propertyName, propertyValue);
+    }
 }

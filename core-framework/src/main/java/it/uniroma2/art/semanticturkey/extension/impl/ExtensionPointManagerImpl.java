@@ -68,7 +68,7 @@ import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 
-public class ExtensionPointManagerImpl implements ExtensionPointManager {
+public class ExtensionPointManagerImpl implements ExtensionPointManager{
 
     @Autowired
     private BundleContext context;
@@ -279,6 +279,11 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
         return getSettingsManager(componentIdentifier).getSettings(project, user, null, scope);
     }
 
+    @Override
+    public Settings getSettingsDefault(Project project, STUser user, String componentID, Scope scope, Scope defaultScope) throws STPropertyAccessException, NoSuchSettingsManager {
+        return getSettingsManager(componentID).getSettingsDefault(project, user, null, scope, defaultScope);
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public void storeConfiguration(String componentIdentifier, Reference reference, ObjectNode configuration)
@@ -320,6 +325,29 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager {
         Object parsedPropertyValue = om.readValue(om.treeAsTokens(propertyValue), om.constructType(propertyType));
         explicitSettings.setPropertyValue(property, parsedPropertyValue);
         settingsManager.storeSettings(project, loggedUser, null, scope, explicitSettings);
+    }
+
+    @Override
+    public void storeSettingsDefault(String componentIdentifier, Project project, STUser user, Scope scope, Scope defaultScope,
+                                     ObjectNode settings) throws NoSuchSettingsManager, STPropertyUpdateException,
+            WrongPropertiesException, STPropertyAccessException {
+        SettingsManager settingsManager = getSettingsManager(componentIdentifier);
+        Settings settingsObj = SettingsSupport.createSettings(settingsManager, scope, settings);
+        settingsManager.storeSettingsDefault(project, user, null, scope, defaultScope, settingsObj);
+    }
+
+    @Override
+    public void storeSettingDefault(String componentID, Project project, STUser user, Scope scope, Scope defaultScope,
+                                    String property, JsonNode propertyValue) throws NoSuchSettingsManager, STPropertyUpdateException,
+            WrongPropertiesException, STPropertyAccessException, PropertyNotFoundException, IOException {
+        // A non-atomic read-update of a single settings default property
+        SettingsManager settingsManager = getSettingsManager(componentID);
+        Settings settingsDefault = settingsManager.getSettingsDefault(project, user, null, scope, defaultScope);
+        Type propertyType = settingsDefault.getPropertyType(property);
+        ObjectMapper om = STPropertiesManager.createObjectMapper();
+        Object parsedPropertyValue = om.readValue(om.treeAsTokens(propertyValue), om.constructType(propertyType));
+        settingsDefault.setPropertyValue(property, parsedPropertyValue);
+        settingsManager.storeSettingsDefault(project, user, null, scope, defaultScope, settingsDefault);
     }
 
     @Override

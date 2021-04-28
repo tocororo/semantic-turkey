@@ -25,6 +25,11 @@ public interface UserSettingsManager<T extends Settings> extends SettingsManager
 				user, getId(), explicit);
 	}
 
+	default T getUserSettingsDefault() throws STPropertyAccessException {
+		return STPropertiesManager.getUserSettingsDefault(ReflectionUtilities.getInterfaceArgumentTypeAsClass(getClass(), UserSettingsManager.class, 0), getId());
+	}
+
+
 	default void storeUserSettings(STUser user, T settings) throws STPropertyUpdateException {
 		STPropertiesManager.setUserSettings(settings, user, getId(), true);
 	}
