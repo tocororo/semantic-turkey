@@ -69,8 +69,6 @@ import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngi
 import it.uniroma2.art.semanticturkey.extension.impl.rendering.VariableDefinition;
 import it.uniroma2.art.semanticturkey.ontology.STEnviroment;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.project.CreateLocal;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -341,8 +339,7 @@ public class BaseRenderingEngineTest {
 	@Test
 	public void testBaseRenderingEngine() throws ClassNotFoundException, InvalidProjectNameException,
 			ProjectInexistentException, ProjectAccessException, ForbiddenProjectAccessException,
-			DuplicatedResourceException, ProjectCreationException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, WrongPropertiesException, RBACException,
+			DuplicatedResourceException, ProjectCreationException, WrongPropertiesException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, ProjectInconsistentException,
 			InvalidConfigurationException, STPropertyAccessException, IOException,
 			ReservedPropertyUpdateException, ProjectUpdateException, STPropertyUpdateException,
@@ -480,8 +477,7 @@ public class BaseRenderingEngineTest {
 	public void testBaseRenderingEngineWithValidation()
 			throws ClassNotFoundException, InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
-			ProjectCreationException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, WrongPropertiesException, RBACException,
+			ProjectCreationException, WrongPropertiesException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, ProjectInconsistentException,
 			InvalidConfigurationException, STPropertyAccessException, IOException,
 			ReservedPropertyUpdateException, ProjectUpdateException, STPropertyUpdateException,

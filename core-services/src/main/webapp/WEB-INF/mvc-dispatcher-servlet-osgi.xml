@@ -16,9 +16,6 @@
 	<osgi:service ref="conversionService"
 		interface="org.springframework.core.convert.ConversionService" />
 
-	<osgi:list id="thirdPartyServices" cardinality="0..N"
-		interface="it.uniroma2.art.semanticturkey.plugin.extpts.ServiceInterface" />
-
 	<osgi:reference id="codaOSGiFactory"
 		interface="it.uniroma2.art.coda.osgi.bundle.CODAOSGiFactory" />
 

@@ -120,8 +120,6 @@ import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDe
 import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.CorruptedProject;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
@@ -204,8 +202,7 @@ public class Projects extends STServiceAdapter {
 			@Optional(defaultValue = "false") boolean globallyAccessible)
 			throws ProjectInconsistentException, InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
-			ProjectCreationException, ClassNotFoundException, WrongPropertiesException,
-			UnsupportedPluginConfigurationException, UnloadablePluginConfigurationException, RBACException,
+			ProjectCreationException, ClassNotFoundException, WrongPropertiesException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, InvalidConfigurationException,
 			STPropertyAccessException, IOException, ReservedPropertyUpdateException, ProjectUpdateException,
 			STPropertyUpdateException, NoSuchConfigurationManager, PropertyNotFoundException {

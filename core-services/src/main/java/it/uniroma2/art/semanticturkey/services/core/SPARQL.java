@@ -70,8 +70,6 @@ import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RDFReporter;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingException;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -399,8 +397,6 @@ public class SPARQL extends STServiceAdapter {
 	 * @param reformattingExporterSpec
 	 * @throws IOException
 	 * @throws WrongPropertiesException
-	 * @throws UnloadablePluginConfigurationException
-	 * @throws UnsupportedPluginConfigurationException
 	 * @throws ClassNotFoundException
 	 * @throws ExportPreconditionViolationException
 	 * @throws STPropertyAccessException
@@ -422,8 +418,7 @@ public class SPARQL extends STServiceAdapter {
 			@Optional(defaultValue = "[]") TransformationPipeline filteringPipeline,
 			@Optional String outputFormat, @Optional PluginSpecification deployerSpec,
 			@Optional PluginSpecification reformattingExporterSpec)
-			throws IOException, ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, WrongPropertiesException,
+			throws IOException, WrongPropertiesException,
 			ExportPreconditionViolationException, IllegalArgumentException, STPropertyAccessException,
 			InvalidConfigurationException, NoSuchExtensionException, ReformattingException {
 

@@ -55,8 +55,6 @@ import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.ontology.NSPrefixMappings;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.properties.Pair;
@@ -1373,8 +1371,7 @@ public class ProjectManager {
 			SHACLSettings shaclSettings, boolean trivialInferenceEnabled, boolean openAtStartup,
 			boolean globallyAccessible) throws InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
-			ProjectCreationException, ClassNotFoundException, UnsupportedPluginConfigurationException,
-			UnloadablePluginConfigurationException, WrongPropertiesException, RBACException,
+			ProjectCreationException, ClassNotFoundException, WrongPropertiesException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, ProjectInconsistentException,
 			InvalidConfigurationException, STPropertyAccessException, IOException,
 			ReservedPropertyUpdateException, ProjectUpdateException, STPropertyUpdateException,

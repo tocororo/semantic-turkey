@@ -95,8 +95,6 @@ import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryWritingException;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.METADATAREGISTRY;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnloadablePluginConfigurationException;
-import it.uniroma2.art.semanticturkey.plugin.configuration.UnsupportedPluginConfigurationException;
 import it.uniroma2.art.semanticturkey.pmki.PendingContribution;
 import it.uniroma2.art.semanticturkey.pmki.PendingContributionStore;
 import it.uniroma2.art.semanticturkey.pmki.PmkiConstants;
@@ -293,12 +291,10 @@ public class PMKI extends STServiceAdapter {
 	 * @throws ClassNotFoundException
 	 * @throws ForbiddenProjectAccessException
 	 * @throws UnsupportedModelException
-	 * @throws UnsupportedPluginConfigurationException
 	 * @throws ProjectUpdateException
 	 * @throws InvalidConfigurationException
 	 * @throws InvalidProjectNameException
 	 * @throws ProjectAccessException
-	 * @throws UnloadablePluginConfigurationException
 	 * @throws UnsupportedLexicalizationModelException
 	 * @throws ProjectInexistentException
 	 * @throws ProjectCreationException
@@ -319,9 +315,8 @@ public class PMKI extends STServiceAdapter {
 			String pmkiHostAddress)
 			throws IOException, RBACException, WrongPropertiesException, ProjectBindingException,
 			ProjectInconsistentException, ClassNotFoundException, ForbiddenProjectAccessException,
-			UnsupportedModelException, UnsupportedPluginConfigurationException, ProjectUpdateException,
-			InvalidConfigurationException, InvalidProjectNameException, ProjectAccessException,
-			UnloadablePluginConfigurationException, UnsupportedLexicalizationModelException,
+			UnsupportedModelException, ProjectUpdateException,
+			InvalidConfigurationException, InvalidProjectNameException, ProjectAccessException, UnsupportedLexicalizationModelException,
 			ProjectInexistentException, ProjectCreationException, ReservedPropertyUpdateException,
 			DuplicatedResourceException, STPropertyAccessException, ConfigurationNotFoundException,
 			NoSuchConfigurationManager, MessagingException, ProjectDeletionException,
