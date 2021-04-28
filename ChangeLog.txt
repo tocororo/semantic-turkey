@@ -1,21 +1,28 @@
-version 9.0.1
+version 10.0
 date: dd/mm/yyyy
   * update core settings to the new settings management framework (including the use of YAML to persist them)
   * implemented support for email verification during the user registration procedure
   * allowed administrator to activate a new registered user through a link sent via email
+  * added Scottish Gaelic and Welsh to the system languages
+
+version 9.1
+date: 28/04/2021
   * added support for "no language tagged" labels in rendering engine
-  * made the rendering of decomp:Component, ontolex:LexicalEntry, ontolex:Form and skosxl:Label of the choice
+  * made the rendering of decomp:Component, ontolex:LexicalEntry, ontolex:Form and skosxl:Label independent of the choice
     of languages for rendering
   * made the LexicographerView only contain outgoing lexico-semantic relationships
-  * added Scottish Gaelic and Welsh to the system languages
   * sped up the lexicographer view on Ontotext GraphDB
   * fixed bug in the lexicographer that prevented the rendering of reified definitions modeled using the Global WordNet
     Association ontology
   * fixed IndexOutBoundException thrown by the history tab in projects with validation enabled
   * fixed issue in validation that loses null-valued operation parameters inside the history
+  * fixed NullPointerException in CODAURIGenerator
+  * fixed bug in NativeTemplateBasedURIGenerator that ignores the configured templates
+  * fixed bug in operations within the service class Project causing losing the configuration type when updating bound
+    components (e.g. URI Generators and Rendering Engines)
   
   
-version 9.0.
+version 9.0
 date: 17/03/2021
   * added support for internationalization (i18n)
     - added localization (l10n) for italian
