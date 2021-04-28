@@ -1,5 +1,5 @@
 version 9.1
-date: dd/mm/yyyy
+date: 28/04/2021
   * added support for "no language tagged" labels in rendering engine
   * made the rendering of decomp:Component, ontolex:LexicalEntry, ontolex:Form and skosxl:Label independent of the choice
     of languages for rendering
