@@ -37,6 +37,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.IterableUtils;
@@ -349,8 +350,10 @@ public class UpdateRoutines {
 		// upgrade pu settings system defaults
 		File oldCorePUSettingsSystemDefaultsFile = STPropertiesManager.getPUSettingsSystemDefaultsFile("it.uniroma2.art.semanticturkey");
 		File newCorePUSettingsSystemDefaultsFile = STPropertiesManager.getPUSettingsSystemDefaultsFile(SemanticTurkeyCoreSettingsManager.class.getName());
-
 		alignFrom90to10_upgradeCorePUSettings(om, oldCorePUSettingsSystemDefaultsFile, newCorePUSettingsSystemDefaultsFile);
+
+		File renderingEnginePUSettingsSystemDefaultsFile = STPropertiesManager.getPUSettingsSystemDefaultsFile(RenderingEngine.class.getName());
+		alignFrom90to10_upgradeRenderingEnginePUSettings(om, renderingEnginePUSettingsSystemDefaultsFile);
 
 		for (File projectDir : Resources.getProjectsDir()
 				.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {
@@ -364,6 +367,10 @@ public class UpdateRoutines {
 			File newCorePUSettingsProjectDefaultsFile = FileUtils.getFile(projectDir, "plugins", SemanticTurkeyCoreSettingsManager.class.getName(), "pu-settings-defaults.props");
 
 			alignFrom90to10_upgradeCorePUSettings(om, oldCorePUSettingsProjectDefaultsFile, newCorePUSettingsProjectDefaultsFile);
+
+			File renderingEnginePUSettingsProjectDefaultsFile = FileUtils.getFile(projectDir, "plugins", it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine.class.getName(), "pu-settings-defaults.props");
+			alignFrom90to10_upgradeRenderingEnginePUSettings(om, renderingEnginePUSettingsProjectDefaultsFile);
+
 		}
 
 		// upgrade project settings system defaults
@@ -377,6 +384,9 @@ public class UpdateRoutines {
 			File oldCorePUSettingsUserDefaultsFile = FileUtils.getFile(userDir, "plugins", "it.uniroma2.art.semanticturkey", "pu-settings-defaults.props");
 			File newCorePUSettingsUserDefaultsFile = FileUtils.getFile(userDir, "plugins", SemanticTurkeyCoreSettingsManager.class.getName(), "pu-settings-defaults.props");
 			alignFrom90to10_upgradeCorePUSettings(om, oldCorePUSettingsUserDefaultsFile, newCorePUSettingsUserDefaultsFile);
+
+			File renderingEnginePUSettingsUserDefaultsFile = FileUtils.getFile(userDir, "plugins", it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine.class.getName(), "pu-settings-defaults.props");
+			alignFrom90to10_upgradeRenderingEnginePUSettings(om, renderingEnginePUSettingsUserDefaultsFile);
 		}
 
 
@@ -387,8 +397,10 @@ public class UpdateRoutines {
 				// upgrade pu settings
 				File oldCorePUSettingsFile = FileUtils.getFile(puBindingsDir, "plugins", "it.uniroma2.art.semanticturkey", "settings.props");
 				File newCorePUSettingsFile = FileUtils.getFile(puBindingsDir, "plugins", SemanticTurkeyCoreSettingsManager.class.getName(), "settings.props");
-
 				alignFrom90to10_upgradeCorePUSettings(om, oldCorePUSettingsFile, newCorePUSettingsFile);
+
+				File renderingEnginePUSettingsFile = FileUtils.getFile(puBindingsDir, "plugins", it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine.class.getName(), "settings.props");
+				alignFrom90to10_upgradeRenderingEnginePUSettings(om, renderingEnginePUSettingsFile);
 			}
 		}
 
@@ -402,6 +414,25 @@ public class UpdateRoutines {
 
 				alignFrom90to10_upgradeCorePUSettings(om, oldCorePUSettingsFile, newCorePUSettingsFile); // core pg settings are handled the same as pu settings
 			}
+		}
+
+	}
+	private static void alignFrom90to10_upgradeRenderingEnginePUSettings(ObjectMapper om, File renderingEnginePUSettingsFile) throws IOException {
+		if (renderingEnginePUSettingsFile.isFile()) {
+			Properties properties = new Properties();
+			try (FileInputStream fis = new FileInputStream(renderingEnginePUSettingsFile)) {
+				properties.load(fis);
+			}
+
+			ValueFactory vf = SimpleValueFactory.getInstance();
+
+			ObjectNode newRenderingEnginePUSettingsNode = JsonNodeFactory.instance.objectNode();
+			convertPropertiesSettingToYAML(properties, "languages", newRenderingEnginePUSettingsNode, "languages", String::valueOf);
+
+			if (newRenderingEnginePUSettingsNode.fields().hasNext()) {
+				STPropertiesManager.storeObjectNodeInYAML(newRenderingEnginePUSettingsNode, renderingEnginePUSettingsFile);
+			}
+
 		}
 
 	}

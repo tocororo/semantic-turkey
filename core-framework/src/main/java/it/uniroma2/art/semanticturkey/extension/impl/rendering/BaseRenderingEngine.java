@@ -21,6 +21,8 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngineExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEnginePUSettings;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.rdf4j.common.iteration.Iterations;
@@ -67,8 +69,6 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 public abstract class BaseRenderingEngine implements RenderingEngine {
 
-	@Autowired
-	private ExtensionPointManager exptManager;
 	private boolean fallbackToTerm;
 	private AbstractLabelBasedRenderingEngineConfiguration conf;
 	protected String languages;
@@ -128,11 +128,10 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		while (m.find()) {
 			if (languagesPropValue == null) {
 				try {
-					languagesPropValue = STPropertiesManager.getPUSetting(STPropertiesManager.PREF_LANGUAGES,
-							context.getProject(), UsersManager.getLoggedUser(),
-							RenderingEngine.class.getName());
+					RenderingEnginePUSettings exptPointSettings = STPropertiesManager.getPUSettings(RenderingEnginePUSettings.class, context.getProject(), UsersManager.getLoggedUser(), RenderingEngine.class.getName());
+					languagesPropValue = exptPointSettings.languages;
 				} catch (STPropertyAccessException e) {
-					logger.debug("Could not access property: " + STPropertiesManager.PREF_LANGUAGES, e);
+					logger.debug("Could not access property: RenderingEnginePUSettings.languages", e);
 				}
 				if (languagesPropValue == null) {
 					languagesPropValue = "*";
