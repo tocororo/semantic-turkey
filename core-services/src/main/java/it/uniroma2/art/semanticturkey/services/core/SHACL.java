@@ -536,7 +536,10 @@ public class SHACL extends STServiceAdapter {
 				if(propInfo.getMinCount()==0){
 					plchInOptional.add(propName);
 				}
-				sb.append("\n\t\t"+ ANN_COLLECTION +"("+min+ (!min.isEmpty() && !max.isEmpty() ? ", " : "") + max+")");
+				//add the ANN_COLLECTION only if propInfo.getMinCount() and propInfo.getMaxCount() are not both 1
+				if(propInfo.getMinCount()!=1 || propInfo.getMaxCount()!=1) {
+					sb.append("\n\t\t" + ANN_COLLECTION + "(" + min + (!min.isEmpty() && !max.isEmpty() ? ", " : "") + max + ")");
+				}
 			}
 
 			if(propInfo.getSh_class()!=null){
