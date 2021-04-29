@@ -23,55 +23,13 @@
 
 package it.uniroma2.art.semanticturkey.resources;
 
-import java.io.*;
-import java.lang.reflect.Type;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.annotation.JsonAppend;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
-import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.IterableUtils;
-import org.apache.commons.collections4.IteratorUtils;
-import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.DirectoryFileFilter;
-import org.apache.commons.lang3.Functions;
-import org.apache.commons.lang3.Functions.FailableConsumer;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.reflect.TypeUtils;
-import org.eclipse.rdf4j.model.*;
-import org.eclipse.rdf4j.model.impl.SimpleNamespace;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.query.parser.sparql.SPARQLUtil;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFHandler;
-import org.eclipse.rdf4j.rio.RDFHandlerException;
-import org.eclipse.rdf4j.rio.RDFParser;
-import org.eclipse.rdf4j.rio.RDFWriter;
-import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
-import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
-
+import com.google.common.collect.Iterables;
 import it.uniroma2.art.semanticturkey.SemanticTurkey;
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
@@ -83,6 +41,7 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
@@ -91,8 +50,56 @@ import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.DirectoryFileFilter;
+import org.apache.commons.lang3.Functions;
+import org.apache.commons.lang3.Functions.FailableConsumer;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.reflect.TypeUtils;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleNamespace;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFHandler;
+import org.eclipse.rdf4j.rio.RDFHandlerException;
+import org.eclipse.rdf4j.rio.RDFParser;
+import org.eclipse.rdf4j.rio.RDFWriter;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
+import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StringReader;
+import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 
@@ -158,7 +165,7 @@ public class UpdateRoutines {
 				alignFrom801To90();
 			}
 
-			if (stDataVersionNumber.compareTo(new VersionNumber(9, 0, 1)) < 0) {
+			if (stDataVersionNumber.compareTo(new VersionNumber(10, 0, 0)) < 0) {
 				alignFrom90To10();
 			}
 
@@ -326,7 +333,7 @@ public class UpdateRoutines {
 		updateProjectSettingsDefaults();
 	}
 
-	private static void alignFrom801To90() throws FileNotFoundException, IOException {
+	private static void alignFrom801To90() throws IOException {
 		logger.debug(
 				"Version 9.0 updated the URIGenerator and the RenderingEngine to the new style (including persistence of properties as YAML). Upgrade deferred on the fist attempt to obtain the description of the project, because we need the extension point manager");
 
@@ -338,7 +345,7 @@ public class UpdateRoutines {
 
 	private static void alignFrom90To10() throws IOException {
 		logger.debug(
-				"Version 9.0.1 updated Semantic Turkey core settings to the new style (including persistence of properties as YAML)");
+				"Version 10.0 updated Semantic Turkey core settings to the new style (including persistence of properties as YAML)");
 
 		ObjectMapper om = STPropertiesManager.createObjectMapper();
 
@@ -417,20 +424,25 @@ public class UpdateRoutines {
 		}
 
 	}
-	private static void alignFrom90to10_upgradeRenderingEnginePUSettings(ObjectMapper om, File renderingEnginePUSettingsFile) throws IOException {
+	private static void alignFrom90to10_upgradeRenderingEnginePUSettings(ObjectMapper om, File renderingEnginePUSettingsFile) {
 		if (renderingEnginePUSettingsFile.isFile()) {
-			Properties properties = new Properties();
-			try (FileInputStream fis = new FileInputStream(renderingEnginePUSettingsFile)) {
-				properties.load(fis);
-			}
+			try {
+				Properties properties = new Properties();
+				try (FileInputStream fis = new FileInputStream(renderingEnginePUSettingsFile)) {
+					properties.load(fis);
+				}
 
-			ValueFactory vf = SimpleValueFactory.getInstance();
+				ValueFactory vf = SimpleValueFactory.getInstance();
 
-			ObjectNode newRenderingEnginePUSettingsNode = JsonNodeFactory.instance.objectNode();
-			convertPropertiesSettingToYAML(properties, "languages", newRenderingEnginePUSettingsNode, "languages", String::valueOf);
+				ObjectNode newRenderingEnginePUSettingsNode = JsonNodeFactory.instance.objectNode();
+				convertPropertiesSettingToYAML(properties, "languages", newRenderingEnginePUSettingsNode, "languages", String::valueOf);
 
-			if (newRenderingEnginePUSettingsNode.fields().hasNext()) {
-				STPropertiesManager.storeObjectNodeInYAML(newRenderingEnginePUSettingsNode, renderingEnginePUSettingsFile);
+				if (newRenderingEnginePUSettingsNode.fields().hasNext()) {
+					STPropertiesManager.storeObjectNodeInYAML(newRenderingEnginePUSettingsNode, renderingEnginePUSettingsFile);
+				}
+			} catch (IOException e) {
+				//If the update routine has already been done previously, the load of the properties file
+				//(which is now YAML) would raise an IOException. In case just catch it and do nothing
 			}
 
 		}

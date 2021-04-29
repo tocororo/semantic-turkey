@@ -127,7 +127,14 @@ public class Config {
 	public static VersionNumber getSTDataVersionNumber() {
 		String versionCode;
 		try {
-			versionCode = STPropertiesManager.getSystemSetting(stDataVersionNumberPropName);
+			//check if the "new" settings file is available in SemanticTurkeyCoreSettingsManager plugin folder
+			File newSystemSettingsFile = STPropertiesManager.getSystemSettingsFile(SemanticTurkeyCoreSettingsManager.class.getName());
+			if (newSystemSettingsFile.exists()) { //in case gets this version number
+				CoreSystemSettings coreSystemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
+				versionCode = coreSystemSettings.stDataVersion;
+			} else { //otherwise gets it from the old system properties file
+				versionCode = STPropertiesManager.getSystemSetting(stDataVersionNumberPropName);
+			}
 		} catch (STPropertyAccessException e) {
 			return new VersionNumber(0, 0, 0);
 		}
