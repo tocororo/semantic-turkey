@@ -16,7 +16,11 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.*;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -67,7 +71,7 @@ public class Settings extends STServiceAdapter {
      */
     @STServiceOperation
     public it.uniroma2.art.semanticturkey.extension.settings.Settings getSettings(String componentID,
-                                                                                  Scope scope) throws NoSuchSettingsManager, STPropertyAccessException {
+            Scope scope) throws NoSuchSettingsManager, STPropertyAccessException {
         Project project = (scope == Scope.SYSTEM) ? null : getProject();
         return exptManager.getSettings(project, UsersManager.getLoggedUser(), componentID, scope);
     }
@@ -78,14 +82,16 @@ public class Settings extends STServiceAdapter {
      * @param componentID
      * @param scope
      * @param defaultScope
+     * @param projectName if scope is project, optionally
      * @return
      * @throws NoSuchSettingsManager
      * @throws STPropertyAccessException
      */
     @STServiceOperation
-    public it.uniroma2.art.semanticturkey.extension.settings.Settings getSettingsDefault(String componentID, Scope scope, @Optional Scope defaultScope) throws NoSuchSettingsManager, STPropertyAccessException {
-        Project project = (scope == Scope.SYSTEM) ? null : getProject();
-
+    public it.uniroma2.art.semanticturkey.extension.settings.Settings getSettingsDefault(String componentID, Scope scope,
+            @Optional Scope defaultScope, @Optional String projectName) throws NoSuchSettingsManager,
+            STPropertyAccessException {
+        Project project = (scope == Scope.PROJECT_USER || scope == Scope.PROJECT_GROUP) ? getProject() : null;
         return exptManager.getSettingsDefault(project, UsersManager.getLoggedUser(), componentID, scope, defaultScope);
     }
 
@@ -107,7 +113,7 @@ public class Settings extends STServiceAdapter {
     @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'U', #projectName)")
     @STServiceOperation
     public it.uniroma2.art.semanticturkey.extension.settings.Settings getProjectSettings(String componentID,
-                                                                                         String projectName) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
+            String projectName) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
             ProjectInexistentException, InvalidProjectNameException {
         return exptManager.getSettings(ProjectManager.getProjectDescription(projectName), null, componentID, Scope.PROJECT);
     }
@@ -116,7 +122,7 @@ public class Settings extends STServiceAdapter {
      * Returns the PU settings of a specific project-user pair.
      * Useful for administration purposes (e.g. Admin or PMs that want to manage user settings for different
      * users/projects and not for themself in the ctx_project).
-     * Users that wants to get their PUSettings can still use {@link #getSettings} with the proper scope.
+     * Users that want to get their PUSettings can still use {@link #getSettings} with the proper scope.
      *
      * @param componentID
      * @param projectName
@@ -132,11 +138,34 @@ public class Settings extends STServiceAdapter {
     @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'U', #projectName)")
     @STServiceOperation
     public it.uniroma2.art.semanticturkey.extension.settings.Settings getPUSettingsOfUser(String componentID,
-                                                                                          String projectName, IRI userIri) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
+            String projectName, IRI userIri) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
             ProjectInexistentException, InvalidProjectNameException, UserException {
         Project project = ProjectManager.getProjectDescription(projectName);
         STUser user = UsersManager.getUser(userIri);
         return exptManager.getSettings(project, user, componentID, Scope.PROJECT_USER);
+    }
+
+    /**
+     * Returns the default PU Settings at user  level for the given user.
+     * Useful for administration purposes (e.g. Admin or PMs that want to manage the default PUSettings different users).
+     * Users that want to get their default can still use {@link #getSettingsDefault}.
+     *
+     * @param componentID
+     * @param userIri
+     * @return
+     * @throws NoSuchSettingsManager
+     * @throws STPropertyAccessException
+     * @throws ProjectAccessException
+     * @throws ProjectInexistentException
+     * @throws InvalidProjectNameException
+     * @throws UserException
+     */
+    @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'U', #projectName)")
+    @STServiceOperation
+    public it.uniroma2.art.semanticturkey.extension.settings.Settings getPUSettingsUserDefault(String componentID,
+            IRI userIri) throws NoSuchSettingsManager, STPropertyAccessException, UserException {
+        STUser user = UsersManager.getUser(userIri);
+        return exptManager.getSettingsDefault(null, user, componentID, Scope.PROJECT_USER, Scope.USER);
     }
 
     /**
@@ -159,26 +188,26 @@ public class Settings extends STServiceAdapter {
         exptManager.storeSettings(componentID, project, UsersManager.getLoggedUser(), scope, settings);
     }
 
-	/**
-	 * Set the value of a property in the settings in a given scope for a component
-	 *
-	 * @param componentID
-	 * @param scope
-	 * @param property
-	 * @param propertyValue
-	 * @throws NoSuchSettingsManager
-	 * @throws STPropertyAccessException
-	 * @throws IllegalStateException
-	 * @throws STPropertyUpdateException
-	 * @throws WrongPropertiesException
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	public void storeSetting(String componentID, Scope scope, String property, @JsonSerialized JsonNode propertyValue)
+    /**
+     * Set the value of a property in the settings in a given scope for a component
+     *
+     * @param componentID
+     * @param scope
+     * @param propertyName
+     * @param propertyValue
+     * @throws NoSuchSettingsManager
+     * @throws STPropertyAccessException
+     * @throws IllegalStateException
+     * @throws STPropertyUpdateException
+     * @throws WrongPropertiesException
+     */
+    @STServiceOperation(method = RequestMethod.POST)
+    public void storeSetting(String componentID, Scope scope, String propertyName, @JsonSerialized JsonNode propertyValue)
             throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
             STPropertyUpdateException, WrongPropertiesException, PropertyNotFoundException, IOException {
-		Project project = (scope == Scope.SYSTEM) ? null : getProject();
-		exptManager.storeSetting(componentID, project, UsersManager.getLoggedUser(), scope, property, propertyValue);
-	}
+        Project project = (scope == Scope.SYSTEM) ? null : getProject();
+        exptManager.storeSetting(componentID, project, UsersManager.getLoggedUser(), scope, propertyName, propertyValue);
+    }
 
     /**
      * Stores the default settings in a given scope for a component
@@ -216,7 +245,7 @@ public class Settings extends STServiceAdapter {
      * @throws WrongPropertiesException
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void storeSettingDefault(String componentID, Scope scope, Scope defaultScope, String propertyName, @JsonSerialized  JsonNode propertyValue)
+    public void storeSettingDefault(String componentID, Scope scope, Scope defaultScope, String propertyName, @JsonSerialized JsonNode propertyValue)
             throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
             STPropertyUpdateException, WrongPropertiesException, PropertyNotFoundException, IOException {
         Project project = (scope == Scope.SYSTEM) ? null : getProject();
