@@ -38,11 +38,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * This class provides services for handling settings.
@@ -104,56 +101,6 @@ public class Settings extends STServiceAdapter {
             STPropertyAccessException {
         Project project = (scope == Scope.PROJECT_USER || scope == Scope.PROJECT_GROUP) ? getProject() : null;
         return exptManager.getSettingsDefault(project, UsersManager.getLoggedUser(), componentID, scope, defaultScope);
-    }
-
-    /**
-     * Returns the project settings of a specific project.
-     * Useful for administration purposes (e.g. Admin that want to manage project settings for a project
-     * different from ctx_project).
-     * This service can still be used by PM providing as projectName the same ctx_project.
-     *
-     * @param componentID
-     * @param projectName
-     * @return
-     * @throws NoSuchSettingsManager
-     * @throws STPropertyAccessException
-     * @throws ProjectAccessException
-     * @throws ProjectInexistentException
-     * @throws InvalidProjectNameException
-     */
-    @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'R', #projectName)")
-    @STServiceOperation
-    public it.uniroma2.art.semanticturkey.extension.settings.Settings getProjectSettings(String componentID,
-            String projectName) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
-            ProjectInexistentException, InvalidProjectNameException {
-        return exptManager.getSettings(ProjectManager.getProjectDescription(projectName), null, componentID, Scope.PROJECT);
-    }
-
-    /**
-     * Returns the PU settings of a specific project-user pair.
-     * Useful for administration purposes (e.g. Admin or PMs that want to manage user settings for different
-     * users/projects and not for themself in the ctx_project).
-     * Users that want to get their PUSettings can still use {@link #getSettings} with the proper scope.
-     *
-     * @param componentID
-     * @param projectName
-     * @param userIri
-     * @return
-     * @throws NoSuchSettingsManager
-     * @throws STPropertyAccessException
-     * @throws ProjectAccessException
-     * @throws ProjectInexistentException
-     * @throws InvalidProjectNameException
-     * @throws UserException
-     */
-    @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'R', #projectName)")
-    @STServiceOperation
-    public it.uniroma2.art.semanticturkey.extension.settings.Settings getPUSettingsOfUser(String componentID,
-            String projectName, IRI userIri) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
-            ProjectInexistentException, InvalidProjectNameException, UserException {
-        Project project = ProjectManager.getProjectDescription(projectName);
-        STUser user = UsersManager.getUser(userIri);
-        return exptManager.getSettings(project, user, componentID, Scope.PROJECT_USER);
     }
 
     /**
@@ -278,33 +225,81 @@ public class Settings extends STServiceAdapter {
 
 
     /**
-     * Allows to store the project settings of a specific project.
-     * Useful for administration purposes (e.g. Admin that want to manage project settings for a project
-     * different from ctx_project).
-     * This service can still be used by PM providing as projectName the same ctx_project.
+     * Returns the PROJECT or PROJECT_USER settings of a specific project or project-user pair.
+     * Useful for administration purposes
+     * (e.g. Admin/PM that want to manage project settings for a project different from ctx_project,
+     * or project_user settings for a project-user pair for a different user).
      *
      * @param componentID
+     * @param scope
      * @param projectName
+     * @param userIri
+     * @return
+     * @throws NoSuchSettingsManager
+     * @throws STPropertyAccessException
+     * @throws ProjectAccessException
+     * @throws ProjectInexistentException
+     * @throws InvalidProjectNameException
+     * @throws UserException
+     */
+    @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'R', #projectName)")
+    @STServiceOperation
+    public it.uniroma2.art.semanticturkey.extension.settings.Settings getSettingsForProjectAdministration(
+            String componentID, Scope scope, String projectName, @Optional IRI userIri)
+            throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
+            ProjectInexistentException, InvalidProjectNameException, UserException {
+
+        //the service has been implemented just for project/project-user administration,
+        //so none of the other scope is admitted
+        if (scope != Scope.PROJECT_USER && scope != Scope.PROJECT) {
+            throw new IllegalArgumentException("Invalid scope for this service");
+        }
+        Project project = ProjectManager.getProjectDescription(projectName);
+        STUser user = (userIri != null) ? UsersManager.getUser(userIri) : null;
+
+        return exptManager.getSettings(project, user, componentID, Scope.PROJECT);
+    }
+
+    /**
+     * Stores the PROJECT or PROJECT_USER settings of a specific project or project-user pair.
+     * Useful for administration purposes
+     * (e.g. Admin/PM that want to manage project settings for a project different from ctx_project,
+     * or project_user settings for a project-user pair for a different user).
+     * @param componentID
+     * @param scope
+     * @param projectName
+     * @param userIri
      * @param propertyName
      * @param propertyValue
      * @throws NoSuchSettingsManager
      * @throws STPropertyAccessException
-     * @throws IllegalStateException
-     * @throws STPropertyUpdateException
-     * @throws WrongPropertiesException
-     * @throws PropertyNotFoundException
-     * @throws IOException
      * @throws ProjectAccessException
      * @throws ProjectInexistentException
      * @throws InvalidProjectNameException
+     * @throws UserException
+     * @throws STPropertyUpdateException
+     * @throws PropertyNotFoundException
+     * @throws WrongPropertiesException
+     * @throws IOException
      */
+    @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'U', #projectName)")
     @STServiceOperation(method = RequestMethod.POST)
-    public void storeProjectSetting(String componentID, String projectName, String propertyName, @JsonSerialized JsonNode propertyValue)
-            throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
-            STPropertyUpdateException, WrongPropertiesException, PropertyNotFoundException,
-            IOException, ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
+    public void storeSettingForProjectAdministration(String componentID, Scope scope,
+            String projectName, @Optional IRI userIri,
+            String propertyName, @JsonSerialized JsonNode propertyValue)
+            throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
+            ProjectInexistentException, InvalidProjectNameException, UserException,
+            STPropertyUpdateException, PropertyNotFoundException, WrongPropertiesException, IOException {
+
+        //the service has been implemented just for project/project-user administration,
+        //so none of the other scope is admitted
+        if (scope != Scope.PROJECT_USER && scope != Scope.PROJECT) {
+            throw new IllegalArgumentException("Invalid scope for this service");
+        }
         Project project = ProjectManager.getProjectDescription(projectName);
-        exptManager.storeSetting(componentID, project, null, Scope.PROJECT, propertyName, propertyValue);
+        STUser user = (userIri != null) ? UsersManager.getUser(userIri) : null;
+
+        exptManager.storeSetting(componentID, project, user, scope, propertyName, propertyValue);
     }
 
 
@@ -312,7 +307,7 @@ public class Settings extends STServiceAdapter {
      * Inner class useful just for { @link getStartupSettings } in order to return a Settings that is a mix
      * between a default project setting (languages) and a subset of CoreSystemSettings properties
      */
-    public class StartupSettings implements STProperties {
+    public static class StartupSettings implements STProperties {
         @Override
         public String getShortName() {
             return "StartupSettings";
