@@ -1419,7 +1419,7 @@ public class STPropertiesManager {
         try {
             return loadSTPropertiesFromYAMLFiles(valueType, false, exptManager, settingsFiles);
         } finally {
-            if (sr != null) {
+            if (sr.isPresent()) {
                 bundleContext.ifPresent(bc -> bc.ungetService(sr.get()));
             }
         }
