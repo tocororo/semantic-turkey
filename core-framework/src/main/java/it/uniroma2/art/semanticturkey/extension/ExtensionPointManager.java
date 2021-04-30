@@ -30,6 +30,7 @@ import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersGroup;
 
 public interface ExtensionPointManager {
 
@@ -110,10 +111,10 @@ public interface ExtensionPointManager {
     void deleteConfiguraton(String componentIdentifier, Reference reference)
             throws NoSuchConfigurationManager, ConfigurationNotFoundException;
 
-    Settings getSettings(Project project, STUser user, String componentIdentifier, Scope scope)
+    Settings getSettings(Project project, STUser user, UsersGroup group, String componentIdentifier, Scope scope)
             throws STPropertyAccessException, NoSuchSettingsManager;
 
-    Settings getSettingsDefault(Project project, STUser loggedUser, String componentID, Scope scope, Scope defaultScope) throws STPropertyAccessException, NoSuchSettingsManager;
+    Settings getSettingsDefault(Project project, STUser user, UsersGroup group, String componentID, Scope scope, Scope defaultScope) throws STPropertyAccessException, NoSuchSettingsManager;
 
     Collection<Scope> getSettingsScopes(String componentIdentifier) throws NoSuchSettingsManager;
 

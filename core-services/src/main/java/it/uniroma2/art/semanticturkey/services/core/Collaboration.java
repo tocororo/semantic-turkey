@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import java.io.IOException;
 
+import it.uniroma2.art.semanticturkey.user.*;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +34,6 @@ import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 /**
  * This class provides services for collaboration (e.g. connection to an issue tracker).
@@ -56,7 +55,7 @@ public class Collaboration extends STServiceAdapter {
 
 		STUser user = UsersManager.getLoggedUser();
 		Project project = getProject();
-		
+		UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
 		String csBackendId = project.getProperty(PROJ_PROP_BACKEND);
 		String csActive = project.getProperty(PROJ_PROP_BACKEND_ACTIVE);
 		
@@ -66,10 +65,10 @@ public class Collaboration extends STServiceAdapter {
 		boolean csLinked = false; //CS project linked
 		
 		if (csBackendId != null) {
-			STProperties projSettings = exptManager.getSettings(project, user, csBackendId, Scope.PROJECT);
+			STProperties projSettings = exptManager.getSettings(project, user, group, csBackendId, Scope.PROJECT);
 			csProjSettingsConfigured = STPropertiesChecker.getModelConfigurationChecker(projSettings).isValid();
 
-			STProperties userSettings = exptManager.getSettings(project, user, csBackendId, Scope.PROJECT_USER);
+			STProperties userSettings = exptManager.getSettings(project, user, group, csBackendId, Scope.PROJECT_USER);
 			csUserSettingsConfigured = STPropertiesChecker.getModelConfigurationChecker(userSettings).isValid();
 
 			csLinked = getCollaborationBackend(false).isProjectLinked();

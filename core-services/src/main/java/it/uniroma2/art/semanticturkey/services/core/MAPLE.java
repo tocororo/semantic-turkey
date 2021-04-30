@@ -6,6 +6,9 @@ import java.io.StringWriter;
 import java.util.List;
 import java.util.UUID;
 
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersGroup;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -303,8 +306,10 @@ public class MAPLE extends STServiceAdapter {
 				throw new ForbiddenProjectAccessException(accessResponse.getMsg());
 			}
 		}
+		STUser user = UsersManager.getLoggedUser();
+		UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
 		StoredProjectMetadata storedProjectMetadata = (StoredProjectMetadata) exptManager.getSettings(project,
-				UsersManager.getLoggedUser(), ProjectMetadataStore.class.getName(), Scope.PROJECT);
+				user, group, ProjectMetadataStore.class.getName(), Scope.PROJECT);
 		STPropertiesChecker settingsManager = STPropertiesChecker
 				.getModelConfigurationChecker(storedProjectMetadata);
 		if (!settingsManager.isValid()) {

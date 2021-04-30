@@ -852,7 +852,7 @@ public class PMKI extends STServiceAdapter {
 			Map<String, List<String>> facetValues, Document doc)
 			throws PropertyNotFoundException, STPropertyAccessException, NoSuchSettingsManager {
 		STPropertiesSchema customFacetsSchema = (STPropertiesSchema) exptManager.getSettings(null,
-				UsersManager.getLoggedUser(), CustomProjectFacetsSchemaStore.class.getName(), Scope.SYSTEM);
+				UsersManager.getLoggedUser(), null, CustomProjectFacetsSchemaStore.class.getName(), Scope.SYSTEM);
 		STProperties customProjectsFacetsForm = customFacetsSchema.toSTProperties();
 		STProperties stdProjectFacetsForm = new ProjectFacets();
 

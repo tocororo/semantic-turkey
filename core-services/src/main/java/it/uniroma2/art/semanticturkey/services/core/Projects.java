@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
 
+import it.uniroma2.art.semanticturkey.user.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -162,10 +163,6 @@ import it.uniroma2.art.semanticturkey.settings.facets.CustomProjectFacetsSchemaS
 import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacets;
 import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsIndexUtils;
 import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsStore;
-import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
-import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 import it.uniroma2.art.semanticturkey.vocabulary.SUPPORT;
 
@@ -456,13 +453,15 @@ public class Projects extends STServiceAdapter {
 			if (onlyOpen && !open) {
 				return null;
 			}
+			STUser user = UsersManager.getLoggedUser();
+			UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, proj);
 			if (userDependent && !ProjectUserBindingsManager
-					.hasUserAccessToProject(UsersManager.getLoggedUser(), proj)) {
+					.hasUserAccessToProject(user, proj)) {
 				return null;
 			}
 			try {
-				facets = (ProjectFacets) exptManager.getSettings(proj, UsersManager.getLoggedUser(),
-						ProjectFacetsStore.class.getName(), Scope.PROJECT);
+				facets = (ProjectFacets) exptManager.getSettings(proj, user, group,
+                        ProjectFacetsStore.class.getName(), Scope.PROJECT);
 			} catch (IllegalStateException | STPropertyAccessException | NoSuchSettingsManager e) {
 				facets = new CorruptedProjectFacets(e);
 			}
@@ -1050,8 +1049,10 @@ public class Projects extends STServiceAdapter {
 			throws IllegalStateException, STPropertyAccessException, NoSuchSettingsManager,
 			ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
 		Project project = ProjectManager.getProject(projectName, true);
-		return (ProjectFacets) exptManager.getSettings(project, UsersManager.getLoggedUser(),
-				ProjectFacetsStore.class.getName(), Scope.PROJECT);
+		STUser user = UsersManager.getLoggedUser();
+		UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
+		return (ProjectFacets) exptManager.getSettings(project, user, group,
+                ProjectFacetsStore.class.getName(), Scope.PROJECT);
 	}
 
 	/**
@@ -1096,8 +1097,9 @@ public class Projects extends STServiceAdapter {
 	@STServiceOperation
 	public STPropertiesSchema getCustomProjectFacetsSchema()
 			throws IllegalStateException, STPropertyAccessException, NoSuchSettingsManager {
-		return (STPropertiesSchema) exptManager.getSettings(null, UsersManager.getLoggedUser(),
-				CustomProjectFacetsSchemaStore.class.getName(), Scope.SYSTEM);
+		STUser user = UsersManager.getLoggedUser();
+		return (STPropertiesSchema) exptManager.getSettings(null, user, null,
+                CustomProjectFacetsSchemaStore.class.getName(), Scope.SYSTEM);
 	}
 
 	/**

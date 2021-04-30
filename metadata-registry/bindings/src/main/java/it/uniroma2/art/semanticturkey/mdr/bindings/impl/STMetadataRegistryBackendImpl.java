@@ -6,6 +6,9 @@ import java.io.StringReader;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersGroup;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -120,8 +123,10 @@ public class STMetadataRegistryBackendImpl extends MetadataRegistryBackendImpl
 	@Override
 	public synchronized void registerProject(Project project) {
 		try {
+			STUser user = UsersManager.getLoggedUser();
+			UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
 			StoredProjectMetadata settings = (StoredProjectMetadata) exptManager.getSettings(project,
-					UsersManager.getLoggedUser(), ProjectMetadataStore.class.getName(), Scope.PROJECT);
+					user, group , ProjectMetadataStore.class.getName(), Scope.PROJECT);
 
 			if (!STPropertiesChecker.getModelConfigurationChecker(settings).isValid()) {
 				settings = null;

@@ -19,6 +19,7 @@ import javax.annotation.PreDestroy;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.uniroma2.art.semanticturkey.properties.*;
+import it.uniroma2.art.semanticturkey.user.UsersGroup;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
@@ -274,14 +275,14 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager{
     }
 
     @Override
-    public Settings getSettings(Project project, STUser user, String componentIdentifier, Scope scope)
+    public Settings getSettings(Project project, STUser user, UsersGroup group, String componentIdentifier, Scope scope)
             throws STPropertyAccessException, NoSuchSettingsManager {
-        return getSettingsManager(componentIdentifier).getSettings(project, user, null, scope);
+        return getSettingsManager(componentIdentifier).getSettings(project, user, group, scope);
     }
 
     @Override
-    public Settings getSettingsDefault(Project project, STUser user, String componentID, Scope scope, Scope defaultScope) throws STPropertyAccessException, NoSuchSettingsManager {
-        return getSettingsManager(componentID).getSettingsDefault(project, user, null, scope, defaultScope);
+    public Settings getSettingsDefault(Project project, STUser user, UsersGroup group, String componentID, Scope scope, Scope defaultScope) throws STPropertyAccessException, NoSuchSettingsManager {
+        return getSettingsManager(componentID).getSettingsDefault(project, user, group, scope, defaultScope);
     }
 
     @SuppressWarnings("unchecked")

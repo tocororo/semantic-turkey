@@ -28,9 +28,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.settings.core.CoreProjectSettings;
 import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
-import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UserException;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.user.*;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +79,9 @@ public class Settings extends STServiceAdapter {
     public it.uniroma2.art.semanticturkey.extension.settings.Settings getSettings(String componentID,
             Scope scope) throws NoSuchSettingsManager, STPropertyAccessException {
         Project project = (scope == Scope.SYSTEM) ? null : getProject();
-        return exptManager.getSettings(project, UsersManager.getLoggedUser(), componentID, scope);
+        STUser user = UsersManager.getLoggedUser();
+        UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
+        return exptManager.getSettings(project, user, group, componentID, scope);
     }
 
     /**
@@ -100,7 +100,7 @@ public class Settings extends STServiceAdapter {
             @Optional Scope defaultScope, @Optional String projectName) throws NoSuchSettingsManager,
             STPropertyAccessException {
         Project project = (scope == Scope.PROJECT_USER || scope == Scope.PROJECT_GROUP) ? getProject() : null;
-        return exptManager.getSettingsDefault(project, UsersManager.getLoggedUser(), componentID, scope, defaultScope);
+        return exptManager.getSettingsDefault(project, UsersManager.getLoggedUser(), null, componentID, scope, defaultScope);
     }
 
     /**
@@ -123,7 +123,7 @@ public class Settings extends STServiceAdapter {
     public it.uniroma2.art.semanticturkey.extension.settings.Settings getPUSettingsUserDefault(String componentID,
             IRI userIri) throws NoSuchSettingsManager, STPropertyAccessException, UserException {
         STUser user = UsersManager.getUser(userIri);
-        return exptManager.getSettingsDefault(null, user, componentID, Scope.PROJECT_USER, Scope.USER);
+        return exptManager.getSettingsDefault(null, user, null, componentID, Scope.PROJECT_USER, Scope.USER);
     }
 
     @STServiceOperation
@@ -256,8 +256,8 @@ public class Settings extends STServiceAdapter {
         }
         Project project = ProjectManager.getProjectDescription(projectName);
         STUser user = (userIri != null) ? UsersManager.getUser(userIri) : null;
-
-        return exptManager.getSettings(project, user, componentID, Scope.PROJECT);
+        UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
+        return exptManager.getSettings(project, user, group, componentID, Scope.PROJECT);
     }
 
     /**
