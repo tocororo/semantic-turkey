@@ -250,7 +250,9 @@ public interface STProperties {
 		Field prop = null;
 		try {
 			prop = this.getClass().getField(id);
-			value = checkAndConvertPropertyValue(id, value, getPropertyType(id));
+			if (value != null) {
+				value = checkAndConvertPropertyValue(id, value, getPropertyType(id));
+			}
 			prop.set(this, value);
 		} catch (SecurityException e) {
 			throw new WrongPropertiesException(e);

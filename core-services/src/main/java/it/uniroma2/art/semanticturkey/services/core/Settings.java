@@ -10,7 +10,11 @@ import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.Language;
 import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STProperty;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -21,6 +25,9 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.settings.core.CoreProjectSettings;
+import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -31,7 +38,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * This class provides services for handling settings.
@@ -110,7 +121,7 @@ public class Settings extends STServiceAdapter {
      * @throws ProjectInexistentException
      * @throws InvalidProjectNameException
      */
-    @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'U', #projectName)")
+    @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'R', #projectName)")
     @STServiceOperation
     public it.uniroma2.art.semanticturkey.extension.settings.Settings getProjectSettings(String componentID,
             String projectName) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
@@ -135,7 +146,7 @@ public class Settings extends STServiceAdapter {
      * @throws InvalidProjectNameException
      * @throws UserException
      */
-    @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'U', #projectName)")
+    @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'R', #projectName)")
     @STServiceOperation
     public it.uniroma2.art.semanticturkey.extension.settings.Settings getPUSettingsOfUser(String componentID,
             String projectName, IRI userIri) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException,
@@ -166,6 +177,19 @@ public class Settings extends STServiceAdapter {
             IRI userIri) throws NoSuchSettingsManager, STPropertyAccessException, UserException {
         STUser user = UsersManager.getUser(userIri);
         return exptManager.getSettingsDefault(null, user, componentID, Scope.PROJECT_USER, Scope.USER);
+    }
+
+    @STServiceOperation
+    public StartupSettings getStartupSettings() throws STPropertyAccessException {
+        CoreProjectSettings defaultProjSettings = STPropertiesManager.getProjectSettingsDefault(CoreProjectSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
+        CoreSystemSettings coreSysSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
+        StartupSettings startupSettings = new StartupSettings();
+        startupSettings.experimentalFeaturesEnabled = coreSysSettings.experimentalFeaturesEnabled;
+        startupSettings.homeContent = coreSysSettings.homeContent;
+        startupSettings.languages = defaultProjSettings.languages;
+        startupSettings.privacyStatementAvailable = coreSysSettings.privacyStatementAvailable;
+        startupSettings.showFlags = coreSysSettings.showFlags;
+        return startupSettings;
     }
 
     /**
@@ -250,5 +274,63 @@ public class Settings extends STServiceAdapter {
             STPropertyUpdateException, WrongPropertiesException, PropertyNotFoundException, IOException {
         Project project = (scope == Scope.SYSTEM) ? null : getProject();
         exptManager.storeSettingDefault(componentID, project, UsersManager.getLoggedUser(), scope, defaultScope, propertyName, propertyValue);
+    }
+
+
+    /**
+     * Allows to store the project settings of a specific project.
+     * Useful for administration purposes (e.g. Admin that want to manage project settings for a project
+     * different from ctx_project).
+     * This service can still be used by PM providing as projectName the same ctx_project.
+     *
+     * @param componentID
+     * @param projectName
+     * @param propertyName
+     * @param propertyValue
+     * @throws NoSuchSettingsManager
+     * @throws STPropertyAccessException
+     * @throws IllegalStateException
+     * @throws STPropertyUpdateException
+     * @throws WrongPropertiesException
+     * @throws PropertyNotFoundException
+     * @throws IOException
+     * @throws ProjectAccessException
+     * @throws ProjectInexistentException
+     * @throws InvalidProjectNameException
+     */
+    @STServiceOperation(method = RequestMethod.POST)
+    public void storeProjectSetting(String componentID, String projectName, String propertyName, @JsonSerialized JsonNode propertyValue)
+            throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
+            STPropertyUpdateException, WrongPropertiesException, PropertyNotFoundException,
+            IOException, ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
+        Project project = ProjectManager.getProjectDescription(projectName);
+        exptManager.storeSetting(componentID, project, null, Scope.PROJECT, propertyName, propertyValue);
+    }
+
+
+    /**
+     * Inner class useful just for { @link getStartupSettings } in order to return a Settings that is a mix
+     * between a default project setting (languages) and a subset of CoreSystemSettings properties
+     */
+    public class StartupSettings implements STProperties {
+        @Override
+        public String getShortName() {
+            return "StartupSettings";
+        }
+
+        @STProperty(description = "")
+        public Boolean experimentalFeaturesEnabled = false;
+
+        @STProperty(description = "")
+        public Boolean privacyStatementAvailable = false;
+
+        @STProperty(description = "")
+        public Boolean showFlags = true;
+
+        @STProperty(description = "")
+        public String homeContent;
+
+        @STProperty(description = "")
+        public List<Language> languages;
     }
 }
