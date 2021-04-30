@@ -60,8 +60,8 @@ public abstract class SettingsSupport {
 		}
 		Class<Settings> settingsClass = getSettingsClass(settingsManager, scope);
 		try {
-			return STPropertiesManager.loadSTPropertiesFromObjectNode(settingsClass, false, settings,
-					STPropertiesManager.createObjectMapper(exptManager));
+			return STPropertiesManager.loadSTPropertiesFromObjectNodes(settingsClass, false, STPropertiesManager.createObjectMapper(exptManager), settings
+			);
 		} finally {
 			bundleContext.ungetService(sr);
 		}

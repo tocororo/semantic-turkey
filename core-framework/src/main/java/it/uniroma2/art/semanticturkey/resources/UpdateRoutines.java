@@ -424,27 +424,30 @@ public class UpdateRoutines {
 		}
 
 	}
-	private static void alignFrom90to10_upgradeRenderingEnginePUSettings(ObjectMapper om, File renderingEnginePUSettingsFile) {
+
+	private static void alignFrom90to10_upgradeRenderingEnginePUSettings(ObjectMapper om, File renderingEnginePUSettingsFile) throws IOException {
 		if (renderingEnginePUSettingsFile.isFile()) {
+			Properties properties;
 			try {
-				Properties properties = new Properties();
+				properties = new Properties();
 				try (FileInputStream fis = new FileInputStream(renderingEnginePUSettingsFile)) {
 					properties.load(fis);
-				}
-
-				ValueFactory vf = SimpleValueFactory.getInstance();
-
-				ObjectNode newRenderingEnginePUSettingsNode = JsonNodeFactory.instance.objectNode();
-				convertPropertiesSettingToYAML(properties, "languages", newRenderingEnginePUSettingsNode, "languages", String::valueOf);
-
-				if (newRenderingEnginePUSettingsNode.fields().hasNext()) {
-					STPropertiesManager.storeObjectNodeInYAML(newRenderingEnginePUSettingsNode, renderingEnginePUSettingsFile);
 				}
 			} catch (IOException e) {
 				//If the update routine has already been done previously, the load of the properties file
 				//(which is now YAML) would raise an IOException. In case just catch it and do nothing
+				return;
 			}
 
+
+			ValueFactory vf = SimpleValueFactory.getInstance();
+
+			ObjectNode newRenderingEnginePUSettingsNode = JsonNodeFactory.instance.objectNode();
+			convertPropertiesSettingToYAML(properties, "languages", newRenderingEnginePUSettingsNode, "languages", String::valueOf);
+
+			if (newRenderingEnginePUSettingsNode.fields().hasNext()) {
+				STPropertiesManager.storeObjectNodeInYAML(newRenderingEnginePUSettingsNode, renderingEnginePUSettingsFile);
+			}
 		}
 
 	}

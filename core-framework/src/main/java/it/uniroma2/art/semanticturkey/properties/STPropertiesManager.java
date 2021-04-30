@@ -6,11 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashSet;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 import javax.annotation.Nullable;
 
@@ -25,7 +22,6 @@ import org.osgi.framework.ServiceReference;
 
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -176,13 +172,33 @@ public class STPropertiesManager {
 
 	public static <T extends STProperties> T getPUSettings(Class<T> valueType, Project project, STUser user,
 			String pluginID, boolean explicit) throws STPropertyAccessException {
-		File defaultPropFile = getPUSettingsProjectDefaultsFile(project, pluginID);
 		File propFile = getPUSettingsFile(project, user, pluginID);
 
 		if (explicit) {
 			return loadSettings(valueType, propFile);
 		} else {
-			return loadSettings(valueType, defaultPropFile, propFile);
+			List<File> propFiles = new ArrayList<>(5);
+
+			File systemDefaultPropFile = getPUSettingsSystemDefaultsFile(pluginID);
+			File userDefaultPropFile = getPUSettingsUserDefaultsFile(user, pluginID);
+			File projectDefaultPropFile = getPUSettingsProjectDefaultsFile(project, pluginID);
+
+			// adds the "scopes" from the lowest to the highest priority: system, user, project, project-group, pu (explicit)
+
+			propFiles.add(systemDefaultPropFile);
+			propFiles.add(userDefaultPropFile);
+			propFiles.add(projectDefaultPropFile);
+
+			UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
+			if (group != null) {
+				File pgFile = getPGSettingsFile(project, group, pluginID);
+				propFiles.add(pgFile);
+			}
+
+			propFiles.add(propFile);
+
+
+			return loadSettings(valueType, propFiles.toArray(new File[0]));
 		}
 	}
 
@@ -908,11 +924,13 @@ public class STPropertiesManager {
 			ObjectMapper objectMapper = createObjectMapper(exptManager);
 			ObjectReader objReader = objectMapper.reader();
 
-			ObjectNode obj = objectMapper.createObjectNode();
+			List<ObjectNode> objs = new ArrayList<>(propFiles.length + 1);
+			objs.add(objectMapper.createObjectNode()); // fallback empty object
 
 			for (File propFile : propFiles) {
 				if (!propFile.exists())
 					continue;
+
 
 				try (Reader reader = new InputStreamReader(new FileInputStream(propFile),
 						StandardCharsets.UTF_8)) {
@@ -920,8 +938,9 @@ public class STPropertiesManager {
 					if (jsonNode != null) {
 						if (!(jsonNode instanceof ObjectNode))
 							throw new STPropertyAccessException(
-									"YAML file not cotaining an object node: " + propFile);
-						obj.setAll((ObjectNode) jsonNode);
+									"YAML file not containing an object node: " + propFile);
+
+						objs.add((ObjectNode) jsonNode);
 					}
 				} catch (JsonMappingException e) {
 					// Swallow exception due to empty property files
@@ -932,26 +951,41 @@ public class STPropertiesManager {
 
 			}
 
-			return loadSTPropertiesFromObjectNode(valueType, loadObjType, obj, objectMapper);
+			return loadSTPropertiesFromObjectNodes(valueType, loadObjType, objectMapper, objs.toArray(new ObjectNode[0]));
 		} catch (IOException e) {
 			throw new STPropertyAccessException(e);
 		}
 	}
 
-	public static <T extends STProperties> T loadSTPropertiesFromObjectNode(Class<T> valueType,
-			boolean loadObjType, ObjectNode obj) throws STPropertyAccessException {
-		return loadSTPropertiesFromObjectNode(valueType, loadObjType, obj, createObjectMapper(null));
+	public static <T extends STProperties> T loadSTPropertiesFromObjectNodes(Class<T> valueType,
+																			 boolean loadObjType, ObjectNode... objs) throws STPropertyAccessException {
+		return loadSTPropertiesFromObjectNodes(valueType, loadObjType, createObjectMapper(null), objs);
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T extends STProperties> T loadSTPropertiesFromObjectNode(Class<T> valueType,
-			boolean loadObjType, ObjectNode obj, ObjectMapper objectMapper) throws STPropertyAccessException {
+	public static <T extends STProperties> T loadSTPropertiesFromObjectNodes(Class<T> valueType,
+																			 boolean loadObjType, ObjectMapper objectMapper, ObjectNode... objs) throws STPropertyAccessException {
 		try {
-			if (!loadObjType && obj.hasNonNull(SETTINGS_TYPE_PROPERTY)) {
-				obj.remove(SETTINGS_TYPE_PROPERTY);
+			if (objs == null || objs.length < 1) {
+				throw new IllegalArgumentException("Missing ObjectNode to deserialize into an STProperties");
 			}
 
-			return (T) objectMapper.readValue(objectMapper.treeAsTokens(obj), valueType);
+			T result = null;
+			for (ObjectNode obj : objs) {
+				if (!loadObjType && obj.hasNonNull(SETTINGS_TYPE_PROPERTY)) {
+					obj.remove(SETTINGS_TYPE_PROPERTY);
+				}
+
+				T aPropertyObj = objectMapper.readValue(objectMapper.treeAsTokens(obj), valueType);
+
+				if (result == null) {
+					result = aPropertyObj;
+				} else {
+					STProperties.deepMerge(result, aPropertyObj);
+				}
+			}
+
+			return result;
 		} catch (IOException e) {
 			throw new STPropertyAccessException(e);
 		}

@@ -259,8 +259,8 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 		// parses the JSON object into an actual Configuration object
 		ObjectMapper mapper = STPropertiesManager.createObjectMapper(exptManager);
-		CustomService customServiceCfg = STPropertiesManager.loadSTPropertiesFromObjectNode(
-				CustomService.class, true, customServiceDefinitiondefinition, mapper);
+		CustomService customServiceCfg = STPropertiesManager.loadSTPropertiesFromObjectNodes(
+				CustomService.class, true, mapper, customServiceDefinitiondefinition);
 
 		registerCustomService(customServiceCfgID, customServiceCfg, overwrite);
 	}

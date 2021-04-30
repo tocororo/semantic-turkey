@@ -294,7 +294,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager{
                 .<Configuration>getInterfaceArgumentTypeAsClass(configurationManager.getClass(),
                         ConfigurationManager.class, 0);
 
-        Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass, true,
+        Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNodes(configBaseClass, true,
                 configuration);
         ((ConfigurationManager) configurationManager).storeConfiguration(reference, configObj);
     }
@@ -407,7 +407,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager{
                         .getInterfaceArgumentTypeAsClass(extFactory.getClass(), ConfigurationManager.class,
                                 0);
 
-                Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNode(configBaseClass,
+                Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNodes(configBaseClass,
                         true, config);
                 STPropertiesChecker checker = STPropertiesChecker.getModelConfigurationChecker(configObj);
                 if (!checker.isValid()) {

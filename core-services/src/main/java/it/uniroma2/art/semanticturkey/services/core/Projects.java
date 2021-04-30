@@ -1068,8 +1068,8 @@ public class Projects extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	public ProjectFacets getProjectFacetsForm() throws IllegalStateException, STPropertyAccessException {
-		return STPropertiesManager.loadSTPropertiesFromObjectNode(ProjectFacets.class, false,
-				JsonNodeFactory.instance.objectNode(), STPropertiesManager.createObjectMapper(exptManager));
+		return STPropertiesManager.loadSTPropertiesFromObjectNodes(ProjectFacets.class, false,
+				STPropertiesManager.createObjectMapper(exptManager), JsonNodeFactory.instance.objectNode());
 	}
 
 	/**
