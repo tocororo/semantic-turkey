@@ -115,6 +115,10 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<openhtml.version>1.0.3</openhtml.version>
 		<fontbox.version>2.0.19</fontbox.version>
 		<cron-utils.version>9.0.2</cron-utils.version>
+		<!-- When updating the version of Karaf, remember to copy from the distribution and then modify the
+files org.ops4j.pax.logging.cfg, org.ops4j.pax.web.cfg, org.apache.karaf.features.cfg; additionally,
+update the version of Karaf indicated in branding.properties (module st-console) -->
+		<karaf.version>4.2.1</karaf.version>
 	</properties>
 
 	<scm>

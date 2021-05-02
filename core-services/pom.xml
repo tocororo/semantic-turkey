@@ -158,6 +158,11 @@
 			<artifactId>st-font</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.karaf.config</groupId>
+			<artifactId>org.apache.karaf.config.core</artifactId>
+			<version>${karaf.version}</version>
+		</dependency>
 	</dependencies>
 
 	<build>

@@ -42,4 +42,7 @@
 
 	<osgi:reference id="resourceMetadataManager"
 		interface="it.uniroma2.art.semanticturkey.versioning.ResourceMetadataManager" />
+
+	<osgi:reference id="configRepository"
+					interface="org.apache.karaf.config.core.ConfigRepository" />
 </beans>
