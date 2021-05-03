@@ -1020,7 +1020,7 @@ public class Projects extends STServiceAdapter {
 			WrongPropertiesException, STPropertyAccessException, ProjectAccessException,
 			InvalidProjectNameException, ProjectInexistentException, IOException, PropertyNotFoundException {
 		Project project = ProjectManager.getProject(projectName, true);
-		exptManager.storeSettings(ProjectFacetsStore.class.getName(), project, UsersManager.getLoggedUser(),
+		exptManager.storeSettings(ProjectFacetsStore.class.getName(), project, UsersManager.getLoggedUser(), null,
 				Scope.PROJECT, facets);
 		// update the index about the facets of this project
 		ProjectInfo projectInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, ProjectACL.AccessLevel.R,
@@ -1084,7 +1084,7 @@ public class Projects extends STServiceAdapter {
 			throws IllegalStateException, NoSuchSettingsManager, STPropertyUpdateException,
 			WrongPropertiesException, STPropertyAccessException {
 		exptManager.storeSettings(CustomProjectFacetsSchemaStore.class.getName(), null,
-				UsersManager.getLoggedUser(), Scope.SYSTEM, facetsSchema);
+				UsersManager.getLoggedUser(), null, Scope.SYSTEM, facetsSchema);
 	}
 
 	/**

@@ -134,6 +134,7 @@ public interface SettingsManager extends IdentifiableComponent {
 					default:
 						throw new IllegalArgumentException("Unrecognized scope for PU settings default: " + defaultScope); // it should not happen
 				}
+				break;
 			default:
 				throw new IllegalArgumentException("Unrecognized scope: " + scope); // it should not happen
 		}

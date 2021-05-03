@@ -118,19 +118,19 @@ public interface ExtensionPointManager {
 
     Collection<Scope> getSettingsScopes(String componentIdentifier) throws NoSuchSettingsManager;
 
-    void storeSettings(String componentIdentifier, Project project, STUser user, Scope scope,
+    void storeSettings(String componentIdentifier, Project project, STUser user, UsersGroup group, Scope scope,
                        ObjectNode settings)
             throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException,
             STPropertyAccessException;
 
-    void storeSetting(String componentID, Project project, STUser loggedUser, Scope scope, String property, JsonNode propertyValue)
+    void storeSetting(String componentID, Project project, STUser loggedUser, UsersGroup group, Scope scope, String property, JsonNode propertyValue)
             throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException, STPropertyAccessException, PropertyNotFoundException, IOException;
 
-    void storeSettingsDefault(String componentIdentifier, Project project, STUser user, Scope scope, Scope defaultScope,
+    void storeSettingsDefault(String componentIdentifier, Project project, STUser user, UsersGroup group, Scope scope, Scope defaultScope,
                               ObjectNode settings) throws NoSuchSettingsManager, STPropertyUpdateException,
             WrongPropertiesException, STPropertyAccessException;
 
-    void storeSettingDefault(String componentIdentifier, Project project, STUser user, Scope scope, Scope defaultScope,
+    void storeSettingDefault(String componentIdentifier, Project project, STUser user, UsersGroup group, Scope scope, Scope defaultScope,
                              String property, JsonNode propertyValue) throws NoSuchSettingsManager, STPropertyUpdateException,
             WrongPropertiesException, STPropertyAccessException, PropertyNotFoundException, IOException;
 

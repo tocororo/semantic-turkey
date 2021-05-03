@@ -121,7 +121,7 @@ public class Collaboration extends STServiceAdapter {
 		Project project = getProject();
 		STUser user = UsersManager.getLoggedUser();
 
-		exptManager.storeSettings(backendId, project, user, Scope.PROJECT_USER, currentUserPreferences);
+		exptManager.storeSettings(backendId, project, user, null, Scope.PROJECT_USER, currentUserPreferences);
 
 		project.setProperty(PROJ_PROP_BACKEND, backendId);
 	}

@@ -308,47 +308,47 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager{
     }
 
     @Override
-    public void storeSettings(String componentIdentifier, Project project, STUser user, Scope scope,
+    public void storeSettings(String componentIdentifier, Project project, STUser user, UsersGroup group, Scope scope,
                               ObjectNode settings) throws NoSuchSettingsManager, STPropertyUpdateException,
             WrongPropertiesException, STPropertyAccessException {
         SettingsManager settingsManager = getSettingsManager(componentIdentifier);
         Settings settingsObj = SettingsSupport.createSettings(settingsManager, scope, settings);
-        settingsManager.storeSettings(project, user, null, scope, settingsObj);
+        settingsManager.storeSettings(project, user, group, scope, settingsObj);
     }
 
     @Override
-    public void storeSetting(String componentID, Project project, STUser loggedUser, Scope scope, String property, JsonNode propertyValue) throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException, STPropertyAccessException, PropertyNotFoundException, IOException {
+    public void storeSetting(String componentID, Project project, STUser loggedUser, UsersGroup group, Scope scope, String property, JsonNode propertyValue) throws NoSuchSettingsManager, STPropertyUpdateException, WrongPropertiesException, STPropertyAccessException, PropertyNotFoundException, IOException {
         // A non-atomic read-update of a single settings property
         SettingsManager settingsManager = getSettingsManager(componentID);
-        Settings explicitSettings = settingsManager.getSettings(project, loggedUser, null, scope, true);
+        Settings explicitSettings = settingsManager.getSettings(project, loggedUser, group, scope, true);
         Type propertyType = explicitSettings.getPropertyType(property);
         ObjectMapper om = STPropertiesManager.createObjectMapper();
         Object parsedPropertyValue = om.readValue(om.treeAsTokens(propertyValue), om.constructType(propertyType));
         explicitSettings.setPropertyValue(property, parsedPropertyValue);
-        settingsManager.storeSettings(project, loggedUser, null, scope, explicitSettings);
+        settingsManager.storeSettings(project, loggedUser, group, scope, explicitSettings);
     }
 
     @Override
-    public void storeSettingsDefault(String componentIdentifier, Project project, STUser user, Scope scope, Scope defaultScope,
+    public void storeSettingsDefault(String componentIdentifier, Project project, STUser user, UsersGroup group, Scope scope, Scope defaultScope,
                                      ObjectNode settings) throws NoSuchSettingsManager, STPropertyUpdateException,
             WrongPropertiesException, STPropertyAccessException {
         SettingsManager settingsManager = getSettingsManager(componentIdentifier);
         Settings settingsObj = SettingsSupport.createSettings(settingsManager, scope, settings);
-        settingsManager.storeSettingsDefault(project, user, null, scope, defaultScope, settingsObj);
+        settingsManager.storeSettingsDefault(project, user, group, scope, defaultScope, settingsObj);
     }
 
     @Override
-    public void storeSettingDefault(String componentID, Project project, STUser user, Scope scope, Scope defaultScope,
+    public void storeSettingDefault(String componentID, Project project, STUser user, UsersGroup group, Scope scope, Scope defaultScope,
                                     String property, JsonNode propertyValue) throws NoSuchSettingsManager, STPropertyUpdateException,
             WrongPropertiesException, STPropertyAccessException, PropertyNotFoundException, IOException {
         // A non-atomic read-update of a single settings default property
         SettingsManager settingsManager = getSettingsManager(componentID);
-        Settings settingsDefault = settingsManager.getSettingsDefault(project, user, null, scope, defaultScope);
+        Settings settingsDefault = settingsManager.getSettingsDefault(project, user, group, scope, defaultScope);
         Type propertyType = settingsDefault.getPropertyType(property);
         ObjectMapper om = STPropertiesManager.createObjectMapper();
         Object parsedPropertyValue = om.readValue(om.treeAsTokens(propertyValue), om.constructType(propertyType));
         settingsDefault.setPropertyValue(property, parsedPropertyValue);
-        settingsManager.storeSettingsDefault(project, user, null, scope, defaultScope, settingsDefault);
+        settingsManager.storeSettingsDefault(project, user, group, scope, defaultScope, settingsDefault);
     }
 
     @Override
