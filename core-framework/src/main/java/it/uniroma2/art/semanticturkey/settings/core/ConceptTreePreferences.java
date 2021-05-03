@@ -25,6 +25,8 @@ public class ConceptTreePreferences implements STProperties {
         public static final String syncInverse$description = keyBase + ".syncInverse.description";
         public static final String visualization$displayName = keyBase + ".visualization.displayName";
         public static final String visualization$description = keyBase + ".visualization.description";
+        public static final String allowVisualizationChange$description = keyBase + ".allowVisualizationChange.description";
+        public static final String allowVisualizationChange$displayName = keyBase + ".allowVisualizationChange.displayName";
         public static final String multischemeMode$displayName = keyBase + ".multischemeMode.displayName";
         public static final String multischemeMode$description = keyBase + ".multischemeMode.description";
         public static final String safeToGoLimit$displayName = keyBase + ".safeToGoLimit.displayName";
@@ -60,6 +62,10 @@ public class ConceptTreePreferences implements STProperties {
             + "}", displayName = "{" + MessageKeys.visualization$displayName + "}")
     @Enumeration({"hierarchyBased", "searchBased"})
     public String visualization;
+
+    @STProperty(description = "{" + MessageKeys.allowVisualizationChange$description
+            + "}", displayName = "{" + MessageKeys.allowVisualizationChange$displayName + "}")
+    public Boolean allowVisualizationChange;
 
     @STProperty(description = "{" + MessageKeys.multischemeMode$description
             + "}", displayName = "{" + MessageKeys.multischemeMode$displayName + "}")

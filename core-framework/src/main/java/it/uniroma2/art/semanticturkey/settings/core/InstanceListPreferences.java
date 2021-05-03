@@ -13,6 +13,8 @@ public class InstanceListPreferences implements STProperties {
         public static final String shortName = keyBase + ".shortName";
         public static final String visualization$description = keyBase + ".visualization.description";
         public static final String visualization$displayName = keyBase + ".visualization.displayName";
+        public static final String allowVisualizationChange$description = keyBase + ".allowVisualizationChange.description";
+        public static final String allowVisualizationChange$displayName = keyBase + ".allowVisualizationChange.displayName";
         public static final String safeToGoLimit$displayName = keyBase + ".safeToGoLimit.displayName";
         public static final String safeToGoLimit$description = keyBase + ".safeToGoLimit.description";
     }
@@ -26,6 +28,10 @@ public class InstanceListPreferences implements STProperties {
             + "}", displayName = "{" + MessageKeys.visualization$displayName + "}")
     @Enumeration({"standard", "searchBased"})
     public String visualization;
+
+    @STProperty(description = "{" + MessageKeys.allowVisualizationChange$description
+            + "}", displayName = "{" + MessageKeys.allowVisualizationChange$displayName + "}")
+    public Boolean allowVisualizationChange;
 
     @STProperty(description = "{" + MessageKeys.safeToGoLimit$description
             + "}", displayName = "{" + MessageKeys.safeToGoLimit$displayName + "}")

@@ -13,6 +13,8 @@ public class LexEntryListPreferences implements STProperties {
         public static final String shortName = keyBase + ".shortName";
         public static final String visualization$description = keyBase + ".visualization.description";
         public static final String visualization$displayName = keyBase + ".visualization.displayName";
+        public static final String allowVisualizationChange$description = keyBase + ".allowVisualizationChange.description";
+        public static final String allowVisualizationChange$displayName = keyBase + ".allowVisualizationChange.displayName";
         public static final String indexLength$description = keyBase + ".indexLength.description";
         public static final String indexLength$displayName = keyBase + ".indexLength.displayName";
         public static final String safeToGoLimit$description = keyBase + ".safeToGoLimit.description";
@@ -28,6 +30,10 @@ public class LexEntryListPreferences implements STProperties {
             + "}", displayName = "{" + MessageKeys.visualization$displayName + "}")
     @Enumeration({"indexBased", "searchBased"})
     public String visualization;
+
+    @STProperty(description = "{" + MessageKeys.allowVisualizationChange$description
+            + "}", displayName = "{" + MessageKeys.allowVisualizationChange$displayName + "}")
+    public Boolean allowVisualizationChange;
 
     @STProperty(description = "{" + MessageKeys.indexLength$description
             + "}", displayName = "{" + MessageKeys.indexLength$displayName + "}")

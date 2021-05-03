@@ -85,7 +85,7 @@ public class Settings extends STServiceAdapter {
             Scope scope) throws NoSuchSettingsManager, STPropertyAccessException {
         Project project = (scope == Scope.SYSTEM) ? null : getProject();
         STUser user = UsersManager.getLoggedUser();
-        UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
+        UsersGroup group = (scope == Scope.PROJECT_GROUP) ? ProjectUserBindingsManager.getUserGroup(user, project) : null;
         return exptManager.getSettings(project, user, group, componentID, scope);
     }
 
@@ -106,7 +106,7 @@ public class Settings extends STServiceAdapter {
             STPropertyAccessException {
         Project project = (scope == Scope.PROJECT_USER || scope == Scope.PROJECT_GROUP) ? getProject() : null;
         STUser user = UsersManager.getLoggedUser();
-        UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
+        UsersGroup group = (scope == Scope.PROJECT_GROUP) ? ProjectUserBindingsManager.getUserGroup(user, project) : null;
         return exptManager.getSettingsDefault(project, user, group, componentID, scope, defaultScope);
     }
 
@@ -128,7 +128,7 @@ public class Settings extends STServiceAdapter {
             STPropertyUpdateException, WrongPropertiesException {
         Project project = (scope == Scope.SYSTEM) ? null : getProject();
         STUser user = UsersManager.getLoggedUser();
-        UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
+        UsersGroup group = (scope == Scope.PROJECT_GROUP) ? ProjectUserBindingsManager.getUserGroup(user, project) : null;
         exptManager.storeSettings(componentID, project, user, group, scope, settings);
     }
 
@@ -151,7 +151,7 @@ public class Settings extends STServiceAdapter {
             STPropertyUpdateException, WrongPropertiesException, PropertyNotFoundException, IOException {
         Project project = (scope == Scope.SYSTEM) ? null : getProject();
         STUser user = UsersManager.getLoggedUser();
-        UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
+        UsersGroup group = (scope == Scope.PROJECT_GROUP) ? ProjectUserBindingsManager.getUserGroup(user, project) : null;
         exptManager.storeSetting(componentID, project, user, group, scope, propertyName, propertyValue);
     }
 
@@ -174,7 +174,7 @@ public class Settings extends STServiceAdapter {
             STPropertyUpdateException, WrongPropertiesException {
         Project project = (scope == Scope.SYSTEM) ? null : getProject();
         STUser user = UsersManager.getLoggedUser();
-        UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
+        UsersGroup group = (scope == Scope.PROJECT_GROUP) ? ProjectUserBindingsManager.getUserGroup(user, project) : null;
         exptManager.storeSettingsDefault(componentID, project, user, group, scope, defaultScope, settings);
     }
 
@@ -198,7 +198,7 @@ public class Settings extends STServiceAdapter {
             STPropertyUpdateException, WrongPropertiesException, PropertyNotFoundException, IOException {
         Project project = (scope == Scope.SYSTEM) ? null : getProject();
         STUser user = UsersManager.getLoggedUser();
-        UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
+        UsersGroup group = (scope == Scope.PROJECT_GROUP) ? ProjectUserBindingsManager.getUserGroup(user, project) : null;
         exptManager.storeSettingDefault(componentID, project, user, group, scope, defaultScope, propertyName, propertyValue);
     }
 
@@ -234,7 +234,7 @@ public class Settings extends STServiceAdapter {
             throw new IllegalArgumentException("Invalid scope for this service");
         }
         Project project = ProjectManager.getProjectDescription(projectName);
-        STUser user = (userIri != null) ? UsersManager.getUser(userIri) : null;
+        STUser user = (userIri != null) ? UsersManager.getUser(userIri) : UsersManager.getLoggedUser();
         UsersGroup group = (groupIri != null) ? UsersGroupsManager.getGroupByIRI(groupIri) : null;
 
         return exptManager.getSettings(project, user, group, componentID, scope);
@@ -331,6 +331,61 @@ public class Settings extends STServiceAdapter {
             PropertyNotFoundException, WrongPropertiesException, IOException {
         STUser user = UsersManager.getUser(userIri);
         exptManager.storeSettingDefault(componentID, null, user, null, Scope.PROJECT_USER, Scope.USER, propertyName, propertyValue);
+    }
+
+
+    /***
+     * Returns the default PU Settings at project level for the given project.
+     * Useful for administration purposes (e.g. Admin that want to manage the default PUSettings for different projects).
+     *
+     * User that wants to manage project where he is PM, can still use {@link #getSettingsDefault}
+     *
+     * @param componentID
+     * @param projectName
+     * @return
+     * @throws NoSuchSettingsManager
+     * @throws STPropertyAccessException
+     * @throws ProjectAccessException
+     * @throws ProjectInexistentException
+     * @throws InvalidProjectNameException
+     */
+    @PreAuthorize("@auth.isAdmin()") //only admin can manage all projects (even closed one)
+    @STServiceOperation
+    public it.uniroma2.art.semanticturkey.extension.settings.Settings getPUSettingsProjectDefault(String componentID,
+            String projectName) throws NoSuchSettingsManager, STPropertyAccessException,  ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
+        Project project = ProjectManager.getProject(projectName, true);
+        return exptManager.getSettingsDefault(project, null, null, componentID, Scope.PROJECT_USER, Scope.PROJECT);
+    }
+
+    /**
+     * Stores the default PU Settings at project level for the given project.
+     * Useful for administration purposes (e.g. Admin that want to manage the default PUSettings for different projects).
+     *
+     * User that wants to manage project where he is PM, can still use {@link #storeSettingsDefault}
+     *
+     * @param componentID
+     * @param projectName
+     * @param propertyName
+     * @param propertyValue
+     * @throws NoSuchSettingsManager
+     * @throws STPropertyAccessException
+     * @throws STPropertyUpdateException
+     * @throws PropertyNotFoundException
+     * @throws WrongPropertiesException
+     * @throws IOException
+     * @throws ProjectAccessException
+     * @throws ProjectInexistentException
+     * @throws InvalidProjectNameException
+     */
+    @PreAuthorize("@auth.isAdmin()") //only admin can manage all projects (even closed one)
+    @STServiceOperation(method = RequestMethod.POST)
+    public void storePUSettingProjectDefault(String componentID, String projectName,
+            String propertyName, @JsonSerialized JsonNode propertyValue)
+            throws NoSuchSettingsManager, STPropertyAccessException, STPropertyUpdateException,
+            PropertyNotFoundException, WrongPropertiesException, IOException, ProjectAccessException,
+            ProjectInexistentException, InvalidProjectNameException {
+        Project project = ProjectManager.getProject(projectName, true);
+        exptManager.storeSettingDefault(componentID, project, null, null, Scope.PROJECT_USER, Scope.PROJECT, propertyName, propertyValue);
     }
 
 
