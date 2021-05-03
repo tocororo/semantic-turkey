@@ -951,7 +951,7 @@ public class STPropertiesManager {
             }
 
             if (objs.isEmpty()) {
-                objs = Collections.emptyList();
+                objs.add(objectMapper.createObjectNode()); // fallback empty object
             }
             return loadSTPropertiesFromObjectNodes(valueType, loadObjType, objectMapper, objs.toArray(new ObjectNode[0]));
         } catch (IOException e) {
