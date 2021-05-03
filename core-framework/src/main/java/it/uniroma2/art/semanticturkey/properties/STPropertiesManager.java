@@ -925,7 +925,6 @@ public class STPropertiesManager {
             ObjectReader objReader = objectMapper.reader();
 
             List<ObjectNode> objs = new ArrayList<>(propFiles.length + 1);
-            objs.add(objectMapper.createObjectNode()); // fallback empty object
 
             for (File propFile : propFiles) {
                 if (!propFile.exists())
@@ -951,6 +950,9 @@ public class STPropertiesManager {
 
             }
 
+            if (objs.isEmpty()) {
+                objs = Collections.emptyList();
+            }
             return loadSTPropertiesFromObjectNodes(valueType, loadObjType, objectMapper, objs.toArray(new ObjectNode[0]));
         } catch (IOException e) {
             throw new STPropertyAccessException(e);
