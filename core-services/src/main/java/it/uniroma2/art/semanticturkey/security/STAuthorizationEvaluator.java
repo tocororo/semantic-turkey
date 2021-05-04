@@ -29,6 +29,7 @@ import it.uniroma2.art.semanticturkey.rbac.HarmingGoalException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACProcessor;
 import it.uniroma2.art.semanticturkey.rbac.TheoryNotFoundException;
+import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
@@ -138,6 +139,28 @@ public class STAuthorizationEvaluator {
 			STPropertyAccessException, JSONException, ProjectAccessException, ProjectInexistentException,
 			InvalidProjectNameException {
 		return this.isAuthorized(prologCapability, "{}", crudv, projectName);
+	}
+
+	public boolean isSettingsActionAuthorized(Scope scope, boolean write) throws ProjectAccessException,
+			ProjectInexistentException, InvalidProjectNameException, HarmingGoalException, JSONException,
+			HaltedEngineException, MalformedGoalException, STPropertyAccessException {
+		if (scope.equals(Scope.SYSTEM)) {
+			return isAdmin();
+		} else if (scope.equals(Scope.PROJECT)) {
+			if (write) {
+				return isAuthorized("pm(project)", "U");
+			} else {
+				return true; //PROJECT settings can be read by any user (e.g. project languages)
+			}
+		} else if (scope.equals(Scope.PROJECT_GROUP)) {
+			if (write) {
+				return isAuthorized("pm(project, group)", "U");
+			} else {
+				return true; //PROJECT_GROUP settings can be read by any user (e.g. group limitations)
+			}
+		} else { //scope: USER, PROJECT_USER
+			return true; //it is enough that the user is logged
+		}
 	}
 
 	/**
