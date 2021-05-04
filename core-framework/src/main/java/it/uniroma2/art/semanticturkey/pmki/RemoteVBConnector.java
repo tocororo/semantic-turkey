@@ -10,6 +10,8 @@ import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.resources.Scope;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -91,14 +93,11 @@ public class RemoteVBConnector {
 	public ObjectNode createProject(String projectName, String baseURI, IRI model, IRI lexicalizationModel, PluginSpecification coreRepoSailConfigurerSpecification) throws IOException, URISyntaxException {
 		ObjectNode remoteConfigurationJson;
 
-		ObjectNode respJson = getRemoteAccessConfigurations();
-		JsonNode remoteConfigsJson = respJson.findValue("remote_configs");
-		if (remoteConfigsJson.isTextual()) {
-			String remoteConfigsValue = remoteConfigsJson.asText();
-			ArrayNode configsJson = (ArrayNode) mapper.readTree(remoteConfigsValue);
-			remoteConfigurationJson = (ObjectNode) configsJson.get(0);
+		ArrayNode remoteConfigs = getRemoteAccessConfigurations();
+		if (remoteConfigs != null && remoteConfigs.size() > 0) {
+			remoteConfigurationJson = (ObjectNode) remoteConfigs.get(0);
 		} else {
-			throw new IllegalStateException("Remote VocBench has not been configured with a'Remote Access configurations'");
+			throw new IllegalStateException("Remote VocBench has not been configured with a 'Remote Access configurations'");
 		}
 
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
@@ -217,16 +216,36 @@ public class RemoteVBConnector {
 		return processResponse(response);
 	}
 
-
-	public ObjectNode getRemoteAccessConfigurations() throws URISyntaxException, IOException {
-		String requestUrl = stHost + "semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/PreferencesSettings/getSystemSettings";
+	/**
+	 * Return the json array node list of the "remoteConfigs" STProperty (contained in the system core Settings)
+	 * of the VB-ST instance. Returns null if VB has been not configured with remote configurations
+	 * @return
+	 * @throws URISyntaxException
+	 * @throws IOException
+	 */
+	public ArrayNode getRemoteAccessConfigurations() throws URISyntaxException, IOException {
+		String requestUrl = stHost + "semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/Settings/getSettings";
 		URIBuilder builder = new URIBuilder(requestUrl);
-		builder.setParameter("properties", "remote_configs");
+		builder.setParameter("componentID", SemanticTurkeyCoreSettingsManager.class.getName());
+		builder.setParameter("scope", Scope.SYSTEM.toString());
 		HttpGet httpGet = new HttpGet(builder.build());
 		httpGet.addHeader(HttpHeaders.ACCEPT, "application/json");
 		//Execute and get the response
 		CloseableHttpResponse response = httpClient.execute(httpGet);
-		return processResponse(response);
+		ObjectNode respNode = processResponse(response);
+		//retrieve the STProperty with name "remoteConfigs" among those returned in the Settings
+		JsonNode remoteConfigValueNode = null;
+		ArrayNode propertiesListJson = (ArrayNode) respNode.findValue("properties");
+		for (JsonNode propsNode: propertiesListJson) {
+			if (propsNode.get("name").textValue().equals("remoteConfigs")) {
+				remoteConfigValueNode = propsNode.get("value");
+			}
+		}
+		if (remoteConfigValueNode != null) {
+			return (ArrayNode) remoteConfigValueNode;
+		} else {
+			return null;
+		}
 	}
 
 	private ObjectNode processResponse(HttpResponse response) throws IOException {
