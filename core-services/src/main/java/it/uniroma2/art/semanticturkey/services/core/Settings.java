@@ -106,9 +106,9 @@ public class Settings extends STServiceAdapter {
     public it.uniroma2.art.semanticturkey.extension.settings.Settings getSettingsDefault(String componentID, Scope scope,
             @Optional Scope defaultScope, @Optional String projectName) throws NoSuchSettingsManager,
             STPropertyAccessException {
-        Project project = (scope == Scope.PROJECT_USER || scope == Scope.PROJECT_GROUP) ? getProject() : null;
+        Project project = (defaultScope == Scope.PROJECT_USER || defaultScope == Scope.PROJECT_GROUP) ? getProject() : null;
         STUser user = UsersManager.getLoggedUser();
-        UsersGroup group = (scope == Scope.PROJECT_GROUP) ? ProjectUserBindingsManager.getUserGroup(user, project) : null;
+        UsersGroup group = (defaultScope == Scope.PROJECT_GROUP) ? ProjectUserBindingsManager.getUserGroup(user, project) : null;
         return exptManager.getSettingsDefault(project, user, group, componentID, scope, defaultScope);
     }
 
@@ -174,7 +174,7 @@ public class Settings extends STServiceAdapter {
     public void storeSettingsDefault(String componentID, Scope scope, Scope defaultScope, ObjectNode settings)
             throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
             STPropertyUpdateException, WrongPropertiesException {
-        Project project = (scope == Scope.SYSTEM) ? null : getProject();
+        Project project = (defaultScope == Scope.SYSTEM || defaultScope == Scope.USER) ? null : getProject();
         STUser user = UsersManager.getLoggedUser();
         UsersGroup group = (scope == Scope.PROJECT_GROUP) ? ProjectUserBindingsManager.getUserGroup(user, project) : null;
         exptManager.storeSettingsDefault(componentID, project, user, group, scope, defaultScope, settings);
@@ -198,9 +198,9 @@ public class Settings extends STServiceAdapter {
     public void storeSettingDefault(String componentID, Scope scope, Scope defaultScope, String propertyName, @JsonSerialized JsonNode propertyValue)
             throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
             STPropertyUpdateException, WrongPropertiesException, PropertyNotFoundException, IOException {
-        Project project = (scope == Scope.SYSTEM) ? null : getProject();
+        Project project = (defaultScope == Scope.SYSTEM || defaultScope == Scope.USER) ? null : getProject();
         STUser user = UsersManager.getLoggedUser();
-        UsersGroup group = (scope == Scope.PROJECT_GROUP) ? ProjectUserBindingsManager.getUserGroup(user, project) : null;
+        UsersGroup group = (defaultScope == Scope.PROJECT_GROUP) ? ProjectUserBindingsManager.getUserGroup(user, project) : null;
         exptManager.storeSettingDefault(componentID, project, user, group, scope, defaultScope, propertyName, propertyValue);
     }
 
