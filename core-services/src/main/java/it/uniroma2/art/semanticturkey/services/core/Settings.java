@@ -18,6 +18,7 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -403,8 +405,11 @@ public class Settings extends STServiceAdapter {
         startupSettings.experimentalFeaturesEnabled = coreSysSettings.experimentalFeaturesEnabled;
         startupSettings.homeContent = coreSysSettings.homeContent;
         startupSettings.languages = defaultProjSettings.languages;
-        startupSettings.privacyStatementAvailable = coreSysSettings.privacyStatementAvailable;
         startupSettings.showFlags = coreSysSettings.showFlags;
+        //privacyStatementAvailable is not a configurable settings, it needs to be evaluated on demand
+        File psFile = new File(Resources.getDocsDir(), "privacy_statement.pdf");
+        boolean privacyStatementAvailable = psFile.isFile();
+        startupSettings.privacyStatementAvailable = privacyStatementAvailable;
         return startupSettings;
     }
 

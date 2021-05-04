@@ -532,7 +532,6 @@ public class UpdateRoutines {
 
 			convertPropertiesSettingToYAML(properties, "remote_configs", newCoreSystemSettingsNode, "remoteConfigs", v -> om.readTree(new StringReader(v)));
 			convertPropertiesSettingToYAML(properties, "experimental_features_enabled", newCoreSystemSettingsNode, "experimentalFeaturesEnabled", Boolean::valueOf);
-			convertPropertiesSettingToYAML(properties, "privacy_statement_available", newCoreSystemSettingsNode, "privacyStatementAvailable", Boolean::valueOf);
 			convertPropertiesSettingToYAML(properties, "show_flags", newCoreSystemSettingsNode, "showFlags", Boolean::valueOf);
 			convertPropertiesSettingToYAML(properties, "home_content", newCoreSystemSettingsNode, "homeContent", String::valueOf);
 			convertPropertiesSettingToYAML(properties, "proj_creation_default_acl_set_universal_access", newCoreSystemSettingsNode, Arrays.asList("projectCreation", "aclUniversalAccessDefault"), Boolean::valueOf);

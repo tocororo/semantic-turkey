@@ -19,12 +19,8 @@ public class CoreSystemSettings implements Settings {
                 + ".experimentalFeaturesEnabled.description";
         public static final String experimentalFeaturesEnabled$displayName = keyBase
                 + ".experimentalFeaturesEnabled.displayName";
-        public static final String privacyStatementAvailable$description = keyBase
-                + ".privacyStatementAvailable.description";
-        public static final String privacyStatementAvailable$displayName = keyBase
-                + ".privacyStatementAvailable.displayName";
-        public static final String showFlags$description = keyBase + ".privacyStatementAvailable.description";
-        public static final String showFlags$displayName = keyBase + ".privacyStatementAvailable.displayName";
+        public static final String showFlags$description = keyBase + ".showFlags.description";
+        public static final String showFlags$displayName = keyBase + ".showFlags.displayName";
         public static final String homeContent$description = keyBase + ".homeContent.description";
         public static final String homeContent$displayName = keyBase + ".homeContent.displayName";
         public static final String projectCreation$description = keyBase + ".projectCreation.description";
@@ -51,10 +47,6 @@ public class CoreSystemSettings implements Settings {
     @STProperty(description = "{" + MessageKeys.experimentalFeaturesEnabled$description
             + "}", displayName = "{" + MessageKeys.experimentalFeaturesEnabled$displayName + "}")
     public Boolean experimentalFeaturesEnabled = false;
-
-    @STProperty(description = "{" + MessageKeys.privacyStatementAvailable$description + "}", displayName = "{"
-            + MessageKeys.privacyStatementAvailable$displayName + "}")
-    public Boolean privacyStatementAvailable = false;
 
     @STProperty(description = "{" + MessageKeys.showFlags$description + "}", displayName = "{"
             + MessageKeys.showFlags$displayName + "}")
