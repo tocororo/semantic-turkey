@@ -6,7 +6,9 @@ import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
+import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEnginePUSettings;
 import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
@@ -14,6 +16,7 @@ import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -25,6 +28,10 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
+import it.uniroma2.art.semanticturkey.settings.core.CorePUSettings;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
+import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -546,9 +553,9 @@ public class EDOAL extends STServiceAdapter {
 			String userLanguages;
 
 			try {
-				userLanguages = STPropertiesManager.getPUSetting(STPropertiesManager.PREF_LANGUAGES,
-						keyProject, UsersManager.getLoggedUser(), RenderingEngine.class.getName());
-			} catch (IllegalStateException | STPropertyAccessException e) {
+				RenderingEnginePUSettings renderingPUSettings = (RenderingEnginePUSettings) exptManager.getSettings(keyProject, UsersManager.getLoggedUser(), ProjectUserBindingsManager.getUserGroup(UsersManager.getLoggedUser(), keyProject), RenderingEngine.class.getName(), Scope.PROJECT_USER);
+				userLanguages = renderingPUSettings.languages;
+			} catch (IllegalStateException | STPropertyAccessException | NoSuchSettingsManager e) {
 				throw new IndexingLanguageNotFound(
 						"Unable to find user languages for project \"" + keyProject + "\"", e);
 			}

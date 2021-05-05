@@ -73,8 +73,6 @@ public class STPropertiesManager {
 
     public static final String PREF_LANGUAGES = "languages";
 
-    public static final String PRELOAD_PROFILER_TRESHOLD_BYTES = "preload.profiler.treshold_bytes";
-
     public static final String SETTING_PROJ_LANGUAGES = "languages";
 
     public static final String SETTINGS_TYPE_PROPERTY = "@type";
