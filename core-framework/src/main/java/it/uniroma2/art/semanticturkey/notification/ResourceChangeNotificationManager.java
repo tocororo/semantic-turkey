@@ -15,6 +15,7 @@ import it.uniroma2.art.semanticturkey.services.events.ResourceCreated;
 import it.uniroma2.art.semanticturkey.services.events.ResourceDeleted;
 import it.uniroma2.art.semanticturkey.services.events.ResourceEvent;
 import it.uniroma2.art.semanticturkey.services.events.ResourceModified;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettings;
 import it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettings.CronDefinition;
 import it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettingsManager;
@@ -59,6 +60,9 @@ public class ResourceChangeNotificationManager {
 
 	@Autowired
 	private NotificationSystemSettingsManager systemSettingsManager;
+
+	@Autowired
+	private SemanticTurkeyCoreSettingsManager stCoreSettingsManager;
 
 	@Autowired
 	private TaskScheduler taskScheduler;
@@ -311,7 +315,7 @@ public class ResourceChangeNotificationManager {
 	 */
 	private NotificationMode getUserNotificationMode(Project project, STUser user) throws STPropertyAccessException {
 		NotificationMode mode = NotificationMode.no_notifications; //default
-		String notificationPrefValue = STPropertiesManager.getPUSetting(NOTIFICATION_STATUS_PREF, project, user);
+		String notificationPrefValue = stCoreSettingsManager.getProjectSettings(project, user).notificationsStatus;
 		if (notificationPrefValue != null && EnumUtils.isValidEnum(NotificationMode.class, notificationPrefValue)) {
 			mode = NotificationMode.valueOf(notificationPrefValue);
 		}

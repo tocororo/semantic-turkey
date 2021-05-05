@@ -184,7 +184,7 @@ public class UpdateRoutines {
 		updateRoles(roles);
 
 		logger.debug("Version 3.0.0 added new properties to the default project preferences");
-		updatePUSettingsSystemDefaults(STPropertiesManager.CORE_PLUGIN_ID);
+		updatePUSettingsSystemDefaults(Config.CORE_PLUGIN_ID);
 		updatePUSettingsSystemDefaults("it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
 	}
 
@@ -255,7 +255,7 @@ public class UpdateRoutines {
 		updateRoles(roles);
 
 		logger.debug("Version 5.0.0 removed a property from the default project preferences");
-		updatePUSettingsSystemDefaults(STPropertiesManager.CORE_PLUGIN_ID);
+		updatePUSettingsSystemDefaults(Config.CORE_PLUGIN_ID);
 		updatePUSettingsSystemDefaults("it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
 	}
 
@@ -264,14 +264,14 @@ public class UpdateRoutines {
 		Resources.getDocsDir().mkdirs();
 
 		logger.debug("Version 6.0.0 changed a property from the default project preferences");
-		updatePUSettingsSystemDefaults(STPropertiesManager.CORE_PLUGIN_ID);
+		updatePUSettingsSystemDefaults(Config.CORE_PLUGIN_ID);
 		updatePUSettingsSystemDefaults("it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
 	}
 
 	private static void alignFrom6To7() throws IOException {
 		logger.debug("Version 7.0.0 updated the class_tree_filter in the pu-settings-defaults");
 		Resources.getDocsDir().mkdirs();
-		updatePUSettingsSystemDefaults(STPropertiesManager.CORE_PLUGIN_ID);
+		updatePUSettingsSystemDefaults(Config.CORE_PLUGIN_ID);
 	}
 
 	private static void alignFrom7To8()
@@ -949,7 +949,7 @@ public class UpdateRoutines {
 	private static void updateProjectSettingsDefaults() throws IOException {
 		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
 				"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"),
-				STPropertiesManager.getProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID));
+				STPropertiesManager.getProjectSettingsDefaultsFile(Config.CORE_PLUGIN_ID));
 	}
 
 	@SuppressWarnings("unused")

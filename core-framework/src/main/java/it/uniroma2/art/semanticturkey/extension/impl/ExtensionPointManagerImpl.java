@@ -346,7 +346,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager{
         Settings settingsDefault = settingsManager.getSettingsDefault(project, user, group, scope, defaultScope);
         Type propertyType = settingsDefault.getPropertyType(property);
         ObjectMapper om = STPropertiesManager.createObjectMapper();
-        Object parsedPropertyValue = om.readValue(om.treeAsTokens(propertyValue), om.constructType(propertyType));
+        Object parsedPropertyValue = propertyValue == null ? null : om.readValue(om.treeAsTokens(propertyValue), om.constructType(propertyType));
         settingsDefault.setPropertyValue(property, parsedPropertyValue);
         settingsManager.storeSettingsDefault(project, user, group, scope, defaultScope, settingsDefault);
     }

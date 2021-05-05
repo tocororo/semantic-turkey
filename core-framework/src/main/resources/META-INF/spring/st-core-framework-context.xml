@@ -341,10 +341,8 @@
 	</osgi:service>
 
 	<!-- Publishes Semantic Turkey core settings managers -->
-
-	<osgi:service auto-export="interfaces">
-		<bean
-				class="it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager" />
-	</osgi:service>
+	<bean id="semanticTurkeyCoreSettingsManager"
+			class="it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager" />
+	<osgi:service auto-export="all-classes" ref="semanticTurkeyCoreSettingsManager" />
 
 </beans>

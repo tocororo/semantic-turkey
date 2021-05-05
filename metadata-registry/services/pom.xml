@@ -190,6 +190,7 @@
 							org.springframework.web.servlet.i18n,
 							org.springframework.web.servlet.theme,
 							it.uniroma2.art.semanticturkey.http.session,
+							it.uniroma2.art.semanticturkey.settings.core,
 							*
 						</Import-Package>
 					</instructions>

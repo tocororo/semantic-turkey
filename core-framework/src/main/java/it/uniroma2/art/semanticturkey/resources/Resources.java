@@ -361,45 +361,6 @@ public class Resources {
 
 	private static void initializeSystemProperties() throws STInitializationException {
 		try {
-			// Old version based on properties files TODO: remove
-
-			// system settings
-			{
-				File propFile = STPropertiesManager.getSystemSettingsFile(STPropertiesManager.CORE_PLUGIN_ID);
-				if (!propFile.getParentFile().exists()) { // if path doesn't exist, first create it
-					propFile.getParentFile().mkdirs();
-				}
-				Utilities.copy(Resources.class.getResourceAsStream(
-						"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/settings.props"),
-						propFile);
-				// default project settings
-				propFile = STPropertiesManager.getProjectSettingsDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID);
-				if (!propFile.getParentFile().exists()) { // if path doesn't exist, first create it
-					propFile.getParentFile().mkdirs();
-				}
-				Utilities.copy(Resources.class.getResourceAsStream(
-						"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"),
-						propFile);
-				// pu_settings - system default
-				// * core plugin
-				propFile = STPropertiesManager
-						.getPUSettingsSystemDefaultsFile(STPropertiesManager.CORE_PLUGIN_ID);
-				if (!propFile.getParentFile().exists()) { // if path doesn't exist, first create it
-					propFile.getParentFile().mkdirs();
-				}
-				Utilities.copy(Resources.class.getResourceAsStream(
-						"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/pu-settings-defaults.props"),
-						propFile);
-				// * rendering engine
-				propFile = STPropertiesManager.getPUSettingsSystemDefaultsFile(RenderingEngine.class.getName());
-				if (!propFile.getParentFile().exists()) { // if path doesn't exist, first create it
-					propFile.getParentFile().mkdirs();
-				}
-				Utilities.copy(Resources.class.getResourceAsStream(
-						"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine/pu-settings-defaults.props"),
-						propFile);
-			}
-
 			// New version based on YAML files
 			File propFile = STPropertiesManager.getSystemSettingsFile(SemanticTurkeyCoreSettingsManager.class.getName());
 			if (!propFile.getParentFile().exists()) { // if path doesn't exist, first create it

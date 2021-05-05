@@ -50,6 +50,9 @@ import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsMa
  */
 public class Config {
 
+	// id of the "core plugin", used for preferences/properties that don't belong to any plugin
+	public static final String CORE_PLUGIN_ID = "it.uniroma2.art.semanticturkey";
+
 	private static Properties stProperties = null;
 	private static File propFile = null;
 	private static String adminStatusPropName = "adminStatus";
@@ -133,9 +136,14 @@ public class Config {
 				CoreSystemSettings coreSystemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
 				versionCode = coreSystemSettings.stDataVersion;
 			} else { //otherwise gets it from the old system properties file
-				versionCode = STPropertiesManager.getSystemSetting(stDataVersionNumberPropName);
+				File oldCoreSettingsFile = STPropertiesManager.getSystemSettingsFile(Config.CORE_PLUGIN_ID);
+				try (FileInputStream fis = new FileInputStream(oldCoreSettingsFile)) {
+					Properties properties = new Properties();
+					properties.load(fis);
+					versionCode = properties.getProperty(stDataVersionNumberPropName);
+				};
 			}
-		} catch (STPropertyAccessException e) {
+		} catch (STPropertyAccessException | IOException e) {
 			return new VersionNumber(0, 0, 0);
 		}
 		return new VersionNumber(versionCode);
@@ -143,7 +151,6 @@ public class Config {
 	
 	public static void setSTDataVersionNumber(VersionNumber vn) {
 		try {
-			STPropertiesManager.setSystemSetting(stDataVersionNumberPropName, vn.toString());
 			CoreSystemSettings coreSystemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
 			coreSystemSettings.stDataVersion = vn.toString();
 			STPropertiesManager.setSystemSettings(coreSystemSettings, SemanticTurkeyCoreSettingsManager.class.getName(), true);

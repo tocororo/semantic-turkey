@@ -16,6 +16,10 @@
 	<osgi:reference id="metadataRegistryBackend"
 		interface="it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend" />
 
+	<!-- Retrieves the SemanticTurkeyCoreSettingsManager -->
+	<osgi:reference id="semanticTurkeyCoreSettingsManager"
+					interface="it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager" />
+
 	<!-- Overrides the default entry point of authentication. As default Spring-Security 
 		redirects to login page -->
 	<http entry-point-ref="authEntryPoint" use-expressions="true">
