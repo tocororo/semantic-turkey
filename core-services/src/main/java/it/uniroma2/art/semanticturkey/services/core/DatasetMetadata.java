@@ -5,9 +5,16 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
 
 import javax.servlet.http.HttpServletResponse;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
+import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
+import it.uniroma2.art.semanticturkey.extension.settings.Settings;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.resources.Scope;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -56,8 +63,6 @@ public class DatasetMetadata extends STServiceAdapter {
 	 * @param outputFormat
 	 *            the output format. If it does not support graphs, the exported graph are merged into a
 	 *            single graph
-	 * @throws UnloadablePluginConfigurationException
-	 * @throws UnsupportedPluginConfigurationException
 	 * @throws ClassNotFoundException
 	 * @throws IOException
 	 * @throws DatasetMetadataExporterException
@@ -111,4 +116,59 @@ public class DatasetMetadata extends STServiceAdapter {
 			tempServerFile.delete();
 		}
 	}
-};
+
+	/**
+	 * Stores the settings about metadata vocabulary
+	 *
+	 * @param componentID
+	 * @param settings
+	 * @throws NoSuchSettingsManager
+	 * @throws STPropertyAccessException
+	 * @throws IllegalStateException
+	 * @throws STPropertyUpdateException
+	 * @throws WrongPropertiesException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	public void storeMetadataVocabularySettings(String componentID, Scope scope, ObjectNode settings)
+			throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
+			STPropertyUpdateException, WrongPropertiesException {
+		if (!isValidMetadataVocabularyID(componentID)) {
+			throw new IllegalArgumentException("Invalid metadata vocabulary componentID: " + componentID);
+		}
+		exptManager.storeSettings(componentID, getProject(), null, null, scope, settings);
+	}
+
+	/**
+	 * Gets the settings about metadata vocabulary
+	 * @param componentID
+	 * @return
+	 * @throws NoSuchSettingsManager
+	 * @throws STPropertyAccessException
+	 */
+	@STServiceOperation
+	public Settings getMetadataVocabularySettings(String componentID, Scope scope) throws NoSuchSettingsManager, STPropertyAccessException {
+		if (!isValidMetadataVocabularyID(componentID)) {
+			throw new IllegalArgumentException("Invalid metadata vocabulary componentID: " + componentID);
+		}
+		return exptManager.getSettings(getProject(), null, null, componentID, scope);
+	}
+
+	/**
+	 * { @link getMetadataVocabularySettings } and { @link storeMetadataVocabularySettings } allows the
+	 * management of settings at different levels (expecially project).
+	 * In order to avoid that users without authorizations use these services for getting/setting settings
+	 * at project level, this method checks that the provided ID is about a DatasetMetadataExporter implementation
+	 * @param id
+	 * @return
+	 */
+	private boolean isValidMetadataVocabularyID(String id) {
+		boolean isValid = id.equals(DatasetMetadataExporter.class.getName());
+		if (!isValid) {
+			Collection<ExtensionFactory<?>> metadataExporterExtensions = exptManager.getExtensions(DatasetMetadataExporter.class.getName());
+			isValid = metadataExporterExtensions.stream().anyMatch(e -> e.getId().equals(id));
+		}
+		return isValid;
+	}
+
+
+}
