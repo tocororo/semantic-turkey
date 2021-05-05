@@ -351,7 +351,7 @@ public class BaseRenderingEngineTest {
 		notationVar.propertyPath = Arrays.asList(
 				SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2004/02/skos/core#notation"));
 		rendEngConf.variables = ImmutableMap.of("notation", notationVar);
-		Project project = ProjectManager.createProject(ProjectConsumer.SYSTEM, "Test", Project.SKOS_MODEL,
+		Project project = ProjectManager.createProject(ProjectConsumer.SYSTEM, "Test", null, Project.SKOS_MODEL,
 				Project.SKOS_MODEL, "http://example.org/", false, false, false, new CreateLocal(), "core",
 				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null, null, null,
 				null, new PluginSpecification(TEST_URI_GENERATOR, null, null, null),
@@ -489,7 +489,7 @@ public class BaseRenderingEngineTest {
 		notationVar.propertyPath = Arrays.asList(
 				SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2004/02/skos/core#notation"));
 		rendEngConf.variables = ImmutableMap.of("notation", notationVar);
-		Project project = ProjectManager.createProject(ProjectConsumer.SYSTEM, "Test", Project.SKOS_MODEL,
+		Project project = ProjectManager.createProject(ProjectConsumer.SYSTEM, "Test", null, Project.SKOS_MODEL,
 				Project.SKOS_MODEL, "http://example.org/", false, true, false, new CreateLocal(), "core",
 				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null, "support",
 				new PluginSpecification(TEST_REPOSTORY_IMPL_CONFIGURER, null, null, null), null,

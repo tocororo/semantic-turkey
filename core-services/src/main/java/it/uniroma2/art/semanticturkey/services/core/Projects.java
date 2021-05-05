@@ -53,6 +53,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -196,7 +197,8 @@ public class Projects extends STServiceAdapter {
 			@Optional String rightDataset, @Optional boolean shaclEnabled,
 			@Optional @JsonSerialized SHACLSettings shaclSettings, @Optional boolean trivialInferenceEnabled,
 			@Optional(defaultValue = "false") boolean openAtStartup,
-			@Optional(defaultValue = "false") boolean globallyAccessible)
+			@Optional(defaultValue = "false") boolean globallyAccessible,
+			@Optional Literal label)
 			throws ProjectInconsistentException, InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
 			ProjectCreationException, ClassNotFoundException, WrongPropertiesException, RBACException,
@@ -239,7 +241,7 @@ public class Projects extends STServiceAdapter {
 				: null;
 		boolean deletePreloadedDataFile = false;
 		try {
-			ProjectManager.createProject(consumer, projectName, model, lexicalizationModel, baseURI.trim(),
+			ProjectManager.createProject(consumer, projectName, label, model, lexicalizationModel, baseURI.trim(),
 					historyEnabled, validationEnabled, blacklistingEnabled, repositoryAccess, coreRepoID,
 					coreRepoSailConfigurerSpecification, coreBackendType, supportRepoID,
 					supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
@@ -426,6 +428,7 @@ public class Projects extends STServiceAdapter {
 		AccessResponse access = null;
 		RepositoryLocation repoLocation = new RepositoryLocation(null);
 		ProjectStatus status = new ProjectStatus(Status.ok);
+		Map<String, String> labels = null;
 		String description = null;
 		ProjectFacets facets = null;
 		String createdAt = null;
@@ -446,6 +449,7 @@ public class Projects extends STServiceAdapter {
 			access = ProjectManager.checkAccessibility(consumer, proj, requestedAccessLevel,
 					requestedLockLevel);
 			repoLocation = proj.getDefaultRepositoryLocation();
+			labels = proj.getLabels();
 			description = proj.getDescription();
 			createdAt = proj.getCreatedAt();
 			openAtStartup = proj.isOpenAtStartupEnabled();
@@ -472,7 +476,7 @@ public class Projects extends STServiceAdapter {
 		}
 		return new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel,
 				historyEnabled, validationEnabled, blacklistingEnabled, shaclEnabled, access, repoLocation,
-				status, description, createdAt, openAtStartup, facets);
+				status, labels, description, createdAt, openAtStartup, facets);
 	}
 
 	/**
@@ -778,7 +782,7 @@ public class Projects extends STServiceAdapter {
 	public void accessProject(ProjectConsumer consumer, String projectName,
 			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
 			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
-			ForbiddenProjectAccessException, RBACException {
+			ForbiddenProjectAccessException {
 		ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
 	}
 
@@ -1389,8 +1393,8 @@ public class Projects extends STServiceAdapter {
 						ValueFactory vf = dataConn.getValueFactory();
 
 						IRI metadataBaseURI = vf.createIRI(
-								"http://example.org/" + UUID.randomUUID().toString() + "/void.ttl");
-						IRI dataGraph = vf.createIRI("urn:uuid:" + UUID.randomUUID().toString());
+								"http://example.org/" + UUID.randomUUID() + "/void.ttl");
+						IRI dataGraph = vf.createIRI("urn:uuid:" + UUID.randomUUID());
 
 						// load preloaded data to the data repository
 						dataConn.add(preloadedDataFile, null, preloadedDataFormat, dataGraph);

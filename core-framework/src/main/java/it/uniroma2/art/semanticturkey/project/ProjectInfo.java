@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
 import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacets;
 
+import java.util.Map;
+
 public class ProjectInfo {
 
 	private final String name;
@@ -20,6 +22,7 @@ public class ProjectInfo {
 	private final AccessResponse accessible;
 	private final RepositoryLocation repositoryLocation;
 	private final ProjectStatus status;
+	private final Map<String, String> labels;
 	private final String description;
 	private final String createdAt;
 	private final ProjectFacets facets;
@@ -36,7 +39,8 @@ public class ProjectInfo {
             @JsonProperty("shaclEnabled") boolean shaclEnabled,
 			@JsonProperty("accessible") AccessResponse accessible,
 			@JsonProperty("repositoryLocation") RepositoryLocation repositoryLocation,
-			@JsonProperty("status") ProjectStatus status, @JsonProperty("description") String description,
+			@JsonProperty("status") ProjectStatus status, @JsonProperty("labels") Map<String, String> labels,
+			@JsonProperty("description") String description,
 			@JsonProperty("createdAt") String createdAt, @JsonProperty("openAtStartup") boolean openAtStartup,
 			ProjectFacets facets) {
 		this.name = name;
@@ -52,6 +56,7 @@ public class ProjectInfo {
 		this.accessible = accessible;
 		this.repositoryLocation = repositoryLocation;
 		this.status = status;
+		this.labels = labels;
 		this.description = description;
 		this.createdAt = createdAt;
 		this.facets = facets;
@@ -114,6 +119,10 @@ public class ProjectInfo {
 
 	public ProjectStatus getStatus() {
 		return this.status;
+	}
+
+	public Map<String, String> getLabels() {
+		return labels;
 	}
 
 	public String getDescription() {

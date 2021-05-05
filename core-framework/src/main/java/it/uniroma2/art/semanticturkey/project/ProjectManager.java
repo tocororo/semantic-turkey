@@ -28,6 +28,7 @@ package it.uniroma2.art.semanticturkey.project;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerConfig;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerFactory;
@@ -81,6 +82,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -1358,7 +1360,7 @@ public class ProjectManager {
 
 	}
 
-	public static Project createProject(ProjectConsumer consumer, String projectName, IRI model,
+	public static Project createProject(ProjectConsumer consumer, String projectName, Literal label, IRI model,
 			IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
 			boolean blacklistingEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
 			PluginSpecification coreRepoSailConfigurerSpecification, String coreBackendType,
@@ -1610,7 +1612,7 @@ public class ProjectManager {
 				}
 			}
 
-			prepareProjectFiles(consumer, projectName, model, lexicalizationModel, projType, projectDir,
+			prepareProjectFiles(consumer, projectName, label, model, lexicalizationModel, projType, projectDir,
 					baseURI, defaultNamespace, historyEnabled, validationEnabled, blacklistingEnabled,
 					repositoryAccess, coreRepoID, coreRepositoryConfig, coreBackendType, supportRepoID,
 					supportRepositoryConfig, supportBackendType, uriGeneratorSpecification,
@@ -1765,8 +1767,8 @@ public class ProjectManager {
 		return exptManager.instantiateExtension(RepositoryImplConfigurer.class, spec);
 	}
 
-	private static void prepareProjectFiles(ProjectConsumer consumer, String projectName, IRI model,
-			IRI lexicalizationModel, ProjectType type, File projectDir, String baseURI,
+	private static void prepareProjectFiles(ProjectConsumer consumer, String projectName, Literal label,
+			IRI model, IRI lexicalizationModel, ProjectType type, File projectDir, String baseURI,
 			String defaultNamespace, boolean historyEnabled, boolean validationEnabled,
 			boolean blacklistingEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
 			RepositoryConfig coreRepoConfig, String coreBackendType, String supportRepoID,
@@ -1822,6 +1824,15 @@ public class ProjectManager {
 
 			// add the openAtStartup value
 			projProp.setProperty(Project.OPEN_AT_STARTUP_PROP, String.valueOf(openAtStartup));
+
+			// add the label value (at project creation is provided as Literal, but it is store as Map since
+			// multiple labels in different languages are admitted
+			Map<String, String> labels = new HashMap<>();
+			if (label != null) {
+				labels.put(label.getLanguage().get(), label.getLabel());
+			}
+			ObjectMapper mapper = new ObjectMapper();
+			projProp.setProperty(Project.LABELS_PROP, mapper.writeValueAsString(labels));
 
 			try (FileOutputStream os = new FileOutputStream(info_stp)) {
 				projProp.store(os, Project.stpComment);

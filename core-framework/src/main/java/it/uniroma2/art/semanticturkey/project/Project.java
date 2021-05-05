@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -48,6 +49,8 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -55,6 +58,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.eclipse.rdf4j.RDF4JException;
 import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -74,6 +78,7 @@ import org.eclipse.rdf4j.repository.manager.RepositoryInfo;
 import org.eclipse.rdf4j.repository.manager.RepositoryManager;
 import org.eclipse.rdf4j.repository.sail.config.SailRepositorySchema;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.sail.config.SailConfigSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -166,6 +171,8 @@ public abstract class Project extends AbstractProject {
 	protected IRI model;
 	protected IRI lexicalizationModel;
 
+	protected Map<String, String> labels; //lang->label (Map grants the uniqueness of label per lang)
+
 	protected String description;
 
 	protected String createdAt;
@@ -178,6 +185,7 @@ public abstract class Project extends AbstractProject {
 	public static final String TIMESTAMP_PROP = "timeStamp";
 	public static final String CREATED_AT_PROP = "created_at";
 	public static final String PROJECT_NAME_PROP = "name";
+	public static final String LABELS_PROP = "labels";
 	public static final String BASEURI_PROP = "baseURI";
 	public static final String DEF_NS_PROP = "defaultNamespace";
 	public static final String MODEL_PROP = "model";
@@ -300,6 +308,15 @@ public abstract class Project extends AbstractProject {
 							"Project property \"" + LEXICALIZATION_MODEL_PROP + "\" must not be null"));
 
 			checkModels(model, lexicalizationModel);
+
+			//init labels
+			String labelsValue = stp_properties.getProperty(LABELS_PROP);
+			if (labelsValue != null) {
+				ObjectMapper mapper = new ObjectMapper();
+				labels = mapper.readValue(labelsValue, new TypeReference<Object>() {});
+			} else {
+				labels = new HashMap<>();
+			}
 
 			// for the update routine 7 -> 8, we are interested in the sole projects with "resource" as
 			// updateForRoles
@@ -748,6 +765,10 @@ public abstract class Project extends AbstractProject {
 		return stp_properties.getProperty(PROJECT_NAME_PROP);
 	}
 
+	public Map<String, String> getLabels() {
+		return labels;
+	}
+
 	public String getBaseURI() {
 		return stp_properties.getProperty(BASEURI_PROP);
 	}
@@ -860,6 +881,27 @@ public abstract class Project extends AbstractProject {
 	public void setName(String name) throws ProjectUpdateException {
 		try {
 			stp_properties.setProperty(PROJECT_NAME_PROP, name);
+			updateProjectProperties();
+		} catch (Exception e) {
+			throw new ProjectUpdateException(e);
+		}
+	}
+
+	/**
+	 *
+	 * @param lang
+	 * @param label if null removes the label in the given language
+	 * @throws ProjectUpdateException
+	 */
+	public void setLabel(String lang, @Nullable String label) throws ProjectUpdateException {
+		try {
+			if (label == null) {
+				labels.remove(lang);
+			} else {
+				labels.put(lang, label);
+			}
+			ObjectMapper mapper = new ObjectMapper();
+			stp_properties.setProperty(LABELS_PROP, mapper.writeValueAsString(labels));
 			updateProjectProperties();
 		} catch (Exception e) {
 			throw new ProjectUpdateException(e);

@@ -355,7 +355,7 @@ public class PMKI extends STServiceAdapter {
 			String leftDataset = null;
 			String rightDataset = null;
 
-			Project newProject = ProjectManager.createProject(consumer, projectName, model,
+			Project newProject = ProjectManager.createProject(consumer, projectName, null, model,
 					lexicalizationModel, baseURI.trim(), historyEnabled, validationEnabled,
 					blacklistingEnabled, repositoryAccess, coreRepoID, coreRepoSailConfigurerSpecification,
 					coreBackendType, supportRepoID, supportRepoSailConfigurerSpecification,

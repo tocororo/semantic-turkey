@@ -232,11 +232,7 @@ public class STUser implements UserDetails {
 	}
 
 	public boolean isAdmin() {
-		boolean isAdmin = false;
-		try {
-			isAdmin = UsersManager.getAdminEmailList().contains(this.email);
-		} catch (STPropertyAccessException e) {}
-		return isAdmin;
+		return UsersManager.getAdminEmailList().contains(this.email);
 	}
 	
 	public ObjectNode getAsJsonObject() {
