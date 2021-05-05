@@ -103,7 +103,7 @@ public class Settings extends STServiceAdapter {
      * @throws NoSuchSettingsManager
      * @throws STPropertyAccessException
      */
-    @PreAuthorize("@auth.isSettingsActionAuthorized(#defaultscope, false)")
+    @PreAuthorize("@auth.isSettingsActionAuthorized(#defaultScope, false)")
     @STServiceOperation
     public it.uniroma2.art.semanticturkey.extension.settings.Settings getSettingsDefault(String componentID, Scope scope,
             Scope defaultScope, @Optional String projectName) throws NoSuchSettingsManager,
@@ -174,7 +174,7 @@ public class Settings extends STServiceAdapter {
      * @throws STPropertyUpdateException
      * @throws WrongPropertiesException
      */
-    @PreAuthorize("@auth.isSettingsActionAuthorized(#defaultscope, true)")
+    @PreAuthorize("@auth.isSettingsActionAuthorized(#defaultScope, true)")
     @STServiceOperation(method = RequestMethod.POST)
     public void storeSettingsDefault(String componentID, Scope scope, Scope defaultScope, ObjectNode settings)
             throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
@@ -199,7 +199,7 @@ public class Settings extends STServiceAdapter {
      * @throws STPropertyUpdateException
      * @throws WrongPropertiesException
      */
-    @PreAuthorize("@auth.isSettingsActionAuthorized(#defaultscope, false)")
+    @PreAuthorize("@auth.isSettingsActionAuthorized(#defaultScope, false)")
     @STServiceOperation(method = RequestMethod.POST)
     public void storeSettingDefault(String componentID, Scope scope, Scope defaultScope, String propertyName, @JsonSerialized JsonNode propertyValue)
             throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
