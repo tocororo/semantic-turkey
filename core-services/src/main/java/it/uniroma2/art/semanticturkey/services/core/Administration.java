@@ -18,8 +18,11 @@ import it.uniroma2.art.semanticturkey.email.EmailServiceFactory;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
+import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.DataSize;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -30,11 +33,16 @@ import it.uniroma2.art.semanticturkey.rbac.RBACProcessor;
 import it.uniroma2.art.semanticturkey.rbac.TheoryNotFoundException;
 import it.uniroma2.art.semanticturkey.resources.Config;
 import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
+import it.uniroma2.art.semanticturkey.settings.core.PreloadProfilerSettings;
+import it.uniroma2.art.semanticturkey.settings.core.PreloadSettings;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
@@ -114,12 +122,38 @@ public class Administration extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void setPreloadProfilerThreshold(@Optional(defaultValue = "0") long threshold) throws STPropertyUpdateException {
-		String thresholdString = null;
-		if (threshold > 0) {
-			thresholdString = threshold+"";
+	public void setPreloadProfilerThreshold(@Optional DataSize threshold) throws STPropertyUpdateException, STPropertyAccessException {
+		SemanticTurkeyCoreSettingsManager coreSettingsManager;
+		try {
+			coreSettingsManager = (SemanticTurkeyCoreSettingsManager)exptManager.getSettingsManager(SemanticTurkeyCoreSettingsManager.class.getName());
+		} catch (NoSuchSettingsManager e) {
+			throw new RuntimeException(e); // this should not happen
 		}
-		STPropertiesManager.setSystemSetting(STPropertiesManager.PRELOAD_PROFILER_TRESHOLD_BYTES, thresholdString);
+		CoreSystemSettings explicitCoreSettings = (CoreSystemSettings) coreSettingsManager.getSettings(null, UsersManager.getLoggedUser(), null, Scope.SYSTEM, true);
+		if (threshold != null && threshold.getValue()> 0) { // set threshold
+			PreloadSettings preloadSettings = explicitCoreSettings.preload;
+			if (preloadSettings == null) {
+				preloadSettings = explicitCoreSettings.preload = new PreloadSettings();
+			}
+
+			PreloadProfilerSettings preloadProfilerSettings = preloadSettings.profiler;
+			if (preloadProfilerSettings == null) {
+				preloadProfilerSettings = preloadSettings.profiler = new PreloadProfilerSettings();
+			}
+
+			preloadProfilerSettings.threshold = threshold;
+		} else { // reset threshold
+			PreloadSettings preloadSettings = explicitCoreSettings.preload;
+			if (preloadSettings != null) {
+				PreloadProfilerSettings preloadProfilerSettings = preloadSettings.profiler;
+				if (preloadProfilerSettings != null) {
+					preloadProfilerSettings.threshold = null;
+				}
+			}
+		}
+
+		// stores the updated settings
+		coreSettingsManager.storeSettings(null, UsersManager.getLoggedUser(), null, Scope.SYSTEM, explicitCoreSettings);
 	}
 	
 	/**

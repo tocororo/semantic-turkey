@@ -125,6 +125,8 @@
 					class="it.uniroma2.art.semanticturkey.converters.StringToSpecialValueConverter">
 					<beans:constructor-arg value="conversionService" />
 				</beans:bean>
+				<beans:bean id="StringToDataSizeConverter"
+							class="it.uniroma2.art.semanticturkey.converters.StringToDataSizeConverter" />
 			</beans:list>
 		</beans:property>
 	</beans:bean>

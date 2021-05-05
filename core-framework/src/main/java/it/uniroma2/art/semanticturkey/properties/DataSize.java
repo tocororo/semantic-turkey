@@ -53,7 +53,7 @@ public class DataSize implements Comparable<DataSize> {
         }
     }
 
-    private String stringValue() {
+    public String stringValue() {
         return value + " " + dataUnit.getSymbol();
     }
 

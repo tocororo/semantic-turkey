@@ -1,32 +1,55 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.StringWriter;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
-import javax.servlet.http.HttpServletResponse;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.io.Closer;
+import it.uniroma2.art.lime.model.repo.LIMERepositoryConnectionWrapper;
+import it.uniroma2.art.lime.profiler.LIMEProfiler;
+import it.uniroma2.art.lime.profiler.ProfilerException;
+import it.uniroma2.art.maple.orchestration.AssessmentException;
+import it.uniroma2.art.maple.orchestration.MediationFramework;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerFactory;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
+import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.*;
+import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
+import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDescription;
+import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
+import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
+import it.uniroma2.art.semanticturkey.project.*;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
+import it.uniroma2.art.semanticturkey.project.ProjectStatus.Status;
+import it.uniroma2.art.semanticturkey.properties.*;
+import it.uniroma2.art.semanticturkey.properties.dynamic.STPropertiesSchema;
+import it.uniroma2.art.semanticturkey.rbac.RBACException;
+import it.uniroma2.art.semanticturkey.resources.Scope;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.*;
+import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataStore;
+import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummary;
+import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
+import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
+import it.uniroma2.art.semanticturkey.settings.core.PreloadProfilerSettings;
+import it.uniroma2.art.semanticturkey.settings.core.PreloadSettings;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
+import it.uniroma2.art.semanticturkey.settings.facets.*;
 import it.uniroma2.art.semanticturkey.user.*;
-import org.apache.commons.io.FileUtils;
+import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
+import it.uniroma2.art.semanticturkey.vocabulary.SUPPORT;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -43,20 +66,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.eclipse.rdf4j.common.iteration.Iterations;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
@@ -83,89 +95,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.io.Closer;
-
-import it.uniroma2.art.lime.model.repo.LIMERepositoryConnectionWrapper;
-import it.uniroma2.art.lime.profiler.LIMEProfiler;
-import it.uniroma2.art.lime.profiler.ProfilerException;
-import it.uniroma2.art.maple.orchestration.AssessmentException;
-import it.uniroma2.art.maple.orchestration.MediationFramework;
-import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerFactory;
-import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
-import it.uniroma2.art.semanticturkey.config.Configuration;
-import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
-import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
-import it.uniroma2.art.semanticturkey.exceptions.ExceptionDAO;
-import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectDeletionException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
-import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
-import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
-import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
-import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
-import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
-import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnector;
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetDescription;
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDescription;
-import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
-import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
-import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.project.AbstractProject;
-import it.uniroma2.art.semanticturkey.project.CorruptedProject;
-import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.project.ProjectACL;
-import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
-import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
-import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
-import it.uniroma2.art.semanticturkey.project.ProjectInfo;
-import it.uniroma2.art.semanticturkey.project.ProjectManager;
-import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
-import it.uniroma2.art.semanticturkey.project.ProjectStatus;
-import it.uniroma2.art.semanticturkey.project.ProjectStatus.Status;
-import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
-import it.uniroma2.art.semanticturkey.project.RepositoryLocation;
-import it.uniroma2.art.semanticturkey.project.RepositorySummary;
-import it.uniroma2.art.semanticturkey.project.SHACLSettings;
-import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
-import it.uniroma2.art.semanticturkey.properties.Pair;
-import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
-import it.uniroma2.art.semanticturkey.properties.STProperties;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
-import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
-import it.uniroma2.art.semanticturkey.properties.dynamic.STPropertiesSchema;
-import it.uniroma2.art.semanticturkey.rbac.RBACException;
-import it.uniroma2.art.semanticturkey.resources.Scope;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataStore;
-import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummary;
-import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
-import it.uniroma2.art.semanticturkey.settings.facets.CorruptedProjectFacets;
-import it.uniroma2.art.semanticturkey.settings.facets.CustomProjectFacetsSchemaStore;
-import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacets;
-import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsIndexUtils;
-import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsStore;
-import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
-import it.uniroma2.art.semanticturkey.vocabulary.SUPPORT;
+import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.net.URL;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @STService
 public class Projects extends STServiceAdapter {
@@ -1356,23 +1291,27 @@ public class Projects extends STServiceAdapter {
 			throw new FileNotFoundException(preloadedDataFile.getPath() + ": not a normal file");
 		}
 
-		long dataSize = preloadedDataFile.length();
+		DataSize dataSize = new DataSize(preloadedDataFile.length(), DataSize.DataUnit.B);
 
 		List<PreloadedDataSummary.PreloadWarning> preloadWarnings = new ArrayList<>();
 
 		if (baseURI == null || model == null || lexicalizationModel == null) {
-			String profilerDataSizeTresholdString = STPropertiesManager
-					.getSystemSetting(STPropertiesManager.PRELOAD_PROFILER_TRESHOLD_BYTES);
-			long profilerDataSizeTreshold;
-			if (profilerDataSizeTresholdString != null) {
-				profilerDataSizeTreshold = Long.parseLong(profilerDataSizeTresholdString);
-			} else {
-				profilerDataSizeTreshold = FileUtils.ONE_MB;
+			CoreSystemSettings coreSystemSettings;
+			try {
+				coreSystemSettings = (CoreSystemSettings) exptManager.getSettings(null, UsersManager.getLoggedUser(), null, SemanticTurkeyCoreSettingsManager.class.getName(), Scope.SYSTEM);
+			} catch (NoSuchSettingsManager e) {
+				throw new RuntimeException(e); // this should never happen
 			}
-			if (dataSize > profilerDataSizeTreshold) { // preloaded data too big to profile
+
+			PreloadSettings preloadSettings = java.util.Optional.ofNullable(coreSystemSettings.preload).orElseGet(PreloadSettings::new);
+			PreloadProfilerSettings preloadProfilerSettings = java.util.Optional.ofNullable(preloadSettings.profiler).orElseGet(PreloadProfilerSettings::new);
+
+			DataSize profilerDataSizeThreshold = java.util.Optional.ofNullable(preloadProfilerSettings.threshold).orElseGet(() -> new DataSize(1, DataSize.DataUnit.MiB));
+
+			if (dataSize.compareTo(profilerDataSizeThreshold) > 0) { // preloaded data too big to profile
 				preloadWarnings = new ArrayList<>(1);
 				preloadWarnings
-						.add(new PreloadedDataSummary.ProfilerSizeTresholdExceeded(profilerDataSizeTreshold));
+						.add(new PreloadedDataSummary.ProfilerSizeTresholdExceeded(profilerDataSizeThreshold));
 			} else { // profile the preloaded data to obtain the necessary information
 				preloadWarnings = new ArrayList<>();
 

@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import it.uniroma2.art.semanticturkey.properties.DataSize;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.rio.RDFFormat;
 
@@ -23,17 +24,17 @@ public class PreloadedDataSummary {
 
 	public static class ProfilerSizeTresholdExceeded implements PreloadWarning {
 
-		private long profilerDataSizeTreshold;
+		private DataSize profilerDataSizeThreshold;
 		private String message;
 
-		public ProfilerSizeTresholdExceeded(long profilerDataSizeTreshold) {
-			this.profilerDataSizeTreshold = profilerDataSizeTreshold;
-			this.message = "The preloaded data size exceeds the profiler treshold: "
-					+ profilerDataSizeTreshold + " bytes";
+		public ProfilerSizeTresholdExceeded(DataSize profilerDataSizeThreshold) {
+			this.profilerDataSizeThreshold = profilerDataSizeThreshold;
+			this.message = "The preloaded data size exceeds the profiler threshold: "
+					+ profilerDataSizeThreshold.stringValue();
 		}
 
-		public long getProfilerDataSizeTreshold() {
-			return profilerDataSizeTreshold;
+		public DataSize getProfilerDataSizeThreshold() {
+			return profilerDataSizeThreshold;
 		}
 
 		@Override
