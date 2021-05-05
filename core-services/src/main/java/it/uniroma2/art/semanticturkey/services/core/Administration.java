@@ -15,8 +15,6 @@ import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.email.EmailApplicationContext;
 import it.uniroma2.art.semanticturkey.email.EmailService;
 import it.uniroma2.art.semanticturkey.email.EmailServiceFactory;
-import it.uniroma2.art.semanticturkey.email.PmkiEmailService;
-import it.uniroma2.art.semanticturkey.email.VbEmailService;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
@@ -31,13 +29,14 @@ import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACProcessor;
 import it.uniroma2.art.semanticturkey.rbac.TheoryNotFoundException;
 import it.uniroma2.art.semanticturkey.resources.Config;
-import it.uniroma2.art.semanticturkey.resources.ConfigurationUpdateException;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
@@ -69,38 +68,6 @@ import java.util.Collection;
 public class Administration extends STServiceAdapter {
 	
 	/**
-	 * Gets the administration config: a map with key value of configuration parameters
-	 * @return
-	 * @throws STPropertyAccessException
-	 */
-	@STServiceOperation
-	@PreAuthorize("@auth.isAdmin()")
-	public JsonNode getAdministrationConfig() throws STPropertyAccessException {
-		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-		ObjectNode configNode = jsonFactory.objectNode();
-		configNode.set("mailFromAddress", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ADDRESS)));
-		configNode.set("mailFromPassword", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_PASSWORD)));
-		configNode.set("mailFromAlias", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ALIAS)));
-		configNode.set("mailSmtpAuth", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_AUTH)));
-		configNode.set("mailSmtpHost", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_HOST)));
-		configNode.set("mailSmtpPort", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_PORT)));
-		configNode.set("mailSmtpSslEnable", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_SSL_ENABLE)));
-		configNode.set("mailSmtpStarttlsEnable", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_STARTTLS_ENABLE)));
-		configNode.set("stDataDir", jsonFactory.textNode(Config.getDataDir().getPath()));
-		configNode.set("preloadProfilerTreshold", jsonFactory.textNode(
-				STPropertiesManager.getSystemSetting(STPropertiesManager.PRELOAD_PROFILER_TRESHOLD_BYTES)));
-		return configNode;
-	}
-	
-	/**
 	 * 
 	 * @param email
 	 * @throws STPropertyUpdateException
@@ -124,10 +91,21 @@ public class Administration extends STServiceAdapter {
 		STUser user = UsersManager.getUser(email);
 		UsersManager.removeAdmin(user);
 	}
+
+	/**
+	 * Gets the data directory path
+	 * @return
+	 * @throws STPropertyAccessException
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAdmin()")
+	public String getDataDir() {
+		return Config.getDataDir().getPath();
+	}
 	
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void setDataDir(String path) throws ConfigurationUpdateException, IOException {
+	public void setDataDir(String path) throws IOException {
 		File file = new File(path);	
 		File oldDir = Resources.getSemTurkeyDataDir();
 		Config.setDataDirProp(path);
@@ -144,33 +122,6 @@ public class Administration extends STServiceAdapter {
 			thresholdString = threshold+"";
 		}
 		STPropertiesManager.setSystemSetting(STPropertiesManager.PRELOAD_PROFILER_TRESHOLD_BYTES, thresholdString);
-	}
-	
-	/**
-	 * 
-	 * @param mailSmtpHost
-	 * @param mailSmtpPort
-	 * @param mailSmtpAuth
-	 * @param mailSmtpSsl
-	 * @param mailSmtpTls
-	 * @param mailFromAddress
-	 * @param mailFromAlias
-	 * @param mailFromPassword
-	 * @throws STPropertyUpdateException
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAdmin()")
-	public void updateEmailConfig(String mailSmtpHost, String mailSmtpPort, boolean mailSmtpAuth,
-			boolean mailSmtpSsl, boolean mailSmtpTls, String mailFromAddress, String mailFromAlias, 
-			@Optional String mailFromPassword) throws STPropertyUpdateException {
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_HOST, mailSmtpHost);
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_PORT, mailSmtpPort);
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_AUTH, mailSmtpAuth+"");
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_SSL_ENABLE, mailSmtpSsl+"");
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_STARTTLS_ENABLE, mailSmtpTls+"");
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ADDRESS, mailFromAddress);
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ALIAS, mailFromAlias);
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_PASSWORD, mailFromPassword);
 	}
 	
 	/**

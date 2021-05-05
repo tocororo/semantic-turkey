@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.settings.core;
 
+import it.uniroma2.art.semanticturkey.email.EmailSender;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
@@ -14,10 +15,10 @@ public class SmtpMailSettings implements STProperties {
 		public static final String port$displayName = keyBase + ".port.displayName";
 		public static final String auth$description = keyBase + ".auth.description";
 		public static final String auth$displayName = keyBase + ".auth.displayName";
-		public static final String ssl$description = keyBase + ".ssl.description";
-		public static final String ssl$displayName = keyBase + ".ssl.displayName";
-		public static final String starttls$description = keyBase + ".starttls.description";
-		public static final String starttls$displayName = keyBase + ".starttls.displayName";
+		public static final String sslEnabled$description = keyBase + ".sslEnabled.description";
+		public static final String sslEnabled$displayName = keyBase + ".sslEnabled.displayName";
+		public static final String starttlsEnabled$description = keyBase + ".starttlsEnabled.description";
+		public static final String starttlsEnabled$displayName = keyBase + ".starttlsEnabled.displayName";
 	}
 
 	@Override
@@ -37,12 +38,13 @@ public class SmtpMailSettings implements STProperties {
 			+ MessageKeys.auth$displayName + "}")
 	public boolean auth = false;
 
-	@STProperty(description = "{" + MessageKeys.ssl$description + "}", displayName = "{"
-			+ MessageKeys.ssl$displayName + "}")
-	public SSLSmtpMailSettings ssl;
+	@STProperty(description = "{" + MessageKeys.sslEnabled$description + "}", displayName = "{"
+			+ MessageKeys.sslEnabled$displayName + "}")
+	public Boolean sslEnabled;
 
-	@STProperty(description = "{" + MessageKeys.starttls$description + "}", displayName = "{"
-			+ MessageKeys.starttls$displayName + "}")
-	public STARTTLSSmtpMailSettings starttls;
+	@STProperty(description = "{" + MessageKeys.starttlsEnabled$description + "}", displayName = "{"
+			+ MessageKeys.starttlsEnabled$displayName + "}")
+	public Boolean starttlsEnabled;
+
 
 }

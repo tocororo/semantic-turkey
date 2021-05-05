@@ -2,6 +2,9 @@ package it.uniroma2.art.semanticturkey.email;
 
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
+import it.uniroma2.art.semanticturkey.settings.core.MailSettings;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -14,20 +17,24 @@ import java.io.UnsupportedEncodingException;
 import java.util.Properties;
 
 public class EmailSender {
-	
+
 	public static void sendMail(String toEmail, String subject, String text)
 			throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
-		String mailFromAddress = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ADDRESS);
-		String mailFromPassword = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_PASSWORD);
-		String mailFromAlias = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_FROM_ALIAS);
 
-		String mailSmtpHost = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_HOST);
-		String mailSmtpPort = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_PORT);
-		boolean mailSmtpAuth = Boolean.parseBoolean(STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_AUTH));
-		boolean mailSmtpSsl = Boolean.parseBoolean(STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_SSL_ENABLE));
-		boolean mailSmtpTls = Boolean.parseBoolean(STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_MAIL_SMTP_STARTTLS_ENABLE));
+		CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
+		MailSettings mailSettings = systemSettings.mail;
 
-		if (mailFromAddress == null || mailSmtpHost == null || mailSmtpPort == null) {
+		String mailFromAddress = mailSettings.from.address;
+		String mailFromPassword = mailSettings.from.password;
+		String mailFromAlias = mailSettings.from.alias;
+
+		String mailSmtpHost = mailSettings.smtp.host;
+		int mailSmtpPort = mailSettings.smtp.port;
+		boolean mailSmtpAuth = mailSettings.smtp.auth;
+		boolean sslEnabled = mailSettings.smtp.sslEnabled;
+		boolean starttlsEnabled = mailSettings.smtp.starttlsEnabled;
+
+		if (mailFromAddress == null || mailSmtpHost == null || mailSmtpPort == 0) {
 			throw new MessagingException("Wrong mail configuration, impossible to send a confirmation e-mail");
 		}
 
@@ -36,9 +43,9 @@ public class EmailSender {
 		props.put("mail.smtp.port", mailSmtpPort);
 		props.put("mail.smtp.auth", mailSmtpAuth+"");
 
-		if (mailSmtpSsl) {
+		if (sslEnabled) {
 			props.put("mail.smtp.ssl.enable", "true");
-		} else if (mailSmtpTls) {
+		} else if (starttlsEnabled) {
 			props.put("mail.smtp.starttls.enable", "true");
 		}
 

@@ -11,6 +11,9 @@ public class CoreSystemSettings implements Settings {
         public static final String keyBase = "it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings";
 
         public static final String shortName = keyBase + ".shortName";
+
+        public static final String adminList$description = keyBase + ".adminList.description";
+        public static final String adminList$displayName = keyBase + ".adminList.displayName";
         public static final String remoteConfigs$description = keyBase
                 + ".remoteConfigs.description";
         public static final String remoteConfigs$displayName = keyBase
@@ -39,6 +42,10 @@ public class CoreSystemSettings implements Settings {
     public String getShortName() {
         return "{" + MessageKeys.shortName + "}";
     }
+
+    @STProperty(description = "{" + MessageKeys.adminList$description + "}", displayName = "{"
+            + MessageKeys.adminList$displayName + "}")
+    public List<String> adminList;
 
     @STProperty(description = "{" + MessageKeys.remoteConfigs$description
             + "}", displayName = "{" + MessageKeys.remoteConfigs$displayName + "}")

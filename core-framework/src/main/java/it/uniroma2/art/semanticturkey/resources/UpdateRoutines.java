@@ -539,7 +539,7 @@ public class UpdateRoutines {
 			convertPropertiesSettingToYAML(properties, "preload.profiler.treshold_bytes", newCoreSystemSettingsNode, Arrays.asList("preload", "profiler", "threshold"), v -> v + " B");
 
 			convertPropertiesSettingToYAML(properties, "stDataVersion", newCoreSystemSettingsNode, "stDataVersion", String::valueOf);
-			convertPropertiesSettingToYAML(properties, "mail.admin.address", newCoreSystemSettingsNode, Arrays.asList("mail", "admin", "address"), v -> {
+			convertPropertiesSettingToYAML(properties, "mail.admin.address", newCoreSystemSettingsNode, "adminList", v -> {
 				v = v.trim();
 				return v.startsWith("[")
 						? new ObjectMapper().readValue(v, new TypeReference<Set<String>>() {
@@ -549,8 +549,8 @@ public class UpdateRoutines {
 			convertPropertiesSettingToYAML(properties, "mail.smtp.host", newCoreSystemSettingsNode, Arrays.asList("mail", "smtp", "host"), String::valueOf);
 			convertPropertiesSettingToYAML(properties, "mail.smtp.port", newCoreSystemSettingsNode, Arrays.asList("mail", "smtp", "port"), Integer::valueOf);
 			convertPropertiesSettingToYAML(properties, "mail.smtp.auth", newCoreSystemSettingsNode, Arrays.asList("mail", "smtp", "auth"), Boolean::valueOf);
-			convertPropertiesSettingToYAML(properties, "mail.smtp.ssl.enable", newCoreSystemSettingsNode, Arrays.asList("mail", "smtp", "ssl", "enable"), Boolean::valueOf);
-			convertPropertiesSettingToYAML(properties, "mail.smtp.starttls.enable", newCoreSystemSettingsNode, Arrays.asList("mail", "smtp", "starttls", "enable"), Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "mail.smtp.ssl.enable", newCoreSystemSettingsNode, Arrays.asList("mail", "smtp", "sslEnabled"), Boolean::valueOf);
+			convertPropertiesSettingToYAML(properties, "mail.smtp.starttls.enable", newCoreSystemSettingsNode, Arrays.asList("mail", "smtp", "starttlsEnabled"), Boolean::valueOf);
 
 			convertPropertiesSettingToYAML(properties, "mail.from.address", newCoreSystemSettingsNode, Arrays.asList("mail", "from", "address"), String::valueOf);
 			convertPropertiesSettingToYAML(properties, "mail.from.password", newCoreSystemSettingsNode, Arrays.asList("mail", "from", "password"), String::valueOf);

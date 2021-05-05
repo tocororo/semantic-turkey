@@ -71,27 +71,12 @@ public class STPropertiesManager {
     private static final String PROJECT_SETTINGS_DEFAULTS_FILE_NAME = "project-settings-defaults.props";
 
     public static final String PREF_LANGUAGES = "languages";
-    public static final String PREF_SHOW_FLAGS = "show_flags";
-    public static final String PREF_SHOW_INSTANCES_NUMBER = "show_instances_number";
-    public static final String PREF_ACTIVE_SCHEMES = "active_schemes";
-    public static final String PREF_PROJ_THEME = "project_theme";
 
     public static final String PRELOAD_PROFILER_TRESHOLD_BYTES = "preload.profiler.treshold_bytes";
 
     public static final String SETTING_ADMIN_ADDRESS = "mail.admin.address";
 
-    public static final String SETTING_MAIL_SMTP_AUTH = "mail.smtp.auth";
-    public static final String SETTING_MAIL_SMTP_HOST = "mail.smtp.host";
-    public static final String SETTING_MAIL_SMTP_PORT = "mail.smtp.port";
-    public static final String SETTING_MAIL_SMTP_SSL_ENABLE = "mail.smtp.ssl.enable";
-    public static final String SETTING_MAIL_SMTP_STARTTLS_ENABLE = "mail.smtp.starttls.enable";
-    public static final String SETTING_MAIL_FROM_ADDRESS = "mail.from.address";
-    public static final String SETTING_MAIL_FROM_PASSWORD = "mail.from.password";
-    public static final String SETTING_MAIL_FROM_ALIAS = "mail.from.alias";
-
     public static final String SETTING_PROJ_LANGUAGES = "languages";
-    public static final String SETTING_EXP_FEATURES_ENABLED = "experimental_features_enabled";
-    public static final String SETTING_HOME_CONTENT = "home_content";
 
     public static final String SETTINGS_TYPE_PROPERTY = "@type";
 

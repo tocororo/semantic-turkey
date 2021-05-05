@@ -1,6 +1,5 @@
+adminList: []
 mail:
-  admin:
-    address: []
   from:
     address: xxxx@gmail.com
     password: xxxx
@@ -9,7 +8,5 @@ mail:
     host: smtp.gmail.com
     port: 465
     auth: true
-    ssl:
-      enable: true
-    starttls:
-      enable: true
+    sslEnabled: true
+    starttlsEnabled: false
