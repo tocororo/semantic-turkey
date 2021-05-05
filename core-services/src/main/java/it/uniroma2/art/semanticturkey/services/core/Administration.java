@@ -35,8 +35,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
-import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
@@ -74,7 +72,7 @@ public class Administration extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void setAdministrator(String email) throws STPropertyUpdateException, JsonProcessingException, UserException {
+	public void setAdministrator(String email) throws STPropertyUpdateException, UserException, STPropertyAccessException {
 		STUser user = UsersManager.getUser(email);
 		UsersManager.addAdmin(user);
 	}
@@ -87,7 +85,7 @@ public class Administration extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void removeAdministrator(String email) throws STPropertyUpdateException, JsonProcessingException, UserException {
+	public void removeAdministrator(String email) throws STPropertyUpdateException, UserException, STPropertyAccessException {
 		STUser user = UsersManager.getUser(email);
 		UsersManager.removeAdmin(user);
 	}

@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.user;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -231,7 +232,11 @@ public class STUser implements UserDetails {
 	}
 
 	public boolean isAdmin() {
-		return UsersManager.getAdminEmailList().contains(this.email);
+		boolean isAdmin = false;
+		try {
+			isAdmin = UsersManager.getAdminEmailList().contains(this.email);
+		} catch (STPropertyAccessException e) {}
+		return isAdmin;
 	}
 	
 	public ObjectNode getAsJsonObject() {

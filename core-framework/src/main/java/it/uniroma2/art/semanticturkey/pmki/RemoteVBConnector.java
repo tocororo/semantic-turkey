@@ -11,7 +11,10 @@ import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.resources.Scope;
+import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
+import it.uniroma2.art.semanticturkey.settings.core.PmkiSettings;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
+import it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionPmkiSettings;
 import it.uniroma2.art.semanticturkey.user.Role;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -53,23 +56,26 @@ public class RemoteVBConnector {
 	private String adminPwd;
 	private String vbUrl;
 
-	public RemoteVBConnector() throws IOException, STPropertyAccessException {
+	public RemoteVBConnector() throws STPropertyAccessException {
 		mapper = new ObjectMapper();
 		httpClient = HttpClientBuilder.create().useSystemProperties().build();
 
-		String vbConfValue = STPropertiesManager.getSystemSetting(STPropertiesManager.SETTING_VB_CONFIG_FOR_PMKI);
-		if (vbConfValue == null) {
+		VocBenchConnectionPmkiSettings vbConnectionSettings = null;
+
+		CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
+		PmkiSettings pmkiSettings = systemSettings.pmki;
+		if (pmkiSettings != null) {
+			vbConnectionSettings = pmkiSettings.vbConnectionConfig;
+		}
+
+		if (vbConnectionSettings == null) {
 			throw new IllegalStateException("No configuration found for connecting to a remote VocBench instance");
 		}
 
-		JsonNode confJson = mapper.readTree(vbConfValue);
-		stHost = confJson.get("stHost").textValue();
-		if (!stHost.endsWith("/")) {
-			stHost += "/";
-		}
-		adminEmail = confJson.get("adminEmail").textValue();
-		adminPwd = confJson.get("adminPassword").textValue();
-		vbUrl = confJson.get("vbUrl").textValue();
+		stHost = vbConnectionSettings.stHost;
+		adminEmail = vbConnectionSettings.adminEmail;
+		adminPwd = vbConnectionSettings.adminPassword;
+		vbUrl = vbConnectionSettings.vbURL;
 	}
 
 	public String getVocbenchUrl() {

@@ -1,14 +1,13 @@
 package it.uniroma2.art.semanticturkey.user;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.resources.Resources;
+import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.user.notification.NotificationPreferencesAPI;
 import it.uniroma2.art.semanticturkey.user.notification.UserNotificationsAPI;
 import org.apache.commons.io.FileUtils;
@@ -27,7 +26,6 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -76,15 +74,9 @@ public class UsersManager {
 		initAdminList();
 	}
 
-	private static void initAdminList() throws STPropertyAccessException, IOException {
-		String adminEmailsSetting = STPropertiesManager
-				.getSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS);
-		// adminEmails could be a plain string for a single address (ST < 6.1.0) or a json serialized list =>
-		// handle both cases
-		adminSet = adminEmailsSetting.startsWith("[")
-				? new ObjectMapper().readValue(adminEmailsSetting, new TypeReference<Set<String>>() {
-				})
-				: new HashSet<>(Collections.singletonList(adminEmailsSetting));
+	private static void initAdminList() throws STPropertyAccessException {
+		CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
+		adminSet = new HashSet<>(systemSettings.adminList);
 	}
 
 	/**
@@ -141,7 +133,7 @@ public class UsersManager {
 		return admins;
 	}
 
-	public static void addAdmin(STUser user) throws STPropertyUpdateException, JsonProcessingException {
+	public static void addAdmin(STUser user) throws STPropertyUpdateException, STPropertyAccessException {
 		if (!user.getStatus().equals(UserStatus.ACTIVE)) {
 			throw new IllegalStateException("Cannot grant administrator authority to a non-active user");
 		}
@@ -149,7 +141,7 @@ public class UsersManager {
 		updateAdminSetting();
 	}
 
-	public static void removeAdmin(STUser user) throws STPropertyUpdateException, JsonProcessingException {
+	public static void removeAdmin(STUser user) throws STPropertyUpdateException, STPropertyAccessException {
 		if (adminSet.size() == 1 && adminSet.contains(user.getEmail())) {
 			throw new IllegalStateException("Cannot remove the sole administrator");
 		} else {
@@ -158,10 +150,10 @@ public class UsersManager {
 		}
 	}
 
-	private static void updateAdminSetting() throws JsonProcessingException, STPropertyUpdateException {
-		ObjectMapper mapper = new ObjectMapper();
-		String adminsJson = mapper.writeValueAsString(adminSet);
-		STPropertiesManager.setSystemSetting(STPropertiesManager.SETTING_ADMIN_ADDRESS, adminsJson);
+	private static void updateAdminSetting() throws STPropertyUpdateException, STPropertyAccessException {
+		CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
+		systemSettings.adminList = new ArrayList<>(adminSet);
+		STPropertiesManager.setSystemSettings(systemSettings, SemanticTurkeyCoreSettingsManager.class.getName());
 	}
 
 	/**
@@ -297,7 +289,7 @@ public class UsersManager {
 	 * @throws IOException
 	 */
 	public static void updateUserEmail(STUser user, String newValue)
-			throws UserException, STPropertyUpdateException, JsonProcessingException {
+			throws UserException, STPropertyUpdateException, STPropertyAccessException {
 		// if user was admin, update also the admin setting
 		if (adminSet.contains(user.getEmail())) {
 			adminSet.remove(user.getEmail());

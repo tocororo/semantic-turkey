@@ -1,27 +1,5 @@
 package it.uniroma2.art.semanticturkey.properties;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
-import javax.annotation.Nullable;
-import javax.validation.constraints.Null;
-
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceReference;
-
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -35,7 +13,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.yaml.RDF4JBNodeDeserializer;
@@ -50,6 +27,30 @@ import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersGroup;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
+
+import javax.annotation.Nullable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
 
 public class STPropertiesManager {
 
@@ -74,13 +75,9 @@ public class STPropertiesManager {
 
     public static final String PRELOAD_PROFILER_TRESHOLD_BYTES = "preload.profiler.treshold_bytes";
 
-    public static final String SETTING_ADMIN_ADDRESS = "mail.admin.address";
-
     public static final String SETTING_PROJ_LANGUAGES = "languages";
 
     public static final String SETTINGS_TYPE_PROPERTY = "@type";
-
-    public static final String SETTING_VB_CONFIG_FOR_PMKI = "pmki.vb_connection_config";
 
     /*
      * Getter/Setter <STData>/pu_binding/<projectname>/<username>/plugins/<plugin>/settings.props
