@@ -908,6 +908,17 @@ public abstract class Project extends AbstractProject {
 		}
 	}
 
+	public void setLabels(Map<String, String> labels) throws ProjectUpdateException {
+		try {
+			this.labels = labels;
+			ObjectMapper mapper = new ObjectMapper();
+			stp_properties.setProperty(LABELS_PROP, mapper.writeValueAsString(labels));
+			updateProjectProperties();
+		} catch (Exception e) {
+			throw new ProjectUpdateException(e);
+		}
+	}
+
 	public void setDefaultNamespace(String defaultNamespace) throws ProjectUpdateException {
 		try {
 			try (RepositoryConnection conn = getRepository().getConnection()) {

@@ -3,6 +3,7 @@ date: dd/mm/yyyy
   * added the Spredsheet lifter to load data from a spreadsheet
   * update core settings to the new settings management framework (including the use of YAML to persist them)
   * upgrade the PUSettings of the RenderingEngine extension point to the new framework (including the use of YAML to persist them)
+  * Implemented labels support for project rendering
   * implemented support for email verification during the user registration procedure
   * allowed administrator to activate a new registered user through a link sent via email
   * allowed administrator to enable remote provisioning of CODA components

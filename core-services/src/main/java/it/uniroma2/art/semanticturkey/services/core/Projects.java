@@ -687,6 +687,15 @@ public class Projects extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
+	public void setProjectLabels(String projectName, Map<String, String> labels)
+			throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
+			ProjectUpdateException {
+		Project project = ProjectManager.getProject(projectName, true);
+		project.setLabels(labels);
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
 	public void deleteProject(ProjectConsumer consumer, String projectName) throws ProjectDeletionException,
 			ProjectAccessException, ProjectUpdateException, ReservedPropertyUpdateException,
 			InvalidProjectNameException, ProjectInexistentException, IOException {
