@@ -49,33 +49,38 @@ public class XlsxStructureAndUtils {
 		// Create a Workbook
 		Workbook workbook = new XSSFWorkbook(); // new HSSFWorkbook() for generating `.xls` file
 		// Create a Sheet
-		Sheet sheet = workbook.createSheet("Sheet 1");
+		Sheet sheet1 = workbook.createSheet("data");
 
 
 
 		int posRow = 0;
 		//create the concept part
 		//create the headers
-		createHeaderPart("CONCEPTS HIERARCHY", posRow, workbook, sheet, maxDepth, headerWhole, isSkosxlLex, reifiedNote, prefPropList, altPropList, hiddenPropList, notePropList);
-		posRow = createConceptPartInExcel(sheet, posRow+1,topConceptList, conceptIriToConceptInfoMap, maxDepth, headerWhole, prefPropList, altPropList, hiddenPropList,
+		createHeaderPart("CONCEPTS HIERARCHY", posRow, workbook, sheet1, maxDepth, headerWhole, isSkosxlLex, reifiedNote, prefPropList, altPropList, hiddenPropList, notePropList);
+		posRow = createConceptPartInExcel(sheet1, posRow+1,topConceptList, conceptIriToConceptInfoMap, maxDepth, headerWhole, prefPropList, altPropList, hiddenPropList,
 				isSkosxlLex, reifiedNote, notePropList);
 
 		// create the scheme part
 		//create the headers
-		createHeaderPart("CONCEPT SCHEMES", posRow+1, workbook, sheet, maxDepth, headerWhole, isSkosxlLex, reifiedNote, prefPropList, altPropList, hiddenPropList, notePropList);
-		posRow = createSchemePartInExcel(sheet, posRow+2, schemeIriToConceptSchemeInfoMap, maxDepth, headerWhole, prefPropList, altPropList, hiddenPropList,
+		createHeaderPart("CONCEPT SCHEMES", posRow+1, workbook, sheet1, maxDepth, headerWhole, isSkosxlLex, reifiedNote, prefPropList, altPropList, hiddenPropList, notePropList);
+		posRow = createSchemePartInExcel(sheet1, posRow+2, schemeIriToConceptSchemeInfoMap, maxDepth, headerWhole, prefPropList, altPropList, hiddenPropList,
 				isSkosxlLex, reifiedNote, notePropList);
 
 		// create the collection part
 		//create the headers
-		createHeaderPart("COLLECTIONS HIERARCHY", posRow+1, workbook, sheet, maxDepth, headerWhole, isSkosxlLex, reifiedNote, prefPropList, altPropList, hiddenPropList, notePropList);
-		posRow = createCollectionPartInExcel(sheet, posRow+2, topCollectionList, collectionIriToConceptInfoMap, maxDepth, headerWhole, prefPropList, altPropList, hiddenPropList,
+		createHeaderPart("COLLECTIONS HIERARCHY", posRow+1, workbook, sheet1, maxDepth, headerWhole, isSkosxlLex, reifiedNote, prefPropList, altPropList, hiddenPropList, notePropList);
+		posRow = createCollectionPartInExcel(sheet1, posRow+2, topCollectionList, collectionIriToConceptInfoMap, maxDepth, headerWhole, prefPropList, altPropList, hiddenPropList,
 				isSkosxlLex, reifiedNote, notePropList);
 
 		// Resize all columns to fit the content size
 		/*for (int i = 0; i < 6; i++) {
 			sheet.autoSizeColumn(i);
 		}*/
+
+		//create a new sheet containg the prefix and namespace
+		Sheet sheet2 = workbook.createSheet("prefixes");
+
+		createPrefixPart(workbook, sheet2);
 
 		// Write the output to a file
 		FileOutputStream fileOut = new FileOutputStream(tempServerFile);
@@ -97,7 +102,8 @@ public class XlsxStructureAndUtils {
 	/** HEADERS PART **/
 
 	private void createHeaderPart(String text, int rowPos, Workbook workbook, Sheet sheet, int maxDepth, HeaderWhole headerWhole, boolean isSkosxlLex,
-			boolean reifiedNote, List<IRI> prefPropList, List<IRI> altPropList, List<IRI> hiddenPropList, List<IRI> notePropList){
+			boolean reifiedNote, List<IRI> prefPropList, List<IRI> altPropList, List<IRI> hiddenPropList, List<IRI> notePropList) {
+
 		// Create a Font for styling header cells
 		Font headerFont = workbook.createFont();
 		//headerFont.setBold(true);
@@ -115,20 +121,34 @@ public class XlsxStructureAndUtils {
 		cell.setCellStyle(headerCellStyle);
 
 		//create the headers related to the properties
-		int posCol = prefLang.isEmpty() ? maxDepth+1 : maxDepth+2;
+		//int posCol = prefLang.isEmpty() ? maxDepth+1 : maxDepth+2;
+		int posCol = prefLang.isEmpty() ? maxDepth : maxDepth+1;
+
+		//add the separator '::'
+		addSeparatorSectionsHeader(headerRow, posCol++, headerCellStyle);
+
 
 		//first of all start with lexicalizations (pref, alt and hidden)
 		posCol = prepareHeaderForPossibleReifiedPropValue(prefPropList, headerWhole, isSkosxlLex, headerRow, headerCellStyle, posCol, toQName(SKOSXL.LITERAL_FORM));
 		posCol = prepareHeaderForPossibleReifiedPropValue(altPropList, headerWhole, isSkosxlLex, headerRow, headerCellStyle, posCol, toQName(SKOSXL.LITERAL_FORM));
 		posCol = prepareHeaderForPossibleReifiedPropValue(hiddenPropList, headerWhole, isSkosxlLex, headerRow, headerCellStyle, posCol, toQName(SKOSXL.LITERAL_FORM));
 
+		//add the separator '::'
+		addSeparatorSectionsHeader(headerRow, posCol++, headerCellStyle);
+
 		//add the rdf:type
 		posCol = prepareHeaderForProp(RDF.TYPE, headerWhole, headerRow, headerCellStyle, posCol);
+
+		//add the separator '::'
+		addSeparatorSectionsHeader(headerRow, posCol++, headerCellStyle);
 
 		//add the note (if reified, otherwise the note are created with the other properties)
 		if(reifiedNote){
 			posCol = prepareHeaderForPossibleReifiedPropValue(notePropList, headerWhole, true, headerRow, headerCellStyle, posCol, toQName(RDF.VALUE));
 		}
+
+		//add the separator '::'
+		addSeparatorSectionsHeader(headerRow, posCol++, headerCellStyle);
 
 		//add all other properties
 		List<IRI> propToSkip = new ArrayList<>();
@@ -238,13 +258,13 @@ public class XlsxStructureAndUtils {
 
 		addResourceIriAndSinglePrefLabel(conceptInfo, row, postCol++, prefPropList);
 
-		addSeparator(row, maxDepth);
+		addSeparator(row, (prefLang.isEmpty() ? maxDepth : maxDepth+1));
 
-		//create all the info associated to the excel
+		//create all the info associated to the concept
 		createResourceInfo(conceptInfo, headerWhole, maxDepth, prefPropList, altPropList, hiddenPropList, isSkosxlLex, row, reifiedNote, notePropList);
 
 		if(alreadyAddedConceptSet.contains(toQName(conceptInfo.getResourceIRI()))) {
-			//this concept was already expanded before, so just return
+			//this concept was already expanded before, so just return and do not add its narrower
 			return posRow;
 		}
 
@@ -271,7 +291,7 @@ public class XlsxStructureAndUtils {
 			Row row = sheet.createRow(posRow++);
 			addResourceIriAndSinglePrefLabel(conceptSchemeInfo, row, 0, prefPropList);
 
-			addSeparator(row, maxDepth);
+			addSeparator(row, (prefLang.isEmpty() ? maxDepth : maxDepth+1));
 
 			createResourceInfo(conceptSchemeInfo, headerWhole, maxDepth, prefPropList, altPropList, hiddenPropList, isSkosxlLex, row, reifiedNote, notePropList);
 		}
@@ -302,7 +322,7 @@ public class XlsxStructureAndUtils {
 		//create all the info associated to the excel
 		createResourceInfo(resourceInfo, headerWhole, maxDepth, prefPropList, altPropList, hiddenPropList, isSkosxlLex, row, reifiedNote, notePropList);
 
-		addSeparator(row, maxDepth);
+		addSeparator(row, (prefLang.isEmpty() ? maxDepth : maxDepth+1));
 
 		if(alreadyAddedCollectionSet.contains(toQName(resourceInfo.getResourceIRI()))) {
 			//this resource was already expanded before, so just return
@@ -320,6 +340,41 @@ public class XlsxStructureAndUtils {
 		}
 
 		return posRow;
+	}
+
+	/** PREFIXES PART **/
+
+	private void createPrefixPart(Workbook workbook, Sheet sheet){
+		// Create a Font for styling header cells
+		Font headerFont = workbook.createFont();
+		//headerFont.setBold(true);
+		headerFont.setFontHeightInPoints((short) 14);
+
+		// Create a CellStyle with the font
+		CellStyle headerCellStyle = workbook.createCellStyle();
+		headerCellStyle.setFont(headerFont);
+
+		// Create  Header Row
+		Row headerRow = sheet.createRow(0);
+
+		Cell cell = headerRow.createCell(0);
+		cell.setCellValue("Prefix");
+		cell.setCellStyle(headerCellStyle);
+
+
+		cell = headerRow.createCell(1);
+		cell.setCellValue("Namespace");
+		cell.setCellStyle(headerCellStyle);
+
+		// Add the prefix-namespace
+		int pos = 0;
+		for(String prefix : prefixDeclaraionMap.keySet()){
+			String namespace = prefixDeclaraionMap.get(prefix);
+			Row row = sheet.createRow(++pos);
+			row.createCell(0).setCellValue(prefix);
+			row.createCell(1).setCellValue(namespace);
+		}
+
 	}
 
 
@@ -359,10 +414,20 @@ public class XlsxStructureAndUtils {
 
 	private void addSeparator(Row row, int maxDepth){
 		if(prefLang.isEmpty()) {
-			row.createCell(maxDepth).setCellValue(":");
+			addSeparatorSectionsData(row, maxDepth);
+			//row.createCell(maxDepth).setCellValue(":");
 		} else {
-			row.createCell(maxDepth+1).setCellValue(":");
+			addSeparatorSectionsData(row, maxDepth);
+			//row.createCell(maxDepth+1).setCellValue(":");
 		}
+	}
+
+	private void addSeparatorSectionsData(Row row, int pos){
+		row.createCell(pos).setCellValue(":");
+	}
+
+	private void addSeparatorSectionsHeader(Row row, int pos, CellStyle cellStyle){
+		row.createCell(pos).setCellValue("::");
 	}
 
 	private void createResourceInfo(ResourceInfo resourceInfo, HeaderWhole headerWhole, int maxDepth, List<IRI> prefPropList, List<IRI> altPropList,
@@ -374,13 +439,19 @@ public class XlsxStructureAndUtils {
 		posCol = prepareCellsForPossibleReifiedPropValue(resourceInfo, altPropList, headerWhole, isSkosxlLex, row, posCol);
 		posCol = prepareCellsForPossibleReifiedPropValue(resourceInfo, hiddenPropList, headerWhole, isSkosxlLex, row, posCol);
 
+		addSeparatorSectionsData(row, posCol++);
+
 		//add the rdf:type(s)
 		posCol = prepareCellsForProp(resourceInfo, RDF.TYPE, headerWhole, row, posCol);
+
+		addSeparatorSectionsData(row, posCol++);
 
 		//add the note (if reified, otherwise the note are created with the other general properties)
 		if(reifiedNote){
 			posCol = prepareCellsForPossibleReifiedPropValue(resourceInfo, notePropList, headerWhole, true, row, posCol);
 		}
+
+		addSeparatorSectionsData(row, posCol++);
 
 		//add all other properties
 		List<IRI> propToSkip = new ArrayList<>();
@@ -499,4 +570,5 @@ public class XlsxStructureAndUtils {
 		}
 		return posCol;
 	}
+
 }

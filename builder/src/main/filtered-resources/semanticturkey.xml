@@ -158,6 +158,7 @@
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-rdf-deserializing-lifter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-zthes-commons/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-zthes-deserializing-lifter/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-spreadsheet-deserializing-lifter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-delete-property-value-rdf-transformer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-property-normalizer-transformer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-sparql-rdf-transformer/${project.version}</bundle>
