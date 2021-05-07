@@ -27,7 +27,6 @@ import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersGroup;
-import org.apache.commons.lang3.NotImplementedException;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -41,7 +40,6 @@ import org.osgi.framework.ServiceReference;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -50,7 +48,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 
 public class STPropertiesManager {
@@ -1017,15 +1014,4 @@ public class STPropertiesManager {
                 + File.separator + pluginID);
     }
 
-    public static String getSystemSetting(String componentID, String propertyID) {
-        throw new NotImplementedException("Old settings management no longer supported");
-    }
-
-    public static void setSystemSetting(String componentID, String propertyID, String value) {
-        throw new NotImplementedException("Old settings management no longer supported");
-    }
-
-    public static String getSystemSetting(String propertyID) {
-        throw new NotImplementedException("Old settings management no longer supported");
-    }
 }

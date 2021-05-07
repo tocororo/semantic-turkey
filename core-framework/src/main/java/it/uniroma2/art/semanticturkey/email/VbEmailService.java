@@ -1,6 +1,5 @@
 package it.uniroma2.art.semanticturkey.email;
 
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserException;
@@ -11,10 +10,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 
 public class VbEmailService extends EmailService {
-
-	//Settings
-	public static final String SETTING_MAIL_CONTENT_REGISTRATION_TO_USER = "mail.content.user_registered.user";
-	public static final String SETTING_MAIL_CONTENT_ENABLED = "mail.content.user_enabled";
 
 	//placeholders
 	private static final String USER_EMAIL_PLACEHOLDER = "{{user.email}}";
@@ -74,16 +69,13 @@ public class VbEmailService extends EmailService {
 	 * @throws STPropertyAccessException
 	 */
 	public void sendVerifiedMailToUser(STUser user) throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
-		String text = STPropertiesManager.getSystemSetting(SETTING_MAIL_CONTENT_REGISTRATION_TO_USER);
-		if (text == null) {
-			text = "Dear {{user.givenName}} {{user.familyName}},<br>" +
-					"your email has been verified. Your registration has been now notified to the administrator. " +
-					"Please wait for the administrator to approve it.<br>" +
-					"After the approval, you can log into VocBench with the e-mail {{user.email}} and your chosen password.<br>" +
-					"Thanks for your interest.<br><br>" +
-					"If you want to unregister, please contact one of the administrators ({{adminList}}).<br><br>" +
-					"Regards,<br>The VocBench team.";
-		}
+		String text = "Dear {{user.givenName}} {{user.familyName}},<br>" +
+			"your email has been verified. Your registration has been now notified to the administrator. " +
+			"Please wait for the administrator to approve it.<br>" +
+			"After the approval, you can log into VocBench with the e-mail {{user.email}} and your chosen password.<br>" +
+			"Thanks for your interest.<br><br>" +
+			"If you want to unregister, please contact one of the administrators ({{adminList}}).<br><br>" +
+			"Regards,<br>The VocBench team.";
 		text = replaceUserPlaceholders(text, user);
 		text = replaceGenericPlaceholders(text);
 		EmailSender.sendMail(user.getEmail(), "VocBench email verified", text);
@@ -133,13 +125,10 @@ public class VbEmailService extends EmailService {
 	 * @throws STPropertyAccessException
 	 */
 	public void sendEnabledMailToUser(STUser user) throws MessagingException, UnsupportedEncodingException, STPropertyAccessException {
-		String text = STPropertiesManager.getSystemSetting(SETTING_MAIL_CONTENT_ENABLED);
-		if (text == null) {
-			text = "Dear {{user.givenName}} {{user.familyName}},<br>" +
-					"the administrator has enabled your account. You can now log into VocBench with the email " +
-					"<i>{{user.email}}</i> and your chosen password.<br><br>" +
-					"Regards,<br>The VocBench team.";
-		}
+		String text = "Dear {{user.givenName}} {{user.familyName}},<br>" +
+			"the administrator has enabled your account. You can now log into VocBench with the email " +
+			"<i>{{user.email}}</i> and your chosen password.<br><br>" +
+			"Regards,<br>The VocBench team.";
 		text = replaceUserPlaceholders(text, user);
 		text = replaceGenericPlaceholders(text);
 		EmailSender.sendMail(user.getEmail(), "VocBench account enabled", text);

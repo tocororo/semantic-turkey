@@ -1,62 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.File;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
-import javax.mail.MessagingException;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BooleanQuery.Builder;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.FOAF;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.util.UriComponentsBuilder;
-
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.config.contribution.ContributionStore;
@@ -141,6 +86,58 @@ import it.uniroma2.art.semanticturkey.user.UserException;
 import it.uniroma2.art.semanticturkey.user.UserStatus;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BooleanQuery.Builder;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.FOAF;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import javax.annotation.Nullable;
+import javax.mail.MessagingException;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @STService
 public class PMKI extends STServiceAdapter {
@@ -336,16 +333,16 @@ public class PMKI extends STServiceAdapter {
 			PluginSpecification supportRepoSailConfigurerSpecification = null;
 			String supportBackendType = null;
 
-			PluginSpecification uriGeneratorSpecification = new PluginSpecification(
-					"it.uniroma2.art.semanticturkey.plugin.impls.urigen.NativeTemplateBasedURIGeneratorFactory",
-					null, new Properties(), null);
+			String extensionID = "it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGenerator";
+			String configType = "it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorConfiguration";
+			ObjectNode configObj = JsonNodeFactory.instance.objectNode();
+			configObj.put("@type", configType);
+			PluginSpecification uriGeneratorSpecification = new PluginSpecification(extensionID, null, null, configObj);
 
-			String renderingEngineFactoryID = BaseRenderingEngine
+			PluginSpecification renderingEngineSpecification = BaseRenderingEngine
 					.getRenderingEngineSpecificationForLexicalModel(lexicalizationModel)
-					.map(PluginSpecification::getFactoryId).orElseThrow(() -> new IllegalArgumentException(
+					.orElseThrow(() -> new IllegalArgumentException(
 							"Unsupported lexicalization model: " + lexicalizationModel));
-			PluginSpecification renderingEngineSpecification = new PluginSpecification(
-					renderingEngineFactoryID, null, new Properties(), null);
 
 			List<Pair<RDFResourceRole, String>> resourceMetadataAssociations = null;
 			File preloadedDataFile = null;
@@ -427,7 +424,7 @@ public class PMKI extends STServiceAdapter {
 			String baseURI, PluginSpecification coreRepoSailConfigurerSpecification,
 			String configurationReference, String pmkiHostAddress) throws IOException,
 			WrongPropertiesException, STPropertyAccessException, ConfigurationNotFoundException,
-			NoSuchConfigurationManager, URISyntaxException, STPropertyUpdateException, MessagingException {
+			NoSuchConfigurationManager, URISyntaxException, MessagingException {
 
 		Reference reference = parseReference(configurationReference);
 		StoredDevResourceContributionConfiguration contribution = (StoredDevResourceContributionConfiguration) exptManager
@@ -527,7 +524,7 @@ public class PMKI extends STServiceAdapter {
 			MultipartFile inputFile, String format, PluginSpecification rdfLifterSpec,
 			TransitiveImportMethodAllowance transitiveImportAllowance) throws STPropertyAccessException,
 			IOException, InvalidConfigurationException, WrongPropertiesException, LiftingException,
-			ProjectBindingException, STPropertyUpdateException, MessagingException, UserException {
+			ProjectBindingException, MessagingException, UserException {
 		Project project = ProjectManager.getProject(projectName);
 		if (project == null) {
 			throw new IllegalArgumentException("Invalid project name '" + projectName
@@ -571,7 +568,7 @@ public class PMKI extends STServiceAdapter {
 	public void loadDevContributionData(String token, String projectName, String contributorEmail,
 			MultipartFile inputFile, String format, PluginSpecification rdfLifterSpec,
 			TransitiveImportMethodAllowance transitiveImportAllowance) throws STPropertyAccessException,
-			IOException, STPropertyUpdateException, URISyntaxException, MessagingException {
+			IOException, URISyntaxException, MessagingException {
 
 		PendingContributionStore pendingContributionStore = new PendingContributionStore();
 		PendingContribution pendingContrib = pendingContributionStore.getPendingContribution(token);
@@ -588,7 +585,7 @@ public class PMKI extends STServiceAdapter {
 					"The provided email does not correspond to the contribution you're trying to complete");
 		} else { // token+projectName+contributorEmail are ok
 			/*
-			 * On the remove VB instance - Login as admin - load the data - create the user, enable it and
+			 * On the remote VB instance - Login as admin - load the data - create the user, enable it and
 			 * assign to the project
 			 */
 			RemoteVBConnector vbConnector = new RemoteVBConnector();
