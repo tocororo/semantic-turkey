@@ -13,6 +13,7 @@ import java.util.Properties;
 
 import javax.annotation.Nullable;
 
+import it.uniroma2.art.semanticturkey.properties.InvalidConfigurationUpdateException;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -122,7 +123,7 @@ public abstract class ConfigurationSupport {
 		STPropertiesChecker checker = STPropertiesChecker.getModelConfigurationChecker(configuration);
 
 		if (!checker.isValid()) {
-			throw new STPropertyUpdateException("Invalid configuration: " + checker.getErrorMessage());
+			throw new InvalidConfigurationUpdateException(checker.getErrorMessage());
 		}
 		File configFile = new File(folder, configurationFilename(identifier));
 		STPropertiesManager.storeSTPropertiesInYAML(configuration, configFile, true);

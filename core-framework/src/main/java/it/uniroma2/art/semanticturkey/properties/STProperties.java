@@ -38,7 +38,7 @@ import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 @STProperties.BasicPropertiesConstraints
 public interface STProperties {
 
-    @Constraint(validatedBy = BasicPropertyCostraintValidator.class)
+    @Constraint(validatedBy = BasicPropertyConstraintValidator.class)
     @Retention(RetentionPolicy.RUNTIME)
     @interface BasicPropertiesConstraints {
 
@@ -50,7 +50,13 @@ public interface STProperties {
 
     }
 
-    class BasicPropertyCostraintValidator implements ConstraintValidator<Annotation, STProperties> {
+    class BasicPropertyConstraintValidator implements ConstraintValidator<Annotation, STProperties> {
+
+        private boolean allowIncomplete;
+
+        public void setAllowIncomplete(boolean allowIncomplete) {
+            this.allowIncomplete = allowIncomplete;
+        }
 
         @Override
         public void initialize(Annotation constraintAnnotation) {
@@ -75,7 +81,7 @@ public interface STProperties {
                     throw new RuntimeException(e);
                 }
 
-                if (isRequired) {
+                if (!allowIncomplete && isRequired) {
                     if (v == null) {
                         context.buildConstraintViolationWithTemplate("Required property shall be non null")
                                 .addNode(p).addConstraintViolation();
@@ -140,9 +146,9 @@ public interface STProperties {
         private static boolean isNullish(Object v) {
             return v == null || (v instanceof String && StringUtils.isAllBlank((String) v))
                     || (v instanceof Collection<?> && ((Collection<?>) v).stream()
-                    .anyMatch(BasicPropertyCostraintValidator::isNullish))
+                    .anyMatch(BasicPropertyConstraintValidator::isNullish))
                     || (v instanceof Map<?, ?> && ((Map<?, ?>) v).values().stream()
-                    .anyMatch(BasicPropertyCostraintValidator::isNullish));
+                    .anyMatch(BasicPropertyConstraintValidator::isNullish));
         }
 
     }

@@ -14,5 +14,7 @@ public class STPropertyUpdateException extends Exception {
 	public STPropertyUpdateException(String msg) {
 		super(msg);
 	}
+
+	public STPropertyUpdateException() {}
 	
 }

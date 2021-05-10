@@ -139,13 +139,10 @@ public class STPropertiesManager {
     public static void setPUSettings(STProperties preferences, Project project, STUser user, String pluginID,
                                      boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
         try {
-            if (!allowIncompletePropValueSet) {
-                STPropertiesChecker preferencesChecker = STPropertiesChecker
-                        .getModelConfigurationChecker(preferences);
-                if (!preferencesChecker.isValid()) {
-                    throw new STPropertyUpdateException(
-                            "Preferences not valid: " + preferencesChecker.getErrorMessage());
-                }
+            STPropertiesChecker preferencesChecker = STPropertiesChecker
+                    .getModelConfigurationChecker(preferences).allowIncomplete(allowIncompletePropValueSet);
+            if (!preferencesChecker.isValid()) {
+                throw new InvalidSettingsUpdateException(preferencesChecker.getErrorMessage());
             }
             File propFile = getPUSettingsFile(project, user, pluginID);
             storeSTPropertiesInYAML(preferences, propFile, false);
@@ -206,14 +203,12 @@ public class STPropertiesManager {
     public static void setPGSettings(STProperties preferences, Project project, UsersGroup group,
                                      String pluginID, boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
         try {
-            if (!allowIncompletePropValueSet) {
-                STPropertiesChecker preferencesChecker = STPropertiesChecker
-                        .getModelConfigurationChecker(preferences);
-                if (!preferencesChecker.isValid()) {
-                    throw new STPropertyUpdateException(
-                            "Preferences not valid: " + preferencesChecker.getErrorMessage());
-                }
+            STPropertiesChecker preferencesChecker = STPropertiesChecker
+                .getModelConfigurationChecker(preferences).allowIncomplete(allowIncompletePropValueSet);
+            if (!preferencesChecker.isValid()) {
+                throw new InvalidSettingsUpdateException(preferencesChecker.getErrorMessage());
             }
+
             File propFile = getPGSettingsFile(project, group, pluginID);
             storeSTPropertiesInYAML(preferences, propFile, false);
         } catch (IOException e) {
@@ -293,13 +288,10 @@ public class STPropertiesManager {
     public static void setPUSettingsProjectDefault(STProperties settings, Project project, String pluginID,
                                                    boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
         try {
-            if (!allowIncompletePropValueSet) {
-                STPropertiesChecker settingsChecker = STPropertiesChecker
-                        .getModelConfigurationChecker(settings);
-                if (!settingsChecker.isValid()) {
-                    throw new STPropertyUpdateException(
-                            "Settings not valid: " + settingsChecker.getErrorMessage());
-                }
+            STPropertiesChecker settingsChecker = STPropertiesChecker
+                    .getModelConfigurationChecker(settings).allowIncomplete(allowIncompletePropValueSet);
+            if (!settingsChecker.isValid()) {
+                throw new InvalidSettingsUpdateException(settingsChecker.getErrorMessage());
             }
             File settingsFile = getPUSettingsProjectDefaultsFile(project, pluginID);
             storeSTPropertiesInYAML(settings, settingsFile, false);
@@ -323,13 +315,10 @@ public class STPropertiesManager {
     public static void setPUSettingsUserDefault(STProperties settings, STUser user, String pluginID,
                                                 boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
         try {
-            if (!allowIncompletePropValueSet) {
-                STPropertiesChecker settingsChecker = STPropertiesChecker
-                        .getModelConfigurationChecker(settings);
-                if (!settingsChecker.isValid()) {
-                    throw new STPropertyUpdateException(
-                            "Settings not valid: " + settingsChecker.getErrorMessage());
-                }
+            STPropertiesChecker settingsChecker = STPropertiesChecker
+                    .getModelConfigurationChecker(settings).allowIncomplete(allowIncompletePropValueSet);
+            if (!settingsChecker.isValid()) {
+                throw new InvalidSettingsUpdateException(settingsChecker.getErrorMessage());
             }
             File settingsFile = getPUSettingsUserDefaultsFile(user, pluginID);
             storeSTPropertiesInYAML(settings, settingsFile, false);
@@ -352,13 +341,10 @@ public class STPropertiesManager {
     public static void setPUSettingsSystemDefault(STProperties settings, String pluginID,
                                                   boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
         try {
-            if (!allowIncompletePropValueSet) {
-                STPropertiesChecker settingsChecker = STPropertiesChecker
-                        .getModelConfigurationChecker(settings);
-                if (!settingsChecker.isValid()) {
-                    throw new STPropertyUpdateException(
-                            "Settings not valid: " + settingsChecker.getErrorMessage());
-                }
+            STPropertiesChecker settingsChecker = STPropertiesChecker
+                    .getModelConfigurationChecker(settings).allowIncomplete(allowIncompletePropValueSet);
+            if (!settingsChecker.isValid()) {
+                throw new InvalidSettingsUpdateException(settingsChecker.getErrorMessage());
             }
             File settingsFile = getPUSettingsSystemDefaultsFile(pluginID);
             storeSTPropertiesInYAML(settings, settingsFile, false);
@@ -551,13 +537,10 @@ public class STPropertiesManager {
     public static void setUserSettings(STProperties preferences, STUser user, String pluginID,
                                        boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
         try {
-            if (!allowIncompletePropValueSet) {
-                STPropertiesChecker preferencesChecker = STPropertiesChecker
-                        .getModelConfigurationChecker(preferences);
-                if (!preferencesChecker.isValid()) {
-                    throw new STPropertyUpdateException(
-                            "Preferences not valid: " + preferencesChecker.getErrorMessage());
-                }
+            STPropertiesChecker preferencesChecker = STPropertiesChecker
+                    .getModelConfigurationChecker(preferences).allowIncomplete(allowIncompletePropValueSet);
+            if (!preferencesChecker.isValid()) {
+                throw new InvalidSettingsUpdateException(preferencesChecker.getErrorMessage());
             }
             File settingsFile = getUserSettingsFile(user, pluginID);
             storeSTPropertiesInYAML(preferences, settingsFile, false);
@@ -594,13 +577,10 @@ public class STPropertiesManager {
     public static void setUserSettingsDefault(STProperties settings, String pluginID,
                                               boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
         try {
-            if (!allowIncompletePropValueSet) {
-                STPropertiesChecker settingsChecker = STPropertiesChecker
-                        .getModelConfigurationChecker(settings);
-                if (!settingsChecker.isValid()) {
-                    throw new STPropertyUpdateException(
-                            "Settings not valid: " + settingsChecker.getErrorMessage());
-                }
+            STPropertiesChecker settingsChecker = STPropertiesChecker
+                    .getModelConfigurationChecker(settings).allowIncomplete(allowIncompletePropValueSet);
+            if (!settingsChecker.isValid()) {
+                throw new InvalidSettingsUpdateException(settingsChecker.getErrorMessage());
             }
             File settingsFile = getUserSettingsDefaultsFile(pluginID);
             storeSTPropertiesInYAML(settings, settingsFile, false);
@@ -686,13 +666,10 @@ public class STPropertiesManager {
     public static void setProjectSettings(STProperties settings, Project project, String pluginID,
                                           boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
         try {
-            if (!allowIncompletePropValueSet) {
-                STPropertiesChecker settingsChecker = STPropertiesChecker
-                        .getModelConfigurationChecker(settings);
-                if (!settingsChecker.isValid()) {
-                    throw new STPropertyUpdateException(
-                            "Settings not valid: " + settingsChecker.getErrorMessage());
-                }
+            STPropertiesChecker settingsChecker = STPropertiesChecker
+                    .getModelConfigurationChecker(settings).allowIncomplete(allowIncompletePropValueSet);
+            if (!settingsChecker.isValid()) {
+                throw new InvalidSettingsUpdateException(settingsChecker.getErrorMessage());
             }
             File settingsFile = getProjectSettingsFile(project, pluginID);
             storeSTPropertiesInYAML(settings, settingsFile, false);
@@ -729,14 +706,12 @@ public class STPropertiesManager {
     public static void setProjectSettingsDefault(STProperties settings, String pluginID,
                                                  boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
         try {
-            if (!allowIncompletePropValueSet) {
-                STPropertiesChecker settingsChecker = STPropertiesChecker
-                        .getModelConfigurationChecker(settings);
-                if (!settingsChecker.isValid()) {
-                    throw new STPropertyUpdateException(
-                            "Settings not valid: " + settingsChecker.getErrorMessage());
-                }
+            STPropertiesChecker settingsChecker = STPropertiesChecker
+                    .getModelConfigurationChecker(settings).allowIncomplete(allowIncompletePropValueSet);
+            if (!settingsChecker.isValid()) {
+                throw new InvalidSettingsUpdateException(settingsChecker.getErrorMessage());
             }
+
             File settingsFile = getProjectSettingsDefaultsFile(pluginID);
             storeSTPropertiesInYAML(settings, settingsFile, false);
         } catch (IOException e) {
@@ -790,14 +765,12 @@ public class STPropertiesManager {
     public static void setSystemSettings(STProperties settings, String pluginID,
                                          boolean allowIncompletePropValueSet) throws STPropertyUpdateException {
         try {
-            if (!allowIncompletePropValueSet) {
-                STPropertiesChecker settingsChecker = STPropertiesChecker
-                        .getModelConfigurationChecker(settings);
-                if (!settingsChecker.isValid()) {
-                    throw new STPropertyUpdateException(
-                            "Settings not valid: " + settingsChecker.getErrorMessage());
-                }
+            STPropertiesChecker settingsChecker = STPropertiesChecker
+                    .getModelConfigurationChecker(settings).allowIncomplete(allowIncompletePropValueSet);
+            if (!settingsChecker.isValid()) {
+                throw new InvalidSettingsUpdateException(settingsChecker.getErrorMessage());
             }
+
             File settingsFile = getSystemSettingsFile(pluginID);
             storeSTPropertiesInYAML(settings, settingsFile, false);
         } catch (IOException e) {

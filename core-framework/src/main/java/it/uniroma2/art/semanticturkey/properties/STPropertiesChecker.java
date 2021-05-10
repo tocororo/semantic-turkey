@@ -21,22 +21,22 @@ import it.uniroma2.art.semanticturkey.properties.STProperties.BasicPropertiesCon
 
 public class STPropertiesChecker {
 
-	private static class AutowiredValidatorFilteringFactory implements ConstraintValidatorFactory {
+	private static class AlwaysPassingValidator<A extends Annotation, T>
+			implements ConstraintValidator<A, T> {
 
-		private static class AlwaysPassingValidator<A extends Annotation, T>
-				implements ConstraintValidator<A, T> {
-
-			@Override
-			public void initialize(A constraintAnnotation) {
-				// nothing to do
-			}
-
-			@Override
-			public boolean isValid(T value, ConstraintValidatorContext context) {
-				return true;
-			}
-
+		@Override
+		public void initialize(A constraintAnnotation) {
+			// nothing to do
 		}
+
+		@Override
+		public boolean isValid(T value, ConstraintValidatorContext context) {
+			return true;
+		}
+
+	}
+
+	private class AutowiredValidatorFilteringFactory implements ConstraintValidatorFactory {
 
 		@Override
 		public void releaseInstance(ConstraintValidator<?, ?> instance) {
@@ -49,20 +49,28 @@ public class STPropertiesChecker {
 			boolean autowired = FieldUtils.getFieldsWithAnnotation(key, Autowired.class).length != 0
 					|| MethodUtils.getMethodsWithAnnotation(key, Autowired.class).length != 0;
 
+			T validator;
 			if (autowired) {
-				return (T) new AlwaysPassingValidator();
+				validator = (T) new AlwaysPassingValidator();
 			} else {
 				try {
-					return ConstructorUtils.invokeConstructor(key);
+					validator = (T) ConstructorUtils.invokeConstructor(key);
 				} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException
 						| InstantiationException e) {
 					throw new RuntimeException(e);
 				}
 			}
+
+			if (validator instanceof STProperties.BasicPropertyConstraintValidator) {
+				((STProperties.BasicPropertyConstraintValidator)validator).setAllowIncomplete(allowIncomplete);
+			}
+
+			return validator;
 		}
 	};
 
 	private STProperties props;
+	private boolean allowIncomplete;
 	private String errorMsg;
 
 	private STPropertiesChecker(STProperties conf) {
@@ -71,6 +79,11 @@ public class STPropertiesChecker {
 
 	public static STPropertiesChecker getModelConfigurationChecker(STProperties conf) {
 		return new STPropertiesChecker(conf);
+	}
+
+	public STPropertiesChecker allowIncomplete(boolean allowIncomplete) {
+		this.allowIncomplete = allowIncomplete;
+		return this;
 	}
 
 	/**
