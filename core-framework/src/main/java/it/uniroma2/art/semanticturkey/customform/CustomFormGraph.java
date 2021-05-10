@@ -290,7 +290,7 @@ public class CustomFormGraph extends CustomForm {
 			if (graphListIt.hasNext()) {
 				GraphElement ge = graphListIt.next();
 				if (ge.isGraphStruct()) {
-					entryPoint = ge.asGraphStruct().getSubject().getValueAsString();	
+					entryPoint = getSingleValueAsString(ge.asGraphStruct().getSubject(), null);
 				}
 			}
 		}
