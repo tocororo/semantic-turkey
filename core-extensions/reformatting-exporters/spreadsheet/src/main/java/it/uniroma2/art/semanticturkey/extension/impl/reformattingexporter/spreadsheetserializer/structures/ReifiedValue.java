@@ -19,11 +19,10 @@ public class ReifiedValue implements ValueForProp {
 
 	@Override
 	public boolean equals(Object object){
-		boolean same = false;
 		if(object instanceof ReifiedValue){
 			return (iriValue.equals(((ReifiedValue) object).getIriValue()) &&
 					literalValue.equals(((ReifiedValue) object).getLiteralValue()));
 		}
-		return same;
+		return false;
 	}
 }

@@ -340,11 +340,11 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 		}
 
 		// do a SPARQL query to get the lexicalization (different query depending on the Lexicalization model)
-		List<IRI> propLexList = new ArrayList<>();
-		propLexList.addAll(prefPropList);
-		propLexList.addAll(altPropList);
-		propLexList.addAll(hiddenPropList);
-		addLexicalizations(sourceRepositoryConnection, propLexList, conceptClassList, lexModel, isSkosxlLex,
+		List<IRI> lexPropList = new ArrayList<>();
+		lexPropList.addAll(prefPropList);
+		lexPropList.addAll(altPropList);
+		lexPropList.addAll(hiddenPropList);
+		addLexicalizations(sourceRepositoryConnection, lexPropList, conceptClassList, lexModel, isSkosxlLex,
 				headerWhole, conceptIriToConceptInfoMap, null, null);
 
 		// do a SPARQL query to get the reified note (if reifiedNote is passed as true)
@@ -355,8 +355,9 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 
 
 		// do a SPARQL query to get all the data directly associated to the concepts
-		addGenericPropertyValue(sourceRepositoryConnection, conceptClassList, isSkosxlLex, propLexList, headerWhole,
-				conceptIriToConceptInfoMap, null, null);
+		addGenericPropertyValue(sourceRepositoryConnection, conceptClassList, isSkosxlLex, lexPropList, headerWhole,
+				conceptIriToConceptInfoMap, null, null, notePropList,
+				reifiedNote);
 
 		return maxDepth;
 	}
@@ -448,11 +449,11 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 
 
 		// do a SPARQL query to get the lexicalization (different query depending on the Lexicalization model)
-		List<IRI> propLexList = new ArrayList<>();
-		propLexList.addAll(prefPropList);
-		propLexList.addAll(altPropList);
-		propLexList.addAll(hiddenPropList);
-		addLexicalizations(sourceRepositoryConnection, propLexList, schemeClassList, lexModel, isSkosxlLex,
+		List<IRI> lexPropList = new ArrayList<>();
+		lexPropList.addAll(prefPropList);
+		lexPropList.addAll(altPropList);
+		lexPropList.addAll(hiddenPropList);
+		addLexicalizations(sourceRepositoryConnection, lexPropList, schemeClassList, lexModel, isSkosxlLex,
 				headerWhole, null, schemeIriToConceptSchemeInfoMap, null);
 
 		// do a SPARQL query to get the reified note (if reifiedNote is passed as true)
@@ -462,8 +463,9 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 		}
 
 		// do a SPARQL query to get all the data directly associated to the concepts
-		addGenericPropertyValue(sourceRepositoryConnection, schemeClassList, isSkosxlLex, propLexList, headerWhole,
-				null, schemeIriToConceptSchemeInfoMap, null);
+		addGenericPropertyValue(sourceRepositoryConnection, schemeClassList, isSkosxlLex, lexPropList, headerWhole,
+				null, schemeIriToConceptSchemeInfoMap, null, notePropList,
+				reifiedNote);
 
 	}
 
@@ -650,11 +652,11 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 
 
 		// do a SPARQL query to get the lexicalization (different query depending on the Lexicalization model)
-		List<IRI> propLexList = new ArrayList<>();
-		propLexList.addAll(prefPropList);
-		propLexList.addAll(altPropList);
-		propLexList.addAll(hiddenPropList);
-		addLexicalizations(sourceRepositoryConnection, propLexList, collectionClassList, lexModel, isSkosxlLex,
+		List<IRI> lexPropList = new ArrayList<>();
+		lexPropList.addAll(prefPropList);
+		lexPropList.addAll(altPropList);
+		lexPropList.addAll(hiddenPropList);
+		addLexicalizations(sourceRepositoryConnection, lexPropList, collectionClassList, lexModel, isSkosxlLex,
 				headerWhole, null, null, collectionIriToConceptInfoMap);
 
 		if(reifiedNote) {
@@ -664,8 +666,9 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 
 
 		// do a SPARQL query to get all the data directly associated to the concepts
-		addGenericPropertyValue(sourceRepositoryConnection, collectionClassList, isSkosxlLex, propLexList, headerWhole,
-				null, null, collectionIriToConceptInfoMap);
+		addGenericPropertyValue(sourceRepositoryConnection, collectionClassList, isSkosxlLex, lexPropList, headerWhole,
+				null, null, collectionIriToConceptInfoMap, notePropList,
+				reifiedNote);
 
 		return maxDepth;
 	}
@@ -853,7 +856,8 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 										 boolean isSkosxlLex, List<IRI> propLexList, HeaderWhole headerWhole,
 										 Map<IRI, ConceptInfo> conceptIriToConceptInfoMap,
 										 Map<IRI, ConceptSchemeInfo> schemeIriToConceptSchemeInfoMap,
-										 Map<IRI, CollectionInfo> collectionIriToConceptInfoMap){
+										 Map<IRI, CollectionInfo> collectionIriToConceptInfoMap,
+										 List<IRI> propNoteList, boolean reifiedNote){
 		// @formatter:off
 		String query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>" +
 				"\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#> " +
@@ -883,13 +887,13 @@ public class SpreadsheetSerializingExporter implements ReformattingExporter {
 				Value valueValue = bindingSet.getValue("value");
 				if (conceptIriToConceptInfoMap != null) {
 					addConceptInfo(isSkosxlLex, resource, null, null, null, null, null, null,
-							prop, valueValue, conceptIriToConceptInfoMap, headerWhole, propLexList, null, false);
+							prop, valueValue, conceptIriToConceptInfoMap, headerWhole, propLexList, propNoteList, reifiedNote);
 				} else if (schemeIriToConceptSchemeInfoMap!=null){
 					addSchemeInfo(isSkosxlLex, resource, null, null, null, null, null, null,
-							prop, valueValue, schemeIriToConceptSchemeInfoMap, headerWhole, propLexList, null, false);
+							prop, valueValue, schemeIriToConceptSchemeInfoMap, headerWhole, propLexList, propNoteList, reifiedNote);
 				} else if (collectionIriToConceptInfoMap!=null){
 					addCollectionInfo(isSkosxlLex, resource, null, null, null, null, null, null,
-							prop, valueValue, collectionIriToConceptInfoMap, headerWhole, propLexList, null, false);
+							prop, valueValue, collectionIriToConceptInfoMap, headerWhole, propLexList, propNoteList, reifiedNote);
 				}
 			}
 		}

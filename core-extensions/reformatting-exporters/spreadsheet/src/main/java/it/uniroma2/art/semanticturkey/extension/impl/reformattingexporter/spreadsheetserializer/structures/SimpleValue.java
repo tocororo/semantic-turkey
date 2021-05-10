@@ -14,11 +14,10 @@ public class SimpleValue implements ValueForProp{
 
 	@Override
 	public boolean equals(Object object){
-		boolean same = false;
 		if(object instanceof  SimpleValue){
 			return value.equals(((SimpleValue) object).getValue());
 		}
-		return  same;
+		return  false;
 
 	}
 }
