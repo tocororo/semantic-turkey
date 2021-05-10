@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.settings;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
@@ -24,6 +25,7 @@ public interface ProjectSettingsManager<T extends Settings> extends SettingsMana
 
 	}
 
+	@JsonIgnore
 	default T getProjectSettingsDefault() throws STPropertyAccessException {
 		return STPropertiesManager.getProjectSettingsDefault(ReflectionUtilities.getInterfaceArgumentTypeAsClass(
 				getClass(), ProjectSettingsManager.class, 0), getId());

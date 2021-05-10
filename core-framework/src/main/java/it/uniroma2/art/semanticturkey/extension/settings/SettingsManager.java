@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import it.uniroma2.art.semanticturkey.extension.IdentifiableComponent;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
@@ -19,6 +20,7 @@ import it.uniroma2.art.semanticturkey.user.UsersGroup;
  * @author Armando Stellato &lt;stellato@uniroma2.it&gt;
  *
  */
+@JsonIgnoreProperties(allowGetters = true)
 public interface SettingsManager extends IdentifiableComponent {
 
 	default Collection<Scope> getSettingsScopes() {
