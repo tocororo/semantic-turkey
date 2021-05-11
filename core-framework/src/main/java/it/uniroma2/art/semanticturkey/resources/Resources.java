@@ -370,7 +370,7 @@ public class Resources {
 					"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager/settings.props"),
 					propFile);
 			// default project settings
-			propFile = STPropertiesManager.getProjectSettingsDefaultsFile(RenderingEngine.class.getName());
+			propFile = STPropertiesManager.getProjectSettingsDefaultsFile(SemanticTurkeyCoreSettingsManager.class.getName());
 			if (!propFile.getParentFile().exists()) { // if path doesn't exist, first create it
 				propFile.getParentFile().mkdirs();
 			}
