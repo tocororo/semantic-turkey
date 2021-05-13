@@ -68,7 +68,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.uima.UIMAException;
 import org.apache.uima.jcas.JCas;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.MalformedQueryException;
@@ -220,7 +219,7 @@ public class Sheet2RDF extends STServiceAdapter {
 
     @STServiceOperation(method = RequestMethod.POST)
     public void addAdvancedGraphApplicationToHeader(String headerId, String graphPattern, List<String> nodeIds,
-                                                    Map<String, String> prefixMapping, @Optional IRI defaultPredicate) {
+            Map<String, String> prefixMapping, @Optional IRI defaultPredicate) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
@@ -242,7 +241,8 @@ public class Sheet2RDF extends STServiceAdapter {
      * @param type     the optional rdf:type of the node
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void updateSimpleGraphApplication(String headerId, String graphId, IRI property, String nodeId, @Optional IRI type) {
+    public void updateSimpleGraphApplication(String headerId, String graphId, IRI property, String nodeId,
+            @Optional IRI type) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
@@ -264,10 +264,11 @@ public class Sheet2RDF extends STServiceAdapter {
      * @param graphId      id of the existing graph application
      * @param graphPattern updated graph pattern
      * @param nodeIds      updated list of referenced node ids
+     * @param defaultPredicate predicate for the fallback of the pred placeholder in the pattern
      */
     @STServiceOperation(method = RequestMethod.POST)
     public void updateAdvancedGraphApplication(String headerId, String graphId, String graphPattern, List<String> nodeIds,
-                                               Map<String, String> prefixMapping, @Optional IRI defaultPredicate) {
+            Map<String, String> prefixMapping, @Optional IRI defaultPredicate) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
@@ -279,6 +280,24 @@ public class Sheet2RDF extends STServiceAdapter {
                 aga.setPrefixMapping(prefixMapping);
                 aga.setDefaultPredicate(defaultPredicate);
                 break;
+            }
+        }
+    }
+
+    /**
+     *
+     * @param headerId
+     * @param graphId
+     * @param delete
+     */
+    @STServiceOperation(method = RequestMethod.POST)
+    public void updateGraphApplicationDelete(String headerId, String graphId, boolean delete) {
+        S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
+        for (GraphApplication g : h.getGraphApplications()) {
+            if (g.getId().equals(graphId)) {
+                g.setDelete(delete);
             }
         }
     }
@@ -340,8 +359,8 @@ public class Sheet2RDF extends STServiceAdapter {
     @Read
     @STServiceOperation(method = RequestMethod.POST)
     public void addNodeToHeader(String headerId, String nodeId, RDFCapabilityType converterCapability,
-                                String converterContract, @Optional String converterDatatypeUri, @Optional String converterLanguage,
-                                @Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) {
+            String converterContract, @Optional String converterDatatypeUri, @Optional String converterLanguage,
+            @Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
@@ -363,8 +382,8 @@ public class Sheet2RDF extends STServiceAdapter {
     @Read
     @STServiceOperation(method = RequestMethod.POST)
     public void updateNodeInHeader(String headerId, String nodeId, RDFCapabilityType converterCapability,
-                                   String converterContract, @Optional String converterDatatypeUri, @Optional String converterLanguage,
-                                   @Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) {
+            String converterContract, @Optional String converterDatatypeUri, @Optional String converterLanguage,
+            @Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
@@ -393,7 +412,7 @@ public class Sheet2RDF extends STServiceAdapter {
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 
         //check if newNodeId is already used in some header
-        for (SimpleHeader h: mappingStruct.getHeaders()) {
+        for (SimpleHeader h : mappingStruct.getHeaders()) {
             if (h.getNodeConversion(newNodeId) != null) {
                 throw new IllegalArgumentException("Cannot rename node '" + nodeId + "' in '" + newNodeId +
                         "'. A node with ID '" + newNodeId + "' already exists");
@@ -405,7 +424,7 @@ public class Sheet2RDF extends STServiceAdapter {
         NodeConversion node = h.getNodeConversion(nodeId);
         node.setNodeId(newNodeId);
         //rename occurrences (if any) of nodeID in the graph applications
-        for (GraphApplication ga: h.getGraphApplications()) {
+        for (GraphApplication ga : h.getGraphApplications()) {
             if (ga instanceof SimpleGraphApplication) {
                 SimpleGraphApplication sga = (SimpleGraphApplication) ga;
                 if (sga.getNodeId().equals(nodeId)) {
@@ -420,7 +439,7 @@ public class Sheet2RDF extends STServiceAdapter {
                 }
                 //replace referenced node ID in graph pattern
                 String pattern = aga.getPattern();
-                pattern = pattern.replaceAll("\\b"+nodeId+"\\b", newNodeId);
+                pattern = pattern.replaceAll("\\b" + nodeId + "\\b", newNodeId);
                 aga.setPattern(pattern);
             }
         }
@@ -490,7 +509,7 @@ public class Sheet2RDF extends STServiceAdapter {
         subjHeader.getGraphApplication().setType(type);
         //update the additional graph applicati
         List<SimpleGraphApplication> additionalGraphApplications = new ArrayList<>();
-        for (Pair<IRI, Value> additionalPO: additionalPredObjs) {
+        for (Pair<IRI, Value> additionalPO : additionalPredObjs) {
             SimpleGraphApplication sga = new SimpleGraphApplication();
             sga.setNodeId(subjHeader.getNodeConversion().getNodeId());
             sga.setProperty(additionalPO.getFirst());
@@ -732,27 +751,37 @@ public class Sheet2RDF extends STServiceAdapter {
         //(one annotation for each table rows)
         for (int i = 0; i < maxTableRows; i++) {
             SuggOntologyCoda suggOntCoda = listSuggOntCoda.get(i);
-            List<CODATriple> tripleList = suggOntCoda.getAllInsertARTTriple();
-            triplesPreviewCount = triplesPreviewCount + tripleList.size();
-            tripleTotCount = tripleTotCount + tripleList.size();
-            for (CODATriple t : tripleList) {
-                ObjectNode tripleJson = jsonFactory.objectNode();
-                tripleJsonArray.add(tripleJson);
-                tripleJson.set("row", jsonFactory.textNode(suggOntCoda.getAnnotation().getBegin() + ""));
-                tripleJson.set("subject", jsonFactory.textNode(NTriplesUtil.toNTriplesString(t.getSubject())));
-                tripleJson.set("predicate", jsonFactory.textNode(NTriplesUtil.toNTriplesString(t.getPredicate())));
-                tripleJson.set("object", jsonFactory.textNode(NTriplesUtil.toNTriplesString(t.getObject())));
+            List<CODATriple> insertTripleList = suggOntCoda.getAllInsertARTTriple();
+            List<CODATriple> deleteTripleList = suggOntCoda.getAllDeleteARTTriple();
+            triplesPreviewCount = triplesPreviewCount + insertTripleList.size() + deleteTripleList.size();
+            tripleTotCount = tripleTotCount + insertTripleList.size() + deleteTripleList.size();
+            for (CODATriple t : insertTripleList) {
+                appendTriplePreviewNode(t, tripleJsonArray, jsonFactory, suggOntCoda.getAnnotation().getBegin(), false);
+            }
+            for (CODATriple t : deleteTripleList) {
+                appendTriplePreviewNode(t, tripleJsonArray, jsonFactory, suggOntCoda.getAnnotation().getBegin(), true);
             }
         }
+        //then list the triple just to count the total triples
         for (int i = maxTableRows; i < listSuggOntCoda.size(); i++) {
             SuggOntologyCoda suggOntCoda = listSuggOntCoda.get(i);
-            tripleTotCount = tripleTotCount + suggOntCoda.getAllInsertARTTriple().size();
+            tripleTotCount = tripleTotCount + suggOntCoda.getAllInsertARTTriple().size() + suggOntCoda.getAllDeleteARTTriple().size();
         }
 
         respJson.set("total", jsonFactory.numberNode(tripleTotCount));
         respJson.set("returned", jsonFactory.numberNode(triplesPreviewCount));
 
         return respJson;
+    }
+
+    private void appendTriplePreviewNode(CODATriple t, ArrayNode tripleJsonArray, JsonNodeFactory jsonFactory, int row, boolean delete) {
+        ObjectNode tripleJson = jsonFactory.objectNode();
+        tripleJsonArray.add(tripleJson);
+        tripleJson.set("row", jsonFactory.numberNode(row));
+        tripleJson.set("delete", jsonFactory.booleanNode(delete));
+        tripleJson.set("subject", jsonFactory.textNode(NTriplesUtil.toNTriplesString(t.getSubject())));
+        tripleJson.set("predicate", jsonFactory.textNode(NTriplesUtil.toNTriplesString(t.getPredicate())));
+        tripleJson.set("object", jsonFactory.textNode(NTriplesUtil.toNTriplesString(t.getObject())));
     }
 
     /**
@@ -838,7 +867,7 @@ public class Sheet2RDF extends STServiceAdapter {
      * @throws JsonGenerationException
      */
     @STServiceOperation
-    public void exportStatus(HttpServletResponse oRes) throws JsonGenerationException, JsonMappingException, IOException {
+    public void exportStatus(HttpServletResponse oRes) throws IOException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct ms = ctx.getSheet2RDFCore().getMappingStruct();
         File tempServerFile = File.createTempFile("sheet2rdf_status", ".json");
