@@ -69,7 +69,8 @@
 		<bundle dependency="true">wrap:mvn:org.json/json/20090211</bundle>
 
 		<bundle dependency="true">mvn:org.apache.commons/commons-lang3/${commons-lang3.version}</bundle>
-		
+		<bundle dependency="true">mvn:commons-lang/commons-lang/2.6</bundle>
+
 		<!-- The following two bundles are required on Java >= 9 since javax.annotation is no longer exposed by default -->
 		<!--
 			<bundle dependency="true">mvn:javax.annotation/javax.annotation-api/${javax.annotations-api.version}</bundle>
