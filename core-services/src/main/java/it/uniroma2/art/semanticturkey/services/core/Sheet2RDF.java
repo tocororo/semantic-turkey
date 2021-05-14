@@ -360,7 +360,8 @@ public class Sheet2RDF extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     public void addNodeToHeader(String headerId, String nodeId, RDFCapabilityType converterCapability,
             String converterContract, @Optional String converterDatatypeUri, @Optional String converterLanguage,
-            @Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) {
+            @Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize,
+            @Optional String memoizeId) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
@@ -376,6 +377,7 @@ public class Sheet2RDF extends STServiceAdapter {
         }
         n.setConverter(c);
         n.setMemoize(memoize);
+        n.setMemoizeId(memoizeId);
         h.addNodeConversions(n);
     }
 
@@ -383,7 +385,8 @@ public class Sheet2RDF extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     public void updateNodeInHeader(String headerId, String nodeId, RDFCapabilityType converterCapability,
             String converterContract, @Optional String converterDatatypeUri, @Optional String converterLanguage,
-            @Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize) {
+            @Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize,
+            @Optional String memoizeId) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
@@ -401,6 +404,7 @@ public class Sheet2RDF extends STServiceAdapter {
                 }
                 node.setConverter(c);
                 node.setMemoize(memoize);
+                node.setMemoizeId(memoizeId);
                 break;
             }
         }
@@ -491,7 +495,7 @@ public class Sheet2RDF extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     public void updateSubjectHeader(String headerId, String converterContract, @Optional Map<String, String> converterParams,
             @Optional IRI type, @Optional(defaultValue = "[]") @JsonSerialized List<Pair<IRI, Value>> additionalPredObjs,
-            @Optional(defaultValue = "false") boolean memoize) {
+            @Optional(defaultValue = "false") boolean memoize, @Optional String memoizeId) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
         SubjectHeader subjHeader = mappingStruct.getSubjectHeader();
@@ -505,6 +509,7 @@ public class Sheet2RDF extends STServiceAdapter {
         }
         n.setConverter(c);
         n.setMemoize(memoize);
+        n.setMemoizeId(memoizeId);
         //update the type in the graph application
         subjHeader.getGraphApplication().setType(type);
         //update the additional graph applicati
