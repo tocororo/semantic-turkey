@@ -9,6 +9,7 @@ date: dd/mm/yyyy
   * allowed administrator to enable remote provisioning of CODA components
   * in Sheet2RDF extended support for triples deletion
   * added Scottish Gaelic and Welsh to the system languages
+  * turned OperationOnResourceDeniedException into a RuntimeException as it may be thrown from an interceptor
   * updated dependency on Coda 1.7.2
   * updated dependency on Sheet2RDF 4.2.0
   * updated dependency on MAPLE 0.0.8

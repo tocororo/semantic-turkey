@@ -1,11 +1,10 @@
 package it.uniroma2.art.semanticturkey.user;
 
+import it.uniroma2.art.semanticturkey.i18n.InternationalizedRuntimeException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
-import it.uniroma2.art.semanticturkey.i18n.InternationalizedException;
-
-public class OperationOnResourceDeniedException extends InternationalizedException {
+public class OperationOnResourceDeniedException extends InternationalizedRuntimeException {
 
 	public OperationOnResourceDeniedException(String key, Object[] args) {
 		super(key, args);
