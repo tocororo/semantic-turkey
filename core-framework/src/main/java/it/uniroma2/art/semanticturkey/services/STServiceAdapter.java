@@ -21,6 +21,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
@@ -266,10 +267,8 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 					List<CODATriple> insertTriples = updates.getInsertTriples();
 					if (!insertTriples.isEmpty()) {
 						Resource graphEntry = detectGraphEntry(insertTriples);
-						ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(graphEntry); // set
-																												// created
-																												// for
-																												// versioning
+						// set created for versioning
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(graphEntry);
 						modelAdditions.add(subject, predicate, graphEntry);
 						for (CODATriple t : insertTriples) {
 							modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject());
@@ -308,38 +307,51 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 				value, Collections.singleton(predicate), false);
 
 		Update update;
-		if (cf == null) {
-			/*
-			 * If property hasn't a CustomForm simply delete all triples where resource occurs. note: this
-			 * case should never be verified cause this service should be called only when the predicate has a
-			 * CustomForm
-			 */
-			StringBuilder queryBuilder = new StringBuilder();
-			queryBuilder.append("delete { ");
-			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
-			queryBuilder.append(" <" + value.stringValue() + "> ?p1 ?o1 . ");
-			queryBuilder.append(" ?s2 ?p2 <" + value.stringValue() + "> . ");
-			queryBuilder.append(" }"); //close graph {}
-			queryBuilder.append(" } where { ");
-			queryBuilder.append(" <" + value.stringValue() + "> ?p1 ?o1 . ");
-			queryBuilder.append(" ?s2 ?p2 <" + value.stringValue() + "> . ");
-			queryBuilder.append(" }");
-			update = repoConn.prepareUpdate(queryBuilder.toString());
-		} else { // otherwise remove with a SPARQL delete the graph defined by the CustomFormGraph
-			StringBuilder queryBuilder = new StringBuilder();
-			queryBuilder.append("delete { ");
-			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
-			queryBuilder.append(cf.getGraphSectionAsString(codaCore, false));
-			queryBuilder.append(" }"); //close graph {}
-			queryBuilder.append(" } where { ");
-			queryBuilder.append(cf.getGraphSectionAsString(codaCore, true));
-			queryBuilder.append(" }");
-			update = repoConn.prepareUpdate(queryBuilder.toString());
+		if (cf != null) {
+			String query = "delete { " +
+					"	graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {" +
+					cf.getGraphSectionAsString(codaCore, false) +
+					" 	}" + //close graph {}
+					"} where { " +
+					cf.getGraphSectionAsString(codaCore, true) +
+					"}";
+			update = repoConn.prepareUpdate(query);
 			update.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), value);
+		} else {
+			/*
+			If property hasn't a CustomForm simply delete all triples where resource occurs.
+			note: this case should never happen since this service should be called only when the predicate has a CF.
+			*/
+			String query = "delete { " +
+					"	graph ?g {" +
+					"		?value ?p1 ?o1 . " +
+					" 		?s2 ?p2 ?value . " +
+					" 	}" + //close graph {}
+					"} where { " +
+					"	?value ?p1 ?o1 . " +
+					"	?s2 ?p2 ?value . " +
+					"}";
+			update = repoConn.prepareUpdate(query);
+			update.setBinding("g", getWorkingGraph());
+			update.setBinding("value", value);
 		}
 		update.setIncludeInferred(false);
 		update.execute();
 		shutDownCodaCore(codaCore);
+
+		//remove also all the outgoing triples from the deleting value (prevents pending triple added "outside" the CF)
+		String query =
+				"delete { " +
+				"	graph ?g {" +
+				"		?value ?p1 ?o1 . " +
+				"	}" + //close graph {}
+				"} where { " +
+				"	?value ?p1 ?o1 . " +
+				"}";
+		update = repoConn.prepareUpdate(query);
+		update.setBinding("g", getWorkingGraph());
+		update.setBinding("value", value);
+		update.execute();
 	}
 
 	/**

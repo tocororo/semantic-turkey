@@ -2029,7 +2029,7 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', notes)', '{lang: ''' +@auth.langof(#value)+ '''}','D')")
 	public void removeNote(@LocallyDefined @Modified Resource resource,
 			@Optional @LocallyDefined @SubPropertyOf(superPropertyIRI = "http://www.w3.org/2004/02/skos/core#note") IRI predicate,
-			Value value) throws PRParserException {
+			@Deleted Value value) throws PRParserException {
 		if (value instanceof Literal) {
 			getManagedConnection().remove(resource, predicate, value, getWorkingGraph());
 		} else { //reified note
