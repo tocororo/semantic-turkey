@@ -369,11 +369,13 @@ public class Sheet2RDF extends STServiceAdapter {
         NodeConversion n = new NodeConversion();
         n.setNodeId(nodeId);
         CODAConverter c = resolveCodaConverter(converterContract, converterCapability);
-        c.setDatatypeUri(converterDatatypeUri);
-        c.setLanguage(converterLanguage);
-        if (converterParams != null) {
-            Map<String, Object> resolvedConvParams = resolveConverterParamsMap(converterParams);
-            c.setParams(resolvedConvParams);
+        if (c != null) {
+            c.setDatatypeUri(converterDatatypeUri);
+            c.setLanguage(converterLanguage);
+            if (converterParams != null) {
+                Map<String, Object> resolvedConvParams = resolveConverterParamsMap(converterParams);
+                c.setParams(resolvedConvParams);
+            }
         }
         n.setConverter(c);
         n.setMemoize(memoize);
@@ -396,11 +398,13 @@ public class Sheet2RDF extends STServiceAdapter {
             if (node.getNodeId().equals(nodeId)) {
                 //update the node
                 CODAConverter c = resolveCodaConverter(converterContract, converterCapability);
-                c.setDatatypeUri(converterDatatypeUri);
-                c.setLanguage(converterLanguage);
-                if (converterParams != null) {
-                    Map<String, Object> resolvedConvParams = resolveConverterParamsMap(converterParams);
-                    c.setParams(resolvedConvParams);
+                if (c != null) {
+                    c.setDatatypeUri(converterDatatypeUri);
+                    c.setLanguage(converterLanguage);
+                    if (converterParams != null) {
+                        Map<String, Object> resolvedConvParams = resolveConverterParamsMap(converterParams);
+                        c.setParams(resolvedConvParams);
+                    }
                 }
                 node.setConverter(c);
                 node.setMemoize(memoize);
@@ -503,9 +507,11 @@ public class Sheet2RDF extends STServiceAdapter {
         //update the converter in the node conversion
         NodeConversion n = subjHeader.getNodeConversion();
         CODAConverter c = resolveCodaConverter(converterContract, RDFCapabilityType.uri);
-        if (converterParams != null) {
-            Map<String, Object> resolvedConvParams = resolveConverterParamsMap(converterParams);
-            c.setParams(resolvedConvParams);
+        if (c != null) {
+            if (converterParams != null) {
+                Map<String, Object> resolvedConvParams = resolveConverterParamsMap(converterParams);
+                c.setParams(resolvedConvParams);
+            }
         }
         n.setConverter(c);
         n.setMemoize(memoize);
