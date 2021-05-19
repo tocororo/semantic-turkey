@@ -21,6 +21,10 @@ public class CoreProjectSettings implements Settings {
 				+ ".labelClashMode.description";
 		public static final String labelClashMode$displayName = keyBase
 				+ ".labelClashMode.displayName";
+		public static final String resourceView$description = keyBase
+				+ ".resourceView.description";
+		public static final String resourceView$displayName = keyBase
+				+ ".resourceView.displayName";
 	}
 
 	@Override
@@ -36,4 +40,9 @@ public class CoreProjectSettings implements Settings {
 			+ "}", displayName = "{" + MessageKeys.labelClashMode$displayName + "}")
 	@Enumeration({"forbid", "warning", "allow"})
 	public String labelClashMode;
+
+	@STProperty(description = "{" + MessageKeys.resourceView$description
+			+ "}", displayName = "{" + MessageKeys.resourceView$displayName + "}")
+	public ResourceViewProjectSettings resourceView;
+
 }

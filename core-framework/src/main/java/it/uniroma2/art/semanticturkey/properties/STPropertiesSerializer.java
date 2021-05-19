@@ -24,14 +24,13 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 import javax.validation.Constraint;
 
-import org.apache.commons.lang3.RegExUtils;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
-import org.apache.commons.text.StringSubstitutor;
-import org.apache.http.util.TextUtils;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -46,7 +45,6 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.google.common.base.Strings;
 
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
@@ -174,18 +172,9 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 				Optional<EnumerationDescription> enumerationHolder = value.getEnumeration(prop);
 
 				if (enumerationHolder.isPresent()) {
-					gen.writeObjectFieldStart("enumeration");
 					EnumerationDescription enumeration = enumerationHolder.get();
 
-					gen.writeArrayFieldStart("values");
-					for (String val : enumeration.getValues()) {
-						gen.writeString(val);
-					}
-					gen.writeEndArray();
-
-					gen.writeBooleanField("open", enumeration.isOpen());
-
-					gen.writeEndObject();
+					writeEnumeration(gen, enumeration);
 				}
 
 				List<Annotation> constraints = selectConstraints(parAnnots, true);
@@ -213,6 +202,22 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 				| NoSuchSettingsManager e) {
 			throw new IOException(e);
 		}
+	}
+
+	private void writeEnumeration(JsonGenerator gen, EnumerationDescription enumeration) throws IOException {
+		List<String> values = enumeration.getValues();
+		boolean open = enumeration.isOpen();
+		gen.writeObjectFieldStart("enumeration");
+		gen.writeArrayFieldStart("values");
+
+		for (String val : values) {
+			gen.writeString(val);
+		}
+		gen.writeEndArray();
+
+		gen.writeBooleanField("open", open);
+
+		gen.writeEndObject();
 	}
 
 	/**
@@ -249,7 +254,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 				try {
 					effectiveSchema = (STProperties) ((Class<?>) annotatedType.getType()).newInstance();
 				} catch (InstantiationException | IllegalAccessException e) {
-					throw new IOException("Unable to istantiate property schema", e);
+					throw new IOException("Unable to instantiate property schema", e);
 				}
 			}
 			gen.writeObjectField("schema", effectiveSchema);
@@ -258,6 +263,11 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 		}
 		appendConstraints(constraints, gen, provider);
 
+		boolean isEnumerated = TypeUtils.isAssignable(annotatedType.getType(), Enum.class);
+		if (isEnumerated) {
+			EnumerationDescription enumerationDescription = new EnumerationDescription(Arrays.stream(((Class) annotatedType.getType()).getEnumConstants()).map(Object::toString).collect(toList()), false);
+			writeEnumeration(gen, enumerationDescription);
+		}
 		if (isParametricType) {
 			gen.writeArrayFieldStart("typeArguments");
 
@@ -397,6 +407,10 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 			return "Array";
 		}
 
+		// Java enums are treated as Strings with an associated list of enumerated options
+		if (TypeUtils.isAssignable(parType, Enum.class)) {
+			return "java.lang.String";
+		}
 		return typeName;
 	}
 

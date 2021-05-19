@@ -1,11 +1,36 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.Maps;
+import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.settings.core.CoreProjectSettings;
+import it.uniroma2.art.semanticturkey.settings.core.ResourceViewCustomSectionSettings;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.ContextStartedEvent;
+import org.springframework.context.event.ContextStoppedEvent;
 import org.springframework.stereotype.Component;
 
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
@@ -41,161 +66,164 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.Subte
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.TopConceptOfStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.TypesStatementConsumer;
 
+import javax.swing.plaf.nimbus.State;
+
 @Component
-public class StatementConsumerProvider {
-	private HashMap<RDFResourceRole, List<StatementConsumer>> role2template;
+public class StatementConsumerProvider implements ApplicationListener<ApplicationEvent> {
 
-	@Autowired
-	public StatementConsumerProvider(CustomFormManager customFormManager,
-			ObjectFactory<CODACoreProvider> codaProvider) {
-		TypesStatementConsumer typesStatementConsumer = new TypesStatementConsumer(customFormManager);
+    private static final Logger logger = LoggerFactory.getLogger(StatementConsumerProvider.class);
 
-		ClassAxiomsStatementConsumer classAxiomsStatementConsumer = new ClassAxiomsStatementConsumer(
-				customFormManager);
+    /**
+     * Event handlers used to listens for project events, such as opening and closing
+     */
+    private ProjectManager.ProjectEventHandler prjEventHandler;
 
-		DatatypeDefinitionsStatementConsumer datatypeDefinitionsStatementConsumer = new DatatypeDefinitionsStatementConsumer(
-				customFormManager);
+    private CustomFormManager customFormManager;
+    private SemanticTurkeyCoreSettingsManager coreSettingsManager;
 
-		LexicalizationsStatementConsumer lexicalizationsStatementConsumer = new LexicalizationsStatementConsumer(
-				customFormManager);
-		BroadersStatementConsumer broaderStatementConsumer = new BroadersStatementConsumer(customFormManager);
-		EquivalentPropertyStatementConsumer equivalentPropertyStatementConsumer = new EquivalentPropertyStatementConsumer(
-				customFormManager);
-		PropertyDisjointWithStatementConsumer propertyDisjointWithStatementConsumer = new PropertyDisjointWithStatementConsumer(
-				customFormManager);
-		SubPropertyOfStatementConsumer subPropertyOfStatementConsumer = new SubPropertyOfStatementConsumer(
-				customFormManager);
-		PropertyChainStatementConsumer propertyChainStatementConsumer = new PropertyChainStatementConsumer(
-				customFormManager);
-		PropertyFacetsStatementConsumer propertyFacetsStatementConsumer = new PropertyFacetsStatementConsumer(
-				customFormManager);
-		DomainsStatementConsumer domainsStatementConsumer = new DomainsStatementConsumer(customFormManager);
-		RangesStatementConsumer rangesStatementConsumer = new RangesStatementConsumer(customFormManager);
-		OntologyImportsStatementConsumer ontologyImportsStatementConsumer = new OntologyImportsStatementConsumer(
-				customFormManager);
-		OtherPropertiesStatementConsumer otherPropertiesStatementConsumer = new OtherPropertiesStatementConsumer(
-				customFormManager);
-		TopConceptOfStatementConsumer topConceptOfStatementConsumer = new TopConceptOfStatementConsumer(
-				customFormManager);
-		InSchemeStatementConsumer inSchemeStatementConsumer = new InSchemeStatementConsumer(
-				customFormManager);
-		SKOSCollectionMembersStatementConsumer skosCollectionMemberStatementConsumer = new SKOSCollectionMembersStatementConsumer(
-				customFormManager);
-		SKOSOrderedCollectionMembersStatementConsumer skosOrderedCollectionMembersStatementConsumer = new SKOSOrderedCollectionMembersStatementConsumer(
-				customFormManager);
-		LabelRelationsStatementConsumer labelRelationStatementConsumer = new LabelRelationsStatementConsumer(
-				customFormManager);
-		SKOSNotesStatementConsumer skosNotesStatementConsumer = new SKOSNotesStatementConsumer(
-				customFormManager);
-		LexicalFormsStatementConsumer lexicalFormsStatementConsumer = new LexicalFormsStatementConsumer(
-				customFormManager);
-		LexicalSensesStatementConsumer lexicalSensesStatementConsumer = new LexicalSensesStatementConsumer(
-				customFormManager);
-		DenotationsStatementConsumer denotationsStatementConsumer = new DenotationsStatementConsumer(
-				customFormManager);
-		EvokedLexicalConcepts evokedLexicalConcepts = new EvokedLexicalConcepts(customFormManager);
-		FormBasedPreviewStatementConsumer formBasedPreview = new FormBasedPreviewStatementConsumer(
-				customFormManager, codaProvider);
-		SubtermsStatementConsumer subtermsStatementConsumer = new SubtermsStatementConsumer(
-				customFormManager);
-		ConstituentsStatementConsumer constituentsStatementConsumer = new ConstituentsStatementConsumer(
-				customFormManager);
+    /**
+     * Statements consumers provided out of the box by Semantic Turkey. The {@code key} is the section name.
+     */
+    private Map<String, StatementConsumer> factoryStatementConsumers;
 
-		FormRepresentationsStatementConsumer representationsStatementConsumer = new FormRepresentationsStatementConsumer(
-				customFormManager);
+    /**
+     * Associates an (open) project with its resource view templates
+     */
+    private Map<String, Map<RDFResourceRole, List<StatementConsumer>>> project2templates;
 
-		RDFSMembersStatementConsumer rdfsMembersStatementConsumer = new RDFSMembersStatementConsumer(
-				customFormManager);
+    @Autowired
+    public StatementConsumerProvider(CustomFormManager customFormManager,
+                                     ObjectFactory<CODACoreProvider> codaProvider, SemanticTurkeyCoreSettingsManager coreSettingsManager) {
+        this.customFormManager = customFormManager;
+        this.coreSettingsManager = coreSettingsManager;
 
-		role2template = new HashMap<>();
-		role2template.put(RDFResourceRole.cls,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, classAxiomsStatementConsumer,
-						lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.dataRange,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, datatypeDefinitionsStatementConsumer,
-						lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.concept,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, topConceptOfStatementConsumer,
-						inSchemeStatementConsumer, broaderStatementConsumer, lexicalizationsStatementConsumer,
-						skosNotesStatementConsumer, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.property,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, equivalentPropertyStatementConsumer,
-						subPropertyOfStatementConsumer, propertyChainStatementConsumer,
-						propertyFacetsStatementConsumer, propertyDisjointWithStatementConsumer,
-						domainsStatementConsumer, rangesStatementConsumer, lexicalizationsStatementConsumer,
-						otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.objectProperty,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, equivalentPropertyStatementConsumer,
-						subPropertyOfStatementConsumer, propertyChainStatementConsumer,
-						propertyFacetsStatementConsumer, propertyDisjointWithStatementConsumer,
-						domainsStatementConsumer, rangesStatementConsumer, lexicalizationsStatementConsumer,
-						otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.datatypeProperty,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, equivalentPropertyStatementConsumer,
-						subPropertyOfStatementConsumer, propertyFacetsStatementConsumer,
-						propertyDisjointWithStatementConsumer, domainsStatementConsumer,
-						rangesStatementConsumer, lexicalizationsStatementConsumer,
-						otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.annotationProperty,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, subPropertyOfStatementConsumer,
-						domainsStatementConsumer, rangesStatementConsumer, lexicalizationsStatementConsumer,
-						otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.ontologyProperty,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, subPropertyOfStatementConsumer,
-						domainsStatementConsumer, rangesStatementConsumer, lexicalizationsStatementConsumer,
-						otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.conceptScheme,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, lexicalizationsStatementConsumer,
-						skosNotesStatementConsumer, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.ontology,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, lexicalizationsStatementConsumer,
-						ontologyImportsStatementConsumer, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.skosCollection,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, lexicalizationsStatementConsumer,
-						skosNotesStatementConsumer, skosCollectionMemberStatementConsumer,
-						otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.skosOrderedCollection,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, lexicalizationsStatementConsumer,
-						skosNotesStatementConsumer, skosOrderedCollectionMembersStatementConsumer,
-						otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.individual, Arrays.asList(typesStatementConsumer, formBasedPreview,
-				lexicalizationsStatementConsumer, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.xLabel,
-				Arrays.asList(typesStatementConsumer, formBasedPreview, labelRelationStatementConsumer,
-						skosNotesStatementConsumer, otherPropertiesStatementConsumer));
+        factoryStatementConsumers = new LinkedHashMap<>();
+        factoryStatementConsumers.put("types", new TypesStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("classaxioms", new ClassAxiomsStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("datatypeDefinitions", new DatatypeDefinitionsStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("lexicalizations", new LexicalizationsStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("broaders", new BroadersStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("equivalentProperties", new EquivalentPropertyStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("disjointProperties", new PropertyDisjointWithStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("superproperties", new SubPropertyOfStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("subPropertyChains", new PropertyChainStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("facets", new PropertyFacetsStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("domains", new DomainsStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("ranges", new RangesStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("imports", new OntologyImportsStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("properties", new OtherPropertiesStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("topconceptof", new TopConceptOfStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("schemes", new InSchemeStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("members", new SKOSCollectionMembersStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("membersOrdered", new SKOSOrderedCollectionMembersStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("labelRelations", new LabelRelationsStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("notes", new SKOSNotesStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("lexicalForms", new LexicalFormsStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("lexicalSenses", new LexicalSensesStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("denotations", new DenotationsStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("evokedLexicalConcepts", new EvokedLexicalConcepts(customFormManager));
+        factoryStatementConsumers.put("formBasedPreview", new FormBasedPreviewStatementConsumer(customFormManager, codaProvider));
+        factoryStatementConsumers.put("subterms", new SubtermsStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("constituents", new ConstituentsStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("formRepresentations", new FormRepresentationsStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("rdfsMembers", new RDFSMembersStatementConsumer(customFormManager));
 
-		role2template.put(RDFResourceRole.ontolexLexicalEntry, Arrays.asList(typesStatementConsumer,
-				lexicalFormsStatementConsumer, subtermsStatementConsumer, constituentsStatementConsumer,
-				rdfsMembersStatementConsumer, formBasedPreview, lexicalSensesStatementConsumer,
-				denotationsStatementConsumer, evokedLexicalConcepts, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.ontolexForm, Arrays.asList(typesStatementConsumer,
-				representationsStatementConsumer, formBasedPreview, otherPropertiesStatementConsumer));
-		role2template.put(RDFResourceRole.ontolexLexicalSense,
-				Arrays.asList(typesStatementConsumer, otherPropertiesStatementConsumer));
+        project2templates = new HashMap<>();
+    }
 
-	}
+    @Override
+    public void onApplicationEvent(ApplicationEvent event) {
+        if (event instanceof ContextStoppedEvent || event instanceof ContextClosedEvent
+                || event instanceof ContextRefreshedEvent) {
+            if (prjEventHandler != null) {
+                ProjectManager.unregisterProjectEventHandler(prjEventHandler);
+                prjEventHandler = null;
+            }
+        }
 
-	public List<StatementConsumer> getTemplateForResourceRole(RDFResourceRole role) {
-		if (role.isProperty()) {
-			if (RDFResourceRole.subsumes(RDFResourceRole.objectProperty, role)) {
-				return role2template.get(RDFResourceRole.objectProperty);
-			} else if (RDFResourceRole.subsumes(RDFResourceRole.datatypeProperty, role)) {
-				return role2template.get(RDFResourceRole.datatypeProperty);
-			} else if (RDFResourceRole.subsumes(RDFResourceRole.ontologyProperty, role)) {
-				return role2template.get(RDFResourceRole.ontologyProperty);
-			} else if (RDFResourceRole.subsumes(RDFResourceRole.annotationProperty, role)) {
-				return role2template.get(RDFResourceRole.annotationProperty);
-			} else {
-				return role2template.get(RDFResourceRole.property);
-			}
-		} else {
-			List<StatementConsumer> result = role2template.get(role);
+        if (event instanceof ContextStartedEvent || event instanceof ContextRefreshedEvent) {
+            prjEventHandler = new ProjectManager.ProjectEventHandler() {
 
-			if (result != null) {
-				return result;
-			} else {
-				return role2template.get(RDFResourceRole.individual);
-			}
-		}
-	}
+                @Override
+                public void beforeProjectTearDown(Project project) {
+                    unregisterProject(project);
+                }
+
+                @Override
+                public void afterProjectInitialization(Project project) {
+                    registerProject(project);
+                }
+            };
+            ProjectManager.registerProjectEventHandler(prjEventHandler);
+        }
+    }
+
+    private void registerProject(Project project) {
+        try {
+            CoreProjectSettings coreProjectSettings = coreSettingsManager.getProjectSettings(project);
+
+            Map<String, ResourceViewCustomSectionSettings> customSectionsSettings = Optional.ofNullable(coreProjectSettings.resourceView).map(s -> s.customSections).orElse(Collections.emptyMap());
+            Map<RDFResourceRole, List<String>> templatesSettings = Optional.ofNullable(coreProjectSettings.resourceView).map(s -> s.templates).orElse(Collections.emptyMap());
+
+            Map<String, StatementConsumer> customSections = customSectionsSettings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> new AbstractPropertyMatchingStatementConsumer(customFormManager, entry.getKey(), entry.getValue().matchedProperties)));
+
+            Map<RDFResourceRole, List<StatementConsumer>> projectTemplates = new HashMap<>();
+
+            for (Map.Entry<RDFResourceRole, List<String>> entry : templatesSettings.entrySet()) {
+                RDFResourceRole resourceRole = entry.getKey();
+                List<String> roleTemplateSections = entry.getValue();
+
+                // resolve sections names against factory ones and then against custom ones. Skip invalid sections
+
+                List<StatementConsumer> roleTemplate = roleTemplateSections.stream().map(s -> factoryStatementConsumers.getOrDefault(s, customSections.get(s))).filter(Objects::nonNull).collect(Collectors.toList());
+
+                projectTemplates.put(resourceRole, roleTemplate);
+            }
+
+            project2templates.put(project.getName(), projectTemplates);
+        } catch (Exception e) {
+            logger.error("Unable to register the newly opened project: " + project.getName(), e);
+        }
+
+    }
+
+    private void unregisterProject(Project project) {
+        project2templates.remove(project.getName());
+    }
+
+
+    public List<StatementConsumer> getTemplateForResourceRole(Project project, RDFResourceRole role) {
+        // there should always be an entry of (open) project
+        Map<RDFResourceRole, List<StatementConsumer>> role2template = project2templates.getOrDefault(project.getName(), Collections.emptyMap());
+
+        List<StatementConsumer> template = null;
+
+        if (role.isProperty()) {
+            if (RDFResourceRole.subsumes(RDFResourceRole.objectProperty, role)) {
+                template = role2template.get(RDFResourceRole.objectProperty);
+            }
+
+            if (template != null && RDFResourceRole.subsumes(RDFResourceRole.datatypeProperty, role)) {
+                template = role2template.get(RDFResourceRole.datatypeProperty);
+            }
+            if (template != null && RDFResourceRole.subsumes(RDFResourceRole.ontologyProperty, role)) {
+                template = role2template.get(RDFResourceRole.ontologyProperty);
+            }
+            if (template != null && RDFResourceRole.subsumes(RDFResourceRole.annotationProperty, role)) {
+                template = role2template.get(RDFResourceRole.annotationProperty);
+            }
+            if (template != null)  {
+                template = role2template.get(RDFResourceRole.property);
+            }
+        } else {
+            template = role2template.get(role);
+        }
+
+        if (template != null) {
+            return template;
+        } else {
+            // if no template has been found, fallback to the one for individuals. If this is not defined (e.g. corrupted settings), fallback to a simple properties listing
+            return role2template.getOrDefault(RDFResourceRole.individual, Arrays.asList(factoryStatementConsumers.get("properties")));
+        }
+    }
 }

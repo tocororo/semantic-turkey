@@ -86,9 +86,12 @@ import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -384,6 +387,22 @@ public class UpdateRoutines {
 		File oldCoreProjectSettingsDefaultFile = STPropertiesManager.getProjectSettingsDefaultsFile("it.uniroma2.art.semanticturkey");
 		File newCoreProjectSettingsDefaultFile = STPropertiesManager.getProjectSettingsDefaultsFile(SemanticTurkeyCoreSettingsManager.class.getName());
 		alignFrom90to10_upgradeCoreProjectSettings(om, oldCoreProjectSettingsDefaultFile, newCoreProjectSettingsDefaultFile);
+
+		JsonNode coreProjectSettingsFactorySystemDefaults = om.readTree(UpdateRoutines.class.getResource("/it/uniroma2/art/semanticturkey/properties/" + SemanticTurkeyCoreSettingsManager.class.getName() + "/project-settings-defaults.props"));
+		JsonNode resViewProjectSettingsFactoryDefaults = coreProjectSettingsFactorySystemDefaults.get("resourceView"); // this fields didn't exist before. So let just copy it
+
+		ObjectNode newCoreProjectSettingsDefault;
+
+		if (newCoreProjectSettingsDefaultFile.isFile()) {
+			try (Reader reader = new InputStreamReader(new FileInputStream(newCoreProjectSettingsDefaultFile),
+					StandardCharsets.UTF_8)) {
+				newCoreProjectSettingsDefault = (ObjectNode) om.readTree(reader);
+			}
+		} else {
+			newCoreProjectSettingsDefault = om.createObjectNode();
+		}
+		newCoreProjectSettingsDefault.set("resourceView", resViewProjectSettingsFactoryDefaults);
+		STPropertiesManager.storeObjectNodeInYAML(newCoreProjectSettingsDefault, newCoreProjectSettingsDefaultFile);
 
 		for (File userDir : Resources.getUsersDir()
 				.listFiles((FileFilter) DirectoryFileFilter.DIRECTORY)) {

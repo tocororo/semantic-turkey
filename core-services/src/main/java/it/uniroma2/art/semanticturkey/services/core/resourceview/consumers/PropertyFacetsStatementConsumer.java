@@ -71,6 +71,7 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 		return Sets.union(inverseOfMatcher.getMatchedProperties(), Sets.newHashSet(RDF.TYPE, OWL.INVERSEOF));
 	}
 
+
 	@Override
 	public Map<String, ResourceViewSection> consumeStatements(Project project, RepositoryConnection repoConn,
 			ResourcePosition resourcePosition, Resource resource, Model statements,

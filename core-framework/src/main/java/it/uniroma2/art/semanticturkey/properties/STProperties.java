@@ -11,6 +11,7 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -19,12 +20,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
 
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.rdf4j.model.Value;
@@ -466,19 +469,21 @@ public interface STProperties {
     default Object convertToPropertValue(Type type, Object value) {
         if (type == Boolean.class || type == boolean.class) {
             value = Boolean.parseBoolean((String) value);
-        } else if (type == Long.class || type == long.class)
+        } else if (type == Long.class || type == long.class) {
             value = Long.parseLong((String) value);
-        else if (type == Integer.class || type == int.class)
+        } else if (type == Integer.class || type == int.class) {
             value = Integer.parseInt((String) value);
-        else if (type == Double.class || type == double.class)
+        } else if (type == Double.class || type == double.class) {
             value = Double.parseDouble((String) value);
-        else if (TypeUtils.isAssignable(type, Value.class)) {
+        } else if (TypeUtils.isAssignable(type, Value.class)) {
             value = NTriplesUtil.parseValue((String) value, SimpleValueFactory.getInstance());
             if (!((Class<?>) type).isInstance(value)) {
                 throw new IllegalArgumentException("The provided value \"" + value
                         + "\" is not a serialization of an RDF4J " + ((Class<?>) type).getSimpleName());
             }
 
+        } else if (TypeUtils.isAssignable(type, Enum.class)) {
+            value = EnumUtils.getEnum((Class)type, (String)value);
         }
         return value;
     }
@@ -501,7 +506,7 @@ public interface STProperties {
     }
 
     /**
-     * Tells if the property with given {@code id} is enumerated (see {@link Enumeration}).
+     * Tells if the property with given {@code id} is enumerated: either its type is an enum (see {@link #getPropertyType(String)}) or it is annotated with {@link Enumeration}.
      *
      * @param id
      * @return
@@ -509,6 +514,8 @@ public interface STProperties {
      */
     default boolean isEnumerated(String id) throws PropertyNotFoundException {
         try {
+            if (TypeUtils.isAssignable(getPropertyType(id), Enum.class)) return true;
+
             Field field = this.getClass().getField(id);
             return field.isAnnotationPresent(it.uniroma2.art.semanticturkey.properties.Enumeration.class);
         } catch (NoSuchFieldException | SecurityException e) {
@@ -523,15 +530,20 @@ public interface STProperties {
      * @return
      */
     default Optional<EnumerationDescription> getEnumeration(String id) throws PropertyNotFoundException {
-        getPropertyDescription(id); // just used to check the existence of the property
-        try {
-            Field field = this.getClass().getField(id);
-            return Optional
-                    .ofNullable(
-                            field.getAnnotation(it.uniroma2.art.semanticturkey.properties.Enumeration.class))
-                    .map(EnumerationDescription::fromAnnotation);
-        } catch (NoSuchFieldException | SecurityException e) {
-            return Optional.empty();
+        Type propertyType = getPropertyType(id);
+        if (TypeUtils.isAssignable(propertyType, Enum.class)) {
+            return Optional.of(new EnumerationDescription(Arrays.stream(((Class) propertyType).getEnumConstants()).map(Object::toString).collect(Collectors.toList()), false));
+        } else {
+            try {
+
+                Field field = this.getClass().getField(id);
+                return Optional
+                        .ofNullable(
+                                field.getAnnotation(it.uniroma2.art.semanticturkey.properties.Enumeration.class))
+                        .map(EnumerationDescription::fromAnnotation);
+            } catch (NoSuchFieldException | SecurityException e) {
+                return Optional.empty();
+            }
         }
     }
 

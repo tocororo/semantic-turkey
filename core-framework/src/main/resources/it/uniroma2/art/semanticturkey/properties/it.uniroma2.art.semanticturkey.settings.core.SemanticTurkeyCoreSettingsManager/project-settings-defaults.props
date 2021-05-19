@@ -125,3 +125,133 @@ languages:
   tag: vi
 - name: Chinese
   tag: zh
+resourceView:
+  templates:
+    cls:
+    - types
+    - formBasedPreview
+    - classaxioms
+    - lexicalizations
+    - properties
+    dataRange:
+    - types
+    - formBasedPreview
+    - datatypeDefinitions
+    - lexicalizations
+    - properties
+    concept:
+    - types
+    - formBasedPreview
+    - topconceptof
+    - schemes
+    - broaders
+    - lexicalizations
+    - notes
+    - properties
+    property:
+    - types
+    - formBasedPreview
+    - equivalentProperties
+    - superproperties
+    - subPropertyChains
+    - facets
+    - disjointProperties
+    - domains
+    - ranges
+    - lexicalizations
+    - properties
+    objectProperty:
+    - types
+    - formBasedPreview
+    - equivalentProperties
+    - superproperties
+    - subPropertyChains
+    - facets
+    - disjointProperties
+    - domains
+    - ranges
+    - lexicalizations
+    - properties
+    datatypeProperty:
+    - types
+    - formBasedPreview
+    - equivalentProperties
+    - superproperties
+    - facets
+    - disjointProperties
+    - domains
+    - ranges
+    - lexicalizations
+    - properties
+    annotationProperty:
+    - types
+    - formBasedPreview
+    - superproperties
+    - domains
+    - ranges
+    - lexicalizations
+    - properties
+    ontologyProperty:
+    - types
+    - formBasedPreview
+    - superproperties
+    - domains
+    - ranges
+    - lexicalizations
+    - properties
+    conceptScheme:
+    - types
+    - formBasedPreview
+    - lexicalizations
+    - notes
+    - properties
+    ontology:
+    - types
+    - formBasedPreview
+    - lexicalizations
+    - imports
+    - properties
+    skosCollection:
+    - types
+    - formBasedPreview
+    - lexicalizations
+    - notes
+    - members
+    - properties
+    skosOrderedCollection:
+    - types
+    - formBasedPreview
+    - lexicalizations
+    - notes
+    - membersOrdered
+    - properties
+    individual:
+    - types
+    - formBasedPreview
+    - lexicalizations
+    - properties
+    xLabel:
+    - types
+    - formBasedPreview
+    - labelRelations
+    - notes
+    - properties
+    ontolexLexicalEntry:
+    - types
+    - lexicalForms
+    - subterms
+    - constituents
+    - rdfsMembers
+    - formBasedPreview
+    - lexicalSenses
+    - denotations
+    - evokedLexicalConcepts
+    - properties
+    ontolexForm:
+    - types
+    - formRepresentations
+    - formBasedPreview
+    - properties
+    ontolexLexicalSense:
+    - types
+    - properties

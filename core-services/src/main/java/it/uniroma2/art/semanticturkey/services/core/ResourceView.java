@@ -243,7 +243,7 @@ public class ResourceView extends STServiceAdapter {
 			description.put("resource", new ResourceSection(annotatedResource));
 
 			List<StatementConsumer> viewTemplate = statementConsumerProvider
-					.getTemplateForResourceRole(resourceRole);
+					.getTemplateForResourceRole(project, resourceRole);
 
 			Set<IRI> specialProperties = viewTemplate.stream().flatMap(c -> c.getMatchedProperties().stream())
 					.collect(toSet());
