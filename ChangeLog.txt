@@ -12,6 +12,7 @@ date: dd/mm/yyyy
   * in Sheet2RDF extended support for triples deletion
   * added Scottish Gaelic and Welsh to the system languages
   * turned OperationOnResourceDeniedException into a RuntimeException as it may be thrown from an interceptor
+  * made the configuration of rendering engines more user friendly (i.e. renaming ${languages} to ${userLangs} and ${show} to ${labels})
   * updated dependency on Coda 1.7.2
   * updated dependency on Sheet2RDF 4.2.0
   * updated dependency on MAPLE 0.0.8

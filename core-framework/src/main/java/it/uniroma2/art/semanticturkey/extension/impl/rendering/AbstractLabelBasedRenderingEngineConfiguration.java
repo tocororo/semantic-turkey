@@ -8,6 +8,8 @@ import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 public abstract class AbstractLabelBasedRenderingEngineConfiguration implements Configuration {
 
+	public static final String USER_LANGS_VAR = "userLangs";
+
 	public static class MessageKeys {
 		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.rendering.AbstractLabelBasedRenderingEngineConfiguration";
 
@@ -25,7 +27,7 @@ public abstract class AbstractLabelBasedRenderingEngineConfiguration implements 
 
 	@STProperty(description = "{" + MessageKeys.languages$description + "}", displayName = "{"
 			+ MessageKeys.languages$displayName + "}")
-	public String languages = "${" + STPropertiesManager.PREF_LANGUAGES + "}";
+	public String languages = "${" + USER_LANGS_VAR + "}";
 
 	@STProperty(description = "{" + MessageKeys.template$description + "}", displayName = "{"
 			+ MessageKeys.template$displayName + "}")

@@ -69,6 +69,8 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
 
 public abstract class BaseRenderingEngine implements RenderingEngine {
 
+	private static final String OLD_LANGUAGES_VAR = "languages";
+
 	private boolean fallbackToTerm;
 	private AbstractLabelBasedRenderingEngineConfiguration conf;
 	protected String languages;
@@ -82,7 +84,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 			.compile("(?<!\\\\)(\\\\\\\\)*(?<splitter>,)");
 
 	private static final Pattern propPattern = Pattern
-			.compile("\\$\\{" + Pattern.quote(STPropertiesManager.PREF_LANGUAGES) + "\\}");
+			.compile("\\$\\{(" + AbstractLabelBasedRenderingEngineConfiguration.USER_LANGS_VAR + "|" + OLD_LANGUAGES_VAR + ")\\}");
 
 	private static enum ValueStatus {
 		ADDED, REMOVED, COMMITTED;
@@ -330,7 +332,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 			if (renderings.get(resource) != null)
 				return;
 
-			String show;
+			String labelsVar;
 
 			if (rawLabelLiteral != null && !rawLabelLiteral.getLabel().isEmpty()) {
 				Matcher matcher = rawLabelDestructuringPattern.matcher(rawLabelLiteral.getLabel());
@@ -382,16 +384,19 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 				}
 
-				show = sb.toString();
+				labelsVar = sb.toString();
 			} else {
-				show = null;
+				labelsVar = null;
 			}
+
+			String show = labelsVar;
 
 			if (template != null) {
 				Map<String, Value> variableValues = new HashMap<>();
 
-				if (show != null && !show.isEmpty()) {
-					variableValues.put("show", vf.createLiteral(show));
+				if (labelsVar != null && !labelsVar.isEmpty()) {
+					variableValues.put("show", vf.createLiteral(labelsVar)); // maintain the old variable name for backward compatibility
+					variableValues.put("labels", vf.createLiteral(labelsVar)); // forward compatible as existing user-defined variable will override it
 				}
 
 				for (String bindingName : bindingSet.getBindingNames()) {

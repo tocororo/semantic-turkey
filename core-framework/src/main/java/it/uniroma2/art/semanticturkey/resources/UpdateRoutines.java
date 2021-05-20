@@ -446,18 +446,19 @@ public class UpdateRoutines {
 
 	private static void alignFrom90to10_upgradeRenderingEnginePUSettings(ObjectMapper om, File renderingEnginePUSettingsFile) throws IOException {
 		if (renderingEnginePUSettingsFile.isFile()) {
-			Properties properties;
 			try {
-				properties = new Properties();
-				try (FileInputStream fis = new FileInputStream(renderingEnginePUSettingsFile)) {
-					properties.load(fis);
+				JsonNode tree = om.readTree(new FileInputStream(renderingEnginePUSettingsFile));
+				if (tree == null || tree.isObject()) {
+					return; // if it has been possible to read an object, then the file has already been converted to YAML
 				}
 			} catch (IOException e) {
-				//If the update routine has already been done previously, the load of the properties file
-				//(which is now YAML) would raise an IOException. In case just catch it and do nothing
-				return;
+				// If reading the YAML file fails, assumes that it is still a properties file
 			}
-
+			Properties properties;
+			properties = new Properties();
+			try (FileInputStream fis = new FileInputStream(renderingEnginePUSettingsFile)) {
+				properties.load(fis);
+			}
 
 			ValueFactory vf = SimpleValueFactory.getInstance();
 

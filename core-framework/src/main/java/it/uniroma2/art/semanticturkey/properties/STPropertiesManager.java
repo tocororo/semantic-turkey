@@ -66,8 +66,6 @@ public class STPropertiesManager {
 
     private static final String PROJECT_SETTINGS_DEFAULTS_FILE_NAME = "project-settings-defaults.props";
 
-    public static final String PREF_LANGUAGES = "languages";
-
     public static final String SETTINGS_TYPE_PROPERTY = "@type";
 
     /*
