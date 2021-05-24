@@ -2,10 +2,14 @@ package it.uniroma2.art.semanticturkey.settings;
 
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
+import it.uniroma2.art.semanticturkey.extension.settings.impl.SettingsSupport;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.resources.Scope;
+import it.uniroma2.art.semanticturkey.settings.events.SettingsDefaultsUpdated;
+import it.uniroma2.art.semanticturkey.settings.events.SettingsUpdated;
 import it.uniroma2.art.semanticturkey.user.UsersGroup;
 import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 
@@ -34,6 +38,7 @@ public interface PGSettingsManager<T extends Settings> extends SettingsManager
     default void storeProjectSettings(Project project, UsersGroup group, T settings)
             throws STPropertyUpdateException {
         STPropertiesManager.setPGSettings(settings, project, group, getId(), true);
+        SettingsSupport.getEventPublisher().publishEvent(new SettingsUpdated(this, project, null, group, Scope.PROJECT_GROUP, settings));
     }
 
 }

@@ -147,6 +147,10 @@
 	<bean
 		class="it.uniroma2.art.semanticturkey.event.support.CrossContextPropagationEventListener" />
 
+	<!-- Enables annotation based event listeners -->
+	<bean
+			class="it.uniroma2.art.semanticturkey.event.annotation.EventListenerAnnotationBeanPostProcessor" />
+
 	<bean
 		class="it.uniroma2.art.semanticturkey.customservice.CustomServiceHandlerMapping"
 		id="customServiceHandlerMapping" />

@@ -14,6 +14,7 @@ import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.settings.PGSettingsManager;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersGroup;
+import org.osgi.application.ApplicationContext;
 
 /**
  * @author Manuel Fiorelli &lt;fiorelli@info.uniroma2.it&gt;

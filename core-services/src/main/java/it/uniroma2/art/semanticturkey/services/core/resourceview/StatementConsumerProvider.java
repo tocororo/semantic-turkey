@@ -8,19 +8,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Maps;
-import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.event.annotation.EventListener;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.settings.core.CoreProjectSettings;
 import it.uniroma2.art.semanticturkey.settings.core.ResourceViewCustomSectionSettings;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
-import org.apache.commons.lang3.EnumUtils;
-import org.apache.commons.lang3.ObjectUtils;
+import it.uniroma2.art.semanticturkey.settings.events.SettingsDefaultsUpdated;
+import it.uniroma2.art.semanticturkey.settings.events.SettingsEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectFactory;
@@ -66,7 +66,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.Subte
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.TopConceptOfStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.TypesStatementConsumer;
 
-import javax.swing.plaf.nimbus.State;
+import javax.annotation.Nullable;
 
 @Component
 public class StatementConsumerProvider implements ApplicationListener<ApplicationEvent> {
@@ -89,7 +89,7 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
     /**
      * Associates an (open) project with its resource view templates
      */
-    private Map<String, Map<RDFResourceRole, List<StatementConsumer>>> project2templates;
+    private ConcurrentHashMap<String, Map<RDFResourceRole, List<StatementConsumer>>> project2templates;
 
     @Autowired
     public StatementConsumerProvider(CustomFormManager customFormManager,
@@ -128,7 +128,7 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
         factoryStatementConsumers.put("formRepresentations", new FormRepresentationsStatementConsumer(customFormManager));
         factoryStatementConsumers.put("rdfsMembers", new RDFSMembersStatementConsumer(customFormManager));
 
-        project2templates = new HashMap<>();
+        project2templates = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -160,41 +160,70 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
 
     private void registerProject(Project project) {
         try {
-            CoreProjectSettings coreProjectSettings = coreSettingsManager.getProjectSettings(project);
-
-            Map<String, ResourceViewCustomSectionSettings> customSectionsSettings = Optional.ofNullable(coreProjectSettings.resourceView).map(s -> s.customSections).orElse(Collections.emptyMap());
-            Map<RDFResourceRole, List<String>> templatesSettings = Optional.ofNullable(coreProjectSettings.resourceView).map(s -> s.templates).orElse(Collections.emptyMap());
-
-            Map<String, StatementConsumer> customSections = customSectionsSettings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> new AbstractPropertyMatchingStatementConsumer(customFormManager, entry.getKey(), entry.getValue().matchedProperties)));
-
-            Map<RDFResourceRole, List<StatementConsumer>> projectTemplates = new HashMap<>();
-
-            for (Map.Entry<RDFResourceRole, List<String>> entry : templatesSettings.entrySet()) {
-                RDFResourceRole resourceRole = entry.getKey();
-                List<String> roleTemplateSections = entry.getValue();
-
-                // resolve sections names against factory ones and then against custom ones. Skip invalid sections
-
-                List<StatementConsumer> roleTemplate = roleTemplateSections.stream().map(s -> factoryStatementConsumers.getOrDefault(s, customSections.get(s))).filter(Objects::nonNull).collect(Collectors.toList());
-
-                projectTemplates.put(resourceRole, roleTemplate);
-            }
-
+            Map<RDFResourceRole, List<StatementConsumer>> projectTemplates = computeTemplatesForProject(project);
             project2templates.put(project.getName(), projectTemplates);
         } catch (Exception e) {
             logger.error("Unable to register the newly opened project: " + project.getName(), e);
         }
+    }
 
+    private Map<RDFResourceRole, List<StatementConsumer>> computeTemplatesForProject(Project project) throws it.uniroma2.art.semanticturkey.properties.STPropertyAccessException {
+        CoreProjectSettings coreProjectSettings = coreSettingsManager.getProjectSettings(project);
+
+        Map<String, ResourceViewCustomSectionSettings> customSectionsSettings = Optional.ofNullable(coreProjectSettings.resourceView).map(s -> s.customSections).orElse(Collections.emptyMap());
+        Map<RDFResourceRole, List<String>> templatesSettings = Optional.ofNullable(coreProjectSettings.resourceView).map(s -> s.templates).orElse(Collections.emptyMap());
+
+        Map<String, StatementConsumer> customSections = customSectionsSettings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> new AbstractPropertyMatchingStatementConsumer(customFormManager, entry.getKey(), entry.getValue().matchedProperties)));
+
+        Map<RDFResourceRole, List<StatementConsumer>> projectTemplates = new HashMap<>();
+
+        for (Map.Entry<RDFResourceRole, List<String>> entry : templatesSettings.entrySet()) {
+            RDFResourceRole resourceRole = entry.getKey();
+            List<String> roleTemplateSections = entry.getValue();
+
+            // resolve sections names against factory ones and then against custom ones. Skip invalid sections
+
+            List<StatementConsumer> roleTemplate = roleTemplateSections.stream().map(s -> factoryStatementConsumers.getOrDefault(s, customSections.get(s))).filter(Objects::nonNull).collect(Collectors.toList());
+
+            projectTemplates.put(resourceRole, roleTemplate);
+        }
+        return projectTemplates;
     }
 
     private void unregisterProject(Project project) {
         project2templates.remove(project.getName());
     }
 
+    @EventListener
+    public void onSettingsUpdated(SettingsEvent event) {
+        // skips events not related to the core settings
+        if (!Objects.equals(event.getSettingsManager().getId(), SemanticTurkeyCoreSettingsManager.class.getName())) return;
+
+        // skips events not related to the project settings (or their defaults)
+        if (!Objects.equals(event.getScope(), Scope.PROJECT)) return;
+
+        // defaults updated, then clear all templates to be sure
+        if (event instanceof SettingsDefaultsUpdated) {
+            project2templates.clear();
+        }
+
+        // otherwise, we are setting a project template, so just clear the associated template
+
+        project2templates.remove(event.getProject().getName());
+    }
 
     public List<StatementConsumer> getTemplateForResourceRole(Project project, RDFResourceRole role) {
         // there should always be an entry of (open) project
-        Map<RDFResourceRole, List<StatementConsumer>> role2template = project2templates.getOrDefault(project.getName(), Collections.emptyMap());
+
+        @Nullable
+        Map<RDFResourceRole, List<StatementConsumer>> role2template = project2templates.computeIfAbsent(project.getName(), projectName -> {
+            try {
+                return computeTemplatesForProject(project);
+            } catch (STPropertyAccessException e) {
+                logger.error("Unable to build the template for the project project: " + project.getName(), e);
+                return Collections.emptyMap();
+            }
+        });
 
         List<StatementConsumer> template = null;
 
