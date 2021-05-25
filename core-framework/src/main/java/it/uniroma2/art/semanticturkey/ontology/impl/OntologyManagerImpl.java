@@ -531,8 +531,8 @@ public class OntologyManagerImpl implements OntologyManager {
 				}
 			}
 
-			System.out.println("path is=" + url.getPath() + "  // rdformat="
-					+ Rio.getParserFormatForFileName(url.getPath()));
+			//System.out.println("path is=" + url.getPath() + "  // rdformat="
+			//		+ Rio.getParserFormatForFileName(url.getPath()));
 			rdfFormat = OptionalUtils
 					.firstPresent(Optional.ofNullable(mimeType).flatMap(Rio::getParserFormatForMIMEType),
 							Rio.getParserFormatForFileName(url.getPath()))

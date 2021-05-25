@@ -1,5 +1,6 @@
 version 10.0
 date: dd/mm/yyyy
+  * added file from http://prefix.cc/ containing most used prefix-namespace to resolve most used namespaces 
   * added the Spreadsheet lifter to load data from a spreadsheet
   * update core settings to the new settings management framework (including the use of YAML to persist them)
   * upgrade the PUSettings of the RenderingEngine extension point to the new framework (including the use of YAML to persist them)

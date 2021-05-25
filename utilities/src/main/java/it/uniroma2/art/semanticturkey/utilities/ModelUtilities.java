@@ -1,9 +1,15 @@
 package it.uniroma2.art.semanticturkey.utilities;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.axis.types.NCName;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -11,11 +17,15 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.Namespaces;
-
-import com.github.jsonldjava.shaded.com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ModelUtilities {
+
+	protected static Logger logger = LoggerFactory.getLogger(ModelUtilities.class);
+
+	private static String fileResourcesLocation = "it/uniroma2/art/semanticturkey/prefixes/";
+	private static String prefiFileLocation = fileResourcesLocation + "prefixCC.json";
 
 	/**
 	 * given namespace <code>namespace</code>, this tries to automatically suggest a prefix for it
@@ -26,6 +36,20 @@ public class ModelUtilities {
 	public static String guessPrefix(String namespace) {
 		int lowerCutIndex;
 		String tempString;
+		String prefix=null;
+
+		//first try to get the prefix from the file taken by prefix.cc via http://prefix.cc/popular/all.file.json
+		try {
+			prefix = getPrefixFromNamespaceFile(namespace);
+		} catch (IOException e) {
+			//there was a problem in reading the file, so set the prefix to null
+			prefix = null;
+			logger.error("Problem with the prefixCC file: "+e.getMessage());
+		}
+		if(prefix!=null && !prefix.isEmpty() && isPrefixSyntValid(prefix)) {
+			return prefix;
+		}
+		// the prefix was not found in the prefix-namespace file, so try to automatically generate one
 
 		if (namespace.endsWith("/") || namespace.endsWith("#"))
 			tempString = namespace.substring(0, namespace.length() - 1);
@@ -42,8 +66,67 @@ public class ModelUtilities {
 		else
 			lowerCutIndex = slashLowerCutIndex;
 
-		String prefix = tempString.substring(lowerCutIndex + 1);
+		prefix = tempString.substring(lowerCutIndex + 1);
 		return isPrefixSyntValid(prefix) ? prefix : null;
+	}
+
+	public static String getNamespaceFormPrefixFromFile(String prefix) throws  IOException {
+		return getPrefixOrNamespaceFromFile(prefix, null);
+	}
+
+	public static String getPrefixFromNamespaceFile(String namespace) throws IOException {
+		return getPrefixOrNamespaceFromFile(null, namespace);
+	}
+
+	private static String getPrefixOrNamespaceFromFile(String prefix, String namespace) {
+		if(prefix == null && namespace == null){
+			return null;
+		} else if(prefix != null && namespace !=null){
+			return null;
+		}
+
+		StringBuffer sb = new StringBuffer();
+		//try (BufferedReader reader = new BufferedReader(new FileReader(prefiFileLocation))) {
+
+		try (BufferedReader reader = new BufferedReader(
+				new InputStreamReader(Objects.requireNonNull(
+						ModelUtilities.class.getClassLoader().getResourceAsStream(prefiFileLocation))))) {
+			String currentLine;
+			while ((currentLine = reader.readLine()) != null) {
+				sb.append("\n").append(currentLine);
+			}
+		} catch (IOException e) {
+			logger.error("Problem with reading the prefixCC file: "+e.getMessage());
+			return null;
+		}
+
+		ObjectNode objectNode = null;
+		try {
+			objectNode = (ObjectNode) new ObjectMapper().readTree(sb.toString());
+		} catch (IOException e) {
+			logger.error("Problem with parsing the prefixCC JSON file: "+e.getMessage());
+			return null;
+		}
+		//now iterate over the elements (prefix/namespace) read from the file
+		String foundText = null;
+		for (Iterator<String> it = objectNode.fieldNames(); it.hasNext(); ) {
+			String prefixFile = it.next();
+			String namespaceFile = objectNode.get(prefixFile).asText();
+			if(prefix != null) {
+				if(prefix.equals(prefixFile)){
+					foundText = namespaceFile;
+				}
+			} else {
+				if(namespace.equals(namespaceFile)) {
+					foundText = prefixFile;
+				}
+			}
+			if(foundText!=null){
+				//found what was seraching for, so stop reading the data
+				return foundText;
+			}
+		}
+		return  null;
 	}
 
 	/**
@@ -105,8 +188,6 @@ public class ModelUtilities {
 	 * {@link SimpleValueFactory}.
 	 * 
 	 * @param value
-	 * @param prefixDeclarations
-	 * @param vf
 	 * @return
 	 */
 	public static Literal toLiteral(Value value) {
