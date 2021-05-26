@@ -205,11 +205,10 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
         // defaults updated, then clear all templates to be sure
         if (event instanceof SettingsDefaultsUpdated) {
             project2templates.clear();
+        } else {
+            // otherwise, we are setting a project template, so just clear the associated template
+            project2templates.remove(event.getProject().getName());
         }
-
-        // otherwise, we are setting a project template, so just clear the associated template
-
-        project2templates.remove(event.getProject().getName());
     }
 
     public List<StatementConsumer> getTemplateForResourceRole(Project project, RDFResourceRole role) {
