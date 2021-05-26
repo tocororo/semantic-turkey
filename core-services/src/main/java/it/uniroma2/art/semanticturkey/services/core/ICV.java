@@ -30,19 +30,29 @@ import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.vocabulary.OWLIM;
+import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.Query;
+import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.UpdateExecutionException;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -54,13 +64,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 
 @STService
@@ -73,7 +90,114 @@ public class ICV extends STServiceAdapter {
 			.withInitial(HashMap::new);
 	
 	protected static Logger logger = LoggerFactory.getLogger(ICV.class);
-	
+
+	//-----ICV ON LOGICAL CONSISTENCY -----
+	private static final Pattern CONSISTENCY_VIOLATION_PATTERN = Pattern.compile("Consistency check (?<conditionName>.+?) failed:\\n(?<inconsistentTriples>.+?)((?=Consistency check)|$)", Pattern.DOTALL);
+
+	public static class ConsistencyViolation {
+
+		public String conditionName;
+		public List<Triple<AnnotatedValue<Resource>, AnnotatedValue<IRI>, AnnotatedValue<Value>>> inconsistentTriples;
+
+	}
+
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	public List<ConsistencyViolation> listConsistencyViolations() {
+		try (RepositoryConnection conn = getRepository().getConnection()) {
+			TupleQuery rulesetQuery = conn.prepareTupleQuery(
+					"PREFIX sys: <http://www.ontotext.com/owlim/system#>                  \n" +
+					"SELECT ?state ?ruleset {                                             \n" +
+					"    ?state sys:listRulesets ?ruleset                                 \n" +
+					"}");
+			String ruleset = QueryResults.stream(rulesetQuery.evaluate())
+					.filter(bs -> conn.getValueFactory().createIRI("http://www.ontotext.com/owlim/system#currentRuleset")
+							.equals(bs.getValue("state")))
+					.map(bs -> bs.getValue("ruleset"))
+					.filter(Objects::nonNull)
+					.findAny()
+					.map(Value::stringValue)
+					.orElseThrow(() -> new IllegalStateException("No ruleset is currently defined"));
+
+			Update consistencyCheck = conn.prepareUpdate(
+				"PREFIX sys: <http://www.ontotext.com/owlim/system#>                               \n" +
+				"INSERT DATA {                                                                     \n" +
+				"    _:b sys:consistencyCheckAgainstRuleset \"" + RenderUtils.escape(ruleset) + "\"\n" +
+				"}");
+			try {
+				consistencyCheck.execute();
+			} catch (UpdateExecutionException e) {
+				String msg = e.getMessage();
+
+				Matcher matcher = CONSISTENCY_VIOLATION_PATTERN.matcher(msg);
+
+				List<ConsistencyViolation> violations = new ArrayList<>();
+
+				ValueFactory vf = SimpleValueFactory.getInstance();
+
+				while (matcher.find()) {
+					String conditionName = matcher.group("conditionName");
+					String triplesRaw = matcher.group("inconsistentTriples");
+					Model inconsistentTriplesModel = new LinkedHashModel();
+					Arrays.stream(triplesRaw.split("\n")).map(String::trim).map(triple -> {
+						int subjectBegin = 0;
+						int subjectEnd = triple.indexOf(" ");
+
+						int predicateBegin = subjectEnd + 1;
+						int predicateEnd = triple.indexOf(" ", predicateBegin);
+
+						int objectBegin = predicateEnd + 1;
+						int objectEnd = triple.length();
+
+						String subjectStr = triple.substring(subjectBegin, subjectEnd);
+						String predicateStr = triple.substring(predicateBegin, predicateEnd);
+						String objectStr = triple.substring(objectBegin, objectEnd);
+
+						Resource subject = subjectStr.startsWith("_:") ? vf.createBNode(subjectStr.substring(2)) : vf.createIRI(subjectStr);
+						IRI predicate = vf.createIRI(predicateStr);
+						Value object;
+
+						if (objectStr.startsWith("_:")) {
+							object = vf.createBNode(objectStr.substring(2));
+						} else if (objectStr.startsWith("\"")) {
+							int langTagBegin = objectStr.lastIndexOf("\"@");
+							if (langTagBegin != -1) {
+								object = vf.createLiteral(objectStr.substring(1, langTagBegin), objectStr.substring(langTagBegin + 2));
+							} else {
+								int dtBegin = objectStr.lastIndexOf("\"^^<");
+								if (dtBegin != -1) {
+									object = vf.createLiteral(objectStr.substring(1, dtBegin), vf.createIRI(objectStr.substring(dtBegin + 4, objectStr.length() - 1)));
+								} else {
+									object = vf.createLiteral(objectStr.substring(1, objectStr.length() - 1));
+								}
+							}
+						} else {
+							object = vf.createIRI(objectStr);
+						}
+
+						return vf.createStatement(subject, predicate, object);
+					}).forEach(inconsistentTriplesModel::add);
+
+
+					ConsistencyViolation aViolation = new ConsistencyViolation();
+					aViolation.conditionName = conditionName;
+					aViolation.inconsistentTriples = inconsistentTriplesModel.stream().map(st -> {
+						return Triple.of(new AnnotatedValue<>(st.getSubject()), new AnnotatedValue<>(st.getPredicate()), new AnnotatedValue<>((Value)st.getObject()));
+					}).collect(Collectors.toList());
+					violations.add(aViolation);
+				}
+
+				if (violations.isEmpty()) {
+					throw e;
+				}
+
+				return violations;
+			}
+		}
+
+		return Collections.emptyList();
+	}
+
 	//-----ICV ON CONCEPTS STRUCTURE-----
 	
 	//ST-87
