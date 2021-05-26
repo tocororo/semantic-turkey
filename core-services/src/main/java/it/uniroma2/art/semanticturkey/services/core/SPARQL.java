@@ -1,35 +1,43 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-
-import javax.annotation.Nullable;
-import javax.servlet.http.HttpServletResponse;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
+import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RDFReporter;
+import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingException;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.export.ExportPreconditionViolationException;
+import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipeline;
+import it.uniroma2.art.semanticturkey.services.core.sparql.Graph2TupleQueryResultAdapter;
+import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
 import org.apache.commons.io.IOUtils;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.Literals;
+import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.Dataset;
@@ -58,31 +66,23 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
-import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
-import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
-import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RDFReporter;
-import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingException;
-import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
-import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.services.core.export.ExportPreconditionViolationException;
-import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipeline;
-import it.uniroma2.art.semanticturkey.services.core.sparql.Graph2TupleQueryResultAdapter;
-import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
+import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * This class provides services for SPARQL queries/updates.
@@ -120,7 +120,6 @@ public class SPARQL extends STServiceAdapter {
 	 * 
 	 * @return
 	 * @throws IOException
-	 * @throws JsonProcessingException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
@@ -129,7 +128,7 @@ public class SPARQL extends STServiceAdapter {
 			@Optional(defaultValue = "true") boolean includeInferred,
 			@Optional(defaultValue = "{}") Map<String, Value> bindings,
 			@Optional(defaultValue = "0") int maxExecTime, @Optional(defaultValue = "") IRI[] defaultGraphs,
-			@Optional(defaultValue = "") IRI[] namedGraphs) throws JsonProcessingException, IOException {
+			@Optional(defaultValue = "") IRI[] namedGraphs) throws IOException {
 		RepositoryConnection conn = getManagedConnection();
 
 		Query preparedQuery = conn.prepareQuery(ql, query);
@@ -206,8 +205,6 @@ public class SPARQL extends STServiceAdapter {
 	 * 
 	 * 
 	 * @return
-	 * @throws IOException
-	 * @throws JsonProcessingException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
@@ -242,7 +239,6 @@ public class SPARQL extends STServiceAdapter {
 	 * @param maxExecTime
 	 * @param defaultGraphs
 	 * @param namedGraphs
-	 * @throws JsonProcessingException
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -253,7 +249,7 @@ public class SPARQL extends STServiceAdapter {
 			@Optional(defaultValue = "true") boolean includeInferred,
 			@Optional(defaultValue = "{}") Map<String, Value> bindings,
 			@Optional(defaultValue = "0") int maxExecTime, @Optional(defaultValue = "") IRI[] defaultGraphs,
-			@Optional(defaultValue = "") IRI[] namedGraphs) throws JsonProcessingException, IOException {
+			@Optional(defaultValue = "") IRI[] namedGraphs) throws IOException {
 
 		if (!format.equals("xlsx") && !format.equals("ods")) {
 			throw new IllegalArgumentException(
@@ -265,101 +261,14 @@ public class SPARQL extends STServiceAdapter {
 		configureOperation(includeInferred, bindings, maxExecTime, defaultGraphs, namedGraphs, null, null,
 				preparedQuery);
 
-		List<List<String>> table = new ArrayList<>();
-
-		if (preparedQuery instanceof TupleQuery) {
-			TupleQueryResult result = ((TupleQuery) preparedQuery).evaluate();
-			List<String> bindingNames = result.getBindingNames();
-			table.add(bindingNames);
-			while (result.hasNext()) {
-				List<String> row = new ArrayList<>();
-				BindingSet tuple = result.next();
-				for (String b : bindingNames) {
-					Value value = tuple.getValue(b);
-					if (value != null) {
-						//row.add(NTriplesUtil.toNTriplesString(value));
-						row.add(toNTriplesString(value));
-					} else {
-						row.add(null);
-					}
-				}
-				table.add(row);
-			}
-		} else { // must be (preparedQuery instanceof GraphQuery)
-			GraphQueryResult result = ((GraphQuery) preparedQuery).evaluate();
-			table.add(Arrays.asList("subj", "pred", "obj"));
-			while (result.hasNext()) {
-				List<String> row = new ArrayList<>();
-				Statement stmt = result.next();
-				//row.add(NTriplesUtil.toNTriplesString(stmt.getSubject()));
-				row.add(toNTriplesString(stmt.getSubject()));
-				//row.add(NTriplesUtil.toNTriplesString(stmt.getPredicate()));
-				row.add(toNTriplesString(stmt.getPredicate()));
-				//row.add(NTriplesUtil.toNTriplesString(stmt.getObject()));
-				row.add(toNTriplesString(stmt.getObject()));
-				table.add(row);
-			}
-		}
-		dumpSpreadsheet(oRes, table, format);
-	}
-	
-	private String toNTriplesString(Value value) {
-		String valueString = "";
-		if(value instanceof IRI) {
-			//"<" + NTriplesUtil.escapeString(value.toString()) + ">";
-			valueString = NTriplesUtil.toNTriplesString(value);
-		} else if(value instanceof BNode) {
-			valueString = NTriplesUtil.toNTriplesString(value);
-		} 
-		else if (value instanceof Literal) {
-			Literal literal = (Literal) value;
-			//valueString = "\""+ NTriplesUtil.escapeString(literal.getLabel()) + "\"";
-			valueString = "\""+ literal.getLabel() + "\"";
-			if(Literals.isLanguageLiteral(literal)) {
-				valueString += "@"+literal.getLanguage().get();
-			} else {
-				valueString += "^^"+toNTriplesString(literal.getDatatype());
-			}
-		} else {
-			throw new IllegalArgumentException("Unknown value type: " + value.getClass());
-		}
-		return valueString;
-	}
-
-	private void dumpSpreadsheet(HttpServletResponse oRes, List<List<String>> table, String format)
-			throws IOException {
 		File tempServerFile = File.createTempFile("sparqlExport", "." + format);
-
-		if (format.equals("xlsx")) {
-			Workbook wb = new XSSFWorkbook();
-			Sheet sheet = wb.createSheet();
-			for (int rowIdx = 0; rowIdx < table.size(); rowIdx++) {
-				List<String> tableRow = table.get(rowIdx);
-				Row row = sheet.createRow(rowIdx);
-				for (int colIdx = 0; colIdx < tableRow.size(); colIdx++) {
-					row.createCell(colIdx).setCellValue(table.get(rowIdx).get(colIdx));
-				}
-			}
-			try (OutputStream tempServerFileStream = new FileOutputStream(tempServerFile)) {
-				wb.write(tempServerFileStream);
-			}
-		} else { // format .ods (do not perform any check since it is already done in the calling method
-			SpreadSheet spreadSheet = SpreadSheet.create(1, table.get(0).size(), table.size());
-			org.jopendocument.dom.spreadsheet.Sheet sheet = spreadSheet.getSheet(0);
-			for (int rowIdx = 0; rowIdx < table.size(); rowIdx++) {
-				List<String> tableRow = table.get(rowIdx);
-				for (int colIdx = 0; colIdx < tableRow.size(); colIdx++) {
-					sheet.setValueAt(tableRow.get(colIdx), colIdx, rowIdx);
-				}
-			}
-			spreadSheet.saveAs(tempServerFile);
-		}
-
 		try {
 			oRes.setHeader("Content-Disposition", "attachment; filename=export." + format);
 			if (format.equals("xlsx")) {
+				dumpXlsxSpreadsheet(oRes, preparedQuery, tempServerFile);
 				oRes.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 			} else {
+				dumpOdsSpreadsheet(oRes, preparedQuery, tempServerFile);
 				oRes.setContentType("application/vnd.oasis.opendocument.spreadsheet");
 			}
 			oRes.setContentLength((int) tempServerFile.length());
@@ -370,6 +279,181 @@ public class SPARQL extends STServiceAdapter {
 		} finally {
 			tempServerFile.delete();
 		}
+	}
+
+	private void dumpXlsxSpreadsheet(HttpServletResponse oRes, Query query, File tempServerFile) throws IOException {
+		Workbook wb = new XSSFWorkbook();
+		Sheet sheet = wb.createSheet();
+		if (query instanceof TupleQuery) {
+			TupleQueryResult result = ((TupleQuery) query).evaluate();
+			//Header
+			Row header = sheet.createRow(0);
+			List<String> bindingNames = result.getBindingNames();
+			for (int i = 0; i < bindingNames.size(); i++) {
+				header.createCell(i).setCellValue(bindingNames.get(i));
+			}
+			//Results
+			int rowIdx = 1;
+			while (result.hasNext()) {
+				BindingSet bs = result.next();
+				Row row = sheet.createRow(rowIdx);
+				for (int i = 0; i < bindingNames.size(); i++) {
+					Value value = bs.getBinding(bindingNames.get(i)).getValue();
+					Cell cell = row.createCell(i);
+					if (value != null) {
+						setXlsxCellValue(wb, cell, value);
+					} else {
+						row.createCell(i).setCellValue("");
+					}
+				}
+				rowIdx++;
+			}
+		} else if (query instanceof GraphQuery) {
+			GraphQueryResult result = ((GraphQuery) query).evaluate();
+			//Header
+			Row header = sheet.createRow(0);
+			header.createCell(0).setCellValue("Subject");
+			header.createCell(1).setCellValue("Predicate");
+			header.createCell(2).setCellValue("Object");
+			//Results
+			int rowIdx = 1;
+			while (result.hasNext()) {
+				Statement stmt = result.next();
+				Row row = sheet.createRow(rowIdx);
+				row.createCell(0).setCellValue(NTriplesUtil.toNTriplesString(stmt.getSubject()));
+				row.createCell(1).setCellValue(NTriplesUtil.toNTriplesString(stmt.getPredicate()));
+				Cell objCell = row.createCell(2);
+				setXlsxCellValue(wb, objCell, stmt.getObject());
+				rowIdx++;
+			}
+		}
+		try (OutputStream tempServerFileStream = new FileOutputStream(tempServerFile)) {
+			wb.write(tempServerFileStream);
+		}
+	}
+
+	private void dumpOdsSpreadsheet(HttpServletResponse oRes, Query query, File tempServerFile) throws IOException {
+		/* it seems that jopendocument API doesn't support to add dynamically row, neither to
+		 format cell, this requires to create a table of only String */
+		List<List<String>> table = new ArrayList<>();
+		if (query instanceof TupleQuery) {
+			TupleQueryResult result = ((TupleQuery) query).evaluate();
+			List<String> bindingNames = result.getBindingNames();
+			table.add(bindingNames);
+			while (result.hasNext()) {
+				List<String> row = new ArrayList<>();
+				BindingSet tuple = result.next();
+				for (String b : bindingNames) {
+					Value value = tuple.getValue(b);
+					if (value != null) {
+						row.add(NTriplesUtil.toNTriplesString(value));
+					} else {
+						row.add(null);
+					}
+				}
+				table.add(row);
+			}
+		} else { // must be (preparedQuery instanceof GraphQuery)
+			GraphQueryResult result = ((GraphQuery) query).evaluate();
+			table.add(Arrays.asList("Subject", "Predicate", "Object"));
+			while (result.hasNext()) {
+				List<String> row = new ArrayList<>();
+				Statement stmt = result.next();
+				row.add(NTriplesUtil.toNTriplesString(stmt.getSubject()));
+				row.add(NTriplesUtil.toNTriplesString(stmt.getPredicate()));
+				row.add(NTriplesUtil.toNTriplesString(stmt.getObject()));
+				table.add(row);
+			}
+		}
+
+		SpreadSheet spreadSheet = SpreadSheet.create(1, table.get(0).size(), table.size());
+		org.jopendocument.dom.spreadsheet.Sheet sheet = spreadSheet.getSheet(0);
+		for (int rowIdx = 0; rowIdx < table.size(); rowIdx++) {
+			List<String> tableRow = table.get(rowIdx);
+			for (int colIdx = 0; colIdx < tableRow.size(); colIdx++) {
+				sheet.setValueAt(tableRow.get(colIdx), colIdx, rowIdx);
+			}
+		}
+		spreadSheet.saveAs(tempServerFile);
+	}
+	
+
+	private void setXlsxCellValue(Workbook wb, Cell cell, Value value) {
+		if (value instanceof Literal) {
+			IRI dt = ((Literal) value).getDatatype();
+			String lang = ((Literal) value).getLanguage().isPresent() ? ((Literal) value).getLanguage().get() : null;
+			String label = ((Literal) value).getLabel();
+			if (lang != null) {
+				cell.setCellValue(NTriplesUtil.toNTriplesString(value));
+			} else if (dt != null) {
+				if (dt.equals(XMLSchema.DATETIME) || dt.equals(XMLSchema.DATE) || dt.equals(XMLSchema.TIME)) {
+					Date date = XMLDatatypeUtil.parseCalendar(label).toGregorianCalendar().getTime();
+					cell.setCellValue(date);
+					CellStyle cellStyle = wb.createCellStyle();
+					CreationHelper createHelper = wb.getCreationHelper();
+					if (dt.equals(XMLSchema.DATETIME)) {
+						cellStyle.setDataFormat(createHelper.createDataFormat().getFormat("yyyy-MM-ddThh:mm:ss"));
+					} else if (dt.equals(XMLSchema.DATE)) {
+						cellStyle.setDataFormat(createHelper.createDataFormat().getFormat("yyyy-MM-dd"));
+					} else {
+						cellStyle.setDataFormat(createHelper.createDataFormat().getFormat("hh:mm:ss"));
+					}
+					cell.setCellStyle(cellStyle);
+				} else if (dt.equals(XMLSchema.INTEGER) || dt.equals(XMLSchema.INT) ||
+						dt.equals(XMLSchema.POSITIVE_INTEGER) || dt.equals(XMLSchema.NON_POSITIVE_INTEGER) ||
+						dt.equals(XMLSchema.NEGATIVE_INTEGER) || dt.equals(XMLSchema.NON_NEGATIVE_INTEGER)) {
+					cell.setCellValue(XMLDatatypeUtil.parseInt(label));
+				} else if (dt.equals(XMLSchema.FLOAT)) {
+					cell.setCellValue(XMLDatatypeUtil.parseFloat(label));
+				} else if (dt.equals(XMLSchema.DOUBLE)) {
+					cell.setCellValue(XMLDatatypeUtil.parseDouble(label));
+				} else if (dt.equals(XMLSchema.LONG)) {
+					cell.setCellValue(XMLDatatypeUtil.parseLong(label));
+				} else if (dt.equals(XMLSchema.SHORT)) {
+					cell.setCellValue(XMLDatatypeUtil.parseShort(label));
+				} else {
+					cell.setCellValue(label);
+				}
+			} else {
+				cell.setCellValue(label);
+			}
+		} else { //IRI or BNode formatted as NTriple
+			cell.setCellValue(NTriplesUtil.toNTriplesString(value));
+		}
+	}
+
+	private List<List<String>> createTableForOds(Query preparedQuery) {
+		List<List<String>> table = new ArrayList<>();
+		if (preparedQuery instanceof TupleQuery) {
+			TupleQueryResult result = ((TupleQuery) preparedQuery).evaluate();
+			List<String> bindingNames = result.getBindingNames();
+			table.add(bindingNames);
+			while (result.hasNext()) {
+				List<String> row = new ArrayList<>();
+				BindingSet tuple = result.next();
+				for (String b : bindingNames) {
+					Value value = tuple.getValue(b);
+					if (value != null) {
+						row.add(NTriplesUtil.toNTriplesString(value));
+					} else {
+						row.add(null);
+					}
+				}
+				table.add(row);
+			}
+		} else { // must be (preparedQuery instanceof GraphQuery)
+			GraphQueryResult result = ((GraphQuery) preparedQuery).evaluate();
+			table.add(Arrays.asList("Subject", "Predicate", "Object"));
+			while (result.hasNext()) {
+				List<String> row = new ArrayList<>();
+				Statement stmt = result.next();
+				row.add(NTriplesUtil.toNTriplesString(stmt.getSubject()));
+				row.add(NTriplesUtil.toNTriplesString(stmt.getPredicate()));
+				row.add(NTriplesUtil.toNTriplesString(stmt.getObject()));
+				table.add(row);
+			}
+		}
+		return table;
 	}
 
 	/**
