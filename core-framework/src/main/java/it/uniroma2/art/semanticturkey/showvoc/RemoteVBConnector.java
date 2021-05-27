@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.pmki;
+package it.uniroma2.art.semanticturkey.showvoc;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,9 +12,9 @@ import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
-import it.uniroma2.art.semanticturkey.settings.core.PmkiSettings;
+import it.uniroma2.art.semanticturkey.settings.core.ShowVocSettings;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
-import it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionPmkiSettings;
+import it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionShowVocSettings;
 import it.uniroma2.art.semanticturkey.user.Role;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -60,12 +60,12 @@ public class RemoteVBConnector {
 		mapper = new ObjectMapper();
 		httpClient = HttpClientBuilder.create().useSystemProperties().build();
 
-		VocBenchConnectionPmkiSettings vbConnectionSettings = null;
+		VocBenchConnectionShowVocSettings vbConnectionSettings = null;
 
 		CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
-		PmkiSettings pmkiSettings = systemSettings.pmki;
-		if (pmkiSettings != null) {
-			vbConnectionSettings = pmkiSettings.vbConnectionConfig;
+		ShowVocSettings svSettings = systemSettings.showvoc;
+		if (svSettings != null) {
+			vbConnectionSettings = svSettings.vbConnectionConfig;
 		}
 
 		if (vbConnectionSettings == null) {

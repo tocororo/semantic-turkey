@@ -1,6 +1,6 @@
 package it.uniroma2.art.semanticturkey.config.contribution;
 
-import it.uniroma2.art.semanticturkey.pmki.PmkiConversionFormat;
+import it.uniroma2.art.semanticturkey.showvoc.ShowVocConversionFormat;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
@@ -17,7 +17,7 @@ public class StoredDevResourceContributionConfiguration extends StoredContributi
 	}
 
 	@STProperty(description = "Input format of the resource to convert", displayName = "Format")
-	public PmkiConversionFormat format; //if not provided, the contribution does not require conversion, the data is already RDF
+	public ShowVocConversionFormat format; //if not provided, the contribution does not require conversion, the data is already RDF
 
 	@STProperty(description = "Homepage URL of the resource", displayName = "Homepage")
 	public String homepage;

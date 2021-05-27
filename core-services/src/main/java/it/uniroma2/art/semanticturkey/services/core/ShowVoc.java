@@ -10,7 +10,7 @@ import it.uniroma2.art.semanticturkey.config.contribution.StoredDevResourceContr
 import it.uniroma2.art.semanticturkey.config.contribution.StoredMetadataContributionConfiguration;
 import it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.email.PmkiEmailService;
+import it.uniroma2.art.semanticturkey.email.ShowVocEmailService;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
@@ -40,12 +40,6 @@ import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryWritingException;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.METADATAREGISTRY;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.pmki.PendingContribution;
-import it.uniroma2.art.semanticturkey.pmki.PendingContributionStore;
-import it.uniroma2.art.semanticturkey.pmki.PmkiConstants;
-import it.uniroma2.art.semanticturkey.pmki.PmkiConstants.PmkiRole;
-import it.uniroma2.art.semanticturkey.pmki.PmkiConversionFormat;
-import it.uniroma2.art.semanticturkey.pmki.RemoteVBConnector;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
@@ -77,6 +71,12 @@ import it.uniroma2.art.semanticturkey.services.core.export.TransformationStep;
 import it.uniroma2.art.semanticturkey.settings.facets.CustomProjectFacetsSchemaStore;
 import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacets;
 import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsIndexUtils;
+import it.uniroma2.art.semanticturkey.showvoc.PendingContribution;
+import it.uniroma2.art.semanticturkey.showvoc.PendingContributionStore;
+import it.uniroma2.art.semanticturkey.showvoc.RemoteVBConnector;
+import it.uniroma2.art.semanticturkey.showvoc.ShowVocConstants;
+import it.uniroma2.art.semanticturkey.showvoc.ShowVocConstants.ShowVocRole;
+import it.uniroma2.art.semanticturkey.showvoc.ShowVocConversionFormat;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
@@ -140,12 +140,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @STService
-public class PMKI extends STServiceAdapter {
+public class ShowVoc extends STServiceAdapter {
 
-	private static Logger logger = LoggerFactory.getLogger(PMKI.class);
+	private static Logger logger = LoggerFactory.getLogger(ShowVoc.class);
 
 	public static class MessageKeys {
-		public static final String keyBase = "it.uniroma2.art.semanticturkey.services.core.PMKI";
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.services.core.ShowVoc";
 		public static final String model$displayName = keyBase + ".model.displayName";
 		public static final String lexicalizationModel$displayName = keyBase
 				+ ".lexicalizationModel.displayName";
@@ -163,7 +163,7 @@ public class PMKI extends STServiceAdapter {
 	/* ADMINISTRATION */
 
 	/**
-	 * Initializes all that stuff needed in PMKI. * - The roles: pmki-public, pmki-pristine, pmki-staging * -
+	 * Initializes all that stuff needed in ShowVoc. * - The roles: showvoc-public, showvoc-pristine, showvoc-staging * -
 	 * The visitor user
 	 *
 	 * @throws IOException
@@ -171,19 +171,21 @@ public class PMKI extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
-	public void initPmki() throws IOException, UserException, RoleCreationException, ProjectAccessException {
-		Collection<Role> roles = Arrays.asList(PmkiRole.PRISTINE, PmkiRole.PUBLIC, PmkiRole.STAGING);
+	public void initShowVoc() throws IOException, UserException, RoleCreationException, ProjectAccessException {
+		Collection<Role> roles = Arrays.asList(ShowVocRole.PRISTINE, ShowVocRole.PUBLIC, ShowVocRole.STAGING);
 		File rolesDir = RBACManager.getRolesDir(null);
 		for (Role r : roles) {
-			File targetRoleFile = new File(rolesDir, "role_" + r.getName() + ".pl");
-			Utilities.copy(
-					Resources.class.getClassLoader().getResourceAsStream(
-							"/it/uniroma2/art/semanticturkey/rbac/roles/role_" + r.getName() + ".pl"),
-					targetRoleFile);
-			RBACManager.addSystemRole(r.getName(), targetRoleFile);
+			if (!RBACManager.roleExists(null, r.getName())) {
+				File targetRoleFile = new File(rolesDir, "role_" + r.getName() + ".pl");
+				Utilities.copy(
+						Resources.class.getClassLoader().getResourceAsStream(
+								"/it/uniroma2/art/semanticturkey/rbac/roles/role_" + r.getName() + ".pl"),
+						targetRoleFile);
+				RBACManager.addSystemRole(r.getName(), targetRoleFile);
+			}
 		}
-		STUser visitor = new STUser(PmkiConstants.PMKI_VISITOR_EMAIL, PmkiConstants.PMKI_VISITOR_PWD,
-				"Visitor", "PMKI");
+		STUser visitor = new STUser(ShowVocConstants.SHOWVOC_VISITOR_EMAIL, ShowVocConstants.SHOWVOC_VISITOR_PWD,
+				"Visitor", "ShowVoc");
 		UsersManager.registerUser(visitor);
 		UsersManager.updateUserStatus(visitor, UserStatus.ACTIVE);
 	}
@@ -249,7 +251,7 @@ public class PMKI extends STServiceAdapter {
 		exptManager.storeConfiguration(ContributionStore.class.getName(), contribRef, configuration);
 		StoredContributionConfiguration contribution = (StoredContributionConfiguration) exptManager
 				.getConfiguration(ContributionStore.class.getName(), contribRef);
-		new PmkiEmailService().sendContributionSubmittedMail(contribution);
+		new ShowVocEmailService().sendContributionSubmittedMail(contribution);
 	}
 
 	/**
@@ -266,7 +268,7 @@ public class PMKI extends STServiceAdapter {
 		StoredContributionConfiguration config = (StoredContributionConfiguration) exptManager
 				.getConfiguration(ContributionStore.class.getName(), reference);
 		exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
-		new PmkiEmailService().sendRejectedContributionMail(reference, config);
+		new ShowVocEmailService().sendRejectedContributionMail(reference, config);
 	}
 
 	/**
@@ -279,7 +281,7 @@ public class PMKI extends STServiceAdapter {
 	 * @param repositoryAccess
 	 * @param coreRepoSailConfigurerSpecification
 	 * @param configurationReference
-	 * @param pmkiHostAddress
+	 * @param showvocHostAddress
 	 * @throws IOException
 	 * @throws RBACException
 	 * @throws WrongPropertiesException
@@ -309,7 +311,7 @@ public class PMKI extends STServiceAdapter {
 	public void approveStableContribution(String projectName, IRI model, IRI lexicalizationModel,
 			String baseURI, RepositoryAccess repositoryAccess,
 			PluginSpecification coreRepoSailConfigurerSpecification, String configurationReference,
-			String pmkiHostAddress)
+			String showvocHostAddress)
 			throws IOException, RBACException, WrongPropertiesException, ProjectBindingException,
 			ProjectInconsistentException, ClassNotFoundException, ForbiddenProjectAccessException,
 			UnsupportedModelException, ProjectUpdateException,
@@ -373,8 +375,8 @@ public class PMKI extends STServiceAdapter {
 
 			/* Set the project status to "pristine" (by assigning the pristine role to the visitor) */
 
-			STUser visitor = UsersManager.getUser(PmkiConstants.PMKI_VISITOR_EMAIL);
-			ProjectUserBindingsManager.addRoleToPUBinding(visitor, newProject, PmkiRole.PRISTINE);
+			STUser visitor = UsersManager.getUser(ShowVocConstants.SHOWVOC_VISITOR_EMAIL);
+			ProjectUserBindingsManager.addRoleToPUBinding(visitor, newProject, ShowVocRole.PRISTINE);
 
 			/* send email notification to the contributor */
 			// generate a random token
@@ -384,8 +386,8 @@ public class PMKI extends STServiceAdapter {
 					contribution.contributorEmail, contribution.contributorName,
 					contribution.contributorLastName);
 
-			new PmkiEmailService().sendAcceptedStableResourceContributionMail(reference, contribution,
-					projectName, pmkiHostAddress, token);
+			new ShowVocEmailService().sendAcceptedStableResourceContributionMail(reference, contribution,
+					projectName, showvocHostAddress, token);
 
 			// contribution approved => delete it from the store
 			exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
@@ -408,7 +410,7 @@ public class PMKI extends STServiceAdapter {
 	 * @param baseURI
 	 * @param coreRepoSailConfigurerSpecification
 	 * @param configurationReference
-	 * @param pmkiHostAddress
+	 * @param showvocHostAddress
 	 * @throws IOException
 	 * @throws WrongPropertiesException
 	 * @throws STPropertyAccessException
@@ -422,7 +424,7 @@ public class PMKI extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	public void approveDevelopmentContribution(String projectName, IRI model, IRI lexicalizationModel,
 			String baseURI, PluginSpecification coreRepoSailConfigurerSpecification,
-			String configurationReference, String pmkiHostAddress) throws IOException,
+			String configurationReference, String showvocHostAddress) throws IOException,
 			WrongPropertiesException, STPropertyAccessException, ConfigurationNotFoundException,
 			NoSuchConfigurationManager, URISyntaxException, MessagingException {
 
@@ -436,7 +438,7 @@ public class PMKI extends STServiceAdapter {
 		 * a user (email the one of the user and a random password) - activate the user - assign a role to the
 		 * user in the project - send an email that redirect directly to the VB instance including the
 		 * credentials - Otherwise (Zthes or Tbx conversion, or not conversion at all): - send an email with
-		 * the link to a load page in PMKI - (only after the load, the user will be created, enabled, assigned
+		 * the link to a load page in ShowVoc - (only after the load, the user will be created, enabled, assigned
 		 * to the project, and the email with the VB instance will be send)
 		 */
 		RemoteVBConnector vbConnector = new RemoteVBConnector();
@@ -444,8 +446,8 @@ public class PMKI extends STServiceAdapter {
 		vbConnector.createProject(projectName, baseURI, model, lexicalizationModel,
 				coreRepoSailConfigurerSpecification);
 
-		PmkiEmailService pmkiEmailService = new PmkiEmailService();
-		if (contribution.format == PmkiConversionFormat.EXCEL) {
+		ShowVocEmailService svEmailService = new ShowVocEmailService();
+		if (contribution.format == ShowVocConversionFormat.EXCEL) {
 			/*
 			 * The load data of a contribution that requires the conversion from an excel file is performed
 			 * directly from the VB instance.
@@ -456,17 +458,17 @@ public class PMKI extends STServiceAdapter {
 			vbConnector.enableUser(contribution.contributorEmail);
 			vbConnector.addRolesToUser(projectName, contribution.contributorEmail,
 					Collections.singletonList(DefaultRole.RDF_GEEK)); // rdf geek required for sheet2rdf
-			pmkiEmailService.sendAcceptedDevExcelResourceContributionMail(reference, contribution,
+			svEmailService.sendAcceptedDevExcelResourceContributionMail(reference, contribution,
 					projectName, vbConnector.getVocbenchUrl(), userPassword);
 		} else {
 			/*
 			 * The load data of a contribution that requires no conversion at all (data already in rdf), or
-			 * conversion from zthes or tbx, is performed on PMKI
+			 * conversion from zthes or tbx, is performed on ShowVoc
 			 */
 			// generate a random token
 			String token = new BigInteger(130, new SecureRandom()).toString(32);
-			pmkiEmailService.sendAcceptedDevGenericResourceContributionMail(reference, contribution,
-					projectName, pmkiHostAddress, token);
+			svEmailService.sendAcceptedDevGenericResourceContributionMail(reference, contribution,
+					projectName, showvocHostAddress, token);
 			// add the pair token-project to the pending contribution
 			new PendingContributionStore().addPendingContribution(token, projectName,
 					contribution.contributorEmail, contribution.contributorName,
@@ -500,7 +502,7 @@ public class PMKI extends STServiceAdapter {
 
 		writeMetadataInRegistry(config);
 
-		new PmkiEmailService().sendAcceptedMetadataContributionMail(reference, config);
+		new ShowVocEmailService().sendAcceptedMetadataContributionMail(reference, config);
 		// contribution approved => delete it from the store
 		exptManager.deleteConfiguraton(ContributionStore.class.getName(), reference);
 	}
@@ -551,14 +553,14 @@ public class PMKI extends STServiceAdapter {
 					transitiveImportAllowance, getManagedConnection(), null, rdfLifterSpec, pipeline);
 
 			// Update the status of the project from pristine to staging
-			STUser visitor = UsersManager.getUser(PmkiConstants.PMKI_VISITOR_EMAIL);
+			STUser visitor = UsersManager.getUser(ShowVocConstants.SHOWVOC_VISITOR_EMAIL);
 			ProjectUserBindingsManager.removeAllRoleFromPUBinding(visitor, project);
-			ProjectUserBindingsManager.addRoleToPUBinding(visitor, project, PmkiRole.STAGING);
+			ProjectUserBindingsManager.addRoleToPUBinding(visitor, project, ShowVocRole.STAGING);
 
 			// remove the stored pending contribution
 			pendingContributionStore.removePendingContribution(token);
 
-			new PmkiEmailService().sendLoadedStableResourceContributionMail(projectName,
+			new ShowVocEmailService().sendLoadedStableResourceContributionMail(projectName,
 					pendingContrib.getContributorName(), pendingContrib.getContributorLastName(),
 					pendingContrib.getContributorEmail());
 		}
@@ -605,7 +607,7 @@ public class PMKI extends STServiceAdapter {
 			vbConnector.enableUser(contributorEmail);
 			vbConnector.addRolesToUser(projectName, contributorEmail,
 					Collections.singletonList(DefaultRole.RDF_GEEK));
-			new PmkiEmailService().sendLoadedDevGenericResourceContributionMail(projectName,
+			new ShowVocEmailService().sendLoadedDevGenericResourceContributionMail(projectName,
 					vbConnector.getVocbenchUrl(), contributorEmail, userPassword);
 
 			// remove the stored pending contribution
@@ -617,7 +619,7 @@ public class PMKI extends STServiceAdapter {
 	@PreAuthorize("@auth.isAdmin()")
 	public void setProjectStatus(String projectName, String status) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
-		STUser visitor = UsersManager.getUser(PmkiConstants.PMKI_VISITOR_EMAIL);
+		STUser visitor = UsersManager.getUser(ShowVocConstants.SHOWVOC_VISITOR_EMAIL);
 		Project project = ProjectManager.getProjectDescription(projectName);
 
 		ProjectUserBindingsManager.removeAllRoleFromPUBinding(visitor, project);
@@ -682,71 +684,6 @@ public class PMKI extends STServiceAdapter {
 
 	public static final int PAGE_SIZE = 10;
 
-	// @STServiceOperation /* No @PreAuthorize("...") since ST doesn't support project-less capabilities */
-	// public SearchResultsPage<DatasetSearchResult> searchDataset(String query,
-	// @it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "{}") @JsonSerialized
-	// Map<String, List<String>> facets,
-	// @it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "1") int page)
-	// throws ProjectBindingException, InvalidProjectNameException, ProjectInexistentException,
-	// ProjectAccessException, UserException {
-	// query = query.trim();
-	// if (StringUtils.isAllBlank(query)) {
-	// return new SearchResultsPage<>(0, PAGE_SIZE, page + 1, Collections.emptyList(),
-	// Collections.emptyList());
-	// }
-	//
-	// List<String> tokens = Arrays.stream(query.split("\\s+")).map(String::toLowerCase)
-	// .collect(Collectors.toList());
-	//
-	// Collection<CatalogRecord> catalogRecords = metadataRegistryBackend.getCatalogRecords();
-	//
-	// List<DatasetSearchResult> searchResults = new ArrayList<>();
-	//
-	// for (CatalogRecord record : catalogRecords) {
-	// DatasetMetadata datasetMetadata = record.getAbstractDataset();
-	// @Nullable
-	// Project project = metadataRegistryBackend.findProjectForDataset(datasetMetadata.getIdentity());
-	//
-	// System.out.println("id = " + datasetMetadata.getIdentity() + " // project = " + project + " // "
-	// + ProjectUserBindingsManager.getPUBinding(UsersManager.getLoggedUser(), project)
-	// .getRoles().contains(PmkiConstants.PmkiRole.PUBLIC));
-	// if (project != null
-	// && !ProjectUserBindingsManager.getPUBinding(UsersManager.getLoggedUser(), project)
-	// .getRoles().contains(PmkiConstants.PmkiRole.PUBLIC)) {
-	// continue; // skip non-public datasets
-	// }
-	// String title = datasetMetadata.getTitle().map(String::toLowerCase).orElse("");
-	// String description = datasetMetadata.getDescription().map(String::toLowerCase).orElse("");
-	//
-	// int matches = 0;
-	// for (String token : tokens) {
-	// if (title.contains(token) || description.contains(token)) {
-	// matches += 1;
-	// }
-	// }
-	//
-	// if (matches > 0) {
-	// IRI id = datasetMetadata.getIdentity();
-	//
-	// IRI ontologyIRI = null;
-	// double score = (double) matches / tokens.size();
-	//
-	// URL datasetPage = null;
-	// List<Literal> titles = datasetMetadata.getTitle().map(
-	// s -> Collections.singletonList(SimpleValueFactory.getInstance().createLiteral(s)))
-	// .orElse(Collections.emptyList());
-	// List<Literal> descriptions = datasetMetadata.getDescription().map(
-	// s -> Collections.singletonList(SimpleValueFactory.getInstance().createLiteral(s)))
-	// .orElse(Collections.emptyList());
-	// Map<String, List<String>> facets2 = Collections.emptyMap();
-	//
-	// DatasetSearchResult datasetSearchResult = new DatasetSearchResult(id.toString(), ontologyIRI,
-	// score, datasetPage, titles, descriptions, facets2);
-	//
-	// searchResults.add(datasetSearchResult);
-	// }
-	// }
-
 	@STServiceOperation /* No @PreAuthorize("...") since ST doesn't support project-less capabilities */
 	public SearchResultsPage<DatasetSearchResult> searchDataset(String query,
 			@it.uniroma2.art.semanticturkey.services.annotations.Optional(defaultValue = "{}") @JsonSerialized Map<String, List<String>> facets,
@@ -810,8 +747,8 @@ public class PMKI extends STServiceAdapter {
 				Project proj = ProjectManager.getProject(id);
 
 				boolean isPublic = ProjectUserBindingsManager
-						.getPUBinding(UsersManager.getUser(PmkiConstants.PMKI_VISITOR_EMAIL), proj).getRoles()
-						.contains(PmkiConstants.PmkiRole.PUBLIC);
+						.getPUBinding(UsersManager.getUser(ShowVocConstants.SHOWVOC_VISITOR_EMAIL), proj).getRoles()
+						.contains(ShowVocRole.PUBLIC);
 
 				if (!isPublic)
 					continue; // skip non public projects
@@ -949,7 +886,7 @@ public class PMKI extends STServiceAdapter {
 			dataDumps = Collections.singletonList(new DownloadDescription(
 					UriComponentsBuilder
 							.fromHttpUrl(apiBaseURL + "it.uniroma2.art.semanticturkey/st-core-services/"
-									+ "PMKI/dataDump")
+									+ "ShowVoc/dataDump")
 							.queryParam("ctx_project", proj.getName()).queryParam("format", "Turtle")
 							.build(false).encode().toUri().toURL(),
 					Collections.emptyList(), Collections.emptyList(), RDFFormat.TURTLE.getDefaultMIMEType()));

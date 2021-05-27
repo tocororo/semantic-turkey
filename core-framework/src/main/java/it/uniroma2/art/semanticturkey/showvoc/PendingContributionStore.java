@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.pmki;
+package it.uniroma2.art.semanticturkey.showvoc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,15 +15,15 @@ import java.util.Properties;
 
 public class PendingContributionStore {
 
-    private static final String SETTING_KEY = "pmki.pending_contribution_map";
+    private static final String SETTING_KEY = "showvoc.pending_contribution_map";
 
     private Properties properties; //properties file containing the map
     private Map<String, PendingContribution> pendingContributions; //token -> pendingContribution
     private ObjectMapper mapper;
 
     /*
-    When a PMKI contribution is approved by the admin, ST delete its description from the ContributionStore
-    (stored previously once submitted by the contributor) and create a project (on ST-PMKI if stable or ST-VB if dev).
+    When a ShowVoc contribution is approved by the admin, ST delete its description from the ContributionStore
+    (stored previously once submitted by the contributor) and create a project (on ST-ShowVoc if stable or ST-VB if dev).
     In the meantime that the system wait the contributor to load the data into the project
     (the workflow foreseen that a link for loading data is sent to the contributor)
     ST needs to keep trace of this pending contribution (namely waiting to be completed)

@@ -576,7 +576,7 @@ public class UpdateRoutines {
 			convertPropertiesSettingToYAML(properties, "mail.from.password", newCoreSystemSettingsNode, Arrays.asList("mail", "from", "password"), String::valueOf);
 			convertPropertiesSettingToYAML(properties, "mail.from.alias", newCoreSystemSettingsNode, Arrays.asList("mail", "from", "alias"), String::valueOf);
 
-			convertPropertiesSettingToYAML(properties, "pmki.vb_connection_config", newCoreSystemSettingsNode, Arrays.asList("pmki", "vbConnectionConfig"), v -> {
+			convertPropertiesSettingToYAML(properties, "pmki.vb_connection_config", newCoreSystemSettingsNode, Arrays.asList("showvoc", "vbConnectionConfig"), v -> {
 				JsonNode jsonNode = om.readTree(new StringReader(v));
 				if (jsonNode instanceof ObjectNode) {
 					ObjectNode jsonObject = (ObjectNode) jsonNode;

@@ -11,11 +11,11 @@ public abstract class EmailService {
 	private String appName;
 
 	EmailService(EmailApplicationContext ctx) {
-		appName = ctx == EmailApplicationContext.VB ? "VocBench" : "PMKI";
+		appName = ctx == EmailApplicationContext.VB ? "VocBench" : "ShowVoc";
 	}
 
 	/**
-	 * The following send email methods are in common for both VB and PMKI EmailService.
+	 * The following send email methods are in common for both VB and ShowVoc EmailService.
 	 * - mail service configuration test
 	 * - reset password confirmed
 	 * - reset password requested

@@ -34,8 +34,8 @@ public class CoreSystemSettings implements Settings {
         public static final String stDataVersion$displayName = keyBase + ".stDataVersion.displayName";
         public static final String mail$description = keyBase + ".mail.description";
         public static final String mail$displayName = keyBase + ".mail.displayName";
-        public static final String pmki$description = keyBase + ".pmki.description";
-        public static final String pmki$displayName = keyBase + ".pmki.displayName";
+        public static final String showvoc$description = keyBase + ".showvoc.description";
+        public static final String showvoc$displayName = keyBase + ".showvoc.displayName";
     }
 
     @Override
@@ -80,7 +80,7 @@ public class CoreSystemSettings implements Settings {
             + MessageKeys.mail$displayName + "}")
     public MailSettings mail;
 
-    @STProperty(description = "{" + MessageKeys.pmki$description + "}", displayName = "{"
-            + MessageKeys.pmki$displayName + "}")
-    public PmkiSettings pmki;
+    @STProperty(description = "{" + MessageKeys.showvoc$description + "}", displayName = "{"
+            + MessageKeys.showvoc$displayName + "}")
+    public ShowVocSettings showvoc;
 }

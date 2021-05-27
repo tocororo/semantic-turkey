@@ -3,9 +3,9 @@ package it.uniroma2.art.semanticturkey.settings.core;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
-public class VocBenchConnectionPmkiSettings implements STProperties {
+public class VocBenchConnectionShowVocSettings implements STProperties {
 	public static class MessageKeys {
-		public static final String keyBase = "it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionPmkiSettings";
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionShowVocSettings";
 
 		public static final String shortName = keyBase + ".shortName";
 

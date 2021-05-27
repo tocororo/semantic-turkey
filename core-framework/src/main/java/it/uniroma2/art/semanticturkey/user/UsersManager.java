@@ -442,6 +442,9 @@ public class UsersManager {
 	public static Collection<File> getAllUserFolders() {
 		Collection<File> userFolders = new ArrayList<>();
 		File usersFolder = Resources.getUsersDir();
+		if (!usersFolder.exists()) {
+			usersFolder.mkdir();
+		}
 		// get all subfolder of "users" folder (one subfolder for each user)
 		String[] userDirectories = usersFolder.list(new FilenameFilter() {
 			public boolean accept(File current, String name) {

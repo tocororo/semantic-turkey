@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.pmki;
+package it.uniroma2.art.semanticturkey.showvoc;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

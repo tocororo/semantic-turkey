@@ -46,7 +46,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetSea
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchResultsPage;
 import it.uniroma2.art.semanticturkey.i18n.I18NConstants;
 import it.uniroma2.art.semanticturkey.mvc.RequestMappingHandlerAdapterPostProcessor;
-import it.uniroma2.art.semanticturkey.pmki.PmkiConstants;
+import it.uniroma2.art.semanticturkey.showvoc.ShowVocConstants;
 
 /**
  * An {@link DatasetCatalogConnector} for <a href="https://data.europa.eu/euodp">Public Multilingual Knowledge
@@ -68,8 +68,8 @@ public class PMKIConnector implements DatasetCatalogConnector {
 	}
 
 	protected PMKIClient createPmkiClient() throws MalformedURLException {
-		return new PMKIClient(exptManager, conf.apiBaseURL, PmkiConstants.PMKI_VISITOR_EMAIL,
-				PmkiConstants.PMKI_VISITOR_PWD);
+		return new PMKIClient(exptManager, conf.apiBaseURL, ShowVocConstants.SHOWVOC_VISITOR_EMAIL,
+				ShowVocConstants.SHOWVOC_VISITOR_PWD);
 	}
 
 	@Override

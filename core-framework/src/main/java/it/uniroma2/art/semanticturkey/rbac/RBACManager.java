@@ -153,6 +153,10 @@ public class RBACManager {
 		}
 		return null;
 	}
+
+	public static boolean roleExists(Project project, String roleName) {
+		return getRole(project, roleName) != null;
+	}
 	
 	/**
 	 * 

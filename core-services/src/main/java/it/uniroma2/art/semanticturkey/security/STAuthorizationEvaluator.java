@@ -13,7 +13,7 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
-import it.uniroma2.art.semanticturkey.pmki.PmkiConstants;
+import it.uniroma2.art.semanticturkey.showvoc.ShowVocConstants;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
@@ -21,8 +21,6 @@ import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.Language;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesUtils;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.rbac.HaltedEngineException;
 import it.uniroma2.art.semanticturkey.rbac.HarmingGoalException;
@@ -86,8 +84,8 @@ public class STAuthorizationEvaluator {
 	}
 
 	/**
-	 * Allows request only when the contextual project is public (i.e. {@link PmkiConstants#PMKI_VISITOR_EMAIL} has role
-	 * {@link PmkiConstants.PmkiRole#PUBLIC}. To use like the following: <code>
+	 * Allows request only when the contextual project is public (i.e. {@link ShowVocConstants#SHOWVOC_VISITOR_EMAIL} has role
+	 * {@link ShowVocConstants.ShowVocRole#PUBLIC}. To use like the following: <code>
 	 * &#64;PreAuthorize("@auth.isCtxProjectPublic()")
 	 * </code>
 	 *
@@ -96,13 +94,13 @@ public class STAuthorizationEvaluator {
 	 */
 	public boolean isCtxProjectPublic() throws UserException {
 		return ProjectUserBindingsManager
-				.getPUBinding(UsersManager.getUser(PmkiConstants.PMKI_VISITOR_EMAIL), stServiceContext.getProject()).getRoles()
-				.contains(PmkiConstants.PmkiRole.PUBLIC);
+				.getPUBinding(UsersManager.getUser(ShowVocConstants.SHOWVOC_VISITOR_EMAIL), stServiceContext.getProject()).getRoles()
+				.contains(ShowVocConstants.ShowVocRole.PUBLIC);
 	}
 
 	/**
 	 * Allows request only when the given project is public (i.e.
-	 * {@link PmkiConstants#PMKI_VISITOR_EMAIL} has role {@link PmkiConstants.PmkiRole#PUBLIC}. To use like
+	 * {@link ShowVocConstants#SHOWVOC_VISITOR_EMAIL} has role {@link ShowVocConstants.ShowVocRole#PUBLIC}. To use like
 	 * the following: <code>
 	 * &#64;PreAuthorize("@auth.isProjectPublic(#projectNameParam"))
 	 * </code>
@@ -116,9 +114,9 @@ public class STAuthorizationEvaluator {
 	public boolean isProjectPublic(String id) throws UserException, InvalidProjectNameException,
 			ProjectInexistentException, ProjectAccessException {
 		return ProjectUserBindingsManager
-				.getPUBinding(UsersManager.getUser(PmkiConstants.PMKI_VISITOR_EMAIL),
+				.getPUBinding(UsersManager.getUser(ShowVocConstants.SHOWVOC_VISITOR_EMAIL),
 						ProjectManager.getProjectDescription(id))
-				.getRoles().contains(PmkiConstants.PmkiRole.PUBLIC);
+				.getRoles().contains(ShowVocConstants.ShowVocRole.PUBLIC);
 	}
 
 	/**

@@ -4,7 +4,7 @@ import it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConf
 import it.uniroma2.art.semanticturkey.config.contribution.StoredDevResourceContributionConfiguration;
 import it.uniroma2.art.semanticturkey.config.contribution.StoredMetadataContributionConfiguration;
 import it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration;
-import it.uniroma2.art.semanticturkey.pmki.PmkiConversionFormat;
+import it.uniroma2.art.semanticturkey.showvoc.ShowVocConversionFormat;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
@@ -16,10 +16,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
-public class PmkiEmailService extends EmailService {
+public class ShowVocEmailService extends EmailService {
 
-	public PmkiEmailService() {
-		super(EmailApplicationContext.PMKI);
+	public ShowVocEmailService() {
+		super(EmailApplicationContext.SHOWVOC);
 	}
 
 	/**
@@ -35,12 +35,12 @@ public class PmkiEmailService extends EmailService {
 			throws STPropertyAccessException, UnsupportedEncodingException, MessagingException {
 		//to admin
 		for (String adminEmail: UsersManager.getAdminEmailList()) {
-			String mailContent = "Dear PMKI administrator,<br>" +
-					"a new contribution request has been submitted to the PMKI portal:<br><br>" +
+			String mailContent = "Dear ShowVoc administrator,<br>" +
+					"a new contribution request has been submitted to ShowVoc:<br><br>" +
 					formatBold("Contribution type: ") + contribution.getContributionTypeLabel() + "<br>" +
 					formatBold("Contributor: ") + contribution.contributorName + " " + contribution.contributorLastName +
 					" (email: " + contribution.contributorEmail + ")";
-			EmailSender.sendMail(adminEmail, "PMKI Contribution request submitted", mailContent);
+			EmailSender.sendMail(adminEmail, "ShowVoc Contribution request submitted", mailContent);
 		}
 		//to contributor
 		String mailContent = "Dear " + contribution.contributorName + " " + contribution.contributorLastName + ",<br>" +
@@ -54,7 +54,7 @@ public class PmkiEmailService extends EmailService {
 		}
 		mailContent += " has been successfully submitted. It will be evaluated by the administrator and " +
 				"you will receive the response to this email address.";
-		EmailSender.sendMail(contribution.contributorEmail, "PMKI Contribution request submitted", mailContent);
+		EmailSender.sendMail(contribution.contributorEmail, "ShowVoc Contribution request submitted", mailContent);
 	}
 
 	/**
@@ -63,7 +63,7 @@ public class PmkiEmailService extends EmailService {
 	 * @param reference
 	 * @param contribution
 	 * @param projectName
-	 * @param pmkiHostUrl
+	 * @param showvocHostUrl
 	 * @param  token
 	 * @throws UnsupportedEncodingException
 	 * @throws MessagingException
@@ -71,17 +71,17 @@ public class PmkiEmailService extends EmailService {
 	 */
 	public void sendAcceptedStableResourceContributionMail(Reference reference,
 			StoredStableResourceContributionConfiguration contribution, String projectName,
-			String pmkiHostUrl, String token)
+			String showvocHostUrl, String token)
 			throws UnsupportedEncodingException, MessagingException, STPropertyAccessException {
 		String formattedDate = getDateFromTimestamp(Long.parseLong(reference.getIdentifier()));
-		String loadPageUrl = pmkiHostUrl + "#/load/stable/" + token;
+		String loadPageUrl = showvocHostUrl + "#/load/stable/" + token;
 		String mailContent = "Dear " + contribution.contributorName + " " + contribution.contributorLastName + ",<br>" +
 				"Your contribution request submitted on " + formattedDate + " about the " + formatItalic(contribution.resourceName) +
 				" resource has been accepted.<br>" +
 				"Now you can now upload the RDF resource at the following link " + loadPageUrl + "<br>" +
 				"In the loading page, please insert the following project name in the proper input field: " +
 				formatItalic(projectName);
-		EmailSender.sendMail(contribution.contributorEmail, "PMKI Contribution approved", mailContent);
+		EmailSender.sendMail(contribution.contributorEmail, "ShowVoc Contribution approved", mailContent);
 	}
 
 	/**
@@ -91,7 +91,7 @@ public class PmkiEmailService extends EmailService {
 	 * @param reference
 	 * @param contribution
 	 * @param projectName
-	 * @param pmkiHostUrl
+	 * @param showvocHostUrl
 	 * @param token
 	 * @throws UnsupportedEncodingException
 	 * @throws MessagingException
@@ -99,23 +99,23 @@ public class PmkiEmailService extends EmailService {
 	 */
 	public void sendAcceptedDevGenericResourceContributionMail(Reference reference,
 			StoredDevResourceContributionConfiguration contribution, String projectName,
-			String pmkiHostUrl, String token) throws IOException, MessagingException, STPropertyAccessException {
+			String showvocHostUrl, String token) throws IOException, MessagingException, STPropertyAccessException {
 
 		String formattedDate = getDateFromTimestamp(Long.parseLong(reference.getIdentifier()));
 		String mailContent = "Dear " + contribution.contributorName + " " + contribution.contributorLastName + ",<br>" +
 				"Your contribution request submitted on " + formattedDate + " for the development of the resource " +
 				formatItalic(contribution.resourceName) + " has been accepted.";
 		if (contribution.format == null) { //No conversion needed => load RDF
-			String loadPageUrl = pmkiHostUrl + "#/load/dev/" + PmkiConversionFormat.RDF + "/" + token;
+			String loadPageUrl = showvocHostUrl + "#/load/dev/" + ShowVocConversionFormat.RDF + "/" + token;
 			mailContent += "Now you can load the data at the following link " + loadPageUrl + ".<br>";
-		} else if (contribution.format == PmkiConversionFormat.TBX || contribution.format == PmkiConversionFormat.ZTHES) {
-			String loadPageUrl = pmkiHostUrl + "#/load/dev/" + contribution.format + "/" + token;
+		} else if (contribution.format == ShowVocConversionFormat.TBX || contribution.format == ShowVocConversionFormat.ZTHES) {
+			String loadPageUrl = showvocHostUrl + "#/load/dev/" + contribution.format + "/" + token;
 			mailContent += "Now you can load the data at the following link " + loadPageUrl +
 					" using the proper lifter for the conversion.<br>";
 		}
 		mailContent += "In the loading page, please insert the following project name in the proper input field: " +
 				formatItalic(projectName);
-		EmailSender.sendMail(contribution.contributorEmail, "PMKI Contribution approved", mailContent);
+		EmailSender.sendMail(contribution.contributorEmail, "ShowVoc Contribution approved", mailContent);
 	}
 
 	/**
@@ -147,7 +147,7 @@ public class PmkiEmailService extends EmailService {
 		} else { //user already registered
 			mailContent += "your pre-existing account (email address: " + contribution.contributorEmail + ").<br>";
 		}
-		EmailSender.sendMail(contribution.contributorEmail, "PMKI Contribution approved", mailContent);
+		EmailSender.sendMail(contribution.contributorEmail, "ShowVoc Contribution approved", mailContent);
 	}
 
 	/**
@@ -165,7 +165,7 @@ public class PmkiEmailService extends EmailService {
 				"Your contribution request submitted on " + formattedDate + " about the metadata of the resource " +
 				formatItalic(contribution.resourceName) + " has been accepted.<br>" +
 				"Thanks for your contribution.";
-		EmailSender.sendMail(contribution.contributorEmail, "PMKI Contribution approved", mailContent);
+		EmailSender.sendMail(contribution.contributorEmail, "ShowVoc Contribution approved", mailContent);
 	}
 
 	/**
@@ -191,7 +191,7 @@ public class PmkiEmailService extends EmailService {
 		} else { //user already registered
 			mailContent += "your pre-existing account (email address: " + contributorEmail + ").<br>";
 		}
-		EmailSender.sendMail(contributorEmail, "PMKI Contribution approved", mailContent);
+		EmailSender.sendMail(contributorEmail, "ShowVoc Contribution approved", mailContent);
 	}
 
 	/**
@@ -209,11 +209,11 @@ public class PmkiEmailService extends EmailService {
 			String contributorLastName, String contributorEmail)
 			throws UnsupportedEncodingException,MessagingException, STPropertyAccessException {
 		for (String adminEmail: UsersManager.getAdminEmailList()) {
-			String mailContent = "Dear PMKI administrator,<br>" +
+			String mailContent = "Dear ShowVoc administrator,<br>" +
 					"the contributor: " + contributorName + " " + contributorLastName +
 					" (email: " + contributorEmail + ") has just uploaded the data into the project " +
 					formatItalic(projectName) + ". The project is now in the STAGING status until you approve it and make it PUBLIC";
-			EmailSender.sendMail(adminEmail, "PMKI Contribution data loaded", mailContent);
+			EmailSender.sendMail(adminEmail, "ShowVoc Contribution data loaded", mailContent);
 		}
 	}
 
@@ -240,7 +240,7 @@ public class PmkiEmailService extends EmailService {
 			StoredMetadataContributionConfiguration contribImpl = (StoredMetadataContributionConfiguration) contribution;
 			mailContent += " about metadata of the " + formatItalic(contribImpl.resourceName) + " resource has been rejected.";
 		}
-		EmailSender.sendMail(contribution.contributorEmail, "PMKI Contribution rejected", mailContent);
+		EmailSender.sendMail(contribution.contributorEmail, "ShowVoc Contribution rejected", mailContent);
 	}
 
 	private static String getDateFromTimestamp(long timestamp) {
