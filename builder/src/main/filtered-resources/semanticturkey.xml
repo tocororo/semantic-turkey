@@ -144,7 +144,7 @@
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-euodp-connector/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-lod-cloud-connector/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-lov-connector/${project.version}</bundle>
-		<bundle>mvn:it.uniroma2.art.semanticturkey/st-pmki-connector/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-showvoc-connector/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-adms-dataset-metadata-exporter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-dcatap-dataset-metadata-exporter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-dcat-dataset-metadata-exporter/${project.version}</bundle>

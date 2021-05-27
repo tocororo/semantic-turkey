@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.pmki;
+package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.showvoc;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -54,21 +54,21 @@ import it.uniroma2.art.semanticturkey.showvoc.ShowVocConstants;
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class PMKIConnector implements DatasetCatalogConnector {
+public class ShowVocConnector implements DatasetCatalogConnector {
 
-	private static final Logger logger = LoggerFactory.getLogger(PMKIConnector.class);
+	private static final Logger logger = LoggerFactory.getLogger(ShowVocConnector.class);
 
-	private PMKIConnectorConfiguration conf;
+	private ShowVocConnectorConfiguration conf;
 
 	private ExtensionPointManager exptManager;
 
-	public PMKIConnector(PMKIConnectorConfiguration conf, ExtensionPointManager exptManager) {
+	public ShowVocConnector(ShowVocConnectorConfiguration conf, ExtensionPointManager exptManager) {
 		this.conf = conf;
 		this.exptManager = exptManager;
 	}
 
-	protected PMKIClient createPmkiClient() throws MalformedURLException {
-		return new PMKIClient(exptManager, conf.apiBaseURL, ShowVocConstants.SHOWVOC_VISITOR_EMAIL,
+	protected ShowVocClient createShowVocClient() throws MalformedURLException {
+		return new ShowVocClient(exptManager, conf.apiBaseURL, ShowVocConstants.SHOWVOC_VISITOR_EMAIL,
 				ShowVocConstants.SHOWVOC_VISITOR_PWD);
 	}
 
@@ -79,37 +79,37 @@ public class PMKIConnector implements DatasetCatalogConnector {
 			throw new IllegalArgumentException("Page number is negative: " + page);
 		}
 
-		try (PMKIClient pmkiClient = createPmkiClient()) {
+		try (ShowVocClient showVocClient = createShowVocClient()) {
 			try {
-				pmkiClient.doLogin();
+				showVocClient.doLogin();
 
-				return pmkiClient.searchDataset(query, facets, page);
+				return showVocClient.searchDataset(query, facets, page);
 
 			} finally {
-				pmkiClient.doLogout();
+				showVocClient.doLogout();
 			}
 		}
 	}
 
 	@Override
 	public DatasetDescription describeDataset(String id) throws IOException {
-		try (PMKIClient pmkiClient = createPmkiClient()) {
+		try (ShowVocClient showVocClient = createShowVocClient()) {
 			try {
-				pmkiClient.doLogin();
+				showVocClient.doLogin();
 
-				return pmkiClient.describeDataset(id, conf.apiBaseURL, conf.frontendBaseURL);
+				return showVocClient.describeDataset(id, conf.apiBaseURL, conf.frontendBaseURL);
 
 			} finally {
-				pmkiClient.doLogout();
+				showVocClient.doLogout();
 			}
 		}
 	}
 
 	public static void main(String[] args) throws IOException {
-		PMKIConnectorConfiguration conf = new PMKIConnectorConfiguration();
+		ShowVocConnectorConfiguration conf = new ShowVocConnectorConfiguration();
 		conf.apiBaseURL = "http://localhost:1979/semanticturkey/";
-		conf.frontendBaseURL = "http://localhost:1979/pmki/";
-		PMKIConnector connector = new PMKIConnectorFactory().createInstance(conf);
+		conf.frontendBaseURL = "http://localhost:1979/showvoc/";
+		ShowVocConnector connector = new ShowVocConnectorFactory().createInstance(conf);
 
 		SearchResultsPage<DatasetSearchResult> results = connector.searchDataset("test",
 				Collections.emptyMap(), 0);
@@ -118,13 +118,13 @@ public class PMKIConnector implements DatasetCatalogConnector {
 
 }
 
-class PMKIClient implements AutoCloseable {
+class ShowVocClient implements AutoCloseable {
 
 	public static final String AUTH_SERVICE_CLASS = "Auth";
 
 	public static final String CORE_SERVICES_PATH = "it.uniroma2.art.semanticturkey/st-core-services/";
 
-	public static final String PMKI_SERVICE_CLASS = "PMKI";
+	public static final String SHOWVOC_SERVICE_CLASS = "ShowVoc";
 
 	private String apiBaseURL;
 	private String email;
@@ -133,7 +133,7 @@ class PMKIClient implements AutoCloseable {
 	private CloseableHttpClient httpClient;
 	private ObjectMapper objectMapper;
 
-	public PMKIClient(ExtensionPointManager exptManager, String apiBaseURL, String email, String password)
+	public ShowVocClient(ExtensionPointManager exptManager, String apiBaseURL, String email, String password)
 			throws MalformedURLException {
 		this.apiBaseURL = apiBaseURL;
 		this.email = email;
@@ -244,7 +244,7 @@ class PMKIClient implements AutoCloseable {
 	public SearchResultsPage<DatasetSearchResult> searchDataset(String query,
 			Map<String, List<String>> facets, int page) throws IOException {
 		String requestURL = UriComponentsBuilder.fromHttpUrl(apiBaseURL).path(CORE_SERVICES_PATH)
-				.path(PMKI_SERVICE_CLASS).path("/searchDataset").queryParam("query", query)
+				.path(SHOWVOC_SERVICE_CLASS).path("/searchDataset").queryParam("query", query)
 				.queryParam("facets", objectMapper.writeValueAsString(facets)).queryParam("page", page)
 				.build(false).encode().toUriString();
 		HttpGet httpGet = new HttpGet(requestURL);
@@ -256,7 +256,7 @@ class PMKIClient implements AutoCloseable {
 	public DatasetDescription describeDataset(String id, @Nullable String apiBaseURL,
 			@Nullable String frontendBaseURL) throws IOException {
 		UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(apiBaseURL);
-		uriBuilder.path(CORE_SERVICES_PATH).path(PMKI_SERVICE_CLASS).path("/describeDataset").queryParam("id",
+		uriBuilder.path(CORE_SERVICES_PATH).path(SHOWVOC_SERVICE_CLASS).path("/describeDataset").queryParam("id",
 				id);
 		if (apiBaseURL != null) {
 			uriBuilder.queryParam("apiBaseURL", apiBaseURL);

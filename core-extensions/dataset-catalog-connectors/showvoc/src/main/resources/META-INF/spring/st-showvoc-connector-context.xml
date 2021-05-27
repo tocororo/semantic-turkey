@@ -5,11 +5,11 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd">
 
-	<!-- Publishes the connector to PMKI -->
+	<!-- Publishes the connector to ShowVoc -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
-			class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.pmki.PMKIConnectorFactory" />
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.showvoc.ShowVocConnectorFactory" />
 	</osgi:service>
 
 </beans>

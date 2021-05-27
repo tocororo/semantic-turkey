@@ -7,7 +7,7 @@
 		<artifactId>st-dataset-catalog-connectors</artifactId>
 		<version>10.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>st-pmki-connector</artifactId>
+	<artifactId>st-showvoc-connector</artifactId>
 	<packaging>bundle</packaging>
 	<dependencies>
 		<dependency>

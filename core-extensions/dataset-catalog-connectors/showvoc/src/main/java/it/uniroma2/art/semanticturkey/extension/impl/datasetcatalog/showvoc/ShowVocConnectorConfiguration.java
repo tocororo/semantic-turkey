@@ -1,18 +1,18 @@
-package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.pmki;
+package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.showvoc;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 /**
- * Configuration class for {@link PMKIConnector}.
+ * Configuration class for {@link ShowVocConnector}.
  * 
  * @author <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  */
-public class PMKIConnectorConfiguration implements Configuration {
+public class ShowVocConnectorConfiguration implements Configuration {
 
 	public static class MessageKeys {
-		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.pmki.PMKIConnectorConfiguration";
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.showvoc.ShowVocConnectorConfiguration";
 
 		public static final String shortName = keyBase + ".shortName";
 		public static final String apiBaseURL$description = keyBase + ".apiBaseURL.description";
