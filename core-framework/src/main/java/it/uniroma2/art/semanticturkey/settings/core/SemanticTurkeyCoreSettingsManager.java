@@ -3,7 +3,7 @@ package it.uniroma2.art.semanticturkey.settings.core;
 import it.uniroma2.art.semanticturkey.extension.settings.PUSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.ProjectSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.SystemSettingsManager;
-import it.uniroma2.art.semanticturkey.settings.PGSettingsManager;
+import it.uniroma2.art.semanticturkey.extension.settings.PGSettingsManager;
 
 /**
  * A settings manager for Semantic Turkey core settings.

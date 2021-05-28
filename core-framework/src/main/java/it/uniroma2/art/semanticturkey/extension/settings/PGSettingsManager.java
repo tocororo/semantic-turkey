@@ -1,14 +1,11 @@
-package it.uniroma2.art.semanticturkey.settings;
+package it.uniroma2.art.semanticturkey.extension.settings;
 
-import it.uniroma2.art.semanticturkey.extension.settings.Settings;
-import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.impl.SettingsSupport;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.resources.Scope;
-import it.uniroma2.art.semanticturkey.settings.events.SettingsDefaultsUpdated;
 import it.uniroma2.art.semanticturkey.settings.events.SettingsUpdated;
 import it.uniroma2.art.semanticturkey.user.UsersGroup;
 import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
