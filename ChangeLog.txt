@@ -17,6 +17,7 @@ date: dd/mm/yyyy
   * made the configuration of rendering engines more user friendly (i.e. renaming ${languages} to ${userLangs} and ${show} to ${labels})
   * enabled events on settings managers
   * replaced PMKI references with "ShowVoc"
+  * fixed bug related to matching linkset targets to datasets registered in the metadata registry
   * updated dependency on Coda 1.7.2
   * updated dependency on Sheet2RDF 4.2.0
   * updated dependency on MAPLE 0.0.8

@@ -80,6 +80,7 @@ import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterFactory;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
+import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
@@ -1001,15 +1002,17 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"  OPTIONAL {\n" +
 				"    ?linkset void:linkPredicate ?linkPredicate .\n" +
 				"  }\n" +
-				"  OPTIONAL { ?targetDataset void:uriSpace ?targetDatasetUriSpace . }\n" +
-				"  OPTIONAL {\n" + 
-				"    ?record a dcat:CatalogRecord ;\n" + 
-				"      foaf:primaryTopic ?registeredTargetDataset .\n" + 
-				"    ?registeredTargetDataset void:uriSpace ?targetDatasetUriSpace ;\n" + 
-				"    OPTIONAL { GRAPH ?g { ?record a dcat:CatalogRecord . }}\n" + 
-				"  }  \n" + 
-				"  OPTIONAL { ?registeredTargetDataset dct:title ?registeredTargetDatasetTitle . }\n" +
 				"  OPTIONAL { ?targetDataset dct:title ?targetDatasetTitle . }\n" +
+				"  OPTIONAL { \n" +
+				"    ?targetDataset void:uriSpace ?targetDatasetUriSpace .\n" +
+				"    OPTIONAL {\n" +
+				"      ?record a dcat:CatalogRecord ;\n" +
+				"        foaf:primaryTopic ?registeredTargetDataset .\n" +
+				"      ?registeredTargetDataset void:uriSpace ?targetDatasetUriSpace ;\n" +
+				"      OPTIONAL { GRAPH ?g { ?record a dcat:CatalogRecord . }}\n" +
+				"      OPTIONAL { ?registeredTargetDataset dct:title ?registeredTargetDatasetTitle . }\n" +
+				"    }\n" +
+				"  }  \n" +
 				"}"
 				//@formatter:on
 			);
@@ -1068,10 +1071,10 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 				// if the declared target is exactly one of the registered datasets, then leave only that in
 				// the list
-				Optional<Target> matchingRegistedTarget = registeredTargets.stream()
+				Optional<Target> matchingRegisteredTarget = registeredTargets.stream()
 						.filter(t -> Objects.equals(t.getDataset(), targetDataset)).findAny();
-				if (matchingRegistedTarget.isPresent()) {
-					registeredTargets = Collections.singletonList(matchingRegistedTarget.get());
+				if (matchingRegisteredTarget.isPresent()) {
+					registeredTargets = Collections.singletonList(matchingRegisteredTarget.get());
 				}
 
 				LinksetMetadata linksetMetadata = new LinksetMetadata();
@@ -1795,7 +1798,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				return Optional.empty();
 			}
 		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException("It shouldn't have happend with UTF-8", e);
+			throw new RuntimeException("It shouldn't have happened with UTF-8", e);
 		}
 	}
 
