@@ -16,6 +16,7 @@ import it.uniroma2.art.semanticturkey.exceptions.UserSelfDeletionException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
@@ -25,6 +26,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
@@ -308,18 +311,45 @@ public class Users extends STServiceAdapter {
 			UsersManager.registerUser(user);
 			UsersManager.addAdmin(user);
 		} else { //not the first user
-			UsersManager.clearExpiredUnverifiedUser();
-			user.setStatus(UserStatus.UNVERIFIED);
-			user.setVerificationToken(new BigInteger(130, new SecureRandom()).toString(32));
-			UsersManager.registerUser(user);
-			//only if registration succeeds (no duplicated email/iri exception) sends verification email
-			try {
-				new VbEmailService().sendRegistrationVerificationMailToUser(user, vbHostAddress);
-			} catch (MessagingException | UnsupportedEncodingException | STPropertyAccessException e) {
-				//if exception is raised while sending the verification email, undo the user creation
-				UsersManager.deleteUser(user);
-				throw e;
+			/*
+			New registered user, two possible workflows:
+			1) email verification enabled: user is set as UNVERIFIED and an email is sent to the user for the
+			email address verification
+			2) email verification not enabled: user is set as NEW, an email is sent to the admin requiring
+			the user activation and another is sent to user informing to wait for the activation
+			 */
+			VbEmailService emailService = new VbEmailService();
+			boolean emailVerification = STPropertiesManager.getSystemSettings(
+					CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName()).emailVerification;
+			if (emailVerification) {
+				UsersManager.clearExpiredUnverifiedUser();
+				user.setStatus(UserStatus.UNVERIFIED);
+				user.setVerificationToken(new BigInteger(130, new SecureRandom()).toString(32));
+				UsersManager.registerUser(user);
+				//only if registration succeeds (no duplicated email/iri exception) sends verification email
+				try {
+					emailService.sendRegistrationMailToUser(user, vbHostAddress, true);
+				} catch (MessagingException | UnsupportedEncodingException | STPropertyAccessException e) {
+					//if exception is raised while sending the verification email,
+					//undo the user creation so that no unverified user is pending
+					UsersManager.deleteUser(user);
+					//and rethrow the exception since in this case is necessary to inform the client
+					throw e;
+				}
+			} else {
+				user.setStatus(UserStatus.NEW);
+				user.setActivationToken(new BigInteger(130, new SecureRandom()).toString(32));
+				UsersManager.registerUser(user);
+				//only if registration succeeds (no duplicated email/iri exception) sends emails
+				try {
+					emailService.sendRegistrationMailToUser(user, vbHostAddress, false);
+					emailService.sendRegistrationMailToAdmin(user, vbHostAddress);
+				} catch (MessagingException | UnsupportedEncodingException | STPropertyAccessException e) {
+					//catch error when sending email (probably email service not configured)
+					logger.error(Utilities.printFullStackTrace(e));
+				}
 			}
+
 
 		}
 	}

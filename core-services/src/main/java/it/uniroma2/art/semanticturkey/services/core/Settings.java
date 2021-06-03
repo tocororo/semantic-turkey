@@ -412,6 +412,7 @@ public class Settings extends STServiceAdapter {
         startupSettings.homeContent = coreSysSettings.homeContent;
         startupSettings.languages = defaultProjSettings.languages;
         startupSettings.showFlags = coreSysSettings.showFlags;
+        startupSettings.emailVerification = coreSysSettings.emailVerification;
         //privacyStatementAvailable is not a configurable settings, it needs to be evaluated on demand
         File psFile = new File(Resources.getDocsDir(), "privacy_statement.pdf");
         boolean privacyStatementAvailable = psFile.isFile();
@@ -434,6 +435,9 @@ public class Settings extends STServiceAdapter {
 
         @STProperty(description = "")
         public Boolean privacyStatementAvailable = false;
+
+        @STProperty(description = "")
+        public Boolean emailVerification = false;
 
         @STProperty(description = "")
         public Boolean showFlags = true;

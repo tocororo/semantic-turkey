@@ -24,6 +24,8 @@ public class CoreSystemSettings implements Settings {
                 + ".experimentalFeaturesEnabled.displayName";
         public static final String showFlags$description = keyBase + ".showFlags.description";
         public static final String showFlags$displayName = keyBase + ".showFlags.displayName";
+        public static final String emailVerification$description = keyBase + ".emailVerification.description";
+        public static final String emailVerification$displayName = keyBase + ".emailVerification.displayName";
         public static final String homeContent$description = keyBase + ".homeContent.description";
         public static final String homeContent$displayName = keyBase + ".homeContent.displayName";
         public static final String projectCreation$description = keyBase + ".projectCreation.description";
@@ -58,6 +60,10 @@ public class CoreSystemSettings implements Settings {
     @STProperty(description = "{" + MessageKeys.showFlags$description + "}", displayName = "{"
             + MessageKeys.showFlags$displayName + "}")
     public Boolean showFlags = true;
+
+    @STProperty(description = "{" + MessageKeys.emailVerification$description + "}", displayName = "{"
+            + MessageKeys.emailVerification$displayName + "}")
+    public Boolean emailVerification = false;
 
     @STProperty(description = "{" + MessageKeys.homeContent$description + "}", displayName = "{"
             + MessageKeys.homeContent$displayName + "}")
