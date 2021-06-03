@@ -47,7 +47,7 @@ public class StringToMapGenericConverter implements ConditionalGenericConverter 
 
 	@Override
 	public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
-		Map<String, String> rawMap;
+		Map<String, Object> rawMap;
 		try {
 			rawMap = mapper.readValue((String) source, new TypeReference<Map<String, Object>>() {
 			});

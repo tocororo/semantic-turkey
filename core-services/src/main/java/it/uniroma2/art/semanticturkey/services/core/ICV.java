@@ -9,6 +9,8 @@ import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
+import it.uniroma2.art.semanticturkey.data.nature.TripleScopes;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
@@ -28,25 +30,24 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
-import it.uniroma2.art.semanticturkey.vocabulary.OWLIM;
-import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.Query;
+import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
@@ -63,8 +64,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import javax.swing.plaf.nimbus.State;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -75,6 +76,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -97,7 +99,8 @@ public class ICV extends STServiceAdapter {
 	public static class ConsistencyViolation {
 
 		public String conditionName;
-		public List<Triple<AnnotatedValue<Resource>, AnnotatedValue<IRI>, AnnotatedValue<Value>>> inconsistentTriples;
+		public List<org.apache.commons.lang3.tuple.Triple> inconsistentTriples;
+		public List<Triple> inconsistentTriple2;
 
 	}
 
@@ -105,6 +108,7 @@ public class ICV extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
 	public List<ConsistencyViolation> listConsistencyViolations() {
 		try (RepositoryConnection conn = getRepository().getConnection()) {
+			// Determines the current ruleset. If none, throws an exception
 			TupleQuery rulesetQuery = conn.prepareTupleQuery(
 					"PREFIX sys: <http://www.ontotext.com/owlim/system#>                  \n" +
 					"SELECT ?state ?ruleset {                                             \n" +
@@ -119,6 +123,7 @@ public class ICV extends STServiceAdapter {
 					.map(Value::stringValue)
 					.orElseThrow(() -> new IllegalStateException("No ruleset is currently defined"));
 
+			// The actual consistency check
 			Update consistencyCheck = conn.prepareUpdate(
 				"PREFIX sys: <http://www.ontotext.com/owlim/system#>                               \n" +
 				"INSERT DATA {                                                                     \n" +
@@ -127,18 +132,17 @@ public class ICV extends STServiceAdapter {
 			try {
 				consistencyCheck.execute();
 			} catch (UpdateExecutionException e) {
-				String msg = e.getMessage();
-
-				Matcher matcher = CONSISTENCY_VIOLATION_PATTERN.matcher(msg);
-
 				List<ConsistencyViolation> violations = new ArrayList<>();
 
+				// Parses (what should be) the consistency violations report
+				String msg = e.getMessage();
+				Matcher matcher = CONSISTENCY_VIOLATION_PATTERN.matcher(msg);
 				ValueFactory vf = SimpleValueFactory.getInstance();
 
 				while (matcher.find()) {
 					String conditionName = matcher.group("conditionName");
 					String triplesRaw = matcher.group("inconsistentTriples");
-					Model inconsistentTriplesModel = new LinkedHashModel();
+					List<Statement> rawTriples = new ArrayList<>();
 					Arrays.stream(triplesRaw.split("\n")).map(String::trim).map(triple -> {
 						int subjectBegin = 0;
 						int subjectEnd = triple.indexOf(" ");
@@ -176,17 +180,69 @@ public class ICV extends STServiceAdapter {
 						}
 
 						return vf.createStatement(subject, predicate, object);
-					}).forEach(inconsistentTriplesModel::add);
+					}).forEach(rawTriples::add);
 
+					// Transforms the raw list of triples into a model for faster lookup
+					Model triplesAsModel = new LinkedHashModel(rawTriples);
+
+					// Deletes bnodes which are objects of other triples in the model. For simplicity, we assume acyclic
+					// graph wrt bnodes
+					triplesAsModel.removeIf(s -> s.getObject().isBNode() && triplesAsModel.contains(null, null, s.getObject()));
+
+					// Processes the remaining triples
+					List<Triple> processedTriples = new ArrayList<>(triplesAsModel.size());
+
+					// Determines the graphs to which each triple belongs to
+					TupleQuery graphQuery = conn.prepareTupleQuery("SELECT ?s ?p ?o ?g { GRAPH ?g { ?s ?p ?o } }");
+					BooleanQuery askExplicitNullCtxQuery = conn.prepareBooleanQuery("ASK { GRAPH <http://rdf4j.org/schema/rdf4j#nil> { ?s ?p ?o } }");
+					askExplicitNullCtxQuery.setIncludeInferred(false);
+					for (Statement st : rawTriples) {
+						graphQuery.setBinding("s", st.getSubject());
+						graphQuery.setBinding("p", st.getPredicate());
+						graphQuery.setBinding("o", st.getObject());
+
+						askExplicitNullCtxQuery.setBinding("s", st.getSubject());
+						askExplicitNullCtxQuery.setBinding("p", st.getPredicate());
+						askExplicitNullCtxQuery.setBinding("o", st.getObject());
+
+						Set<Resource> graphSet = QueryResults.stream(graphQuery.evaluate()).map(bs -> (Resource)bs.getValue("g")).collect(Collectors.toSet());
+						if (askExplicitNullCtxQuery.evaluate()) { // explicitly in the null context
+							graphSet.add(null);
+						} else if(graphSet.isEmpty()) { // if the triple is not in any graph nor is it in the null context, then it is inferred
+							graphSet.add(NatureRecognitionOrchestrator.INFERENCE_GRAPH);
+						}
+						String graphsAttribute = AbstractStatementConsumer.computeGraphs(graphSet);
+						TripleScopes tripleScopeAttribute = AbstractStatementConsumer.computeTripleScope(graphSet, getWorkingGraph());
+
+						AnnotatedValue<Resource> annotatedSubject = new AnnotatedValue<>(st.getSubject());
+						AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<>(st.getPredicate());
+						AnnotatedValue<Value> annotatedObject = new AnnotatedValue<>(st.getObject());
+
+						Triple aProcessedTriple = new Triple(annotatedSubject, annotatedPredicate, annotatedObject, graphsAttribute, tripleScopeAttribute);
+						processedTriples.add(aProcessedTriple);
+					}
+					TupleQuery explainQuery = conn.prepareTupleQuery("PREFIX proof: <http://www.ontotext.com/proof/>\n" +
+							"\n" +
+							"SELECT ?rule ?s ?p ?o ?context WHERE {\n" +
+							"    ?ctx proof:explain (?subject ?predicate ?object) .\n" +
+							"    ?ctx proof:rule ?rule .\n" +
+							"    ?ctx proof:subject ?s .\n" +
+							"    ?ctx proof:predicate ?p .\n" +
+							"    ?ctx proof:object ?o .\n" +
+							"    ?ctx proof:context ?context .\n" +
+							"}");
 
 					ConsistencyViolation aViolation = new ConsistencyViolation();
 					aViolation.conditionName = conditionName;
-					aViolation.inconsistentTriples = inconsistentTriplesModel.stream().map(st -> {
-						return Triple.of(new AnnotatedValue<>(st.getSubject()), new AnnotatedValue<>(st.getPredicate()), new AnnotatedValue<>((Value)st.getObject()));
+					aViolation.inconsistentTriples = rawTriples.stream().map(st -> {
+						return org.apache.commons.lang3.tuple.Triple.of(new AnnotatedValue<>(st.getSubject()), new AnnotatedValue<>(st.getPredicate()), new AnnotatedValue<>((Value)st.getObject()));
 					}).collect(Collectors.toList());
+					aViolation.inconsistentTriple2 =  processedTriples;
+
 					violations.add(aViolation);
 				}
 
+				// If no violation has been found, it means that the exception was related to something else
 				if (violations.isEmpty()) {
 					throw e;
 				}
@@ -196,6 +252,54 @@ public class ICV extends STServiceAdapter {
 		}
 
 		return Collections.emptyList();
+	}
+
+	private List<Triple> getProcessedTriples(ValueFactory vf, TupleQuery graphQuery, TupleQuery explainQuery, Collection<Statement> rawTriples) {
+		List<Triple> processedTriples = new ArrayList<>(rawTriples.size());
+
+		for (Statement st : rawTriples) {
+			graphQuery.setBinding("s", st.getSubject());
+			graphQuery.setBinding("p", st.getPredicate());
+			graphQuery.setBinding("o", st.getObject());
+
+			List<IRI> graphs = QueryResults.asList(graphQuery.evaluate()).stream().map(bs -> (IRI) bs.getValue("g")).collect(Collectors.toList());
+
+			boolean inferred = false;
+			List<Triple> annotatedPremises = null;
+
+			if (graphs.isEmpty()) { // either implicit or in the null context
+				explainQuery.setBinding("subject", st.getSubject());
+				explainQuery.setBinding("predicate", st.getPredicate());
+				explainQuery.setBinding("object", st.getObject());
+
+				List<BindingSet> premisesBindingSets = QueryResults.asList(explainQuery.evaluate());
+
+				if (premisesBindingSets.size() == 1 && Objects.equals(premisesBindingSets.iterator().next().getValue("rule"), "explicit")) {
+					// in the null context
+				} else {
+					inferred = true;
+					List<Statement> premisesModel = premisesBindingSets.stream().map(bs -> vf.createStatement((Resource) bs.getValue("s"), (IRI) bs.getValue("p"), bs.getValue("o"))).collect(Collectors.toList());
+					annotatedPremises = getProcessedTriples(vf, graphQuery, explainQuery, premisesModel);
+				}
+			}
+
+			AnnotatedValue<Resource> annotatedSubject = new AnnotatedValue<>(st.getSubject());
+			AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<>(st.getPredicate());
+			AnnotatedValue<Value> annotatedObject = new AnnotatedValue<>(st.getObject());
+
+/*
+			Triple annotatedTriple = new Triple(subject, predicate, object, graphs, tripleScope);
+			annotatedTriple.subject = annotatedSubject;
+			annotatedTriple.predicate = annotatedPredicate;;
+			annotatedTriple.object = annotatedObject;
+			annotatedTriple.graphs = graphs.size() > 0 ? graphs.stream().map(Object::toString).collect(Collectors.joining(",")) : inferred ? NatureRecognitionOrchestrator.INFERENCE_GRAPH.toString() : "";
+			annotatedTriple.tripleScope = graphs.size() > 0 ? NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(graphs, getWorkingGraph()) : TripleScopes.inferred;
+			annotatedTriple.premises = annotatedPremises;
+			processedTriples.add(annotatedTriple);
+*/
+		}
+
+		return processedTriples;
 	}
 
 	//-----ICV ON CONCEPTS STRUCTURE-----
@@ -1544,7 +1648,7 @@ public class ICV extends STServiceAdapter {
 		}
 		return redundancies;
 	}
-	
+
 	private class TripleForAnnotatedValue {
 		AnnotatedValue<Resource> subject;
 		AnnotatedValue<Resource> predicate;

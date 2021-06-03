@@ -35,9 +35,9 @@
 		<bundle dependency="true">mvn:commons-fileupload/commons-fileupload/1.3.1</bundle>
 
 		<bundle dependency="true">mvn:org.yaml/snakeyaml/1.18</bundle>
-		<bundle dependency="true">mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.9.6</bundle>
-		<bundle dependency="true">mvn:com.fasterxml.jackson.datatype/jackson-datatype-jdk8/2.9.6</bundle>
-		<bundle dependency="true">mvn:com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.9.6</bundle>
+		<bundle dependency="true">mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/${jackson.version}</bundle>
+		<bundle dependency="true">mvn:com.fasterxml.jackson.datatype/jackson-datatype-jdk8/${jackson.version}</bundle>
+		<bundle dependency="true">mvn:com.fasterxml.jackson.datatype/jackson-datatype-jsr310/${jackson.version}</bundle>
 
 		<bundle dependency="true">wrap:mvn:org.apache.axis/axis/1.4</bundle>
 

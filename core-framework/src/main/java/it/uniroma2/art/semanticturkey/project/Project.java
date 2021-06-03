@@ -313,7 +313,7 @@ public abstract class Project extends AbstractProject {
 			String labelsValue = stp_properties.getProperty(LABELS_PROP);
 			if (labelsValue != null) {
 				ObjectMapper mapper = new ObjectMapper();
-				labels = mapper.readValue(labelsValue, new TypeReference<Object>() {});
+				labels = mapper.readValue(labelsValue, new TypeReference<Map<String, String>>() {});
 			} else {
 				labels = new HashMap<>();
 			}

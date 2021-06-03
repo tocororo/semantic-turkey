@@ -473,7 +473,7 @@ public class STPropertiesManager {
                 try (Reader reader = new InputStreamReader(new FileInputStream(propFile),
                         StandardCharsets.UTF_8)) {
                     JsonNode jsonNode = objReader.readTree(reader);
-                    if (jsonNode != null) {
+                    if (jsonNode != null && !jsonNode.isMissingNode()) {
                         if (!(jsonNode instanceof ObjectNode))
                             throw new STPropertyAccessException(
                                     "YAML file not containing an object node: " + propFile);

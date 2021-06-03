@@ -98,8 +98,12 @@
 			</plugin>
 		</plugins>
 	</build>
-
 	<dependencies>
+		<dependency>
+			<groupId>com.google.code.findbugs</groupId>
+			<artifactId>annotations</artifactId>
+			<version>${annotations.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>jetty</groupId>
 			<artifactId>jetty</artifactId>
@@ -176,7 +180,7 @@
 			<artifactId>json</artifactId>
 			<version>20090211</version>
 		</dependency>
-<!-- The dependency to javax.validation is required for the definition of 
+<!-- The dependency to javax.validation is required for the definition of
 			constraints and validators -->
 		<dependency>
 			<groupId>javax.validation</groupId>
@@ -229,6 +233,11 @@
 			<groupId>org.apache.servicemix.bundles</groupId>
 			<artifactId>org.apache.servicemix.bundles.aspectj</artifactId>
 			<version>1.7.4_1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>${jackson.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
@@ -291,11 +300,6 @@
 			<groupId>it.uniroma2.art.lime</groupId>
 			<artifactId>lime-profiler</artifactId>
 			<version>${lime-api.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.code.findbugs</groupId>
-			<artifactId>annotations</artifactId>
-			<version>${annotations.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>it.uniroma2.art.maple</groupId>

@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.tx;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
 /**
@@ -26,7 +27,7 @@ public class STServiceInvocaton {
 
 	@Override
 	public String toString() {
-		return Objects.toStringHelper(STServiceInvocaton.class).add("method", method).add("args", Arrays.toString(arguments))
+		return MoreObjects.toStringHelper(STServiceInvocaton.class).add("method", method).add("args", Arrays.toString(arguments))
 				.toString();
 	}
 
