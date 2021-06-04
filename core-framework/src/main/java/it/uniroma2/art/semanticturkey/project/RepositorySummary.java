@@ -42,14 +42,16 @@ public class RepositorySummary {
 
 	private final String id;
 	private final String description;
-	private RemoteRepositorySummary remoteRepoSummary;
+	private final RemoteRepositorySummary remoteRepoSummary;
+	private final String backendType;
 
 	@JsonCreator
 	public RepositorySummary(@JsonProperty("id") String id, @JsonProperty("description") String description,
-			@JsonProperty("remoteRepoSummary") @Nullable RemoteRepositorySummary remoteRepoSummary) {
+							 @JsonProperty("remoteRepoSummary") @Nullable RemoteRepositorySummary remoteRepoSummary, @JsonProperty("backendType") @Nullable String backendType) {
 		this.id = id;
 		this.description = description;
 		this.remoteRepoSummary = remoteRepoSummary;
+		this.backendType = backendType;
 	}
 
 	public String getId() {
@@ -63,5 +65,10 @@ public class RepositorySummary {
 	@Nullable
 	public RemoteRepositorySummary getRemoteRepoSummary() {
 		return remoteRepoSummary;
+	}
+
+	@Nullable
+	public String getBackendType() {
+		return backendType;
 	}
 }

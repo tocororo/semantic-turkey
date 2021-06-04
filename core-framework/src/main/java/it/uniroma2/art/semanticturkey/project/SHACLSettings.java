@@ -33,8 +33,14 @@ public class SHACLSettings implements Settings {
 				+ ".logValidationViolations.description";
 		public static final String logValidationViolations$displayName = keyBase
 				+ ".logValidationViolations.displayName";
+		public static final String ignoreNoShapesLoadedException$description = keyBase
+				+ ".ignoreNoShapesLoadedException.description";
+		public static final String ignoreNoShapesLoadedException$displayName = keyBase
+				+ ".ignoreNoShapesLoadedException.displayName";
 		public static final String cacheSelectNodes$description = keyBase + ".cacheSelectNodes.description";
 		public static final String cacheSelectNodes$displayName = keyBase + ".cacheSelectNodes.displayName";
+		public static final String validationEnabled$displayName = keyBase + ".validationEnabled.displayName";
+		public static final String validationEnabled$description = keyBase + ".validationEnabled.description";
 		public static final String globalLogValidationExecution$description = keyBase
 				+ ".globalLogValidationExecution.description";
 		public static final String globalLogValidationExecution$displayName = keyBase
@@ -51,6 +57,22 @@ public class SHACLSettings implements Settings {
 				+ ".serializableValidation.description";
 		public static final String serializableValidation$displayName = keyBase
 				+ ".serializableValidation.displayName";
+		public static final String eclipseRdf4jShaclExtensions$description = keyBase
+				+ ".eclipseRdf4jShaclExtensions.description";
+		public static final String eclipseRdf4jShaclExtensions$displayName = keyBase
+				+ ".eclipseRdf4jShaclExtensions.displayName";
+		public static final String dashDataShapes$description = keyBase
+				+ ".dashDataShapes.description";
+		public static final String dashDataShapes$displayName = keyBase
+				+ ".dashDataShapes.displayName";
+		public static final String validationResultsLimitTotal$description = keyBase
+				+ ".validationResultsLimitTotal.description";
+		public static final String validationResultsLimitTotal$displayName = keyBase
+				+ ".validationResultsLimitTotal.displayName";
+		public static final String validationResultsLimitPerConstraint$description = keyBase
+				+ ".validationResultsLimitPerConstraint.description";
+		public static final String validationResultsLimitPerConstraint$displayName = keyBase
+				+ ".validationResultsLimitPerConstraint.displayName";
 	}
 
 	@Override
@@ -74,6 +96,14 @@ public class SHACLSettings implements Settings {
 			+ MessageKeys.logValidationViolations$description + "}")
 	public boolean logValidationViolations = ShaclSailConfig.LOG_VALIDATION_VIOLATIONS_DEFAULT;
 
+	@STProperty(displayName = "{" + MessageKeys.ignoreNoShapesLoadedException$displayName + "}", description = "{"
+			+ MessageKeys.ignoreNoShapesLoadedException$description + "}")
+	public boolean ignoreNoShapesLoadedException = ShaclSailConfig.IGNORE_NO_SHAPES_LOADED_EXCEPTION_DEFAULT;
+
+	@STProperty(displayName = "{" + MessageKeys.validationEnabled$displayName + "}", description = "{"
+			+ MessageKeys.validationEnabled$description + "}")
+	public boolean validationEnabled = ShaclSailConfig.VALIDATION_ENABLED_DEFAULT;
+
 	@STProperty(displayName = "{" + MessageKeys.cacheSelectNodes$displayName + "}", description = "{"
 			+ MessageKeys.cacheSelectNodes$description + "}")
 	public boolean cacheSelectNodes = ShaclSailConfig.CACHE_SELECT_NODES_DEFAULT;
@@ -93,4 +123,21 @@ public class SHACLSettings implements Settings {
 	@STProperty(displayName = "{" + MessageKeys.serializableValidation$displayName + "}", description = "{"
 			+ MessageKeys.serializableValidation$description + "}")
 	public boolean serializableValidation = ShaclSailConfig.SERIALIZABLE_VALIDATION_DEFAULT;
+
+	@STProperty(displayName = "{" + MessageKeys.eclipseRdf4jShaclExtensions$displayName + "}", description = "{"
+			+ MessageKeys.eclipseRdf4jShaclExtensions$description + "}")
+	public boolean eclipseRdf4jShaclExtensions = ShaclSailConfig.ECLIPSE_RDF4J_SHACL_EXTENSIONS_DEFAULT;
+
+	@STProperty(displayName = "{" + MessageKeys.dashDataShapes$displayName + "}", description = "{"
+			+ MessageKeys.dashDataShapes$description + "}")
+	public boolean dashDataShapes = ShaclSailConfig.DASH_DATA_SHAPES_DEFAULT;
+
+	@STProperty(displayName = "{" + MessageKeys.validationResultsLimitTotal$displayName + "}", description = "{"
+			+ MessageKeys.validationResultsLimitTotal$description + "}")
+	public long validationResultsLimitTotal = ShaclSailConfig.VALIDATION_RESULTS_LIMIT_TOTAL_DEFAULT;
+
+	@STProperty(displayName = "{" + MessageKeys.validationResultsLimitPerConstraint$displayName + "}", description = "{"
+			+ MessageKeys.validationResultsLimitPerConstraint$description + "}")
+	private long validationResultsLimitPerConstraint = ShaclSailConfig.VALIDATION_RESULTS_LIMIT_PER_CONSTRAINT_DEFAULT;
+
 }

@@ -1,7 +1,15 @@
 package it.uniroma2.art.semanticturkey.utilities;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.eclipse.rdf4j.http.client.RDF4JProtocolSession;
 import org.eclipse.rdf4j.http.client.SharedHttpClientSessionManager;
 import org.eclipse.rdf4j.http.protocol.Protocol;
@@ -27,6 +35,12 @@ import org.eclipse.rdf4j.repository.manager.SystemRepository;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 
 public interface ModelBasedRepositoryManager {
+
+	Model getRepositoryConfig(String id);
+
+	void addRepositoryConfig(Model model);
+
+	Repository getRepository(String id);
 
 	public class ModelBasedRepositoryConfig extends RepositoryConfig {
 		private Model model;
@@ -64,12 +78,6 @@ public interface ModelBasedRepositoryManager {
 		}
 	}
 
-	Model getRepositoryConfig(String id);
-
-	void addRepositoryConfig(Model model);
-
-	Repository getRepository(String id);
-
 	static class LocalRepositoryManagerAdapter implements ModelBasedRepositoryManager, AutoCloseable {
 
 		private ValueFactory vf;
@@ -81,7 +89,7 @@ public interface ModelBasedRepositoryManager {
 			this.repMgr = repMgr;
 			this.shutdownOnClose = shutdownOnClose;
 		}
-		
+
 		public LocalRepositoryManagerAdapter(LocalRepositoryManager repMgr) {
 			this(repMgr, true);
 		}
@@ -130,6 +138,14 @@ public interface ModelBasedRepositoryManager {
 			sessionManager = new SharedHttpClientSessionManager();
 		}
 
+		public static void restartGDBRepository(RemoteRepositoryManagerAdapter repMgr, String repId) throws IOException {
+			try (RDF4JProtocolSession protocolSession = repMgr.sessionManager
+					.createRDF4JProtocolSession(repMgr.serverURL)) {
+				protocolSession.setUsernameAndPassword(repMgr.username, repMgr.password);
+				protocolSession.getHttpClient().execute(new HttpPost(StringUtils.appendIfMissing(repMgr.serverURL, "/") + "/rest/repositories/" + URLEncoder.encode(repId, StandardCharsets.UTF_8.name()) + "/restart"));
+			}
+		}
+
 		@Override
 		public Model getRepositoryConfig(String id) {
 			// based on the sources of RemoteRepositoryManager
@@ -140,7 +156,7 @@ public interface ModelBasedRepositoryManager {
 
 				int serverProtocolVersion = Integer.parseInt(protocolSession.getServerProtocol());
 				if (serverProtocolVersion < 10) { // explicit per-repo config endpoint was introduced in
-													// Protocol version 10
+					// Protocol version 10
 					protocolSession
 							.setRepository(Protocol.getRepositoryLocation(serverURL, SystemRepository.ID));
 					protocolSession.getStatements(null, null, null, true, new StatementCollector(model));
@@ -183,6 +199,5 @@ public interface ModelBasedRepositoryManager {
 		public void close() {
 			sessionManager.shutDown();
 		}
-
 	}
 }

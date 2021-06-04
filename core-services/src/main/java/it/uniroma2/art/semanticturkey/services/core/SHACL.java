@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,14 +21,26 @@ import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLNoTargetShapeFromCla
 import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLNotEnabledException;
 import it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLTargetShapeNotExistingException;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManagerException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
+import it.uniroma2.art.semanticturkey.utilities.ModelBasedRepositoryManager;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.eclipse.rdf4j.exceptions.ValidationException;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Namespace;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Literals;
+import org.eclipse.rdf4j.model.util.ModelBuilder;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDF4J;
 import org.eclipse.rdf4j.query.GraphQuery;
@@ -35,14 +48,21 @@ import org.eclipse.rdf4j.query.GraphQueryResult;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.WriterConfig;
+import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.eclipse.rdf4j.sail.config.SailConfigSchema;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.eclipse.rdf4j.sail.shacl.ShaclSail;
+import org.eclipse.rdf4j.sail.shacl.config.ShaclSailConfig;
+import org.eclipse.rdf4j.sail.shacl.config.ShaclSailSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -177,6 +197,39 @@ public class SHACL extends STServiceAdapter {
 		getManagedConnection().clear(RDF4J.SHACL_SHAPE_GRAPH);
 	}
 
+	/**
+	 * Batch validates the repository.
+	 *
+	 * @return the SHACL validation report, describing any conformance violation
+	 */
+	@STServiceOperation
+	// @Read // Transaction is handled internally
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	public String batchValidation() {
+		Model reportAsModel;
+		try (RepositoryConnection con = getRepository().getConnection()) {
+			con.begin(ShaclSail.TransactionSettings.ValidationApproach.Bulk); // nothing to do, but forcing validation
+			con.commit();
+			// a successful commit means that no constraint is violated
+			reportAsModel = new ModelBuilder()
+					.subject(Values.bnode())
+						.add(RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SHACL.VALIDATION_REPORT)
+						.add(org.eclipse.rdf4j.model.vocabulary.SHACL.CONFORMS, true)
+					.build();
+		} catch(RepositoryException e) {
+			Throwable cause = ExceptionUtils.getRootCause(e);
+			if (cause instanceof ValidationException) {
+				reportAsModel = ((ValidationException) cause).validationReportAsModel();
+			} else {
+				// if the exception is not related to SHACL violations, rethrow it as it indicates an actual problem
+				throw e;
+			}
+		}
+
+		StringWriter reportStringWriter = new StringWriter();
+		Rio.write(reportAsModel, reportStringWriter, RDFFormat.TURTLE, new WriterConfig().set(BasicWriterSettings.PRETTY_PRINT, true).set(BasicWriterSettings.INLINE_BLANK_NODES, true));
+		return reportStringWriter.toString();
+	}
 
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
