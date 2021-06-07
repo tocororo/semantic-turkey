@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
@@ -33,7 +35,10 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -50,6 +55,7 @@ import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
@@ -60,7 +66,9 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
+import org.eclipse.rdf4j.repository.util.Connections;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,6 +82,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -81,6 +90,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 @STService
@@ -268,6 +278,20 @@ public class ICV extends STServiceAdapter {
 		TupleQuery graphQuery = conn.prepareTupleQuery("SELECT ?s ?p ?o ?g { GRAPH ?g { ?s ?p ?o } }");
 		BooleanQuery askExplicitNullCtxQuery = conn.prepareBooleanQuery("ASK { GRAPH <http://rdf4j.org/schema/rdf4j#nil> { ?s ?p ?o } }");
 		askExplicitNullCtxQuery.setIncludeInferred(false);
+
+		// Statements used for rendering blank nodes
+		Model statements = new LinkedHashModel();
+		Map<Resource, Map<String, Value>> resource2attributes = new HashMap<>();
+		Map<IRI, Map<Resource, Literal>> predicate2creShow = new HashMap<>();
+
+		// Performs a describe over blank nodes
+		List<BNode> blankNodes = Sets.union(triplesAsModel.subjects(), triplesAsModel.objects()).stream().filter(BNode.class::isInstance).map(BNode.class::cast).collect(Collectors.toList());
+		if (!blankNodes.isEmpty()) {
+			GraphQuery describeQuery = conn.prepareGraphQuery("DESCRIBE " + IntStream.range(0, blankNodes.size()).mapToObj(i -> "?x" + i).collect(Collectors.joining(" ")));
+			Streams.mapWithIndex(blankNodes.stream(), Pair::of).forEach(p->describeQuery.setBinding("x" + p.getValue(), p.getKey()));
+			QueryResults.stream(describeQuery.evaluate()).forEach(statements::add);
+		}
+		
 		for (Statement st : rawTriples) {
 			if (!triplesAsModel.contains(st)) continue; // skips triples that have been deletes (e.g. by bnode inlining)
 
@@ -292,6 +316,12 @@ public class ICV extends STServiceAdapter {
 			AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<>(st.getPredicate());
 			AnnotatedValue<Value> annotatedObject = new AnnotatedValue<>(st.getObject());
 
+			// Adds shows
+			AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering(annotatedSubject, resource2attributes, predicate2creShow, st.getPredicate(), statements, true);
+			AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering(annotatedPredicate, resource2attributes, predicate2creShow, st.getPredicate(), statements, true);
+			if (annotatedObject.getValue().isResource()) {
+				AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering((AnnotatedValue<Resource>)(Object)annotatedObject, resource2attributes, predicate2creShow, st.getPredicate(), statements, true);
+			}
 			Triple aProcessedTriple = new Triple(annotatedSubject, annotatedPredicate, annotatedObject, graphsAttribute, tripleScopeAttribute);
 			processedTriples.add(aProcessedTriple);
 		}
