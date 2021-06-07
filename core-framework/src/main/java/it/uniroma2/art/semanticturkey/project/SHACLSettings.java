@@ -138,6 +138,6 @@ public class SHACLSettings implements Settings {
 
 	@STProperty(displayName = "{" + MessageKeys.validationResultsLimitPerConstraint$displayName + "}", description = "{"
 			+ MessageKeys.validationResultsLimitPerConstraint$description + "}")
-	private long validationResultsLimitPerConstraint = ShaclSailConfig.VALIDATION_RESULTS_LIMIT_PER_CONSTRAINT_DEFAULT;
+	public long validationResultsLimitPerConstraint = ShaclSailConfig.VALIDATION_RESULTS_LIMIT_PER_CONSTRAINT_DEFAULT;
 
 }
