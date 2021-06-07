@@ -41,6 +41,8 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Literals;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -64,7 +66,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import javax.swing.plaf.nimbus.State;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -102,6 +103,52 @@ public class ICV extends STServiceAdapter {
 		public List<org.apache.commons.lang3.tuple.Triple> inconsistentTriples;
 		public List<Triple> inconsistentTriple2;
 
+	}
+
+	public static class InferenceExplanation  {
+		public String ruleName;
+		public List<Triple> premises;
+	}
+
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf', 'R')")
+	public InferenceExplanation explain(Resource subject, IRI predicate, Value object) {
+		RepositoryConnection conn = getManagedConnection();
+		ValueFactory vf = SimpleValueFactory.getInstance();
+
+		// Executes the query to obtain an explanation for an inferred triple
+		TupleQuery explainQuery = conn.prepareTupleQuery("PREFIX proof: <http://www.ontotext.com/proof/>\n" +
+				"\n" +
+				"SELECT ?rule ?s ?p ?o ?context WHERE {\n" +
+				"    ?ctx proof:explain (?subject ?predicate ?object) .\n" +
+				"    ?ctx proof:rule ?rule .\n" +
+				"    ?ctx proof:subject ?s .\n" +
+				"    ?ctx proof:predicate ?p .\n" +
+				"    ?ctx proof:object ?o .\n" +
+				"    ?ctx proof:context ?context .\n" +
+				"}");
+		explainQuery.setBinding("subject", subject);
+		explainQuery.setBinding("predicate", predicate);
+		explainQuery.setBinding("object", object);
+		List<BindingSet> explanationBindingSets = QueryResults.asList(explainQuery.evaluate());
+
+		if (explanationBindingSets.isEmpty()) {
+			throw new RuntimeException("Could not explain triple: " + NTriplesUtil.toNTriplesString(subject) + " " + NTriplesUtil.toNTriplesString(predicate) + " " + NTriplesUtil.toNTriplesString(object) + " .");
+		}
+
+		// Gets the rule name
+		String ruleName = Literals.getLabel(explanationBindingSets.iterator().next().getValue("rule"), "");
+
+		// Gets tge raw triples that are the conditions
+		List<Statement> rawTriples = explanationBindingSets.stream().map(bs -> vf.createStatement((Resource)bs.getValue("s"), (IRI)bs.getValue("p"),bs.getValue("o"))).collect(Collectors.toList());
+
+		List<Triple> processedTriples = getProcessedTriples(conn, rawTriples);
+		InferenceExplanation explanation = new InferenceExplanation();
+		explanation.ruleName = ruleName;
+		explanation.premises = processedTriples;
+
+		return explanation;
 	}
 
 	@STServiceOperation
@@ -182,55 +229,7 @@ public class ICV extends STServiceAdapter {
 						return vf.createStatement(subject, predicate, object);
 					}).forEach(rawTriples::add);
 
-					// Transforms the raw list of triples into a model for faster lookup
-					Model triplesAsModel = new LinkedHashModel(rawTriples);
-
-					// Deletes bnodes which are objects of other triples in the model. For simplicity, we assume acyclic
-					// graph wrt bnodes
-					triplesAsModel.removeIf(s -> s.getObject().isBNode() && triplesAsModel.contains(null, null, s.getObject()));
-
-					// Processes the remaining triples
-					List<Triple> processedTriples = new ArrayList<>(triplesAsModel.size());
-
-					// Determines the graphs to which each triple belongs to
-					TupleQuery graphQuery = conn.prepareTupleQuery("SELECT ?s ?p ?o ?g { GRAPH ?g { ?s ?p ?o } }");
-					BooleanQuery askExplicitNullCtxQuery = conn.prepareBooleanQuery("ASK { GRAPH <http://rdf4j.org/schema/rdf4j#nil> { ?s ?p ?o } }");
-					askExplicitNullCtxQuery.setIncludeInferred(false);
-					for (Statement st : rawTriples) {
-						graphQuery.setBinding("s", st.getSubject());
-						graphQuery.setBinding("p", st.getPredicate());
-						graphQuery.setBinding("o", st.getObject());
-
-						askExplicitNullCtxQuery.setBinding("s", st.getSubject());
-						askExplicitNullCtxQuery.setBinding("p", st.getPredicate());
-						askExplicitNullCtxQuery.setBinding("o", st.getObject());
-
-						Set<Resource> graphSet = QueryResults.stream(graphQuery.evaluate()).map(bs -> (Resource)bs.getValue("g")).collect(Collectors.toSet());
-						if (askExplicitNullCtxQuery.evaluate()) { // explicitly in the null context
-							graphSet.add(null);
-						} else if(graphSet.isEmpty()) { // if the triple is not in any graph nor is it in the null context, then it is inferred
-							graphSet.add(NatureRecognitionOrchestrator.INFERENCE_GRAPH);
-						}
-						String graphsAttribute = AbstractStatementConsumer.computeGraphs(graphSet);
-						TripleScopes tripleScopeAttribute = AbstractStatementConsumer.computeTripleScope(graphSet, getWorkingGraph());
-
-						AnnotatedValue<Resource> annotatedSubject = new AnnotatedValue<>(st.getSubject());
-						AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<>(st.getPredicate());
-						AnnotatedValue<Value> annotatedObject = new AnnotatedValue<>(st.getObject());
-
-						Triple aProcessedTriple = new Triple(annotatedSubject, annotatedPredicate, annotatedObject, graphsAttribute, tripleScopeAttribute);
-						processedTriples.add(aProcessedTriple);
-					}
-					TupleQuery explainQuery = conn.prepareTupleQuery("PREFIX proof: <http://www.ontotext.com/proof/>\n" +
-							"\n" +
-							"SELECT ?rule ?s ?p ?o ?context WHERE {\n" +
-							"    ?ctx proof:explain (?subject ?predicate ?object) .\n" +
-							"    ?ctx proof:rule ?rule .\n" +
-							"    ?ctx proof:subject ?s .\n" +
-							"    ?ctx proof:predicate ?p .\n" +
-							"    ?ctx proof:object ?o .\n" +
-							"    ?ctx proof:context ?context .\n" +
-							"}");
+					List<Triple> processedTriples = getProcessedTriples(conn, rawTriples);
 
 					ConsistencyViolation aViolation = new ConsistencyViolation();
 					aViolation.conditionName = conditionName;
@@ -254,51 +253,48 @@ public class ICV extends STServiceAdapter {
 		return Collections.emptyList();
 	}
 
-	private List<Triple> getProcessedTriples(ValueFactory vf, TupleQuery graphQuery, TupleQuery explainQuery, Collection<Statement> rawTriples) {
-		List<Triple> processedTriples = new ArrayList<>(rawTriples.size());
+	private List<Triple> getProcessedTriples(RepositoryConnection conn, List<Statement> rawTriples) {
+		// Transforms the raw list of triples into a model for faster lookup
+		Model triplesAsModel = new LinkedHashModel(rawTriples);
 
+		// Deletes bnodes which are objects of other triples in the model. For simplicity, we assume acyclic
+		// graph wrt bnodes
+		triplesAsModel.removeIf(s -> s.getSubject().isBNode() && triplesAsModel.contains(null, null, s.getObject()));
+
+		// Processes the remaining triples
+		List<Triple> processedTriples = new ArrayList<>(triplesAsModel.size());
+
+		// Determines the graphs to which each triple belongs to
+		TupleQuery graphQuery = conn.prepareTupleQuery("SELECT ?s ?p ?o ?g { GRAPH ?g { ?s ?p ?o } }");
+		BooleanQuery askExplicitNullCtxQuery = conn.prepareBooleanQuery("ASK { GRAPH <http://rdf4j.org/schema/rdf4j#nil> { ?s ?p ?o } }");
+		askExplicitNullCtxQuery.setIncludeInferred(false);
 		for (Statement st : rawTriples) {
+			if (!triplesAsModel.contains(st)) continue; // skips triples that have been deletes (e.g. by bnode inlining)
+
 			graphQuery.setBinding("s", st.getSubject());
 			graphQuery.setBinding("p", st.getPredicate());
 			graphQuery.setBinding("o", st.getObject());
 
-			List<IRI> graphs = QueryResults.asList(graphQuery.evaluate()).stream().map(bs -> (IRI) bs.getValue("g")).collect(Collectors.toList());
+			askExplicitNullCtxQuery.setBinding("s", st.getSubject());
+			askExplicitNullCtxQuery.setBinding("p", st.getPredicate());
+			askExplicitNullCtxQuery.setBinding("o", st.getObject());
 
-			boolean inferred = false;
-			List<Triple> annotatedPremises = null;
-
-			if (graphs.isEmpty()) { // either implicit or in the null context
-				explainQuery.setBinding("subject", st.getSubject());
-				explainQuery.setBinding("predicate", st.getPredicate());
-				explainQuery.setBinding("object", st.getObject());
-
-				List<BindingSet> premisesBindingSets = QueryResults.asList(explainQuery.evaluate());
-
-				if (premisesBindingSets.size() == 1 && Objects.equals(premisesBindingSets.iterator().next().getValue("rule"), "explicit")) {
-					// in the null context
-				} else {
-					inferred = true;
-					List<Statement> premisesModel = premisesBindingSets.stream().map(bs -> vf.createStatement((Resource) bs.getValue("s"), (IRI) bs.getValue("p"), bs.getValue("o"))).collect(Collectors.toList());
-					annotatedPremises = getProcessedTriples(vf, graphQuery, explainQuery, premisesModel);
-				}
+			Set<Resource> graphSet = QueryResults.stream(graphQuery.evaluate()).map(bs -> (Resource)bs.getValue("g")).collect(Collectors.toSet());
+			if (askExplicitNullCtxQuery.evaluate()) { // explicitly in the null context
+				graphSet.add(null);
+			} else if(graphSet.isEmpty()) { // if the triple is not in any graph nor is it in the null context, then it is inferred
+				graphSet.add(NatureRecognitionOrchestrator.INFERENCE_GRAPH);
 			}
+			String graphsAttribute = AbstractStatementConsumer.computeGraphs(graphSet);
+			TripleScopes tripleScopeAttribute = AbstractStatementConsumer.computeTripleScope(graphSet, getWorkingGraph());
 
 			AnnotatedValue<Resource> annotatedSubject = new AnnotatedValue<>(st.getSubject());
 			AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<>(st.getPredicate());
 			AnnotatedValue<Value> annotatedObject = new AnnotatedValue<>(st.getObject());
 
-/*
-			Triple annotatedTriple = new Triple(subject, predicate, object, graphs, tripleScope);
-			annotatedTriple.subject = annotatedSubject;
-			annotatedTriple.predicate = annotatedPredicate;;
-			annotatedTriple.object = annotatedObject;
-			annotatedTriple.graphs = graphs.size() > 0 ? graphs.stream().map(Object::toString).collect(Collectors.joining(",")) : inferred ? NatureRecognitionOrchestrator.INFERENCE_GRAPH.toString() : "";
-			annotatedTriple.tripleScope = graphs.size() > 0 ? NatureRecognitionOrchestrator.computeTripleScopeFromGraphs(graphs, getWorkingGraph()) : TripleScopes.inferred;
-			annotatedTriple.premises = annotatedPremises;
-			processedTriples.add(annotatedTriple);
-*/
+			Triple aProcessedTriple = new Triple(annotatedSubject, annotatedPredicate, annotatedObject, graphsAttribute, tripleScopeAttribute);
+			processedTriples.add(aProcessedTriple);
 		}
-
 		return processedTriples;
 	}
 
