@@ -820,7 +820,7 @@ public class OntologyManagerImpl implements OntologyManager {
 	private void guessMissingPrefix(RepositoryConnection conn, String ns) throws RDF4JException {
 		logger.debug("checking namespace: " + ns + " for missing prefix");
 		if (QueryResults.stream(conn.getNamespaces()).noneMatch(nsObj -> nsObj.getName().equals(ns))) {
-			String guessedPrefix = ModelUtilities.guessPrefix(ns);
+			String guessedPrefix = ModelUtilities.guessPrefix(ns, conn.getNamespaces());
 			if(guessedPrefix == null){
 				//the guess was not possible, so just return and add nothing
 				return;

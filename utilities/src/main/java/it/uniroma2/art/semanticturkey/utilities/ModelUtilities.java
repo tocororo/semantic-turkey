@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
@@ -13,10 +14,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.axis.types.NCName;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,12 +34,28 @@ public class ModelUtilities {
 	 * given namespace <code>namespace</code>, this tries to automatically suggest a prefix for it
 	 * 
 	 * @param namespace
+	 * @param namespaces
 	 * @return the guessed prefix, or null if the guess was not possible
 	 */
-	public static String guessPrefix(String namespace) {
-		int lowerCutIndex;
-		String tempString;
+	public static String guessPrefix(String namespace, RepositoryResult<Namespace> namespaces) {
+		//int lowerCutIndex;
+		//String tempString;
 		String prefix=null;
+
+
+		//prepare a map for the already existing prefix-namespace (and during the construction of this map, check if
+		// the input namespace does not already have a prefix, in that case return null, since there is no need to
+		// generate a new prefix for this namespace)
+		Map<String, String> prefixToNamespaceMap = new HashMap<>();
+		Iterator<Namespace> iter = namespaces.stream().iterator();
+		while(iter.hasNext()){
+			Namespace namespaceStruct = iter.next();
+			if(namespaceStruct.getName().equals(namespace)){
+				//the namespace is already present among the namespace having a prefix, so return null
+				return null;
+			}
+			prefixToNamespaceMap.put(namespaceStruct.getPrefix(), namespaceStruct.getName());
+		}
 
 		//first try to get the prefix from the file taken by prefix.cc via http://prefix.cc/popular/all.file.json
 		try {
@@ -49,8 +68,29 @@ public class ModelUtilities {
 		if(prefix!=null && !prefix.isEmpty() && isPrefixSyntValid(prefix)) {
 			return prefix;
 		}
-		// the prefix was not found in the prefix-namespace file, so try to automatically generate one
 
+		// the prefix was not found in the prefix-namespace file, so try to automatically generate one
+		String[] nsArray = namespace.split("/");
+		for(int i=nsArray.length-1; i>0; --i){
+			String nsPart = nsArray[i];
+			nsPart = nsPart.replace("#", "");
+			if(nsPart.isEmpty()){
+				// an empty string, so skip it
+				continue;
+			}
+			// check if the prefix is valid
+			if(isPrefixSyntValid(nsPart)){
+				// check if the prefix is not already present
+				if(prefixToNamespaceMap.get(nsPart)==null) {
+					//the proposed prefix is not already presnt in the map, so it can be used
+					return nsPart;
+				}
+			}
+		}
+		return null;
+
+		/*
+		// OLD guess algorithm
 		if (namespace.endsWith("/") || namespace.endsWith("#"))
 			tempString = namespace.substring(0, namespace.length() - 1);
 		else
@@ -68,6 +108,7 @@ public class ModelUtilities {
 
 		prefix = tempString.substring(lowerCutIndex + 1);
 		return isPrefixSyntValid(prefix) ? prefix : null;
+		*/
 	}
 
 	public static String getNamespaceFormPrefixFromFile(String prefix) throws  IOException {
