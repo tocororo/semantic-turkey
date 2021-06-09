@@ -1058,7 +1058,7 @@ public class Projects extends STServiceAdapter {
      * @throws InvalidProjectNameException
      */
     @STServiceOperation
-    @PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
+    @PreAuthorize("@auth.isAdmin()")
     public Collection<RepositorySummary> getRepositories(String projectName,
                                                          @Optional(defaultValue = "false") boolean excludeLocal)
             throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {

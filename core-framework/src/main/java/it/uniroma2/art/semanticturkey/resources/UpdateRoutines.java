@@ -192,6 +192,7 @@ public class UpdateRoutines {
 	}
 
 	private static void alignFrom3To4() throws IOException {
+		System.out.println("Update routine: 3.0 -> 4.0");
 		logger.debug("Version 4.0.0 renamed some settings files");
 		// users\<username>\plugins\<plugin>\system-preferences.props -> settings.props
 		// users\<username>\plugins\<plugin>\project-preference-defaults.props -> pu-settings-defaults.props
@@ -252,6 +253,7 @@ public class UpdateRoutines {
 	}
 
 	private static void alignFrom4To5() throws IOException {
+		System.out.println("Update routine: 4.0 -> 5.0");
 		logger.debug("Version 5.0.0 added a capability to some roles");
 		Role[] roles = { DefaultRole.LEXICOGRAPHER, DefaultRole.MAPPER, DefaultRole.ONTOLOGIST,
 				DefaultRole.PROJECTMANAGER, DefaultRole.RDF_GEEK, DefaultRole.THESAURUS_EDITOR };
@@ -263,6 +265,7 @@ public class UpdateRoutines {
 	}
 
 	private static void alignFrom5To6() throws IOException {
+		System.out.println("Update routine: 5.0 -> 6.0");
 		logger.debug("Version 6.0.0 added a docs folder under system/");
 		Resources.getDocsDir().mkdirs();
 
@@ -272,6 +275,7 @@ public class UpdateRoutines {
 	}
 
 	private static void alignFrom6To7() throws IOException {
+		System.out.println("Update routine: 6.0 -> 7.0");
 		logger.debug("Version 7.0.0 updated the class_tree_filter in the pu-settings-defaults");
 		Resources.getDocsDir().mkdirs();
 		updatePUSettingsSystemDefaults(Config.CORE_PLUGIN_ID);
@@ -279,6 +283,7 @@ public class UpdateRoutines {
 
 	private static void alignFrom7To8()
 			throws UnsupportedRDFormatException, IOException, ProjectAccessException {
+		System.out.println("Update routine: 7.0 -> 8.0");
 		logger.debug("Version 8.0 changed the namespace " + "associated with the metadata registry");
 		File catalogFile = new File(Config.getDataDir(), "metadataRegistry/catalog.ttl");
 		if (catalogFile.exists()) {
@@ -332,11 +337,13 @@ public class UpdateRoutines {
 	}
 
 	private static void alignFrom8To801() throws IOException {
+		System.out.println("Update routine: 8.0 -> 8.0.1");
 		logger.debug("Version 8.0.1 updated the languages in the project-settings-defaults");
 		updateProjectSettingsDefaults();
 	}
 
 	private static void alignFrom801To90() throws IOException {
+		System.out.println("Update routine: 8.0.1 -> 9.0");
 		logger.debug(
 				"Version 9.0 updated the URIGenerator and the RenderingEngine to the new style (including persistence of properties as YAML). Upgrade deferred on the fist attempt to obtain the description of the project, because we need the extension point manager");
 
@@ -347,6 +354,7 @@ public class UpdateRoutines {
 	}
 
 	private static void alignFrom90To10() throws IOException {
+		System.out.println("Update routine: 9.0 -> 10.0");
 		logger.debug(
 				"Version 10.0 updated Semantic Turkey core settings to the new style (including persistence of properties as YAML)");
 
