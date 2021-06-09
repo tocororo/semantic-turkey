@@ -103,6 +103,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -179,6 +181,8 @@ public class UpdateRoutines {
 	}
 
 	private static void alignFromPreviousTo3() throws IOException {
+		System.out.println("Update routine: x.y -> 3.0");
+
 		logger.debug("Version 3.0.0 added capabilities to some roles");
 		// In doubt, update all roles
 		Role[] roles = { DefaultRole.LEXICOGRAPHER, DefaultRole.MAPPER, DefaultRole.ONTOLOGIST,
@@ -249,6 +253,7 @@ public class UpdateRoutines {
 		updateRoles(roles);
 
 		logger.debug("Version 4.0.0 added groups and pg_bindings folders");
+		System.out.println("- Initializing PG bindings folder");
 		Resources.initializeGroups();
 	}
 
@@ -267,6 +272,7 @@ public class UpdateRoutines {
 	private static void alignFrom5To6() throws IOException {
 		System.out.println("Update routine: 5.0 -> 6.0");
 		logger.debug("Version 6.0.0 added a docs folder under system/");
+		System.out.println("Adding docs/ folder into system/");
 		Resources.getDocsDir().mkdirs();
 
 		logger.debug("Version 6.0.0 changed a property from the default project preferences");
@@ -284,7 +290,8 @@ public class UpdateRoutines {
 	private static void alignFrom7To8()
 			throws UnsupportedRDFormatException, IOException, ProjectAccessException {
 		System.out.println("Update routine: 7.0 -> 8.0");
-		logger.debug("Version 8.0 changed the namespace " + "associated with the metadata registry");
+		System.out.println("- Updating the namespace associated with the metadata registry");
+		logger.debug("Version 8.0 changed the namespace associated with the metadata registry");
 		File catalogFile = new File(Config.getDataDir(), "metadataRegistry/catalog.ttl");
 		if (catalogFile.exists()) {
 			replaceNamespaceDefinition(
@@ -310,6 +317,7 @@ public class UpdateRoutines {
 		// set the default <undetermined, DublinCore metadata> association if project has
 		// updateForRoles: resource, and DC properties as creation and modification properties
 		logger.debug("Version 8.0 replaced updateForRoles with the resource metadata mechanism");
+		System.out.println("- Replacing 'updateForRoles' with the resource metadata mechanism");
 
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		for (AbstractProject absProj : ProjectManager.listProjects()) {
@@ -355,6 +363,7 @@ public class UpdateRoutines {
 
 	private static void alignFrom90To10() throws IOException {
 		System.out.println("Update routine: 9.0 -> 10.0");
+		System.out.println("- Updating Semantic Turkey core settings to the new style (including persistence of properties as YAML)");
 		logger.debug(
 				"Version 10.0 updated Semantic Turkey core settings to the new style (including persistence of properties as YAML)");
 
@@ -852,10 +861,13 @@ public class UpdateRoutines {
 
 	private static void updateStoredPropertiesForComponentRenaming(String oldName, String newName)
 			throws IOException {
+		System.out.println("- Updating: " + oldName + " -> " + newName);
 		applyToComponentFolders(oldName, d -> d.renameTo(new File(d.getParentFile(), newName)));
 	}
 
 	private static void updateCustomServices(String... serviceID) throws IOException {
+		Arrays.stream(serviceID).forEach(s -> System.out.println("- Updating CustomService " + s));
+
 		File configFolder = STPropertiesManager
 				.getSystemPropertyFolder(CustomServiceDefinitionStore.class.getName());
 		FileUtils.forceMkdir(configFolder);
@@ -868,6 +880,7 @@ public class UpdateRoutines {
 	}
 
 	private static void updateInvokableReporters(String... reporterID) throws IOException {
+		Arrays.stream(reporterID).forEach(r -> System.out.println("- Updating InvokableReporter " + r));
 		File configFolder = STPropertiesManager
 				.getSystemPropertyFolder(InvokableReporterStore.class.getName());
 		FileUtils.forceMkdir(configFolder);
@@ -958,6 +971,7 @@ public class UpdateRoutines {
 	private static void updateRoles(Role[] roles) throws IOException {
 		File rolesDir = RBACManager.getRolesDir(null);
 		for (Role r : roles) {
+			System.out.println("- Updating role " + r);
 			Utilities.copy(
 					Resources.class.getClassLoader().getResourceAsStream(
 							"/it/uniroma2/art/semanticturkey/rbac/roles/role_" + r.getName() + ".pl"),
@@ -966,18 +980,19 @@ public class UpdateRoutines {
 	}
 
 	private static void updatePUSettingsSystemDefaults(String pluginId) throws IOException {
-		Utilities.copy(
-				Resources.class.getClassLoader()
-						.getResourceAsStream("/it/uniroma2/art/semanticturkey/properties/" + pluginId
-								+ "/pu-settings-defaults.props"),
-				STPropertiesManager.getPUSettingsSystemDefaultsFile(pluginId));
+		File targetFile = STPropertiesManager.getPUSettingsSystemDefaultsFile(pluginId);
+		System.out.println("- Updating: " + targetFile.getAbsolutePath());
+		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
+				"/it/uniroma2/art/semanticturkey/properties/" + pluginId + "/pu-settings-defaults.props"), targetFile);
 	}
 
 	@SuppressWarnings("unused")
 	private static void updateProjectSettingsDefaults() throws IOException {
+		File targetFile = STPropertiesManager.getProjectSettingsDefaultsFile(Config.CORE_PLUGIN_ID);
+		System.out.println("- Updating: " + targetFile.getAbsolutePath());
 		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
 				"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"),
-				STPropertiesManager.getProjectSettingsDefaultsFile(Config.CORE_PLUGIN_ID));
+				targetFile);
 	}
 
 	@SuppressWarnings("unused")
@@ -1029,6 +1044,7 @@ public class UpdateRoutines {
 	private static void renameFile(File parentFolder, String fromName, String toName) {
 		File fromFile = new File(parentFolder, fromName);
 		File toFile = new File(parentFolder, toName);
+		System.out.println("- Renaming: " + fromFile.getAbsolutePath() + " -> " + toFile.getAbsolutePath());
 		if (fromFile.exists()) {
 			if (toFile.exists()) {
 				toFile.delete();
