@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
@@ -351,12 +353,18 @@ public class ICV extends STServiceAdapter {
 			AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<>(st.getPredicate());
 			AnnotatedValue<Value> annotatedObject = new AnnotatedValue<>(st.getObject());
 
-			// Adds shows
+			// Add annotations to resources
+			for (AnnotatedValue<?> av : ImmutableList.of(annotatedSubject, annotatedPredicate, annotatedObject)) {
+				if (av.getValue().isResource()) {
+					AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering((AnnotatedValue<Resource>)(Object)av, resource2attributes, predicate2creShow, st.getPredicate(), statements, true);
+					AbstractStatementConsumer.addNature((AnnotatedValue<Resource>)(Object)av, resource2attributes);
+					AbstractStatementConsumer.addQName((AnnotatedValue<Resource>)(Object)av, resource2attributes);
+				}
+			}
+
 			AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering(annotatedSubject, resource2attributes, predicate2creShow, st.getPredicate(), statements, true);
 			AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering(annotatedPredicate, resource2attributes, predicate2creShow, st.getPredicate(), statements, true);
-			if (annotatedObject.getValue().isResource()) {
-				AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering((AnnotatedValue<Resource>)(Object)annotatedObject, resource2attributes, predicate2creShow, st.getPredicate(), statements, true);
-			}
+
 			Triple aProcessedTriple = new Triple(annotatedSubject, annotatedPredicate, annotatedObject, graphsAttribute, tripleScopeAttribute);
 			processedTriples.add(aProcessedTriple);
 		}
