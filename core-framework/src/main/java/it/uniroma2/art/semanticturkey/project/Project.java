@@ -384,8 +384,8 @@ public abstract class Project extends AbstractProject {
 
             RemoteRepositorySummary remoteRepoSummary;
 
-                java.util.Optional<STRepositoryInfo> stRepositoryInfo = repoManager
-                        .getSTRepositoryInfo(rep.getId());
+            java.util.Optional<STRepositoryInfo> stRepositoryInfo = repoManager
+                    .getSTRepositoryInfo(rep.getId());
 
             if (repImplConfig instanceof HTTPRepositoryConfig) {
                 HTTPRepositoryConfig httpRepConfig = ((HTTPRepositoryConfig) repImplConfig);

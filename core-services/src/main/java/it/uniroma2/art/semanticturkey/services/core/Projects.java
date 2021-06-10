@@ -42,6 +42,7 @@ import it.uniroma2.art.semanticturkey.services.annotations.*;
 import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataStore;
 import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummary;
 import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
 import it.uniroma2.art.semanticturkey.settings.core.PreloadProfilerSettings;
 import it.uniroma2.art.semanticturkey.settings.core.PreloadSettings;
@@ -119,6 +120,17 @@ public class Projects extends STServiceAdapter {
 
     @Autowired
     private PreloadedDataStore preloadedDataStore;
+
+    /**
+     * Returns the backend type of the context repository
+     * @return
+     */
+    @STServiceOperation
+    public String getContextRepositoryBackend() {
+        String repId = STServiceContextUtils.getRepostoryId(stServiceContext);
+        java.util.Optional<STRepositoryInfo> repInfo = getProject().getRepositoryManager().getSTRepositoryInfo(repId);
+        return repInfo.map(STRepositoryInfo::getBackendType).orElse(null);
+    }
 
     // TODO understand how to specify remote repository / different sail configurations
     @STServiceOperation(method = RequestMethod.POST)

@@ -32,6 +32,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
@@ -92,13 +94,15 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.util.stream.Collectors.joining;
+
 
 @STService
 public class ICV extends STServiceAdapter {
 	
 	@Autowired
 	private ResourceLocator resourceLocator;
-	
+
 	private ThreadLocal<Map<Project, RepositoryConnection>> projectConnectionHolder = ThreadLocal
 			.withInitial(HashMap::new);
 	
@@ -281,8 +285,7 @@ public class ICV extends STServiceAdapter {
 
 		// Statements used for rendering blank nodes
 		Model statements = new LinkedHashModel();
-		Map<Resource, Map<String, Value>> resource2attributes = new HashMap<>();
-		Map<IRI, Map<Resource, Literal>> predicate2creShow = new HashMap<>();
+
 
 		// Performs a describe over blank nodes
 		List<BNode> blankNodes = Sets.union(triplesAsModel.subjects(), triplesAsModel.objects()).stream().filter(BNode.class::isInstance).map(BNode.class::cast).collect(Collectors.toList());
@@ -291,7 +294,39 @@ public class ICV extends STServiceAdapter {
 			Streams.mapWithIndex(blankNodes.stream(), Pair::of).forEach(p->describeQuery.setBinding("x" + p.getValue(), p.getKey()));
 			QueryResults.stream(describeQuery.evaluate()).forEach(statements::add);
 		}
-		
+
+		// Get attributes for resources
+		List<Resource> resources = Streams.concat(triplesAsModel.subjects().stream(), triplesAsModel.predicates().stream(), triplesAsModel.objects().stream()).filter(Resource.class::isInstance).map(Resource.class::cast).distinct().collect(Collectors.toList());
+
+		Collection<AnnotatedValue<Resource>> annotatedResources;
+		if (!resources.isEmpty()) {
+			QueryBuilder qb;
+			StringBuilder sb = new StringBuilder();
+			sb.append(
+					// @formatter:off
+					" SELECT ?resource WHERE {		\n" +
+							IntStream.range(0, blankNodes.size()).mapToObj(i -> "{ BIND(?x" + i + " as ?resource) }").collect(Collectors.joining("\nUNION\n")) +
+							"} 																		\n" +
+							" GROUP BY ?resource													\n"
+					// @formatter:on
+			);
+			qb = createQueryBuilder(sb.toString());
+			qb.processStandardAttributes();
+			qb.process(LexicalEntryRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_lexicalEntryRendering");
+			qb.process(FormRenderer.INSTANCE_WITHOUT_FALLBACK, "resource", "attr_formRendering");
+
+			Streams.mapWithIndex(resources.stream(), Pair::of).forEach(p -> qb.setBinding("x" + p.getValue(), p.getKey()));
+
+			annotatedResources = qb.runQuery();
+		} else {
+			annotatedResources = Collections.emptyList();
+		}
+
+		// Stuff for the computation of resource attributes
+		Map<Resource, Map<String, Value>> resource2attributes = annotatedResources.stream().collect(Collectors.toMap(ar -> ar.getValue(), ar -> ar.getAttributes()));
+		Map<IRI, Map<Resource, Literal>> predicate2creShow = new HashMap<>();
+
+		// Process the statements that survived after bnode inlining
 		for (Statement st : rawTriples) {
 			if (!triplesAsModel.contains(st)) continue; // skips triples that have been deletes (e.g. by bnode inlining)
 
