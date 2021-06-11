@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
@@ -51,7 +50,6 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Literals;
-import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -70,9 +68,7 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
-import org.eclipse.rdf4j.repository.util.Connections;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
-import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,7 +82,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -95,8 +90,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static java.util.stream.Collectors.joining;
 
 
 @STService
@@ -116,8 +109,7 @@ public class ICV extends STServiceAdapter {
 	public static class ConsistencyViolation {
 
 		public String conditionName;
-		public List<org.apache.commons.lang3.tuple.Triple> inconsistentTriples;
-		public List<Triple> inconsistentTriple2;
+		public List<Triple> inconsistentTriples;
 
 	}
 
@@ -249,10 +241,7 @@ public class ICV extends STServiceAdapter {
 
 					ConsistencyViolation aViolation = new ConsistencyViolation();
 					aViolation.conditionName = conditionName;
-					aViolation.inconsistentTriples = rawTriples.stream().map(st -> {
-						return org.apache.commons.lang3.tuple.Triple.of(new AnnotatedValue<>(st.getSubject()), new AnnotatedValue<>(st.getPredicate()), new AnnotatedValue<>((Value)st.getObject()));
-					}).collect(Collectors.toList());
-					aViolation.inconsistentTriple2 =  processedTriples;
+					aViolation.inconsistentTriples =  processedTriples;
 
 					violations.add(aViolation);
 				}
@@ -1524,7 +1513,7 @@ public class ICV extends STServiceAdapter {
 		//now iterate over conceptToBroadersConceptMap to extract the cycles (if any)
 		List<List<String>> cyclesList = new ArrayList<>();
 		for( String concept : conceptToBroadersConceptMap.keySet()) {
-				calculateCycle(concept, new ArrayList<String>(), conceptToBroadersConceptMap, 
+				calculateCycle(concept, new ArrayList<>(), conceptToBroadersConceptMap,
 						cyclesList );
 		}
 		
@@ -1597,8 +1586,8 @@ public class ICV extends STServiceAdapter {
 			//since they have different sizes, they are different
 			return false;
 		}
-		for(int i=0; i<cycle1.size(); ++i) {
-			if(!cycle2.contains(cycle1.get(i))) {
+		for (String s : cycle1) {
+			if (!cycle2.contains(s)) {
 				// the i element of cycle1 is not contained in cycle2, so they do not contain the same
 				// elements
 				return false;
@@ -1684,20 +1673,17 @@ public class ICV extends STServiceAdapter {
 			TripleForAnnotatedValue tripleForRedundancy = tripleForRedundancyMap.get(key);
 			//check the AnnotatedValue to which of its "elements"refer to
 			String value = annotatedValue.getValue().stringValue();
-			boolean invert=false;
-			if(predicate.equals(NTriplesUtil.toNTriplesString(SKOS.NARROWER))) {
-				invert=true;
-			}
-			if(value.equals(concept)) {
+			boolean invert = predicate.equals(NTriplesUtil.toNTriplesString(SKOS.NARROWER));
+			if (value.equals(concept)) {
 				if(invert) {
 					tripleForRedundancy.setObject(annotatedValue);
 				} else {
 					tripleForRedundancy.setSubject(annotatedValue);
 				}
-			} else if(value.equals(predicate)) {
+			} else if (value.equals(predicate)) {
 				tripleForRedundancy.setPredicate(annotatedValue);
 			} else { //value.equals(other_concept)
-				if(invert) {
+				if (invert) {
 					tripleForRedundancy.setSubject(annotatedValue);
 				} else {
 					tripleForRedundancy.setObject(annotatedValue);
@@ -2102,12 +2088,12 @@ public class ICV extends STServiceAdapter {
 				RepositoryConnection connectionToOtherRepository = null;
 				String typeAndLocation = nsToLocationMap.get(namespace);
 				if(typeAndLocation.startsWith(RepositoryLocation.Location.local.toString())) {
-					String projName = typeAndLocation.split(RepositoryLocation.Location.local.toString()+":")[1]; 
+					String projName = typeAndLocation.split(RepositoryLocation.Location.local +":")[1];
 					connectionToOtherRepository = acquireManagedConnectionToProject(getProject(), ProjectManager.getProject(projName));
 				} else { // it is a remote alignments
 					if(!typeAndLocation.equals("remote:dereference")) { // it is a SPARQL endpoint
 						String sparqlEndPoint = typeAndLocation.split(
-								RepositoryLocation.Location.remote.toString()+":")[1]; 
+								RepositoryLocation.Location.remote +":")[1];
 						if(sparqlEndPoint != null) {
 							Repository sparqlRepository = new SPARQLRepository(sparqlEndPoint);
 							sparqlRepository.init();
@@ -2156,11 +2142,7 @@ public class ICV extends STServiceAdapter {
 							ObjectNode singleBrokenAlign = jsonFactory.objectNode();
 							singleBrokenAlign.putPOJO("subject", triple.getSubject());
 							singleBrokenAlign.putPOJO("predicate", triple.getPredicate());
-							if(isDeprecated) {
-								triple.getObject().setAttribute("deprecated", true);
-							} else {
-								triple.getObject().setAttribute("deprecated", false);
-							}
+							triple.getObject().setAttribute("deprecated", isDeprecated);
 							singleBrokenAlign.putPOJO("object", triple.getObject());
 							response.add(singleBrokenAlign);
 						}
@@ -2397,10 +2379,10 @@ public class ICV extends STServiceAdapter {
 				+ "(?:[a-z0-9-._~!$&'()*+,;=:@/]|%[0-9A-F]{2})*)?)"
 				+ "(?:\\\\?((?:[a-z0-9-._~!$&'()*+,;=:/?@]|%[0-9A-F]{2})*))?"
 				+ "(?:#((?:[a-z0-9-._~!$&'()*+,;=:/?@]|%[0-9A-F]{2})*))?";
-		
+
 		String queryPart ="FILTER ( (REGEX( str(?resource), \" \")) "
 				+ "|| !REGEX( str(?resource), \""+regex+"\", \"i\") ) \n";
-		
+
 		return queryPart;
 	}
 	
