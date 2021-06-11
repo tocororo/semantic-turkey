@@ -7,6 +7,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +72,7 @@ public class EUODPConnector implements DatasetCatalogConnector {
 	private static final String EUODP_V3_ENDPOINT = "http://data.europa.eu/euodp/data/api/3/";
 	private static final String DATASET_SEARCH_PATH = "action/package_search";
 
-	private static final String EUODP_SPARQL_ENDPOINT = "http://data.europa.eu/euodp/sparqlep";
+	private static final String EUODP_SPARQL_ENDPOINT = "http://data.europa.eu/sparql";
 
 	private static final int DEFAULT_PAGE_SIZE = 20;
 
@@ -234,7 +235,7 @@ public class EUODPConnector implements DatasetCatalogConnector {
 
 			IRI ontologyIRI = null;
 			URL datasetPage = UriComponentsBuilder
-					.fromHttpUrl("http://data.europa.eu/euodp/data/dataset/{id}")
+					.fromHttpUrl("https://data.europa.eu/data/datasets/{id}")
 					.buildAndExpand(ImmutableMap.of("id", id)).toUri().toURL();
 			List<Literal> titles = new ArrayList<>();
 			List<Literal> descriptions = new ArrayList<>();
@@ -259,7 +260,7 @@ public class EUODPConnector implements DatasetCatalogConnector {
 				//@formatter:on
 			);
 
-			IRI dataset = vf.createIRI("http://data.europa.eu/88u/dataset/", id);
+			IRI dataset = vf.createIRI("https://europeandataportal.eu/set/data/", id);
 			showQuery.setBinding("dataset", dataset);
 			Model triples = QueryResults.stream(showQuery.evaluate())
 					.map(bs -> SimpleValueFactory.getInstance().createStatement((Resource) bs.getValue("s"),
@@ -303,7 +304,7 @@ public class EUODPConnector implements DatasetCatalogConnector {
 	public static void main(String[] args) throws IOException {
 		EUODPConnector connector = new EUODPConnector();
 
-		// Map<String, List<String>> facets = new HashMap<>();
+		 Map<String, List<String>> facets = new HashMap<>();
 		// // facets.put("tag", Arrays.asList("Time", "IoT"));
 		// facets.put("res_format",
 		// Arrays.asList("http://publications.europa.eu/resource/authority/file-type/HTML"));
@@ -311,9 +312,9 @@ public class EUODPConnector implements DatasetCatalogConnector {
 		// Arrays.asList("http://publications.europa.eu/resource/authority/language/ENG"));
 		// // facets.put("unknown", Arrays.asList("English"));
 		//
-		// SearchResultsPage<DatasetSearchResult> results = connector.searchDataset("vocabulary", facets, 0);
-		//
-		// // System.out.println(results);
+		 SearchResultsPage<DatasetSearchResult> results = connector.searchDataset("vocabulary", facets, 0);
+
+		  System.out.println(results);
 		//
 		// System.out.println("-----");
 		//
