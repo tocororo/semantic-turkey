@@ -755,10 +755,9 @@ public abstract class Project extends AbstractProject {
     }
 
     private void updateProjectProperties() throws IOException {
-        FileOutputStream os = new FileOutputStream(infoSTPFile);
-        // properties.storeToXML(os, "local cache references for mirroring remote ontologies");
-        stp_properties.store(os, stpComment);
-        os.close();
+        try(FileOutputStream os = new FileOutputStream(infoSTPFile)) {
+            stp_properties.store(os, stpComment);
+        }
     }
 
     public long getTimeStamp() {

@@ -123,10 +123,8 @@ public class STMetadataRegistryBackendImpl extends MetadataRegistryBackendImpl
 	@Override
 	public synchronized void registerProject(Project project) {
 		try {
-			STUser user = UsersManager.getLoggedUser();
-			UsersGroup group = ProjectUserBindingsManager.getUserGroup(user, project);
-			StoredProjectMetadata settings = (StoredProjectMetadata) exptManager.getSettings(project,
-					user, group , ProjectMetadataStore.class.getName(), Scope.PROJECT);
+			StoredProjectMetadata settings = (StoredProjectMetadata) exptManager.getSettings(project,null,
+					null , ProjectMetadataStore.class.getName(), Scope.PROJECT);
 
 			if (!STPropertiesChecker.getModelConfigurationChecker(settings).isValid()) {
 				settings = null;
