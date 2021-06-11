@@ -294,12 +294,11 @@ public class ICV extends STServiceAdapter {
 			QueryBuilder qb;
 			StringBuilder sb = new StringBuilder();
 			sb.append(
-					// @formatter:off
-					" SELECT ?resource WHERE {		\n" +
-							IntStream.range(0, blankNodes.size()).mapToObj(i -> "{ BIND(?x" + i + " as ?resource) }").collect(Collectors.joining("\nUNION\n")) +
-							"} 																		\n" +
-							" GROUP BY ?resource													\n"
-					// @formatter:on
+				// @formatter:off
+				" SELECT ?resource WHERE {		\n" +
+				IntStream.range(0, resources.size()).mapToObj(i -> "{ BIND(?x" + i + " as ?resource) }").collect(Collectors.joining("\nUNION\n")) +
+				"} GROUP BY ?resource													\n"
+				// @formatter:on
 			);
 			qb = createQueryBuilder(sb.toString());
 			qb.processStandardAttributes();
@@ -345,14 +344,12 @@ public class ICV extends STServiceAdapter {
 			// Add annotations to resources
 			for (AnnotatedValue<?> av : ImmutableList.of(annotatedSubject, annotatedPredicate, annotatedObject)) {
 				if (av.getValue().isResource()) {
-					AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering((AnnotatedValue<Resource>)(Object)av, resource2attributes, predicate2creShow, st.getPredicate(), statements, true);
-					AbstractStatementConsumer.addNature((AnnotatedValue<Resource>)(Object)av, resource2attributes);
-					AbstractStatementConsumer.addQName((AnnotatedValue<Resource>)(Object)av, resource2attributes);
+					AnnotatedValue<Resource> av2 = (AnnotatedValue<Resource>)(Object)av;
+					AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering(av2, resource2attributes, predicate2creShow, st.getPredicate(), statements, true);
+					AbstractStatementConsumer.addNature(av2, resource2attributes);
+					AbstractStatementConsumer.addQName(av2, resource2attributes);
 				}
 			}
-
-			AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering(annotatedSubject, resource2attributes, predicate2creShow, st.getPredicate(), statements, true);
-			AbstractStatementConsumer.addShowViaDedicatedOrGenericRendering(annotatedPredicate, resource2attributes, predicate2creShow, st.getPredicate(), statements, true);
 
 			Triple aProcessedTriple = new Triple(annotatedSubject, annotatedPredicate, annotatedObject, graphsAttribute, tripleScopeAttribute);
 			processedTriples.add(aProcessedTriple);
