@@ -47,6 +47,6 @@ public class DatasetSearchResultPage {
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this).add("help", help).add("success", success)
-				.add("result", result).add("errror", error).toString();
+				.add("result", result).add("error", error).toString();
 	}
 }
