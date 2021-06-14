@@ -141,7 +141,7 @@
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-jira-backend/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-freedcamp-backend/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-sparql-custom-service-backend/${project.version}</bundle>
-		<bundle>mvn:it.uniroma2.art.semanticturkey/st-euodp-connector/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-dataeu-connector/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-lod-cloud-connector/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-lov-connector/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-showvoc-connector/${project.version}</bundle>

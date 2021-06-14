@@ -8,7 +8,7 @@
   <artifactId>st-dataset-catalog-connectors</artifactId>
   <packaging>pom</packaging>
   <modules>
-  	<module>euodp</module>
+  	<module>dataeu</module>
   	<module>lod-cloud</module>
   	<module>lov</module>
   	<module>showvoc</module>

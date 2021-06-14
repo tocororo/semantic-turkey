@@ -9,7 +9,7 @@
 
 	<osgi:service auto-export="interfaces">
 		<bean
-			class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.euodp.EUODPConnectorFactory" />
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.dataeu.DataEUConnectorFactory" />
 	</osgi:service>
 
 </beans>

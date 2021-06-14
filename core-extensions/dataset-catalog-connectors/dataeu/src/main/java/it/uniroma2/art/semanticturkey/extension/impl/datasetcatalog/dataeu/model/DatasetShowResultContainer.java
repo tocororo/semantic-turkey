@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.euodp.model;
+package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.dataeu.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
