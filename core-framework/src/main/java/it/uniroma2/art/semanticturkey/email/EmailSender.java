@@ -45,6 +45,13 @@ public class EmailSender {
 
 		if (sslEnabled) {
 			props.put("mail.smtp.ssl.enable", "true");
+			/*
+			the following is required since, if not specified, it seems that the mail API uses TLSv1 as default SSL
+			protocol which in some cases is disabled in jre\lib\security\java.security (prop: jdk.tls.disabledAlgorithms)
+			causing
+			javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)
+			 */
+			props.put("mail.smtp.ssl.protocols", "TLSv1.2");
 		} else if (starttlsEnabled) {
 			props.put("mail.smtp.starttls.enable", "true");
 		}
@@ -59,6 +66,7 @@ public class EmailSender {
 		} else {
 			session = Session.getInstance(props);
 		}
+		System.out.println(session.getProperties().getProperty("mail.smtp.ssl.protocols"));
 
 		Message message = new MimeMessage(session);
 		message.setFrom(new InternetAddress(mailFromAddress, mailFromAlias));
