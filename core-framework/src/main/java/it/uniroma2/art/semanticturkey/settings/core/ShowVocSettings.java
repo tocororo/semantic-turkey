@@ -9,6 +9,9 @@ public class ShowVocSettings implements STProperties {
 
 		public static final String shortName = keyBase + ".shortName";
 
+		public static final String disableContributions$description = keyBase + ".disableContributions.description";
+		public static final String disableContributions$displayName = keyBase + ".disableContributions.displayName";
+
 		public static final String vbConnectionConfig$description = keyBase + ".vbConnectionConfig.description";
 		public static final String vbConnectionConfig$displayName = keyBase + ".vbConnectionConfig.displayName";
 	}
@@ -17,6 +20,10 @@ public class ShowVocSettings implements STProperties {
 	public String getShortName() {
 		return "{" + MessageKeys.shortName + "}";
 	}
+
+	@STProperty(description = "{" + MessageKeys.disableContributions$description + "}", displayName = "{"
+			+ MessageKeys.disableContributions$displayName + "}")
+	public Boolean disableContributions;
 
 	@STProperty(description = "{" + MessageKeys.vbConnectionConfig$description + "}", displayName = "{"
 			+ MessageKeys.vbConnectionConfig$displayName + "}")
