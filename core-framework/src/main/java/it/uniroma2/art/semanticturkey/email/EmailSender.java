@@ -51,7 +51,8 @@ public class EmailSender {
 			causing
 			javax.net.ssl.SSLHandshakeException: No appropriate protocol (protocol is disabled or cipher suites are inappropriate)
 			 */
-			props.put("mail.smtp.ssl.protocols", "TLSv1.2");
+			String sslProtocols = mailSettings.smtp.sslProtocols != null ? mailSettings.smtp.sslProtocols : "TLSv1.2 TLSv1.3";
+			props.put("mail.smtp.ssl.protocols", sslProtocols);
 		} else if (starttlsEnabled) {
 			props.put("mail.smtp.starttls.enable", "true");
 		}
@@ -66,7 +67,6 @@ public class EmailSender {
 		} else {
 			session = Session.getInstance(props);
 		}
-		System.out.println(session.getProperties().getProperty("mail.smtp.ssl.protocols"));
 
 		Message message = new MimeMessage(session);
 		message.setFrom(new InternetAddress(mailFromAddress, mailFromAlias));

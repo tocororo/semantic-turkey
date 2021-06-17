@@ -1,6 +1,5 @@
 package it.uniroma2.art.semanticturkey.settings.core;
 
-import it.uniroma2.art.semanticturkey.email.EmailSender;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
@@ -19,6 +18,8 @@ public class SmtpMailSettings implements STProperties {
 		public static final String sslEnabled$displayName = keyBase + ".sslEnabled.displayName";
 		public static final String starttlsEnabled$description = keyBase + ".starttlsEnabled.description";
 		public static final String starttlsEnabled$displayName = keyBase + ".starttlsEnabled.displayName";
+		public static final String sslProtocols$description = keyBase + ".sslProtocols.description";
+		public static final String sslProtocols$displayName = keyBase + ".sslProtocols.displayName";
 	}
 
 	@Override
@@ -46,5 +47,8 @@ public class SmtpMailSettings implements STProperties {
 			+ MessageKeys.starttlsEnabled$displayName + "}")
 	public Boolean starttlsEnabled;
 
+	@STProperty(description = "{" + MessageKeys.sslProtocols$description + "}", displayName = "{"
+			+ MessageKeys.sslProtocols$displayName + "}")
+	public String sslProtocols = "TLSv1.2 TLSv1.3";
 
 }
