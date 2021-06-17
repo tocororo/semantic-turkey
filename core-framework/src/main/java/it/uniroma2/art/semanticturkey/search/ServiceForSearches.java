@@ -557,13 +557,19 @@ public class ServiceForSearches {
 		if(outgoingSearch!=null && outgoingSearch.size()>0) {
 			String valueOfProp = "?valueOfProp_"+cont;
 			for(TripleForSearch<IRI, String, SearchMode> tripleForSearch : outgoingSearch) {
-				query += "\n?resource "+NTriplesUtil.toNTriplesString(tripleForSearch.getPredicate())+" "+valueOfProp+" ." +
-						searchStrategy.searchSpecificModePrepareQuery(valueOfProp, 
-								tripleForSearch.getSearchString(), tripleForSearch.getMode(), null, null, 
-								includeLocales, false);
+				//be careful that the tripleForSearch.getPredicate() can be null, so in that case, use a variable
+				String predValueOrVar;
+				if(tripleForSearch.getPredicate() == null) {
+					predValueOrVar = "?inputPredNull"+cont;
+				} else {
+					predValueOrVar = NTriplesUtil.toNTriplesString(tripleForSearch.getPredicate());
+				}
+				query += "\n?resource "+predValueOrVar+" "+valueOfProp+" ." +
+						searchModePrepareQueryNoIndexes(valueOfProp, tripleForSearch.getSearchString(),
+								tripleForSearch.getMode());
 			}
 		}
-		
+
 		//the ingoingLinks part	
 		if(ingoingLinks!=null && ingoingLinks.size()>0) {
 			query += ServiceForSearches.filterWithOrOfAndPairValues(ingoingLinks, "?resource", "in", true);
@@ -571,6 +577,28 @@ public class ServiceForSearches {
 		
 		//@formatter:on
 		
+		return query;
+	}
+
+	// used by prepareQueryWithStatusOutgoingIngoing when outgoingSearch is not empty/null. It does not use any index,
+	// just plain old regex
+	private static String searchModePrepareQueryNoIndexes(String variable, String value, SearchMode searchMode){
+		String query ="";
+
+		if(searchMode == SearchMode.startsWith){
+			query="\nFILTER regex(str("+variable+"), '^"+value+"', 'i')";
+		} else if(searchMode == SearchMode.endsWith){
+			query="\nFILTER regex(str("+variable+"), '"+value+"$', 'i')";
+		} else if(searchMode == SearchMode.contains){
+			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')";
+		} else if(searchMode == SearchMode.fuzzy){
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", false);
+			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
+			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')";
+		} else { // searchMode.equals(exact)
+			query="\nFILTER regex(str("+variable+"), '^"+value+"$', 'i')";
+		}
+
 		return query;
 	}
 	
@@ -616,150 +644,7 @@ public class ServiceForSearches {
 		return output;
 	}
 	
-	/*public Collection<AnnotatedValue<Resource>> executeGenericSearchQuery(String query, Resource[] namedGraphs,
-			RepositoryConnection repositoryConnection){
-		
-		Collection<AnnotatedValue<Resource>> results = new ArrayList<AnnotatedValue<Resource>>();
-		
-		TupleQuery tupleQuery;
-		tupleQuery = repositoryConnection.prepareTupleQuery(query);
-		tupleQuery.setIncludeInferred(false);
-		
-		//set the dataset to search just in the UserNamedGraphs
-		SimpleDataset dataset = new SimpleDataset();
-		for(Resource namedGraph : namedGraphs){
-			if(namedGraph instanceof IRI){
-				dataset.addDefaultGraph((IRI) namedGraph);
-			}
-		}
-		tupleQuery.setDataset(dataset);
-		
-		TupleQueryResult tupleBindingsIterator = tupleQuery.evaluate();
-		
-		Map<String, ValueTypeAndShow> propertyMap = new HashMap<String, ValueTypeAndShow>();
-		Map<String, ValueTypeAndShow> otherResourcesMap = new HashMap<String, ValueTypeAndShow>();
-		
-		while (tupleBindingsIterator.hasNext()) {
-			BindingSet tupleBindings = tupleBindingsIterator.next();
-			Value value = tupleBindings.getBinding("resource").getValue();
 
-			if (!(value instanceof IRI)) {
-				continue;
-			}
-
-			RDFResourceRole role = null;
-			boolean isProp = false;
-			//since there are more than one element in the input role array, see the resource
-			String type = tupleBindings.getBinding("type").getValue().stringValue();
-			
-			role = getRoleFromType(type);
-			
-			if(role.equals(RDFResourceRole.cls)){
-				//remove all the classes which belongs to xml/rdf/rdfs/owl to exclude from the results those
-				// classes which are not visible in the class tree (as it is done in #ClsOld.getSubClasses since 
-				// when the parent class is Owl:Thing the service filters out those classes with 
-				// NoLanguageResourcePredicate)
-				String resNamespace = value.stringValue();
-				if(resNamespace.equals(XMLSchema.NAMESPACE) || resNamespace.equals(RDF.NAMESPACE) 
-						|| resNamespace.equals(RDFS.NAMESPACE) || resNamespace.equals(OWL.NAMESPACE) ){
-					continue;
-				}
-				if(!otherResourcesMap.containsKey(value.stringValue())){
-					ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
-					otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
-				}
-				
-			} else if(role.equals(RDFResourceRole.individual)){
-				//there a special section for the individual, since an individual can belong to more than a
-				// class, so the result set could have more tuple regarding a single individual, this way
-				// should speed up the process
-				if(!otherResourcesMap.containsKey(value.stringValue())){
-					ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
-					otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
-				}
-			} else if(role.equals(RDFResourceRole.property) || 
-					role.equals(RDFResourceRole.annotationProperty) || 
-					role.equals(RDFResourceRole.datatypeProperty) || 
-					role.equals(RDFResourceRole.objectProperty) || 
-					role.equals(RDFResourceRole.ontologyProperty) ) {
-				isProp = true;
-				//check if the property was already added before (with a different type)
-				if(propertyMap.containsKey(value.stringValue())){
-					ValueTypeAndShow prevValueTypeAndShow = propertyMap.get(value.stringValue());
-					if(prevValueTypeAndShow.getRole().equals(RDFResourceRole.property)){
-						//the previous value was property, now it has a different role, so replace the old 
-						// one with the new one
-						ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
-						propertyMap.put(value.stringValue(), valueTypeAndShow);
-					}
-				} else{
-					//the property map did not have a previous value, so add this one without any checking
-					ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
-					propertyMap.put(value.stringValue(), valueTypeAndShow);
-				}
-			} else{
-				//it is a concept, a conceptScheme or a collection, just add it to the otherMap
-				ValueTypeAndShow valueTypeAndShow = new ValueTypeAndShow((IRI) value, role);
-				//check if the map already has the resource, in case it has not the resorce, add it
-				if(!otherResourcesMap.containsKey(value.stringValue())){
-					otherResourcesMap.put(value.stringValue(), valueTypeAndShow);
-				}
-			}
-			
-			if(tupleBindings.hasBinding("show")){
-				Value showRes = tupleBindings.getBinding("show").getValue();
-				if(showRes instanceof Literal){
-					//check if the show belong to a property or to another type
-					if(isProp){
-						if(!propertyMap.get(value.stringValue()).hasShowValue((Literal) showRes)) {
-							propertyMap.get(value.stringValue()).addShow((Literal) showRes);
-						}
-					} else{
-						//is not a property
-						if(!otherResourcesMap.get(value.stringValue()).hasShowValue((Literal) showRes)){
-							otherResourcesMap.get(value.stringValue()).addShow((Literal) showRes);
-						}
-					}
-				}
-			}
-			
-			if(tupleBindings.hasBinding("scheme")){
-				Value scheme = tupleBindings.getBinding("scheme").getValue();
-				if(scheme instanceof IRI){
-					if(!otherResourcesMap.get(value.stringValue()).hasScheme((IRI) scheme)){
-						otherResourcesMap.get(value.stringValue()).addScheme((IRI) scheme);
-					}
-				}
-			}
-		}
-		
-		//now iterate over the 2 maps and construct the responses
-		for(String key : otherResourcesMap.keySet()){
-			ValueTypeAndShow valueTypeAndShow = otherResourcesMap.get(key);
-			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(valueTypeAndShow.getResource());
-			annotatedValue.setAttribute("explicit", true);
-			annotatedValue.setAttribute("role", valueTypeAndShow.getRole().name());
-			if(valueTypeAndShow.isShowPresent()){
-				annotatedValue.setAttribute("show", valueTypeAndShow.getShowAsString());
-			}
-			if(valueTypeAndShow.isSchemePresent()){
-				annotatedValue.setAttribute("schemes", valueTypeAndShow.getSchemesAsString());
-			}
-			results.add(annotatedValue);
-		}
-		for(String key : propertyMap.keySet()){
-			ValueTypeAndShow valueTypeAndShow = propertyMap.get(key);
-			AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(valueTypeAndShow.getResource());
-			annotatedValue.setAttribute("explicit", true);
-			annotatedValue.setAttribute("role", valueTypeAndShow.getRole().name());
-			if(valueTypeAndShow.isShowPresent() ){
-				annotatedValue.setAttribute("show", valueTypeAndShow.getShowAsString());
-			} 
-			results.add(annotatedValue);
-		}
-		return results;
-	}*/
-	
 	public Collection<String> executeGenericSearchQueryForStringList(String query, Resource[] namedGraphs,
 			RepositoryConnection repositoryConnection){
 		Collection<String> results = new ArrayList<>();
