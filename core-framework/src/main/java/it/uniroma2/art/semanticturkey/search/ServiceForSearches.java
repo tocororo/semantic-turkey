@@ -468,7 +468,7 @@ public class ServiceForSearches {
 				!isInstanceWanted && !isPropertyWanted && !isCollectionWanted && !isDataRangeWanted && 
 				!isLexiconWanted && !isLexicalEntryWanted){
 			
-			String msg = "the serch roles should be at least one of: "+
+			String msg = "the search roles should be at least one of: "+
 					RDFResourceRole.cls.name()+", "+
 					RDFResourceRole.concept.name()+", "+
 					RDFResourceRole.conceptScheme.name()+", "+

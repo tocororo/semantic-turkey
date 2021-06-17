@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Namespace;
@@ -32,6 +34,7 @@ import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sparql.query.QueryStringUtil;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
@@ -340,6 +343,112 @@ public class Search extends STServiceAdapter {
 				attrs.put("show", formRendering);
 			}
 		}
+	}
+
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
+	public Collection<AnnotatedValue<Resource>> searchAlignedResource(@Optional String[] rolesArray,
+								  @Optional List<IRI> predList, @Optional (defaultValue = "30") int maxNumOfResPerQuery){
+		Collection<AnnotatedValue<Resource>> results = new ArrayList<>();
+		List<IRI> matchResList = new ArrayList<>();
+
+		// first do a query on the project from stServiceContext.getProjectConsumer() to get all the resources having as
+		// namespace (they start with) the namespace getProject().getDefaultNamespace()
+		String currentNS = getProject().getDefaultNamespace();
+		ProjectConsumer otherPrjConsumser = stServiceContext.getProjectConsumer();
+		Project otherPrj = ProjectManager.getProject(otherPrjConsumser.getName());
+
+		ServiceForSearches serviceForSearches = new ServiceForSearches();
+		serviceForSearches.checksPreQuery(null, rolesArray, SearchMode.startsWith, true);
+		//@formatter:off
+		StringBuilder query = new StringBuilder("SELECT DISTINCT ?matchRes" +
+				"\nWHERE{");
+		query.append(serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, null, null,
+				null));
+		// if predList is not null/empty, then use these values
+		if(predList!=null && !predList.isEmpty()) {
+			boolean first = true;
+			query.append("?resource");
+			for(IRI pred : predList){
+				if(!first){
+					query.append(" | ");
+				}
+				first = false;
+				query.append(NTriplesUtil.toNTriplesString(pred));
+			}
+
+			query.append(" ?matchRes .");
+		} else {
+			query.append("\n?resource ?pred ?matchRes .");
+		}
+		// check that ?matchRes is an IRI
+		query.append("\nFILTER isIRI(?matchRes)");
+		// apply the regex
+		query.append("\nFILTER REGEX(str(?matchRes), \"^").append(currentNS).append("\", \"i\")")
+				.append("\n}");
+		//@formatter:on
+
+
+		//execute the query
+		try(RepositoryConnection conn = otherPrj.getRepository().getConnection()){
+			TupleQuery tupleQuery = conn.prepareTupleQuery(query.toString());
+			tupleQuery.setIncludeInferred(false);
+			try(TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
+				while(tupleQueryResult.hasNext()) {
+					BindingSet bindingSet = tupleQueryResult.next();
+					IRI matchRes = (IRI) bindingSet.getValue("matchRes");
+					matchResList.add(matchRes);
+				}
+			}
+		}
+
+		//prepare and execute another query on the current dataset to get the data about the results of the previous
+		// query
+		List<IRI> reducedIriList = new ArrayList<>();
+		String queryBefore, queryAfter;
+		queryBefore = "SELECT ?resource "+
+				"\nWHERE {"+
+				"\nVALUES ?resource {";
+
+		queryAfter = " } " +
+				serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, null, null,
+						null)+
+				"\n}";
+
+		while(!matchResList.isEmpty()){
+			IRI iri = matchResList.remove(0);
+			reducedIriList.add(iri);
+			if(reducedIriList.size()>=maxNumOfResPerQuery){
+				//create and execute the query
+				query = new StringBuilder(queryBefore);
+				for(IRI iri2 : reducedIriList ){
+					query.append(" ").append(NTriplesUtil.toNTriplesString(iri2)).append(" ");
+				}
+				query.append(queryAfter);
+				results.addAll(executeQuery(query.toString()));
+				//clear reducedIriList
+				reducedIriList.clear();
+			}
+
+		}
+		//if reducedIriList is not empty, then create and execute the query
+		query = new StringBuilder(queryBefore);
+		for(IRI iri : reducedIriList ){
+			query.append(" ").append(NTriplesUtil.toNTriplesString(iri)).append(" ");
+		}
+		query.append(queryAfter);
+		results.addAll(executeQuery(query.toString()));
+
+		return results;
+	}
+
+	private Collection<AnnotatedValue<Resource>> executeQuery(String query){
+		QueryBuilder qb;
+		qb = new QueryBuilder(stServiceContext, query);
+		qb.processQName();;
+		qb.processRendering();
+		return qb.runQuery();
 	}
 
 	/**
