@@ -68,6 +68,9 @@ public abstract class CHANGETRACKER {
 	/** ct:enabled */
 	public static final IRI ENABLED;
 
+	/** ct:undo */
+	public static final IRI UNDO;
+
 	static {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
@@ -89,5 +92,7 @@ public abstract class CHANGETRACKER {
 		ACCEPT = vf.createIRI(NAMESPACE, "accept");
 		REJECT = vf.createIRI(NAMESPACE, "reject");
 		ENABLED = vf.createIRI(NAMESPACE, "enabled");
+
+		UNDO = vf.createIRI(NAMESPACE, "undo");
 	}
 }

@@ -1,5 +1,6 @@
 version 10.0
 date: dd/mm/yyyy
+  * added undo management
   * added the possibility in the advancedSearch to not pass the predicate in predicate-object where the object can be text-searched
   * allowed to disable validation on commit in projects with SHACL validation enabled
   * introduced batch SHACL validation of a repository producing a validation report

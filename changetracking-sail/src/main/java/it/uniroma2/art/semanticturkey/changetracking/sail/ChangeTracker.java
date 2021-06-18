@@ -96,10 +96,12 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 	protected final Model graphManagement;
 	protected final boolean historyEnabled;
 	protected final boolean validationEnabled;
+	protected final boolean undoEnabled;
 	protected final boolean blacklistEnabled;
 	protected final Optional<Boolean> interactiveNotifications;
 	private Function<String, Repository> repositoryResolver;
 
+	protected Optional<UndoStack> undoStack;
 	static {
 		props = new Properties();
 		try {
@@ -120,8 +122,8 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 	}
 
 	public ChangeTracker(/* @Nullable */ String serverURL, String supportRepoId, String metadataNS,
-			IRI historyGraph, Set<IRI> includeGraph, Set<IRI> excludeGraph, boolean historyEnabled,
-			boolean validationEnabled, Optional<Boolean> interactiveNotifications,
+										 IRI historyGraph, Set<IRI> includeGraph, Set<IRI> excludeGraph, boolean historyEnabled,
+										 boolean validationEnabled, boolean undoEnabled, Optional<Boolean> interactiveNotifications,
 			/* @Nullable */ IRI validationGraph, boolean blacklistEnabled,
 			/* @Nullable */ IRI blacklistGraph) {
 		this.serverURL = serverURL;
@@ -147,7 +149,12 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 			graphManagement.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.VALIDATION_GRAPH,
 					validationGraph);
 		}
-
+		this.undoEnabled = undoEnabled;
+		if (this.undoEnabled) {
+			undoStack = Optional.of(new UndoStack());
+		} else {
+			undoStack = Optional.empty();
+		}
 		this.blacklistEnabled = blacklistEnabled;
 		if (blacklistGraph != null) {
 			graphManagement.add(CHANGETRACKER.GRAPH_MANAGEMENT, CHANGETRACKER.BLACKLIST_GRAPH,

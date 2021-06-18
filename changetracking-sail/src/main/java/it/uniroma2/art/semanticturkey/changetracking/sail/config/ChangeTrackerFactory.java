@@ -71,7 +71,7 @@ public class ChangeTrackerFactory implements SailFactory {
 		}
 
 		return new ChangeTracker(serverURL, metadataRepoId, metadataNS, metadataGraph, includeGraph,
-				excludeGraph, historyEnabled, validationEnabled, interactiveNotifications, validationGraph,
+				excludeGraph, historyEnabled, validationEnabled, true, interactiveNotifications, validationGraph,
 				blacklistEnabled, blacklistGraph);
 	}
 
