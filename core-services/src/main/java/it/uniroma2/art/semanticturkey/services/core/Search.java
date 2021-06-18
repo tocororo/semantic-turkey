@@ -349,7 +349,7 @@ public class Search extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'R')")
-	Collection<AnnotatedValue<Resource>> searchAlignedResources(
+	public Collection<AnnotatedValue<Resource>> searchAlignedResources(
 					String searchString,
 					boolean useLocalName,
 					boolean useURI,
