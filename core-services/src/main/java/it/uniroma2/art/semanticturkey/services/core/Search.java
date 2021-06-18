@@ -376,17 +376,33 @@ public class Search extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = new QueryBuilder(stServiceContext, query);
-		qb.processQName();;
+		qb.processQName();
 		qb.processRendering();
 		//execute the query and save the result in initialAnnValueList (the final result of this service will be a
 		// subset of this Collection)
 		Collection<AnnotatedValue<Resource>> initialAnnValueList = qb.runQuery();
 
-		//prepare a list of IRI from initialAnnValueList
+		// do a SPARQL query to get all the resource explicitly defined
+		Set<IRI> refDefinedSet = new HashSet<>();
+		try(RepositoryConnection conn = getProject().getRepository().getConnection()){
+			Resource wg = getWorkingGraph();
+			query = "SELECT ?resource " +
+					"\nWHERE {" +
+					"\nGRAPH "+NTriplesUtil.toNTriplesString(wg) +" { "+
+					"\n?resource a ?type ." +
+					"\n}" +
+					"\n}";
+			executeQueryOneVar(query, "resource", conn, refDefinedSet);
+		}
+
+		// prepare a list of IRI from initialAnnValueList (and filter it using refDefinedSet)
 		List<IRI> initialIriResList = new ArrayList<>();
 		for(AnnotatedValue<Resource> annotatedValue : initialAnnValueList){
 			if(annotatedValue.getValue() instanceof IRI) {
-				initialIriResList.add((IRI) annotatedValue.getValue());
+				IRI resource = (IRI) annotatedValue.getValue();
+				if(refDefinedSet.contains(resource)) {
+					initialIriResList.add((IRI) annotatedValue.getValue());
+				}
 			}
 		}
 
@@ -427,7 +443,7 @@ public class Search extends STServiceAdapter {
 						sb.append(" ").append(NTriplesUtil.toNTriplesString(iri)).append(" ");
 					}
 					query = queryBefore+sb.toString()+queryAfter;
-					objResInDatasetSet.addAll(executeQuery(query, "otherRes", conn));
+					executeQueryOneVar(query, "otherRes", conn, objResInDatasetSet);
 					//clear reducedIriList
 					reducedIriList.clear();
 				}
@@ -437,7 +453,7 @@ public class Search extends STServiceAdapter {
 				sb.append(" ").append(NTriplesUtil.toNTriplesString(iri)).append(" ");
 			}
 			query = queryBefore+sb.toString()+queryAfter;
-			objResInDatasetSet.addAll(executeQuery(query, "otherRes", conn));
+			executeQueryOneVar(query, "otherRes", conn, objResInDatasetSet);
 		}
 
 		// iterate over the initialAnnValueList and keep only the initialAnnValueList being present in objResInDataset
@@ -453,8 +469,8 @@ public class Search extends STServiceAdapter {
 		return  annotatedValueList;
 	}
 
-	private Collection<IRI> executeQuery(String query, String var, RepositoryConnection conn){
-		Collection<IRI> resultList = new ArrayList<>();
+	private void executeQueryOneVar(String query, String var, RepositoryConnection conn,
+									Collection<IRI> collection){
 
 		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
 		tupleQuery.setIncludeInferred(false);
@@ -463,12 +479,10 @@ public class Search extends STServiceAdapter {
 				BindingSet bindingSet = tupleQueryResult.next();
 				Value value = bindingSet.getValue(var);
 				if(value instanceof IRI) {
-					resultList.add((IRI) value);
+					collection.add((IRI) value);
 				}
 			}
 		}
-
-		return resultList;
 	}
 
 	/**
@@ -536,7 +550,7 @@ public class Search extends STServiceAdapter {
 
 		QueryBuilder qb;
 		qb = new QueryBuilder(stServiceContext, query);
-		qb.processQName();;
+		qb.processQName();
 		qb.processRendering();
 		return qb.runQuery();
 
