@@ -413,7 +413,9 @@ public class Settings extends STServiceAdapter {
         startupSettings.languages = defaultProjSettings.languages;
         startupSettings.showFlags = coreSysSettings.showFlags;
         startupSettings.emailVerification = coreSysSettings.emailVerification;
-        startupSettings.disableContributions = coreSysSettings.showvoc.disableContributions;
+        if (coreSysSettings.showvoc != null && coreSysSettings.showvoc.disableContributions != null) {
+            startupSettings.disableContributions = coreSysSettings.showvoc.disableContributions;
+        }
         //privacyStatementAvailable is not a configurable settings, it needs to be evaluated on demand
         File psFile = new File(Resources.getDocsDir(), "privacy_statement.pdf");
         startupSettings.privacyStatementAvailable = psFile.isFile();
