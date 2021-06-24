@@ -1,18 +1,5 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail.config;
 
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.EXCLUDE_GRAPH;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_GRAPH;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.METADATA_NS;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.SUPPORT_REPOSITORY_ID;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INCLUDE_GRAPH;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.INTERACTIVE_NOTIFICATIONS;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.SERVER_URL;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.HISTORY_ENABLED;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.VALIDATION_ENABLED;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.VALIDATION_GRAPH;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.BLACKLISTING_ENABLED;
-import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.BLACKLIST_GRAPH;
-
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
@@ -33,6 +20,8 @@ import org.eclipse.rdf4j.sail.config.SailImplConfig;
 import it.uniroma2.art.semanticturkey.changetracking.sail.ChangeTracker;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 
+import static it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema.*;
+
 /**
  * A configuration class for the {@link ChangeTracker} sail.
  * 
@@ -52,6 +41,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 	private IRI validationGraph;
 	private boolean blacklistingEnabled;
 	private IRI blacklistGraph;
+	private boolean undoEnabled;
 
 	public ChangeTrackerConfig() {
 		this(null);
@@ -68,10 +58,11 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		interactiveNotifications = null;
 		validationGraph = null;
 		blacklistGraph = null;
-		historyEnabled = true;
+		historyEnabled = false;
 		validationEnabled = false;
 		blacklistingEnabled = false;
 		blacklistGraph = null;
+		undoEnabled = false;
 	}
 
 	public String getSupportRepositoryID() {
@@ -162,6 +153,14 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		this.blacklistGraph = blacklistGraph;
 	}
 
+	public boolean isUndoEnabled() {
+		return undoEnabled;
+	}
+
+	public void setUndoEnabled(boolean undoEnabled) {
+		this.undoEnabled = undoEnabled;
+	}
+
 	@Override
 	public Resource export(Model graph) {
 		Resource implNode = super.export(graph);
@@ -209,6 +208,7 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		graph.add(implNode, HISTORY_ENABLED, vf.createLiteral(historyEnabled));
 		graph.add(implNode, VALIDATION_ENABLED, vf.createLiteral(validationEnabled));
 		graph.add(implNode, BLACKLISTING_ENABLED, vf.createLiteral(blacklistingEnabled));
+		graph.add(implNode, UNDO_ENABLED, vf.createLiteral(undoEnabled));
 
 		if (interactiveNotifications != null) {
 			graph.add(implNode, INTERACTIVE_NOTIFICATIONS, vf.createLiteral(interactiveNotifications));
@@ -258,6 +258,9 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 		blacklistingEnabled = graph
 				.filter(implNode, BLACKLISTING_ENABLED, SimpleValueFactory.getInstance().createLiteral(true))
 				.isEmpty() ? false : true;
+		undoEnabled = graph
+				.filter(implNode, UNDO_ENABLED, SimpleValueFactory.getInstance().createLiteral(true))
+				.isEmpty() ? false : true;
 
 		Set<Value> knownValuesForInteractiveModifications = graph
 				.filter(implNode, INTERACTIVE_NOTIFICATIONS, null).objects();
@@ -274,7 +277,9 @@ public class ChangeTrackerConfig extends AbstractDelegatingSailImplConfig {
 	public void validate() throws SailConfigException {
 		super.validate();
 
-		if (supportRepositoryID == null) {
+		boolean needsSupportRepo = historyEnabled || validationEnabled;
+
+		if (needsSupportRepo && supportRepositoryID == null) {
 			throw new SailConfigException("No support repository set for " + getType() + " Sail.");
 		}
 

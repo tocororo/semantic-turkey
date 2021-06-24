@@ -49,7 +49,6 @@ import it.uniroma2.art.semanticturkey.settings.core.PreloadSettings;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.settings.facets.*;
 import it.uniroma2.art.semanticturkey.user.*;
-import it.uniroma2.art.semanticturkey.utilities.ModelBasedRepositoryManager;
 import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 import it.uniroma2.art.semanticturkey.vocabulary.SUPPORT;
 import org.apache.commons.io.IOUtils;
@@ -139,9 +138,9 @@ public class Projects extends STServiceAdapter {
                               IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
                               @Optional(defaultValue = "false") boolean blacklistingEnabled, RepositoryAccess repositoryAccess,
                               String coreRepoID,
-                              @Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfigurerConfiguration\"}}") PluginSpecification coreRepoSailConfigurerSpecification,
+                              @Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfiguration\"}}") PluginSpecification coreRepoSailConfigurerSpecification,
                               @Optional String coreBackendType, String supportRepoID,
-                              @Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfigurerConfiguration\"}}") PluginSpecification supportRepoSailConfigurerSpecification,
+                              @Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfiguration\"}}") PluginSpecification supportRepoSailConfigurerSpecification,
                               @Optional String supportBackendType,
                               @Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGenerator\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorConfiguration\"}}") PluginSpecification uriGeneratorSpecification,
                               @Optional PluginSpecification renderingEngineSpecification,
@@ -152,7 +151,7 @@ public class Projects extends STServiceAdapter {
                               @Optional @JsonSerialized SHACLSettings shaclSettings, @Optional boolean trivialInferenceEnabled,
                               @Optional(defaultValue = "false") boolean openAtStartup,
                               @Optional(defaultValue = "false") boolean globallyAccessible,
-                              @Optional Literal label)
+                              @Optional Literal label, @Optional(defaultValue = "false") boolean undoEnabled)
             throws ProjectInconsistentException, InvalidProjectNameException, ProjectInexistentException,
             ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
             ProjectCreationException, ClassNotFoundException, WrongPropertiesException, RBACException,
@@ -201,7 +200,7 @@ public class Projects extends STServiceAdapter {
                     supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
                     renderingEngineSpecification, resourceMetadataAssociations, preloadedDataFile,
                     preloadedDataFormat, transitiveImportAllowance, failedImports, leftDataset, rightDataset,
-                    shaclEnabled, shaclSettings, trivialInferenceEnabled, openAtStartup, globallyAccessible);
+                    shaclEnabled, shaclSettings, trivialInferenceEnabled, openAtStartup, globallyAccessible, undoEnabled);
             deletePreloadedDataFile = true;
         } finally {
             if (preloadedDataFileName != null) {
@@ -374,6 +373,7 @@ public class Projects extends STServiceAdapter {
         boolean validationEnabled = false;
         boolean blacklistingEnabled = false;
         boolean shaclEnabled = false;
+        boolean undoEnabled = false;
         boolean open = false;
         AccessResponse access = null;
         RepositoryLocation repoLocation = new RepositoryLocation(null);
@@ -395,6 +395,7 @@ public class Projects extends STServiceAdapter {
             validationEnabled = proj.isValidationEnabled();
             blacklistingEnabled = proj.isBlacklistingEnabled();
             shaclEnabled = proj.isSHACLEnabled();
+            undoEnabled = proj.isUndoEnabled();
             open = ProjectManager.isOpen(proj);
             access = ProjectManager.checkAccessibility(consumer, proj, requestedAccessLevel,
                     requestedLockLevel);
@@ -403,7 +404,6 @@ public class Projects extends STServiceAdapter {
             description = proj.getDescription();
             createdAt = proj.getCreatedAt();
             openAtStartup = proj.isOpenAtStartupEnabled();
-
             if (onlyOpen && !open) {
                 return null;
             }
@@ -425,8 +425,8 @@ public class Projects extends STServiceAdapter {
             status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
         }
         return new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel,
-                historyEnabled, validationEnabled, blacklistingEnabled, shaclEnabled, access, repoLocation,
-                status, labels, description, createdAt, openAtStartup, facets);
+                historyEnabled, validationEnabled, blacklistingEnabled, shaclEnabled, undoEnabled, access,
+                repoLocation, status, labels, description, createdAt, openAtStartup, facets);
     }
 
     /**

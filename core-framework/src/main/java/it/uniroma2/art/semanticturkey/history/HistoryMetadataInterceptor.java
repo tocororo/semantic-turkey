@@ -127,7 +127,8 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 							return;
 
 						if (!stServiceContext.getProject().isHistoryEnabled()
-								&& !stServiceContext.getProject().isValidationEnabled())
+								&& !stServiceContext.getProject().isValidationEnabled() && !stServiceContext
+						.getProject().isUndoEnabled())
 							return;
 
 						Repository repository = STServiceContextUtils.getRepostory(stServiceContext);

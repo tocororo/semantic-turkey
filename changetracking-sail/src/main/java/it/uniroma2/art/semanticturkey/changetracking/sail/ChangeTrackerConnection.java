@@ -5,11 +5,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -19,6 +22,10 @@ import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 
+import com.google.common.base.Functions;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.eclipse.rdf4j.IsolationLevel;
 import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
@@ -101,7 +108,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
     private IRI pendingBlacklisting;
     private IRI pendingValidation;
     private Literal pendingComment;
-    private IRI pendingUndoFor;
+    private UndoSource pendingUndoFor;
 
     public ChangeTrackerConnection(NotifyingSailConnection wrappedCon, ChangeTracker sail) {
         super(wrappedCon);
@@ -328,109 +335,109 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
             // 3 cases: i) with validation, ii) with history, iii) w/o history & validation, thus using an in-memory stack
 
             synchronized (sail) {
-                if (sail.validationEnabled) {
-                    try (RepositoryConnection suppRepConn = sail.supportRepo.getConnection()) {
-                        suppRepConn.begin();
+                pendingUndoFor.accept(new UndoSource.UndoSourceVisitor() {
+                    @Override
+                    public void visitValidationSourced(UndoSource.ValidationSourcedUndo undoStackTip) {
+                        try (RepositoryConnection suppRepConn = sail.supportRepo.getConnection()) {
+                            suppRepConn.begin();
 
-                        TupleQuery latestCommitQuery = suppRepConn.prepareTupleQuery(
-                            "SELECT * WHERE { ?commit a <http://semanticturkey.uniroma2.it/ns/changelog#Commit> ; " +
-                            "  <http://www.w3.org/ns/prov#endedAtTime> ?endTime ;" +
-                            "  <http://www.w3.org/ns/prov#qualifiedAssociation> [" +
-                            "    <http://www.w3.org/ns/prov#hadRole> <http://semanticturkey.uniroma2.it/ns/st-changelog#performer> ; " +
-                            "    <http://www.w3.org/ns/prov#agent> ?performer " +
-                            "   ] . " +
-                            "}" +
-                            "ORDER by DESC(?endTime)" +
-                            "LIMIT 1");
-                        SimpleDataset dataset = new SimpleDataset();
-                        dataset.addDefaultGraph(sail.validationGraph);
-                        latestCommitQuery.setDataset(dataset);
+                            TupleQuery latestCommitQuery = suppRepConn.prepareTupleQuery(
+                                    "SELECT * WHERE { ?commit a <http://semanticturkey.uniroma2.it/ns/changelog#Commit> ; " +
+                                            "  <http://www.w3.org/ns/prov#endedAtTime> ?endTime ;" +
+                                            "}" +
+                                            "ORDER by DESC(?endTime)" +
+                                            "LIMIT 1");
+                            SimpleDataset dataset = new SimpleDataset();
+                            dataset.addDefaultGraph(sail.validationGraph);
+                            latestCommitQuery.setDataset(dataset);
 
-                        BindingSet candidateForUndo = QueryResults.asList(latestCommitQuery.evaluate()).stream().findAny().orElseThrow(() -> new SailException("Empty undo stack"));
-                        Optional<Value> performer = Optional.of(candidateForUndo.getValue("performer"));
-                        if (!performer.filter(pendingUndoFor::equals).isPresent()) {
-                            throw new SailException("The performer of the last operation does not match the agent for whom undo has been requested");
+                            BindingSet candidateForUndo = QueryResults.asList(latestCommitQuery.evaluate()).stream().findAny().orElseThrow(() -> new SailException("Empty undo stack"));
+
+                            IRI commit = (IRI) candidateForUndo.getValue("commit");
+
+                            if (!commit.equals(undoStackTip.getCommit())) {
+                                throw new SailException("Concurrent undo");
+                            }
+
+                            QueryResults.stream(HistoryRepositories.getRemovedStaments(suppRepConn,
+                                    commit, sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
+                                ChangeTrackerConnection.super.removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
+                                        VALIDATION.stagingRemoveGraph(s.getContext()));
+                            });
+                            QueryResults.stream(HistoryRepositories.getAddedStaments(suppRepConn, commit,
+                                    sail.validationGraph)).forEach(s -> {
+                                ChangeTrackerConnection.super.removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
+                                        VALIDATION.stagingAddGraph(s.getContext()));
+                            });
+
+                            ChangeTrackerConnection.super.commit();
+
+                            removeLastCommit(sail.validationGraph, commit, null, false, false);
+
+                            suppRepConn.commit();
+                        }
+                    }
+
+                    @Override
+                    public void visitHistorySourced(UndoSource.HistorySourcedUndo undoStackTip) {
+                        try (RepositoryConnection suppRepConn = sail.supportRepo.getConnection()) {
+                            suppRepConn.begin();
+
+                            TupleQuery latestCommitQuery = suppRepConn.prepareTupleQuery(
+                                    "SELECT * WHERE {" +
+                                            "  <http://semanticturkey.uniroma2.it/ns/changelog#MASTER> <http://semanticturkey.uniroma2.it/ns/changelog#tip> ?commit . " +
+                                            "  OPTIONAL { ?commit <http://semanticturkey.uniroma2.it/ns/changelog#parentCommit> ?newTip }" +
+                                            "}" +
+                                            "LIMIT 1");
+                            SimpleDataset dataset = new SimpleDataset();
+                            dataset.addDefaultGraph(sail.historyGraph);
+                            latestCommitQuery.setDataset(dataset);
+
+                            BindingSet candidateForUndo = QueryResults.asList(latestCommitQuery.evaluate()).stream().findAny().orElseThrow(() -> new SailException("Empty undo stack"));
+                            IRI commit = (IRI) candidateForUndo.getValue("commit");
+
+                            if (!commit.equals(undoStackTip.getCommit())) {
+                                throw new SailException("Concurrent undo");
+                            }
+
+                            IRI newTip = (IRI) candidateForUndo.getValue("newTip");
+                            QueryResults.stream(HistoryRepositories.getRemovedStaments(suppRepConn,
+                                    commit, sail.historyGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
+                                ChangeTrackerConnection.super.addStatement(s.getSubject(), s.getPredicate(), s.getObject(),
+                                        s.getContext());
+                            });
+                            QueryResults.stream(HistoryRepositories.getAddedStaments(suppRepConn, commit,
+                                    sail.historyGraph)).forEach(s -> {
+                                ChangeTrackerConnection.super.removeStatements(s.getSubject(), s.getPredicate(), s.getObject(), s.getContext());
+                            });
+
+                            ChangeTrackerConnection.super.commit();
+
+                            removeLastCommit(sail.historyGraph, commit, newTip, false, true);
+
+                            suppRepConn.commit();
                         }
 
-                        IRI commit = (IRI) candidateForUndo.getValue("commit");
-
-                        QueryResults.stream(HistoryRepositories.getRemovedStaments(suppRepConn,
-                                commit, sail.validationGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
-                            super.removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
-                                    VALIDATION.stagingRemoveGraph(s.getContext()));
-                        });
-                        QueryResults.stream(HistoryRepositories.getAddedStaments(suppRepConn, commit,
-                                sail.validationGraph)).forEach(s -> {
-                            super.removeStatements(s.getSubject(), s.getPredicate(), s.getObject(),
-                                    VALIDATION.stagingAddGraph(s.getContext()));
-                        });
-
-                        super.commit();
-
-                        removeLastCommit(sail.validationGraph, commit, null, false, false);
-
-                        suppRepConn.commit();
                     }
-                } else if (sail.historyEnabled) {
-                    try (RepositoryConnection suppRepConn = sail.supportRepo.getConnection()) {
-                        suppRepConn.begin();
 
-                        TupleQuery latestCommitQuery = suppRepConn.prepareTupleQuery(
-                                "SELECT * WHERE {" +
-                                "  <http://semanticturkey.uniroma2.it/ns/changelog#MASTER> <http://semanticturkey.uniroma2.it/ns/changelog#tip> ?commit . " +
-                                "  ?commit a <http://semanticturkey.uniroma2.it/ns/changelog#Commit> ; " +
-                                "    <http://www.w3.org/ns/prov#endedAtTime> ?endTime ;" +
-                                "    <http://www.w3.org/ns/prov#qualifiedAssociation> [" +
-                                "      <http://www.w3.org/ns/prov#hadRole> <http://semanticturkey.uniroma2.it/ns/st-changelog#performer> ; " +
-                                "      <http://www.w3.org/ns/prov#agent> ?performer " +
-                                "   ] . " +
-                                "  OPTIONAL { ?commit <http://semanticturkey.uniroma2.it/ns/changelog#parentCommit> ?newTip }" +
-                                "}" +
-                                "LIMIT 1");
-                        SimpleDataset dataset = new SimpleDataset();
-                        dataset.addDefaultGraph(sail.historyGraph);
-                        latestCommitQuery.setDataset(dataset);
+                    @Override
+                    public void visitStackSourced(UndoSource.StackSourcedUndo undoStackTip) {
+                        // get the tip of the undo stack
+                        StagingArea latestUndoStackTip = sail.undoStack.get().peek().orElseThrow(() -> new SailException("Empty undo stack"));
 
-                        BindingSet candidateForUndo = QueryResults.asList(latestCommitQuery.evaluate()).stream().findAny().orElseThrow(() -> new SailException("Empty undo stack"));
-                        Optional<Value> performer = Optional.of(candidateForUndo.getValue("performer"));
-                        if (!performer.filter(pendingUndoFor::equals).isPresent()) {
-                            throw new SailException("The performer of the last operation does not match the agent for whom undo has been requested");
+                        if (!latestUndoStackTip.equals(undoStackTip)) {
+                            throw new SailException("Concurrent undo");
                         }
 
-                        IRI commit = (IRI) candidateForUndo.getValue("commit");
-                        IRI newTip = (IRI) candidateForUndo.getValue("newTip");
-                        QueryResults.stream(HistoryRepositories.getRemovedStaments(suppRepConn,
-                                commit, sail.historyGraph)).map(NILDecoder.INSTANCE).forEach(s -> {
-                            super.addStatement(s.getSubject(), s.getPredicate(), s.getObject(),
-                                    s.getContext());
-                        });
-                        QueryResults.stream(HistoryRepositories.getAddedStaments(suppRepConn, commit,
-                                sail.historyGraph)).forEach(s -> {
-                            super.removeStatements(s.getSubject(), s.getPredicate(), s.getObject(), s.getContext());
-                        });
+                        undoStackTip.getStagingArea().getRemovedStatements().forEach(st -> ChangeTrackerConnection.super.removeStatements(st.getSubject(), st.getPredicate(), st.getObject(), (Resource)st.getContext()));
+                        undoStackTip.getStagingArea().getAddedStatements().forEach(st -> ChangeTrackerConnection.super.addStatement(st.getSubject(), st.getPredicate(), st.getObject(), (Resource)st.getContext()));
 
-                        super.commit();
+                        ChangeTrackerConnection.super.commit();
 
-                        removeLastCommit(sail.historyGraph, commit, newTip, false, true);
+                        sail.undoStack.get().pop();
 
-                        suppRepConn.commit();
                     }
-                } else {
-                    // get the tip of the undo stack
-                    StagingArea undoStackTip = sail.undoStack.get().peek().orElseThrow(() -> new SailException("Empty undo stack"));
-                    // check the performer of the operation at the tip
-                    Optional<IRI> performer = UndoStack.getPerformer(undoStackTip.getCommitMetadataModel());
-                    if (!performer.filter(pendingUndoFor::equals).isPresent()) {
-                        throw new SailException("The performer of the last operation does not match the agent for whom undo has been requested");
-                    }
-
-                    undoStackTip.getRemovedStatements().forEach(st -> super.removeStatements(st.getSubject(), st.getPredicate(), st.getObject(), (Resource)st.getContext()));
-                    undoStackTip.getAddedStatements().forEach(st -> super.addStatement(st.getSubject(), st.getPredicate(), st.getObject(), (Resource)st.getContext()));
-
-                    super.commit();
-
-                    sail.undoStack.get().pop();
-                }
+                });
             }
 
         } else if (readonlyHandler.isReadOnly()) {
@@ -765,26 +772,22 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
     public CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluate(TupleExpr tupleExpr,
                                                                                        Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
 
+        Map<IRI, Function<IRI, Model>> virtualResourceHandlers = ImmutableMap.of(CHANGETRACKER.SYSINFO, this::generateSysInfoModel, CHANGETRACKER.UNDO, this::generateUndoModel);
+
         if (tupleExpr instanceof DescribeOperator) {
-            if (dataset != null && dataset.getDefaultGraphs().contains(CHANGETRACKER.SYSINFO)) {
+
+            if (dataset != null) {
+                Map<IRI, Function<IRI, Model>> enabledVirtualResources = Maps.filterKeys(virtualResourceHandlers, v -> ((BiFunction<Set<IRI>, IRI, Boolean>)Collection::contains).apply(dataset.getDefaultGraphs(), v));
+
                 TupleExpr argTupleExpr = ((UnaryTupleOperator) tupleExpr).getArg();
                 Model generatedTriples = new LinkedHashModel();
                 QueryResults.stream(super.evaluate(argTupleExpr, dataset, bindings, includeInferred))
                         .flatMap(bs -> StreamSupport.stream(bs.spliterator(), false)).map(Binding::getValue)
-                        .filter(v -> v instanceof IRI
-                                && v.stringValue().startsWith(CHANGETRACKER.SYSINFO.toString()))
                         .forEach(v -> {
-                            IRI vIRI = (IRI) v;
+                            Function<IRI, Model> fun = enabledVirtualResources.entrySet().stream().filter(entry -> v.stringValue().startsWith(entry.getKey().stringValue())).map(Map.Entry::getValue).findAny().orElse(null);
 
-                            generatedTriples.add(vIRI,
-                                    SimpleValueFactory.getInstance().createIRI("http://schema.org/version"),
-                                    SimpleValueFactory.getInstance()
-                                            .createLiteral(ChangeTracker.getVersion()));
-                            generatedTriples.add(vIRI, ChangeTrackerSchema.SUPPORT_REPOSITORY_ID,
-                                    SimpleValueFactory.getInstance().createLiteral(sail.supportRepoId));
-                            if (sail.serverURL != null) {
-                                generatedTriples.add(vIRI, ChangeTrackerSchema.SERVER_URL,
-                                        SimpleValueFactory.getInstance().createLiteral(sail.serverURL));
+                            if (fun != null) {
+                                generatedTriples.addAll(fun.apply((IRI)v));
                             }
                         });
 
@@ -805,6 +808,54 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
         return super.evaluate(tupleExpr, dataset, bindings, includeInferred);
     }
+
+    protected Model generateSysInfoModel(IRI subj) {
+        Model model = new LinkedHashModel();
+        model.add(subj,
+                SimpleValueFactory.getInstance().createIRI("http://schema.org/version"),
+                SimpleValueFactory.getInstance()
+                        .createLiteral(ChangeTracker.getVersion()));
+        model.add(subj, ChangeTrackerSchema.SUPPORT_REPOSITORY_ID,
+                SimpleValueFactory.getInstance().createLiteral(sail.supportRepoId));
+        if (sail.serverURL != null) {
+            model.add(subj, ChangeTrackerSchema.SERVER_URL,
+                    SimpleValueFactory.getInstance().createLiteral(sail.serverURL));
+        }
+
+        return model;
+    }
+
+    protected Model generateUndoModel(IRI subj) throws SailException {
+        Model generatedTriples = new LinkedHashModel();
+
+        if (pendingUndoFor == null) return generatedTriples;
+
+        pendingUndoFor.accept(new UndoSource.UndoSourceVisitor() {
+            @Override
+            public void visitValidationSourced(UndoSource.ValidationSourcedUndo undoStackTip) {
+                try(RepositoryConnection suppRepCon = sail.supportRepo.getConnection()) {
+                    Model commitMetadata = HistoryRepositories.getCommitUserMetadata(suppRepCon, undoStackTip.getCommit(), sail.validationGraph, true);
+                    generatedTriples.addAll(commitMetadata);
+                }
+            }
+
+            @Override
+            public void visitHistorySourced(UndoSource.HistorySourcedUndo undoStackTip) {
+                try(RepositoryConnection suppRepCon = sail.supportRepo.getConnection()) {
+                    Model commitMetadata = HistoryRepositories.getCommitUserMetadata(suppRepCon, undoStackTip.getCommit(), sail.historyGraph, true);
+                    generatedTriples.addAll(commitMetadata);
+                }
+            }
+
+            @Override
+            public void visitStackSourced(UndoSource.StackSourcedUndo undoStackTip) {
+                Model commitMetadata = undoStackTip.getStagingArea().getCommitMetadataModel();
+                generatedTriples.addAll(commitMetadata);
+            }
+        });
+        return generatedTriples;
+    }
+
 
     @Override
     public void addStatement(Resource subj, IRI pred, Value obj, Resource... contexts) throws SailException {
@@ -830,7 +881,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
         if (contexts.length == 0 || !contextList.isEmpty()) {
             if (pendingUndoFor != null) {
-                throw new SailException("Could not modify triples because of a pending undo for " + NTriplesUtil.toNTriplesString(pendingUndoFor));
+                throw new SailException("Could not modify triples because of a pending undo");
             }
             Resource[] newContexts = contextList.toArray(new Resource[contextList.size()]);
             try {
@@ -876,7 +927,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
         if (contexts.length == 0 || !contextList.isEmpty()) {
             if (pendingUndoFor != null) {
-                throw new SailException("Could not modify triples because of a pending undo for " + NTriplesUtil.toNTriplesString(pendingUndoFor));
+                throw new SailException("Could not modify triples because of a pending undo");
             }
 
             Resource[] newContexts = contextList.toArray(new Resource[contextList.size()]);
@@ -913,7 +964,78 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
             throw new SailException("Expected an IRI as performer for an UNDO, but given " + NTriplesUtil.toNTriplesString(obj));
         }
 
-        pendingUndoFor = (IRI) obj;
+        if (pendingUndoFor != null) {
+            throw new SailException("Already requested an undo");
+        }
+
+        if (sail.validationEnabled) {
+            try (RepositoryConnection suppRepConn = sail.supportRepo.getConnection()) {
+                suppRepConn.begin();
+
+                TupleQuery latestCommitQuery = suppRepConn.prepareTupleQuery(
+                        "SELECT * WHERE { ?commit a <http://semanticturkey.uniroma2.it/ns/changelog#Commit> ; " +
+                                "  <http://www.w3.org/ns/prov#endedAtTime> ?endTime ;" +
+                                "  <http://www.w3.org/ns/prov#qualifiedAssociation> [" +
+                                "    <http://www.w3.org/ns/prov#hadRole> <http://semanticturkey.uniroma2.it/ns/st-changelog#performer> ; " +
+                                "    <http://www.w3.org/ns/prov#agent> ?performer " +
+                                "   ] . " +
+                                "}" +
+                                "ORDER by DESC(?endTime)" +
+                                "LIMIT 1");
+                SimpleDataset dataset = new SimpleDataset();
+                dataset.addDefaultGraph(sail.validationGraph);
+                latestCommitQuery.setDataset(dataset);
+
+                BindingSet candidateForUndo = QueryResults.asList(latestCommitQuery.evaluate()).stream().findAny().orElseThrow(() -> new SailException("Empty undo stack"));
+                Optional<Value> performer = Optional.of(candidateForUndo.getValue("performer"));
+                if (!performer.filter(obj::equals).isPresent()) {
+                    throw new SailException("The performer of the last operation does not match the agent for whom undo has been requested");
+                }
+
+                pendingUndoFor = new UndoSource.ValidationSourcedUndo((IRI) candidateForUndo.getValue("commit"));
+            }
+        } else if (sail.historyEnabled) {
+            try (RepositoryConnection suppRepConn = sail.supportRepo.getConnection()) {
+                suppRepConn.begin();
+
+                TupleQuery latestCommitQuery = suppRepConn.prepareTupleQuery(
+                        "SELECT * WHERE {" +
+                                "  <http://semanticturkey.uniroma2.it/ns/changelog#MASTER> <http://semanticturkey.uniroma2.it/ns/changelog#tip> ?commit . " +
+                                "  ?commit a <http://semanticturkey.uniroma2.it/ns/changelog#Commit> ; " +
+                                "    <http://www.w3.org/ns/prov#endedAtTime> ?endTime ;" +
+                                "    <http://www.w3.org/ns/prov#qualifiedAssociation> [" +
+                                "      <http://www.w3.org/ns/prov#hadRole> <http://semanticturkey.uniroma2.it/ns/st-changelog#performer> ; " +
+                                "      <http://www.w3.org/ns/prov#agent> ?performer " +
+                                "   ] . " +
+                                "  OPTIONAL { ?commit <http://semanticturkey.uniroma2.it/ns/changelog#parentCommit> ?newTip }" +
+                                "}" +
+                                "LIMIT 1");
+                SimpleDataset dataset = new SimpleDataset();
+                dataset.addDefaultGraph(sail.historyGraph);
+                latestCommitQuery.setDataset(dataset);
+
+                BindingSet candidateForUndo = QueryResults.asList(latestCommitQuery.evaluate()).stream().findAny().orElseThrow(() -> new SailException("Empty undo stack"));
+                Optional<Value> performer = Optional.of(candidateForUndo.getValue("performer"));
+                if (!performer.filter(obj::equals).isPresent()) {
+                    throw new SailException("The performer of the last operation does not match the agent for whom undo has been requested");
+                }
+
+                pendingUndoFor = new UndoSource.HistorySourcedUndo((IRI) candidateForUndo.getValue("commit"));
+            }
+        } else if (sail.undoEnabled) {
+
+            StagingArea undoStackTip = sail.undoStack.get().peek().orElseThrow(() -> new SailException("Empty undo stack"));
+
+            // check the performer of the operation at the tip
+            Optional<IRI> performer = UndoStack.getPerformer(undoStackTip.getCommitMetadataModel());
+            if (!performer.filter(obj::equals).isPresent()) {
+                throw new SailException("The performer of the last operation does not match the agent for whom undo has been requested");
+            }
+
+            pendingUndoFor = new UndoSource.StackSourcedUndo(undoStackTip);
+        } else {
+            throw new SailException("Undo not supported");
+        }
     }
 
     @Override
@@ -933,7 +1055,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
         if (contexts.length == 0 || !contextList.isEmpty()) {
             if (pendingUndoFor != null) {
-                throw new SailException("Could not modify triples because of a pending undo for " + NTriplesUtil.toNTriplesString(pendingUndoFor));
+                throw new SailException("Could not modify triples because of a pending undo");
             }
 
             Resource[] newContexts = contextList.toArray(new Resource[contextList.size()]);
@@ -982,7 +1104,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
         if (contexts.length == 0 || !contextList.isEmpty()) {
             if (pendingUndoFor != null) {
-                throw new SailException("Could not modify triples because of a pending undo for " + NTriplesUtil.toNTriplesString(pendingUndoFor));
+                throw new SailException("Could not modify triples because of a pending undo");
             }
 
             Resource[] newContexts = contextList.toArray(new Resource[contextList.size()]);

@@ -357,7 +357,7 @@ public class BaseRenderingEngineTest {
 				null, new PluginSpecification(TEST_URI_GENERATOR, null, null, null),
 				new PluginSpecification(TEST_RENDERING_ENGINE, null, null,
 						STPropertiesManager.storeSTPropertiesToObjectNode(rendEngConf, true)),
-				null, null, null, null, null, null, null, false, null, false, false, false);
+				null, null, null, null, null, null, null, false, null, false, false, false, false);
 		try {
 			Repository repo = new SailRepository(new MemoryStore());
 			repo.init();
@@ -496,7 +496,7 @@ public class BaseRenderingEngineTest {
 				new PluginSpecification(TEST_URI_GENERATOR, null, null, null),
 				new PluginSpecification(TEST_RENDERING_ENGINE, null, null,
 						STPropertiesManager.storeSTPropertiesToObjectNode(rendEngConf, true)),
-				null, null, null, null, null, null, null, false, null, false, false, false);
+				null, null, null, null, null, null, null, false, null, false, false, false, false);
 		try {
 			STServiceContext stServiceContext = new STServiceContext() {
 

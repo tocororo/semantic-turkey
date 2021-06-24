@@ -175,6 +175,7 @@ public abstract class Project extends AbstractProject {
     public static final String HISTORY_ENABLED_PROP = "historyEnabled";
     public static final String VALIDATION_ENABLED_PROP = "validationEnabled";
     public static final String BLACKLISTING_ENABLED_PROP = "blacklistingEnabled";
+    public static final String UNDO_ENABLED_PROP = "undoEnabled";
     public static final String DESCRIPTION_PROP = "description";
     public static final String VERSIONS_PROP = "versions";
     public static final String DEFAULT_REPOSITORY_LOCATION_PROP = "defaultRepositoryLocation";
@@ -224,6 +225,7 @@ public abstract class Project extends AbstractProject {
         reservedProperties.add(VALIDATION_ENABLED_PROP);
         reservedProperties.add(BLACKLISTING_ENABLED_PROP);
         reservedProperties.add(SHACL_ENABLED_PROP);
+        reservedProperties.add(UNDO_ENABLED_PROP);
         reservedProperties.add(CREATED_AT_PROP);
         reservedProperties.add(OPEN_AT_STARTUP_PROP);
     }
@@ -878,6 +880,10 @@ public abstract class Project extends AbstractProject {
 
     public boolean isTrivialInferencerEnabled() {
         return Boolean.parseBoolean(getProperty(TRIVIAL_INFERENCER_ENABLED_PROP));
+    }
+
+    public boolean isUndoEnabled() {
+        return Boolean.parseBoolean(getProperty(UNDO_ENABLED_PROP));
     }
 
     String getRequiredProperty(String propertyName) throws ProjectInconsistentException {

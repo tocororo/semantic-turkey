@@ -121,7 +121,7 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 		return version;
 	}
 
-	public ChangeTracker(/* @Nullable */ String serverURL, String supportRepoId, String metadataNS,
+	public ChangeTracker(/* @Nullable */ String serverURL, /* @Nullable */ String supportRepoId, String metadataNS,
 										 IRI historyGraph, Set<IRI> includeGraph, Set<IRI> excludeGraph, boolean historyEnabled,
 										 boolean validationEnabled, boolean undoEnabled, Optional<Boolean> interactiveNotifications,
 			/* @Nullable */ IRI validationGraph, boolean blacklistEnabled,
@@ -176,13 +176,15 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 
 		if (serverURL != null) {
 			supportRepo = new HTTPRepository(serverURL, supportRepoId);
-		} else {
+		} else if (supportRepoId != null) {
 			supportRepo = new RepositoryWrapper(repositoryResolver.apply(supportRepoId)) {
 				@Override
 				public void shutDown() throws RepositoryException {
 					// Ignore shutdown of the referenced repository
 				}
 			};
+		} else {
+			supportRepo = null;
 		}
 	}
 

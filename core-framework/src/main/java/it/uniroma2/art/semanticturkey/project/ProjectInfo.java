@@ -19,6 +19,7 @@ public class ProjectInfo {
 	private final boolean validationEnabled;
 	private final boolean blacklistingEnabled;
 	private final boolean shaclEnabled;
+	private final boolean undoEnabled;
 	private final AccessResponse accessible;
 	private final RepositoryLocation repositoryLocation;
 	private final ProjectStatus status;
@@ -30,19 +31,19 @@ public class ProjectInfo {
 
 	@JsonCreator
 	public ProjectInfo(@JsonProperty("name") String name, @JsonProperty("open") boolean open,
-			@JsonProperty("baseURI") String baseURI,
-			@JsonProperty("defaultNamespace") String defaultNamespace, @JsonProperty("model") String model,
-			@JsonProperty("lexicalizationModel") String lexicalizationModel,
-			@JsonProperty("historyEnabled") boolean historyEnabled,
-			@JsonProperty("validationEnabled") boolean validationEnabled,
-            @JsonProperty("blacklistingEnabled") boolean blacklistingEnabled,
-            @JsonProperty("shaclEnabled") boolean shaclEnabled,
-			@JsonProperty("accessible") AccessResponse accessible,
-			@JsonProperty("repositoryLocation") RepositoryLocation repositoryLocation,
-			@JsonProperty("status") ProjectStatus status, @JsonProperty("labels") Map<String, String> labels,
-			@JsonProperty("description") String description,
-			@JsonProperty("createdAt") String createdAt, @JsonProperty("openAtStartup") boolean openAtStartup,
-			ProjectFacets facets) {
+                       @JsonProperty("baseURI") String baseURI,
+                       @JsonProperty("defaultNamespace") String defaultNamespace, @JsonProperty("model") String model,
+                       @JsonProperty("lexicalizationModel") String lexicalizationModel,
+                       @JsonProperty("historyEnabled") boolean historyEnabled,
+                       @JsonProperty("validationEnabled") boolean validationEnabled,
+                       @JsonProperty("blacklistingEnabled") boolean blacklistingEnabled,
+                       @JsonProperty("shaclEnabled") boolean shaclEnabled,
+					   @JsonProperty("undoEnabled") boolean undoEnabled, @JsonProperty("accessible") AccessResponse accessible,
+                       @JsonProperty("repositoryLocation") RepositoryLocation repositoryLocation,
+                       @JsonProperty("status") ProjectStatus status, @JsonProperty("labels") Map<String, String> labels,
+                       @JsonProperty("description") String description,
+                       @JsonProperty("createdAt") String createdAt, @JsonProperty("openAtStartup") boolean openAtStartup,
+                       ProjectFacets facets) {
 		this.name = name;
 		this.open = open;
 		this.baseURI = baseURI;
@@ -53,6 +54,7 @@ public class ProjectInfo {
 		this.validationEnabled = validationEnabled;
 		this.blacklistingEnabled = blacklistingEnabled;
 		this.shaclEnabled = shaclEnabled;
+		this.undoEnabled = undoEnabled;
 		this.accessible = accessible;
 		this.repositoryLocation = repositoryLocation;
 		this.status = status;
@@ -97,6 +99,10 @@ public class ProjectInfo {
 	
 	public boolean isBlacklistingEnabled() {
 		return blacklistingEnabled;
+	}
+
+	public boolean isUndoEnabled() {
+		return undoEnabled;
 	}
 
 	public boolean isOpenAtStartup() {

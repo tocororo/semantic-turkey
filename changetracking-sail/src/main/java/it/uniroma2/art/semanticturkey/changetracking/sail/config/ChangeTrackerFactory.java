@@ -51,6 +51,7 @@ public class ChangeTrackerFactory implements SailFactory {
 		boolean historyEnabled = config2.isHistoryEnabled();
 		boolean validationEnabled = config2.isValidationEnabled();
 		boolean blacklistEnabled = config2.isBlacklistingEnabled();
+		boolean undoEnabled = config2.isUndoEnabled();
 		Optional<Boolean> interactiveNotifications = config2.isInteractiveNotifications();
 		IRI validationGraph = config2.getValidationGraph();
 		IRI blacklistGraph = config2.getBlacklistGraph();
@@ -71,7 +72,7 @@ public class ChangeTrackerFactory implements SailFactory {
 		}
 
 		return new ChangeTracker(serverURL, metadataRepoId, metadataNS, metadataGraph, includeGraph,
-				excludeGraph, historyEnabled, validationEnabled, true, interactiveNotifications, validationGraph,
+				excludeGraph, historyEnabled, validationEnabled, undoEnabled, interactiveNotifications, validationGraph,
 				blacklistEnabled, blacklistGraph);
 	}
 

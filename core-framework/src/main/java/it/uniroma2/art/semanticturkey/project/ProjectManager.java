@@ -157,7 +157,7 @@ import java.util.function.Function;
  * the online status of each project reports:
  * <ul>
  * <li>the list of its consumers, together with the {@link AccessLevel for each of them}</li>
- * <li>the {@link LockStatus}, which is represented by a &lt;{@link LockLevel},
+ * <li>the {@link OpenProjectsHolder.LockStatus}, which is represented by a &lt;{@link LockLevel},
  * {@link ProjectConsumer}&rt;</li>
  * </ul>
  * </p>
@@ -1361,17 +1361,17 @@ public class ProjectManager {
 	}
 
 	public static Project createProject(ProjectConsumer consumer, String projectName, Literal label, IRI model,
-			IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
-			boolean blacklistingEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
-			PluginSpecification coreRepoSailConfigurerSpecification, String coreBackendType,
-			String supportRepoID, PluginSpecification supportRepoSailConfigurerSpecification,
-			String supportBackendType, PluginSpecification uriGeneratorSpecification,
-			PluginSpecification renderingEngineSpecification,
-			List<Pair<RDFResourceRole, String>> resourceMetadataAssociations, File preloadedDataFile,
-			RDFFormat preloadedDataFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
-			Set<IRI> failedImports, String leftDataset, String rightDataset, boolean shaclEnabled,
-			SHACLSettings shaclSettings, boolean trivialInferenceEnabled, boolean openAtStartup,
-			boolean globallyAccessible) throws InvalidProjectNameException, ProjectInexistentException,
+                                        IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
+                                        boolean blacklistingEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
+                                        PluginSpecification coreRepoSailConfigurerSpecification, String coreBackendType,
+                                        String supportRepoID, PluginSpecification supportRepoSailConfigurerSpecification,
+                                        String supportBackendType, PluginSpecification uriGeneratorSpecification,
+                                        PluginSpecification renderingEngineSpecification,
+                                        List<Pair<RDFResourceRole, String>> resourceMetadataAssociations, File preloadedDataFile,
+                                        RDFFormat preloadedDataFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
+                                        Set<IRI> failedImports, String leftDataset, String rightDataset, boolean shaclEnabled,
+                                        SHACLSettings shaclSettings, boolean trivialInferenceEnabled, boolean openAtStartup,
+                                        boolean globallyAccessible, boolean undoEnabled) throws InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
 			ProjectCreationException, ClassNotFoundException, WrongPropertiesException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, ProjectInconsistentException,
@@ -1415,34 +1415,38 @@ public class ProjectManager {
 			RepositoryConfig coreRepositoryConfig = new RepositoryConfig("core",
 					"Core repository for project " + projectName);
 			RepositoryConfig supportRepositoryConfig;
-
+			boolean needsChangeTracker;
 			if (historyEnabled || validationEnabled) {
 				supportRepositoryConfig = new RepositoryConfig("support",
 						"Support repository for project " + projectName);
+				needsChangeTracker = true;
 			} else {
 				supportRepositoryConfig = null;
+				needsChangeTracker = undoEnabled;
 			}
 
 			Function<SailImplConfig, SailImplConfig> backendDecorator = backendSailImplConfig -> {
 				SailImplConfig sailImplConfig = backendSailImplConfig;
 
-				if (supportRepositoryConfig != null) {
+				if (needsChangeTracker) {
 
 					ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(sailImplConfig);
-					changeTrackerSailConfig.setSupportRepositoryID(
-							repositoryAccess.isLocal() ? Project.SUPPORT_REPOSITORY : supportRepoID);
-					changeTrackerSailConfig.setMetadataNS(SUPPORT.computeMetadataNS(baseURI));
-					changeTrackerSailConfig.setHistoryEnabled(historyEnabled);
-					if (historyEnabled) {
-						changeTrackerSailConfig.setHistoryGraph(SUPPORT.HISTORY);
-					}
-					changeTrackerSailConfig.setValidationEnabled(validationEnabled);
-					if (validationEnabled) {
-						changeTrackerSailConfig.setValidationGraph(SUPPORT.VALIDATION);
-					}
-					changeTrackerSailConfig.setBlacklistingEnabled(blacklistingEnabled);
-					if (blacklistingEnabled) {
-						changeTrackerSailConfig.setBlacklistGraph(SUPPORT.BLACKLIST);
+					if (supportRepositoryConfig != null) {
+						changeTrackerSailConfig.setSupportRepositoryID(
+								repositoryAccess.isLocal() ? Project.SUPPORT_REPOSITORY : supportRepoID);
+						changeTrackerSailConfig.setMetadataNS(SUPPORT.computeMetadataNS(baseURI));
+						changeTrackerSailConfig.setHistoryEnabled(historyEnabled);
+						if (historyEnabled) {
+							changeTrackerSailConfig.setHistoryGraph(SUPPORT.HISTORY);
+						}
+						changeTrackerSailConfig.setValidationEnabled(validationEnabled);
+						if (validationEnabled) {
+							changeTrackerSailConfig.setValidationGraph(SUPPORT.VALIDATION);
+						}
+						changeTrackerSailConfig.setBlacklistingEnabled(blacklistingEnabled);
+						if (blacklistingEnabled) {
+							changeTrackerSailConfig.setBlacklistGraph(SUPPORT.BLACKLIST);
+						}
 					}
 
 					sailImplConfig = changeTrackerSailConfig;
@@ -1617,7 +1621,7 @@ public class ProjectManager {
 					repositoryAccess, coreRepoID, coreRepositoryConfig, coreBackendType, supportRepoID,
 					supportRepositoryConfig, supportBackendType, uriGeneratorSpecification,
 					renderingEngineSpecification, leftDataset, rightDataset, shaclEnabled,
-					trivialInferenceEnabled, openAtStartup);
+					trivialInferenceEnabled, openAtStartup, undoEnabled);
 
 			Project project = accessProject(consumer, projectName, AccessLevel.RW, LockLevel.NO);
 			RBACManager.loadRBACProcessor(project);
@@ -1768,14 +1772,14 @@ public class ProjectManager {
 	}
 
 	private static void prepareProjectFiles(ProjectConsumer consumer, String projectName, Literal label,
-			IRI model, IRI lexicalizationModel, ProjectType type, File projectDir, String baseURI,
-			String defaultNamespace, boolean historyEnabled, boolean validationEnabled,
-			boolean blacklistingEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
-			RepositoryConfig coreRepoConfig, String coreBackendType, String supportRepoID,
-			RepositoryConfig supportRepoConfig, String supportBackendType,
-			PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
-			String leftDataset, String rightDataset, boolean enableSHACL, boolean trivialInferenceEnabled,
-			boolean openAtStartup) throws ProjectCreationException {
+											IRI model, IRI lexicalizationModel, ProjectType type, File projectDir, String baseURI,
+											String defaultNamespace, boolean historyEnabled, boolean validationEnabled,
+											boolean blacklistingEnabled, RepositoryAccess repositoryAccess, String coreRepoID,
+											RepositoryConfig coreRepoConfig, String coreBackendType, String supportRepoID,
+											RepositoryConfig supportRepoConfig, String supportBackendType,
+											PluginSpecification uriGeneratorSpecification, PluginSpecification renderingEngineSpecification,
+											String leftDataset, String rightDataset, boolean enableSHACL, boolean trivialInferenceEnabled,
+											boolean openAtStartup, boolean undoEnabled) throws ProjectCreationException {
 		File info_stp = new File(projectDir, Project.INFOFILENAME);
 
 		try {
@@ -1837,6 +1841,8 @@ public class ProjectManager {
 			try (FileOutputStream os = new FileOutputStream(info_stp)) {
 				projProp.store(os, Project.stpComment);
 			}
+
+			projProp.setProperty(Project.UNDO_ENABLED_PROP, String.valueOf(undoEnabled));
 
 			logger.debug("project creation: all project properties have been stored");
 

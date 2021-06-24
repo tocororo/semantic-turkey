@@ -24,6 +24,9 @@ public abstract class ChangeTrackerSchema {
 	public static final IRI VALIDATION_GRAPH;
 	public static final IRI BLACKLIST_GRAPH;
 
+	public static final IRI UNDO_ENABLED;
+
+
 	static {
 		ValueFactory vf = SimpleValueFactory.getInstance();
 
@@ -39,5 +42,6 @@ public abstract class ChangeTrackerSchema {
 		VALIDATION_GRAPH = vf.createIRI(NAMESPACE, "validationGraph");
 		BLACKLISTING_ENABLED = vf.createIRI(NAMESPACE, "blacklistEnabled");
 		BLACKLIST_GRAPH = vf.createIRI(NAMESPACE, "blacklistGraph");
+		UNDO_ENABLED = vf.createIRI(NAMESPACE, "undoEnabled");
 	}
 }
