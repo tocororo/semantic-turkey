@@ -1838,11 +1838,11 @@ public class ProjectManager {
 			ObjectMapper mapper = new ObjectMapper();
 			projProp.setProperty(Project.LABELS_PROP, mapper.writeValueAsString(labels));
 
+			projProp.setProperty(Project.UNDO_ENABLED_PROP, String.valueOf(undoEnabled));
+
 			try (FileOutputStream os = new FileOutputStream(info_stp)) {
 				projProp.store(os, Project.stpComment);
 			}
-
-			projProp.setProperty(Project.UNDO_ENABLED_PROP, String.valueOf(undoEnabled));
 
 			logger.debug("project creation: all project properties have been stored");
 
