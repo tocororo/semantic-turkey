@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.utilities.IRI2StringConverter;
+import org.eclipse.rdf4j.model.Resource;
 
 /**
  * Resuming metadata about a commit.
@@ -27,6 +28,9 @@ public class CommitInfo {
 	private GregorianCalendar startTime;
 	private GregorianCalendar endTime;
 	private List<ParameterInfo> operationParameters;
+	private List<Resource> created;
+	private List<Resource> modified;
+	private List<Resource> deleted;
 
 	// Optional field. Usually, it is present (with either true or false value) only when listing commits
 	// pending for validation
@@ -96,4 +100,27 @@ public class CommitInfo {
 		this.commentAllowed = commentAllowed;
 	}
 
+	public List<Resource> getCreated() {
+		return created;
+	}
+
+	public void setCreated(List<Resource> created) {
+		this.created = created;
+	}
+
+	public List<Resource> getModified() {
+		return modified;
+	}
+
+	public void setModified(List<Resource> modified) {
+		this.modified = modified;
+	}
+
+	public List<Resource> getDeleted() {
+		return deleted;
+	}
+
+	public void setDeleted(List<Resource> deleted) {
+		this.deleted = deleted;
+	}
 }

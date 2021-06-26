@@ -1,11 +1,8 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
-import it.uniroma2.art.semanticturkey.changetracking.model.HistoryRepositories;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
-import it.uniroma2.art.semanticturkey.history.OperationMetadata;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
@@ -18,14 +15,13 @@ import it.uniroma2.art.semanticturkey.services.core.history.SupportRepositoryUti
 import it.uniroma2.art.semanticturkey.services.tracker.STServiceTracker;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.vocabulary.STCHANGELOG;
-import org.apache.commons.lang3.ObjectUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.PROV;
-import org.eclipse.rdf4j.model.vocabulary.RDF4J;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -40,11 +36,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Service class related to the management of undo
@@ -69,9 +67,7 @@ public class Undo extends STServiceAdapter {
         IRI undoIRI = vf.createIRI(CHANGETRACKER.UNDO.stringValue() + "?nonce=" + System.currentTimeMillis());
         GraphQuery undoMetadataQuery = con.prepareGraphQuery("DESCRIBE " + RenderUtils.toSPARQL(undoIRI) + " FROM <" + CHANGETRACKER.UNDO + ">");
         Model undoMetadata = QueryResults.asModel(undoMetadataQuery.evaluate());
-
-        Rio.write(undoMetadata, System.out, RDFFormat.TURTLE, new WriterConfig().set(BasicWriterSettings.PRETTY_PRINT, true));
-
+        
         CommitInfo commitInfo = new CommitInfo();
 
         Models.getPropertyIRI(undoMetadata, CHANGETRACKER.COMMIT_METADATA, PROV.USED).map(v -> {
@@ -81,6 +77,10 @@ public class Undo extends STServiceAdapter {
         }).ifPresent(op -> {
             commitInfo.setOperation(op);
         });
+
+        commitInfo.setCreated(Models.getPropertyResources(undoMetadata, CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#created")).stream().collect(Collectors.toList()));
+        commitInfo.setModified(Models.getPropertyResources(undoMetadata, CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#modified")).stream().collect(Collectors.toList()));
+        commitInfo.setDeleted(Models.getPropertyResources(undoMetadata, CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#deleted")).stream().collect(Collectors.toList()));
 
         Pattern paramPattern = Pattern.compile("^param-(\\d+)-(\\w+)$");
         Models.getPropertyResource(undoMetadata, CHANGETRACKER.COMMIT_METADATA, STCHANGELOG.PARAMETERS).ifPresent(params -> {

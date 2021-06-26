@@ -29,6 +29,8 @@ import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * An AOP Alliance {@link MethodInterceptor} implementation that manages events about resouce lifecycle
@@ -102,7 +104,46 @@ public class ResourceLifecycleEventPublisherInterceptor implements MethodInterce
 				}
 
 			} finally {
-				ResourceLevelChangeMetadataSupport.removeVersioningMetadata();
+				if (TransactionSynchronizationManager.isSynchronizationActive()) {
+					TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+						@Override
+						public void suspend() {
+
+						}
+
+						@Override
+						public void resume() {
+
+						}
+
+						@Override
+						public void flush() {
+
+						}
+
+						@Override
+						public void beforeCommit(boolean readOnly) {
+
+						}
+
+						@Override
+						public void beforeCompletion() {
+
+						}
+
+						@Override
+						public void afterCommit() {
+
+						}
+
+						@Override
+						public void afterCompletion(int status) {
+							ResourceLevelChangeMetadataSupport.removeVersioningMetadata();
+						}
+					});
+				} else {
+					ResourceLevelChangeMetadataSupport.removeVersioningMetadata();
+				}
 			}
 
 			return rv;

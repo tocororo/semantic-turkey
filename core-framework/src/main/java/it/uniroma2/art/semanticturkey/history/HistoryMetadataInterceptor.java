@@ -1,18 +1,36 @@
 package it.uniroma2.art.semanticturkey.history;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-
-import javax.servlet.http.HttpServletRequest;
-
+import com.google.common.primitives.Primitives;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.event.annotation.TransactionalEventListener;
+import it.uniroma2.art.semanticturkey.mvc.ResolvedRequestHolder;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.annotations.OmitHistoryMetadata;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadata;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
+import it.uniroma2.art.semanticturkey.services.events.ResourceCreated;
+import it.uniroma2.art.semanticturkey.services.events.ResourceDeleted;
+import it.uniroma2.art.semanticturkey.services.events.ResourceEvent;
+import it.uniroma2.art.semanticturkey.services.events.ResourceModified;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.vocabulary.STCHANGELOG;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.WriterConfig;
+import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -20,16 +38,10 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.google.common.primitives.Primitives;
-
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
-import it.uniroma2.art.semanticturkey.mvc.ResolvedRequestHolder;
-import it.uniroma2.art.semanticturkey.services.STServiceContext;
-import it.uniroma2.art.semanticturkey.services.annotations.OmitHistoryMetadata;
-import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
-import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
-import it.uniroma2.art.semanticturkey.user.UsersManager;
-import it.uniroma2.art.semanticturkey.vocabulary.STCHANGELOG;
+import javax.servlet.http.HttpServletRequest;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 
 /**
  * An AOP Alliance {@link MethodInterceptor} implementation that manages history-relevant metadata related to
@@ -68,8 +80,8 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 			HttpServletRequest request = ResolvedRequestHolder.get();
 
 			for (int i = 0; i < parameterNames.length; i++) {
-				String paramenterName = parameterNames[i];
-				String providedValue = request.getParameter(paramenterName);
+				String parameterName = parameterNames[i];
+				String providedValue = request.getParameter(parameterName);
 				if (providedValue == null) {
 					Object actualValue = serviceArguments[i];
 
@@ -126,9 +138,7 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 						if (readOnly)
 							return;
 
-						if (!stServiceContext.getProject().isHistoryEnabled()
-								&& !stServiceContext.getProject().isValidationEnabled() && !stServiceContext
-						.getProject().isUndoEnabled())
+						if (!shouldWriteMetadata())
 							return;
 
 						Repository repository = STServiceContextUtils.getRepostory(stServiceContext);
@@ -136,6 +146,19 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 
 						Model rdfOperationMetadata = operationMetadata.toRDF();
 						conn.add(rdfOperationMetadata, CHANGETRACKER.COMMIT_METADATA);
+
+						ResourceLevelChangeMetadata versioningMetadata = ResourceLevelChangeMetadataSupport
+								.currentVersioningMetadata();
+
+						Model resourceVersioningModel = new LinkedHashModel();
+
+						ValueFactory vf = conn.getValueFactory();
+						versioningMetadata.getCreatedResources().forEach(r -> resourceVersioningModel.add(CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#created"), r.getKey()));
+						versioningMetadata.getModifiedResources().forEach(r -> resourceVersioningModel.add(CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#modified"), r.getKey()));
+						versioningMetadata.getDeletedResources().forEach(r -> resourceVersioningModel.add(CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#getDeletedResources"), r.getKey()));
+
+						conn.add(resourceVersioningModel, CHANGETRACKER.COMMIT_METADATA);
+
 					}
 
 					@Override
@@ -157,5 +180,11 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 		}
 
 		return rv;
+	}
+
+	private boolean shouldWriteMetadata() {
+		return stServiceContext.getProject().isHistoryEnabled()
+				|| stServiceContext.getProject().isValidationEnabled() || stServiceContext
+				.getProject().isUndoEnabled();
 	}
 }
