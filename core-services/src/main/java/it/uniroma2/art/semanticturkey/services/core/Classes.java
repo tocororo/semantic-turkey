@@ -201,6 +201,33 @@ public class Classes extends STServiceAdapter {
 		return qb.runQuery();
 	}
 
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(cls, taxonomy)', 'R')")
+	public Collection<AnnotatedValue<Resource>> getSuperClasses(@LocallyDefined IRI cls) {
+		QueryBuilder qb = createQueryBuilder(
+				// @formatter:off
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" prefix owl: <http://www.w3.org/2002/07/owl#>								\n" +
+				" prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
+				" SELECT ?resource "+generateNatureSPARQLSelectPart()+"						\n" +
+				" WHERE {																	\n" +
+					 RenderUtils.toSPARQL(cls) + " rdfs:subClassOf ?resource				.\n " +
+				"    FILTER(isIRI(?resource))												\n " +
+				generateNatureSPARQLWherePart("?resource") +
+				" }																			\n " +
+				" GROUP BY ?resource"
+				// @formatter:on
+		);
+		qb.process(FixedRoleProcessor.INSTANCE, "resource", "attr_role");
+		qb.processRendering();
+		qb.processQName();
+		qb.setBinding("workingGraph", getWorkingGraph());
+		return qb.runQuery();
+	}
+
 	/**
 	 * Returns the description of the classes in the given <code>classList</code>. If <code>numInst</code> is
 	 * set to <code>true</code>, then the description of each class will contain the number of (explicit)

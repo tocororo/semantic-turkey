@@ -600,6 +600,44 @@ public class SKOS extends STServiceAdapter {
 		return qb.runQuery();
 	}
 
+	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(skosCollection, taxonomy)', 'R')")
+	public Collection<AnnotatedValue<Resource>> getSuperCollections(@LocallyDefined Resource collection) {
+		QueryBuilder qb = createQueryBuilder(
+				// @formatter:off
+				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>					\n" +
+				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>						\n" +
+				" PREFIX owl: <http://www.w3.org/2002/07/owl#>								\n" +
+				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>						\n" +
+				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>						\n" +
+				"                                                                            \n" +
+				" SELECT ?resource (COUNT(DISTINCT ?mid) AS ?index) " + generateNatureSPARQLSelectPart() +"\n"+
+				" WHERE { 																	\n" +
+				"   {                                                                        \n" +
+				//for the skos:Collection
+				" 	  FILTER NOT EXISTS {?resource skos:memberList [] }                     \n" +
+				" 	  ?resource skos:member ?nested .                                     \n" +
+				"   } UNION {                                                                \n" +
+				//for the skos:OrderedCollection
+				" 	  ?resource skos:memberList ?memberList .                               \n" +
+				" 	  ?memberList rdf:rest* ?mid .                                           \n" +
+				" 	  ?mid rdf:rest* ?node .                                                 \n" +
+				" 	  ?node rdf:first ?nested .                                            \n" +
+				"   }                                                                        \n" +
+				" 	FILTER EXISTS { ?resource rdf:type/rdfs:subClassOf* skos:Collection . }  \n" +
+				generateNatureSPARQLWherePart("?resource") +
+				" }                                                                          \n" +
+				" GROUP BY ?resource                                                         \n" +
+				" ORDER BY ?index                                                            \n"
+				// @formatter:on
+		);
+		qb.processRendering();
+		qb.processQName();
+		qb.setBinding("nested", collection);
+		return qb.runQuery();
+	}
+
 	
 	@STServiceOperation
 	@Read

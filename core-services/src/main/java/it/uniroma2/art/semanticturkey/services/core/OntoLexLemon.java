@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import it.uniroma2.art.semanticturkey.services.annotations.Deleted;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -862,7 +863,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(ontolexLexicalEntry)', 'D')")
-	public void deleteLexicalEntry(@LocallyDefined IRI lexicalEntry) {
+	public void deleteLexicalEntry(@LocallyDefined @Deleted IRI lexicalEntry) {
 		RepositoryConnection conn = getManagedConnection();
 
 		String triples2deleteQueryString =

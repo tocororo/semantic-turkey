@@ -155,7 +155,7 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 						ValueFactory vf = conn.getValueFactory();
 						versioningMetadata.getCreatedResources().forEach(r -> resourceVersioningModel.add(CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#created"), r.getKey()));
 						versioningMetadata.getModifiedResources().forEach(r -> resourceVersioningModel.add(CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#modified"), r.getKey()));
-						versioningMetadata.getDeletedResources().forEach(r -> resourceVersioningModel.add(CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#getDeletedResources"), r.getKey()));
+						versioningMetadata.getDeletedResources().forEach(r -> resourceVersioningModel.add(CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#deleted"), r.getKey()));
 
 						conn.add(resourceVersioningModel, CHANGETRACKER.COMMIT_METADATA);
 
