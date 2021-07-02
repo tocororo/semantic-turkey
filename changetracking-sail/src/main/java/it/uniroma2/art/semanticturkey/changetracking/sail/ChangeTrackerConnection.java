@@ -422,10 +422,11 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
 
                     @Override
                     public void visitStackSourced(UndoSource.StackSourcedUndo undoStackTip) {
+
                         // get the tip of the undo stack
                         StagingArea latestUndoStackTip = sail.undoStack.get().peek().orElseThrow(() -> new SailException("Empty undo stack"));
 
-                        if (!latestUndoStackTip.equals(undoStackTip)) {
+                        if (!latestUndoStackTip.equals(undoStackTip.getStagingArea())) {
                             throw new SailException("Concurrent undo");
                         }
 

@@ -150,7 +150,7 @@ public class ChangeTracker extends NotifyingSailWrapper implements RepositoryRes
 					validationGraph);
 		}
 		this.undoEnabled = undoEnabled;
-		if (this.undoEnabled) {
+		if (!historyEnabled && !validationEnabled && this.undoEnabled) {
 			undoStack = Optional.of(new UndoStack());
 		} else {
 			undoStack = Optional.empty();

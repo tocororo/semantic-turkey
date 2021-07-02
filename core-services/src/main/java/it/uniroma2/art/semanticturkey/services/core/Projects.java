@@ -10,6 +10,7 @@ import it.uniroma2.art.lime.profiler.LIMEProfiler;
 import it.uniroma2.art.lime.profiler.ProfilerException;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
+import it.uniroma2.art.semanticturkey.changetracking.sail.ChangeTracker;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerFactory;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
@@ -1708,6 +1709,101 @@ public class Projects extends STServiceAdapter {
         });
         return validationEnabled.toBoolean();
     }
+
+    /**
+     * Sets whether undo is enabled in a <em>closed</em> project. Undo can be enabled on projects with history or validation
+     * and in any project in which the change tracker happens to be set up (see {@link #isChangeTrackerSetUp(String)}
+     *
+     * @param projectName
+     * @param undoEnabled
+     */
+    @STServiceOperation(method = RequestMethod.POST)
+    @PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
+    public void setUndoEnabled(String projectName, boolean undoEnabled) throws ProjectUpdateException, ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
+        ProjectManager.handleProjectExclusively(projectName, project -> {
+            STLocalRepositoryManager prjRepMgr = new STLocalRepositoryManager(project.getProjectDirectory());
+            prjRepMgr.init();
+            boolean undoEnabledOrig = project.isUndoEnabled();
+            try {
+                project.setReservedProperty(Project.UNDO_ENABLED_PROP, String.valueOf(undoEnabled));
+            } catch (ProjectUpdateException e) {
+                ExceptionUtils.rethrow(e);
+            }
+            
+            try {
+                prjRepMgr.operateOnUnfoldedManager(Project.CORE_REPOSITORY, (modelBasedRepositoryManager, repId) -> {
+                    Model repConfig = modelBasedRepositoryManager.getRepositoryConfig(repId);
+                    Resource changeTrackerSail = Models.subject(repConfig.filter(null, SailConfigSchema.SAILTYPE, Values.literal(ChangeTrackerFactory.SAIL_TYPE))).orElseThrow(() -> new IllegalArgumentException("the ChangeTracker Sail is not configured for the repository"));
+                    Models.setProperty(repConfig, changeTrackerSail, ChangeTrackerSchema.UNDO_ENABLED, Values.literal(undoEnabled));
+                    try {
+                        modelBasedRepositoryManager.addRepositoryConfig(repConfig);
+                    } catch(Exception e) {
+                        try {
+                            project.setReservedProperty(Project.UNDO_ENABLED_PROP, String.valueOf(undoEnabledOrig));
+                        } catch (ProjectUpdateException e2) {
+                            e.addSuppressed(e2);
+                            ExceptionUtils.rethrow(e);
+                        }
+                    }
+                });
+            } finally {
+                prjRepMgr.shutDown();
+            }
+        });
+    }
+
+    /**
+     * Tells whether undo is enabled in a <em>closed</em> project.
+     *
+     * @param projectName
+     * @return
+     */
+    @STServiceOperation
+    @PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
+    public Boolean isUndoEnabled(String projectName) throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
+        MutableBoolean undoEnabled = new MutableBoolean(false);
+        ProjectManager.handleProjectExclusively(projectName, project -> {
+            STLocalRepositoryManager prjRepMgr = new STLocalRepositoryManager(project.getProjectDirectory());
+            prjRepMgr.init();
+            try {
+                prjRepMgr.operateOnUnfoldedManager(Project.CORE_REPOSITORY, (modelBasedRepositoryManager, repId) -> {
+                    Model repConfig = modelBasedRepositoryManager.getRepositoryConfig(repId);
+                    Resource changeTrackerSail = Models.subject(repConfig.filter(null, SailConfigSchema.SAILTYPE, Values.literal(ChangeTrackerFactory.SAIL_TYPE))).orElseThrow(() -> new IllegalArgumentException("the ChangeTracker Sail is not configured for the repository"));
+                    boolean v = Models.getPropertyLiteral(repConfig, changeTrackerSail, ChangeTrackerSchema.UNDO_ENABLED).map(Literal::booleanValue).orElse(false);
+                    undoEnabled.setValue(v);
+                });
+            } finally {
+                prjRepMgr.shutDown();
+            }
+        });
+        return undoEnabled.toBoolean();
+    }
+    
+    /**
+     * Tells whether the change tracker is set up for a <em>closed</em> project.
+     *
+     * @param projectName
+     * @return
+     */
+    @STServiceOperation
+    @PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
+    public Boolean isChangeTrackerSetUp(String projectName) throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
+        MutableBoolean changeTrackerSetup = new MutableBoolean(false);
+        ProjectManager.handleProjectExclusively(projectName, project -> {
+            STLocalRepositoryManager prjRepMgr = new STLocalRepositoryManager(project.getProjectDirectory());
+            prjRepMgr.init();
+            try {
+                prjRepMgr.operateOnUnfoldedManager(Project.CORE_REPOSITORY, (modelBasedRepositoryManager, repId) -> {
+                    Model repConfig = modelBasedRepositoryManager.getRepositoryConfig(repId);
+                    changeTrackerSetup.setValue(Models.subject(repConfig.filter(null, SailConfigSchema.SAILTYPE, Values.literal(ChangeTrackerFactory.SAIL_TYPE))).isPresent());
+                });
+            } finally {
+                prjRepMgr.shutDown();
+            }
+        });
+        return changeTrackerSetup.toBoolean();
+    }
+
 
     /**
      * Enables/Disables the possibility to automatically open a project when SemanticTurkey is executed

@@ -7,11 +7,12 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.Values;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Optional;
 
-public class UndoStack {
+public class UndoStack implements Iterable<StagingArea> {
     public static final int MAX_DEPTH = 10;
 
     private LinkedList<StagingArea> storage;
@@ -21,6 +22,7 @@ public class UndoStack {
     }
 
     public void push(StagingArea data) {
+
         if (storage.size() == MAX_DEPTH) {
             storage.clear();
         }
@@ -52,13 +54,17 @@ public class UndoStack {
     }
 
     public static Optional<IRI> getPerformer(Model commitMetadataModel) {
-        Optional<IRI> performer = Models.objectResources(commitMetadataModel.filter(CHANGETRACKER.COMMIT_METADATA, PROV.QUALIFIED_ASSOCIATION, null))
+        Optional<IRI> performer = Models.getPropertyResources(commitMetadataModel, CHANGETRACKER.COMMIT_METADATA, PROV.QUALIFIED_ASSOCIATION)
                 .stream()
                 .filter(ass -> commitMetadataModel.contains(ass, PROV.HAD_ROLE, Values.iri("http://semanticturkey.uniroma2.it/ns/st-changelog#performer")))
-                .map(ass -> Models.getPropertyIRI(commitMetadataModel, ass, PROV.AGENT).orElse(null))
+                .map(ass -> Models.getPropertyIRI(commitMetadataModel, ass, PROV.HAS_AGENT).orElse(null))
                 .filter(Objects::nonNull)
                 .findAny();
         return performer;
     }
 
+    @Override
+    public Iterator<StagingArea> iterator() {
+        return storage.iterator();
+    }
 }

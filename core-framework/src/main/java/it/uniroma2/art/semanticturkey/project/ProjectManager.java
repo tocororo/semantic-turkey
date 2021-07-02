@@ -1431,10 +1431,11 @@ public class ProjectManager {
 				if (needsChangeTracker) {
 
 					ChangeTrackerConfig changeTrackerSailConfig = new ChangeTrackerConfig(sailImplConfig);
+					changeTrackerSailConfig.setMetadataNS(SUPPORT.computeMetadataNS(baseURI));
+					changeTrackerSailConfig.setUndoEnabled(undoEnabled);
 					if (supportRepositoryConfig != null) {
 						changeTrackerSailConfig.setSupportRepositoryID(
 								repositoryAccess.isLocal() ? Project.SUPPORT_REPOSITORY : supportRepoID);
-						changeTrackerSailConfig.setMetadataNS(SUPPORT.computeMetadataNS(baseURI));
 						changeTrackerSailConfig.setHistoryEnabled(historyEnabled);
 						if (historyEnabled) {
 							changeTrackerSailConfig.setHistoryGraph(SUPPORT.HISTORY);
