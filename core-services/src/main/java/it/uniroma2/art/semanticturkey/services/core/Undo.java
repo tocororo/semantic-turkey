@@ -78,9 +78,9 @@ public class Undo extends STServiceAdapter {
             commitInfo.setOperation(op);
         });
 
-        commitInfo.setCreated(Models.getPropertyResources(undoMetadata, CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#created")).stream().collect(Collectors.toList()));
-        commitInfo.setModified(Models.getPropertyResources(undoMetadata, CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#modified")).stream().collect(Collectors.toList()));
-        commitInfo.setDeleted(Models.getPropertyResources(undoMetadata, CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#deleted")).stream().collect(Collectors.toList()));
+        commitInfo.setCreated(Models.getPropertyResources(undoMetadata, CHANGETRACKER.COMMIT_METADATA, STCHANGELOG.CREATED).stream().collect(Collectors.toList()));
+        commitInfo.setModified(Models.getPropertyResources(undoMetadata, CHANGETRACKER.COMMIT_METADATA, STCHANGELOG.MODIFIED).stream().collect(Collectors.toList()));
+        commitInfo.setDeleted(Models.getPropertyResources(undoMetadata, CHANGETRACKER.COMMIT_METADATA, STCHANGELOG.DELETED).stream().collect(Collectors.toList()));
 
         Pattern paramPattern = Pattern.compile("^param-(\\d+)-(\\w+)$");
         Models.getPropertyResource(undoMetadata, CHANGETRACKER.COMMIT_METADATA, STCHANGELOG.PARAMETERS).ifPresent(params -> {

@@ -28,12 +28,18 @@ public abstract class STCHANGELOG {
 	public static final IRI VALIDATOR;
 
 	public static final IRI PARAMETERS;
+    public static final IRI CREATED;
+    public static final IRI MODIFIED;
+    public static final IRI DELETED;
 
-	static {
+    static {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
 		PERFORMER = vf.createIRI(NAMESPACE, "performer");
 		VALIDATOR = vf.createIRI(NAMESPACE, "validator");
 		PARAMETERS = vf.createIRI(NAMESPACE, "parameters");
+		CREATED = vf.createIRI(NAMESPACE, "created");
+		MODIFIED = vf.createIRI(NAMESPACE, "modified");
+		DELETED = vf.createIRI(NAMESPACE, "deleted");
 	}
 }

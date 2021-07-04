@@ -142,9 +142,9 @@ public class HistoryMetadataInterceptor implements MethodInterceptor {
 						Model resourceVersioningModel = new LinkedHashModel();
 
 						ValueFactory vf = conn.getValueFactory();
-						versioningMetadata.getCreatedResources().forEach(r -> resourceVersioningModel.add(CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#created"), r.getKey()));
-						versioningMetadata.getModifiedResources().forEach(r -> resourceVersioningModel.add(CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#modified"), r.getKey()));
-						versioningMetadata.getDeletedResources().forEach(r -> resourceVersioningModel.add(CHANGETRACKER.COMMIT_METADATA, vf.createIRI("http://semanticturkey.uniroma2.it/ns/st-changelog#deleted"), r.getKey()));
+						versioningMetadata.getCreatedResources().forEach(r -> resourceVersioningModel.add(CHANGETRACKER.COMMIT_METADATA, STCHANGELOG.CREATED, r.getKey()));
+						versioningMetadata.getModifiedResources().forEach(r -> resourceVersioningModel.add(CHANGETRACKER.COMMIT_METADATA, STCHANGELOG.MODIFIED, r.getKey()));
+						versioningMetadata.getDeletedResources().forEach(r -> resourceVersioningModel.add(CHANGETRACKER.COMMIT_METADATA, STCHANGELOG.DELETED, r.getKey()));
 
 						conn.add(resourceVersioningModel, CHANGETRACKER.COMMIT_METADATA);
 
