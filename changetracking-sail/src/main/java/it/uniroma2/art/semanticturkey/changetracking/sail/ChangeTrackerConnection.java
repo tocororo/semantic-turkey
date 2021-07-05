@@ -43,6 +43,7 @@ import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.RDFCollections;
+import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
@@ -835,16 +836,18 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
             @Override
             public void visitValidationSourced(UndoSource.ValidationSourcedUndo undoStackTip) {
                 try(RepositoryConnection suppRepCon = sail.supportRepo.getConnection()) {
-                    Model commitMetadata = HistoryRepositories.getCommitUserMetadata(suppRepCon, undoStackTip.getCommit(), sail.validationGraph, true);
+                    Model commitMetadata = HistoryRepositories.getCommitUserMetadata(suppRepCon, undoStackTip.getCommit(), sail.validationGraph, false);
                     generatedTriples.addAll(commitMetadata);
+                    generatedTriples.add(undoStackTip.getCommit(), RDF.TYPE, CHANGELOG.COMMIT);
                 }
             }
 
             @Override
             public void visitHistorySourced(UndoSource.HistorySourcedUndo undoStackTip) {
                 try(RepositoryConnection suppRepCon = sail.supportRepo.getConnection()) {
-                    Model commitMetadata = HistoryRepositories.getCommitUserMetadata(suppRepCon, undoStackTip.getCommit(), sail.historyGraph, true);
+                    Model commitMetadata = HistoryRepositories.getCommitUserMetadata(suppRepCon, undoStackTip.getCommit(), sail.historyGraph, false);
                     generatedTriples.addAll(commitMetadata);
+                    generatedTriples.add(undoStackTip.getCommit(), RDF.TYPE, CHANGELOG.COMMIT);
                 }
             }
 
@@ -854,6 +857,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
                 generatedTriples.addAll(commitMetadata);
             }
         });
+
         return generatedTriples;
     }
 
