@@ -10,7 +10,6 @@ import it.uniroma2.art.lime.profiler.LIMEProfiler;
 import it.uniroma2.art.lime.profiler.ProfilerException;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
-import it.uniroma2.art.semanticturkey.changetracking.sail.ChangeTracker;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerFactory;
 import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
@@ -18,7 +17,18 @@ import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.*;
+import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
+import it.uniroma2.art.semanticturkey.exceptions.ExceptionDAO;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectCreationException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectDeletionException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.ReservedPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedModelException;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
@@ -28,18 +38,42 @@ import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DownloadDe
 import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.project.*;
+import it.uniroma2.art.semanticturkey.project.AbstractProject;
+import it.uniroma2.art.semanticturkey.project.CorruptedProject;
+import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectACL;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.LockLevel;
+import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
+import it.uniroma2.art.semanticturkey.project.ProjectInfo;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.ProjectManager.AccessResponse;
+import it.uniroma2.art.semanticturkey.project.ProjectStatus;
 import it.uniroma2.art.semanticturkey.project.ProjectStatus.Status;
-import it.uniroma2.art.semanticturkey.properties.*;
+import it.uniroma2.art.semanticturkey.project.RepositoryAccess;
+import it.uniroma2.art.semanticturkey.project.RepositoryLocation;
+import it.uniroma2.art.semanticturkey.project.RepositorySummary;
+import it.uniroma2.art.semanticturkey.project.SHACLSettings;
+import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
+import it.uniroma2.art.semanticturkey.properties.DataSize;
+import it.uniroma2.art.semanticturkey.properties.Pair;
+import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.properties.dynamic.STPropertiesSchema;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.*;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataStore;
 import it.uniroma2.art.semanticturkey.services.core.projects.PreloadedDataSummary;
 import it.uniroma2.art.semanticturkey.services.core.projects.ProjectPropertyInfo;
@@ -48,8 +82,17 @@ import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
 import it.uniroma2.art.semanticturkey.settings.core.PreloadProfilerSettings;
 import it.uniroma2.art.semanticturkey.settings.core.PreloadSettings;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
-import it.uniroma2.art.semanticturkey.settings.facets.*;
-import it.uniroma2.art.semanticturkey.user.*;
+import it.uniroma2.art.semanticturkey.settings.facets.CorruptedProjectFacets;
+import it.uniroma2.art.semanticturkey.settings.facets.CustomProjectFacetsSchemaStore;
+import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacets;
+import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsIndexUtils;
+import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsStore;
+import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersGroup;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
 import it.uniroma2.art.semanticturkey.vocabulary.SUPPORT;
 import org.apache.commons.io.IOUtils;
@@ -69,9 +112,20 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.eclipse.rdf4j.common.iteration.Iterations;
-import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Literals;
@@ -105,9 +159,26 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.StringWriter;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @STService
@@ -845,7 +916,7 @@ public class Projects extends STServiceAdapter {
     }
 
     @STServiceOperation(method = RequestMethod.POST)
-    @PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
+    @PreAuthorize("@auth.isAdmin()")
     public void exportProject(HttpServletResponse oRes,
                               @RequestParam(value = "projectName") String projectName)
             throws IOException, ProjectAccessException {
@@ -919,7 +990,7 @@ public class Projects extends STServiceAdapter {
      * @throws IOException
      */
     @STServiceOperation
-    @PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
+    @PreAuthorize("@auth.isAdmin()")
     public String getProjectPropertyFileContent(String projectName)
             throws InvalidProjectNameException, ProjectInexistentException, IOException {
         return ProjectManager.getProjectPropertyFileContent(projectName);
@@ -1603,6 +1674,7 @@ public class Projects extends STServiceAdapter {
      * @throws ProjectAccessException
      */
     @STServiceOperation(method = RequestMethod.POST)
+    @PreAuthorize("@auth.isAdmin()")
     public void setBlacklistingEnabled(String projectName, boolean blacklistingEnabled)
             throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
         ProjectManager.handleProjectExclusively(projectName, project -> {
@@ -1665,7 +1737,7 @@ public class Projects extends STServiceAdapter {
      * @param shaclValidationEnabled
      */
     @STServiceOperation(method = RequestMethod.POST)
-    @PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
+    @PreAuthorize("@auth.isAdmin()")
     public void setSHACLValidationEnabled(String projectName, boolean shaclValidationEnabled) throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
         ProjectManager.handleProjectExclusively(projectName, project -> {
             STLocalRepositoryManager prjRepMgr = new STLocalRepositoryManager(project.getProjectDirectory());
@@ -1690,7 +1762,7 @@ public class Projects extends STServiceAdapter {
      * @return
      */
     @STServiceOperation
-    @PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
+    @PreAuthorize("@auth.isAdmin()")
     public Boolean isSHACLValidationEnabled(String projectName) throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
         MutableBoolean validationEnabled = new MutableBoolean(ShaclSailConfig.VALIDATION_ENABLED_DEFAULT);
         ProjectManager.handleProjectExclusively(projectName, project -> {
@@ -1718,8 +1790,8 @@ public class Projects extends STServiceAdapter {
      * @param undoEnabled
      */
     @STServiceOperation(method = RequestMethod.POST)
-    @PreAuthorize("@auth.isAuthorized('pm(project)', 'U')")
-    public void setUndoEnabled(String projectName, boolean undoEnabled) throws ProjectUpdateException, ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
+    @PreAuthorize("@auth.isAdmin()")
+    public void setUndoEnabled(String projectName, boolean undoEnabled) throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
         ProjectManager.handleProjectExclusively(projectName, project -> {
             STLocalRepositoryManager prjRepMgr = new STLocalRepositoryManager(project.getProjectDirectory());
             prjRepMgr.init();
@@ -1759,7 +1831,7 @@ public class Projects extends STServiceAdapter {
      * @return
      */
     @STServiceOperation
-    @PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
+    @PreAuthorize("@auth.isAdmin()")
     public Boolean isUndoEnabled(String projectName) throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
         MutableBoolean undoEnabled = new MutableBoolean(false);
         ProjectManager.handleProjectExclusively(projectName, project -> {
@@ -1786,7 +1858,7 @@ public class Projects extends STServiceAdapter {
      * @return
      */
     @STServiceOperation
-    @PreAuthorize("@auth.isAuthorized('pm(project)', 'R')")
+    @PreAuthorize("@auth.isAdmin()")
     public Boolean isChangeTrackerSetUp(String projectName) throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
         MutableBoolean changeTrackerSetup = new MutableBoolean(false);
         ProjectManager.handleProjectExclusively(projectName, project -> {
@@ -1816,6 +1888,7 @@ public class Projects extends STServiceAdapter {
      * @throws ProjectUpdateException
      */
     @STServiceOperation(method = RequestMethod.POST)
+    @PreAuthorize("@auth.isAdmin()")
     public void setOpenAtStartup(String projectName, boolean openAtStartup)
             throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
             ProjectUpdateException {
@@ -1824,6 +1897,7 @@ public class Projects extends STServiceAdapter {
     }
 
     @STServiceOperation
+    @PreAuthorize("@auth.isAdmin()")
     public Boolean getOpenAtStartup(String projectName)
             throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
         Project project = ProjectManager.getProject(projectName, true);
