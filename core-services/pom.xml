@@ -187,7 +187,7 @@
 				<version>3.5.1</version>
 				<configuration>
 					<fork>true</fork>
-					<compilerArgument>-Ait.uniroma2.art.semanticturkey.generation.controller.path.prefix=${project.groupId}\/${project.artifactId}</compilerArgument>
+					<compilerArgument>-Ait.uniroma2.art.semanticturkey.generation.controller.path.prefix=${project.groupId}/${project.artifactId}</compilerArgument>
 				</configuration>
 			</plugin>
 			<plugin>

@@ -159,6 +159,8 @@
 				</beans:bean>
 				<beans:bean id="StringToDataSizeConverter"
 							class="it.uniroma2.art.semanticturkey.converters.StringToDataSizeConverter" />
+				<beans:bean id="StringToZonedDateTimeConverter"
+							class="it.uniroma2.art.semanticturkey.converters.StringToZonedDateTimeConverter" />
 			</beans:list>
 		</beans:property>
 	</beans:bean>
