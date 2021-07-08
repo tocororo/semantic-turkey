@@ -105,6 +105,7 @@ public class History extends STServiceAdapter {
 		}
 	}
 
+	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public HistoryPaginationInfo getCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
