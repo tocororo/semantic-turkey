@@ -1,10 +1,15 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import it.uniroma2.art.semanticturkey.project.Project;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
@@ -61,7 +66,45 @@ public class History extends STServiceAdapter {
 	@Autowired
 	private STServiceTracker stServiceTracker;
 
+	/**
+	 * Returns the time of origin. If a <code>resource</code> is provided, returns the datetime of the oldest commit
+	 * first adding a statement for it (as subject). Otherwise, returns the datetime of the commit in the history
+	 * @param resource
+	 * @return
+	 */
 	@STServiceOperation
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
+	public java.util.Optional<String> getTimeOfOrigin(@Optional IRI resource) {
+		IRI historyGraph = SupportRepositoryUtils.obtainHistoryGraph(getManagedConnection());
+		Repository supportRepository = getProject().getRepositoryManager().getRepository(Project.SUPPORT_REPOSITORY);
+		try (RepositoryConnection conn = supportRepository.getConnection()) {
+			TupleQuery query = conn.prepareTupleQuery(
+				String.format(
+					"PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>\n" +
+					"PREFIX prov: <http://www.w3.org/ns/prov#>\n" +
+					"\n" +
+					"SELECT ?time WHERE {\n" +
+					"    ?commit a cl:Commit ;\n" +
+					"        prov:endedAtTime ?time.\n" +
+					"%s" +
+					"}\n" +
+					"ORDER BY ASC(?time)\n" +
+					"LIMIT 1",
+						resource != null ?
+							"	?commit prov:generated/(cl:addedStatement|cl:removedStatement)/cl:subject ?resource"
+							:
+							""
+			));
+
+			if (resource != null) {
+				query.setBinding("resource", resource);
+			}
+
+			return QueryResults.stream(query.evaluate()).map(bs -> (Literal)bs.getValue("time")).map(l -> StringUtils.substringBefore(l.calendarValue().toGregorianCalendar().toZonedDateTime().toString(), "[")).findAny();
+		}
+	}
+
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public HistoryPaginationInfo getCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
