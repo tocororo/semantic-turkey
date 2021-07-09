@@ -74,7 +74,7 @@ public class History extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ')', 'R')")
 	public java.util.Optional<String> getTimeOfOrigin(@Optional IRI resource) {
 		IRI historyGraph = SupportRepositoryUtils.obtainHistoryGraph(getManagedConnection());
 		Repository supportRepository = getProject().getRepositoryManager().getRepository(Project.SUPPORT_REPOSITORY);
