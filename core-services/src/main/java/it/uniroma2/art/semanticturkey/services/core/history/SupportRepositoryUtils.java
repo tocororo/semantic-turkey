@@ -41,7 +41,7 @@ public abstract class SupportRepositoryUtils {
 		}
 	}
 
-	public static String addInnerPatter(boolean addPatter, String innerPatter) {
+	public static String addInnerPattern(boolean addPatter, String innerPatter) {
 		if (addPatter) {
 			return innerPatter;
 		} else {

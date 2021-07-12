@@ -781,30 +781,32 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
             if (dataset != null) {
                 Map<IRI, Function<IRI, Model>> enabledVirtualResources = Maps.filterKeys(virtualResourceHandlers, v -> ((BiFunction<Set<IRI>, IRI, Boolean>)Collection::contains).apply(dataset.getDefaultGraphs(), v));
 
-                TupleExpr argTupleExpr = ((UnaryTupleOperator) tupleExpr).getArg();
-                Model generatedTriples = new LinkedHashModel();
-                QueryResults.stream(super.evaluate(argTupleExpr, dataset, bindings, includeInferred))
-                        .flatMap(bs -> StreamSupport.stream(bs.spliterator(), false)).map(Binding::getValue)
-                        .forEach(v -> {
-                            Function<IRI, Model> fun = enabledVirtualResources.entrySet().stream().filter(entry -> v.stringValue().startsWith(entry.getKey().stringValue())).map(Map.Entry::getValue).findAny().orElse(null);
+                if (!enabledVirtualResources.isEmpty()) {
+                    TupleExpr argTupleExpr = ((UnaryTupleOperator) tupleExpr).getArg();
+                    Model generatedTriples = new LinkedHashModel();
+                    QueryResults.stream(super.evaluate(argTupleExpr, dataset, bindings, includeInferred))
+                            .flatMap(bs -> StreamSupport.stream(bs.spliterator(), false)).map(Binding::getValue)
+                            .forEach(v -> {
+                                Function<IRI, Model> fun = enabledVirtualResources.entrySet().stream().filter(entry -> v.stringValue().startsWith(entry.getKey().stringValue())).map(Map.Entry::getValue).findAny().orElse(null);
 
-                            if (fun != null) {
-                                generatedTriples.addAll(fun.apply((IRI)v));
-                            }
-                        });
+                                if (fun != null) {
+                                    generatedTriples.addAll(fun.apply((IRI) v));
+                                }
+                            });
 
-                List<MapBindingSet> statementCollection = generatedTriples.stream().map(st -> {
-                    MapBindingSet bs = new MapBindingSet();
-                    bs.addBinding("subject", st.getSubject());
-                    bs.addBinding("predicate", st.getPredicate());
-                    bs.addBinding("object", st.getObject());
-                    if (st.getContext() != null) {
-                        bs.addBinding("context", st.getContext());
-                    }
-                    return bs;
-                }).collect(Collectors.toList());
+                    List<MapBindingSet> statementCollection = generatedTriples.stream().map(st -> {
+                        MapBindingSet bs = new MapBindingSet();
+                        bs.addBinding("subject", st.getSubject());
+                        bs.addBinding("predicate", st.getPredicate());
+                        bs.addBinding("object", st.getObject());
+                        if (st.getContext() != null) {
+                            bs.addBinding("context", st.getContext());
+                        }
+                        return bs;
+                    }).collect(Collectors.toList());
 
-                return new CollectionIteration<>(statementCollection);
+                    return new CollectionIteration<>(statementCollection);
+                }
             }
         }
 

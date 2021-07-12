@@ -1,13 +1,10 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import it.uniroma2.art.semanticturkey.project.Project;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
@@ -110,6 +107,7 @@ public class History extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(code)', 'R')")
 	public HistoryPaginationInfo getCommitSummary(@Optional(defaultValue = "") IRI[] operationFilter,
 			@Optional(defaultValue = "") IRI[] performerFilter,
+			@Optional(defaultValue = "") IRI[] resourceFilter,
 			@Optional(defaultValue = "") IRI[] validatorFilter, @Optional String timeLowerBound,
 			@Optional String timeUpperBound, @Optional(defaultValue = DEFAULT_PAGE_SIZE) long limit) {
 		IRI historyGraph = SupportRepositoryUtils.obtainHistoryGraph(getManagedConnection());
@@ -120,6 +118,8 @@ public class History extends STServiceAdapter {
 				"operationT");
 		String performerSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(performerFilter,
 				"performerT");
+		String resourceSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(resourceFilter,
+				"resourceT");
 		String validatorSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(validatorFilter,
 				"validatorT");
 
@@ -154,6 +154,12 @@ public class History extends STServiceAdapter {
 					"     ]                                                                    \n" +
 					performerSPARQLFilter;
 			}
+			if(!resourceSPARQLFilter.isEmpty()) {
+				queryString+= "     FILTER EXISTS {\n" +
+					"		  ?commit prov:generated/(cl:addedStatement|cl:removedStatement)/cl:subject ?resourceT . \n" +
+					resourceSPARQLFilter +
+					"     }\n";
+			}
 			if(!validatorSPARQLFilter.isEmpty()) {
 				queryString+="     ?commit prov:qualifiedAssociation [                         \n" +
 					"         prov:agent ?validatorT ;                                         \n" +
@@ -184,6 +190,7 @@ public class History extends STServiceAdapter {
 	public Collection<CommitInfo> getCommits(long tipRevisionNumber,
 			@Optional(defaultValue = "") IRI[] operationFilter,
 			@Optional(defaultValue = "") IRI[] performerFilter,
+		 	@Optional(defaultValue = "") IRI[] resourceFilter,
 			@Optional(defaultValue = "") IRI[] validatorFilter, @Optional String timeLowerBound,
 			@Optional String timeUpperBound,
 			@Optional(defaultValue = "Unordered") SortingDirection operationSorting,
@@ -205,6 +212,8 @@ public class History extends STServiceAdapter {
 				"operation");
 		String performerSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(performerFilter,
 				"performer");
+		String resourceSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(resourceFilter,
+				"resource");
 		String validatorSPARQLFilter = SupportRepositoryUtils.computeInCollectionSPARQLFilter(validatorFilter,
 				"validator");
 
@@ -216,12 +225,15 @@ public class History extends STServiceAdapter {
 										" prov:hadRole <" + STCHANGELOG.PERFORMER + ">	\n" +
 										" ]                                           	\n" +
 										performerSPARQLFilter;
+		String innerPatternResource = " FILTER EXISTS { \n" +
+				                      "   ?commit prov:generated/(cl:addedStatement|cl:removedStatement)/cl:subject ?resource . \n" +
+				                      "   " + resourceSPARQLFilter + "\n" +
+				                      " }\n";
 		String innerPatternValidator = 	" ?commit prov:qualifiedAssociation [			\n" +
 										" prov:agent ?validator ;						\n" +
 										"  prov:hadRole <" + STCHANGELOG.VALIDATOR + ">	\n" +
 										" ]												\n" +
 										validatorSPARQLFilter;
-
 
 		Repository supportRepository = getProject().getRepositoryManager().getRepository("support");
 		try (RepositoryConnection conn = supportRepository.getConnection()) {
@@ -254,9 +266,10 @@ public class History extends STServiceAdapter {
 
 				//add all the FILTER that are specified by the input parameters
 				timeBoundsSPARQLFilter +
-				SupportRepositoryUtils.addInnerPatter((!operationSPARQLFilter.isEmpty() || filterOnOperation), innerPatternOperation) +
-				SupportRepositoryUtils.addInnerPatter(!performerSPARQLFilter.isEmpty(), innerPatternPerformer) +
-				SupportRepositoryUtils.addInnerPatter(!validatorSPARQLFilter.isEmpty(), innerPatternValidator) +
+				SupportRepositoryUtils.addInnerPattern((!operationSPARQLFilter.isEmpty() || filterOnOperation), innerPatternOperation) +
+				SupportRepositoryUtils.addInnerPattern(!performerSPARQLFilter.isEmpty(), innerPatternPerformer) +
+				SupportRepositoryUtils.addInnerPattern(!resourceSPARQLFilter.isEmpty(), innerPatternResource) +
+				SupportRepositoryUtils.addInnerPattern(!validatorSPARQLFilter.isEmpty(), innerPatternValidator) +
 				"}																				\n" + // closing GRAPH
 				"}																				\n" +
 				orderBySPARQLFragment +
@@ -265,7 +278,7 @@ public class History extends STServiceAdapter {
 				"} 																				\n" +
 				//INNER QUERY ENDED
 
-				SupportRepositoryUtils.addInnerPatter((operationSPARQLFilter.isEmpty() && !filterOnOperation),
+				SupportRepositoryUtils.addInnerPattern((operationSPARQLFilter.isEmpty() && !filterOnOperation),
 						SupportRepositoryUtils.conditionalOptional(operationSPARQLFilter.isEmpty(),
 							innerPatternOperation)) +
 			    "     OPTIONAL {                                                               \n" +
@@ -274,16 +287,17 @@ public class History extends STServiceAdapter {
 			    "         FILTER(STRSTARTS(STR(?param), STR(?operation)))                     \n" +
 			    "     }                                                                        \n" +
 
-				SupportRepositoryUtils.addInnerPatter(performerSPARQLFilter.isEmpty(),
+				SupportRepositoryUtils.addInnerPattern(performerSPARQLFilter.isEmpty(),
 						SupportRepositoryUtils.conditionalOptional(performerSPARQLFilter.isEmpty(),
 							innerPatternPerformer)) +
 
-				SupportRepositoryUtils.addInnerPatter(validatorSPARQLFilter.isEmpty(),
+				SupportRepositoryUtils.addInnerPattern(validatorSPARQLFilter.isEmpty(),
 					SupportRepositoryUtils.conditionalOptional(validatorSPARQLFilter.isEmpty(),
 						innerPatternValidator)) +
 				"}																				\n" +
 				" GROUP BY ?commit ?revisionNumber ?startTime ?endTime ?operation ?performer ?validator		\n" +
-				" HAVING(BOUND(?commit))														\n";
+				" HAVING(BOUND(?commit))														\n" +
+				orderBySPARQLFragment;// reapply order, but limit and offset have already been addressed in the inner query
 				// @formatter:on
 
 			logger.debug("query: " + queryString);
