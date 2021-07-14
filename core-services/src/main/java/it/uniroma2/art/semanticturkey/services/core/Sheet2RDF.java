@@ -136,7 +136,6 @@ public class Sheet2RDF extends STServiceAdapter {
         // initialize the S2RDFContext and register it
         RepositoryConnection connection = getManagedConnection();
         CODACore codaCore = getInitializedCodaCore(connection);
-        codaCore.initialize(connection);
         Sheet2RDFCore s2rdfCore = new Sheet2RDFCore(serverSpreadsheetFile, connection, fsNamingStrategy);
         S2RDFContext s2rdfCtx = new S2RDFContext(s2rdfCore, codaCore, serverSpreadsheetFile);
         String token = stServiceContext.getSessionToken();
@@ -368,7 +367,7 @@ public class Sheet2RDF extends STServiceAdapter {
         //create node and add it to the header
         NodeConversion n = new NodeConversion();
         n.setNodeId(nodeId);
-        CODAConverter c = resolveCodaConverter(converterContract, converterCapability);
+        CODAConverter c = resolveCodaConverter(converterContract, converterCapability, ctx);
         if (c != null) {
             c.setDatatypeUri(converterDatatypeUri);
             c.setLanguage(converterLanguage);
@@ -397,7 +396,7 @@ public class Sheet2RDF extends STServiceAdapter {
         for (NodeConversion node : nodes) {
             if (node.getNodeId().equals(nodeId)) {
                 //update the node
-                CODAConverter c = resolveCodaConverter(converterContract, converterCapability);
+                CODAConverter c = resolveCodaConverter(converterContract, converterCapability, ctx);
                 if (c != null) {
                     c.setDatatypeUri(converterDatatypeUri);
                     c.setLanguage(converterLanguage);
@@ -506,7 +505,7 @@ public class Sheet2RDF extends STServiceAdapter {
         subjHeader.setId(headerId);
         //update the converter in the node conversion
         NodeConversion n = subjHeader.getNodeConversion();
-        CODAConverter c = resolveCodaConverter(converterContract, RDFCapabilityType.uri);
+        CODAConverter c = resolveCodaConverter(converterContract, RDFCapabilityType.uri, ctx);
         if (c != null) {
             if (converterParams != null) {
                 Map<String, Object> resolvedConvParams = resolveConverterParamsMap(converterParams);
@@ -1014,11 +1013,12 @@ public class Sheet2RDF extends STServiceAdapter {
      *
      * @param converterContract
      * @param converterCapability
+     * @param s2rdfCtx context of s2rdf used to retrieve the initialized coda core instance
      * @return
      */
-    private CODAConverter resolveCodaConverter(String converterContract, RDFCapabilityType converterCapability) {
+    private CODAConverter resolveCodaConverter(String converterContract, RDFCapabilityType converterCapability, S2RDFContext s2rdfCtx) {
         CODAConverter converter = null;
-        CODACore codaCore = getInitializedCodaCore(getManagedConnection());
+        CODACore codaCore = s2rdfCtx.getCodaCore();
         for (ConverterContractDescription aDescr : codaCore.listConverterContracts()) {
             if (converterContract.equals(aDescr.getContractURI())) {
                 converter = new CODAConverter(converterCapability, converterContract);
@@ -1028,7 +1028,6 @@ public class Sheet2RDF extends STServiceAdapter {
                 }
             }
         }
-        shutDownCodaCore(codaCore);
         return converter;
     }
 
