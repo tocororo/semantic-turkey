@@ -746,6 +746,8 @@ public class ShowVoc extends STServiceAdapter {
 
 				Project proj = ProjectManager.getProject(id);
 
+				if (proj == null) continue; // skip closed projects
+
 				boolean isPublic = ProjectUserBindingsManager
 						.getPUBinding(UsersManager.getUser(ShowVocConstants.SHOWVOC_VISITOR_EMAIL), proj).getRoles()
 						.contains(ShowVocRole.PUBLIC);
@@ -755,9 +757,6 @@ public class ShowVoc extends STServiceAdapter {
 
 				Map<String, List<String>> facetValues = new HashMap<>();
 				extractFacetsValues(facetAggregations, facetValues, doc);
-
-				if (proj == null)
-					continue; // skip closed projects
 
 				IRI ontologyIRI = vf.createIRI(proj.getBaseURI());
 				double score = sd.score;
