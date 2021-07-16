@@ -704,6 +704,9 @@ public abstract class Project extends AbstractProject {
             case SKOS_MODEL_STRING:
                 coreVocabularies.put(vf.createIRI("http://www.w3.org/2004/02/skos/core"),
                         ImmutablePair.of(OntologyManager.class.getResource("skos.rdf"), RDFFormat.RDFXML));
+            case EDOAL_MODEL_STRING: //in edoal skos is needed for mapping properties
+                coreVocabularies.put(vf.createIRI("http://www.w3.org/2004/02/skos/core"),
+                        ImmutablePair.of(OntologyManager.class.getResource("skos.rdf"), RDFFormat.RDFXML));
         }
 
         return coreVocabularies;
