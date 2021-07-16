@@ -23,7 +23,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.Clos
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 /**
- * An {@link RDFLifter} that deserializes RDF data for a spreadsheet created by the provided exporter in ST
+ * An {@link RDFLifter} that deserializes RDF data from a spreadsheet created by the provided exporter in ST
  * 
  * @author <a href="mailto:turbati@info.uniroma2.it">Andrea Turbati</a>
  */
@@ -45,7 +45,7 @@ public class SpreadsheetDeserializingLifter implements RDFLifter {
 			Model model = new LinkedHashModel();
 
 			Workbook workbook = WorkbookFactory.create(sourceFormattedResource.getInputStream());
-			//read the second sheet, containg the prefxi-mapping
+			//read the second sheet, containing the prefix-mapping
 			Sheet sheet2 = workbook.getSheetAt(1);
 			readPrefixed(sheet2);
 
@@ -54,7 +54,7 @@ public class SpreadsheetDeserializingLifter implements RDFLifter {
 
 			// read the excel file and process the Concepts, Schemes and Collections part, use the separator to
 			// identify the different parts:
-			// - concept hierarchy / scheme URI / collection hieararchy
+			// - concept hierarchy / scheme URI / collection hierarchy
 			// - lexicalizations
 			// - types
 			// - reified notes (this part can be empty)

@@ -20,9 +20,9 @@ import it.uniroma2.art.semanticturkey.services.core.skosdiff.ChangedLabel;
 import it.uniroma2.art.semanticturkey.services.core.skosdiff.ChangedResource;
 import it.uniroma2.art.semanticturkey.services.core.skosdiff.DatasetInfo;
 import it.uniroma2.art.semanticturkey.services.core.skosdiff.DiffResultStructure;
+import it.uniroma2.art.semanticturkey.services.core.skosdiff.DiffTaskInfo;
 import it.uniroma2.art.semanticturkey.services.core.skosdiff.LabelWithResAndLitForm;
 import it.uniroma2.art.semanticturkey.services.core.skosdiff.ResourceWithLexicalization;
-import it.uniroma2.art.semanticturkey.services.core.skosdiff.TaskInfo;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -70,8 +70,8 @@ public class SkosDiffing extends STServiceAdapter {
 	private final String SERVER_HOST = "http://localhost";
 	private final String SERVER_PORT = "7576";
 
-	private final String SERVER_NAME = "skosDiff";
-	private final String BASE_PATH = "skosDiff";
+	private final String SERVER_NAME_WITH_SLASH = "st-rsc/";
+	private final String BASE_PATH_WITH_SLASH = "";
 
 	private final String SPARQL_ENDPOINT_1 = "sparqlEndpoint1";
 	private final String SPARQL_ENDPOINT_2 = "sparqlEndpoint2";
@@ -132,7 +132,7 @@ public class SkosDiffing extends STServiceAdapter {
 
 
 		//prepare the HTTP POST
-		String url = SERVER_HOST +":"+ SERVER_PORT +"/"+SERVER_NAME+"/"+BASE_PATH+"/diff/executeDiffTask";
+		String url = SERVER_HOST +":"+ SERVER_PORT +"/"+ SERVER_NAME_WITH_SLASH + BASE_PATH_WITH_SLASH +"diff/executeDiffTask";
 		HttpPost httpPost = new HttpPost(url);
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode objectNode = jsonFactory.objectNode();
@@ -185,12 +185,12 @@ public class SkosDiffing extends STServiceAdapter {
 	}
 
 	@STServiceOperation(method = RequestMethod.GET)
-	public List<TaskInfo> getAllTasksInfo(@Optional String projectName) throws IOException {
+	public List<DiffTaskInfo> getAllTasksInfo(@Optional String projectName) throws IOException {
 
-		List<TaskInfo> tasks = new ArrayList<>();
+		List<DiffTaskInfo> tasks = new ArrayList<>();
 
 		String url;
-		url = SERVER_HOST +":"+ SERVER_PORT +"/"+SERVER_NAME+"/"+BASE_PATH+"/diff/tasksInfo";
+		url = SERVER_HOST +":"+ SERVER_PORT +"/"+ SERVER_NAME_WITH_SLASH + BASE_PATH_WITH_SLASH +"diff/tasksInfo";
 		if(projectName!=null && !projectName.isEmpty()){
 			url += "?projectName="+projectName;
 		}
@@ -207,7 +207,7 @@ public class SkosDiffing extends STServiceAdapter {
 			if (entity != null) {
 				// return it as a String
 				String result = EntityUtils.toString(entity);
-				tasks = new ObjectMapper().readValue(result, new TypeReference<List<TaskInfo>>(){});
+				tasks = new ObjectMapper().readValue(result, new TypeReference<List<DiffTaskInfo>>(){});
 			}
 		}
 		return tasks;
@@ -215,7 +215,7 @@ public class SkosDiffing extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void deleteTask(String taskId) throws IOException {
-		String url = SERVER_HOST +":"+ SERVER_PORT +"/"+SERVER_NAME+"/"+BASE_PATH+"/diff/"+taskId;
+		String url = SERVER_HOST +":"+ SERVER_PORT +"/"+ SERVER_NAME_WITH_SLASH + BASE_PATH_WITH_SLASH +"diff/"+taskId;
 		HttpDelete httpDelete = new HttpDelete(url);
 		try (CloseableHttpClient httpClient = HttpClients.createDefault();
 			 CloseableHttpResponse response = httpClient.execute(httpDelete)) {
@@ -224,7 +224,7 @@ public class SkosDiffing extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.GET)
 	public void getTaskResult(HttpServletResponse response, String taskId, ResultType resultType) throws IOException, ParserConfigurationException, TransformerException {
-		String url = SERVER_HOST +":"+ SERVER_PORT +"/"+SERVER_NAME+"/"+BASE_PATH+"/diff/"+taskId;
+		String url = SERVER_HOST +":"+ SERVER_PORT +"/"+ SERVER_NAME_WITH_SLASH + BASE_PATH_WITH_SLASH +"diff/"+taskId;
 
 
 		HttpGet httpGet = new HttpGet(url);
