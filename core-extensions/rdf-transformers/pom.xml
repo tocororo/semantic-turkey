@@ -9,6 +9,7 @@
   <packaging>pom</packaging>
   <modules>
   	<module>delete-property-value</module>
+  	<module>edoal-flattenizer</module>
   	<module>sparql</module>
   	<module>property-normalizer</module> <!-- imports a class from  st-sparql -->
   	<module>update-property-value</module>

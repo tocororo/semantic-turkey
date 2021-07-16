@@ -396,7 +396,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager{
         }
         T obj;
 
-        if (config == null || !config.fieldNames().hasNext()) {
+        if (config == null) {
             if (extFactory instanceof NonConfigurableExtensionFactory) {
                 obj = ((NonConfigurableExtensionFactory<T>) extFactory).createInstance();
             } else {

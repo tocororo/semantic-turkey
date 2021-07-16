@@ -162,6 +162,7 @@
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-spreadsheet-deserializing-lifter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-delete-property-value-rdf-transformer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-property-normalizer-transformer/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-edoal-flattenizer-transformer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-sparql-rdf-transformer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-update-property-value-rdf-tranformer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-xlabel-dereification-rdf-transformer/${project.version}</bundle>
