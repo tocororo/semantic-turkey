@@ -231,16 +231,16 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
                 template = role2template.get(RDFResourceRole.objectProperty);
             }
 
-            if (template != null && RDFResourceRole.subsumes(RDFResourceRole.datatypeProperty, role)) {
+            if (template == null && RDFResourceRole.subsumes(RDFResourceRole.datatypeProperty, role)) {
                 template = role2template.get(RDFResourceRole.datatypeProperty);
             }
-            if (template != null && RDFResourceRole.subsumes(RDFResourceRole.ontologyProperty, role)) {
+            if (template == null && RDFResourceRole.subsumes(RDFResourceRole.ontologyProperty, role)) {
                 template = role2template.get(RDFResourceRole.ontologyProperty);
             }
-            if (template != null && RDFResourceRole.subsumes(RDFResourceRole.annotationProperty, role)) {
+            if (template == null && RDFResourceRole.subsumes(RDFResourceRole.annotationProperty, role)) {
                 template = role2template.get(RDFResourceRole.annotationProperty);
             }
-            if (template != null)  {
+            if (template == null)  {
                 template = role2template.get(RDFResourceRole.property);
             }
         } else {
