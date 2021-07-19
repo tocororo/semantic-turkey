@@ -156,24 +156,30 @@
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-http-loader/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-graph-store-http-loader/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-sftp-loader/${project.version}</bundle>
+		<!-- lifters -->
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-rdf-deserializing-lifter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-zthes-commons/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-zthes-deserializing-lifter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-spreadsheet-deserializing-lifter/${project.version}</bundle>
+		<!-- transformers -->
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-delete-property-value-rdf-transformer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-property-normalizer-transformer/${project.version}</bundle>
-		<bundle>mvn:it.uniroma2.art.semanticturkey/st-edoal-flattenizer-transformer/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-edoal-stdflat-transformer/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-stdflat-edoal-transformer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-sparql-rdf-transformer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-update-property-value-rdf-tranformer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-xlabel-dereification-rdf-transformer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-xnote-dereification-rdf-transformer/${project.version}</bundle>
+		<!-- serializers-->
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-rdf-serializing-exporter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-spreadsheet-serializing-exporter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-zthes-serializing-exporter/${project.version}</bundle>
+
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-ontolex-lemon-rendering-engine/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-rdfs-rendering-engine/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-skos-rendering-engine/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-skosxl-rendering-engine/${project.version}</bundle>
+
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-predefined-repository-impl-configurer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-graphdb-search-strategy/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-regex-search-strategy/${project.version}</bundle>
