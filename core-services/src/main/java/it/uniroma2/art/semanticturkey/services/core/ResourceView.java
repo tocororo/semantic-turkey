@@ -22,6 +22,7 @@
  */
 package it.uniroma2.art.semanticturkey.services.core;
 
+import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -32,6 +33,8 @@ import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
@@ -74,6 +77,7 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.StatementConsum
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
 import it.uniroma2.art.semanticturkey.services.support.QueryResultsProcessors;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
 import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
@@ -81,6 +85,8 @@ import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.utilities.ErrorRecoveringValueFactory;
 import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
+import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
+import org.apache.commons.collections4.PredicateUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -113,10 +119,12 @@ import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -152,17 +160,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.*;
-
-;
 
 /**
  * This service produces a view showing the details of a resource. This service operates uniformly (as much as
@@ -172,22 +178,16 @@ import static java.util.stream.Collectors.*;
 public class ResourceView extends STServiceAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(ResourceView.class);
-
     @Autowired
     private ResourceLocator resourceLocator;
-
     @Autowired
     private StatementConsumerProvider statementConsumerProvider;
-
     @Autowired
     private CustomFormManager customFormManager;
-
     @Autowired
     private MetadataRegistryBackend metadataRegistryBackend;
-
     @Autowired
     private MediationFramework mediationFramework;
-
     private ThreadLocal<Map<Project, RepositoryConnection>> projectConnectionHolder = ThreadLocal
             .withInitial(HashMap::new);
 
@@ -309,123 +309,140 @@ public class ResourceView extends STServiceAdapter {
     @Read
     @PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ')', 'R')")
     public Map<String, ResourceViewSection> getResourceViewAtTime(IRI resource, ZonedDateTime date) throws Exception {
+        if (ObjectUtils.notEqual(STServiceContextUtils.getRepostoryId(stServiceContext), Project.CORE_REPOSITORY)) {
+            throw new IllegalArgumentException("The time machine can be used only on the core data in a project");
+        }
+
+        Project project = getProject();
+        Resource workingGraph = getWorkingGraph();
+
+        java.util.Optional<Dataset> headDataset;
+        if (project.isValidationEnabled()) {
+            SimpleDataset dataset = new SimpleDataset();
+            QueryResults.stream(getManagedConnection().getContextIDs())
+                    .filter(IRI.class::isInstance).map(IRI.class::cast)
+                    .filter(Predicates.not(Predicates.or(VALIDATION::isAddGraph, VALIDATION::isRemoveGraph)))
+                    .forEach(g -> {
+                        dataset.addNamedGraph(g);
+                        dataset.addDefaultGraph(g);
+                    });
+            headDataset = java.util.Optional.of(dataset);
+        } else {
+            headDataset = java.util.Optional.empty();
+        }
         Repository tempRepository = new SailRepository(new MemoryStore());
+
         try {
             RepositoryConnection tempConn = tempRepository.getConnection();
-            projectConnectionHolder.get().put(getProject(), tempConn);
-
-            Project project = getProject();
-            Resource workingGraph = getWorkingGraph();
-
-
-            MutableLong excludedObjectsCount = new MutableLong();
+            projectConnectionHolder.get().put(project, tempConn);
 
             ResourcePosition resourcePosition = new LocalResourcePosition(project);
             boolean includeInferred = false;
             boolean ignorePropertyExclusions = true;
 
-            Repository supportRepository = project.getRepositoryManager().getRepository("support");
+            try (RepositoryConnection supportConn = project.getRepositoryManager().getRepository(Project.SUPPORT_REPOSITORY).getConnection()) {
 
-            RepositoryConnection headConn = getManagedConnection();
+                RepositoryConnection headConn = getManagedConnection();
+                IRI historyGraph = SupportRepositoryUtils.obtainHistoryGraph(headConn);
 
-            IRI historyGraph = SupportRepositoryUtils.obtainHistoryGraph(getManagedConnection());
 
-            //// Retrieve relevant statements from HEAD
+                //// Retrieve relevant statements from HEAD
 
-            TupleQuery headDataQuery = headConn.prepareTupleQuery(
-                    "PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>\n" +
-                            "\n" +
-                            "SELECT ?s ?p ?o ?c WHERE {\n" +
-                    "    {\n" +
-                    "        BIND(?resource as ?s)\n" +
-                    "        GRAPH ?c {\n" +
-                    "            ?s ?p ?o   \n" +
-                            "}\n" +
-                            "    } UNION {\n" +
-                    "        ?resource ?anyP ?s .\n" +
-                    "        GRAPH ?c {\n" +
-                    "            ?s ?p ?o\n" +
-                            "        " +
-                            "}\n" +
-                            "    }" +
-                            "\n" +
-                            "}\n" +
-                            "          ");
-            headDataQuery.setBinding("resource", resource);
-            headDataQuery.setIncludeInferred(false);
+                TupleQuery headDataQuery = headConn.prepareTupleQuery(
+                        "SELECT ?s ?p ?o ?c WHERE {\n" +
+                                "    {\n" +
+                                "        BIND(?resource as ?s)\n" +
+                                "        GRAPH ?c {\n" +
+                                "            ?s ?p ?o   \n" +
+                                "}\n" +
+                                "    } UNION {\n" +
+                                "        ?resource ?anyP ?s .\n" +
+                                "        GRAPH ?c {\n" +
+                                "            ?s ?p ?o\n" +
+                                "        " +
+                                "}\n" +
+                                "    }" +
+                                "\n" +
+                                "}\n" +
+                                "          ");
+                headDataQuery.setBinding("resource", resource);
+                headDataQuery.setIncludeInferred(false);
+                headDataset.ifPresent(headDataQuery::setDataset);
 
-            Model statements = QueryResults.stream(headDataQuery.evaluate()).map(bs -> SimpleValueFactory.getInstance().createStatement((Resource) bs.getValue("s"), (IRI) bs.getValue("p"), bs.getValue("o"), (Resource) bs.getValue("c"))).collect(Collectors.toCollection(LinkedHashModel::new));
+                Model statements = QueryResults.stream(headDataQuery.evaluate()).map(bs -> SimpleValueFactory.getInstance().createStatement((Resource) bs.getValue("s"), (IRI) bs.getValue("p"), bs.getValue("o"), (Resource) bs.getValue("c"))).collect(Collectors.toCollection(LinkedHashModel::new));
 
-            GraphQuery headBnodeExpansionQuery = headConn.prepareGraphQuery(
-                    "DESCRIBE ?o WHERE {\n" +
-                    "   BIND(?resource as ?s)\n" +
-                    "   GRAPH ?c {\n" +
-                    "       ?s ?p ?o .\n" +
-                    "   }\n" +
-                    "}");
-            headDataQuery.setBinding("resource", resource);
-            headDataQuery.setIncludeInferred(false);
+                GraphQuery headBnodeExpansionQuery = headConn.prepareGraphQuery(
+                        "DESCRIBE ?o WHERE {\n" +
+                                "   BIND(?resource as ?s)\n" +
+                                "   GRAPH ?c {\n" +
+                                "       ?s ?p ?o .\n" +
+                                "   }\n" +
+                                "}");
+                headBnodeExpansionQuery.setBinding("resource", resource);
+                headBnodeExpansionQuery.setIncludeInferred(false);
+                headDataset.ifPresent(headBnodeExpansionQuery::setDataset);
 
-            Model bnodeExpansion = QueryResults.asModel(headBnodeExpansionQuery.evaluate());
+                Model bnodeExpansion = QueryResults.asModel(headBnodeExpansionQuery.evaluate());
 
-            // TODO implement algorithm to guess the graph of each statement
+                // TODO implement algorithm to guess the graph of each statement
 
-            bnodeExpansion.forEach(s -> statements.add(s.getSubject(), s.getPredicate(), s.getObject(), getWorkingGraph()));
+                bnodeExpansion.forEach(s -> statements.add(s.getSubject(), s.getPredicate(), s.getObject(), getWorkingGraph()));
 
-            //// Go through the history to revert relevant commits
+                //// Go through the history to revert relevant commits
 
-            Set<Value> firstLevelObjects = new HashSet<>(statements.filter(resource, null, null).objects());
-            Set<Resource> otherSubjects = new HashSet<>();
-            firstLevelObjects.stream().filter(Resource.class::isInstance).forEach(v -> otherSubjects.add((Resource) v));
-            statements.objects().stream().filter(BNode.class::isInstance).forEach(v -> otherSubjects.add((Resource) v));
-            otherSubjects.addAll(statements.subjects());
-            otherSubjects.remove(resource);
+                Set<Resource> firstLevelObjects = new HashSet<>(Models.objectResources(statements.filter(resource, null, null)));
+                Set<BNode> bnodes = statements.objects().stream().filter(BNode.class::isInstance).map(BNode.class::cast).collect(Collectors.toSet());
 
-            while (true) {
-                try (RepositoryConnection historyConn = supportRepository.getConnection()) {
-                    Set<Resource> allSubjects = Sets.union(Collections.singleton(resource), otherSubjects);
-                    TupleQuery commitSearchQuery = historyConn.prepareTupleQuery(
+                Set<Resource> allSubjects = Sets.union(Collections.singleton(resource), Sets.union(firstLevelObjects, bnodes));
+
+                int k = 0;
+
+                System.out.println("###");
+                Rio.write(statements.filter(null, null, null, workingGraph), System.out, RDFFormat.TURTLE, new WriterConfig().set(BasicWriterSettings.PRETTY_PRINT, true).set(BasicWriterSettings.INLINE_BLANK_NODES, true));
+                System.out.println("###");
+
+                while (!allSubjects.isEmpty()) {
+                    System.out.println("all subjects = " + allSubjects);
+
+                    if (++k > 10) {
+                        System.out.println("Infinite loop?");
+                        break;
+                    }
+                    TupleQuery commitSearchQuery = supportConn.prepareTupleQuery(
                             "PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>\n" +
-                            "PREFIX prov: <http://www.w3.org/ns/prov#>" +
-                            "\n" +
-                            "SELECT * FROM " + RenderUtils.toSPARQL(historyGraph) +" WHERE {\n" +
-                            "    ?commit a cl:Commit ;\n" +
-                            "        prov:startedAtTime ?time ;\n" +
-                            "        prov:generated ?delta .\n" +
-                            "    FILTER(?time > ?timeLowerBound) \n" +
+                                    "PREFIX prov: <http://www.w3.org/ns/prov#>" +
+                                    "\n" +
+                                    "SELECT * FROM " + RenderUtils.toSPARQL(historyGraph) + " WHERE {\n" +
+                                    "    ?commit a cl:Commit ;\n" +
+                                    "        prov:startedAtTime ?time ;\n" +
+                                    "        prov:generated ?delta .\n" +
+                                    "    FILTER(?time > ?timeLowerBound) \n" +
                                     "    \n" +
                                     "\n" +
                                     (IntStream.range(0, allSubjects.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?resource)}").collect(Collectors.joining(" UNION "))) +
-                            "   ?delta cl:addedStatement|cl:removedStatement ?st .\n" +
-                            "    ?st cl:subject ?resource .\n" +
-//                                    "    ?st (cl:object/^cl:subject)* ?s .\n" +
-//                                    "    FILTER(sameTerm(?s, ?resource) || isBlank(?s) && NOT EXISTS {\n" +
-//                                    "        ?delta ?opt2 ?st2 .\n" +
-//                                    "        ?st2 cl:object ?s .\n" +
-//                                    "        ?st2 cl:subject ?subject2 .\n" +
-//                                    "        FILTER(isIRI(?subject2) && !sameTerm(?subject2, ?resource))\n" +
-//                                    "    }" +
-//                                    ")\n" +
-                                    "    \n" +
+                                    "   ?delta cl:addedStatement|cl:removedStatement ?st .\n" +
+                                    "    ?st cl:subject ?resource .\n" +
+                                    "    ?st (cl:object/^cl:subject)* ?s .\n" +
                                     "    ?delta ?op ?s .\n" +
                                     "    ?s cl:subject ?subject .\n" +
                                     "    ?s cl:predicate ?predicate .\n" +
-                            "    ?s cl:object ?object .\n" +
-                            "    ?s cl:context ?context .\n" +
-                            "}\n" +
-                            "ORDER BY DESC(?time)"
+                                    "    ?s cl:object ?object .\n" +
+                                    "    ?s cl:context ?context .\n" +
+                                    "   FILTER(sameTerm(?subject, ?resource) || isBlank(?subject) && NOT EXISTS {\n" +
+                                    "        ?delta ?opt2 ?st2 .\n" +
+                                    "        ?st2 cl:object ?subject .\n" +
+                                    "        ?st2 (cl:subject/^cl:object)*/cl:subject ?subject2 .\n" +
+                                    "        FILTER(isIRI(?subject2) && !sameTerm(?subject2, ?resource))\n" +
+                                    "    }" +
+                                    ")\n" +
+                                    "}\n" +
+                                    "ORDER BY DESC(?time)"
                     );
                     commitSearchQuery.setBinding("timeLowerBound", Values.literal(date));
                     Streams.mapWithIndex(allSubjects.stream(), Pair::of).forEach(p -> commitSearchQuery.setBinding("x" + p.getValue(), p.getKey()));
 
-                    Set<Value> newFirstLevelObjects = new HashSet<>();
-                    Set<Resource> newOtherSubjects = new HashSet<>();
-
-                    boolean needGoto = false;
                     List<BindingSet> relevantCommits = QueryResults.asList(commitSearchQuery.evaluate());
                     for (BindingSet relevantCommit : relevantCommits) {
-                        Set<IRI> newPredicates = new LinkedHashSet<>();
-
                         IRI op = (IRI) relevantCommit.getValue("op");
 
                         Resource subject = (Resource) relevantCommit.getValue("subject");
@@ -437,197 +454,114 @@ public class ResourceView extends STServiceAdapter {
                             statements.remove(subject, predicate, object, context);
                         } else { // removed
                             statements.add(subject, predicate, object, context);
-                            if (ObjectUtils.notEqual(object, resource) && object.isBNode() && !otherSubjects.contains(object)) {
-                                newOtherSubjects.add((BNode)object);
-                            }
-
-                            if (ObjectUtils.notEqual(subject, resource) && !otherSubjects.contains(subject)) {
-                                newOtherSubjects.add(subject);
-                            }
-
-
-                            if (Objects.equals(subject, resource) && ObjectUtils.notEqual(object, resource) && !firstLevelObjects.contains(object)) {
-                                newFirstLevelObjects.add(object);
-                            }
-                        }
-
-                        if (!newFirstLevelObjects.isEmpty()) {
-
-                            TupleQuery headPredQuery = headConn.prepareTupleQuery(
-                                    "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
-                                            "\n" +
-                                            "SELECT ?subject ?predicate ?object ?context WHERE {\n" +
-                                            (IntStream.range(0, newFirstLevelObjects.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?subject)}").collect(Collectors.joining(" UNION "))) +
-                                            "    GRAPH ?context {\n" +
-                                            "        ?subject ?predicate ?object .\n" +
-                                            "    " +
-                                            "}\n" +
-                                            "}");
-                            headPredQuery.setIncludeInferred(false);
-                            Streams.mapWithIndex(newFirstLevelObjects.stream(), Pair::of).forEach(p -> headPredQuery.setBinding("x" + p.getValue(), p.getKey()));
-
-                            Model newStatements = QueryResults.stream(headPredQuery.evaluate()).map(bs -> SimpleValueFactory.getInstance().createStatement((Resource) bs.getValue("subject"), (IRI)bs.getValue("predicate"), bs.getValue("object"), (Resource)bs.getValue("context"))).collect(Collectors.toCollection(LinkedHashModel::new));
-
-                            statements.addAll(newStatements);
-
-                            // TODO implement blank node expansion
-
-                            newFirstLevelObjects.stream().filter(Resource.class::isInstance).filter(v -> !otherSubjects.contains(v)).forEach(v  -> newOtherSubjects.add((Resource) v));
-                            newStatements.objects().stream().filter(BNode.class::isInstance).filter(v -> !newOtherSubjects.contains(v)).forEach(v -> newOtherSubjects.add((BNode)v));
-
-                            firstLevelObjects.addAll(newFirstLevelObjects);
-
-                            needGoto = true;
-                        }
-
-                        if (!newOtherSubjects.isEmpty()) {
-                            otherSubjects.addAll(newOtherSubjects);
-                            needGoto = true;
-                        }
-                        if (needGoto) {
-                            continue;
                         }
                     }
 
-                    break;
+                    Set<Resource> newFirstLevelObjects = new HashSet<>(Sets.difference(Models.objectResources(statements.filter(resource, null, null)), firstLevelObjects));
 
-                }
-            }
+                    if (!newFirstLevelObjects.isEmpty()) {
+                        TupleQuery singleLevelHeadDataQuery = headConn.prepareTupleQuery(
+                                "SELECT ?s ?p ?o ?c WHERE {\n" +
+                                        (IntStream.range(0, newFirstLevelObjects.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?resource)}").collect(Collectors.joining(" UNION "))) +
+                                        "    GRAPH ?c {\n" +
+                                        "       ?s ?p ?o   \n" +
+                                        "   }\n" +
+                                        "}");
+                        Streams.mapWithIndex(newFirstLevelObjects.stream(), Pair::of).forEach(p -> singleLevelHeadDataQuery.setBinding("x" + p.getValue(), p.getKey()));
+                        singleLevelHeadDataQuery.setIncludeInferred(false);
+                        headDataset.ifPresent(singleLevelHeadDataQuery::setDataset);
 
-            //// Construct the property model at the time
+                        Model newFirstLevelObjectsStatements = QueryResults.stream(singleLevelHeadDataQuery.evaluate()).map(bs -> SimpleValueFactory.getInstance().createStatement((Resource) bs.getValue("s"), (IRI) bs.getValue("p"), bs.getValue("o"), (Resource) bs.getValue("c"))).collect(Collectors.toCollection(LinkedHashModel::new));
 
-            Set<IRI> currentPredicates = new HashSet<>(statements.predicates());
-            Model predicateStatements = new LinkedHashModel();
-
-            while (true) {
-                TupleQuery headPredQuery = headConn.prepareTupleQuery(
-                    "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
-                    "\n" +
-                    "SELECT ?subject ?predicate ?object ?context WHERE {\n" +
-                    (IntStream.range(0, currentPredicates.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?subject)}").collect(Collectors.joining(" UNION "))) +
-                    "    ?resource rdfs:subPropertyOf* ?subject .\n" +
-                    "    VALUES(?predicate) {(<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)(<http://www.w3.org/2000/01/rdf-schema#subPropertyOf>)}\n" +
-                    "    GRAPH ?context {\n" +
-                    "        ?subject ?predicate ?object .\n" +
-                    "    " +
-                    "}\n" +
-                    "}");
-                headPredQuery.setIncludeInferred(false);
-                Streams.mapWithIndex(currentPredicates.stream(), Pair::of).forEach(p -> headPredQuery.setBinding("x" + p.getValue(), p.getKey()));
-
-                predicateStatements = QueryResults.stream(headPredQuery.evaluate()).map(bs -> SimpleValueFactory.getInstance().createStatement((Resource) bs.getValue("subject"), (IRI)bs.getValue("predicate"), bs.getValue("object"), (Resource)bs.getValue("context"))).collect(Collectors.toCollection(LinkedHashModel::new));
-
-                try (RepositoryConnection historyConn = supportRepository.getConnection()) {
-                    TupleQuery commitSearchQuery = historyConn.prepareTupleQuery(
-                        "PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>\n" +
-                        "PREFIX prov: <http://www.w3.org/ns/prov#>" +
-                        "\n" +
-                        "SELECT *  FROM " + RenderUtils.toSPARQL(historyGraph) + " WHERE {\n" +
-                        "    ?commit a cl:Commit ;\n" +
-                        "        prov:startedAtTime ?time ;\n" +
-                        "        prov:generated ?delta .\n" +
-                        "    FILTER(?time > ?timeLowerBound) \n" +
-                        "    \n" +
-                        "\n" +
-                        (IntStream.range(0, currentPredicates.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?subject)}").collect(Collectors.joining(" UNION "))) +
-                        "    ?delta ?opt ?s .\n" +
-                        "    ?s cl:subject ?subject .\n" +
-                        "    VALUES(?predicate){(<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)(<http://www.w3.org/2000/01/rdf-schema#subPropertyOf>)}\n" +
-                        "    ?s cl:predicate ?predicate .\n" +
-                        "    ?s cl:object ?object .\n" +
-                        "    ?s cl:context ?context .\n" +
-                        "}\n" +
-                        "ORDER BY DESC(?time)"
-                    );
-                    commitSearchQuery.setBinding("timeLowerBound", Values.literal(date));
-                    Streams.mapWithIndex(currentPredicates.stream(), Pair::of).forEach(p -> commitSearchQuery.setBinding("x" + p.getValue(), p.getKey()));
-
-                    Set<Resource> newCurrentPredicates = new HashSet<>();
-
-                    List<BindingSet> relevantCommits = QueryResults.asList(commitSearchQuery.evaluate());
-                    for (BindingSet relevantCommit : relevantCommits) {
-                        Set<IRI> newPredicates = new LinkedHashSet<>();
-
-                        IRI op = (IRI) relevantCommit.getValue("op");
-
-                        Resource subject = (Resource) relevantCommit.getValue("subject");
-                        IRI predicate = (IRI) relevantCommit.getValue("predicate");
-                        Value object = relevantCommit.getValue("object");
-                        Resource context = (Resource) relevantCommit.getValue("context");
-
-                        if (Objects.equals(op, CHANGELOG.ADDED_STATEMENT)) { // added
-                            predicateStatements.remove(subject, predicate, object, context);
-                        } else { // removed
-                            predicateStatements.add(subject, predicate, object, context);
-                            if (!currentPredicates.contains(subject)) {
-                                newCurrentPredicates.add(subject);
-                            }
-                        }
-
-                        if (!newCurrentPredicates.isEmpty()) {
-                            continue;
-                        }
+                        statements.addAll(newFirstLevelObjectsStatements);
                     }
 
-                    break;
+                    Set<BNode> newBNodes = statements.objects().stream().filter(BNode.class::isInstance).map(BNode.class::cast).filter(Predicates.not(bnodes::contains)).collect(Collectors.toSet());
 
+                    GraphQuery headFurtherBnodeExpansionQuery = headConn.prepareGraphQuery(
+                            "DESCRIBE ?o WHERE {\n" +
+                                    (IntStream.range(0, newBNodes.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?resource)}").collect(Collectors.joining(" UNION "))) +
+                                    "}");
+                    Streams.mapWithIndex(newBNodes.stream(), Pair::of).forEach(p -> headFurtherBnodeExpansionQuery.setBinding("x" + p.getValue(), p.getKey()));
+                    headFurtherBnodeExpansionQuery.setIncludeInferred(false);
+                    headDataset.ifPresent(headFurtherBnodeExpansionQuery::setDataset);
+
+                    Model bnodeFurtherExpansion = QueryResults.asModel(headFurtherBnodeExpansionQuery.evaluate());
+
+                    statements.addAll(bnodeFurtherExpansion);
+                    // TODO implement algorithm to guess the graph of each statement
+
+                    newBNodes = statements.objects().stream().filter(BNode.class::isInstance).map(BNode.class::cast).filter(Predicates.not(bnodes::contains)).collect(Collectors.toSet());
+
+                    System.out.println("---");
+                    Rio.write(statements.filter(null, null, null, workingGraph), System.out, RDFFormat.TURTLE, new WriterConfig().set(BasicWriterSettings.PRETTY_PRINT, true).set(BasicWriterSettings.INLINE_BLANK_NODES, true));
+                    System.out.println("---");
+
+                    System.out.println("new first level objects = " + newFirstLevelObjects);
+                    System.out.println("new bnodes = " + newBNodes);
+
+                    firstLevelObjects.addAll(newFirstLevelObjects);
+                    bnodes.addAll(newBNodes);
+                    allSubjects = Sets.union(newFirstLevelObjects, newBNodes);
                 }
-            }
 
-            //// Construct the type model at the time
+                Set<IRI> types = new HashSet<>();
+                Set<IRI> newTypes = statements.filter(null, RDF.TYPE, null).objects().stream().filter(IRI.class::isInstance).map(IRI.class::cast).collect(Collectors.toSet());
+                Model typesStatements = new LinkedHashModel();
 
-            Set<IRI> currentTypes = new HashSet<>(Models.objectIRIs(statements.filter(null, RDF.TYPE, null)));
-            Model typeStatements = new LinkedHashModel();
+                System.out.println("new ttypes = " + newTypes);
+                while (!newTypes.isEmpty()) {
+                    TupleQuery headTypesQuery = headConn.prepareTupleQuery(
+                            "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
+                                    "\n" +
+                                    "SELECT ?subject ?predicate ?object ?context WHERE {\n" +
+                                    (IntStream.range(0, newTypes.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?subject)}").collect(Collectors.joining(" UNION "))) +
+                                    "    ?resource rdfs:subClassOf* ?subject .\n" +
+                                    "    VALUES(?predicate) {(<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)(<http://www.w3.org/2000/01/rdf-schema#subClassOf>)}\n" +
+                                    "    GRAPH ?context {\n" +
+                                    "        ?subject ?predicate ?object .\n" +
+                                    "    " +
+                                    "}\n" +
+                                    "}");
+                    headTypesQuery.setIncludeInferred(false);
+                    headDataset.ifPresent(headTypesQuery::setDataset);
+                    Streams.mapWithIndex(newTypes.stream(), Pair::of).forEach(p -> headTypesQuery.setBinding("x" + p.getValue(), p.getKey()));
 
-            while (true) {
-                TupleQuery headTypeQuery = headConn.prepareTupleQuery(
-                        "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
-                                "\n" +
-                                "SELECT ?subject ?predicate ?object ?context WHERE {\n" +
-                                (IntStream.range(0, currentTypes.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?subject)}").collect(Collectors.joining(" UNION "))) +
-                                "    ?resource rdfs:subClassOf* ?subject .\n" +
-                                "    VALUES(?predicate) {(<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)(<http://www.w3.org/2000/01/rdf-schema#subClassOf>)}\n" +
-                                "    GRAPH ?context {\n" +
-                                "        ?subject ?predicate ?object .\n" +
-                                "    " +
-                                "}\n" +
-                                "}");
-                headTypeQuery.setIncludeInferred(false);
-                Streams.mapWithIndex(currentTypes.stream(), Pair::of).forEach(p -> headTypeQuery.setBinding("x" + p.getValue(), p.getKey()));
+                    Model newTypesStatements = QueryResults.stream(headTypesQuery.evaluate()).map(bs -> SimpleValueFactory.getInstance().createStatement((Resource) bs.getValue("subject"), (IRI) bs.getValue("predicate"), bs.getValue("object"), (Resource) bs.getValue("context"))).collect(Collectors.toCollection(LinkedHashModel::new));
+                    newTypesStatements.removeIf(s -> types.contains(s.getSubject()));
 
-                typeStatements = QueryResults.stream(headTypeQuery.evaluate()).map(bs -> SimpleValueFactory.getInstance().createStatement((Resource) bs.getValue("subject"), (IRI)bs.getValue("predicate"), bs.getValue("object"), (Resource)bs.getValue("context"))).collect(Collectors.toCollection(LinkedHashModel::new));
+                    typesStatements.addAll(newTypesStatements);
 
-                try (RepositoryConnection historyConn = supportRepository.getConnection()) {
-                    TupleQuery commitSearchQuery = historyConn.prepareTupleQuery(
+                    System.out.println("[[[" + newTypesStatements);
+                    newTypes.addAll(Sets.difference(Models.subjectIRIs(newTypesStatements), types));
+                    newTypes.addAll(Sets.difference(Models.objectIRIs(newTypesStatements), types));
+
+                    TupleQuery commitSearchQuery = supportConn.prepareTupleQuery(
                             "PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>\n" +
-                            "PREFIX prov: <http://www.w3.org/ns/prov#>" +
-                            "\n" +
-                            "SELECT *  FROM " + RenderUtils.toSPARQL(historyGraph) + " WHERE {\n" +
-                            "    ?commit a cl:Commit ;\n" +
-                            "        prov:startedAtTime ?time ;\n" +
-                            "        prov:generated ?delta .\n" +
-                            "    FILTER(?time > ?timeLowerBound) \n" +
-                            "    \n" +
-                            "\n" +
-                            (IntStream.range(0, currentTypes.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?subject)}").collect(Collectors.joining(" UNION "))) +
-                            "    ?delta ?opt ?s .\n" +
-                            "    ?s cl:subject ?subject .\n" +
-                            "    VALUES(?predicate){(<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)(<http://www.w3.org/2000/01/rdf-schema#subClassOf>)}\n" +
-                            "    ?s cl:predicate ?predicate .\n" +
-                            "    ?s cl:object ?object .\n" +
-                            "    ?s cl:context ?context .\n" +
-                            "}\n" +
-                            "ORDER BY DESC(?time)"
+                                    "PREFIX prov: <http://www.w3.org/ns/prov#>" +
+                                    "\n" +
+                                    "SELECT *  FROM " + RenderUtils.toSPARQL(historyGraph) + " WHERE {\n" +
+                                    "    ?commit a cl:Commit ;\n" +
+                                    "        prov:startedAtTime ?time ;\n" +
+                                    "        prov:generated ?delta .\n" +
+                                    "    FILTER(?time > ?timeLowerBound) \n" +
+                                    "    \n" +
+                                    "\n" +
+                                    (IntStream.range(0, newTypes.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?subject)}").collect(Collectors.joining(" UNION "))) +
+                                    "    ?delta ?opt ?s .\n" +
+                                    "    ?s cl:subject ?subject .\n" +
+                                    "    VALUES(?predicate){(<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)(<http://www.w3.org/2000/01/rdf-schema#subClassOf>)}\n" +
+                                    "    ?s cl:predicate ?predicate .\n" +
+                                    "    ?s cl:object ?object .\n" +
+                                    "    ?s cl:context ?context .\n" +
+                                    "}\n" +
+                                    "ORDER BY DESC(?time)"
                     );
                     commitSearchQuery.setBinding("timeLowerBound", Values.literal(date));
-                    Streams.mapWithIndex(currentTypes.stream(), Pair::of).forEach(p -> commitSearchQuery.setBinding("x" + p.getValue(), p.getKey()));
-
-                    Set<Resource> newCurrentTypes = new HashSet<>();
+                    Streams.mapWithIndex(newTypes.stream(), Pair::of).forEach(p -> commitSearchQuery.setBinding("x" + p.getValue(), p.getKey()));
 
                     List<BindingSet> relevantCommits = QueryResults.asList(commitSearchQuery.evaluate());
                     for (BindingSet relevantCommit : relevantCommits) {
-                        Set<IRI> newPredicates = new LinkedHashSet<>();
-
                         IRI op = (IRI) relevantCommit.getValue("op");
 
                         Resource subject = (Resource) relevantCommit.getValue("subject");
@@ -636,86 +570,164 @@ public class ResourceView extends STServiceAdapter {
                         Resource context = (Resource) relevantCommit.getValue("context");
 
                         if (Objects.equals(op, CHANGELOG.ADDED_STATEMENT)) { // added
-                            typeStatements.remove(subject, predicate, object, context);
+                            typesStatements.remove(subject, predicate, object, context);
                         } else { // removed
-                            typeStatements.add(subject, predicate, object, context);
-                            if (!currentTypes.contains(subject)) {
-                                newCurrentTypes.add(subject);
-                            }
+                            typesStatements.add(subject, predicate, object, context);
                         }
 
-                        if (!newCurrentTypes.isEmpty()) {
-                            continue;
-                        }
                     }
 
-                    break;
-
+                    types.addAll(newTypes);
+                    newTypes = new HashSet<>();
+                    newTypes.addAll(Sets.difference(Models.subjectIRIs(typesStatements.filter(null, null, null)), types));
+                    newTypes.addAll(Sets.difference(Models.objectIRIs(typesStatements.filter(null, null, null)), types));
                 }
-            }
 
-            //// Construct the rendering model at time
+                System.out.println("****");
+                Rio.write(typesStatements.filter(null, null, null, workingGraph), System.out, RDFFormat.TURTLE, new WriterConfig().set(BasicWriterSettings.PRETTY_PRINT, true).set(BasicWriterSettings.INLINE_BLANK_NODES, true));
+                System.out.println("****");
 
-            Model renderingModel = new LinkedHashModel();
 
-            Map<IRI, List<IRI>> lexicalizationModel2PropertyPath = new HashMap<>();
-            lexicalizationModel2PropertyPath.put(Project.RDFS_LEXICALIZATION_MODEL, Lists.newArrayList(RDFS.LABEL));
-            lexicalizationModel2PropertyPath.put(Project.SKOS_LEXICALIZATION_MODEL, Lists.newArrayList(SKOS.PREF_LABEL));
-            lexicalizationModel2PropertyPath.put(Project.SKOSXL_LEXICALIZATION_MODEL, Lists.newArrayList(SKOSXL.PREF_LABEL, SKOSXL.LITERAL_FORM));
+                Set<IRI> predicates = new HashSet<>();
+                Set<IRI> newPredicates = new HashSet<>(statements.predicates());
+                Model predicatesStatements = new LinkedHashModel();
 
-            List<IRI> renderingPropPath = lexicalizationModel2PropertyPath.get(project.getLexicalizationModel());
+                System.out.println("new ttypes = " + newTypes);
+                while (!newPredicates.isEmpty()) {
+                    TupleQuery headPredicatesQuery = headConn.prepareTupleQuery(
+                            "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
+                                    "\n" +
+                                    "SELECT ?subject ?predicate ?object ?context WHERE {\n" +
+                                    (IntStream.range(0, newPredicates.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?subject)}").collect(Collectors.joining(" UNION "))) +
+                                    "    ?resource rdfs:subPropertyOf* ?subject .\n" +
+                                    "    VALUES(?predicate) {(<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)(<http://www.w3.org/2000/01/rdf-schema#subPropertyOf>)}\n" +
+                                    "    GRAPH ?context {\n" +
+                                    "        ?subject ?predicate ?object .\n" +
+                                    "    " +
+                                    "}\n" +
+                                    "}");
+                    headPredicatesQuery.setIncludeInferred(false);
+                    headDataset.ifPresent(headPredicatesQuery::setDataset);
+                    Streams.mapWithIndex(newPredicates.stream(), Pair::of).forEach(p -> headPredicatesQuery.setBinding("x" + p.getValue(), p.getKey()));
 
-            if (renderingPropPath != null) {
-                Multimap<Integer, Resource> level2resources = HashMultimap.create();
-                level2resources.put(0, resource);
-                level2resources.putAll(0, Models.objectIRIs(statements.filter(resource, null, null)));
+                    Model newPredicatesStatements = QueryResults.stream(headPredicatesQuery.evaluate()).map(bs -> SimpleValueFactory.getInstance().createStatement((Resource) bs.getValue("subject"), (IRI) bs.getValue("predicate"), bs.getValue("object"), (Resource) bs.getValue("context"))).collect(Collectors.toCollection(LinkedHashModel::new));
+                    newPredicatesStatements.removeIf(s -> predicates.contains(s.getSubject()));
 
-                Multimap<Integer, Resource> newLevel2resources = HashMultimap.create();
-                newLevel2resources.putAll(level2resources);
+                    predicatesStatements.addAll(newPredicatesStatements);
 
-                while(true) {
-                    for (int i = 0 ; i < renderingPropPath.size() ; i++) {
-                        Collection<Resource> newResources4level = newLevel2resources.get(i);
-                        if (newResources4level.isEmpty()) continue;
+                    System.out.println("[[[" + newPredicatesStatements);
+                    newPredicates.addAll(Sets.difference(Models.subjectIRIs(newPredicatesStatements), predicates));
+                    newPredicates.addAll(Sets.difference(Models.objectIRIs(newPredicatesStatements), predicates));
 
-                        int i2 = i;
-                        String queryString = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
-                                "\n" +
-                                "SELECT * WHERE {\n" +
-                                (IntStream.range(0, newResources4level.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?s" + i2 + ")}").collect(Collectors.joining(" UNION "))) +
-                                propertyChainHeadPattern(renderingPropPath, i2) +
-                                "}";
-                        TupleQuery headRenderingQuery = headConn.prepareTupleQuery(queryString);
-                        headRenderingQuery.setIncludeInferred(false);
-                        Streams.mapWithIndex(newResources4level.stream(), Pair::of).forEach(p -> headRenderingQuery.setBinding("x" + p.getValue(), p.getKey()));
+                    TupleQuery commitSearchQuery = supportConn.prepareTupleQuery(
+                            "PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>\n" +
+                                    "PREFIX prov: <http://www.w3.org/ns/prov#>" +
+                                    "\n" +
+                                    "SELECT *  FROM " + RenderUtils.toSPARQL(historyGraph) + " WHERE {\n" +
+                                    "    ?commit a cl:Commit ;\n" +
+                                    "        prov:startedAtTime ?time ;\n" +
+                                    "        prov:generated ?delta .\n" +
+                                    "    FILTER(?time > ?timeLowerBound) \n" +
+                                    "    \n" +
+                                    "\n" +
+                                    (IntStream.range(0, newTypes.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?subject)}").collect(Collectors.joining(" UNION "))) +
+                                    "    ?delta ?opt ?s .\n" +
+                                    "    ?s cl:subject ?subject .\n" +
+                                    "    VALUES(?predicate){(<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)(<http://www.w3.org/2000/01/rdf-schema#subPropertyOf>)}\n" +
+                                    "    ?s cl:predicate ?predicate .\n" +
+                                    "    ?s cl:object ?object .\n" +
+                                    "    ?s cl:context ?context .\n" +
+                                    "}\n" +
+                                    "ORDER BY DESC(?time)"
+                    );
+                    commitSearchQuery.setBinding("timeLowerBound", Values.literal(date));
+                    Streams.mapWithIndex(newPredicates.stream(), Pair::of).forEach(p -> commitSearchQuery.setBinding("x" + p.getValue(), p.getKey()));
 
-                        QueryResults.stream(headRenderingQuery.evaluate()).forEach(bs -> {
-                            for (int j = i2; j < renderingPropPath.size(); j++) {
-                                Resource cj = (Resource) bs.getValue("c" + j);
-                                Resource sj = (Resource) bs.getValue("s" + j);
-                                Value sj_plus_1 = bs.getValue("s" + (j + 1));
+                    List<BindingSet> relevantCommits = QueryResults.asList(commitSearchQuery.evaluate());
+                    for (BindingSet relevantCommit : relevantCommits) {
+                        IRI op = (IRI) relevantCommit.getValue("op");
 
-                                if (ObjectUtils.allNotNull(sj, sj_plus_1)) {
-                                    renderingModel.add(sj, renderingPropPath.get(j), sj_plus_1, cj);
-                                    if (sj_plus_1.isResource() && level2resources.containsEntry(j + 1, sj_plus_1)) {
-                                        newLevel2resources.put(j + 1, (Resource) sj_plus_1);
+                        Resource subject = (Resource) relevantCommit.getValue("subject");
+                        IRI predicate = (IRI) relevantCommit.getValue("predicate");
+                        Value object = relevantCommit.getValue("object");
+                        Resource context = (Resource) relevantCommit.getValue("context");
+
+                        if (Objects.equals(op, CHANGELOG.ADDED_STATEMENT)) { // added
+                            predicatesStatements.remove(subject, predicate, object, context);
+                        } else { // removed
+                            predicatesStatements.add(subject, predicate, object, context);
+                        }
+
+                    }
+
+                    predicates.addAll(newPredicates);
+                    newPredicates = new HashSet<>();
+                    newPredicates.addAll(Sets.difference(Models.subjectIRIs(predicatesStatements), predicates));
+                    newPredicates.addAll(Sets.difference(Models.objectIRIs(predicatesStatements), predicates));
+                }
+
+                //// Construct the rendering model at time
+
+                Model renderingModel = new LinkedHashModel();
+
+                Map<IRI, List<IRI>> lexicalizationModel2PropertyPath = new HashMap<>();
+                lexicalizationModel2PropertyPath.put(Project.RDFS_LEXICALIZATION_MODEL, Lists.newArrayList(RDFS.LABEL));
+                lexicalizationModel2PropertyPath.put(Project.SKOS_LEXICALIZATION_MODEL, Lists.newArrayList(SKOS.PREF_LABEL));
+                lexicalizationModel2PropertyPath.put(Project.SKOSXL_LEXICALIZATION_MODEL, Lists.newArrayList(SKOSXL.PREF_LABEL, SKOSXL.LITERAL_FORM));
+
+                List<IRI> renderingPropPath = lexicalizationModel2PropertyPath.get(project.getLexicalizationModel());
+
+                if (renderingPropPath != null) {
+                    Multimap<Integer, Resource> level2resources = HashMultimap.create();
+                    level2resources.put(0, resource);
+                    level2resources.putAll(0, Models.objectIRIs(statements.filter(resource, null, null)));
+
+                    Multimap<Integer, Resource> newLevel2resources = HashMultimap.create();
+                    newLevel2resources.putAll(level2resources);
+
+                    while (true) {
+                        for (int i = 0; i < renderingPropPath.size(); i++) {
+                            Collection<Resource> newResources4level = newLevel2resources.get(i);
+                            if (newResources4level.isEmpty()) continue;
+
+                            int i2 = i;
+                            String queryString = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
+                                    "\n" +
+                                    "SELECT * WHERE {\n" +
+                                    (IntStream.range(0, newResources4level.size()).mapToObj(index -> "{BIND(?x" + index + " AS ?s" + i2 + ")}").collect(Collectors.joining(" UNION "))) +
+                                    propertyChainHeadPattern(renderingPropPath, i2) +
+                                    "}";
+                            TupleQuery headRenderingQuery = headConn.prepareTupleQuery(queryString);
+                            headRenderingQuery.setIncludeInferred(false);
+                            headDataset.ifPresent(headRenderingQuery::setDataset);
+                            Streams.mapWithIndex(newResources4level.stream(), Pair::of).forEach(p -> headRenderingQuery.setBinding("x" + p.getValue(), p.getKey()));
+
+                            QueryResults.stream(headRenderingQuery.evaluate()).forEach(bs -> {
+                                for (int j = i2; j < renderingPropPath.size(); j++) {
+                                    Resource cj = (Resource) bs.getValue("c" + j);
+                                    Resource sj = (Resource) bs.getValue("s" + j);
+                                    Value sj_plus_1 = bs.getValue("s" + (j + 1));
+
+                                    if (ObjectUtils.allNotNull(sj, sj_plus_1)) {
+                                        renderingModel.add(sj, renderingPropPath.get(j), sj_plus_1, cj);
+                                        if (sj_plus_1.isResource() && level2resources.containsEntry(j + 1, sj_plus_1)) {
+                                            newLevel2resources.put(j + 1, (Resource) sj_plus_1);
+                                        }
                                     }
                                 }
-                            }
-                        });
+                            });
 
-                    }
+                        }
 
-                    level2resources.putAll(newLevel2resources);
-                    newLevel2resources.clear();
+                        level2resources.putAll(newLevel2resources);
+                        newLevel2resources.clear();
 
-                    for (int i = 0 ; i < renderingPropPath.size() ; i++) {
-                        Collection<Resource> resources4level = level2resources.get(i);
-                        if (resources4level.isEmpty()) continue;
+                        for (int i = 0; i < renderingPropPath.size(); i++) {
+                            Collection<Resource> resources4level = level2resources.get(i);
+                            if (resources4level.isEmpty()) continue;
 
-                        int i2 = i;
-                        try (RepositoryConnection historyConn = supportRepository.getConnection()) {
-                            TupleQuery commitSearchQuery = historyConn.prepareTupleQuery(
+                            int i2 = i;
+                            TupleQuery commitSearchQuery = supportConn.prepareTupleQuery(
                                     "PREFIX cl: <http://semanticturkey.uniroma2.it/ns/changelog#>\n" +
                                             "PREFIX prov: <http://www.w3.org/ns/prov#>" +
                                             "\n" +
@@ -753,25 +765,26 @@ public class ResourceView extends STServiceAdapter {
                                     }
                                 }
                             });
+
+                        }
+
+                        if (newLevel2resources.isEmpty()) {
+                            break;
                         }
                     }
 
-                    if (newLevel2resources.isEmpty()) {
-                        break;
-                    }
                 }
 
+                //// Writes statements to the temp connection
+                tempConn.add(statements);
+                tempConn.add(typesStatements);
+                tempConn.add(predicatesStatements);
+                tempConn.add(renderingModel);
             }
 
-            //// Writes statements to the temp connection
-            tempConn.add(statements);
-            tempConn.add(predicateStatements);
-            tempConn.add(typeStatements);
-            tempConn.add(renderingModel);
-            tempConn.export(Rio.createWriter(RDFFormat.TRIG, System.out).setWriterConfig(new WriterConfig().set(BasicWriterSettings.PRETTY_PRINT, true).set(BasicWriterSettings.INLINE_BLANK_NODES, true)));
+            tempConn.export(Rio.createWriter(RDFFormat.TRIG, System.out).setWriterConfig(new WriterConfig().set(BasicWriterSettings.PRETTY_PRINT, true).set(BasicWriterSettings.INLINE_BLANK_NODES, true)), workingGraph);
 
             return getResourceView(resource, resourcePosition, includeInferred, ignorePropertyExclusions);
-
         } finally {
             tempRepository.shutDown();
         }
@@ -779,8 +792,8 @@ public class ResourceView extends STServiceAdapter {
 
     private String propertyChainHeadPattern(List<IRI> propertyChain, int begin) {
         StringBuilder sb = new StringBuilder();
-        sb.append("GRAPH ?c" + begin +" {\n" +
-               "   ?s" + begin +" " + RenderUtils.toSPARQL(propertyChain.get(begin)) + " ?s" + (begin + 1) +" .\n");
+        sb.append("GRAPH ?c" + begin + " {\n" +
+                "   ?s" + begin + " " + RenderUtils.toSPARQL(propertyChain.get(begin)) + " ?s" + (begin + 1) + " .\n");
 
         int newBegin = begin + 1;
 
@@ -797,9 +810,9 @@ public class ResourceView extends STServiceAdapter {
 
     private String propertyChainHistoryPattern(List<IRI> propertyChain, int begin) {
         StringBuilder sb = new StringBuilder();
-        sb.append("    ?delta ?opt" + begin + " ?st" + begin +" .\n" +
+        sb.append("    ?delta ?opt" + begin + " ?st" + begin + " .\n" +
                 "    ?st" + begin + " cl:subject ?s" + begin + " .\n" +
-                "    ?st" + begin + " cl:predicate " + RenderUtils.toSPARQL(propertyChain.get(begin)) +" .\n" +
+                "    ?st" + begin + " cl:predicate " + RenderUtils.toSPARQL(propertyChain.get(begin)) + " .\n" +
                 "    ?st" + begin + " cl:object ?s" + (begin + 1) + " .\n" +
                 "    ?st" + begin + " cl:context ?c" + begin + " .\n");
 
@@ -813,7 +826,6 @@ public class ResourceView extends STServiceAdapter {
 
         return sb.toString();
     }
-
 
     protected AccessMethod computeAccessMethod(ResourcePosition resourcePosition)
             throws DatasetNotAccessibleException {
@@ -1716,6 +1728,8 @@ class XLabelLiteralFormQueryProcessor implements QueryBuilderProcessor {
 
 class DecompComponentRenderer extends BaseRenderingEngine {
 
+    public static final DecompComponentRenderer INSTANCE;
+    public static final DecompComponentRenderer INSTANCE_WITHOUT_FALLBACK;
     private static AbstractLabelBasedRenderingEngineConfiguration conf;
 
     static {
@@ -1728,11 +1742,11 @@ class DecompComponentRenderer extends BaseRenderingEngine {
 
         };
         conf.languages = null;
-    }
 
-    public static final DecompComponentRenderer INSTANCE = new DecompComponentRenderer();
-    public static final DecompComponentRenderer INSTANCE_WITHOUT_FALLBACK = new DecompComponentRenderer(
-            false);
+        INSTANCE = new DecompComponentRenderer();
+        INSTANCE_WITHOUT_FALLBACK = new DecompComponentRenderer(
+                false);
+    }
 
     private DecompComponentRenderer() {
         super(conf, true);
