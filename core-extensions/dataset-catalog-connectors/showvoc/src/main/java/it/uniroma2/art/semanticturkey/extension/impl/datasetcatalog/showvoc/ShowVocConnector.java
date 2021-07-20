@@ -28,6 +28,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.message.BasicNameValuePair;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -106,14 +108,20 @@ public class ShowVocConnector implements DatasetCatalogConnector {
 	}
 
 	public static void main(String[] args) throws IOException {
-		ShowVocConnectorConfiguration conf = new ShowVocConnectorConfiguration();
-		conf.apiBaseURL = "http://localhost:1979/semanticturkey/";
-		conf.frontendBaseURL = "http://localhost:1979/showvoc/";
-		ShowVocConnector connector = new ShowVocConnectorFactory().createInstance(conf);
+//		ShowVocConnectorConfiguration conf = new ShowVocConnectorConfiguration();
+//		conf.apiBaseURL = "http://localhost:1979/semanticturkey/";
+//		conf.frontendBaseURL = "http://localhost:1979/showvoc/";
+//		ShowVocConnector connector = new ShowVocConnectorFactory().createInstance(conf);
+//
+//		SearchResultsPage<DatasetSearchResult> results = connector.searchDataset("test",
+//				Collections.emptyMap(), 0);
+//		System.out.println(results);
 
-		SearchResultsPage<DatasetSearchResult> results = connector.searchDataset("test",
-				Collections.emptyMap(), 0);
-		System.out.println(results);
+		SailRepository sailRepo = new SailRepository(new MemoryStore());
+		sailRepo.init();
+		System.out.println(sailRepo.getValueFactory().createBNode());
+
+		sailRepo.shutDown();
 	}
 
 }
