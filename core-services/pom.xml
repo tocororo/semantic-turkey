@@ -1,328 +1,394 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>it.uniroma2.art.semanticturkey</groupId>
-		<artifactId>semanticturkey</artifactId>
-		<version>10.0-SNAPSHOT</version>
-	</parent>
+    <parent>
+        <groupId>it.uniroma2.art.semanticturkey</groupId>
+        <artifactId>semanticturkey</artifactId>
+        <version>10.0-SNAPSHOT</version>
+    </parent>
 
-	<artifactId>st-core-services</artifactId>
-	<name>Semantic Turkey CORE Services</name>
-	<description>The set of core services bundled with the default Semantic Turkey XPI</description>
-	<packaging>bundle</packaging>
+    <artifactId>st-core-services</artifactId>
+    <name>Semantic Turkey CORE Services</name>
+    <description>The set of core services bundled with the default Semantic Turkey XPI</description>
+    <packaging>bundle</packaging>
 
-	<developers>
-		<developer>
-			<id>starred</id>
-			<name>Armando Stellato</name>
-			<email>stellato@info.uniroma2.it</email>
-			<url>http://art.uniroma2.it/stellato</url>
-			<organization>ART Group, University of Rome, Tor Vergata</organization>
-			<organizationUrl>http://art.uniroma2.it</organizationUrl>
-		</developer>
-		<developer>
-			<id>turbati</id>
-			<name>Andrea Turbati</name>
-			<email>turbati@info.uniroma2.it</email>
-			<url>http://art.uniroma2.it/turbati</url>
-			<organization>ART Group, University of Rome, Tor Vergata</organization>
-			<organizationUrl>http://art.uniroma2.it</organizationUrl>
-		</developer>
-	</developers>
+    <developers>
+        <developer>
+            <id>starred</id>
+            <name>Armando Stellato</name>
+            <email>stellato@info.uniroma2.it</email>
+            <url>http://art.uniroma2.it/stellato</url>
+            <organization>ART Group, University of Rome, Tor Vergata</organization>
+            <organizationUrl>http://art.uniroma2.it</organizationUrl>
+        </developer>
+        <developer>
+            <id>turbati</id>
+            <name>Andrea Turbati</name>
+            <email>turbati@info.uniroma2.it</email>
+            <url>http://art.uniroma2.it/turbati</url>
+            <organization>ART Group, University of Rome, Tor Vergata</organization>
+            <organizationUrl>http://art.uniroma2.it</organizationUrl>
+        </developer>
+    </developers>
 
-	<dependencies>
-		<dependency>
-			<groupId>it.uniroma2.art.semanticturkey</groupId>
-			<artifactId>st-i18n</artifactId>
-			<version>${project.version}</version>
-		</dependency>
+    <repositories>
+        <repository>
+            <id>Shibbolet</id>
+            <name>Shibbolet</name>
+            <url>https://build.shibboleth.net/nexus/content/repositories/releases/</url>
+        </repository>
+    </repositories>
 
-		<dependency>
-			<groupId>it.uniroma2.art.semanticturkey</groupId>
-			<artifactId>st-core-framework</artifactId>
-			<version>${project.version}</version>
-		</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>it.uniroma2.art.semanticturkey</groupId>
+            <artifactId>st-i18n</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-web</artifactId>
-			<version>${spring.version}</version>
-			<scope>provided</scope>
-		</dependency>
+        <dependency>
+            <groupId>it.uniroma2.art.semanticturkey</groupId>
+            <artifactId>st-core-framework</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-web</artifactId>
-			<version>${spring-security.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-config</artifactId>
-			<version>${spring-security.version}</version>
-		</dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>${spring.version}</version>
+            <scope>provided</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>it.uniroma2.art.semanticturkey</groupId>
-			<artifactId>st-codegen-annotations</artifactId>
-			<version>${project.version}</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>it.uniroma2.art.semanticturkey</groupId>
-			<artifactId>st-codegen-processor</artifactId>
-			<version>${project.version}</version>
-			<scope>compile</scope>
-		</dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-aop</artifactId>
-			<version>${spring.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-fileupload</groupId>
-			<artifactId>commons-fileupload</artifactId>
-			<version>1.3.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.rdf4j</groupId>
-			<artifactId>rdf4j-rio-ntriples</artifactId>
-			<version>${rdf4j.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.rdf4j</groupId>
-			<artifactId>rdf4j-queryresultio-sparqljson</artifactId>
-			<version>${rdf4j.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.rdf4j</groupId>
-			<artifactId>rdf4j-queryrender</artifactId>
-			<version>${rdf4j.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>${junit.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>it.uniroma2.art.semanticturkey</groupId>
-			<artifactId>st-changetracking-sail</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>it.uniroma2.art.semanticturkey</groupId>
-			<artifactId>st-metadata-registry-bindings</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>it.uniroma2.art.semanticturkey</groupId>
-			<artifactId>st-regex-search-strategy</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>net.bytebuddy</groupId>
-			<artifactId>byte-buddy</artifactId>
-			<version>${byte-buddy.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.samskivert</groupId>
-			<artifactId>jmustache</artifactId>
-			<version>${jmustache.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jsoup</groupId>
-			<artifactId>jsoup</artifactId>
-			<version>${jsoup.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.openhtmltopdf</groupId>
-			<artifactId>openhtmltopdf-core</artifactId>
-			<version>${openhtml.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.openhtmltopdf</groupId>
-			<artifactId>openhtmltopdf-pdfbox</artifactId>
-			<version>${openhtml.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.openhtmltopdf</groupId>
-			<artifactId>openhtmltopdf-slf4j</artifactId>
-			<version>${openhtml.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>it.uniroma2.art.semanticturkey</groupId>
-			<artifactId>st-font</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.karaf.config</groupId>
-			<artifactId>org.apache.karaf.config.core</artifactId>
-			<version>${karaf.version}</version>
-		</dependency>
-	</dependencies>
+        <dependency>
+            <groupId>it.uniroma2.art.semanticturkey</groupId>
+            <artifactId>st-codegen-annotations</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>it.uniroma2.art.semanticturkey</groupId>
+            <artifactId>st-codegen-processor</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
 
-	<build>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-fileupload</groupId>
+            <artifactId>commons-fileupload</artifactId>
+            <version>1.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.rdf4j</groupId>
+            <artifactId>rdf4j-rio-ntriples</artifactId>
+            <version>${rdf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.rdf4j</groupId>
+            <artifactId>rdf4j-queryresultio-sparqljson</artifactId>
+            <version>${rdf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.rdf4j</groupId>
+            <artifactId>rdf4j-queryrender</artifactId>
+            <version>${rdf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>it.uniroma2.art.semanticturkey</groupId>
+            <artifactId>st-changetracking-sail</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>it.uniroma2.art.semanticturkey</groupId>
+            <artifactId>st-metadata-registry-bindings</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>it.uniroma2.art.semanticturkey</groupId>
+            <artifactId>st-regex-search-strategy</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>${byte-buddy.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.samskivert</groupId>
+            <artifactId>jmustache</artifactId>
+            <version>${jmustache.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>${jsoup.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-core</artifactId>
+            <version>${openhtml.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-pdfbox</artifactId>
+            <version>${openhtml.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-slf4j</artifactId>
+            <version>${openhtml.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>it.uniroma2.art.semanticturkey</groupId>
+            <artifactId>st-font</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.karaf.config</groupId>
+            <artifactId>org.apache.karaf.config.core</artifactId>
+            <version>${karaf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opensaml</groupId>
+            <artifactId>opensaml</artifactId>
+            <version>2.6.6</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opensaml</groupId>
+            <artifactId>xmltooling</artifactId>
+            <version>1.4.6</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opensaml</groupId>
+            <artifactId>openws</artifactId>
+            <version>1.5.6</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>ca.juliusdavies</groupId>
+            <artifactId>not-yet-commons-ssl</artifactId>
+            <version>0.3.9</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.owasp.esapi</groupId>
+            <artifactId>esapi</artifactId>
+            <version>2.0.1</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.santuario</groupId>
+            <artifactId>xmlsec</artifactId>
+            <version>1.5.7</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security.extensions</groupId>
+            <artifactId>spring-security-saml2-core</artifactId>
+            <version>${spring-saml.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.narupley</groupId>
+            <artifactId>not-going-to-be-commons-ssl</artifactId>
+            <version>0.3.20</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
 
-		<resources>
-			<resource>
-				<!-- we had problems in using standard wab deployment (referencing the 
-					WEB-INF/classes from depending wabs) -->
-				<!-- thus we have manually managed the webapp directory and we still 
-					put the classes in the . position -->
-				<directory>src/main/webapp</directory>
-			</resource>
-			<resource>
-				<directory>src/main/resources</directory>
-			</resource>
-		</resources>
+    <build>
 
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.5.1</version>
-				<configuration>
-					<fork>true</fork>
-					<compilerArgument>-Ait.uniroma2.art.semanticturkey.generation.controller.path.prefix=${project.groupId}/${project.artifactId}</compilerArgument>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.felix</groupId>
-				<artifactId>maven-bundle-plugin</artifactId>
-				<version>3.0.1</version>
-				<extensions>true</extensions>
-				<configuration>
-					<instructions>
-						<!-- <_wab>src/main/webapp</_wab> could also use src/main/resources 
-							if you like -->
-						<Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
-						<Webapp-Context>semanticturkey</Webapp-Context>
-						<Web-ContextPath>semanticturkey</Web-ContextPath>
-						<Export-Package>
-							<!-- The following is required to make core service classes (SKOS[XL], 
-								...) available for extensions -->
-							{local-packages}
-						</Export-Package>
-						<Import-Package>
-							it.uniroma2.art.coda.osgi.bundle,
-							it.uniroma2.art.semanticturkey,
-							it.uniroma2.art.semanticturkey.event.support,
-							it.uniroma2.art.semanticturkey.history,
-							it.uniroma2.art.semanticturkey.exceptions,
-							it.uniroma2.art.semanticturkey.ontology,
-							it.uniroma2.art.semanticturkey.project,
-							it.uniroma2.art.semanticturkey.resources,
-							it.uniroma2.art.semanticturkey.servlet,
-							it.uniroma2.art.semanticturkey.utilities,
-							it.uniroma2.art.semanticturkey.vocabulary,
-							it.uniroma2.art.semanticturkey.l10n,
-							it.uniroma2.art.semanticturkey.font,
-							it.uniroma2.art.sheet2rdf.*,
-							org.springframework.web.servlet.view,
-							org.springframework.web.servlet,
-							org.springframework.context.*,
-<!-- 							org.springframework.context.support, -->
-							org.springframework.context.config,
-							org.springframework.core,
-							org.springframework.web.context,
-							org.springframework.osgi.web.context.support,
-							org.springframework.stereotype,
-							org.springframework.ui,
-							org.springframework.web.bind.annotation,
-							org.springframework.web.servlet.mvc.annotation,
-							org.osgi.framework,
-							org.aopalliance.aop,
-							javax.persistence,
-							javax.validation,
-							net.sf.cglib.proxy,
-							net.sf.cglib.core,
-							net.sf.cglib.reflect,
-							org.springframework.core.convert, <!-- This dependency 
+        <resources>
+            <resource>
+                <!-- we had problems in using standard wab deployment (referencing the
+                    WEB-INF/classes from depending wabs) -->
+                <!-- thus we have manually managed the webapp directory and we still
+                    put the classes in the . position -->
+                <directory>src/main/webapp</directory>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <fork>true</fork>
+                    <compilerArgument>
+                        -Ait.uniroma2.art.semanticturkey.generation.controller.path.prefix=${project.groupId}\/${project.artifactId}
+                    </compilerArgument>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>3.0.1</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <!-- <_wab>src/main/webapp</_wab> could also use src/main/resources
+                            if you like -->
+                        <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
+                        <Webapp-Context>semanticturkey</Webapp-Context>
+                        <Web-ContextPath>semanticturkey</Web-ContextPath>
+                        <!--						<Embed-Dependency>opensaml,openws,xmltooling,not-yet-commons-ssl,esapi,xmlsec,spring-security-saml2-core,not-going-to-be-commons-ssl,bcprov-ext-jdk15on,bcpkix-jdk15on,bcprov-jdk15on;scope=runtime|compile</Embed-Dependency>-->
+                        <Embed-Dependency>
+                            *;artifactId=opensaml,openws,xmltooling,not-yet-commons-ssl,esapi,xmlsec,spring-security-saml2-core,not-going-to-be-commons-ssl,bcprov-ext-jdk15on,bcpkix-jdk15on,bcprov-jdk15on;scope=runtime|compile|provided
+                        </Embed-Dependency>
+                        <Embed-Transitive>true</Embed-Transitive>
+                        <Embed-Directory>lib</Embed-Directory>
+                        <Export-Package>
+                            <!-- The following is required to make core service classes (SKOS[XL],
+                                ...) available for extensions -->
+                            {local-packages}
+                        </Export-Package>
+                        <Import-Package>
+                            it.uniroma2.art.coda.osgi.bundle,
+                            it.uniroma2.art.semanticturkey,
+                            it.uniroma2.art.semanticturkey.event.support,
+                            it.uniroma2.art.semanticturkey.history,
+                            it.uniroma2.art.semanticturkey.exceptions,
+                            it.uniroma2.art.semanticturkey.ontology,
+                            it.uniroma2.art.semanticturkey.project,
+                            it.uniroma2.art.semanticturkey.resources,
+                            it.uniroma2.art.semanticturkey.servlet,
+                            it.uniroma2.art.semanticturkey.utilities,
+                            it.uniroma2.art.semanticturkey.vocabulary,
+                            it.uniroma2.art.semanticturkey.l10n,
+                            it.uniroma2.art.semanticturkey.font,
+                            it.uniroma2.art.sheet2rdf.*,
+                            org.springframework.web.servlet.view,
+                            org.springframework.web.servlet,
+                            org.springframework.context.*,
+                            <!-- 							org.springframework.context.support, -->
+                            org.springframework.context.config,
+                            org.springframework.core,
+                            org.springframework.web.context,
+                            org.springframework.osgi.web.context.support,
+                            org.springframework.stereotype,
+                            org.springframework.ui,
+                            org.springframework.web.bind.annotation,
+                            org.springframework.web.servlet.mvc.annotation,
+                            org.osgi.framework,
+                            org.aopalliance.aop,
+                            javax.persistence,
+                            javax.validation,
+                            net.sf.cglib.proxy,
+                            net.sf.cglib.core,
+                            net.sf.cglib.reflect,
+                            org.springframework.core.convert, <!-- This dependency
 								is required for the ConversionServiceFactoryBean -->
-							org.springframework.validation.beanvalidation,
-							org.springframework.validation.annotation,
-							org.jsoup,
-							org.springframework.aop.framework,
-							org.springframework.aop.framework.autoproxy,
-							org.springframework.aop,
-							<!-- The imports org.springframework.cglib.* seem necessary after 
-								the move to Karaf -->
-							org.springframework.cglib.proxy,
-							org.springframework.cglib.core,
-							org.springframework.cglib.reflect,
-							javax.validation.bootstrap,
-							javax.validation.constraints,
-							javax.validation.spi,
-							org.hibernate.validator,
-							org.springframework.validation,
-							javax.inject,
-							org.springframework.beans.factory.config,
-							org.springframework.beans.factory,
-							javax.servlet.http,
-							<!-- This dependency is required for the instantiation of the ST HTTP 
-								Context -->
-							it.uniroma2.art.semanticturkey.services.http,
-							<!-- This dependency is required for the exception handler -->
-							it.uniroma2.art.semanticturkey.mvc,
-							<!-- These dependencies are required for multipart resolver -->
-							org.springframework.web.multipart.commons,
-							<!--org.apache.commons.fileupload;version="[1.2.0,2)", -->
-							org.apache.commons.io,
-							org.antlr.runtime.*,
-							it.uniroma2.art.semanticturkey.http.session,
-							<!-- These imports are for spring-security-cas -->
-							org.jasig.cas.client.validation,
-							org.springframework.security.cas,
-							org.springframework.security.cas.authentication,
-							org.springframework.security.cas.web,
-							org.springframework.security.core.userdetails,
-							*;resolution:=optional
-						</Import-Package>
-						<DynamicImport-Package>*</DynamicImport-Package>
-					</instructions>
-				</configuration>
-			</plugin>
-		</plugins>
-		<finalName>${project.groupId}.${project.artifactId}</finalName>
-		<pluginManagement>
-			<plugins>
-				<!--This plugin's configuration is used to store Eclipse m2e settings 
-					only. It has no influence on the Maven build itself. -->
-				<plugin>
-					<groupId>org.eclipse.m2e</groupId>
-					<artifactId>lifecycle-mapping</artifactId>
-					<version>1.0.0</version>
-					<configuration>
-						<lifecycleMappingMetadata>
-							<pluginExecutions>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>
-											org.apache.felix
-										</groupId>
-										<artifactId>
-											maven-bundle-plugin
-										</artifactId>
-										<versionRange>
-											[2.3.5,)
-										</versionRange>
-										<goals>
-											<goal>manifest</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore></ignore>
-									</action>
-								</pluginExecution>
-							</pluginExecutions>
-						</lifecycleMappingMetadata>
-					</configuration>
-				</plugin>
-			</plugins>
-		</pluginManagement>
-	</build>
+                            org.springframework.validation.beanvalidation,
+                            org.springframework.validation.annotation,
+                            org.jsoup,
+                            org.springframework.aop.framework,
+                            org.springframework.aop.framework.autoproxy,
+                            org.springframework.aop,
+                            <!-- The imports org.springframework.cglib.* seem necessary after
+                                the move to Karaf -->
+                            org.springframework.cglib.proxy,
+                            org.springframework.cglib.core,
+                            org.springframework.cglib.reflect,
+                            javax.validation.bootstrap,
+                            javax.validation.constraints,
+                            javax.validation.spi,
+                            org.hibernate.validator,
+                            org.springframework.validation,
+                            javax.inject,
+                            org.springframework.beans.factory.config,
+                            org.springframework.beans.factory,
+                            javax.servlet.http,
+                            <!-- This dependency is required for the instantiation of the ST HTTP
+                                Context -->
+                            it.uniroma2.art.semanticturkey.services.http,
+                            <!-- This dependency is required for the exception handler -->
+                            it.uniroma2.art.semanticturkey.mvc,
+                            <!-- These dependencies are required for multipart resolver -->
+                            org.springframework.web.multipart.commons,
+                            <!--org.apache.commons.fileupload;version="[1.2.0,2)", -->
+                            org.apache.commons.io,
+                            org.antlr.runtime.*,
+                            it.uniroma2.art.semanticturkey.http.session,
+                            <!-- These imports are for spring-security-cas -->
+                            <!--							org.springframework.security.saml,-->
+                            <!--							org.springframework.security.saml.parser,-->
+                            org.jasig.cas.client.validation,
+                            org.springframework.security.cas,
+                            org.springframework.security.cas.authentication,
+                            org.springframework.security.cas.web,
+                            org.springframework.security.core.userdetails,
+                            *;resolution:=optional
+                        </Import-Package>
+                        <DynamicImport-Package>*</DynamicImport-Package>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+        <finalName>${project.groupId}.${project.artifactId}</finalName>
+        <pluginManagement>
+            <plugins>
+                <!--This plugin's configuration is used to store Eclipse m2e settings
+                    only. It has no influence on the Maven build itself. -->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>
+                                            org.apache.felix
+                                        </groupId>
+                                        <artifactId>
+                                            maven-bundle-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [2.3.5,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>manifest</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore></ignore>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>

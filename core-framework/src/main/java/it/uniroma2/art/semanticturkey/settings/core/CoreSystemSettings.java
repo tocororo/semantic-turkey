@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.settings.core;
 
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
+import it.uniroma2.art.semanticturkey.properties.Enumeration;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
 import java.util.List;
@@ -38,6 +39,8 @@ public class CoreSystemSettings implements Settings {
         public static final String mail$displayName = keyBase + ".mail.displayName";
         public static final String showvoc$description = keyBase + ".showvoc.description";
         public static final String showvoc$displayName = keyBase + ".showvoc.displayName";
+        public static final String authService$description = keyBase + ".authService.description";
+        public static final String authService$displayName = keyBase + ".authService.displayName";
     }
 
     @Override
@@ -89,4 +92,12 @@ public class CoreSystemSettings implements Settings {
     @STProperty(description = "{" + MessageKeys.showvoc$description + "}", displayName = "{"
             + MessageKeys.showvoc$displayName + "}")
     public ShowVocSettings showvoc;
+
+    @STProperty(description = "{" + MessageKeys.authService$description + "}", displayName = "{"
+            + MessageKeys.authService$displayName + "}")
+    @Enumeration({"Default", "EULogin"})
+    public String authService = "Default";
+
+
+
 }

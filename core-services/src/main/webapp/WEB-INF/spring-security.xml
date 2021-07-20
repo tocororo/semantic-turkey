@@ -1,194 +1,459 @@
 <beans:beans xmlns="http://www.springframework.org/schema/security"
-	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:osgi="http://www.springframework.org/schema/osgi"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans
+             xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:osgi="http://www.springframework.org/schema/osgi"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:context="http://www.springframework.org/schema/context"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
 	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
-	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-3.1.xsd
 	http://www.springframework.org/schema/security
 	http://www.springframework.org/schema/security/spring-security-3.1.xsd
-	http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi.xsd">
+	http://www.springframework.org/schema/osgi
+	http://www.springframework.org/schema/osgi/spring-osgi.xsd">
 
-	<!-- Retrieves the ResourceLocator -->
-	<osgi:reference id="resourceLocator"
-		interface="it.uniroma2.art.semanticturkey.data.access.ResourceLocator" />
+    <!-- Retrieves the ResourceLocator -->
+    <osgi:reference id="resourceLocator"
+                    interface="it.uniroma2.art.semanticturkey.data.access.ResourceLocator"/>
 
-	<!-- Retrieves the MetadataRegistry -->
-	<osgi:reference id="metadataRegistryBackend"
-		interface="it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend" />
+    <!-- Retrieves the MetadataRegistry -->
+    <osgi:reference id="metadataRegistryBackend"
+                    interface="it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend"/>
 
-	<!-- Retrieves the SemanticTurkeyCoreSettingsManager -->
-	<osgi:reference id="semanticTurkeyCoreSettingsManager"
-					interface="it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager" />
+    <!-- Retrieves the SemanticTurkeyCoreSettingsManager -->
+    <osgi:reference id="semanticTurkeyCoreSettingsManager"
+                    interface="it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager"/>
 
-	<!-- Overrides the default entry point of authentication. As default Spring-Security 
-		redirects to login page -->
-	<http entry-point-ref="authEntryPoint" use-expressions="true">
-		<!-- Tells the login request url (it must be a POST) and the parameters 
-			username and password and specifies the handler for successful and failed 
-			login -->
-		<form-login
-			login-processing-url="/it.uniroma2.art.semanticturkey/st-core-services/Auth/login"
-			username-parameter="email" password-parameter="password"
-			authentication-success-handler-ref="authSuccessHandler"
-			authentication-failure-handler-ref="authFailHandler" />
+    <!-- Enable auto-wiring -->
+    <context:annotation-config/>
 
-		<!-- Tells the handler for denied access (when user requests an url which 
-			for has not enough permission) -->
-		<access-denied-handler ref="accessDeniedHandler" />
+    <!-- Scan for auto-wiring classes in spring saml packages -->
+    <context:component-scan base-package="org.springframework.security.saml"/>
 
-		<!-- Tells the logout request url (GET) and specifies the handler for successful 
-			logout -->
-		<logout logout-url="/it.uniroma2.art.semanticturkey/st-core-services/Auth/logout"
-			delete-cookies="JSESSIONID" success-handler-ref="logoutSuccessHandler" />
+    <context:property-placeholder location="file:${karaf.base}/etc/eu-login.properties"/>
 
-		<!-- http://docs.spring.io/spring-security/site/docs/3.1.x/reference/el-access.html -->
-		<intercept-url
-			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/getUser"
-			access="permitAll" />
-		<intercept-url
-			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/getUserFormFields"
-			access="permitAll" />
-		<intercept-url
-			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/registerUser"
-			access="permitAll" />
-		<intercept-url
-			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/forgotPassword"
-			access="permitAll" />
-		<intercept-url
-			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/resetPassword"
-			access="permitAll" />
-		<intercept-url
-			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/verifyUserEmail"
-			access="permitAll" />
-		<intercept-url
-			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/activateRegisteredUser"
-			access="permitAll" />
-		<intercept-url
-			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Settings/getStartupSettings"
-			access="permitAll" />
-		<intercept-url
-			pattern="/it.uniroma2.art.semanticturkey/st-core-services/Administration/downloadPrivacyStatement"
-			access="permitAll" />
-		<intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/**"
-			access="isAuthenticated()" />
+    <!-- Overrides the default entry point of authentication. As default Spring-Security
+        redirects to login page -->
+    <http entry-point-ref="authEntryPoint" use-expressions="true">
+        <!-- Tells the login request url (it must be a POST) and the parameters
+            username and password and specifies the handler for successful and failed
+            login -->
+        <form-login
+                login-processing-url="/it.uniroma2.art.semanticturkey/st-core-services/Auth/login"
+                username-parameter="email" password-parameter="password"
+                authentication-success-handler-ref="authSuccessHandler"
+                authentication-failure-handler-ref="authFailHandler"/>
 
-		<!-- validity: 30 days -->
-		<!-- user-service-ref not strictly needed (if there is just one UserDetailsService 
-			implementation it should be automatically selected) -->
-		<remember-me key="vocbench_rememberme_key"
-			token-validity-seconds="2592000" user-service-ref="stUserDetailsService"
-			authentication-success-handler-ref="authSuccessHandler" />
+        <!-- Tells the handler for denied access (when user requests an url which
+            for has not enough permission) -->
+        <access-denied-handler ref="accessDeniedHandler"/>
 
-		<!-- Use this filter at position CHANNEL_FILTER (1st) in order to add CORS 
-			headers to responses -->
-		<custom-filter position="CHANNEL_FILTER" ref="corsFilter" />
+        <!-- Tells the logout request url (GET) and specifies the handler for successful
+            logout -->
+        <logout logout-url="/it.uniroma2.art.semanticturkey/st-core-services/Auth/logout"
+                delete-cookies="JSESSIONID" success-handler-ref="logoutSuccessHandler"/>
+
+        <!-- http://docs.spring.io/spring-security/site/docs/3.1.x/reference/el-access.html -->
+        <intercept-url
+                pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/getUser"
+                access="permitAll"/>
+        <intercept-url
+                pattern="/it.uniroma2.art.semanticturkey/st-core-services/saml/**"
+                access="permitAll"/>
+        <intercept-url
+                pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/getUserFormFields"
+                access="permitAll"/>
+        <intercept-url
+                pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/registerUser"
+                access="permitAll"/>
+        <intercept-url
+                pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/forgotPassword"
+                access="permitAll"/>
+        <intercept-url
+                pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/resetPassword"
+                access="permitAll"/>
+        <intercept-url
+                pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/verifyUserEmail"
+                access="permitAll"/>
+        <intercept-url
+                pattern="/it.uniroma2.art.semanticturkey/st-core-services/Users/activateRegisteredUser"
+                access="permitAll"/>
+        <intercept-url
+                pattern="/it.uniroma2.art.semanticturkey/st-core-services/Settings/getStartupSettings"
+                access="permitAll"/>
+        <intercept-url
+                pattern="/it.uniroma2.art.semanticturkey/st-core-services/Administration/downloadPrivacyStatement"
+                access="permitAll"/>
+        <intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/**"
+                       access="isAuthenticated()"/>
+
+        <!-- validity: 30 days -->
+        <!-- user-service-ref not strictly needed (if there is just one UserDetailsService
+            implementation it should be automatically selected) -->
+        <remember-me key="vocbench_rememberme_key"
+                     token-validity-seconds="2592000" user-service-ref="stUserDetailsService"
+                     authentication-success-handler-ref="authSuccessHandler"/>
+
+        <!-- Use this filter at position CHANNEL_FILTER (1st) in order to add CORS
+            headers to responses -->
+        <custom-filter position="CHANNEL_FILTER" ref="corsFilter"/>
+        <custom-filter before="FIRST" ref="metadataGeneratorFilter"/>
+        <custom-filter after="SWITCH_USER_FILTER" ref="samlFilter"/>
+
 
         <session-management>
             <concurrency-control session-registry-alias="sessionRegistry" max-sessions="10"/>
         </session-management>
 
-	</http>
+    </http>
 
-	<authentication-manager>
-		<!-- with UserDetailsService bean and password encoder -->
-		<authentication-provider user-service-ref="stUserDetailsService">
-			<password-encoder ref="bCryptPasswordEncoder" />
-		</authentication-provider>
-	</authentication-manager>
+    <authentication-manager alias="authenticationManager">
+        <!-- with UserDetailsService bean and password encoder -->
+        <authentication-provider user-service-ref="stUserDetailsService">
+            <password-encoder ref="bCryptPasswordEncoder"/>
+        </authentication-provider>
 
-	<global-method-security pre-post-annotations="enabled"/>
+        <authentication-provider ref="samlAuthenticationProvider"/>
+    </authentication-manager>
 
-	<context:annotation-config/>
+    <global-method-security pre-post-annotations="enabled"/>
 
-	<beans:bean
-		class="it.uniroma2.art.semanticturkey.services.http.STServiceHTTPContext" />
+    <!-- <context:annotation-config/>-->
 
-	<beans:bean id="conversionService"
-		class="org.springframework.context.support.ConversionServiceFactoryBean">
-		<beans:property name="converters">
-			<beans:list>
-				<beans:bean id="StringToACLAccessLevelConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToACLAccessLevelConverter" />
-				<beans:bean id="StringToACLLockLevelConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToACLLockLevelConverter" />
-				<beans:bean id="StringToProjectConsumerConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToProjectConsumerConverter" />
-				<beans:bean id="StringToProjectConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToProjectConverter" />
+    <beans:bean
+            class="it.uniroma2.art.semanticturkey.services.http.STServiceHTTPContext"/>
 
-				<beans:bean id="StringToResourcePositionConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToResourcePositionConverter">
-					<beans:constructor-arg ref="metadataRegistryBackend" />
-				</beans:bean>
+    <beans:bean id="conversionService"
+                class="org.springframework.context.support.ConversionServiceFactoryBean">
+        <beans:property name="converters">
+            <beans:list>
+                <beans:bean id="StringToACLAccessLevelConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToACLAccessLevelConverter"/>
+                <beans:bean id="StringToACLLockLevelConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToACLLockLevelConverter"/>
+                <beans:bean id="StringToProjectConsumerConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToProjectConsumerConverter"/>
+                <beans:bean id="StringToProjectConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToProjectConverter"/>
 
-				<beans:bean id="StringToRDF4JBNodeConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JBNodeConverter" />
-				<beans:bean id="StringToRDF4JIRIConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JIRIConverter" />
-				<beans:bean id="StringToRDF4JLiteralConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JLiteralConverter" />
-				<beans:bean id="StringToRDF4JResourceConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JResourceConverter" />
-				<beans:bean id="StringToRDF4JValueConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JValueConverter" />
+                <beans:bean id="StringToResourcePositionConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToResourcePositionConverter">
+                    <beans:constructor-arg ref="metadataRegistryBackend"/>
+                </beans:bean>
 
-				<beans:bean id="StringToObjectNodeConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToObjectNodeConverter" />
-				<beans:bean id="StringToPluginSpecificationConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToPluginSpecificationConverter" />
-				<beans:bean id="StringToFilteringStepConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToFilteringStepConverter" />
-				<beans:bean id="StringToFilteringPipelineConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToFilteringPipelineConverter" />
+                <beans:bean id="StringToRDF4JBNodeConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JBNodeConverter"/>
+                <beans:bean id="StringToRDF4JIRIConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JIRIConverter"/>
+                <beans:bean id="StringToRDF4JLiteralConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JLiteralConverter"/>
+                <beans:bean id="StringToRDF4JResourceConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JResourceConverter"/>
+                <beans:bean id="StringToRDF4JValueConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JValueConverter"/>
 
-				<beans:bean id="StringToRDF4JRDFormatConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JRDFormatConverter" />
+                <beans:bean id="StringToObjectNodeConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToObjectNodeConverter"/>
+                <beans:bean id="StringToPluginSpecificationConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToPluginSpecificationConverter"/>
+                <beans:bean id="StringToFilteringStepConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToFilteringStepConverter"/>
+                <beans:bean id="StringToFilteringPipelineConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToFilteringPipelineConverter"/>
 
-				<beans:bean id="StringToRepositoryAccessConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToRepositoryAccessConverter" />
+                <beans:bean id="StringToRDF4JRDFormatConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToRDF4JRDFormatConverter"/>
 
-				<beans:bean id="StringToMapConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToMapGenericConverter">
-					<beans:constructor-arg value="conversionService" />
-				</beans:bean>
-				<beans:bean id="StringToCustomFormValueConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToCustomFormValueConverter"/>
-				<beans:bean id="StringToSpecialValueConverter"
-					class="it.uniroma2.art.semanticturkey.converters.StringToSpecialValueConverter">
-					<beans:constructor-arg value="conversionService" />
-				</beans:bean>
-				<beans:bean id="StringToDataSizeConverter"
-							class="it.uniroma2.art.semanticturkey.converters.StringToDataSizeConverter" />
-				<beans:bean id="StringToZonedDateTimeConverter"
-							class="it.uniroma2.art.semanticturkey.converters.StringToZonedDateTimeConverter" />
-			</beans:list>
-		</beans:property>
-	</beans:bean>
+                <beans:bean id="StringToRepositoryAccessConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToRepositoryAccessConverter"/>
 
-	<beans:bean id="corsFilter"
-		class="it.uniroma2.art.semanticturkey.security.CORSFilter" />
-	<beans:bean id="stUserDetailsService"
-		class="it.uniroma2.art.semanticturkey.security.STUserDetailsService" />
-	<beans:bean id="authEntryPoint"
-		class="it.uniroma2.art.semanticturkey.security.STAuthenticationEntryPoint" />
-	<beans:bean id="authSuccessHandler"
-		class="it.uniroma2.art.semanticturkey.security.STAuthenticationSuccessHandler" />
-	<beans:bean id="authFailHandler"
-		class="it.uniroma2.art.semanticturkey.security.STAuthenticationFailureHandler" />
-	<beans:bean id="accessDeniedHandler"
-		class="it.uniroma2.art.semanticturkey.security.STAccessDeniedHandler" />
-	<beans:bean id="logoutSuccessHandler"
-		class="it.uniroma2.art.semanticturkey.security.STLogoutSuccessHandler" />
+                <beans:bean id="StringToMapConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToMapGenericConverter">
+                    <beans:constructor-arg value="conversionService"/>
+                </beans:bean>
+                <beans:bean id="StringToCustomFormValueConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToCustomFormValueConverter"/>
+                <beans:bean id="StringToSpecialValueConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToSpecialValueConverter">
+                    <beans:constructor-arg value="conversionService"/>
+                </beans:bean>
+                <beans:bean id="StringToDataSizeConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToDataSizeConverter"/>
+                <beans:bean id="StringToZonedDateTimeConverter"
+                            class="it.uniroma2.art.semanticturkey.converters.StringToZonedDateTimeConverter"/>
+            </beans:list>
+        </beans:property>
+    </beans:bean>
 
-	<beans:bean id='bCryptPasswordEncoder'
-		class='org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder' />
+    <beans:bean id="corsFilter"
+                class="it.uniroma2.art.semanticturkey.security.CORSFilter"/>
+    <beans:bean id="stUserDetailsService"
+                class="it.uniroma2.art.semanticturkey.security.STUserDetailsService"/>
+    <beans:bean id="authEntryPoint"
+                class="it.uniroma2.art.semanticturkey.security.STAuthenticationEntryPoint"/>
+    <beans:bean id="authSuccessHandler"
+                class="it.uniroma2.art.semanticturkey.security.STAuthenticationSuccessHandler"/>
+    <beans:bean id="authFailHandler"
+                class="it.uniroma2.art.semanticturkey.security.STAuthenticationFailureHandler"/>
+    <beans:bean id="accessDeniedHandler"
+                class="it.uniroma2.art.semanticturkey.security.STAccessDeniedHandler"/>
+    <beans:bean id="logoutSuccessHandler"
+                class="it.uniroma2.art.semanticturkey.security.STLogoutSuccessHandler"/>
 
-	<beans:bean id='accessControlManager'
-		class='it.uniroma2.art.semanticturkey.security.AccessControlManager' />
-	<beans:bean id='auth'
-		class='it.uniroma2.art.semanticturkey.security.STAuthorizationEvaluator' />
+    <beans:bean id='bCryptPasswordEncoder'
+                class='org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder'/>
 
-	<beans:bean id="projStarter"
-		  class="it.uniroma2.art.semanticturkey.services.core.projects.ProjectStarter" />
+    <beans:bean id='accessControlManager'
+                class='it.uniroma2.art.semanticturkey.security.AccessControlManager'/>
+    <beans:bean id='auth'
+                class='it.uniroma2.art.semanticturkey.security.STAuthorizationEvaluator'/>
+
+    <beans:bean id="projStarter"
+                class="it.uniroma2.art.semanticturkey.services.core.projects.ProjectStarter"/>
+
+    <!-- SAML -->
+
+    <beans:bean id="samlUserDetails" class="it.uniroma2.art.semanticturkey.security.impl.SAMLUserDetails"/>
+    <beans:bean id="samlSuccessHandler"
+                class="it.uniroma2.art.semanticturkey.security.impl.SAMLAuthenticationSuccessHandler"/>
+
+    <!-- Filters for processing of SAML messages -->
+    <beans:bean id="samlFilter" class="org.springframework.security.web.FilterChainProxy">
+        <filter-chain-map request-matcher="ant">
+            <filter-chain pattern="/it.uniroma2.art.semanticturkey/st-core-services/saml/login/**"
+                          filters="samlEntryPoint"/>
+            <!-- <filter-chain pattern="/saml/logout/**" filters="samlLogoutFilter"/>-->
+            <filter-chain pattern="/it.uniroma2.art.semanticturkey/st-core-services/saml/metadata/**"
+                          filters="metadataDisplayFilter"/>
+            <filter-chain pattern="/saml/SSO/**" filters="samlWebSSOProcessingFilter"/>
+            <filter-chain pattern="/saml/SSOHoK/**" filters="samlWebSSOHoKProcessingFilter"/>
+            <!-- <filter-chain pattern="/saml/SingleLogout/**" filters="samlLogoutProcessingFilter"/>-->
+            <!--<filter-chain pattern="/saml/discovery/**" filters="samlIDPDiscovery"/>-->
+        </filter-chain-map>
+    </beans:bean>
+
+    <!-- Logger for SAML messages and events -->
+    <beans:bean id="samlLogger" class="org.springframework.security.saml.log.SAMLDefaultLogger">
+        <!-- Enable these to see the actual SAML Messages in logs -->
+        <beans:property name="logAllMessages" value="true"/>
+        <beans:property name="logErrors" value="true"/>
+        <beans:property name="logMessagesOnException" value="true"/>
+    </beans:bean>
+
+    <!-- Central storage of cryptographic keys -->
+    <beans:bean id="keyManager" class="org.springframework.security.saml.key.JKSKeyManager">
+        <beans:constructor-arg value="classpath:security/turkeykeystore.jks"/>
+        <beans:constructor-arg type="java.lang.String" value="semanticturkey2021"/>
+        <beans:constructor-arg>
+            <beans:map>
+                <beans:entry key="turkeykeys" value="semanticturkey2021"/>
+            </beans:map>
+        </beans:constructor-arg>
+        <beans:constructor-arg type="java.lang.String" value="turkeykeys"/>
+    </beans:bean>
+
+    <!-- Entry point to initialize SAML authentication-->
+    <beans:bean id="samlEntryPoint" class="org.springframework.security.saml.SAMLEntryPoint">
+        <beans:property name="defaultProfileOptions">
+            <beans:bean class="org.springframework.security.saml.websso.WebSSOProfileOptions">
+                <beans:property name="binding" value="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
+                <!--  <beans:property name="relayState" value="tenantDomain=test-art.com"/>-->
+                <beans:property name="includeScoping" value="false"/>
+            </beans:bean>
+        </beans:property>
+    </beans:bean>
+
+    <!-- Filter automatically generates default SP metadata -->
+    <beans:bean id="metadataGeneratorFilter" class="org.springframework.security.saml.metadata.MetadataGeneratorFilter">
+        <beans:constructor-arg>
+            <beans:bean class="org.springframework.security.saml.metadata.MetadataGenerator">
+                <beans:property name="entityBaseURL" value="${eu.entityBaseURL}"/>
+                <beans:property name="extendedMetadata">
+                    <beans:bean class="org.springframework.security.saml.metadata.ExtendedMetadata">
+                        <beans:property name="idpDiscoveryEnabled" value="false"/>
+                    </beans:bean>
+                </beans:property>
+            </beans:bean>
+        </beans:constructor-arg>
+    </beans:bean>
+
+
+    <!-- The filter is waiting for connections on URL suffixed with filterSuffix and presents SP metadata there.
+    Remove to disable Service Provider metadata download (http<s>://<server:port>/<context>/saml/metadata)-->
+    <beans:bean id="metadataDisplayFilter" class="org.springframework.security.saml.metadata.MetadataDisplayFilter"/>
+
+
+    <!-- IDP MetaData -->
+    <beans:bean id="metadata" class="org.springframework.security.saml.metadata.CachingMetadataManager">
+        <beans:constructor-arg>
+            <beans:list>
+                <!-- for metadata in filesystem -->
+                <beans:bean class="org.springframework.security.saml.metadata.ExtendedMetadataDelegate">
+                    <beans:constructor-arg>
+                        <beans:bean class="org.opensaml.saml2.metadata.provider.FilesystemMetadataProvider">
+                            <beans:constructor-arg>
+                                <beans:bean class="java.util.Timer"/>
+                            </beans:constructor-arg>
+                            <beans:constructor-arg>
+                                <beans:value type="java.io.File">${karaf.base}/etc/eu-login.xml</beans:value>
+                            </beans:constructor-arg>
+                            <beans:property name="parserPool" ref="parserPool"/>
+                        </beans:bean>
+                    </beans:constructor-arg>
+                    <beans:constructor-arg>
+                        <beans:bean class="org.springframework.security.saml.metadata.ExtendedMetadata"/>
+                    </beans:constructor-arg>
+                </beans:bean>
+                <!-- for metadata in classpath(inside resources/metadata folder) -->
+                <!-- <beans:bean class="org.springframework.security.saml.metadata.ExtendedMetadataDelegate">
+                    <beans:constructor-arg>
+                        <beans:bean class="org.opensaml.saml2.metadata.provider.ResourceBackedMetadataProvider">
+                            <beans:constructor-arg>
+                                <beans:bean class="java.util.Timer"/>
+                            </beans:constructor-arg>
+                            <beans:constructor-arg>
+                                <beans:bean class="org.opensaml.util.resource.ClasspathResource">
+                                    <beans:constructor-arg value="/metadata/eu-login.xml"/>
+                                </beans:bean>
+                            </beans:constructor-arg>
+                            <beans:property name="parserPool" ref="parserPool"/>
+                        </beans:bean>
+                    </beans:constructor-arg>
+                    <beans:constructor-arg>
+                        <beans:bean
+                                class="org.springframework.security.saml.metadata.ExtendedMetadata">
+                        </beans:bean>
+                    </beans:constructor-arg>
+                </beans:bean> -->
+            </beans:list>
+        </beans:constructor-arg>
+        <!--Default IDP -->
+        <beans:property name="defaultIDP" value="${eu.defaultIDP}"/>
+    </beans:bean>
+
+    <!-- SAML Authentication Provider responsible for validating of received SAML messages -->
+    <beans:bean id="samlAuthenticationProvider" class="org.springframework.security.saml.SAMLAuthenticationProvider">
+        <!-- OPTIONAL property: can be used to store/load user data after login -->
+        <beans:property name="userDetails" ref="samlUserDetails"/>
+    </beans:bean>
+
+
+    <!-- Provider of default SAML Context ( use metaiop-Security profile for verification of message signatures) -->
+    <beans:bean id="contextProvider" class="org.springframework.security.saml.context.SAMLContextProviderLB">
+        <beans:property name="storageFactory">
+            <beans:bean class="org.springframework.security.saml.storage.EmptyStorageFactory"/>
+        </beans:property>
+        <beans:property name="scheme" value="${eu.scheme}"/>
+        <beans:property name="serverName" value="${eu.serverName}"/>
+        <beans:property name="includeServerPortInRequestURL" value="false"/>
+        <beans:property name="contextPath" value="/semanticturkey"/>
+    </beans:bean>
+    <!-- <beans:bean id="contextProvider" class="org.springframework.security.saml.context.SAMLContextProviderImpl"/>-->
+    <!--<beans:bean id="contextProvider" class="org.springframework.security.saml.context.SAMLContextProviderImpl">
+        <beans:property name="storageFactory">
+            <beans:bean class="org.springframework.security.saml.storage.EmptyStorageFactory"/>
+        </beans:property>
+    </beans:bean>-->
+
+    <!-- Processing filter for WebSSO profile messages -->
+    <beans:bean id="samlWebSSOProcessingFilter" class="org.springframework.security.saml.SAMLProcessingFilter">
+        <beans:property name="authenticationManager" ref="authenticationManager"/>
+        <beans:property name="authenticationSuccessHandler" ref="samlSuccessHandler"/>
+        <beans:property name="authenticationFailureHandler" ref="authFailHandler"/>
+    </beans:bean>
+
+    <!-- Processing filter for WebSSO Holder-of-Key profile -->
+    <beans:bean id="samlWebSSOHoKProcessingFilter"
+                class="org.springframework.security.saml.SAMLWebSSOHoKProcessingFilter">
+        <beans:property name="authenticationManager" ref="authenticationManager"/>
+        <beans:property name="authenticationSuccessHandler" ref="samlSuccessHandler"/>
+        <beans:property name="authenticationFailureHandler" ref="authFailHandler"/>
+    </beans:bean>
+
+
+    <!-- Class loading incoming SAML messages from httpRequest stream -->
+    <beans:bean id="processor" class="org.springframework.security.saml.processor.SAMLProcessorImpl">
+        <beans:constructor-arg>
+            <beans:list>
+                <beans:ref bean="redirectBinding"/>
+                <beans:ref bean="postBinding"/>
+                <beans:ref bean="artifactBinding"/>
+                <beans:ref bean="soapBinding"/>
+                <beans:ref bean="paosBinding"/>
+            </beans:list>
+        </beans:constructor-arg>
+    </beans:bean>
+
+    <!-- SAML 2.0 WebSSO Assertion Consumer -->
+    <!--<beans:bean id="webSSOprofileConsumer" class="org.springframework.security.saml.websso.WebSSOProfileConsumerImpl"/>-->
+    <beans:bean id="webSSOprofileConsumer"
+                class="it.uniroma2.art.semanticturkey.security.impl.WebSSOProfileConsumerImplCustom"/>
+
+    <!-- SAML 2.0 Holder-of-Key WebSSO Assertion Consumer -->
+    <beans:bean id="hokWebSSOprofileConsumer"
+                class="org.springframework.security.saml.websso.WebSSOProfileConsumerHoKImpl"/>
+
+    <!-- SAML 2.0 Web SSO profile -->
+    <beans:bean id="webSSOprofile" class="org.springframework.security.saml.websso.WebSSOProfileImpl"/>
+
+    <!-- SAML 2.0 Holder-of-Key Web SSO profile -->
+    <beans:bean id="hokWebSSOProfile" class="org.springframework.security.saml.websso.WebSSOProfileConsumerHoKImpl"/>
+
+    <!-- SAML 2.0 ECP profile -->
+    <beans:bean id="ecpprofile" class="org.springframework.security.saml.websso.WebSSOProfileECPImpl"/>
+
+    <!-- SAML 2.0 Logout Profile -->
+    <beans:bean id="logoutprofile" class="org.springframework.security.saml.websso.SingleLogoutProfileImpl"/>
+
+    <!-- Bindings, encoders and decoders used for creating and parsing messages -->
+    <beans:bean id="postBinding" class="org.springframework.security.saml.processor.HTTPPostBinding">
+        <beans:constructor-arg ref="parserPool"/>
+        <beans:constructor-arg ref="velocityEngine"/>
+    </beans:bean>
+
+    <beans:bean id="redirectBinding" class="org.springframework.security.saml.processor.HTTPRedirectDeflateBinding">
+        <beans:constructor-arg ref="parserPool"/>
+    </beans:bean>
+
+    <beans:bean id="artifactBinding" class="org.springframework.security.saml.processor.HTTPArtifactBinding">
+        <beans:constructor-arg ref="parserPool"/>
+        <beans:constructor-arg ref="velocityEngine"/>
+        <beans:constructor-arg>
+            <beans:bean class="org.springframework.security.saml.websso.ArtifactResolutionProfileImpl">
+                <beans:constructor-arg>
+                    <beans:bean class="org.apache.commons.httpclient.HttpClient">
+                        <beans:constructor-arg>
+                            <beans:bean class="org.apache.commons.httpclient.MultiThreadedHttpConnectionManager"/>
+                        </beans:constructor-arg>
+                    </beans:bean>
+                </beans:constructor-arg>
+                <beans:property name="processor">
+                    <beans:bean class="org.springframework.security.saml.processor.SAMLProcessorImpl">
+                        <beans:constructor-arg ref="soapBinding"/>
+                    </beans:bean>
+                </beans:property>
+            </beans:bean>
+        </beans:constructor-arg>
+    </beans:bean>
+
+    <beans:bean id="soapBinding" class="org.springframework.security.saml.processor.HTTPSOAP11Binding">
+        <beans:constructor-arg ref="parserPool"/>
+    </beans:bean>
+
+    <beans:bean id="paosBinding" class="org.springframework.security.saml.processor.HTTPPAOS11Binding">
+        <beans:constructor-arg ref="parserPool"/>
+    </beans:bean>
+
+    <!-- Initialization of OpenSAML library-->
+    <beans:bean class="org.springframework.security.saml.SAMLBootstrap"/>
+
+    <!-- Initialization of the velocity engine -->
+    <beans:bean id="velocityEngine" class="org.springframework.security.saml.util.VelocityFactory"
+                factory-method="getEngine"/>
+
+    <beans:bean id="parserPool" class="org.opensaml.xml.parse.StaticBasicParserPool" init-method="initialize"/>
+
+    <beans:bean id="parserPoolHolder" class="org.springframework.security.saml.parser.ParserPoolHolder"/>
+
 
 </beans:beans>

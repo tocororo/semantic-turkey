@@ -26,6 +26,10 @@
 		<bundle dependency="true">mvn:org.springframework.security/spring-security-cas/${spring-security.version}</bundle>
 		<bundle dependency="true">wrap:mvn:org.jasig.cas.client/cas-client-core/${cas.client.version}$Export-Package=*;version=&quot;${cas.client.version}&quot;</bundle>
 
+		<bundle dependency="true">wrap:mvn:org.apache.velocity/velocity-engine-core/2.0</bundle>
+		<bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-httpclient/3.1_7</bundle>
+		<bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.joda-time/2.3_1</bundle>
+
 		<!-- These bundles provide optional dependencies for spring-web, in order 
 			to support multipart resolver. It's important that these bundles are installed 
 			before spring-web, otherwise the latter must be refreshed to pick the optional 
@@ -69,8 +73,9 @@
 		<bundle dependency="true">wrap:mvn:org.json/json/20090211</bundle>
 
 		<bundle dependency="true">mvn:org.apache.commons/commons-lang3/${commons-lang3.version}</bundle>
-		<bundle dependency="true">mvn:commons-lang/commons-lang/2.6</bundle>
 
+		<bundle dependency="true">mvn:commons-lang/commons-lang/2.6</bundle>
+		
 		<!-- The following two bundles are required on Java >= 9 since javax.annotation is no longer exposed by default -->
 		<!--
 			<bundle dependency="true">mvn:javax.annotation/javax.annotation-api/${javax.annotations-api.version}</bundle>
@@ -120,12 +125,23 @@
 			override="false">
 			mvn:it.uniroma2.art.semanticturkey/st-builder/${project.version}/cfg/st
 		</configfile>
+
+		<configfile finalname="/etc/eu-login.properties"
+					override="false">
+			mvn:it.uniroma2.art.semanticturkey/st-builder/${project.version}/properties/eu-login
+		</configfile>
+
+		<configfile finalname="/etc/eu-login.xml"
+					override="false">
+			mvn:it.uniroma2.art.semanticturkey/st-builder/${project.version}/xml/eu-login
+		</configfile>
 	</feature>
 
 	<feature name="semantic_turkey" version="${project.version}">
 
 		<!-- First install all prerequisites -->
 		<feature>semantic_prereq</feature>
+
 
 		<!-- Finally install Semantic Turkey -->
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-font/${project.version}</bundle>
@@ -174,12 +190,10 @@
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-rdf-serializing-exporter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-spreadsheet-serializing-exporter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-zthes-serializing-exporter/${project.version}</bundle>
-
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-ontolex-lemon-rendering-engine/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-rdfs-rendering-engine/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-skos-rendering-engine/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-skosxl-rendering-engine/${project.version}</bundle>
-
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-predefined-repository-impl-configurer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-graphdb-search-strategy/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-regex-search-strategy/${project.version}</bundle>

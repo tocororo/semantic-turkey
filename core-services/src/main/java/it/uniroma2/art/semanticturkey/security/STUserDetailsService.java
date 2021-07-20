@@ -16,22 +16,24 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
  * (Referenced in WEB-INF/spring-security.xml)
  */
 public class STUserDetailsService implements UserDetailsService {
-	
-	//TODO this component seems to be initialized twice (PostCostruct is called twice). Why? this is declared just in spring-security.xml
+
+    //TODO this component seems to be initialized twice (PostCostruct is called twice). Why? this is declared just in spring-security.xml
 //	@PostConstruct
 //	public void postCostr() {
 //		System.out.println("@PostConstruct STUserDetailsService");
 //	}
-	
-	@Override
-	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		STUser user = null;
-		try {
-			return UsersManager.getUser(username);
-		} catch (UserException e) {
-			throw new UsernameNotFoundException("User with e-mail address '" + username + "' not found");
-		}
-	}
-	
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+
+        try {
+            STUser user = UsersManager.getUser(username);
+            user.setSamlUser(false);
+            return user;
+        } catch (UserException e) {
+            throw new UsernameNotFoundException("User with e-mail address '" + username + "' not found");
+        }
+    }
+
 }
 

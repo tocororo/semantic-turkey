@@ -18,6 +18,7 @@ date: dd/mm/yyyy
   * allowed administrator to activate a new registered user through a link sent via email
   * allowed administrator to enable remote provisioning of CODA components
   * in Sheet2RDF extended support for triples deletion
+  * implemented support for EU-Login
   * added Scottish Gaelic and Welsh to the system languages
   * turned OperationOnResourceDeniedException into a RuntimeException as it may be thrown from an interceptor
   * made the configuration of rendering engines more user friendly (i.e. renaming ${languages} to ${userLangs} and ${show} to ${labels})

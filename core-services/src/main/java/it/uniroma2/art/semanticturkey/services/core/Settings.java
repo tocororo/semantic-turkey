@@ -413,6 +413,7 @@ public class Settings extends STServiceAdapter {
         startupSettings.languages = defaultProjSettings.languages;
         startupSettings.showFlags = coreSysSettings.showFlags;
         startupSettings.emailVerification = coreSysSettings.emailVerification;
+        startupSettings.authService = coreSysSettings.authService;
         if (coreSysSettings.showvoc != null && coreSysSettings.showvoc.disableContributions != null) {
             startupSettings.disableContributions = coreSysSettings.showvoc.disableContributions;
         }
@@ -452,5 +453,8 @@ public class Settings extends STServiceAdapter {
 
         @STProperty(description = "")
         public Boolean disableContributions;
+
+        @STProperty(description = "")
+        public String authService;
     }
 }
