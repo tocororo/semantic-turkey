@@ -70,7 +70,7 @@ public class SkosDiffing extends STServiceAdapter {
 	private final String SERVER_HOST = "http://localhost";
 	private final String SERVER_PORT = "7576";
 
-	private final String SERVER_NAME_WITH_SLASH = "st-rsc/";
+	private final String SERVER_NAME_WITH_SLASH = "";
 	private final String BASE_PATH_WITH_SLASH = "";
 
 	private final String SPARQL_ENDPOINT_1 = "sparqlEndpoint1";

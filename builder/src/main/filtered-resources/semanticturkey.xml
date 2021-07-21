@@ -190,10 +190,12 @@
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-rdf-serializing-exporter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-spreadsheet-serializing-exporter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-zthes-serializing-exporter/${project.version}</bundle>
+
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-ontolex-lemon-rendering-engine/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-rdfs-rendering-engine/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-skos-rendering-engine/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-skosxl-rendering-engine/${project.version}</bundle>
+
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-predefined-repository-impl-configurer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-graphdb-search-strategy/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-regex-search-strategy/${project.version}</bundle>
