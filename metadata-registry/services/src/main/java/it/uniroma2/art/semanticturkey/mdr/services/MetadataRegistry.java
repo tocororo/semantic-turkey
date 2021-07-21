@@ -424,16 +424,17 @@ public class MetadataRegistry extends STServiceAdapter {
 	/**
 	 * Returns the datasets associated with the given projects, if any.
 	 * 
-	 * @param projects
+	 * @param datasets
+	 * @param allowSubset
 	 * @return
 	 */
 	@STServiceOperation
 	// @PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')") //project wide service, could be
 	// invoked without a ctx_project, so without capabililties
-	public Map<IRI, String> findProjectForDatasets(List<IRI> datasets) {
+	public Map<IRI, String> findProjectForDatasets(List<IRI> datasets, @Optional boolean allowSubset) {
 		Map<IRI, String> rv = new HashMap<>();
 		for (IRI dataset : datasets) {
-			Project p = metadataRegistryBackend.findProjectForDataset(dataset);
+			Project p = metadataRegistryBackend.findProjectForDataset(dataset, allowSubset);
 			if (p != null) {
 				rv.put(dataset, p.getName());
 			}
