@@ -385,16 +385,16 @@ public class DynamicSTProperties implements STProperties {
 		String currentLangTag = currentLocale.toString().toLowerCase();
 		String defaultLangTag = "en";
 
-		Stream<Literal> sortedDescriptions = description.stream().sorted(
-				Comparator.comparing((Literal l) -> l.getLanguage().orElse("").toLowerCase()).reversed());
+		List<Literal> sortedDescriptions = description.stream().sorted(
+				Comparator.comparing((Literal l) -> l.getLanguage().orElse("").toLowerCase()).reversed()).collect(Collectors.toList());
 
-		Optional<Literal> localizedDescription = sortedDescriptions
+		Optional<Literal> localizedDescription = sortedDescriptions.stream()
 				.filter(l -> currentLangTag.startsWith(l.getLanguage().orElse("").toLowerCase())).findFirst();
 		if (localizedDescription.isPresent()) {
 			return localizedDescription.get().stringValue();
 		}
 
-		Optional<Literal> defaultLangDescription = sortedDescriptions
+		Optional<Literal> defaultLangDescription = sortedDescriptions.stream()
 				.filter(l -> defaultLangTag.startsWith(l.getLanguage().orElse("").toLowerCase())).findFirst();
 		if (defaultLangDescription.isPresent()) {
 			return defaultLangDescription.get().stringValue();
@@ -416,16 +416,16 @@ public class DynamicSTProperties implements STProperties {
 		String currentLangTag = currentLocale.toString().toLowerCase();
 		String defaultLangTag = "en";
 
-		Stream<Literal> sortedDisplayNames = displayName.stream().sorted(
-				Comparator.comparing((Literal l) -> l.getLanguage().orElse("").toLowerCase()).reversed());
+		List<Literal> sortedDisplayNames = displayName.stream().sorted(
+				Comparator.comparing((Literal l) -> l.getLanguage().orElse("").toLowerCase()).reversed()).collect(Collectors.toList());
 
-		Optional<Literal> localizedDescription = sortedDisplayNames
+		Optional<Literal> localizedDescription = sortedDisplayNames.stream()
 				.filter(l -> currentLangTag.startsWith(l.getLanguage().orElse("").toLowerCase())).findFirst();
 		if (localizedDescription.isPresent()) {
 			return localizedDescription.get().stringValue();
 		}
 
-		Optional<Literal> defaultLangDescription = sortedDisplayNames
+		Optional<Literal> defaultLangDescription = sortedDisplayNames.stream()
 				.filter(l -> defaultLangTag.startsWith(l.getLanguage().orElse("").toLowerCase())).findFirst();
 		if (defaultLangDescription.isPresent()) {
 			return defaultLangDescription.get().stringValue();
