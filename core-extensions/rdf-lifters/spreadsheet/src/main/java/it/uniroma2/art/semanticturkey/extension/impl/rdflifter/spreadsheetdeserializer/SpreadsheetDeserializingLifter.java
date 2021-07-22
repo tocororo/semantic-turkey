@@ -445,7 +445,8 @@ public class SpreadsheetDeserializingLifter implements RDFLifter {
 	private IRI createIRI(String qnameOrIri){
 		// if the qnameOrIri starts with < then it is already an IRI
 		if(qnameOrIri.startsWith("<")) {
-			return SimpleValueFactory.getInstance().createIRI(qnameOrIri);
+			String iriString = qnameOrIri.substring(1, qnameOrIri.lastIndexOf(">"));
+			return SimpleValueFactory.getInstance().createIRI(iriString);
 		}
 		//the qnameOrIri is a quname, so extract the prefix and local name
 		String prefix = qnameOrIri.split(":")[0].trim();
