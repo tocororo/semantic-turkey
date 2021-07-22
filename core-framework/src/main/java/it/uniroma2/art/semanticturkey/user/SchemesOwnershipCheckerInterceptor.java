@@ -181,7 +181,7 @@ public class SchemesOwnershipCheckerInterceptor  implements MethodInterceptor {
 				if (!schemes.isEmpty()) {
 					//do the check of the ownership only if schemes is not empty (it means that the deleted resource belongs to a scheme or it's a scheme)
 					if (!ProjectGroupBindingsManager.hasUserOwnershipOfSchemes(UsersManager.getLoggedUser(), stServiceContext.getProject(), schemes, false)) {
-						throw OperationOnResourceDeniedException.resourceDeletionForbidden(modifiedArg, group.getShortName());
+						throw OperationOnResourceDeniedException.resourceDeletionForbidden(deletedArg, group.getShortName());
 					}
 				}
 			}
