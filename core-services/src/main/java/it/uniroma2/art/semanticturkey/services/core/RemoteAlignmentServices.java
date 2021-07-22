@@ -613,8 +613,8 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
         /// End of integrity checks
 
-        if (scenarioDefinition.getPairings().isEmpty()) {
-            throw new AlignmentServiceException("No pairing of lexicalization set");
+        if (scenarioDefinition.getPairings().isEmpty() && scenarioDefinition.getAlignmentChains().isEmpty()) {
+            throw new AlignmentServiceException("No pairing of lexicalization set nor any alignment chain");
         }
 
         Task task = clientTemplate.doPOST(new TypeReference<Task>() {
