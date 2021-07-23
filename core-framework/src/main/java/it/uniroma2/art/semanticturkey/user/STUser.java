@@ -41,7 +41,7 @@ public class STUser implements UserDetails {
     private Map<IRI, String> customProps;
     private String verificationToken;
     private String activationToken;
-    private boolean samlUser;
+    private SamlLevel samlLevel;
 
     public static String USER_DATE_FORMAT = "yyyy-MM-dd";
 
@@ -237,11 +237,15 @@ public class STUser implements UserDetails {
     }
 
     public boolean isSamlUser() {
-        return samlUser;
+        return samlLevel != null;
     }
 
-    public void setSamlUser(boolean samlUser) {
-        this.samlUser = samlUser;
+    public SamlLevel getSamlLevel() {
+        return samlLevel;
+    }
+
+    public void setSamlLevel(SamlLevel level) {
+        this.samlLevel = level;
     }
 
     public ObjectNode getAsJsonObject() {
@@ -264,8 +268,9 @@ public class STUser implements UserDetails {
         userJson.set("phone", jsonFactory.textNode(phone));
         userJson.set("status", jsonFactory.textNode(status.name()));
         userJson.set("admin", jsonFactory.booleanNode(isAdmin()));
-        userJson.set("samlUser", jsonFactory.booleanNode(samlUser));
-
+        if (isSamlUser()) {
+            userJson.set("samlLevel", jsonFactory.textNode(samlLevel.name()));
+        }
 
         ArrayNode langsArrayNode = jsonFactory.arrayNode();
         for (String l : languageProficiencies) {
@@ -324,6 +329,16 @@ public class STUser implements UserDetails {
 
     public static IRI generateUserIri(String email) {
         return SimpleValueFactory.getInstance().createIRI(UserVocabulary.USERSBASEURI, email);
+    }
+
+    /**
+     * This enum is intended just for informs the client about the situation of the new
+     * registering user through SAML, namely it tells if there are already registered user or not.
+     * In the latter case the user will become an administrator
+     */
+    public enum SamlLevel {
+        LEV_1, //first user
+        LEV_2  //other user already registered
     }
 
 }

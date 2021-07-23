@@ -28,7 +28,7 @@ public class STUserDetailsService implements UserDetailsService {
 
         try {
             STUser user = UsersManager.getUser(username);
-            user.setSamlUser(false);
+            user.setSamlLevel(null);
             return user;
         } catch (UserException e) {
             throw new UsernameNotFoundException("User with e-mail address '" + username + "' not found");

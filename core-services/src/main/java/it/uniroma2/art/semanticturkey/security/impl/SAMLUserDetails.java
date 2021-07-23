@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
@@ -40,7 +41,8 @@ public class SAMLUserDetails implements SAMLUserDetailsService {
             String firstName = cred.getAttributeAsString("firstName");
             String lastName = cred.getAttributeAsString("lastName");
             loggedUser = new STUser(userEmail, null, firstName, lastName);
-            loggedUser.setSamlUser(true);
+            STUser.SamlLevel samlLevel = UsersManager.listUsers().isEmpty() ? STUser.SamlLevel.LEV_1 : STUser.SamlLevel.LEV_2;
+            loggedUser.setSamlLevel(samlLevel);
             Authentication auth = new UsernamePasswordAuthenticationToken(loggedUser, loggedUser.getPassword(), null);
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
