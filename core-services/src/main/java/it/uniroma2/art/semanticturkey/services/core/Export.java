@@ -286,25 +286,42 @@ public class Export extends STServiceAdapter {
 				source = new RepositorySource(workingRepositoryConnection, graphs);
 			}
 
-			if (deployerSpec != null) {
-				Deployer deployer = exptManager.instantiateExtension(Deployer.class, deployerSpec);
-				deployer.deploy(source);
-				String responseString = ServletUtilities.getService()
-						.createReplyResponse(stServiceContext.getRequest().getServiceMethod(),
-								RepliesStatus.ok, SerializationType.json)
-						.getResponseContent();
-				byte[] responseBytes = responseString.getBytes(StandardCharsets.UTF_8);
-				oRes.setHeader("Content-Type", "application/json;charset=UTF-8");
-				oRes.setHeader("Content-Length", Integer.toString(responseBytes.length));
-				try (OutputStream os = oRes.getOutputStream()) {
-					os.write(responseBytes, 0, responseBytes.length);
-					os.flush();
-				}
-			} else {
-				// Dumps the working repository (i.e. the filtered repository)
-				write2requestResponse(oRes, formattedResource); // if there is no deployer, then data are
-																// always reformatted
+			downloadOrDeploy(exptManager, stServiceContext, oRes, deployerSpec, source);
+		}
+	}
+
+	/**
+	 * Download or deploy the data in the provided <em>source</em>. The type of source must match the kind of deployer.
+	 * If there is no deployer, the the source must always be a {@link FormattedResourceSource}.
+	 * @param exptManager
+	 * @param stServiceContext
+	 * @param oRes
+	 * @param deployerSpec
+	 * @param source
+	 * @throws WrongPropertiesException
+	 * @throws STPropertyAccessException
+	 * @throws InvalidConfigurationException
+	 * @throws IOException
+	 */
+	public static void downloadOrDeploy(ExtensionPointManager exptManager, STServiceContext stServiceContext, HttpServletResponse oRes, PluginSpecification deployerSpec, Source source) throws WrongPropertiesException, STPropertyAccessException, InvalidConfigurationException, IOException {
+		if (deployerSpec != null) {
+			Deployer deployer = exptManager.instantiateExtension(Deployer.class, deployerSpec);
+			deployer.deploy(source);
+			String responseString = ServletUtilities.getService()
+					.createReplyResponse(stServiceContext.getRequest().getServiceMethod(),
+							RepliesStatus.ok, SerializationType.json)
+					.getResponseContent();
+			byte[] responseBytes = responseString.getBytes(StandardCharsets.UTF_8);
+			oRes.setHeader("Content-Type", "application/json;charset=UTF-8");
+			oRes.setHeader("Content-Length", Integer.toString(responseBytes.length));
+			try (OutputStream os = oRes.getOutputStream()) {
+				os.write(responseBytes, 0, responseBytes.length);
+				os.flush();
 			}
+		} else {
+			// Dumps the working repository (i.e. the filtered repository)
+			write2requestResponse(oRes, ((FormattedResourceSource)source).getSourceFormattedResource()); // if there is no deployer, then data are
+															// always reformatted
 		}
 	}
 

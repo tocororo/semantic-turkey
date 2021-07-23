@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter;
 
+import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,6 +14,8 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 /**
  * This class represents the output of a {@link ReformattingExporter}.
@@ -22,6 +25,7 @@ import org.apache.commons.io.FileUtils;
 public class ClosableFormattedResource implements Closeable {
 
 	private File backingFile;
+	private byte[] data;
 	private String defaultFileExtension;
 	private String mimeType;
 	private Charset charset;
@@ -30,6 +34,15 @@ public class ClosableFormattedResource implements Closeable {
 	public ClosableFormattedResource(File backingFile, String defaultFileExtension, String mimeType,
 			Charset charset, String originalFilename) {
 		this.backingFile = backingFile;
+		this.defaultFileExtension = defaultFileExtension;
+		this.mimeType = mimeType;
+		this.charset = charset;
+		this.originalFilename = originalFilename;
+	}
+
+	public ClosableFormattedResource(byte[] data, String defaultFileExtension, String mimeType,
+									 Charset charset, String originalFilename) {
+		this.data = data;
 		this.defaultFileExtension = defaultFileExtension;
 		this.mimeType = mimeType;
 		this.charset = charset;
@@ -57,11 +70,17 @@ public class ClosableFormattedResource implements Closeable {
 	}
 
 	public void writeTo(OutputStream outputStream) throws IOException {
-		FileUtils.copyFile(backingFile, outputStream);
+		if (backingFile != null) {
+			FileUtils.copyFile(backingFile, outputStream);
+		} else {
+			try(ByteArrayInputStream is = new ByteArrayInputStream(data)) {
+				IOUtils.copy(is, outputStream);
+			}
+		}
 	}
 
 	public InputStream getInputStream() throws IOException {
-		return new FileInputStream(backingFile);
+		return backingFile != null ? new FileInputStream(backingFile) : new ByteArrayInputStream(data);
 	}
 
 	@Override

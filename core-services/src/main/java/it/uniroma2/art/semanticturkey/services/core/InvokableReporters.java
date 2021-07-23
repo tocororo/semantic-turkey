@@ -9,7 +9,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.net.URLConnection;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -25,8 +28,13 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
+import javax.swing.text.AbstractDocument;
 import javax.validation.constraints.Null;
 
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.extension.extpts.deployer.FormattedResourceSource;
+import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ClosableFormattedResource;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.entity.ContentType;
 import org.jsoup.Jsoup;
@@ -73,9 +81,9 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
 @STService
 public class InvokableReporters extends STServiceAdapter {
 
-	private static final String TEXT_HTML = "text/html";
+	private static final ContentType TEXT_HTML = ContentType.create("text/html");
 
-	private static final String APPLICATION_PDF = "application/pdf";
+	private static final ContentType APPLICATION_PDF = ContentType.create("application/pdf");
 
 	private final String FONT_FILE_NAME = "arial-unicode-ms.ttf";
 
@@ -465,7 +473,7 @@ public class InvokableReporters extends STServiceAdapter {
 						throw (Error) e;
 					} else {
 						throw new InvokableReporterException(
-								"An exception was raied on execution of sections[" + sectionNumber + "]: "
+								"An exception was raised on execution of sections[" + sectionNumber + "]: "
 										+ e.getClass().getSimpleName() + ":" + e.getMessage(),
 								e);
 					}
@@ -526,20 +534,21 @@ public class InvokableReporters extends STServiceAdapter {
 	 */
 	@PreAuthorize("true") // actual authorization is done when invoking the underlying custom services
 	@STServiceOperation
-	public void compileAndDownloadReport(HttpServletResponse response, String reporterReference,
-			@it.uniroma2.art.semanticturkey.services.annotations.Optional String targetMimeType)
+	public void compileAndExportReport(HttpServletResponse response, String reporterReference,
+									   @it.uniroma2.art.semanticturkey.services.annotations.Optional String targetMimeType,
+									   @it.uniroma2.art.semanticturkey.services.annotations.Optional PluginSpecification deployerSpec)
 			throws NoSuchConfigurationManager, IOException, ConfigurationNotFoundException,
 			WrongPropertiesException, STPropertyAccessException, IllegalArgumentException,
-			InvokableReporterException {
+			InvokableReporterException, InvalidConfigurationException {
 		Report report = compileReport(reporterReference, true, true);
 		String reportMimeType = report.mimeType;
 		String rendering = report.rendering != null ? report.rendering : "";
 
 		byte[] bytes;
-		String contentType;
+		ContentType contentType;
 		if (targetMimeType != null) {
-			if (Objects.equals(targetMimeType, APPLICATION_PDF)) {
-				if (Objects.equals(reportMimeType, TEXT_HTML)) {
+			if (Objects.equals(targetMimeType, APPLICATION_PDF.getMimeType())) {
+				if (Objects.equals(reportMimeType, TEXT_HTML.getMimeType())) {
 					Document jsoupDocument = Jsoup.parse(rendering);
 					jsoupDocument.head().prepend(
 							"<style type=\"text/css\">body { font-family:\"arial unicode ms\"; }</style>");
@@ -571,15 +580,17 @@ public class InvokableReporters extends STServiceAdapter {
 			contentType = APPLICATION_PDF;
 		} else {
 			bytes = rendering.getBytes(StandardCharsets.UTF_8);
-			contentType = ContentType.getByMimeType(reportMimeType).withCharset(StandardCharsets.UTF_8)
-					.toString();
+			contentType = ContentType.getByMimeType(reportMimeType).withCharset(StandardCharsets.UTF_8);
 		}
 
-		response.setContentType(contentType);
-		response.setContentLength(bytes.length);
+		String defaultFileExtension = contentType.equals(TEXT_HTML) ? "html" : contentType.equals(APPLICATION_PDF) ? "pdf" : "dat";
+		String mimeType = contentType.getMimeType();
+		Charset charset = contentType.getCharset();
+		String originalFilename = "report-" + Instant.now() + defaultFileExtension;
 
-		try (OutputStream os = response.getOutputStream()) {
-			IOUtils.write(bytes, os);
+		try (ClosableFormattedResource res = new ClosableFormattedResource(bytes, defaultFileExtension, mimeType, charset, originalFilename)){
+			FormattedResourceSource source = new FormattedResourceSource(res);
+			Export.downloadOrDeploy(exptManager, stServiceContext, response, deployerSpec, source);
 		}
 	}
 
