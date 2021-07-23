@@ -12,6 +12,8 @@ public class ServiceInvocation implements STProperties {
 		public static final String keyBase = "it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation";
 
 		public static final String shortName = keyBase + ".shortName";
+		public static final String extensionPath$description = keyBase + ".extensionPath.description";
+		public static final String extensionPath$displayName = keyBase + ".extensionPath.displayName";
 		public static final String service$description = keyBase + ".service.description";
 		public static final String service$displayName = keyBase + ".service.displayName";
 		public static final String operation$description = keyBase + ".operation.description";
@@ -30,6 +32,9 @@ public class ServiceInvocation implements STProperties {
 	public String getShortName() {
 		return MessageKeys.shortName;
 	}
+
+	@STProperty(displayName = "{" + MessageKeys.extensionPath$displayName + "}", description = "{" + MessageKeys.extensionPath$description + "}")
+	public String extensionPath;
 
 	@STProperty(displayName = "{" + MessageKeys.service$displayName + "}", description = "{"
 			+ MessageKeys.service$description + "}")

@@ -35,14 +35,23 @@ import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.FormattedResourceSource;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ClosableFormattedResource;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
+import it.uniroma2.art.semanticturkey.services.tracker.OperationDescription;
+import it.uniroma2.art.semanticturkey.services.tracker.STServiceTracker;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.reflect.TypeUtils;
 import org.apache.http.entity.ContentType;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.util.Values;
 import org.jsoup.Jsoup;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
+import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.http.HttpEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -77,6 +86,9 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ValueConstants;
+import org.springframework.web.method.HandlerMethod;
 
 @STService
 public class InvokableReporters extends STServiceAdapter {
@@ -92,10 +104,16 @@ public class InvokableReporters extends STServiceAdapter {
 	@Autowired
 	private CustomServiceHandlerMapping customServiceHandlerMapping;
 
+	@Autowired
+	private STServiceTracker stServiceTracker;
+
 	private Mustache.Compiler mustacheCompiler;
+
+	private	LocalVariableTableParameterNameDiscoverer parameterNameDiscoverer;
 
 	public InvokableReporters() {
 		mustacheCompiler = Mustache.compiler().emptyStringIsFalse(true).zeroIsFalse(true);
+		parameterNameDiscoverer = new LocalVariableTableParameterNameDiscoverer();
 	}
 
 	protected InvokableReporterStore getInvokableReporterStore() throws NoSuchConfigurationManager {
@@ -379,6 +397,7 @@ public class InvokableReporters extends STServiceAdapter {
 			for (ServiceInvocation serviceInvocation : reporter.sections) {
 				sectionNumber++;
 				Section section = new Section();
+				section.extensionPath = Optional.ofNullable(serviceInvocation.extensionPath).orElse(CustomServiceHandlerMapping.CUSTOM_SERVICES_EXTENSION_PATH);
 				section.service = serviceInvocation.service;
 				section.operation = serviceInvocation.operation;
 				section.arguments = serviceInvocation.arguments;
@@ -390,15 +409,26 @@ public class InvokableReporters extends STServiceAdapter {
 				}
 				report.sections.add(section);
 
-				Object handler = customServiceHandlerMapping.getHandler(serviceInvocation.service);
+				Object handler;
+				Optional<Method> operation;
+				if (Objects.equals(section.extensionPath, CustomServiceHandlerMapping.CUSTOM_SERVICES_EXTENSION_PATH)) {
+					handler = customServiceHandlerMapping.getHandler(serviceInvocation.service);
+					if (handler == null) {
+						throw new IllegalArgumentException("Service not found: " + serviceInvocation.service);
+					}
+					operation = Arrays.stream(handler.getClass().getMethods())
+							.filter(m -> m.getName().equals(serviceInvocation.operation)).findAny();
 
-				if (handler == null) {
-					throw new IllegalArgumentException("Service not found: " + serviceInvocation.service);
+				} else {
+					IRI operationIRI = Values.iri("http://semanticturkey.uniroma2.it/services/" + section.extensionPath + "/"
+							+ section.service + "/" + section.operation);
+					OperationDescription operationDescription = stServiceTracker.getOperationDescription(operationIRI).orElseThrow(() -> new IllegalArgumentException("Operation not found: " + operationIRI));
+					HandlerMethod springHandler = (HandlerMethod) operationDescription.getSpringEntry().getValue();
+					handler = springHandler.createWithResolvedBean().getBean();
+					operation = Optional.of(springHandler.getMethod());
 				}
-				Optional<Method> operation = Arrays.stream(handler.getClass().getMethods())
-						.filter(m -> m.getName().equals(serviceInvocation.operation)).findAny();
 
-				Object result = null;
+				Object response = null;
 
 				try {
 
@@ -408,9 +438,7 @@ public class InvokableReporters extends STServiceAdapter {
 							Map<String, String> actualParameters = Optional
 									.ofNullable(serviceInvocation.arguments).orElse(Collections.emptyMap());
 							Set<String> actualParameterNameSet = actualParameters.keySet();
-
-							String[] parameterNames = Arrays.stream(m.getParameters()).map(Parameter::getName)
-									.collect(Collectors.toList()).toArray(new String[0]);
+							String[] parameterNames = parameterNameDiscoverer.getParameterNames(m);
 
 							Set<String> parameterNameSet = new HashSet<>();
 							Arrays.stream(parameterNames).forEach(parameterNameSet::add);
@@ -426,37 +454,60 @@ public class InvokableReporters extends STServiceAdapter {
 												+ undefinedArgs.stream().collect(Collectors.joining(",")));
 							}
 
-							SetView<String> missingArgs = Sets.difference(parameterNameSet,
-									actualParameterNameSet);
-							if (!missingArgs.isEmpty()) {
-								throw new IllegalArgumentException("Missing a value for parameters: "
-										+ undefinedArgs.stream().collect(Collectors.joining(",")));
-							}
+//							SetView<String> missingArgs = Sets.difference(parameterNameSet,
+//									actualParameterNameSet);
+//							if (!missingArgs.isEmpty()) {
+//								throw new IllegalArgumentException("Missing a value for parameters: "
+//										+ undefinedArgs.stream().collect(Collectors.joining(",")));
+//							}
 
 							for (int i = 0; i < formalParameters.length; i++) {
 								String paramName = parameterNames[i];
 								Type formalParam = formalParameters[i];
+								String actualParam;
 								if (!actualParameters.containsKey(paramName)) {
-									throw new IllegalArgumentException(
-											"Missing argument for parameter '" + paramName + "'");
-								}
-								String actualParam = actualParameters.get(paramName);
+									RequestParam requestParamAnnot = m.getParameters()[i].getAnnotation(RequestParam.class);
 
-								Object convertedParam = argumentObjectMapper.readValue(
+									if (requestParamAnnot.required()) {
+										throw new IllegalArgumentException(
+												"Missing argument for parameter '" + paramName + "'");
+									} else {
+										if (!Objects.equals(requestParamAnnot.defaultValue(), ValueConstants.DEFAULT_NONE)) {
+											actualParam = requestParamAnnot.defaultValue();
+										} else {
+											if (TypeUtils.isAssignable(formalParam, boolean.class) || TypeUtils.isAssignable(formalParam, Boolean.class)) {
+												actualParam = "false";
+											} else if (TypeUtils.isAssignable(formalParam, Number.class)
+													|| TypeUtils.isAssignable(formalParam, byte.class)
+													|| TypeUtils.isAssignable(formalParam, short.class)
+													|| TypeUtils.isAssignable(formalParam, int.class)
+													|| TypeUtils.isAssignable(formalParam, long.class)
+													|| TypeUtils.isAssignable(formalParam, float.class)
+													|| TypeUtils.isAssignable(formalParam, double.class)
+											) {
+												actualParam = "0";
+											} else {
+												actualParam = null;
+											}
+										}
+									}
+								} else {
+									actualParam = actualParameters.get(paramName);
+								}
+								Object convertedParam = actualParam == null ? null : argumentObjectMapper.readValue(
 										new StringReader(actualParam),
 										argumentObjectMapper.constructType(formalParam));
-								convertedArgs[i++] = convertedParam;
-
+								convertedArgs[i] = convertedParam;
 							}
 
 							try {
-								result = m.invoke(handler, convertedArgs);
+								response = m.invoke(handler, convertedArgs);
 							} catch (InvocationTargetException e) {
 								throw e.getCause();
 							}
 						} else {
 							try {
-								result = m.invoke(handler);
+								response = m.invoke(handler);
 							} catch (InvocationTargetException e) {
 								throw e.getCause();
 
@@ -467,7 +518,11 @@ public class InvokableReporters extends STServiceAdapter {
 						throw new IllegalArgumentException("Operation not found: " + operation);
 					}
 
-					section.result = ((Response<?>) result).getResult();
+					// unwrap HttpEntities
+					if (response instanceof HttpEntity) {
+						response = ((HttpEntity<?>) response).getBody();
+					}
+					section.result = ((Response<?>) response).getResult();
 				} catch (Throwable e) {
 					if (e instanceof Error) {
 						throw (Error) e;
@@ -608,6 +663,7 @@ public class InvokableReporters extends STServiceAdapter {
 	}
 
 	public static class Section {
+		public String extensionPath;
 		public String service;
 		public String operation;
 		@Nullable

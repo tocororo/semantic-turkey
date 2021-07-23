@@ -108,7 +108,8 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 
 	private static final Logger logger = LoggerFactory.getLogger(CustomServiceHandlerMapping.class);
 
-	public static final String CUSTOM_SERVICES_URL_PREFIX = "it.uniroma2.art.semanticturkey/st-custom-services/";
+	public static final String CUSTOM_SERVICES_EXTENSION_PATH = "it.uniroma2.art.semanticturkey/st-custom-services";
+	public static final String CUSTOM_SERVICES_URL_PREFIX = CUSTOM_SERVICES_EXTENSION_PATH + "/";
 
 	@Autowired
 	private ExtensionPointManager exptManager;
