@@ -70,8 +70,9 @@ public class SkosDiffing extends STServiceAdapter {
 	private final String SERVER_HOST = "http://localhost";
 	private final String SERVER_PORT = "7576";
 
-	private final String SERVER_NAME_WITH_SLASH = "";
+	private final String SERVER_NAME_WITH_SLASH = "st-rsc/";
 	private final String BASE_PATH_WITH_SLASH = "";
+	private final String SERVICE_NAME_WITH_SLASH = "diff/";
 
 	private final String SPARQL_ENDPOINT_1 = "sparqlEndpoint1";
 	private final String SPARQL_ENDPOINT_2 = "sparqlEndpoint2";
@@ -132,7 +133,7 @@ public class SkosDiffing extends STServiceAdapter {
 
 
 		//prepare the HTTP POST
-		String url = SERVER_HOST +":"+ SERVER_PORT +"/"+ SERVER_NAME_WITH_SLASH + BASE_PATH_WITH_SLASH +"diff/executeDiffTask";
+		String url = SERVER_HOST +":"+ SERVER_PORT +"/"+ SERVER_NAME_WITH_SLASH + BASE_PATH_WITH_SLASH +SERVICE_NAME_WITH_SLASH+"executeDiffTask";
 		HttpPost httpPost = new HttpPost(url);
 		JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
 		ObjectNode objectNode = jsonFactory.objectNode();
@@ -190,7 +191,7 @@ public class SkosDiffing extends STServiceAdapter {
 		List<DiffTaskInfo> tasks = new ArrayList<>();
 
 		String url;
-		url = SERVER_HOST +":"+ SERVER_PORT +"/"+ SERVER_NAME_WITH_SLASH + BASE_PATH_WITH_SLASH +"diff/tasksInfo";
+		url = SERVER_HOST +":"+ SERVER_PORT +"/"+ SERVER_NAME_WITH_SLASH + BASE_PATH_WITH_SLASH + SERVICE_NAME_WITH_SLASH+"tasksInfo";
 		if(projectName!=null && !projectName.isEmpty()){
 			url += "?projectName="+projectName;
 		}
@@ -215,7 +216,7 @@ public class SkosDiffing extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.POST)
 	public void deleteTask(String taskId) throws IOException {
-		String url = SERVER_HOST +":"+ SERVER_PORT +"/"+ SERVER_NAME_WITH_SLASH + BASE_PATH_WITH_SLASH +"diff/"+taskId;
+		String url = SERVER_HOST +":"+ SERVER_PORT +"/"+ SERVER_NAME_WITH_SLASH + BASE_PATH_WITH_SLASH +SERVICE_NAME_WITH_SLASH+taskId;
 		HttpDelete httpDelete = new HttpDelete(url);
 		try (CloseableHttpClient httpClient = HttpClients.createDefault();
 			 CloseableHttpResponse response = httpClient.execute(httpDelete)) {
@@ -224,7 +225,7 @@ public class SkosDiffing extends STServiceAdapter {
 
 	@STServiceOperation(method = RequestMethod.GET)
 	public void getTaskResult(HttpServletResponse response, String taskId, ResultType resultType) throws IOException, ParserConfigurationException, TransformerException {
-		String url = SERVER_HOST +":"+ SERVER_PORT +"/"+ SERVER_NAME_WITH_SLASH + BASE_PATH_WITH_SLASH +"diff/"+taskId;
+		String url = SERVER_HOST +":"+ SERVER_PORT +"/"+ SERVER_NAME_WITH_SLASH + BASE_PATH_WITH_SLASH +SERVICE_NAME_WITH_SLASH+taskId;
 
 
 		HttpGet httpGet = new HttpGet(url);
