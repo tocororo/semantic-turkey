@@ -1,6 +1,8 @@
 version 10.0
 date: dd/mm/yyyy
-  * rename the service compileAndDownloadReport to compileAndExportReport, while allowing to indicate an optional deployer
+  * allowed ordinary services in custom reports
+  * implemented a content storage service
+  * renamed the service compileAndDownloadReport to compileAndExportReport, while allowing to indicate an optional deployer
   * added time machine
   * added undo management
   * added the possibility in the advancedSearch to not pass the predicate in predicate-object where the object can be text-searched

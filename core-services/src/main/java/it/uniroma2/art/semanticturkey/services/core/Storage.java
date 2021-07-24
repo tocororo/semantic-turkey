@@ -14,6 +14,7 @@ import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
@@ -28,10 +29,12 @@ import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,41 +54,51 @@ public class Storage extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-	public List<DirectoryEntryInfo> list(String dir) {
+	@PreAuthorize("@auth.isAdmin()")
+	public Collection<DirectoryEntryInfo> list(String dir) {
 		Reference ref = parseReference(dir);
 		return StorageManager.list(ref);
 	}
-
 
 	/**
 	 * Creates a new directory
 	 * @param dir a relative reference to the directory (see {@link Reference#getRelativeReference()})
 	 * @return
 	 */
-	@STServiceOperation
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
 	public void createDirectory(String dir) {
-		throw new NotImplementedException();
+		Reference ref = parseReference(dir);
+		StorageManager.createDirectory(ref);
 	}
 
 	/**
 	 * Deletes a directory
 	 * @param dir a relative reference to the directory (see {@link Reference#getRelativeReference()})
 	 * @return
+	 * @throws IOException
 	 */
-	@STServiceOperation
-	public void deleteDirectory(String dir) {
-		throw new NotImplementedException();
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void deleteDirectory(String dir) throws IOException {
+		Reference ref = parseReference(dir);
+		StorageManager.deleteDirectory(ref);
 	}
 
 	/**
-	 * Creates a file
+	 * Creates a file. Fails if the file already exists, unless <code>overwrite</code> is <code>true</code>
 	 * @param data the content of the file
 	 * @param path a relative reference to the file (see {@link Reference#getRelativeReference()})
+	 * @param overwrite
 	 * @return
 	 */
-	@STServiceOperation
-	public void createFile(MultipartFile data, String path) {
-		throw new NotImplementedException();
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void createFile(MultipartFile data, String path, @Optional  boolean overwrite) throws IOException {
+		Reference ref = parseReference(path);
+		try (InputStream is = data.getInputStream()) {
+			StorageManager.createFile(is, ref, overwrite);
+		}
 	}
 
 	/**
@@ -93,9 +106,11 @@ public class Storage extends STServiceAdapter {
 	 * @param path a relative reference to the file (see {@link Reference#getRelativeReference()})
 	 * @return
 	 */
-	@STServiceOperation
-	public void deleteFile(MultipartFile data, String path) {
-		throw new NotImplementedException();
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void deleteFile(String path) throws IOException {
+		Reference ref = parseReference(path);
+		StorageManager.deleteFile(ref);
 	}
 
 	/**
@@ -105,8 +120,10 @@ public class Storage extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-	public void getFile(HttpServletResponse oRes, String path) {
-		throw new NotImplementedException();
+	@PreAuthorize("@auth.isAdmin()")
+	public void getFile(HttpServletResponse oRes, String path) throws IOException {
+		Reference ref = parseReference(path);
+		StorageManager.getFileContent(oRes.getOutputStream(), ref, oRes::setContentLength);
 	}
 
 }
