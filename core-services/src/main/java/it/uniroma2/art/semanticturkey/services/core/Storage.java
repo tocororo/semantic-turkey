@@ -50,7 +50,7 @@ public class Storage extends STServiceAdapter {
 
 	/**
 	 * Lists the entries in a given directory
-	 * @param dir a relative reference to the directory (see {@link Reference#getRelativeReference()})
+	 * @param dir a relative reference to the directory (e.g. sys:/a/b/c.txt)
 	 * @return
 	 */
 	@STServiceOperation
@@ -62,7 +62,7 @@ public class Storage extends STServiceAdapter {
 
 	/**
 	 * Creates a new directory
-	 * @param dir a relative reference to the directory (see {@link Reference#getRelativeReference()})
+	 * @param dir a relative reference to the directory (e.g. sys:/a/b/c.txt)
 	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -74,7 +74,7 @@ public class Storage extends STServiceAdapter {
 
 	/**
 	 * Deletes a directory
-	 * @param dir a relative reference to the directory (see {@link Reference#getRelativeReference()})
+	 * @param dir a relative reference to the directory (e.g. sys:/a/b/c.txt)
 	 * @return
 	 * @throws IOException
 	 */
@@ -88,7 +88,7 @@ public class Storage extends STServiceAdapter {
 	/**
 	 * Creates a file. Fails if the file already exists, unless <code>overwrite</code> is <code>true</code>
 	 * @param data the content of the file
-	 * @param path a relative reference to the file (see {@link Reference#getRelativeReference()})
+	 * @param path a relative reference to the file (e.g. sys:/a/b/c.txt)
 	 * @param overwrite
 	 * @return
 	 */
@@ -103,7 +103,7 @@ public class Storage extends STServiceAdapter {
 
 	/**
 	 * Deletes a file
-	 * @param path a relative reference to the file (see {@link Reference#getRelativeReference()})
+	 * @param path a relative reference to the file (e.g. sys:/a/b/c.txt)
 	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -116,7 +116,7 @@ public class Storage extends STServiceAdapter {
 	/**
 	 * Downloads a file
 	 * @param oRes the response object to which the file will be written to
-	 * @param path a relative reference to the file (see {@link Reference#getRelativeReference()})
+	 * @param path a relative reference to the file (e.g. sys:/a/b/c.txt)
 	 * @return
 	 */
 	@STServiceOperation
