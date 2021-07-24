@@ -1,5 +1,8 @@
 package it.uniroma2.art.semanticturkey.config.customservice;
 
+import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,6 +33,17 @@ public class Type {
 
 	public List<Type> getTypeArguments() {
 		return typeArguments;
+	}
+
+	public static Type fromJavaType(java.lang.reflect.Type javaType) {
+		String typeName = javaType.getTypeName();
+		List<Type> typeArguments;
+		if (javaType instanceof ParameterizedType) {
+			typeArguments = Arrays.stream(((ParameterizedType) javaType).getActualTypeArguments()).map(Type::fromJavaType).collect(Collectors.toList());
+		} else {
+			typeArguments = new ArrayList<>();
+		}
+		return new Type(javaType.getTypeName(), typeArguments);
 	}
 
 	@Override

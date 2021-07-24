@@ -340,7 +340,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 	 * @param parType
 	 * @return
 	 */
-	private String computeReducedTypeName(Type parType) {
+	public static String computeReducedTypeName(Type parType) {
 		String typeName = parType.getTypeName();
 		switch (typeName) {
 		case "java.lang.Boolean":

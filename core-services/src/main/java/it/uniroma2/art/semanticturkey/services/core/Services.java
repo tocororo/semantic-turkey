@@ -3,11 +3,16 @@ package it.uniroma2.art.semanticturkey.services.core;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
+import it.uniroma2.art.semanticturkey.config.customservice.CustomService;
+import it.uniroma2.art.semanticturkey.config.customservice.Operation;
+import it.uniroma2.art.semanticturkey.config.customservice.Type;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.dynamic.DynamicSTProperties;
 import it.uniroma2.art.semanticturkey.services.tracker.OperationDescription;
@@ -91,13 +96,48 @@ public class Services extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
+	public Operation getServiceOperationAsCustomService(IRI operationIRI) {
+		OperationDescription operationDescription = stServiceTracker.getOperationDescription(operationIRI).orElseThrow(() -> new IllegalArgumentException("Operation not found: " + RenderUtils.toSPARQL(operationIRI)));
+		Method m = operationDescription.getSpringEntry().getValue().getMethod();
+		LocalVariableTableParameterNameDiscoverer parameterNameDiscoverer = new LocalVariableTableParameterNameDiscoverer();
+		String[] parameterNames = parameterNameDiscoverer.getParameterNames(m);
+		AnnotatedType[] parameterTypes = m.getAnnotatedParameterTypes();
+		Parameter[] parameters = m.getParameters();
+
+		Operation invocationForm = new Operation();
+		invocationForm.name = m.getName();
+
+		List<it.uniroma2.art.semanticturkey.config.customservice.Parameter> parameterDefs = new ArrayList<>();
+
+		for (int i = 0 ; i < parameterNames.length ; i++) {
+			it.uniroma2.art.semanticturkey.config.customservice.Parameter param = new it.uniroma2.art.semanticturkey.config.customservice.Parameter();
+			param.name = parameterNames[i];
+			param.required = Optional.of(parameters[i].getAnnotation(RequestParam.class))
+					.map(RequestParam::required)
+					.orElse(false);
+			param.type = Type.fromJavaType(parameterTypes[i].getType());
+
+			parameterDefs.add(param);
+		}
+
+		invocationForm.parameters = parameterDefs;
+
+		return invocationForm;
+	}
+	/**
+	 * Returns the description of an operation. The <em>operationIRI</em> is structured as follows: <code>http://semanticturkey.uniroma2.it/services/{extensionPath}/{serviceClass}/{operation}</code>
+	 *
+	 * @param operationIRI
+	 * @return
+	 */
+	@STServiceOperation
 	public STProperties getServiceInvocationForm(IRI operationIRI) {
 		OperationDescription operationDescription = stServiceTracker.getOperationDescription(operationIRI).orElseThrow(() -> new IllegalArgumentException("Operation not found: " + RenderUtils.toSPARQL(operationIRI)));
 		DynamicSTProperties invocationForm = new DynamicSTProperties("serviceInvocation");
 		Method m = operationDescription.getSpringEntry().getValue().getMethod();
 		LocalVariableTableParameterNameDiscoverer parameterNameDiscoverer = new LocalVariableTableParameterNameDiscoverer();
 		String[] parameterNames = parameterNameDiscoverer.getParameterNames(m);
-		AnnotatedType[] parameterTypoes = m.getAnnotatedParameterTypes();
+		AnnotatedType[] parameterTypes = m.getAnnotatedParameterTypes();
 		Parameter[] parameters = m.getParameters();
 
 		for (int i = 0 ; i < parameterNames.length ; i++) {
@@ -106,7 +146,7 @@ public class Services extends STServiceAdapter {
 					Optional.of(parameters[i].getAnnotation(RequestParam.class))
 							.map(RequestParam::required)
 							.orElse(false),
-					parameterTypoes[i]);
+					parameterTypes[i]);
 			invocationForm.addProperty(parameterNames[i], def);
 		}
 		return invocationForm;
