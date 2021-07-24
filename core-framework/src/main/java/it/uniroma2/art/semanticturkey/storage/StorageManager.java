@@ -15,8 +15,10 @@ import org.apache.commons.lang3.math.NumberUtils;
 
 import javax.servlet.ServletOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -161,7 +163,7 @@ public abstract class StorageManager {
      * @param setContentLength an optional (may be <code>null</code>) consumer that will be invoked to indicate the content size
      * @return
      */
-    public static void getFileContent(ServletOutputStream os, Reference ref, IntConsumer setContentLength) throws IOException {
+    public static void getFileContent(OutputStream os, Reference ref, IntConsumer setContentLength) throws IOException {
         File file = getFile(ref);
         if (setContentLength != null) {
             setContentLength.accept(Math.toIntExact(file.length()));
@@ -176,7 +178,18 @@ public abstract class StorageManager {
      * @param ref a reference to the file
      * @return
      */
-    public static void getFileContent(ServletOutputStream os, Reference ref) throws IOException {
+    public static void getFileContent(OutputStream os, Reference ref) throws IOException {
         getFileContent(os, ref, null);
     }
+
+    /**
+     * Returns the content of a file
+     * @param ref a reference to the file
+     * @return
+     */
+    public static InputStream getFileContent(Reference ref) throws IOException {
+        File file = getFile(ref);
+        return new FileInputStream(file);
+    }
+
 }

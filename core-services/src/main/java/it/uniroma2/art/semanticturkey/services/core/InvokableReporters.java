@@ -1,59 +1,5 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.StringReader;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.Type;
-import java.net.URLConnection;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
-import javax.servlet.http.HttpServletResponse;
-import javax.swing.text.AbstractDocument;
-import javax.validation.constraints.Null;
-
-import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
-import it.uniroma2.art.semanticturkey.extension.extpts.deployer.FormattedResourceSource;
-import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ClosableFormattedResource;
-import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
-import it.uniroma2.art.semanticturkey.services.tracker.OperationDescription;
-import it.uniroma2.art.semanticturkey.services.tracker.STServiceTracker;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.reflect.TypeUtils;
-import org.apache.http.entity.ContentType;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.util.Values;
-import org.jsoup.Jsoup;
-import org.jsoup.helper.W3CDom;
-import org.jsoup.nodes.Document;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
-import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.http.HttpEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -61,18 +7,22 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
+import com.google.common.io.Closer;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.CustomContext;
-
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
+import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter;
 import it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporterStore;
 import it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation;
 import it.uniroma2.art.semanticturkey.customservice.CustomServiceHandlerMapping;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.extpts.deployer.FormattedResourceSource;
+import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ClosableFormattedResource;
 import it.uniroma2.art.semanticturkey.font.FontClass;
 import it.uniroma2.art.semanticturkey.mvc.RequestMappingHandlerAdapterPostProcessor;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -85,10 +35,64 @@ import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.tracker.OperationDescription;
+import it.uniroma2.art.semanticturkey.services.tracker.STServiceTracker;
+import it.uniroma2.art.semanticturkey.storage.StorageManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.reflect.TypeUtils;
+import org.apache.http.entity.ContentType;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.util.Values;
+import org.jsoup.Jsoup;
+import org.jsoup.helper.W3CDom;
+import org.jsoup.nodes.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
+import org.springframework.http.HttpEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ValueConstants;
 import org.springframework.web.method.HandlerMethod;
+
+import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.constraints.Null;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.net.URI;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @STService
 public class InvokableReporters extends STServiceAdapter {
@@ -566,6 +570,14 @@ public class InvokableReporters extends STServiceAdapter {
 			}
 		}
 
+		report.filename = reporter.filename;
+		report.additionalFiles = CollectionUtils.emptyIfNull(reporter.additionalFiles).stream().map(af -> {
+			AdditionalFile af2 = new AdditionalFile();
+			af2.sourcePath = af.sourcePath;
+			af2.destinationPath = af.destinationPath;
+			af2.required = af.required;
+			return af2;
+		}).collect(Collectors.toList());
 		return report;
 	}
 
@@ -638,13 +650,71 @@ public class InvokableReporters extends STServiceAdapter {
 			contentType = ContentType.getByMimeType(reportMimeType).withCharset(StandardCharsets.UTF_8);
 		}
 
-		String defaultFileExtension = contentType.equals(TEXT_HTML) ? "html" : contentType.equals(APPLICATION_PDF) ? "pdf" : "dat";
+		String defaultFileExtension = contentType.getMimeType().equals(TEXT_HTML.getMimeType()) ? "html" : contentType.getMimeType().equals(APPLICATION_PDF.getMimeType()) ? "pdf" : "dat";
 		String mimeType = contentType.getMimeType();
 		Charset charset = contentType.getCharset();
-		String originalFilename = "report-" + Instant.now() + defaultFileExtension;
+		
+		String mainReportFilename;
+		if (report.filename != null) {
+			mainReportFilename = report.filename;
+		} else {
+			mainReportFilename = "report-" + System.currentTimeMillis() + "." + defaultFileExtension;
+		}
 
-		try (ClosableFormattedResource res = new ClosableFormattedResource(bytes, defaultFileExtension, mimeType, charset, originalFilename)){
-			FormattedResourceSource source = new FormattedResourceSource(res);
+		String downloadFilename;
+
+		try (Closer closer = Closer.create()) {
+
+			FormattedResourceSource source;
+
+			if (CollectionUtils.isEmpty(report.additionalFiles)) { // no additional files, just download the main report
+				downloadFilename = mainReportFilename;
+				ClosableFormattedResource res = closer.register(new ClosableFormattedResource(bytes, defaultFileExtension, mimeType, charset, downloadFilename));
+				source = new FormattedResourceSource(res);
+			} else { // as there are additional files, create a compressed archive
+				Map<String, String> env = new HashMap<>();
+				env.put("create", "true");
+				// locate file system by using the syntax
+				// defined in java.net.JarURLConnection
+				File tempDirectory = Files.createTempDirectory("report_").toFile();
+				closer.register(() -> FileUtils.deleteQuietly(tempDirectory));
+
+				File destinationArchive = new File(tempDirectory, StringUtils.substringBeforeLast(mainReportFilename, ".") + ".zip");
+
+				URI destinationArchiveURI = URI.create("jar:" + destinationArchive.toURI().toString());
+
+				try (FileSystem zipfs = FileSystems.newFileSystem(destinationArchiveURI, env)) {
+//					Path externalTxtFile = Paths.get("/codeSamples/zipfs/SomeTextFile.txt");
+//					Path pathInZipfile = zipfs.getPath("/SomeTextFile.txt");
+//					// copy a file into the zip file
+//					Files.copy( externalTxtFile,pathInZipfile,
+//							StandardCopyOption.REPLACE_EXISTING);
+
+					// copy each additional files
+					for (AdditionalFile af: report.additionalFiles) {
+						try (InputStream is = StorageManager.getFileContent(parseReference(af.sourcePath))) {
+							try {
+								Path zipfsPath = zipfs.getPath(StringUtils.prependIfMissing(af.destinationPath, "/"));
+								Path zipfsParentPath = zipfsPath.getParent();
+								if (zipfsParentPath != null) {
+									Files.createDirectories(zipfsParentPath);
+								}
+								Files.copy(is, zipfsPath,
+										StandardCopyOption.REPLACE_EXISTING);
+							} catch (FileNotFoundException e) {
+								if (af.required) throw e;
+							}
+						}
+					}
+					// copy main report file
+					Files.copy(new ByteArrayInputStream(bytes), zipfs.getPath("/" + mainReportFilename),
+							StandardCopyOption.REPLACE_EXISTING);
+				}
+
+				ClosableFormattedResource res = closer.register(new ClosableFormattedResource(destinationArchive, "zip", "application/zip", null, destinationArchive.getName()));
+				source = new FormattedResourceSource(res);
+			}
+
 			Export.downloadOrDeploy(exptManager, stServiceContext, response, deployerSpec, source);
 		}
 	}
@@ -653,6 +723,7 @@ public class InvokableReporters extends STServiceAdapter {
 		public String label;
 		@Nullable
 		public String description;
+		public List<AdditionalFile> additionalFiles;
 		public List<Section> sections;
 		@Nullable
 		public String template;
@@ -660,8 +731,15 @@ public class InvokableReporters extends STServiceAdapter {
 		public String rendering;
 		@Nullable
 		public String mimeType;
+		@Nullable
+		public String filename;
 	}
 
+	public static class AdditionalFile {
+		public String sourcePath;
+		public String destinationPath;
+		public boolean required;
+	}
 	public static class Section {
 		public String extensionPath;
 		public String service;

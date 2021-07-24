@@ -1,5 +1,6 @@
 version 10.0
 date: dd/mm/yyyy
+  * allowed the inclusion of additional files in reports (which are returned as zip archives)
   * allowed ordinary services in custom reports
   * implemented a content storage service
   * renamed the service compileAndDownloadReport to compileAndExportReport, while allowing to indicate an optional deployer

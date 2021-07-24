@@ -22,12 +22,16 @@ public class InvokableReporter implements Configuration {
 		public static final String label$displayName = keyBase + ".label.displayName";
 		public static final String description$description = keyBase + ".description.description";
 		public static final String description$displayName = keyBase + ".description.displayName";
+		public static final String additionalFiles$description = keyBase + ".additionalFiles.description";
+		public static final String additionalFiles$displayName = keyBase + ".additionalFiles.displayName";
 		public static final String sections$description = keyBase + ".sections.description";
 		public static final String sections$displayName = keyBase + ".sections.displayName";
 		public static final String template$description = keyBase + ".template.description";
 		public static final String template$displayName = keyBase + ".template.displayName";
 		public static final String mimeType$description = keyBase + ".mimeType.description";
 		public static final String mimeType$displayName = keyBase + ".mimeType.displayName";
+		public static final String filename$description = keyBase + ".filename.description";
+		public static final String filename$displayName = keyBase + ".filename.displayName";
 	}
 
 	@Override
@@ -42,6 +46,9 @@ public class InvokableReporter implements Configuration {
 	@STProperty(description = "{" + MessageKeys.description$description + "}", displayName = "{" + MessageKeys.description$displayName + "}")
 	public String description;
 
+	@STProperty(description = "{" + MessageKeys.additionalFiles$description + "}", displayName = "{" + MessageKeys.additionalFiles$displayName + "}")
+	public List<AdditionalFile> additionalFiles;
+
 	@STProperty(description = "{" + MessageKeys.sections$description + "}", displayName = "{" + MessageKeys.sections$displayName + "}")
 	public List<ServiceInvocation> sections;
 
@@ -52,5 +59,8 @@ public class InvokableReporter implements Configuration {
 	@STProperty(description = "{" + MessageKeys.mimeType$description + "}", displayName = "{" + MessageKeys.mimeType$displayName + "}")
 	@Required
 	public String mimeType = "text/plain";
+
+	@STProperty(description = "{" + MessageKeys.filename$description + "}", displayName = "{" + MessageKeys.filename$displayName + "}")
+	public String filename;
 
 }
