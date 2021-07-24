@@ -397,14 +397,8 @@ public class ResourceView extends STServiceAdapter {
 
                 int k = 0;
 
-                System.out.println("###");
-                Rio.write(statements.filter(null, null, null, workingGraph), System.out, RDFFormat.TURTLE, new WriterConfig().set(BasicWriterSettings.PRETTY_PRINT, true).set(BasicWriterSettings.INLINE_BLANK_NODES, true));
-                System.out.println("###");
-
                 while (!allSubjects.isEmpty()) {
-                    System.out.println("all subjects = " + allSubjects);
-
-                    if (++k > 10) {
+                    if (++k > 50) {
                         System.out.println("Infinite loop?");
                         break;
                     }
@@ -493,13 +487,6 @@ public class ResourceView extends STServiceAdapter {
 
                     newBNodes = statements.objects().stream().filter(BNode.class::isInstance).map(BNode.class::cast).filter(Predicates.not(bnodes::contains)).collect(Collectors.toSet());
 
-                    System.out.println("---");
-                    Rio.write(statements.filter(null, null, null, workingGraph), System.out, RDFFormat.TURTLE, new WriterConfig().set(BasicWriterSettings.PRETTY_PRINT, true).set(BasicWriterSettings.INLINE_BLANK_NODES, true));
-                    System.out.println("---");
-
-                    System.out.println("new first level objects = " + newFirstLevelObjects);
-                    System.out.println("new bnodes = " + newBNodes);
-
                     firstLevelObjects.addAll(newFirstLevelObjects);
                     bnodes.addAll(newBNodes);
                     allSubjects = Sets.union(newFirstLevelObjects, newBNodes);
@@ -509,7 +496,6 @@ public class ResourceView extends STServiceAdapter {
                 Set<IRI> newTypes = statements.filter(null, RDF.TYPE, null).objects().stream().filter(IRI.class::isInstance).map(IRI.class::cast).collect(Collectors.toSet());
                 Model typesStatements = new LinkedHashModel();
 
-                System.out.println("new ttypes = " + newTypes);
                 while (!newTypes.isEmpty()) {
                     TupleQuery headTypesQuery = headConn.prepareTupleQuery(
                             "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
@@ -532,7 +518,6 @@ public class ResourceView extends STServiceAdapter {
 
                     typesStatements.addAll(newTypesStatements);
 
-                    System.out.println("[[[" + newTypesStatements);
                     newTypes.addAll(Sets.difference(Models.subjectIRIs(newTypesStatements), types));
                     newTypes.addAll(Sets.difference(Models.objectIRIs(newTypesStatements), types));
 
@@ -583,16 +568,10 @@ public class ResourceView extends STServiceAdapter {
                     newTypes.addAll(Sets.difference(Models.objectIRIs(typesStatements.filter(null, null, null)), types));
                 }
 
-                System.out.println("****");
-                Rio.write(typesStatements.filter(null, null, null, workingGraph), System.out, RDFFormat.TURTLE, new WriterConfig().set(BasicWriterSettings.PRETTY_PRINT, true).set(BasicWriterSettings.INLINE_BLANK_NODES, true));
-                System.out.println("****");
-
-
                 Set<IRI> predicates = new HashSet<>();
                 Set<IRI> newPredicates = new HashSet<>(statements.predicates());
                 Model predicatesStatements = new LinkedHashModel();
 
-                System.out.println("new ttypes = " + newTypes);
                 while (!newPredicates.isEmpty()) {
                     TupleQuery headPredicatesQuery = headConn.prepareTupleQuery(
                             "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
@@ -615,7 +594,6 @@ public class ResourceView extends STServiceAdapter {
 
                     predicatesStatements.addAll(newPredicatesStatements);
 
-                    System.out.println("[[[" + newPredicatesStatements);
                     newPredicates.addAll(Sets.difference(Models.subjectIRIs(newPredicatesStatements), predicates));
                     newPredicates.addAll(Sets.difference(Models.objectIRIs(newPredicatesStatements), predicates));
 
