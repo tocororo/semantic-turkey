@@ -16,6 +16,7 @@ import it.uniroma2.art.semanticturkey.config.customservice.Type;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.dynamic.DynamicSTProperties;
 import it.uniroma2.art.semanticturkey.services.tracker.OperationDescription;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
@@ -105,7 +106,7 @@ public class Services extends STServiceAdapter {
 		Parameter[] parameters = m.getParameters();
 
 		Operation invocationForm = new Operation();
-		invocationForm.name = m.getName();
+		invocationForm.name = StringUtils.removeEnd(m.getName(), "Published");
 
 		List<it.uniroma2.art.semanticturkey.config.customservice.Parameter> parameterDefs = new ArrayList<>();
 
