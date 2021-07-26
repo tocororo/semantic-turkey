@@ -8,9 +8,10 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesSerializer;
 
 /**
- * Type information used in the definiion of a custom service.
+ * Type information used in the definition of a custom service.
  * 
  * @author <a href="fiorelli@info.uniroma2.it">Manuel Fiorelli</a>
  * @see CustomService
@@ -36,14 +37,14 @@ public class Type {
 	}
 
 	public static Type fromJavaType(java.lang.reflect.Type javaType) {
-		String typeName = javaType.getTypeName();
+		String typeName = STPropertiesSerializer.computeReducedTypeName(javaType);
 		List<Type> typeArguments;
 		if (javaType instanceof ParameterizedType) {
 			typeArguments = Arrays.stream(((ParameterizedType) javaType).getActualTypeArguments()).map(Type::fromJavaType).collect(Collectors.toList());
 		} else {
 			typeArguments = new ArrayList<>();
 		}
-		return new Type(javaType.getTypeName(), typeArguments);
+		return new Type(typeName, typeArguments);
 	}
 
 	@Override

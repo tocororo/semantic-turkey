@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import it.uniroma2.art.semanticturkey.config.customservice.CustomService;
 import it.uniroma2.art.semanticturkey.config.customservice.Operation;
@@ -106,23 +107,18 @@ public class Services extends STServiceAdapter {
 		Parameter[] parameters = m.getParameters();
 
 		Operation invocationForm = new Operation();
-		invocationForm.name = StringUtils.removeEnd(m.getName(), "Published");
+		invocationForm.name = operationDescription.getName();
 
-		List<it.uniroma2.art.semanticturkey.config.customservice.Parameter> parameterDefs = new ArrayList<>();
-
-		for (int i = 0 ; i < parameterNames.length ; i++) {
-			it.uniroma2.art.semanticturkey.config.customservice.Parameter param = new it.uniroma2.art.semanticturkey.config.customservice.Parameter();
-			param.name = parameterNames[i];
-			param.required = Optional.of(parameters[i].getAnnotation(RequestParam.class))
-					.map(RequestParam::required)
-					.orElse(false);
-			param.type = Type.fromJavaType(parameterTypes[i].getType());
-
-			parameterDefs.add(param);
-		}
-
+		List<it.uniroma2.art.semanticturkey.config.customservice.Parameter> parameterDefs = operationDescription.getParameters().stream().map(param -> {
+			it.uniroma2.art.semanticturkey.config.customservice.Parameter rv = new it.uniroma2.art.semanticturkey.config.customservice.Parameter();
+			rv.name = param.getName();
+			rv.type = it.uniroma2.art.semanticturkey.config.customservice.Type.fromJavaType(param.getType().getJavaType());
+			rv.required = param.isRequired();
+			return rv;
+		}).collect(Collectors.toList());
 		invocationForm.parameters = parameterDefs;
 
+		invocationForm.returns = it.uniroma2.art.semanticturkey.config.customservice.Type.fromJavaType(operationDescription.getReturnType().getJavaType());
 		return invocationForm;
 	}
 	/**
