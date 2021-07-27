@@ -1,19 +1,24 @@
 package it.uniroma2.art.semanticturkey.services.tracker;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Lists;
 import it.uniroma2.art.semanticturkey.mvc.IntrospectableController;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesSerializer;
 import it.uniroma2.art.semanticturkey.services.annotations.DisplayName;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -67,8 +72,8 @@ public class OperationDescription {
                                               String artifactId, String serviceClass, String operation,
                                               Entry<RequestMappingInfo, HandlerMethod> springEntry) {
         Optional<Method> method = Arrays
-                .stream(((IntrospectableController) applicationContext
-                        .getBean((String) springEntry.getValue().getBean())).getService().getClass()
+                .stream(AopProxyUtils.ultimateTargetClass(((IntrospectableController) applicationContext
+                        .getBean((String) springEntry.getValue().getBean())).getService())
                         .getMethods())
                 .filter(m -> m.getName().equals(operation)).findAny();
         String displayName = method.map(serviceMethod -> {
@@ -158,9 +163,15 @@ public class OperationDescription {
         }
 
         public List<Type> getTypeArguments() {
-            return Stream.of(javaType).filter(ParameterizedType.class::isInstance)
-                    .flatMap(t -> Arrays.stream(((ParameterizedType) t)
-                            .getActualTypeArguments())).map(Type::new).collect(Collectors.toList());
+            if (TypeUtils.isArrayType(javaType)) {
+                return Lists.newArrayList(new Type(TypeUtils.getArrayComponentType(javaType)));
+            } else if (javaType instanceof ParameterizedType) {
+                return Stream.of(javaType).filter(ParameterizedType.class::isInstance)
+                        .flatMap(t -> Arrays.stream(((ParameterizedType) t)
+                                .getActualTypeArguments())).map(Type::new).collect(Collectors.toList());
+            } else {
+                return Collections.emptyList();
+            }
         }
 
         @JsonIgnore

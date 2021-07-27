@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.config.customservice;
 
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,7 +9,13 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.Lists;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesSerializer;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import org.apache.commons.lang3.reflect.TypeUtils;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+
+import javax.lang.model.type.ArrayType;
 
 /**
  * Type information used in the definition of a custom service.
@@ -37,10 +44,21 @@ public class Type {
 	}
 
 	public static Type fromJavaType(java.lang.reflect.Type javaType) {
-		String typeName = STPropertiesSerializer.computeReducedTypeName(javaType);
+		String typeName;
+		if (TypeUtils.getRawType(javaType, null) == AnnotatedValue.class) {
+			typeName = "AnnotatedValue";
+		} else if (TypeUtils.equals(javaType, TupleQueryResult.class)) {
+			typeName = "TupleQueryResult";
+		} else {
+			typeName = STPropertiesSerializer.computeReducedTypeName(javaType);
+		}
 		List<Type> typeArguments;
 		if (javaType instanceof ParameterizedType) {
-			typeArguments = Arrays.stream(((ParameterizedType) javaType).getActualTypeArguments()).map(Type::fromJavaType).collect(Collectors.toList());
+			typeArguments = Arrays.stream(((ParameterizedType) javaType).getActualTypeArguments())
+					.map(Type::fromJavaType)
+					.collect(Collectors.toList());
+		} else if (TypeUtils.isArrayType(javaType)) {
+			typeArguments = Lists.newArrayList(Type.fromJavaType(TypeUtils.getArrayComponentType(javaType)));
 		} else {
 			typeArguments = new ArrayList<>();
 		}
@@ -54,4 +72,5 @@ public class Type {
 		}
 		return typeArguments.stream().map(Object::toString).collect(Collectors.joining(",", name + "<", ">"));
 	}
+
 }

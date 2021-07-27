@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 import javax.validation.Constraint;
 
 import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -341,7 +342,7 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 	 * @return
 	 */
 	public static String computeReducedTypeName(Type parType) {
-		String typeName = parType.getTypeName();
+		String typeName = StringUtils.substringBefore(parType.getTypeName(), "<");
 		switch (typeName) {
 		case "java.lang.Boolean":
 			return "boolean";

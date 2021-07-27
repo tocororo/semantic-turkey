@@ -101,10 +101,6 @@ public class Services extends STServiceAdapter {
 	public Operation getServiceOperationAsCustomService(IRI operationIRI) {
 		OperationDescription operationDescription = stServiceTracker.getOperationDescription(operationIRI).orElseThrow(() -> new IllegalArgumentException("Operation not found: " + RenderUtils.toSPARQL(operationIRI)));
 		Method m = operationDescription.getSpringEntry().getValue().getMethod();
-		LocalVariableTableParameterNameDiscoverer parameterNameDiscoverer = new LocalVariableTableParameterNameDiscoverer();
-		String[] parameterNames = parameterNameDiscoverer.getParameterNames(m);
-		AnnotatedType[] parameterTypes = m.getAnnotatedParameterTypes();
-		Parameter[] parameters = m.getParameters();
 
 		Operation invocationForm = new Operation();
 		invocationForm.name = operationDescription.getName();
