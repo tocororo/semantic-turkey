@@ -25,6 +25,10 @@ public class CoreProjectSettings implements Settings {
 				+ ".resourceView.description";
 		public static final String resourceView$displayName = keyBase
 				+ ".resourceView.displayName";
+		public static final String timeMachineEnabled$description = keyBase
+				+ ".timeMachineEnabled.description";
+		public static final String timeMachineEnabled$displayName = keyBase
+				+ ".timeMachineEnabled.displayName";
 	}
 
 	@Override
@@ -44,5 +48,9 @@ public class CoreProjectSettings implements Settings {
 	@STProperty(description = "{" + MessageKeys.resourceView$description
 			+ "}", displayName = "{" + MessageKeys.resourceView$displayName + "}")
 	public ResourceViewProjectSettings resourceView;
+
+	@STProperty(description = "{" + MessageKeys.timeMachineEnabled$description
+			+ "}", displayName = "{" + MessageKeys.timeMachineEnabled$displayName + "}")
+	public Boolean timeMachineEnabled = true;
 
 }
