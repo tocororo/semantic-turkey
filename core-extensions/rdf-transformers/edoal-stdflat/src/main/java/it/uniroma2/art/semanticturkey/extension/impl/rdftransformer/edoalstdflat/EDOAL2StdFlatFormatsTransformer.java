@@ -41,7 +41,13 @@ public class EDOAL2StdFlatFormatsTransformer implements RDFTransformer {
 
 	private HashSet<IRI> possiblePropSet;
 
+	private SubjectPosition subject_position;
+
+	public enum SubjectPosition {entity1, entity2};
+
 	public EDOAL2StdFlatFormatsTransformer(EDOAL2StdFlatFormatsTransformerConfiguration config) {
+		this.subject_position = config.subject_position;
+
 		this.mappingProperties = config.mappingProperties;
 
 		// initialize the possibleProp Set
@@ -101,7 +107,12 @@ public class EDOAL2StdFlatFormatsTransformer implements RDFTransformer {
 				IRI mappingProperty = (IRI) bindingSet.getValue("mappingProperty");
 				Resource graph = (Resource) bindingSet.getValue("g");
 				// add the triple to the tempConnection using the extracted graph
-				tempConnection.add(entity1, mappingProperty, entity2, graph);
+				if (subject_position.equals(SubjectPosition.entity1)) {
+					tempConnection.add(entity1, mappingProperty, entity2, graph);
+				} else {
+					tempConnection.add(entity2, mappingProperty, entity1, graph);
+				}
+
 			}
 
 

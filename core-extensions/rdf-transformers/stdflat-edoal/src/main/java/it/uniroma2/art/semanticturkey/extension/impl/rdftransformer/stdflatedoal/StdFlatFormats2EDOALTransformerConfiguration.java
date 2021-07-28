@@ -20,6 +20,8 @@ public class StdFlatFormats2EDOALTransformerConfiguration implements Configurati
 		public static final String shortName = keyBase + ".shortName";
 		public static final String mappingProperties$description = keyBase + ".mappingProperties.description";
 		public static final String mappingProperties$displayName = keyBase + ".mappingProperties.displayName";
+		public static final String entity1Position$description = keyBase + ".entity1Position.description";
+		public static final String entity1Position$displayName = keyBase + ".entity1Position.displayName";
 	}
 
 	@Override
@@ -29,5 +31,8 @@ public class StdFlatFormats2EDOALTransformerConfiguration implements Configurati
 
 	@STProperty(description = "{" + MessageKeys.mappingProperties$description + "}", displayName = "{" + MessageKeys.mappingProperties$displayName + "}")
 	public Set<@HasRole(RDFResourceRole.property) IRI> mappingProperties = new HashSet<>();
+
+	@STProperty(description = "{" + MessageKeys.entity1Position$displayName + "}", displayName = "{" + MessageKeys.entity1Position$description + "}")
+	public StdFlatFormats2EDOALTransformer.Entity1Position entity1_position = StdFlatFormats2EDOALTransformer.Entity1Position.subject;
 
 }

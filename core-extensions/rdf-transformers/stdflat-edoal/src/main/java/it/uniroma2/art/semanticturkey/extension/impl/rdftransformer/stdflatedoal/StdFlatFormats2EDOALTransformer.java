@@ -46,10 +46,15 @@ public class StdFlatFormats2EDOALTransformer implements RDFTransformer {
 	@Nullable
 	private Set<IRI> mappingProperties;
 
+	private Entity1Position entity1_position;
+
 	private HashMap<IRI, String> possiblePropMap;
 
+	public enum Entity1Position {subject, object}
 
 	public StdFlatFormats2EDOALTransformer(StdFlatFormats2EDOALTransformerConfiguration config) {
+		this.entity1_position = config.entity1_position;
+
 		this.mappingProperties = config.mappingProperties;
 
 		// initialize the possibleProp Set
@@ -138,7 +143,12 @@ public class StdFlatFormats2EDOALTransformer implements RDFTransformer {
 				continue;
 			}
 			String relation = getRelation(pred);
-			Cell cell = new Cell(subj, obj, Float.parseFloat("1.0"), relation);
+			Cell cell;
+			if(entity1_position.equals(Entity1Position.subject)) {
+				cell = new Cell(subj, obj, Float.parseFloat("1.0"), relation);
+			} else {
+				cell = new Cell(obj, subj, Float.parseFloat("1.0"), relation);
+			}
 			cell.setMappingProperty(pred);
 			if (!graphToCelLListMap.containsKey(graph)) {
 				graphToCelLListMap.put(graph, new ArrayList<>());
