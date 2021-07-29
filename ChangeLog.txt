@@ -33,6 +33,7 @@ date: dd/mm/yyyy
   * updated dependency on Coda 1.7.2
   * updated dependency on Sheet2RDF 4.2.0
   * updated dependency on MAPLE 0.0.8
+  * updated dependency on Lime 0.4.2
 
 version 9.1
 date: 28/04/2021
