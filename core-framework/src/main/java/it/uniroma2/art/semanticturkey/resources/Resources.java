@@ -34,6 +34,7 @@ import java.util.UUID;
 
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
+import it.uniroma2.art.semanticturkey.storage.StorageManager;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -276,6 +277,7 @@ public class Resources {
 			initializeSystemProperties();
 			initializePredefinedCustomServices();
 			initializePredefinedInvokableReporters();
+			initializePredefinedStorage();
 
 			Config.setSTDataVersionNumber(Config.getVersionNumber());
 		} else {
@@ -427,7 +429,8 @@ public class Resources {
 			for (String configName : Arrays.asList(
 					"it.uniroma2.art.semanticturkey.invokablereporter.OntoLexLemonReport.cfg",
 					"it.uniroma2.art.semanticturkey.invokablereporter.OWLReport.cfg",
-					"it.uniroma2.art.semanticturkey.invokablereporter.SKOSReport.cfg")) {
+					"it.uniroma2.art.semanticturkey.invokablereporter.SKOSReport.cfg",
+					"it.uniroma2.art.semanticturkey.invokablereporter.OWLDocgen.cfg")) {
 				try (InputStream is = Resources.class.getResourceAsStream(
 						"/it/uniroma2/art/semanticturkey/config/invokablereporter/" + configName)) {
 					FileUtils.copyInputStreamToFile(is, new File(configFolder, configName));
@@ -437,4 +440,23 @@ public class Resources {
 			throw new STInitializationException(e);
 		}
 	}
+
+	private static void initializePredefinedStorage() throws STInitializationException {
+		try {
+			File filesFolder = FileUtils.getFile(StorageManager.getSystemStorageDirectory(),
+					"it.uniroma2.art.semanticturkey.invokablereporter.docgen",
+					"resources");
+			FileUtils.forceMkdir(filesFolder);
+			for (String fileName : Arrays.asList(
+					"extra.css", "jquery.js", "marked.min.js", "owl.css", "primer.css", "rec.css")) {
+				try (InputStream is = Resources.class.getResourceAsStream(
+						"/it/uniroma2/art/semanticturkey/storage/it.uniroma2.art.semanticturkey.invokablereporter.docgen/resources/" + fileName)) {
+					FileUtils.copyInputStreamToFile(is, new File(filesFolder, fileName));
+				}
+			}
+		} catch (IOException e) {
+			throw new STInitializationException(e);
+		}
+	}
+
 }

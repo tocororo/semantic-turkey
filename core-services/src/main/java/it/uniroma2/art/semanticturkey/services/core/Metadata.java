@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -96,17 +97,18 @@ public class Metadata extends STServiceAdapter {
 
 	/**
 	 * Returns the prefix declarations in the managed ontology.
-	 * 
+	 *
+	 * @param explicit
 	 * @return
 	 * @throws OntologyManagerException
 	 */
 	@STServiceOperation
-	public Collection<PrefixMapping> getNamespaceMappings() throws OntologyManagerException {
-		Map<String, String> allMappings = getOntologyManager().getNSPrefixMappings(false);
+	public Collection<PrefixMapping> getNamespaceMappings(@Optional(defaultValue = "false") boolean explicit) throws OntologyManagerException {
+		Map<String, String> allMappings = getOntologyManager().getNSPrefixMappings(explicit);
 		Map<String, String> explicitMappings = getOntologyManager().getNSPrefixMappings(true);
 
 		return allMappings.entrySet().stream().map(entry -> new PrefixMapping(entry.getKey(),
-				entry.getValue(), explicitMappings.containsKey(entry.getKey()))).collect(toList());
+				entry.getValue(), explicitMappings.containsKey(entry.getKey()))).sorted(Comparator.comparing(PrefixMapping::getPrefix)).collect(toList());
 	}
 
 	/**

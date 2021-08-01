@@ -121,9 +121,10 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 	 * rendering engines.
 	 * 
 	 * @param context
+	 * @param languages
 	 * @return
 	 */
-	private List<String> computeLanguages(STServiceContext context) {
+	public static List<String> computeLanguages(STServiceContext context, String languages) {
 		StringBuffer sb = new StringBuffer();
 		Matcher m = propPattern.matcher(languages);
 		String languagesPropValue = context.getLanguages();
@@ -158,7 +159,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 		StringBuilder gp = new StringBuilder();
 		getGraphPatternInternal(gp);
 
-		List<String> acceptedLanguges = computeLanguages(context);
+		List<String> acceptedLanguges = computeLanguages(context, languages);
 
 		if (!acceptedLanguges.isEmpty()) {
 			gp.append(String.format(" FILTER(LANG(?labelInternal) IN (%s))", acceptedLanguges.stream()
@@ -309,7 +310,7 @@ public abstract class BaseRenderingEngine implements RenderingEngine {
 
 		// note: there might be a race condition between this invocation and the generation of the graph
 		// pattern
-		List<String> acceptedLanguges = computeLanguages(context);
+		List<String> acceptedLanguges = computeLanguages(context, languages);
 		@Nullable
 		Template template;
 		boolean isValidationEnabled;

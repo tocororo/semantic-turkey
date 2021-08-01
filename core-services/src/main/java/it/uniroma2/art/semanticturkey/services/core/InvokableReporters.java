@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 import com.google.common.io.Closer;
@@ -43,6 +44,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
+import org.apache.commons.math3.util.MathUtils;
 import org.apache.http.entity.ContentType;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.Values;
@@ -393,6 +395,16 @@ public class InvokableReporters extends STServiceAdapter {
 		if (includeTemplate) {
 			report.template = reporter.template;
 		}
+		report.filename = reporter.filename;
+		report.additionalFiles = CollectionUtils.emptyIfNull(reporter.additionalFiles).stream().map(af -> {
+			AdditionalFile af2 = new AdditionalFile();
+			af2.sourcePath = af.sourcePath;
+			af2.destinationPath = af.destinationPath;
+			af2.required = af.required;
+			af2.sourceExists = StorageManager.exists(parseReference(af.sourcePath));
+			return af2;
+		}).collect(Collectors.toList());
+
 		ObjectMapper argumentObjectMapper = STPropertiesManager.createObjectMapper();
 
 		if (reporter.sections != null && reporter.sections.size() > 0) {
@@ -469,8 +481,9 @@ public class InvokableReporters extends STServiceAdapter {
 								String paramName = parameterNames[i];
 								Type formalParam = formalParameters[i];
 								String actualParam;
-								if (!actualParameters.containsKey(paramName)) {
+								if (actualParameters.get(paramName) == null) {
 									RequestParam requestParamAnnot = m.getParameters()[i].getAnnotation(RequestParam.class);
+									if (requestParamAnnot == null) continue; // skip non request mapped arguments
 
 									if (requestParamAnnot.required()) {
 										throw new IllegalArgumentException(
@@ -570,14 +583,6 @@ public class InvokableReporters extends STServiceAdapter {
 			}
 		}
 
-		report.filename = reporter.filename;
-		report.additionalFiles = CollectionUtils.emptyIfNull(reporter.additionalFiles).stream().map(af -> {
-			AdditionalFile af2 = new AdditionalFile();
-			af2.sourcePath = af.sourcePath;
-			af2.destinationPath = af.destinationPath;
-			af2.required = af.required;
-			return af2;
-		}).collect(Collectors.toList());
 		return report;
 	}
 
@@ -647,7 +652,7 @@ public class InvokableReporters extends STServiceAdapter {
 			contentType = APPLICATION_PDF;
 		} else {
 			bytes = rendering.getBytes(StandardCharsets.UTF_8);
-			contentType = ContentType.getByMimeType(reportMimeType).withCharset(StandardCharsets.UTF_8);
+			contentType = ContentType.create(reportMimeType, StandardCharsets.UTF_8);
 		}
 
 		String defaultFileExtension = contentType.getMimeType().equals(TEXT_HTML.getMimeType()) ? "html" : contentType.getMimeType().equals(APPLICATION_PDF.getMimeType()) ? "pdf" : "dat";
@@ -693,17 +698,15 @@ public class InvokableReporters extends STServiceAdapter {
 					// copy each additional files
 					for (AdditionalFile af: report.additionalFiles) {
 						try (InputStream is = StorageManager.getFileContent(parseReference(af.sourcePath))) {
-							try {
-								Path zipfsPath = zipfs.getPath(StringUtils.prependIfMissing(af.destinationPath, "/"));
-								Path zipfsParentPath = zipfsPath.getParent();
-								if (zipfsParentPath != null) {
-									Files.createDirectories(zipfsParentPath);
-								}
-								Files.copy(is, zipfsPath,
-										StandardCopyOption.REPLACE_EXISTING);
-							} catch (FileNotFoundException e) {
-								if (af.required) throw e;
+							Path zipfsPath = zipfs.getPath(StringUtils.prependIfMissing(af.destinationPath, "/"));
+							Path zipfsParentPath = zipfsPath.getParent();
+							if (zipfsParentPath != null) {
+								Files.createDirectories(zipfsParentPath);
 							}
+							Files.copy(is, zipfsPath,
+									StandardCopyOption.REPLACE_EXISTING);
+						} catch (FileNotFoundException e) {
+							if (af.required) throw e;
 						}
 					}
 					// copy main report file
@@ -739,6 +742,7 @@ public class InvokableReporters extends STServiceAdapter {
 		public String sourcePath;
 		public String destinationPath;
 		public boolean required;
+		public boolean sourceExists;
 	}
 	public static class Section {
 		public String extensionPath;
@@ -778,7 +782,7 @@ public class InvokableReporters extends STServiceAdapter {
 			}
 		}
 
-		private static class ArrayAdaptor implements Iterable<Object> {
+		private static class ArrayAdaptor implements Iterable<Object>, CustomContext {
 
 			private ArrayNode node;
 
@@ -794,6 +798,15 @@ public class InvokableReporters extends STServiceAdapter {
 			@Override
 			public String toString() {
 				return node.toString();
+			}
+
+			@Override
+			public Object get(String name) throws Exception {
+				if (name.length() > 0 && Character.isDigit(name.charAt(0))) {
+					return adaptJsonNode(node.get(Integer.parseInt(name)));
+				} else {
+					return null;
+				}
 			}
 		}
 

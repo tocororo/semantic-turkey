@@ -192,4 +192,13 @@ public abstract class StorageManager {
         return new FileInputStream(file);
     }
 
+    /**
+     * Returns whether the referenced file exists
+     * @param ref
+     * @return
+     */
+    public static boolean exists(Reference ref) {
+        File file = getFile(ref);
+        return file.exists() && file.isFile();
+    }
 }

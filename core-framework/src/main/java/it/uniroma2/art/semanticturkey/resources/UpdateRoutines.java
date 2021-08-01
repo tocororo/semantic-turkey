@@ -51,6 +51,7 @@ import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
+import it.uniroma2.art.semanticturkey.storage.StorageManager;
 import it.uniroma2.art.semanticturkey.user.Role;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import org.apache.commons.io.FileUtils;
@@ -364,8 +365,9 @@ public class UpdateRoutines {
 	private static void alignFrom90To10() throws IOException {
 		System.out.println("Update routine: 9.0 -> 10.0");
 		System.out.println("- Updating Semantic Turkey core settings to the new style (including persistence of properties as YAML)");
+		System.out.println("- Add stuff related to documentation generation");
 		logger.debug(
-				"Version 10.0 updated Semantic Turkey core settings to the new style (including persistence of properties as YAML)");
+				"Version 10.0 updated Semantic Turkey core settings to the new style (including persistence of properties as YAML) and add stuff related to documentation generation");
 
 		ObjectMapper om = STPropertiesManager.createObjectMapper();
 
@@ -461,6 +463,35 @@ public class UpdateRoutines {
 
 	}
 
+	private static void alignFrom90to10_upgradeDocgenRelatedStuff() throws IOException {
+
+		// Copy docgenerators
+		File configFolder = STPropertiesManager
+				.getSystemPropertyFolder(InvokableReporterStore.class.getName());
+		FileUtils.forceMkdir(configFolder);
+		for (String configName : Arrays.asList("it.uniroma2.art.semanticturkey.invokablereporter.OWLDocgen.cfg")) {
+			try (InputStream is = Resources.class.getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/config/invokablereporter/" + configName)) {
+				FileUtils.copyInputStreamToFile(is, new File(configFolder, configName));
+			}
+		}
+
+		// Copy resources supporting docgenerators
+		File filesFolder = FileUtils.getFile(StorageManager.getSystemStorageDirectory(),
+				"it.uniroma2.art.semanticturkey.invokablereporter.docgen",
+				"resources");
+		FileUtils.forceMkdir(filesFolder);
+		for (String fileName : Arrays.asList(
+				"extra.css", "jquery.js", "marked.min.js", "owl.css", "primer.css", "rec.css")) {
+			try (InputStream is = Resources.class.getResourceAsStream(
+					"/it/uniroma2/art/semanticturkey/storage/it.uniroma2.art.semanticturkey.invokablereporter.docgen/resources/" + fileName)) {
+				FileUtils.copyInputStreamToFile(is, new File(filesFolder, fileName));
+			}
+		}
+
+
+	}
+
 	private static void alignFrom90to10_upgradeRenderingEnginePUSettings(ObjectMapper om, File renderingEnginePUSettingsFile) throws IOException {
 		if (renderingEnginePUSettingsFile.isFile()) {
 			try {
@@ -487,6 +518,7 @@ public class UpdateRoutines {
 			}
 		}
 
+		alignFrom90to10_upgradeDocgenRelatedStuff();
 	}
 
 	private static void alignFrom90to10_upgradeCorePUSettings(ObjectMapper om, File oldCorePUSettingsFile, File newCorePUSettingsFile) throws IOException {
