@@ -1,16 +1,17 @@
 version 10.0
 date: dd/mm/yyyy
-  * allowed to index specific sections in the Mustache templates used for the rendering of invokable reporters
-  * allowed the inclusion of additional files in reports (which are returned as zip archives)
-  * allowed ordinary services in custom reports
+  * added two transformers, one from EDOAL to flat formats (OWL and SKOS alignment properties) and one from flat formats to EDOAL
   * implemented a content storage service
+  * allowed references to files in the content storage in reports (which are returned as zip archives)
+  * allowed invocation of ordinary services in custom reports
+  * allowed to index specific sections in the Mustache templates used for the rendering of invokable reporters
   * renamed the service compileAndDownloadReport to compileAndExportReport, while allowing to indicate an optional deployer
-  * added time machine
-  * added undo management
-  * added the possibility in the advancedSearch to not pass the predicate in predicate-object where the object can be text-searched
+  * introduced the Time Machine, allowing for the recreation of the state of any resource (up to two hops of context in the graph) at any time in history
+  * added support for undo
+  * added the possibility in the advancedSearch to not pass the predicate in predicate-object constraints, where the object can be text-searched
   * allowed to disable validation on commit in projects with SHACL validation enabled
   * introduced batch SHACL validation of a repository producing a validation report
-  * replaced the connector to the EU Open Data Portal (being dismissed) with a connector to the data.europa.eu portal
+  * replaced the connector to the EU Open Data Portal (being dismissed) with a connector to the new data.europa.eu portal
   * added configuration parameters for SHACL
   * added inconsistency report
   * added file from http://prefix.cc/ containing most used prefix-namespace to resolve most used namespaces 
@@ -29,11 +30,12 @@ date: dd/mm/yyyy
   * turned OperationOnResourceDeniedException into a RuntimeException as it may be thrown from an interceptor
   * made the configuration of rendering engines more user friendly (i.e. renaming ${languages} to ${userLangs} and ${show} to ${labels})
   * enabled events on settings managers
-  * replaced PMKI references with "ShowVoc"
+  * replaced references to "PMKI" with the new name "ShowVoc"
   * fixed bug related to matching linkset targets to datasets registered in the metadata registry
   * updated dependency on Coda 1.7.2
   * updated dependency on Sheet2RDF 4.2.0
   * updated dependency on MAPLE 0.0.8
+  * updated dependency on Lime 0.4.2
 
 version 9.1
 date: 28/04/2021
