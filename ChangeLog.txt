@@ -1,3 +1,7 @@
+version 10.0.1
+date: dd/mm/yyyy
+  *
+
 version 10.0
 date: 02/08/2021
   * added two transformers, one from EDOAL to flat formats (OWL and SKOS alignment properties) and one from flat formats to EDOAL

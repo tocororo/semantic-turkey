@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>it.uniroma2.art.semanticturkey</groupId>
 		<artifactId>st-deployers</artifactId>
-		<version>10.0</version>
+		<version>10.0.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>st-graph-store-http-deployer</artifactId>
 	<packaging>bundle</packaging>
