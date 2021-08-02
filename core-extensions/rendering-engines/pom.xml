@@ -3,7 +3,7 @@
   <parent>
     <groupId>it.uniroma2.art.semanticturkey</groupId>
     <artifactId>st-core-extensions</artifactId>
-    <version>10.0-SNAPSHOT</version>
+    <version>10.0</version>
   </parent>
   <artifactId>st-rendering-engines</artifactId>
   <packaging>pom</packaging>
