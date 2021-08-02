@@ -430,7 +430,8 @@ public class Resources {
 					"it.uniroma2.art.semanticturkey.invokablereporter.OntoLexLemonReport.cfg",
 					"it.uniroma2.art.semanticturkey.invokablereporter.OWLReport.cfg",
 					"it.uniroma2.art.semanticturkey.invokablereporter.SKOSReport.cfg",
-					"it.uniroma2.art.semanticturkey.invokablereporter.OWLDocgen.cfg")) {
+					"it.uniroma2.art.semanticturkey.invokablereporter.OWLDocgen.cfg",
+					"it.uniroma2.art.semanticturkey.invokablereporter.SKOSDocgen.cfg")) {
 				try (InputStream is = Resources.class.getResourceAsStream(
 						"/it/uniroma2/art/semanticturkey/config/invokablereporter/" + configName)) {
 					FileUtils.copyInputStreamToFile(is, new File(configFolder, configName));

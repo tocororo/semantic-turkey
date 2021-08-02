@@ -469,7 +469,8 @@ public class UpdateRoutines {
 		File configFolder = STPropertiesManager
 				.getSystemPropertyFolder(InvokableReporterStore.class.getName());
 		FileUtils.forceMkdir(configFolder);
-		for (String configName : Arrays.asList("it.uniroma2.art.semanticturkey.invokablereporter.OWLDocgen.cfg")) {
+		for (String configName : Arrays.asList("it.uniroma2.art.semanticturkey.invokablereporter.OWLDocgen.cfg",
+				"it.uniroma2.art.semanticturkey.invokablereporter.SKOSDocgen.cfg")) {
 			try (InputStream is = Resources.class.getResourceAsStream(
 					"/it/uniroma2/art/semanticturkey/config/invokablereporter/" + configName)) {
 				FileUtils.copyInputStreamToFile(is, new File(configFolder, configName));
