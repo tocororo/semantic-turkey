@@ -512,7 +512,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				unionNeeded = true;
 				//search in skosxl:prefLabel->skosxl:literalForm and skosxl:altLabel->skosxl:literalForm
 				query +="\n{" +
-					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+"> ) ?skosxlLabel ." +
+					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+"> | <"+SKOSXL.HIDDEN_LABEL.stringValue()+"> ) ?skosxlLabel ." +
 					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
 					"\n}";
 			}
