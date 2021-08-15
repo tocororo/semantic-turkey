@@ -1466,16 +1466,19 @@ public class ProjectManager {
 
 					if (shaclSettings != null) {
 						shaclSailConfig.setParallelValidation(shaclSettings.parallelValidation);
-						shaclSailConfig.setUndefinedTargetValidatesAllSubjects(
-								shaclSettings.undefinedTargetValidatesAllSubjects);
 						shaclSailConfig.setLogValidationPlans(shaclSettings.logValidationPlans);
 						shaclSailConfig.setLogValidationViolations(shaclSettings.logValidationViolations);
+						shaclSailConfig.setValidationEnabled(shaclSettings.validationEnabled);
 						shaclSailConfig.setCacheSelectNodes(shaclSettings.cacheSelectNodes);
 						shaclSailConfig
 								.setGlobalLogValidationExecution(shaclSettings.globalLogValidationExecution);
 						shaclSailConfig.setRdfsSubClassReasoning(shaclSettings.rdfsSubclassReasoning);
 						shaclSailConfig.setPerformanceLogging(shaclSettings.performanceLogging);
 						shaclSailConfig.setSerializableValidation(shaclSettings.serializableValidation);
+						shaclSailConfig.setEclipseRdf4jShaclExtensions(shaclSettings.eclipseRdf4jShaclExtensions);
+						shaclSailConfig.setDashDataShapes(shaclSettings.dashDataShapes);
+						shaclSailConfig.setValidationResultsLimitTotal(shaclSettings.validationResultsLimitTotal);
+						shaclSailConfig.setValidationResultsLimitPerConstraint(shaclSettings.validationResultsLimitPerConstraint);
 					}
 					sailImplConfig = shaclSailConfig;
 				}

@@ -1,6 +1,8 @@
 version 10.0.1
 date: dd/mm/yyyy
-  * Updated German localization
+  * removed deprecated configuration settings for SHACL
+  * fixed bug related to some SHACL configuration settings (e.g. validationEnabled) that were actually ignored
+  * updated German localization
 
 version 10.0
 date: 02/08/2021

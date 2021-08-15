@@ -21,10 +21,6 @@ public class SHACLSettings implements Settings {
 				+ ".parallelValidation.description";
 		public static final String parallelValidation$displayName = keyBase
 				+ ".parallelValidation.displayName";
-		public static final String undefinedTargetValidatesAllSubjects$description = keyBase
-				+ ".undefinedTargetValidatesAllSubjects.description";
-		public static final String undefinedTargetValidatesAllSubjects$displayName = keyBase
-				+ ".undefinedTargetValidatesAllSubjects.displayName";
 		public static final String logValidationPlans$description = keyBase
 				+ ".logValidationPlans.description";
 		public static final String logValidationPlans$displayName = keyBase
@@ -33,10 +29,6 @@ public class SHACLSettings implements Settings {
 				+ ".logValidationViolations.description";
 		public static final String logValidationViolations$displayName = keyBase
 				+ ".logValidationViolations.displayName";
-		public static final String ignoreNoShapesLoadedException$description = keyBase
-				+ ".ignoreNoShapesLoadedException.description";
-		public static final String ignoreNoShapesLoadedException$displayName = keyBase
-				+ ".ignoreNoShapesLoadedException.displayName";
 		public static final String cacheSelectNodes$description = keyBase + ".cacheSelectNodes.description";
 		public static final String cacheSelectNodes$displayName = keyBase + ".cacheSelectNodes.displayName";
 		public static final String validationEnabled$displayName = keyBase + ".validationEnabled.displayName";
@@ -84,10 +76,6 @@ public class SHACLSettings implements Settings {
 			+ MessageKeys.parallelValidation$description + "}")
 	public boolean parallelValidation = ShaclSailConfig.PARALLEL_VALIDATION_DEFAULT;
 
-	@STProperty(displayName = "{" + MessageKeys.undefinedTargetValidatesAllSubjects$displayName
-			+ "}", description = "{" + MessageKeys.undefinedTargetValidatesAllSubjects$description + "}")
-	public boolean undefinedTargetValidatesAllSubjects = ShaclSailConfig.UNDEFINED_TARGET_VALIDATES_ALL_SUBJECTS_DEFAULT;
-
 	@STProperty(displayName = "{" + MessageKeys.logValidationPlans$displayName + "}", description = "{"
 			+ MessageKeys.logValidationPlans$description + "}")
 	public boolean logValidationPlans = ShaclSailConfig.LOG_VALIDATION_PLANS_DEFAULT;
@@ -95,10 +83,6 @@ public class SHACLSettings implements Settings {
 	@STProperty(displayName = "{" + MessageKeys.logValidationViolations$displayName + "}", description = "{"
 			+ MessageKeys.logValidationViolations$description + "}")
 	public boolean logValidationViolations = ShaclSailConfig.LOG_VALIDATION_VIOLATIONS_DEFAULT;
-
-	@STProperty(displayName = "{" + MessageKeys.ignoreNoShapesLoadedException$displayName + "}", description = "{"
-			+ MessageKeys.ignoreNoShapesLoadedException$description + "}")
-	public boolean ignoreNoShapesLoadedException = ShaclSailConfig.IGNORE_NO_SHAPES_LOADED_EXCEPTION_DEFAULT;
 
 	@STProperty(displayName = "{" + MessageKeys.validationEnabled$displayName + "}", description = "{"
 			+ MessageKeys.validationEnabled$description + "}")
