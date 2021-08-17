@@ -3,6 +3,7 @@ date: dd/mm/yyyy
   * removed deprecated configuration settings for SHACL
   * fixed bug related to some SHACL configuration settings (e.g. validationEnabled) that were actually ignored
   * updated German localization
+  * fixed a bug when searching in skosxl:Label
 
 version 10.0
 date: 02/08/2021

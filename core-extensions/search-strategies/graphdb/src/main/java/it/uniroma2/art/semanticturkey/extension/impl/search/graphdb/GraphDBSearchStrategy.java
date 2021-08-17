@@ -161,7 +161,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		// the useLocalName, useURI and useNotes
 		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLexicalizations, useLocalName, useURI,
 				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
-				searchInSKOSXLLabel, searchInOntolex, true, prefixToNamespaceMap);
+				searchInSKOSXLLabel, searchInOntolex, true, prefixToNamespaceMap, false);
 		//filter the resource according to its type
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, schemeFilter, null,
 				null);
@@ -214,7 +214,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLexicalizations,
 				useLocalName, useURI,
 				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
-				searchInSKOSXLLabel, searchInOntolex, false, prefixToNamespaceMap);
+				searchInSKOSXLLabel, searchInOntolex, false, prefixToNamespaceMap, false);
 		//filter the resource according to its type
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", null, "or", null,
 				lexicons);
@@ -385,12 +385,14 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		query+=ServiceForSearches.getResourceshavingTypes(clsListList, "?resource", searchInSubTypes)+
 				"\n}";
 
+		boolean specialCaseXLabel = ServiceForSearches.isSpecialCaseXLabel(clsListList);
+
 		//prepare the part relative to the ?resource, specifying the searchString, the searchMode, 
 		// the useLocalName and useURI
 		if(searchString!=null && searchString.length()>0) {
 			query += prepareQueryforResourceUsingSearchString(searchString, searchMode, useLexicalizations, useLocalName, useURI,
 				useNotes, langs, includeLocales,  lexModel, searchInRDFSLabel, searchInSKOSLabel, 
-				searchInSKOSXLLabel, searchInOntolex, true, prefixToNamespaceMap);
+				searchInSKOSXLLabel, searchInOntolex, true, prefixToNamespaceMap, specialCaseXLabel);
 		}
 		
 		//the part relative to the schemes
@@ -416,14 +418,14 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		
 		//return serviceForSearches.executeInstancesSearchQuery(query, stServiceContext.getRGraphs(), getThreadBoundTransaction(stServiceContext));
 	}
-	
-	
+
+
 	
 	private String prepareQueryforResourceUsingSearchString(String searchString, SearchMode searchMode, 
 			boolean useLexicalizations, boolean useLocalName, boolean useURI, boolean useNotes, List<String> langs,
 			boolean includeLocales,  IRI lexModel, boolean searchInRDFSLabel, boolean searchInSKOSLabel, 
 			boolean searchInSKOSXLLabel, boolean searchInOntolex, boolean includeResToLexicalEntry,
-			Map<String, String> prefixToNamespaceMap) {
+			Map<String, String> prefixToNamespaceMap, boolean specialCaseXLabel) {
 		String query="";
 
 
@@ -515,6 +517,10 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\n?resource (<"+SKOSXL.PREF_LABEL.stringValue()+"> | <"+SKOSXL.ALT_LABEL.stringValue()+"> | <"+SKOSXL.HIDDEN_LABEL.stringValue()+"> ) ?skosxlLabel ." +
 					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
 					"\n}";
+				if (specialCaseXLabel) {
+					query+= "\nUNION " +
+							"\n{?resource <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label . }";
+				}
 			}
 			if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL) || searchInOntolex) {
 				if(unionNeeded) {

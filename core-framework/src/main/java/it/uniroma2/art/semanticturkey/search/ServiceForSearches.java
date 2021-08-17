@@ -389,7 +389,22 @@ public class ServiceForSearches {
 		return queryPart;
 	}
 	
-	
+	public static boolean isSpecialCaseXLabel(List<List<IRI>> clsListList) {
+		// check if any of the IRI in clsListList is SKOSXL.Label
+		if (clsListList==null || clsListList.isEmpty()) {
+			return false;
+		}
+		for (List<IRI> clsList : clsListList) {
+			for (IRI cls : clsList) {
+				if(cls.equals(SKOSXL.LABEL)) {
+					return true;
+				}
+			}
+		}
+
+		return  false;
+	}
+
 	public static String getResourceshavingTypes(List<List<IRI>> typesListOfList, String varToUse, 
 			boolean searchInSubTypes) {
 		String query = "\nSELECT "+varToUse

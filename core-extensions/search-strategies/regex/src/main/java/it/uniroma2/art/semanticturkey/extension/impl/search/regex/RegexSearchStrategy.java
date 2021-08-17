@@ -79,7 +79,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//see if the localName and/or URI should be used in the query or not
 		query += prepareQueryforResourceUsingSearchString(searchString, searchMode, useLexicalizations, useLocalName, useURI,
 				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
-				searchInSKOSXLLabel, searchInOntolex, true, prefixToNamespaceMap);
+				searchInSKOSXLLabel, searchInOntolex, true, prefixToNamespaceMap, false);
 		
 		
 		
@@ -127,7 +127,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		query+=prepareQueryforResourceUsingSearchString(searchString, searchMode, useLexicalizations,
 				useLocalName, useURI,
 				useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
-				searchInSKOSXLLabel, searchInOntolex, false, prefixToNamespaceMap);
+				searchInSKOSXLLabel, searchInOntolex, false, prefixToNamespaceMap, false);
 		
 		//add the information about the lexicon
 		query+="\nOPTIONAL{ ?lexicon <"+LIME.ENTRY.stringValue()+"> ?resource . }";
@@ -283,16 +283,17 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		//do a subquery to get the candidate resources
 		query+=ServiceForSearches.getResourceshavingTypes(clsListList, "?resource", searchInSubTypes)+
 				"\n}";
-			
+
+		boolean specialCaseXLabel = ServiceForSearches.isSpecialCaseXLabel(clsListList);
+
 		//now examine the rdf:label and/or skos:xlabel/skosxl:label
 		//see if the localName and/or URI should be used in the query or not
-		
-		
+
 		if(searchString!=null && searchString.length()>0) {
 			query += prepareQueryforResourceUsingSearchString(searchString, searchMode,
 					useLexicalizations, useLocalName, useURI,
 					useNotes, langs, includeLocales, lexModel, searchInRDFSLabel, searchInSKOSLabel, 
-					searchInSKOSXLLabel, searchInOntolex, true, prefixToNamespaceMap);
+					searchInSKOSXLLabel, searchInOntolex, true, prefixToNamespaceMap, specialCaseXLabel);
 		}
 		
 		
@@ -370,7 +371,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			boolean useLocalName, boolean useURI, boolean useNotes, List<String> langs,
 			boolean includeLocales,  IRI lexModel, boolean searchInRDFSLabel, boolean searchInSKOSLabel, 
 			boolean searchInSKOSXLLabel, boolean searchInOntolex, boolean includeResToLexicalEntry,
-			Map<String, String> prefixToNamespaceMap) {
+			Map<String, String> prefixToNamespaceMap, boolean specialCaseXLabel) {
 		String query="";
 
 		int countUse = 0;
@@ -444,8 +445,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			countLexMultiSearch += searchInSKOSXLLabel ? 1 : 0 ;
 			countLexMultiSearch += searchInOntolex ? 1 : 0 ;
 
-			conditionalOpenPar = (countUse>1 || countLexMultiSearch > 1) ? "{" : "";
-			conditionalClosePar = (countUse>1 || countLexMultiSearch > 1) ? "}" : "";
+			conditionalOpenPar = (countUse>1 || countLexMultiSearch > 1) || specialCaseXLabel ? "{" : "";
+			conditionalClosePar = (countUse>1 || countLexMultiSearch > 1 || specialCaseXLabel) ? "}" : "";
 
 			if(lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) || searchInRDFSLabel) {
 				//search in the rdfs:label
@@ -478,6 +479,13 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 					"\n?skosxlLabel <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label ." +
 					searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
 					"\n"+conditionalClosePar;
+				if (specialCaseXLabel) {
+					query+= "\nUNION " +
+							"\n{" +
+							"\n?resource <"+SKOSXL.LITERAL_FORM.stringValue()+"> ?label . " +
+							searchSpecificModePrepareQuery("?label", searchString, searchMode, null, langs, includeLocales) +
+							"\n}";
+				}
 			}
 			if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL) || searchInOntolex) {
 				//construct the complex path from a resource to a LexicalEntry
