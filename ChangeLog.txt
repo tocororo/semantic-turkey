@@ -5,6 +5,7 @@ date: dd/mm/yyyy
   * updated German localization
   * fixed a bug when searching in skosxl:Label
   * changed the renderer in SKOSXL to show directly also skosxl:Label label
+  * fixed a bug in the ICV listConceptsRelatedDisjoint
 
 version 10.0
 date: 02/08/2021

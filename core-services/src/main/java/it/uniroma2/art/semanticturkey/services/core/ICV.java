@@ -1112,7 +1112,8 @@ public class ICV extends STServiceAdapter {
 	
 	/**
 	 * Return a list of concepts connected to each other with both the skos:related and the 
-	 * skos:broaderTransitive as the related relation is disjoint with broaderTransitive
+	 * skos:broaderTransitive as the skos:related relation is disjoint with skos:broaderTransitive
+	 * (it consider also all their subproperties with the transitive closure)
 	 * @return a list of concepts connected to each other with both the skos:related and the 
 	 * skos:broaderTransitive as the related relation is disjoint with broaderTransitive
 	 */
@@ -1120,22 +1121,53 @@ public class ICV extends STServiceAdapter {
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(concept)', 'R')")
 	public Collection<AnnotatedValue<Resource>> listConceptsRelatedDisjoint()  {
-		String query = "SELECT DISTINCT ?resource \n"
-				+ "WHERE {\n"
-				+ "?resource a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n"
-				+ "?concept2 a "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT) +" . \n"
-				+ "?resource " +NTriplesUtil.toNTriplesString(SKOS.RELATED) +" ?concept2 .\n"
+		String query = "SELECT DISTINCT ?resource "
+				+ "\nWHERE {"
+
+				// get the subProperties of skos:related
+				+"\n{SELECT ?relProp "
+				+"\nWHERE {"
+				+"\n?relProp "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+NTriplesUtil.toNTriplesString(SKOS.RELATED)+" ."
+				+"\n}"
+				+"\n}"
+
+				//get the subProperties of skos:broaderTransitive
+				+"\n{SELECT ?broadProp "
+				+"\nWHERE {"
+				+"\n?broadProp "+NTriplesUtil.toNTriplesString(RDFS.SUBPROPERTYOF)+"* "+NTriplesUtil.toNTriplesString(SKOS.BROADER_TRANSITIVE)+" ."
+				+"\n}"
+				+"\n}"
+
+				//get all the subclasses of skos:Concept (twice)
+				+"\n{SELECT ?conceptClass1 "
+				+"\nWHERE {"
+				+"\n?conceptClass1 "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT)+" ."
+				+"\n}"
+				+"\n}"
+
+				+"\n{SELECT ?conceptClass2 "
+				+"\nWHERE {"
+				+"\n?conceptClass2 "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* "+NTriplesUtil.toNTriplesString(SKOS.CONCEPT)+" ."
+				+"\n}"
+				+"\n}"
+
+
+				+ "\n?resource a ?conceptClass1 . "
+				+ "\n?concept2 a ?conceptClass2 . "
+
+				+ "\n?resource ?relProp ?concept2 ."
 				
-				+ "{?resource "+NTriplesUtil.toNTriplesString(SKOS.BROADER_TRANSITIVE) +" ?concept2 . }\n"
-				+ "UNION \n"
-				+ "{?concept2 "+NTriplesUtil.toNTriplesString(SKOS.BROADER_TRANSITIVE) +" ?resource . }\n";
+				+ "\n{?resource ?broadProp ?concept2 . }"
+				+ "\nUNION "
+				+ "\n{?concept2 ?broadProp ?resource . }";
 				
 		
-		query+="}\n"
-				+ "GROUP BY ?resource ";
-		
+		query+="\n}"
+				+ "\nGROUP BY ?resource ";
+
 		logger.debug("query [listConceptsRelatedDisjoint]:\n" + query);
 		QueryBuilder qb = createQueryBuilder(query);
+		qb.setIncludeInferred(true);
 		qb.processRole();
 		qb.processRendering();
 		qb.processQName();
