@@ -526,7 +526,7 @@ public class STAuthorizationEvaluator {
 	 * @return
 	 */
 	public boolean isLoggedUser(String email) {
-		return (UsersManager.getLoggedUser().getEmail().equals(email));
+		return (UsersManager.getLoggedUser().getEmail().equalsIgnoreCase(email));
 	}
 
 }

@@ -343,12 +343,6 @@ public class Users extends STServiceAdapter {
                 }
             }
             setSamlUserInSecurityContext(loggedUser, user);
-           /* if (loggedUser != null && loggedUser.isSamlUser() && loggedUser.getEmail().equals(email)) {
-                Authentication auth = new UsernamePasswordAuthenticationToken(user, user.getPassword(), null);
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            }
-*/
-
         }
 
     }
@@ -359,7 +353,7 @@ public class Users extends STServiceAdapter {
      * @param registeringUser
      */
     private void setSamlUserInSecurityContext(STUser loggedUser, STUser registeringUser) {
-        if (loggedUser != null && loggedUser.isSamlUser() && loggedUser.getEmail().equals(registeringUser.getEmail())) {
+        if (loggedUser != null && loggedUser.isSamlUser() && loggedUser.getEmail().equalsIgnoreCase(registeringUser.getEmail())) {
             Authentication auth = new UsernamePasswordAuthenticationToken(registeringUser, registeringUser.getPassword(), null);
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
@@ -557,7 +551,7 @@ public class Users extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isAuthorized('um(user)', 'C')")
     public ObjectNode enableUser(String email, boolean enabled) throws UserException, ProjectBindingException {
-        if (UsersManager.getLoggedUser().getEmail().equals(email)) {
+        if (UsersManager.getLoggedUser().getEmail().equalsIgnoreCase(email)) {
             throw new ProjectBindingException(Users.class.getName() + ".messages.cant_disable_current_user", null);
         }
         STUser user = UsersManager.getUser(email);
@@ -587,7 +581,7 @@ public class Users extends STServiceAdapter {
     @PreAuthorize("@auth.isAuthorized('um(user)', 'D')")
     public void deleteUser(@RequestParam("email") String email) throws Exception {
         STUser user = UsersManager.getUser(email);
-        if (UsersManager.getLoggedUser().getEmail().equals(email)) {
+        if (UsersManager.getLoggedUser().getEmail().equalsIgnoreCase(email)) {
             throw new UserSelfDeletionException();
         }
         UsersManager.deleteUser(user);

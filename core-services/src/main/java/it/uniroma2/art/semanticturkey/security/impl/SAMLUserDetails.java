@@ -33,11 +33,12 @@ public class SAMLUserDetails implements SAMLUserDetailsService {
         STUser loggedUser = null;
         try {
             loggedUser = UsersManager.getUser(userEmail);
+            //UsersManager.getUser() didn't thrown exception => user with the email address exists, so set it in the security context
             UserDetails userDetails = stUserDetailsService.loadUserByUsername(loggedUser.getEmail());
             Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(auth);
-
         } catch (UserException u) {
+            //UsersManager.getUser() throws exception => no user exists with the email address, init a SAML user in the security context
             String firstName = cred.getAttributeAsString("firstName");
             String lastName = cred.getAttributeAsString("lastName");
             loggedUser = new STUser(userEmail, null, firstName, lastName);

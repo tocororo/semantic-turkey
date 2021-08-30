@@ -238,7 +238,7 @@ public class UsersRepoHelper {
 			if (lang != null) {
 				//Check if the current tuple is about a user already fetched (and differs just for the language proficiency)
 				for (STUser u: list) {
-					if (u.getEmail().equals(email)) {
+					if (u.getEmail().equalsIgnoreCase(email)) {
 						u.addLanguageProficiency(lang);
 						continue tupleLoop;
 					}

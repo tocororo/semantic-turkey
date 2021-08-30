@@ -165,7 +165,7 @@ public class UsersManager {
 	public static STUser getUser(String email) throws UserException {
         STUser user = null;
         for (STUser u : userList) {
-            if (u.getEmail().equals(email)) {
+            if (u.getEmail().equalsIgnoreCase(email)) {
                 user = u;
             }
         }
@@ -202,7 +202,7 @@ public class UsersManager {
      */
     public static boolean isEmailUsed(String email) {
         for (STUser u : userList) {
-            if (u.getEmail().equals(email)) {
+            if (u.getEmail().equalsIgnoreCase(email)) {
                 return true;
             }
         }
@@ -610,7 +610,7 @@ public class UsersManager {
 
     public static STUser getUnverifiedUser(String email, String token) {
         return userList.stream()
-                .filter(u -> u.getStatus().equals(UserStatus.UNVERIFIED) && u.getEmail().equals(email) && u.getVerificationToken().equals(token))
+                .filter(u -> u.getStatus().equals(UserStatus.UNVERIFIED) && u.getEmail().equalsIgnoreCase(email) && u.getVerificationToken().equals(token))
                 .findAny().orElse(null);
     }
 
@@ -646,7 +646,7 @@ public class UsersManager {
 
     public static void activateNewRegisteredUser(String email, String token) throws UserException {
         STUser user = userList.stream()
-                .filter(u -> u.getStatus().equals(UserStatus.NEW) && u.getEmail().equals(email) && u.getActivationToken().equals(token))
+                .filter(u -> u.getStatus().equals(UserStatus.NEW) && u.getEmail().equalsIgnoreCase(email) && u.getActivationToken().equals(token))
                 .findAny().orElse(null);
         if (user != null) {
             user.setStatus(UserStatus.ACTIVE);
