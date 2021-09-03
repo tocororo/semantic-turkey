@@ -3,6 +3,7 @@ date: dd/mm/yyyy
   * removed deprecated configuration settings for SHACL
   * fixed bug related to some SHACL configuration settings (e.g. validationEnabled) that were actually ignored
   * updated German localization
+  * fixed the issues due to case-sensitive user email address comparisons
   * fixed a bug when searching in skosxl:Label
   * changed the renderer in SKOSXL to show directly also skosxl:Label label
   * fixed a bug in the ICV listConceptsRelatedDisjoint
