@@ -8,6 +8,7 @@ date: dd/mm/yyyy
   * changed the renderer in SKOSXL to show directly also skosxl:Label label
   * fixed a bug in the ICV listConceptsRelatedDisjoint
   * fixed ClassCastException in SKOS removeNote
+  * fixed illegal base URI when adding an import from file without providing an explicit base URI
 
 version 10.0
 date: 02/08/2021
