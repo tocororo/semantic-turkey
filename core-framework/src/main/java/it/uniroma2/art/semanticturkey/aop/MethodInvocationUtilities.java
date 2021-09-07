@@ -41,17 +41,19 @@ public abstract class MethodInvocationUtilities {
 	 * @param invocation
 	 * @param annotationType
 	 * @param expectedParameterType
+	 * @param ignoreTypeMismatches
 	 * @return
 	 */
 	public static <T, S extends Annotation> Optional<ImmutablePair<T, S>> getFirstAnnotatedArgument(
-			MethodInvocation invocation, Class<S> annotationType, Class<T> expectedParameterType) {
+			MethodInvocation invocation, Class<S> annotationType, Class<T> expectedParameterType, boolean ignoreTypeMismatches) {
 		Parameter[] params = invocation.getMethod().getParameters();
 		for (int i = 0; i < params.length; i++) {
 			Parameter par = params[i];
 			S annotation = par.getAnnotation(annotationType);
-			if (annotation != null) {
+			Object argument = invocation.getArguments()[i];
+			if (annotation != null && expectedParameterType.isInstance(argument)) {
 				return Optional.of(new ImmutablePair<>(
-						expectedParameterType.cast(invocation.getArguments()[i]), annotation));
+						expectedParameterType.cast(argument), annotation));
 			}
 		}
 

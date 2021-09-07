@@ -53,11 +53,11 @@ public class ResourceLifecycleEventPublisherInterceptor implements MethodInterce
 	public Object invoke(MethodInvocation invocation) throws Throwable {
 
 		Optional<ImmutablePair<Resource, Created>> createdResource = MethodInvocationUtilities
-				.getFirstAnnotatedArgument(invocation, Created.class, Resource.class);
+				.getFirstAnnotatedArgument(invocation, Created.class, Resource.class, true);
 		Optional<ImmutablePair<Resource, Modified>> modifiedResource = MethodInvocationUtilities
-				.getFirstAnnotatedArgument(invocation, Modified.class, Resource.class);
+				.getFirstAnnotatedArgument(invocation, Modified.class, Resource.class, true);
 		Optional<ImmutablePair<Resource, Deleted>> deletedResource = MethodInvocationUtilities
-				.getFirstAnnotatedArgument(invocation, Deleted.class, Resource.class);
+				.getFirstAnnotatedArgument(invocation, Deleted.class, Resource.class, true);
 
 		ResourceLevelChangeMetadata versioningMetadata = ResourceLevelChangeMetadataSupport
 				.currentVersioningMetadata();

@@ -288,7 +288,7 @@ public class Metadata extends STServiceAdapter {
 		Set<IRI> failedImports = new HashSet<>();
 		File inputServerFile = File.createTempFile("addFromLocalFile", localFile.getOriginalFilename());
 		if (baseURI == null) {
-			baseURI = inputServerFile.getAbsolutePath();
+			baseURI = inputServerFile.toURI().toString();
 		}
 		try {
 			localFile.transferTo(inputServerFile);
