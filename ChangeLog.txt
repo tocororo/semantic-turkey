@@ -9,7 +9,8 @@ date: dd/mm/yyyy
   * fixed a bug in the ICV listConceptsRelatedDisjoint
   * fixed ClassCastException in SKOS removeNote
   * fixed illegal base URI when adding an import from file without providing an explicit base URI
-
+  * added missing resource lifecycle annotations in some services
+  
 version 10.0
 date: 02/08/2021
   * added two transformers, one from EDOAL to flat formats (OWL and SKOS alignment properties) and one from flat formats to EDOAL

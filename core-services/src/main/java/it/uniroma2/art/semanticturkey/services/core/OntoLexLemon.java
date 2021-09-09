@@ -2069,7 +2069,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, sense)', 'D')")
-	public void removeSense(Resource lexicalSense, boolean removePlain) {
+	public void removeSense(@Deleted Resource lexicalSense, boolean removePlain) {
 		RepositoryConnection conn = getManagedConnection();
 
 		Set<Resource> lexicalEntries = Models.objectResources(QueryResults.asModel(
