@@ -1857,12 +1857,12 @@ public class OntoLexLemon extends STServiceAdapter {
 			"    \n" +
 			"    BIND(NOT EXISTS {\n" +
 			"        { " +
-			"?sense ?sensePred2 ?entity ." +
+			"?sense ?sensePred2 [] ." +
 			" } UNION { " +
-			"?entity ?sensePredInv2 ?sense" +
+			"[] ?sensePredInv2 ?sense" +
 			" }\n" +
 			"    " +
-			"        } ?shouldRemove)\n" +
+			"        } AS ?shouldRemove)\n" +
 			"}");
 		senseQuery.setBinding("lexicalEntry", lexicalEntry);
 
