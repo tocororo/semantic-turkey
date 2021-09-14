@@ -16,7 +16,6 @@ import org.springframework.context.ApplicationContext;
 
 import it.uniroma2.art.semanticturkey.aop.MethodInvocationUtilities;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.data.role.RoleRecognitionOrchestrator;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.annotations.Created;
@@ -81,7 +80,7 @@ public class ResourceLifecycleEventPublisherInterceptor implements MethodInterce
 
 				// deletions are published before the actually occur
 				for (Pair<Resource, RDFResourceRole> pair : versioningMetadata.getDeletedResources()) {
-					Pair<Resource, RDFResourceRole> enhancedPair = enhanceResourceChangeInfo(repConn, pair);
+					Pair<Resource, RDFResourceRole> enhancedPair = ResourceLevelChangeMetadataSupport.enhanceResourceChangeInfo(repConn, pair);
 					applicationContext
 							.publishEvent(new ResourceDeleted(enhancedPair.getLeft(), enhancedPair.getRight(),
 									stServiceContext.getWGraph(), repository, project, user));
@@ -90,14 +89,14 @@ public class ResourceLifecycleEventPublisherInterceptor implements MethodInterce
 				rv = invocation.proceed();
 
 				for (Pair<Resource, RDFResourceRole> pair : versioningMetadata.getCreatedResources()) {
-					Pair<Resource, RDFResourceRole> enhancedPair = enhanceResourceChangeInfo(repConn, pair);
+					Pair<Resource, RDFResourceRole> enhancedPair = ResourceLevelChangeMetadataSupport.enhanceResourceChangeInfo(repConn, pair);
 					applicationContext
 							.publishEvent(new ResourceCreated(enhancedPair.getLeft(), enhancedPair.getRight(),
 									stServiceContext.getWGraph(), repository, project, user));
 				}
 
 				for (Pair<Resource, RDFResourceRole> pair : versioningMetadata.getModifiedResources()) {
-					Pair<Resource, RDFResourceRole> enhancedPair = enhanceResourceChangeInfo(repConn, pair);
+					Pair<Resource, RDFResourceRole> enhancedPair = ResourceLevelChangeMetadataSupport.enhanceResourceChangeInfo(repConn, pair);
 					applicationContext.publishEvent(
 							new ResourceModified(enhancedPair.getLeft(), enhancedPair.getRight(),
 									stServiceContext.getWGraph(), repository, project, user));
@@ -150,21 +149,6 @@ public class ResourceLifecycleEventPublisherInterceptor implements MethodInterce
 		} finally {
 			RDF4JRepositoryUtils.releaseConnection(repConn, repository);
 		}
-	}
-
-	protected Pair<Resource, RDFResourceRole> enhanceResourceChangeInfo(RepositoryConnection repConn,
-			Pair<Resource, RDFResourceRole> pair) {
-		Resource resource = pair.getLeft();
-		RDFResourceRole resourceRole = pair.getRight();
-
-		Pair<Resource, RDFResourceRole> enhancedPair;
-		if (resourceRole == RDFResourceRole.undetermined) {
-			RDFResourceRole computedResourceRole = RoleRecognitionOrchestrator.computeRole(resource, repConn);
-			enhancedPair = ImmutablePair.of(resource, computedResourceRole);
-		} else {
-			enhancedPair = pair;
-		}
-		return enhancedPair;
 	}
 
 }

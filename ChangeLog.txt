@@ -1,5 +1,6 @@
 version 10.0.1
 date: dd/mm/yyyy
+  * when deleting a (plain) conceptualization/lexicalization, its reification through a sense is deleted as well
   * removed deprecated configuration settings for SHACL
   * fixed bug related to some SHACL configuration settings (e.g. validationEnabled) that were actually ignored
   * updated German localization

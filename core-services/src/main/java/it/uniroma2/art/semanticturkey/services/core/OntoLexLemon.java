@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import it.uniroma2.art.semanticturkey.services.annotations.Deleted;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLifecycleEventPublisherInterceptor;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -53,6 +54,7 @@ import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.hibernate.validator.constraints.Length;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.google.common.base.Objects;
@@ -220,7 +222,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(limeLexicon)', 'D')")
-	public void deleteLexicon(@LocallyDefined IRI lexicon,
+	public void deleteLexicon(@LocallyDefined @Deleted IRI lexicon,
 			@Optional(defaultValue = "false") boolean updateModificationTimestamps) {
 		// note: the following update is a copy with minor modification of the one for the deletion of a
 		// lexical entry
@@ -1812,6 +1814,143 @@ public class OntoLexLemon extends STServiceAdapter {
 	}
 
 	/**
+	 * Removes a lexicalization. This operation removes both the plain lexicalization and its reification through a sense.
+	 * Is also address the triples connecting the resources in both directions.
+	 *
+	 * @param lexicalEntry
+	 * @param reference
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#reference)+ ', lexicalization)', 'D')")
+	public void removeLexicalization(Resource lexicalEntry, Resource reference) {
+		IRI lexicalEntryPred = ONTOLEX.DENOTES;
+		IRI lexicalEntryPredInv = ONTOLEX.IS_DENOTED_BY;
+		IRI lexicalEntryPred2 = ONTOLEX.EVOKES;
+		IRI lexicalEntryPredInv2 = ONTOLEX.IS_EVOKED_BY;
+
+		IRI sensePred = ONTOLEX.REFERENCE;
+		IRI sensePredInv = ONTOLEX.IS_REFERENCE_OF;
+		IRI sensePred2 = ONTOLEX.IS_LEXICALIZED_SENSE_OF;
+		IRI sensePredInv2 = ONTOLEX.LEXICALIZED_SENSE;
+
+		removeLexicoSemanticAssertion(lexicalEntry, reference, lexicalEntryPred, lexicalEntryPredInv, sensePred, sensePredInv, sensePred2, sensePredInv2);
+	}
+
+	private void removeLexicoSemanticAssertion(Resource lexicalEntry, Resource reference, IRI lexicalEntryPred, IRI lexicalEntryPredInv, IRI sensePred, IRI sensePredInv, IRI sensePred2, IRI sensePredInv2) {
+		RepositoryConnection conn = getManagedConnection();
+
+		TupleQuery senseQuery = conn.prepareTupleQuery(
+			"PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>\n" +
+			"\n" +
+			"SELECT DISTINCT ?sense ?shouldRemove WHERE {\n" +
+			"    ?sense ontolex:isSenseOf|^ontolex:sense" +
+			" ?lexicalEntry .\n" +
+			"    \n" +
+			"    {" +
+			" ?sense ?sensePred ?entity ." +
+			" " +
+			"} UNION {" +
+			" ?entity ?sensePredInv ?sense ." +
+			" " +
+			"}\n" +
+			"    \n" +
+			"    BIND(NOT EXISTS {\n" +
+			"        { " +
+			"?sense ?sensePred2 ?entity ." +
+			" } UNION { " +
+			"?entity ?sensePredInv2 ?sense" +
+			" }\n" +
+			"    " +
+			"        } ?shouldRemove)\n" +
+			"}");
+		senseQuery.setBinding("lexicalEntry", lexicalEntry);
+
+		senseQuery.setBinding("sensePred", sensePred);
+		senseQuery.setBinding("sensePredInv", sensePredInv);
+		senseQuery.setBinding("sensePred2", sensePred2);
+		senseQuery.setBinding("sensePredInv2", sensePredInv2);
+
+		try (TupleQueryResult senses = senseQuery.evaluate()) {
+			while (senses.hasNext()) {
+				BindingSet bindingSet = senses.next();
+
+				Resource sense = (Resource) bindingSet.getValue("sense");
+				boolean shouldRemove = Literals.getBooleanValue(bindingSet.getValue("shouldRemove"), false);
+
+				publishResourceDeleted(sense, RDFResourceRole.ontolexLexicalSense);
+
+				if (shouldRemove) {
+					for (Statement st : conn.getStatements(null, ONTOLEX.SENSE, sense, false, getWorkingGraph())) {
+						// the actual triple is deleted later, when deleting both the outgoing and the ingoing triples
+						// related to the sense being deleted
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+								.addModifiedResource(st.getSubject(), RDFResourceRole.ontolexLexicalEntry);
+					}
+
+					for (Statement st : conn.getStatements(null, ONTOLEX.IS_REFERENCE_OF, sense, false, getWorkingGraph())) {
+						// the actual triple is deleted later, when deleting both the outgoing and the ingoing triples
+						// related to the sense being deleted
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+								.addModifiedResource(st.getSubject());
+					}
+
+					for (Statement st : conn.getStatements(null, ONTOLEX.LEXICALIZED_SENSE, sense, false, getWorkingGraph())) {
+						// the actual triple is deleted later, when deleting both the outgoing and the ingoing triples
+						// related to the sense being deleted
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
+								.addModifiedResource(st.getSubject());
+					}
+
+					Update reifiedRelationRemoval = conn.prepareUpdate(
+							//@formatter:off
+							"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
+							"PREFIX vartrans: <http://www.w3.org/ns/lemon/vartrans#>\n" +
+							"DELETE  {\n" +
+							"	?relation ?p ?o .\n" +
+							"}\n" +
+							"WHERE {\n" +
+							"   ?relatesProp rdfs:subPropertyOf* vartrans:relates.\n" +
+							"	?relation ?relatesProp ?resource .\n" +
+							"	?relation ?p ?o .\n" +
+							"}"
+							//@formatter:on
+					);
+					SimpleDataset dataset = new SimpleDataset();
+					dataset.addDefaultRemoveGraph((IRI) getWorkingGraph());
+					reifiedRelationRemoval.setDataset(dataset);
+					reifiedRelationRemoval.setBinding("resource", sense);
+					reifiedRelationRemoval.execute();
+
+					conn.remove(sense, null, null, getWorkingGraph());
+					conn.remove((Resource)null, null, sense, getWorkingGraph());
+				} else {
+					if (conn.hasStatement(sense, sensePred, reference, false, getWorkingGraph())) {
+						conn.remove(sense, sensePred, reference, getWorkingGraph());
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(sense);
+					}
+
+					if (conn.hasStatement(reference, sensePredInv, sense, false, getWorkingGraph())) {
+						conn.remove(reference, sensePredInv, sense, getWorkingGraph());
+						ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+					}
+				}
+
+			}
+		}
+
+		if (conn.hasStatement(lexicalEntry, lexicalEntryPred, reference, false, getWorkingGraph())) {
+			conn.remove(lexicalEntry, lexicalEntryPred, reference, getWorkingGraph());
+			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry);
+		}
+
+		if (conn.hasStatement(reference, lexicalEntryPredInv, lexicalEntry, false, getWorkingGraph())) {
+			conn.remove(reference, lexicalEntryPredInv, lexicalEntry, getWorkingGraph());
+			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
+		}
+	}
+
+	/**
 	 * Removes a plain lexicalization. This operation removes the triples connecting the lexical entry and the
 	 * reference in both directions.
 	 * 
@@ -1853,7 +1992,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, lexicalization)', 'D')")
-	public void removeReifiedLexicalization(Resource lexicalSense, boolean removePlain) {
+	public void removeReifiedLexicalization(@Deleted Resource lexicalSense, boolean removePlain) {
 		RepositoryConnection conn = getManagedConnection();
 
 		Set<Resource> lexicalEntries = Models.objectResources(QueryResults.asModel(
@@ -2030,7 +2169,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 * the concpet in both directions.
 	 * 
 	 * @param lexicalEntry
-	 * @param reference
+	 * @param concept
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
@@ -2056,6 +2195,31 @@ public class OntoLexLemon extends STServiceAdapter {
 					"Unable to delete a plain conceptualization because neither the lexical entry nor the concept are locally defined");
 		}
 	}
+
+	/**
+	 * Removes a conceptualization. This operation removes both the plain conceptualization and its reification through a sense.
+	 * Is also address the triples connecting the resources in both directions.
+	 *
+	 * @param lexicalEntry
+	 * @param concept
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@Write
+	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#concept)+ ', conceptualization)', 'D')")
+	public void removeConceptualization(Resource lexicalEntry, Resource concept) {
+		IRI lexicalEntryPred = ONTOLEX.EVOKES;
+		IRI lexicalEntryPredInv = ONTOLEX.IS_EVOKED_BY;
+		IRI lexicalEntryPred2 = ONTOLEX.DENOTES;
+		IRI lexicalEntryPredInv2 = ONTOLEX.IS_DENOTED_BY;
+
+		IRI sensePred = ONTOLEX.IS_LEXICALIZED_SENSE_OF;
+		IRI sensePredInv = ONTOLEX.LEXICALIZED_SENSE;
+		IRI sensePred2 = ONTOLEX.REFERENCE;
+		IRI sensePredInv2 = ONTOLEX.IS_REFERENCE_OF;
+
+		removeLexicoSemanticAssertion(lexicalEntry, concept, lexicalEntryPred, lexicalEntryPredInv, sensePred, sensePredInv, sensePred2, sensePredInv2);
+	}
+
 
 	/* --- Senses --- */
 
@@ -2295,7 +2459,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 * Removes a lexical concept from a lexical sense. Optionally, delete plain conceptualizations.
 	 * 
 	 * @param lexicalSense
-	 * @param newConcept
+	 * @param concept
 	 * @param deletePlain
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -2342,9 +2506,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 * Returns the categories of lexical relations, possibly filtered based on the linguistic catalogs of the
 	 * supplied lexicon.
 	 * 
-	 * @param lexicalSense
-	 * @param newConcept
-	 * @param deletePlain
+	 * @param lexicon
 	 */
 	@STServiceOperation
 	@Read
@@ -2377,9 +2539,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 * Returns the categories of sense relations, possibly filtered based on the linguistic catalogs of the
 	 * supplied lexicon.
 	 * 
-	 * @param lexicalSense
-	 * @param newConcept
-	 * @param deletePlain
+	 * @param lexicon
 	 */
 	@STServiceOperation
 	@Read
@@ -2427,9 +2587,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	 * Returns the categories of conceptual relations, possibly filtered based on the linguistic catalogs of
 	 * the supplied lexicon.
 	 * 
-	 * @param lexicalSense
-	 * @param newConcept
-	 * @param deletePlain
+	 * @param lexicon
 	 */
 	@STServiceOperation
 	@Read
@@ -2556,8 +2714,6 @@ public class OntoLexLemon extends STServiceAdapter {
 	 * Creates a new vartrans:TranslationSet.
 	 * 
 	 * @param newTranslationSet
-	 * @param language
-	 * @param title
 	 * @param customFormValue
 	 * @return
 	 * @throws CustomFormException

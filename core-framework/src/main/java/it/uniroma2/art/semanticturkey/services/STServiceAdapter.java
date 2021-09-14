@@ -9,9 +9,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadata;
+import it.uniroma2.art.semanticturkey.services.events.ResourceDeleted;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
@@ -27,6 +33,7 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import it.uniroma2.art.coda.core.CODACore;
@@ -79,6 +86,9 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 
 	@Autowired
 	protected STServiceContext stServiceContext;
+
+	@Autowired
+	protected ApplicationEventPublisher applicationEventPublisher;
 
 	@Autowired
 	private PlatformTransactionManager txManager;
@@ -448,5 +458,29 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 			throw new IllegalArgumentException("Unsupported scope: " + scope);
 		}
 	}
+
+	protected void publishResourceDeleted(Resource resource, RDFResourceRole role) {
+		ResourceLevelChangeMetadata resourceLevelChangeMetadata = ResourceLevelChangeMetadataSupport.currentVersioningMetadata();
+
+		if (resourceLevelChangeMetadata.getDeletedResources().stream().noneMatch(p -> Objects.equals(p.left, resource))) {
+			Project project = getProject();
+			STUser user = UsersManager.getLoggedUser();
+
+			Repository repository = getRepository();
+			RepositoryConnection repConn = getManagedConnection();
+
+			Pair<Resource, RDFResourceRole> enhancedPair = ResourceLevelChangeMetadataSupport.enhanceResourceChangeInfo(repConn, ImmutablePair.of(resource, role));
+
+			resourceLevelChangeMetadata.addCreatedResource(resource, role);
+			applicationEventPublisher
+					.publishEvent(new ResourceDeleted(enhancedPair.getLeft(), enhancedPair.getRight(),
+							stServiceContext.getWGraph(), repository, project, user));
+		}
+	}
+
+	protected void publishResourceDeleted(Resource resource) {
+		publishResourceDeleted(resource, RDFResourceRole.undetermined);
+	}
+
 
 }
