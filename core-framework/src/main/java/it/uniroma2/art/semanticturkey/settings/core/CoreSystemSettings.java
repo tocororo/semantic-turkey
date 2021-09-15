@@ -95,7 +95,7 @@ public class CoreSystemSettings implements Settings {
 
     @STProperty(description = "{" + MessageKeys.authService$description + "}", displayName = "{"
             + MessageKeys.authService$displayName + "}")
-    @Enumeration({"Default", "EULogin"})
+    @Enumeration({"Default", "SAML"})
     public String authService = "Default";
 
 

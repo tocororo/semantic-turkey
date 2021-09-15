@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Configuration
-@PropertySource("file:${karaf.base}/etc/eu-login.properties")
+@PropertySource("file:${karaf.base}/etc/saml-login.properties")
 public class SAMLAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     @Autowired
@@ -24,7 +24,7 @@ public class SAMLAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuc
 
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.sendRedirect(env.getProperty("eu.redirect"));
+        response.sendRedirect(env.getProperty("saml.redirect"));
 
     }
 

@@ -30,7 +30,7 @@
     <!-- Scan for auto-wiring classes in spring saml packages -->
     <context:component-scan base-package="org.springframework.security.saml"/>
 
-    <context:property-placeholder location="file:${karaf.base}/etc/eu-login.properties"/>
+    <context:property-placeholder location="file:${karaf.base}/etc/saml-login.properties"/>
 
     <!-- Overrides the default entry point of authentication. As default Spring-Security
         redirects to login page -->
@@ -267,7 +267,7 @@
     <beans:bean id="metadataGeneratorFilter" class="org.springframework.security.saml.metadata.MetadataGeneratorFilter">
         <beans:constructor-arg>
             <beans:bean class="org.springframework.security.saml.metadata.MetadataGenerator">
-                <beans:property name="entityBaseURL" value="${eu.entityBaseURL}"/>
+                <beans:property name="entityBaseURL" value="${saml.entityBaseURL}"/>
                 <beans:property name="extendedMetadata">
                     <beans:bean class="org.springframework.security.saml.metadata.ExtendedMetadata">
                         <beans:property name="idpDiscoveryEnabled" value="false"/>
@@ -287,7 +287,6 @@
     <beans:bean id="metadata" class="org.springframework.security.saml.metadata.CachingMetadataManager">
         <beans:constructor-arg>
             <beans:list>
-                <!-- for metadata in filesystem -->
                 <beans:bean class="org.springframework.security.saml.metadata.ExtendedMetadataDelegate">
                     <beans:constructor-arg>
                         <beans:bean class="org.opensaml.saml2.metadata.provider.FilesystemMetadataProvider">
@@ -295,7 +294,7 @@
                                 <beans:bean class="java.util.Timer"/>
                             </beans:constructor-arg>
                             <beans:constructor-arg>
-                                <beans:value type="java.io.File">${karaf.base}/etc/eu-login.xml</beans:value>
+                                <beans:value type="java.io.File">${karaf.base}/etc/saml-login.xml</beans:value>
                             </beans:constructor-arg>
                             <beans:property name="parserPool" ref="parserPool"/>
                         </beans:bean>
@@ -304,31 +303,10 @@
                         <beans:bean class="org.springframework.security.saml.metadata.ExtendedMetadata"/>
                     </beans:constructor-arg>
                 </beans:bean>
-                <!-- for metadata in classpath(inside resources/metadata folder) -->
-                <!-- <beans:bean class="org.springframework.security.saml.metadata.ExtendedMetadataDelegate">
-                    <beans:constructor-arg>
-                        <beans:bean class="org.opensaml.saml2.metadata.provider.ResourceBackedMetadataProvider">
-                            <beans:constructor-arg>
-                                <beans:bean class="java.util.Timer"/>
-                            </beans:constructor-arg>
-                            <beans:constructor-arg>
-                                <beans:bean class="org.opensaml.util.resource.ClasspathResource">
-                                    <beans:constructor-arg value="/metadata/eu-login.xml"/>
-                                </beans:bean>
-                            </beans:constructor-arg>
-                            <beans:property name="parserPool" ref="parserPool"/>
-                        </beans:bean>
-                    </beans:constructor-arg>
-                    <beans:constructor-arg>
-                        <beans:bean
-                                class="org.springframework.security.saml.metadata.ExtendedMetadata">
-                        </beans:bean>
-                    </beans:constructor-arg>
-                </beans:bean> -->
             </beans:list>
         </beans:constructor-arg>
         <!--Default IDP -->
-        <beans:property name="defaultIDP" value="${eu.defaultIDP}"/>
+        <beans:property name="defaultIDP" value="${saml.defaultIDP}"/>
     </beans:bean>
 
     <!-- SAML Authentication Provider responsible for validating of received SAML messages -->
@@ -343,8 +321,8 @@
         <beans:property name="storageFactory">
             <beans:bean class="org.springframework.security.saml.storage.EmptyStorageFactory"/>
         </beans:property>
-        <beans:property name="scheme" value="${eu.scheme}"/>
-        <beans:property name="serverName" value="${eu.serverName}"/>
+        <beans:property name="scheme" value="${saml.scheme}"/>
+        <beans:property name="serverName" value="${saml.serverName}"/>
         <beans:property name="includeServerPortInRequestURL" value="false"/>
         <beans:property name="contextPath" value="/semanticturkey"/>
     </beans:bean>

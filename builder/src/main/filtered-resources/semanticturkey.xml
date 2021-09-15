@@ -126,14 +126,14 @@
 			mvn:it.uniroma2.art.semanticturkey/st-builder/${project.version}/cfg/st
 		</configfile>
 
-		<configfile finalname="/etc/eu-login.properties"
+		<configfile finalname="/etc/saml-login.properties"
 					override="false">
-			mvn:it.uniroma2.art.semanticturkey/st-builder/${project.version}/properties/eu-login
+			mvn:it.uniroma2.art.semanticturkey/st-builder/${project.version}/properties/saml-login
 		</configfile>
 
-		<configfile finalname="/etc/eu-login.xml"
+		<configfile finalname="/etc/saml-login.xml"
 					override="false">
-			mvn:it.uniroma2.art.semanticturkey/st-builder/${project.version}/xml/eu-login
+			mvn:it.uniroma2.art.semanticturkey/st-builder/${project.version}/xml/saml-login
 		</configfile>
 	</feature>
 

@@ -159,33 +159,33 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>install-eulogin-file</id>
+                        <id>install-samllogin-file</id>
                         <phase>compile</phase>
                         <goals>
                             <goal>install-file</goal>
                         </goals>
                         <configuration>
-                            <file>${project.basedir}/src/main/distribution/etc/eu-login.properties</file>
+                            <file>${project.basedir}/src/main/distribution/etc/saml-login.properties</file>
                             <groupId>it.uniroma2.art.semanticturkey</groupId>
                             <artifactId>${project.artifactId}</artifactId>
                             <version>${project.version}</version>
                             <packaging>properties</packaging>
-                            <classifier>eu-login</classifier>
+                            <classifier>saml-login</classifier>
                         </configuration>
                     </execution>
                     <execution>
-                        <id>install-eulogin-metadata-file</id>
+                        <id>install-samllogin-metadata-file</id>
                         <phase>compile</phase>
                         <goals>
                             <goal>install-file</goal>
                         </goals>
                         <configuration>
-                            <file>${project.basedir}/src/main/distribution/etc/eu-login.xml</file>
+                            <file>${project.basedir}/src/main/distribution/etc/saml-login.xml</file>
                             <groupId>it.uniroma2.art.semanticturkey</groupId>
                             <artifactId>${project.artifactId}</artifactId>
                             <version>${project.version}</version>
                             <packaging>xml</packaging>
-                            <classifier>eu-login</classifier>
+                            <classifier>saml-login</classifier>
                         </configuration>
                     </execution>
                 </executions>
