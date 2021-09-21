@@ -1,3 +1,7 @@
+version 10.1.1
+date: dd/mm/yyyy
+  *
+
 version 10.1
 date: 21/09/2021
   * when deleting a (plain) conceptualization/lexicalization, its reification through a sense is deleted as well
