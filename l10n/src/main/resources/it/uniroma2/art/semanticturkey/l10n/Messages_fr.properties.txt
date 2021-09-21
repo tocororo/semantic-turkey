@@ -1,0 +1,1235 @@
+it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettings.CronDefinition.shortName = Cron
+it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettings.CronDefinition.expression.description = Une expression cron
+it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettings.CronDefinition.expression.displayName = Expression
+it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettings.CronDefinition.zone.description = Identifiant de fuseau horaire adapté à java.util.TimeZone.getTimeZone(String)
+it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettings.CronDefinition.zone.displayName = Fuseau horaire
+
+it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettings.shortName = Réglages du système de notification
+it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettings.notificationDigestSchedule.description = Une expression cron qui planifie l'envoi périodique de résumés des notifications
+it.uniroma2.art.semanticturkey.settings.notification.NotificationSystemSettings.notificationDigestSchedule.displayName = Planification des résumés des notifications
+
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraIssueCreationForm.shortName = Réglages Jira pour la création of an issue
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraIssueCreationForm.summary.description = Sommaire du nouveau Issue
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraIssueCreationForm.summary.displayName = Sommaire
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraIssueCreationForm.description.description = Description du nouveau Issue
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraIssueCreationForm.description.displayName = Description
+
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendFactory.name = Backend Jira
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendFactory.description = Utilisez Atlassian Jira en tant que backend de collaboration
+
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendProjectSettings.shortName = Réglages d'un projet Jira
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendProjectSettings.htmlDescription = La configuration manuelle de JIRA nécessite de compléter tous les champs suivants (y compris les non-obligatoires). Il est également possible de n'insérer que les champs obligatoires puis, une fois que les informations de connexion auront été fournies, de parcourir la liste des projets JIRA pour sélectionner l'un d'entre eux.
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendProjectSettings.serverURL.displayName = URL du serveur
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendProjectSettings.serverURL.description = URL du serveur
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendProjectSettings.jiraPrjKey.displayName = Clé du projet Jira
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendProjectSettings.jiraPrjKey.description = Clé du projet Jira
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendProjectSettings.jiraPrjId.description = Identifiant du projet Jira
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendProjectSettings.jiraPrjId.displayName = Identifiant du projet Jira
+
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSettings.shortName = Informations utilisateur Jira
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSettings.htmlWarning = Les informations sont stockées sur le serveur sans chiffrement. Soyez conscient du fait que l'administrateur système pourrait y avoir accès. Pour générer le jeton, référez-vous à cette <a target="_blank" href="https://id.atlassian.com/manage/api-tokens">page</a>
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSettings.username.description = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSettings.username.displayName = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSettings.password.description = Jeton
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSettings.password.displayName = Jeton
+
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampIssueCreationForm.shortName = Réglages Freedcamp pour la création d'une nouvelle tâche
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampIssueCreationForm.title.description = Titre de la nouvelle tâche
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampIssueCreationForm.title.displayName = Titre
+
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampBackendFactory.name = Backend Freedcamp
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampBackendFactory.description = Utilisez Freedcamp en tant que backend de collaboration
+
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampBackendProjectSettings.shortName = Réglages d'un projet Freedcamp
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampBackendProjectSettings.htmlDescription = La configuration manuelle de Freedcamp nécessite de compléter tous les champs suivants (y compris les non-obligatoires). Il est également possible de n'insérer que les champs obligatoires puis, une fois que les informations de connexion auront été fournies, de parcourir la liste des projets Freedcamp pour sélectionner l'un d'entre eux. Ne complétez le champ "Identifiant de liste de tâches Freedcamp" que si vous êtes certain, si vous laissez ce champ vide, l'identifiant sera retrouvé ou créé par l'outil.
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampBackendProjectSettings.serverURL.displayName = URL du serveur
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampBackendProjectSettings.serverURL.description = URL du serveur
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampBackendProjectSettings.freedcampPrjId.description = Identifiant du projet Freedcamp
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampBackendProjectSettings.freedcampPrjId.displayName =  Identifiant du projet Freedcamp
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampBackendProjectSettings.freedcampTaskListId.description = Identifiant de la liste de tâches Freedcamp
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampBackendProjectSettings.freedcampTaskListId.displayName = Identifiant de la liste de tâches Freedcamp
+
+it.uniroma2.art.semanticturkey.config.customservice.Parameter.shortName = Paramètre
+it.uniroma2.art.semanticturkey.config.customservice.Parameter.name.description = Nom du paramètre
+it.uniroma2.art.semanticturkey.config.customservice.Parameter.name.displayName = Nom
+it.uniroma2.art.semanticturkey.config.customservice.Parameter.required.description = Indique si le paramètre est obligatoire ou non
+it.uniroma2.art.semanticturkey.config.customservice.Parameter.required.displayName = Obligatoire
+it.uniroma2.art.semanticturkey.config.customservice.Parameter.type.description = Type du paramètre
+it.uniroma2.art.semanticturkey.config.customservice.Parameter.type.displayName = Type
+
+it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter.shortName = Reporter invocable
+it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter.label.description = L'étiquette du reporter invocable
+it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter.label.displayName = Étiquette
+it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter.description.description = Description de ce reporter invocable
+it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter.description.displayName = Description
+it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter.sections.description = Invocations des services personnalisés qui composent ce reporter invocable
+it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter.sections.displayName = Invocations des services
+it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter.template.description = Un modèle de rendu pour le rapport qui prend tous les résultats en tant qu'entrée. Le modèle doit être conforme au langage de modélisation Mustache
+it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter.template.displayName = Modèle
+it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter.mimeType.description = Type MIME du rendu généré. Le type par défaut est text/plain
+it.uniroma2.art.semanticturkey.config.invokablereporter.InvokableReporter.mimeType.displayName = MIME
+
+it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation.shortName = Invocation du service
+it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation.service.description = Le nom du service invoqué
+it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation.service.displayName = Service
+it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation.operation.description = Le nom de l'opération spécifique invoquée
+it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation.operation.displayName = Opération
+it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation.arguments.description = Les paramètres fournis à l'opération de service invoquée
+it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation.arguments.displayName = Paramètres
+it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation.label.description = L'étiquette de cette section
+it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation.label.displayName = Étiquette
+it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation.description.description = Une description de cette section
+it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation.description.displayName = Description
+it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation.template.description = Un modèle de rendu pour la section individuelle. Le modèle doit être conforme au langage de modélisation Mustache
+it.uniroma2.art.semanticturkey.config.invokablereporter.ServiceInvocation.template.displayName = Modèle
+
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.Title.shortName = Titre
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.Title.title.description = Un nom ou un titre servant à désigner une ressource. Il peut s'agir du titre d'un jeu de données ou du nom d'une partie d'un logiciel
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.Title.title.displayName = Titre
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.Title.titleType.description = Le type du titre
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.Title.titleType.displayName = Type de titre
+
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.OntoPortalDeployerFactory.name = Déployeur pour OntoPortal
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.OntoPortalDeployerFactory.description = Un déployeur qui soumet une ontologie (ou plus précisément, une ontologie en OWL ou un thésaurus en SKOS) à un entrepôt OntoPortal (par ex. BioPortal, EcoPortal, AgroPortal, etc.)
+
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.shortName = EcoPortal
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.creators.description = Les principaux chercheurs impliqués dans la production des données, ou les auteurs de la publication, par ordre de priorité
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.creators.displayName = Créateurs
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.titles.displayName = Titres
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.publisher.description = Le nom de l'entité qui détient, archive, publie, distribue, délivre, émet ou produit la ressource
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.publisher.displayName = Éditeur
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.publicationYear.description = Année au cours de laquelle les données ont été ou vont être rendues publiques
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.publicationYear.displayName = Année de publication
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.resourceType.description = Une description de la ressource. Le format est libre, mais on privilégiera les unitermes fournissant un cetain niveau de détail
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.resourceType.displayName = Type de ressource
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.resourceTypeGeneral.description = Le type général d'une ressource
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.EcoPortalDeployerConfiguration.resourceTypeGeneral.displayName = Type général de ressource
+it.uniroma2.art.semanticturkey.extension.impl.rendering.AbstractLabelBasedRenderingEngineConfiguration.languages.description = Une liste des étiquettes de langues séparées par des virgules qui serviront au calcul de la variable ${labels}. Utilise ${userLangs} pour dépendre des réglages de l'utilisateur pour le projet
+it.uniroma2.art.semanticturkey.extension.impl.rendering.AbstractLabelBasedRenderingEngineConfiguration.languages.displayName = Langues
+it.uniroma2.art.semanticturkey.extension.impl.rendering.AbstractLabelBasedRenderingEngineConfiguration.template.description = Le modèle de rendu des ressources. Si aucun modèle n'est fourni, la valeur par défaut est : ${labels}
+it.uniroma2.art.semanticturkey.extension.impl.rendering.AbstractLabelBasedRenderingEngineConfiguration.template.displayName = Modèle
+it.uniroma2.art.semanticturkey.extension.impl.rendering.AbstractLabelBasedRenderingEngineConfiguration.variables.description = Définition des variables qui peuvent être utilisées dans le modèle
+it.uniroma2.art.semanticturkey.extension.impl.rendering.AbstractLabelBasedRenderingEngineConfiguration.variables.displayName = Variables
+it.uniroma2.art.semanticturkey.extension.impl.rendering.AbstractLabelBasedRenderingEngineConfiguration.ignoreValidation.description = Indique si le moteur de rendu devrait ignorer le fait que la validation est activée
+it.uniroma2.art.semanticturkey.extension.impl.rendering.AbstractLabelBasedRenderingEngineConfiguration.ignoreValidation.displayName = Ignorer la validation
+
+it.uniroma2.art.semanticturkey.extension.impl.rendering.VariableDefinition.shortName = Définition de variable
+it.uniroma2.art.semanticturkey.extension.impl.rendering.VariableDefinition.propertyPath.description = Une séquence de propriétés qui doivent être parcourues pour obtenir la valeur de la variable
+it.uniroma2.art.semanticturkey.extension.impl.rendering.VariableDefinition.propertyPath.displayName = Chemin de propriété
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JSailConfiguration.directTypeInference.displayName = Inférence des types directs
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JSailConfiguration.inferencer.description = Moteur d'inférence à utiliser ; aucun par défaut
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JSailConfiguration.inferencer.displayName = Moteur d'inférence
+
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JPersistentInMemorySailConfiguration.shortName = en mémoire / persistant
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JPersistentInMemorySailConfiguration.syncDelay.description = Délai en millisecondes avant que le modèle soit enregistré de manière persistente ; le délai par défaut est 1000 ms
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JPersistentInMemorySailConfiguration.syncDelay.displayName = Délai de synchronisation
+
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfiguration.shortName = native store / persistant
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfiguration.forceSync.description = Spécifie si les mises à jour doivent être synchronisées sur le disque en mode forcé ; la valeur par défaut est faux
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfiguration.forceSync.displayName = Force la synchronisation
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfiguration.tripleIndexes.description = Spécifie les index de triplets qui doivent être créés pour optimiser la résolution des requêtes ; voir : http://rdf4j.org/doc/programming-with-rdf4j/the-repository-api/#Creating_a_Native_RDF_Repository; par défaut : spoc, posc
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfiguration.tripleIndexes.displayName = Index
+
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterFactory.name = outil d'export des métadonnées du jeu de données ADMS
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterFactory.description = Exporte les métadonnées du jeu de données en utilisant le vocabulaire ADMS
+
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.shortName = Réglages de outil d'export des métadonnées du jeu de données ADMS
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_iri.description = IRI de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_title.description = Titre de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_description.description = Description de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_skos_label.description = AltLabel SKOS de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_issued.description = Asset publié le
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_modified.description = Asset modifié le
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_keywords.description = Mots-clés de l'asset (séparés par des virgules)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_versionInfo.description = Information de version de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_versionsNotes.description = Notes de version de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_theme.description = Thème de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_spatial.description = Couverture spatiale de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_contactPoint.description = Point de contact de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_landingPage.description = Page d'accueil de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_landingPage_title.description = Page d'accueil de l'asset - titre
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_describedBy.description = Asset décrit par
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_describedBy_title.description = Asset décrit par - titre
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_page.description = Page de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_page_title.description = Page de l'asset - titre
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_identifier.description = Identifiant de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_identifier_notation.description = Identifiant de l'asset - notation (saisir un rdfs:Literal)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_identifie_creator.description = Identifiant de l'asset - createur
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_identifier_schemeAgency.description = Identifiant de l'asset - agence du schéma
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_temporal.description = Couverture temporelle de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_temporal_startDate.description = Couverture temporelle de l'asset - date de début
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_temporal_endDate.description = Couverture temporelle de l'asset - date de fin
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_language.description = Langue de l'asset (si un code ISO 639-1 (sur deux caractères) est utilisé pour la langue, il faut alors utiliser l'IRI correspondante ; si aucun code ISO 639-1 n'est utilisé, il faut alors utiliser l'IRI correspondant au code ISO 639-2 (sur trois caractères).
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_status.description = Statut de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_interoperability_level.description = Niveau d'interopérabilité de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_type.description = Type d'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_includedAsset.description = Asset include dans l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_sample.description = Échantillon de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_traslation.description = Traduction de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_prev.description = Asset précédent
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_last.description = Dernier asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_next.description = Asset suivant
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_relation.description = Relation de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_distribution.description = Distribution de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_publisher.description = Éditeur de l'asset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_publisher_name.description = Éditeur de l'asset - nom
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.asset_publisher_type.description = Éditeur de l'asset - type
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.distribution_issued.description = Distribution produite le
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.distribution_modified.description = Distribution modifiée le
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.distribution_title.description = Titre de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.distribution_description.description = Description de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.distribution_accessUurl.description = URL d'accès de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.distribution_downloadUrl.description = URL de téléchargement de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.distribution_licence.description = Licence de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.distribution_licence_title.description = Licence de la distribution - titre
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.distribution_licence_description.description = Licence de la distribution - description
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.distribution_licence_type.description = Licence de la distribution - type
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.distribution_format.description = Format de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms.ADMSDatasetMetadataExporterSettings.distribution_media_type.description = Type de média de la distribution
+
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterFactory.name = outil d'export des métadonnées du jeu de données DCAT-AP
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterFactory.description = Exporte les métadonnées du jeu de données en utilisant le vocabulaire DCAT-AP
+
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.shortName = Réglages de l'outil d'export des métadonnées du jeu de données DCATAP
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.catalogue_iri.description = IRI du catalogue
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.dataset_iri.description = IRI du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.catalogue_description.description = Catalogue - description
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.catalogue_publisherAgentIRI.description = Catalogue - IRI 
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.catalogue_publisherAgentName.description = Catalogue - nom de l'agent éditeur
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.catalogue_publisherAgentType.description = Catalogue - type de l'agent éditeur
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.catalogue_title.description = Catalogue - titre
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.catalogue_homepage.description = Catalogue - page d'accueil
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.catalogue_language.description = Catalogue - langue
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.catalogue_licence.description = Catalogue - licence
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.catalogue_releaseDate.description = Catalogue - date de mise à disposition
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.catalogue_themes.description = Catalogue - thèmes
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.catalogue_modificationDate.description = Catalogue - date de modification
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.dataset_description.description = Jeu de données - description
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.dataset_title.description = Jeu de données - titre
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.dataset_distributionIRI.description = Jeu de données - IRI de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.dataset_distributionAccessUrl.description = Jeu de données - URL d'accès de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.dataset_distributionDescription.description = Jeu de données - description de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.dataset_distributionFormat.description = Jeu de données - format de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.dataset_distributionLicence.description = Jeu de données - licence de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.dataset_keyword.description = Jeu de données - mots-clés
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.dataset_publisherAgentIRI.description = Jeu de données - IRI de l'agent éditeur
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.dataset_publisherAgentName.description = Jeu de données - nom de l'agent éditeur
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.dataset_publisherAgentType.description = Jeu de données - type de l'agent éditeur
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.dataset_theme.description = Thème du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.category_preferredLabel.description = Label préférentiel de la catégorie
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterSettings.categoryScheme_title.description = Titre du schéma des catégories
+
+it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEnginePUSettings.template.description = Le modèle de rendu des ressources
+it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEnginePUSettings.template.displayName = Modèle
+it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEnginePUSettings.variables.description = Définition des variables qui peuvent être utilisées dans le modèle
+it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEnginePUSettings.variables.displayName = Variables
+it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEnginePUSettings.ignoreValidation.description = Indique si le moteur de rendu devrait ignorer le fait que la validation est activée
+it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEnginePUSettings.ignoreValidation.displayName = Ignorer la validation
+
+it.uniroma2.art.semanticturkey.extension.impl.rendering.ontolexlemon.OntoLexLemonRenderingEngineFactory.name = Moteur de rendu W3C OntoLex-Lemon
+it.uniroma2.art.semanticturkey.extension.impl.rendering.ontolexlemon.OntoLexLemonRenderingEngineFactory.description = Un moteur de rendu basé sur le modèle W3C OntoLex-Lemon
+it.uniroma2.art.semanticturkey.extension.impl.rendering.ontolexlemon.OntoLexLemonRenderingEngineConfiguration.shortName = Configuration du moteur de rendu W3C OntoLex-Lemon
+
+it.uniroma2.art.semanticturkey.extension.impl.rendering.rdfs.RDFSRenderingEngineFactory.name = Moteur de rendu RDFS
+it.uniroma2.art.semanticturkey.extension.impl.rendering.rdfs.RDFSRenderingEngineFactory.description = Un moteur de rendu basé sur rdfs:label(s)
+it.uniroma2.art.semanticturkey.extension.impl.rendering.rdfs.RDFSRenderingEngineConfiguration.shortName = Configuration du moteur de rendu RDFS
+
+it.uniroma2.art.semanticturkey.extension.impl.rendering.skos.SKOSRenderingEngineFactory.name = Moteur de rendu SKOS
+it.uniroma2.art.semanticturkey.extension.impl.rendering.skos.SKOSRenderingEngineFactory.description = Un moteur de rendu basé sur skos:prefLabel(s)
+it.uniroma2.art.semanticturkey.extension.impl.rendering.skos.SKOSRenderingEngineConfiguration.shortName = Configuration du moteur de rendu SKOS
+
+it.uniroma2.art.semanticturkey.extension.impl.rendering.skosxl.SKOSXLRenderingEngineFactory.name = Moteur de rendu SKOSXL
+it.uniroma2.art.semanticturkey.extension.impl.rendering.skosxl.SKOSXLRenderingEngineFactory.description = Un moteur de rendu basé sur skosxl:prefLabel(s)
+it.uniroma2.art.semanticturkey.extension.impl.rendering.skosxl.SKOSXLRenderingEngineConfiguration.shortName = Configuration du moteur de rendu SKOSXL
+
+it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterSettings.shortName = Réglages communs de l'outil d'export des métadonnées des jeux de données
+
+it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorFactory.name = Générateur d'URI natif, basé sur des modèles
+it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorFactory.description = Un générateur d'URI A URI Generator qui instantie des modèles associés à différents xRoles
+
+it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorConfiguration.shortName = Natif, basé sur des modèles
+
+it.uniroma2.art.semanticturkey.settings.alignmentservices.RemoteAlignmentServiceProjectSettings.shortName = Paramétrages du projet de service distant d'alignement
+it.uniroma2.art.semanticturkey.settings.alignmentservices.RemoteAlignmentServiceProjectSettings.configID.description = L'identifiant d'une configuration de niveau système pour un service d'alignement
+it.uniroma2.art.semanticturkey.settings.alignmentservices.RemoteAlignmentServiceProjectSettings.configID.displayName = Identifiant de la configuration
+
+it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEnginePUSettings.shortName = Paramétrages utilisateur d'un projet de moteur de rendu
+it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEnginePUSettings.languages.description = Liste des langues, séparées par des virgules, qui doivent être utilisées pour calculer un rendu. Une astérisque "*" signifie toutes les langues
+it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEnginePUSettings.languages.displayName = Langues
+
+it.uniroma2.art.semanticturkey.project.SHACLSettings.shortName = Paramétrages de SHACL
+it.uniroma2.art.semanticturkey.project.SHACLSettings.parallelValidation.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.parallelValidation.displayName = Validation parallèle
+it.uniroma2.art.semanticturkey.project.SHACLSettings.undefinedTargetValidatesAllSubjects.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.undefinedTargetValidatesAllSubjects.displayName = Cible non définie valide tous les sujets
+it.uniroma2.art.semanticturkey.project.SHACLSettings.logValidationPlans.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.logValidationPlans.displayName = Logue les plans de validation
+it.uniroma2.art.semanticturkey.project.SHACLSettings.logValidationViolations.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.logValidationViolations.displayName =  Logue les violations de validation
+it.uniroma2.art.semanticturkey.project.SHACLSettings.ignoreNoShapesLoadedException.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.ignoreNoShapesLoadedException.displayName = Ignore NoShapesLoadedException
+it.uniroma2.art.semanticturkey.project.SHACLSettings.cacheSelectNodes.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.cacheSelectNodes.displayName = Met en cache les noeuds sélectionnés
+it.uniroma2.art.semanticturkey.project.SHACLSettings.validationEnabled.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.validationEnabled.displayName = Validation active
+it.uniroma2.art.semanticturkey.project.SHACLSettings.globalLogValidationExecution.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.globalLogValidationExecution.displayName = Log global de l'exécution de la validation
+it.uniroma2.art.semanticturkey.project.SHACLSettings.rdfsSubclassReasoning.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.rdfsSubclassReasoning.displayName = Inférence RDFS des sous-classes
+it.uniroma2.art.semanticturkey.project.SHACLSettings.performanceLogging.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.performanceLogging.displayName = Log pour les prestations
+it.uniroma2.art.semanticturkey.project.SHACLSettings.serializableValidation.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.serializableValidation.displayName = Validation sérialisable 
+it.uniroma2.art.semanticturkey.project.SHACLSettings.eclipseRdf4jShaclExtensions.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.eclipseRdf4jShaclExtensions.displayName = Extensions d'Eclipse RDF4J
+it.uniroma2.art.semanticturkey.project.SHACLSettings.dashDataShapes.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.dashDataShapes.displayName = DASH data shapes
+it.uniroma2.art.semanticturkey.project.SHACLSettings.validationResultsLimitTotal.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.validationResultsLimitTotal.displayName = Limite des résultats de validation totale
+it.uniroma2.art.semanticturkey.project.SHACLSettings.validationResultsLimitPerConstraint.description =
+it.uniroma2.art.semanticturkey.project.SHACLSettings.validationResultsLimitPerConstraint.displayName = Limite des résultats de validation par contrainte
+
+
+
+it.uniroma2.art.semanticturkey.settings.search.StoredCustomSearch.shortName = Recherche personnalisée sauvegardée
+it.uniroma2.art.semanticturkey.settings.search.StoredCustomSearch.searchSPARQLParameterizationReferences.description = Un ensemble de références relatives à des paramétrisations sauvegardées de requêtes SPARQL pouvant être utilisées pour une recherche personnalisée
+it.uniroma2.art.semanticturkey.settings.search.StoredCustomSearch.searchSPARQLParameterizationReferences.displayName = Références à des paramétrisations SPARQL de recherche
+ 
+it.uniroma2.art.semanticturkey.settings.metadata.StoredProjectMetadata.shortName = Métadonnées de projet sauvegardé
+it.uniroma2.art.semanticturkey.settings.metadata.StoredProjectMetadata.datasetDescription.description = Une paire formée d'un IRI identifiant de manière unique le jeu de données associé au projet et de sa description en format Turtle
+it.uniroma2.art.semanticturkey.settings.metadata.StoredProjectMetadata.datasetDescription.displayName = Description du jeu de données
+
+it.uniroma2.art.semanticturkey.mdr.bindings.StoredProjectMetadata.shortName = Stored Project Metadata
+it.uniroma2.art.semanticturkey.mdr.bindings.StoredProjectMetadata.datasetDescription.description = Une paire formée d'un IRI identifiant de manière unique le jeu de données associé au projet et de sa description en format Turtle
+it.uniroma2.art.semanticturkey.mdr.bindings.StoredProjectMetadata.datasetDescription.displayName = Description du jeu de données
+
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.htmlWarning = La clé API est stockée sur le serveur sans chiffrement. Soyez conscient du fait que l'administrateur système pourrait y avoir accès.
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.apiBaseURL.description = L'URL de base de l'API REST d'OntoPortal
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.apiBaseURL.displayName = URL de base de l'API
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.apiKey.description = A valid API key for the OntoPortal REST API. A user''s API key be found on the account page of that user Une clé API valide pour l'API Rest d'OntoPortal. La clé API de chaque utilisateur peut être trouvée sur la page de son compte
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.apiKey.displayName = Clé API
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.acronym.description = L'acronyme de l'ontologie concernée par la soumission
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.acronym.displayName = Acronyme
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.description.description = Description de l'ontologie
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.description.displayName = Description
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.version.description = Version de l'ontologie
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.version.displayName = Version
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.hasOntologyLanguage.description = Langue de l'ontologie
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.hasOntologyLanguage.displayName = Format
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.status.description = Statut de l'ontologie
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.status.displayName = Statut
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.released.description = Date de mise à disposition. La date doit être au format aaaa-mm-jj (ex. 2020-02-20)
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.released.displayName = Date de mise à disposition
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.contact.description = Contacts pour l'ontologie. Chaque contact doit être enregistré sous la forme : nom (adresse e-mail)
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.contact.displayName = Contacts
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.homepage.description = Adresse de la page web principale de l'ontologie
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.homepage.displayName = Page d'accueil
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.documentation.description = Adresse de la page web fournissant la documentation sur l'ontologie
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.documentation.displayName = Documentation
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.publication.description = Adresse d'une page web listant les publications relatives à l'ontologie
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.AbstractOntoPortalDeployerConfiguration.publication.displayName = Publications
+
+it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.OntoPortalDeployerConfiguration.shortName = OntoPortal
+
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAURIGeneratorFactory.name = Générateur d'URI basé sur CODA
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAURIGeneratorFactory.description = Un générateur d'URI basé sur un convertisseur CODA
+
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAAnyURIGeneratorConfiguration.shortName = Générateur d'URI basé sur un convertisseur CODA
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAAnyURIGeneratorConfiguration.converter.description = Nom de la classe pour la sélection du convertisseur CODA désiré
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODAAnyURIGeneratorConfiguration.converter.displayName = Convertisseur
+
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODATemplateBasedURIGeneratorConfiguration.shortName = Générateur d'URI à modèle basé sur CODA
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODATemplateBasedURIGeneratorConfiguration.concept.description = Modèle pour les concepts SKOS
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODATemplateBasedURIGeneratorConfiguration.concept.displayName = Concept
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODATemplateBasedURIGeneratorConfiguration.xLabel.description = Modèle pour les eXtended Labels SKOS
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODATemplateBasedURIGeneratorConfiguration.xLabel.displayName = eXtended label
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODATemplateBasedURIGeneratorConfiguration.xNote.description = Modèle pour les définitions SKOS
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODATemplateBasedURIGeneratorConfiguration.xNote.displayName = Définition
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODATemplateBasedURIGeneratorConfiguration.fallback.description = Modèle de repli pour tout type inconnu de ressource 
+it.uniroma2.art.semanticturkey.extension.impl.urigen.coda.CODATemplateBasedURIGeneratorConfiguration.fallback.displayName = Repli
+
+it.uniroma2.art.semanticturkey.config.customservice.CustomService.shortName = Service personnalisé
+it.uniroma2.art.semanticturkey.config.customservice.CustomService.name.description = Le nom utilisé pour regrouper toutes les opérations définies par ce service personnalisé
+it.uniroma2.art.semanticturkey.config.customservice.CustomService.name.displayName = Nom du service
+it.uniroma2.art.semanticturkey.config.customservice.CustomService.description.description = Une description de ce service personnalisé
+it.uniroma2.art.semanticturkey.config.customservice.CustomService.description.displayName = Description
+it.uniroma2.art.semanticturkey.config.customservice.CustomService.operations.description = Les opérations assurées par ce service personnalisé
+it.uniroma2.art.semanticturkey.config.customservice.CustomService.operations.displayName = Opérations
+
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty.DeletePropertyValueRDFTransformerConfiguration.shortName = Transformer RDF pour la suppression des valeurs de propriété
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty.DeletePropertyValueRDFTransformerConfiguration.resource.description = Le sujet du triplet filtré
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty.DeletePropertyValueRDFTransformerConfiguration.resource.displayName = Ressource
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty.DeletePropertyValueRDFTransformerConfiguration.property.description = Le prédicat du triplet filtré
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty.DeletePropertyValueRDFTransformerConfiguration.property.displayName = Prédicat
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty.DeletePropertyValueRDFTransformerConfiguration.value.description = L'object du triplet filtré. S'il n'est pas fourni, tous les triplets de la forme <ressource, prédicat, *> sont supprimés
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty.DeletePropertyValueRDFTransformerConfiguration.value.displayName = Valeur
+
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty.DeletePropertyValueRDFTransformerFactory.name = Transformer RDF pour la suppression des valeurs de propriété
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.deleteproperty.DeletePropertyValueRDFTransformerFactory.description = Un transformer RDF qui peut être configuré pour supprimer une valeur de propriété
+
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerConfiguration.shortName = Configuration du déployeur HTTP du graph store
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerConfiguration.htmlWarning = Il faut définir soit "<em>graphStoreHTTPEndpoint</em>" soit "<em>destinationGraph</em>". Les informations sont stockées sur le serveur sans chiffrement. Soyez conscient du fait que l'administrateur système pourrait y avoir accès.
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerConfiguration.graphStoreHTTPEndpoint.description = L'adresse du endpoint conforme au protocole du graph store HTTP. Si cette adresse n'est pas renseignée, on considère que le graphe de destination est identifié directement.
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerConfiguration.graphStoreHTTPEndpoint.displayName = Endpoint HTTP du graph store
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerConfiguration.destinationGraph.description = Le graphe dans lequel les données devraient être déployées. S'il n'est pas renseigné, le graphe par défaut est utilisé
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerConfiguration.destinationGraph.displayName = Graphe de destination
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerConfiguration.clearFirst.description = Indique si des données pré-existantes doivent être supprimées au préalable
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerConfiguration.clearFirst.displayName = Supprimer au préalable
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerConfiguration.username.description = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerConfiguration.username.displayName = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerConfiguration.password.description = Mot de passe
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerConfiguration.password.displayName = Mot de passe
+
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerFactory.name = Déployeur HTTP du graph store
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sparql.GraphStoreHTTPDeployerFactory.description = Un déployeur qui utilise le protocole HTTP pour graph store SPARQL 1.1
+
+it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql.SPARQLCustomServiceBackendFactory.name = Backend SPARQL du service personnalisé
+it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql.SPARQLCustomServiceBackendFactory.description = Un backend utilisant SPARQL pour implémenter des services personnalisés
+
+it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql.SPARQLOperation.shortName = Opération pour service personnalisé en SPARQL
+it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql.SPARQLOperation.sparql.description = Implémentation en SPARQL d'une opération de service personnalisé
+it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql.SPARQLOperation.sparql.displayName = SPARQL
+
+it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.showvoc.ShowVocConnectorConfiguration.shortName = Connecteur ShowVoc
+it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.showvoc.ShowVocConnectorConfiguration.apiBaseURL.description = URL de base de l'implémentation de l'API REST de ShowVoc
+it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.showvoc.ShowVocConnectorConfiguration.apiBaseURL.displayName = URL de base de l'API
+it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.showvoc.ShowVocConnectorConfiguration.frontendBaseURL.description = L'URL de base du frontend d'une instance ShowVoc
+it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.showvoc.ShowVocConnectorConfiguration.frontendBaseURL.displayName = URL de base du frontend
+
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.shortName = Configuration du déployeur HTTP
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.htmlWarning = Les informations sont stockées sur le serveur sans chiffrement. Soyez conscient du fait que l'administrateur système pourrait y avoir accès.
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.endpoint.description = L'adresse du endpoint dans lequel les données seront déployées
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.endpoint.displayName = Endpoint
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.httpVerb.description = Verbe HTTP à utiliser
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.httpVerb.displayName = Verbe HTTP
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.queryParameters.description = Paramètres de requête additionnels
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.queryParameters.displayName = Paramètres de requête
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.requestHeaders.description = Headers de requête additionnels
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.requestHeaders.displayName = Headers de requête
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.username.description = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.username.displayName = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.password.description = Mot de passe
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerConfiguration.password.displayName = Mot de passe
+
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerFactory.name = Déployeur HTTP
+it.uniroma2.art.semanticturkey.extension.impl.deployer.http.HTTPDeployerFactory.description = Un déployeur qui utilise le protocole HTTP
+
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.shortName = Configuration du déployeur SFTP
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.htmlWarning = Les informations sont stockées sur le serveur sans chiffrement. Soyez conscient du fait que l'administrateur système pourrait y avoir accès
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.host.description = Nom/adresse de l'hôte cible
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.host.displayName = Hôte
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.port.description = Le port cible
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.port.displayName = Port
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.serverKeyFingerprint.description = L'empreinte du serveur cible. Elle doit avoir l'une des formes autorisées (MD5:)?[\\dA-F][\\dA-F](:[\\dA-F][\\dA-F])'{'15'}' et SHA(1|224|256|384|512):[code Base64 sans signe = final]
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.serverKeyFingerprint.displayName = Empreinte de la clé du serveur 
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.username.description = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.username.displayName = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.password.description = Mot de passe
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.password.displayName = Mot de passe
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.destinationPath.description = Chemin sur l'hôte distant où les données seront déployées
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.destinationPath.displayName = Nom de la destination
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.timeout.description = Délai d'expiration en millisecondes
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerConfiguration.timeout.displayName = Délai d'expiration (ms)
+
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerFactory.name = Déployeur SFTP
+it.uniroma2.art.semanticturkey.extension.impl.deployer.sftp.SFTPDeployerFactory.description = Un déployeur qui utilise le protocole SFTP
+
+it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderConfiguration.shortName = Configuration du loader HTTP pour le graph store
+it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderConfiguration.htmlWarning = Il faut définir soit "<em>graphStoreHTTPEndpoint</em>" soit "<em>sourceGraph</em>". Les informations sont stockées sur le serveur sans chiffrement. Soyez conscient du fait que l'administrateur système pourrait y avoir accès. 
+it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderConfiguration.graphStoreHTTPEndpoint.description = L'adresse du endpoint conforme au protocole du graph store HTTP. Si cette adresse n'est pas renseignée, on considère que le graphe de destination est identifié directement.
+it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderConfiguration.graphStoreHTTPEndpoint.displayName = Endpoint HTTP du graph store
+it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderConfiguration.sourceGraph.description = Le graphe dans lequel les données devraient être déployées. S'il n'est pas renseigné, le graphe par défaut est utilisé
+it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderConfiguration.sourceGraph.displayName = Graphe source
+it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderConfiguration.username.description = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderConfiguration.username.displayName = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderConfiguration.password.description = Mot de passe
+it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderConfiguration.password.displayName = Mot de passe
+
+it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderFactory.name = Loader HTTP du graph store
+it.uniroma2.art.semanticturkey.extension.impl.loader.sparql.GraphStoreHTTPLoaderFactory.description = Un loader qui utilise le protocole HTTP pour graph store SPARQL 1.1
+
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.shortName = Configuration du loader HTTP
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.htmlWarning = Les informations sont stockées sur le serveur sans chiffrement. Soyez conscient du fait que l'administrateur système pourrait y avoir accès.
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.endpoint.description = L'adresse du endpoint duquel les données seront chargées
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.endpoint.displayName = Endpoint
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.queryParameters.description = Paramètres de requête additionnels
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.queryParameters.displayName = Paramètres de requête
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.requestHeaders.description = Headers de requête additionnels
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.requestHeaders.displayName = Headers de requête
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.enableContentNegotiation.description = Permet la négociation de contenu sur la base du format de données fourni par l'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.enableContentNegotiation.displayName = Permet la négociation de contenu
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.reportContentType.description  = Indique au loader de reporter le content-type reçu par le serveur
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.reportContentType.displayName = Reporter le content-type
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.username.description = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.username.displayName = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.password.description = Mot de passe
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderConfiguration.password.displayName = Mot de passe
+
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderFactory.name = Loader HTTP
+it.uniroma2.art.semanticturkey.extension.impl.loader.http.HTTPLoaderFactory.description = Un loader qui utilise le protocole HTTP
+
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.shortName = Configuration du loader SFTP
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.htmlWarning = Les informations sont stockées sur le serveur sans chiffrement. Soyez conscient du fait que l'administrateur système pourrait y avoir accès.
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.host.description = Nom/adresse de l'hôte source
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.host.displayName = Hôte
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.port.description = Le port source
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.port.displayName = Port
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.serverKeyFingerprint.description = L'empreinte du serveur source. Elle doit avoir l'une des formes autorisées (MD5:)?[\\dA-F][\\dA-F](:[\\dA-F][\\dA-F]){15} and SHA(1|224|256|384|512):[code Base64 sans signe = final] 
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.serverKeyFingerprint.displayName = Empreinte de la clé du serveur
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.username.description = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.username.displayName = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.password.description = Mot de passe
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.password.displayName = Mot de passe
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.sourcePath.description = Chemin sur l'hôte distant d'où les données seront chargées
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.sourcePath.displayName = Nom de la source
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.timeout.description = Délai d'expiration en millisecondes
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoderConfiguration.timeout.displayName = Délai d'expiration (ms)
+
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoaderFactory.name = Loader SFTP
+it.uniroma2.art.semanticturkey.extension.impl.loader.sftp.SFTPLoaderFactory.description = Un loader qui utilise le protocole SFTP
+
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.propertynormalizer.PropertyNormalizerTransformerConfiguration.shortName = Transformeur de normalisatione de propriété
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.propertynormalizer.PropertyNormalizerTransformerConfiguration.normalizingProperty.description = Propriété de remplacement
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.propertynormalizer.PropertyNormalizerTransformerConfiguration.normalizingProperty.displayName = Propriété normalisante
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.propertynormalizer.PropertyNormalizerTransformerConfiguration.propertiesBeingNormalized.description = Propriétés qui sont remplacées dans la sortie
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.propertynormalizer.PropertyNormalizerTransformerConfiguration.propertiesBeingNormalized.displayName = Propriétés qui ont été normalisées
+
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.propertynormalizer.PropertyNormalizerTransformerFactory.name = Transformeur de normalisatione de propriété
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.propertynormalizer.PropertyNormalizerTransformerFactory.description = Un transformer RDF qui normalise un ensemble de propriétés en remplaçant leur occurrence en prédicat dans des triplets par une propriété fournie
+ 
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerConfiguration.shortName = Transformeur RDF basé sur SPARQL Update
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerConfiguration.filter.description = SPARQL update qui implémente le filtre
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerConfiguration.filter.displayName = Filtre
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerConfiguration.sliced.description = Exécute la requête SPARQL query sur chaque graphe séparément
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerConfiguration.sliced.displayName = Sliced
+
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerFactory.name = Transformeur RDF basé sur SPARQL
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerFactory.description = Un transformeur RDF qui peut être configuré au moyen d'une mise à jour SPARQL
+
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTransformerConfiguration.shortName = Transformeur RDF pour la mise à jour de propriété
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTransformerConfiguration.resource.description = Le sujet du triplet filtré
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTransformerConfiguration.resource.displayName = Ressource
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTransformerConfiguration.property.description = Le prédicat du triplet filtré
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTransformerConfiguration.property.displayName = Propriété
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTransformerConfiguration.value.description = La nouvelle valeur à utiliser
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTransformerConfiguration.value.displayName = Valeur
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTransformerConfiguration.oldValue.description = Si renseigné, le triplet <resource, property, oldValue> est remplacé par <resource, property, value>. Dans le cas contraire, tous les triplets <resource, property, *> sont supprimés et le triplet <resource, property, value> est créé
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTransformerConfiguration.oldValue.displayName = Ancienne valeur
+
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTranformerFactory.name = Transformeur RDF pour la mise à jour de propriété
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.updateproperty.UpdatePropertyValueRDFTranformerFactory.description = Un transformeur RDF qui peut être configuré pour mettre à jour une propriété
+
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xlabeldereification.XLabelDereificationRDFTransformerConfiguration.shortName = Transformeur RDF pour la déréification de XLabel
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xlabeldereification.XLabelDereificationRDFTransformerConfiguration.preserveReifiedLabels.description = Préserve les étiquettes réifiées dans la sortie
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xlabeldereification.XLabelDereificationRDFTransformerConfiguration.preserveReifiedLabels.displayName = Préserve les étiquettes réifiées
+
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xlabeldereification.XLabelDereificationRDFTransformerFactory.name = Transformeur RDF pour la déréification de XLabel
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xlabeldereification.XLabelDereificationRDFTransformerFactory.description = Un transformeur RDF qui opère la déréification de XLabel
+
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xnotedereification.XNoteDereificationRDFTransformerConfiguration.shortName = Transformeur RDF pour la déréification de XNote
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xnotedereification.XNoteDereificationRDFTransformerConfiguration.preserveReifiedNotes.description = Préserve les notes réifiées dans la sortie
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xnotedereification.XNoteDereificationRDFTransformerConfiguration.preserveReifiedNotes.displayName = Préserve les notes réifiées
+
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xnotedereification.XNoteDereificationRDFTransformerFactory.name = Transformeur RDF pour la déréification de XNote
+it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xnotedereification.XNoteDereificationRDFTransformerFactory.description = Un transformeur RDF qui opère la déréification de XNote
+
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterConfiguration.shortName = Exportateur pour la serialisation RDF
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterConfiguration.prettyPrint.description = Indique s'il faut privilégier le pretty printing
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterConfiguration.prettyPrint.displayName = Pretty print
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterConfiguration.inlineBlankNodes.description = Indique s'il faut utiliser des listes, collections et noeuds anonymes à la place d'étiquettes de noeuds anonymes
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterConfiguration.inlineBlankNodes.displayName = Inclus les noeuds anonymes
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterConfiguration.xsdStringToPlainLiteral.description = Indique si le sérialiseur doit supprimer le type de données xsd:string des littéraux et les représenter comme des littéraux ordinaires RDF-1.0
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterConfiguration.xsdStringToPlainLiteral.displayName = xsd:string en tant que littéral ordinaire
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterConfiguration.rdfLangStringToLangLiteral.description = Indique si le sérialiseur doit ignorer le type de données rdf:langString des littéraux de langage naturel lorsqu'il les sérialise
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterConfiguration.rdfLangStringToLangLiteral.displayName = rdf:langString to language tagged literal
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterConfiguration.baseDirective.description = Tells whether the serializer should include a base directive
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterConfiguration.baseDirective.displayName = Base directive
+
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterFactory.name = Exportateur pour la sérialisation RDF
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.rdfserializer.RDFSerializingExporterFactory.description = Un exportateur de reformatage qui sérialise les données RDF selon une syntaxe RDF concrète
+
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.spreadsheetserializer.SpreadsheetSerializingExporter.exceptionModel.message = Seuls les projets basés sur un modèle SKOS peuvent utiliser cet exportateur
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.spreadsheetserializer.SpreadsheetSerializingExporter.exceptionLexModel.message = Seuls les projets basés sur un modèle de lexicalisation SKOS ou SKOSXL peuvent utiliser cet exportateur
+
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.spreadsheetserializer.SpreadsheetSerializingExporterConfiguration.shortName = Exportateur de sérialisation en Spreadsheet
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.spreadsheetserializer.SpreadsheetSerializingExporterConfiguration.language.description = Langue préférentielle pour l'étiquette
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.spreadsheetserializer.SpreadsheetSerializingExporterConfiguration.language.displayName = Langue préférentielle
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.spreadsheetserializer.SpreadsheetSerializingExporterConfiguration.reifiedNotes.description = ndique si les skos:note sont réifiés
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.spreadsheetserializer.SpreadsheetSerializingExporterConfiguration.reifiedNotes.displayName =  skos:note réifié
+
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.spreadsheetserializer.SpreadsheetSerializingExporterFactory.name = Exportateur de sérialisation en Spreadsheet
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.spreadsheetserializer.SpreadsheetSerializingExporterFactory.description = Un exportateur de reformattage qui sérialise les données RDF selon un Spreadsheet
+
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.zthesserializer.ZthesSerializingExporterConfiguration.shortName = Exportateur de sérialisation Zthes
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.zthesserializer.ZthesSerializingExporterConfiguration.pivotLanguages.description = Liste priorisée des étiquettes de langue sur laquelle sont basées les relations des PT
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.zthesserializer.ZthesSerializingExporterConfiguration.pivotLanguages.displayName = Langues pivots
+
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.zthesserializer.ZthesSerializingExporterFactory.name = Exportateur de sérialisation Zthes
+it.uniroma2.art.semanticturkey.extension.impl.reformattingexporter.zthesserializer.ZthesSerializingExporterFactory.description = Un exportateur de reformattage qui sérialise les données RDF selon une syntaxe Zthes concrète
+
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurerFactory.name = Predefined RepositoryImpl configurer Configurateur prédéfini de RepositoryImpl
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryImplConfigurerFactory.description = Supporte les configurations prédéfinies pour RepositoryImpl
+
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.baseURL.description = URL de base (owlim:base-URL)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.baseURL.displayName = URL de base
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.defaultNS.description = Espaces de noms par défaut pour les imports (';' delimited) (owlim:defaultNS)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.defaultNS.displayName = Espaces de noms par défaut
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.entityIndexSize.description = Taille de l'index des entités (owlim:entity-index-size)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.entityIndexSize.displayName = Taille de l'index des entités
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.entityIdSize.description = Taille en bit de l'identifiant des entités(owlim:entity-id-size)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.entityIdSize.displayName = Taille en bit de l'identifiant des entités
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.imports.description = Fichiers RDF importés (';' delimited) (owlim:imports)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.imports.displayName = Fichiers RDF importés
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.repositoryType.description = Type d'entrepôt (owlim:repository-type)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.repositoryType.displayName = Type d'entrepôt
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.ruleset.description = Ensemble de règles (owlim:ruleset)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.ruleset.displayName = Ensemble de règles
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.storageFolder.description = Dossier de sauvegarde (owlim:storage-folder)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.storageFolder.displayName = Dossier de sauvegarde
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.enableContextIndex.description = Utilise un index de contextes (owlim:enable-context-index)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.enableContextIndex.displayName = Utilise un index de contextes 
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.enablePredicateList.description = Utilise un index de prédicats(owlim:enablePredicateList)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.enablePredicateList.displayName = Utilise un index de prédicats
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.inMemoryLiteralProperties.description = Met en cache les étiquettes de langue des littéraux (owlim:in-memory-literal-properties)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.inMemoryLiteralProperties.displayName = Met en cache les étiquettes de langue des littéraux
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.enableLiteralIndex.description = Permet l'index des littéraux (owlim:enable-literal-index)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.enableLiteralIndex.displayName = Permet l'index des littéraux
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.checkForInconsistencies.description = Contrôle les incohérences (owlim:check-for-inconsistencies)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.checkForInconsistencies.displayName = Contrôle les incohérences
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.disableSameAs.description = Désactive OWL sameAs (owlim:disable-sameAs)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.disableSameAs.displayName = Désactive OWL sameAs 
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.queryTimeout.description = Délai d'expiration de la requête (en secondes) (owlim:query-timeout)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.queryTimeout.displayName = Délai d'expiration de la requête (en secondes) (seconds)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.queryLimitResults.description = Limite les résultats de la requête (en secondes) (owlim:query-limit-results)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.queryLimitResults.displayName = Limite les résultats de la requête (en secondes)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.throwQueryEvaluationExceptionOnTimeout.description = Déclare une exception au délai d'expiration des requêtes (owlim:throw-QueryEvaluationException-on-timeout)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.throwQueryEvaluationExceptionOnTimeout.displayName = Déclare une exception au délai d'expiration des requêtes
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.readOnly.description = Lecture seule (owlim:read-only)
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.AbstractGraphDBConfiguration.readOnly.displayName = Lecture seule
+
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.GraphDBFreeConfiguration.shortName = GraphDB Free (uniquement à distance)
+
+it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.GraphDBSEConfiguration.shortName = GraphDB SE (uniquement à distance)
+
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterFactory.name = Exportateur de métadonnées de jeux de données VoID/LIME
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterFactory.description = Exporte les métadonnées des jeux de données en utilisant les vocabulaires VoID et LIME
+
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.shortName = Réglages de l'exportateur de métadonnées de jeux de données VoID/LIME
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_description_baseUri.description = URI de base de la description du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_description_baseUri.displayName = URI de base de la description du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_localName.description=Nom local du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_localName.displayName=Nom local du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_title.description=Le nom du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_title.displayName=Titre
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_description.description=Une description textuelle du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_description.displayName=Description
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_homePage.description=Page d'accueil du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_homePage.displayName=Page d'accueil
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_creators.description=Une entité, de type personne, organisation ou service, qui est le responsable principal de la création du jeu de données (IRIs séparés par des virgules)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_creators.displayName=Créateurs
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_publisher.description=Une entité, de type personne, organisation ou service, qui est responsable de la mise à disposition du jeu de données (devrait être un IRI)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_publisher.displayName=Éditeurs
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_contributors.description=Une entité, de type personne, organisation ou service, qui est responsable des contributions faites au jeu de données (IRIs séparés par des virgules)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_contributors.displayName=Contributeurs
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_source.description=Une ressource de laquelle le jeu de donnée est dérivée (IRIs séparés par des virgules)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_source.displayName=Source
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_date.description=Un instant ou une période de temps associé avec un évènement dans le cycle de vie de la ressource. Le format de la valeur devrait être celui d'un xsd:date.
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_date.displayName=Date
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_created.description=Date de création du jeu de données. Le format de la valeur devrait être celui d'un xsd:date.
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_created.displayName=Date de création
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_issued.description=Date de mise à disposition formelle (par ex. publication) du jeu de données. Le format de la valeur devrait être celui d'un xsd:date.
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_issued.displayName=Date de mise à disposition
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_modified.description=Date de modification du jeu de données. Le format de la valeur devrait être celui d'un xsd:date.
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_modified.displayName=Date de modification
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_license.description=License du jeu de données (devrait être un IRI)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_license.displayName=License
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_subjects.description=Sujets du jeu de données (IRIs séparés par des virgules)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_subjects.displayName=Subjects
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_features.description=A technical features of a dataset (IRIs séparés par des virgules)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_features.displayName=Technical features
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_dataDumps.description=Dataset data dump (IRIs séparés par des virgules)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_dataDumps.displayName=Dump de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_sparqlEndpoint.description=SPARQL endpoint du jeu de données (devrait être un IRI)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_sparqlEndpoint.displayName=SPARQL endpoint
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_uriLookupEndpoint.description=Endpoint d'un protocole de recherche d'URI pour un void:Dataset (devrait être un IRI)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_uriLookupEndpoint.displayName=URI d'un endpoint de recherche
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_openSearchDescription.description=Un document de description OpenSearch d'un service de recherche textuelle dans un void:Dataset (devrait être un IRI)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_openSearchDescription.displayName=Description OpenSearch
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_uriSpace.description=Un URI qui est un préfixe commun aux URIs de toutes les entités d'un void:Datset
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_uriSpace.displayName=Espace des URIs
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_exampleResources.description=Une entité exemple représentative des entités décrites dans le void:Dataset (IRIs séparés par des virgules)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_exampleResources.displayName=Ressources exemples
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_rootResources.description=Un concept de tête ou un point d'entrée pour un void:Dataset structuré en mode arborescent (IRIs séparés par des virgules)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterSettings.dataset_rootResources.displayName=Ressources racines
+
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterFactory.name = Exportateur de métadonnées de jeu de données DCAT
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterFactory.description = Exporte les métadonnées d'un jeu de données en utilisant le vocabulaire DCAT-AP
+
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.shortName = Réglages del'exportateur de métadonnées de jeu de données DCAT
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_iri.description = IRI du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_iri.displayName = IRI du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_title.description = Un nom donné au jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_title.displayName = Titre du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_description.description = Une description textuelle du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_description.displayName = Description du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_issued.description = La date d'insertion du jeu de données correspondant dans le catalogue.
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_issued.displayName = Jeu de données mis à disposition le
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_modified.description = Jeu de données modifié le
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_modified.displayName = Jeu de données modifié le
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_identifier.description = Un identifiant unique du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_identifier.displayName = Identifiant du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_keywords.description = Mot-clé ou étiquette décrivant le jeu de données (valeurs séparées par des virgules)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_keywords.displayName = Mots-clés du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_language.description = La langue du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_language.displayName = Langue du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_contactPoint.description = Relie un jeu de données à des informations de contact pertinentes en utilisant VCard
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_contactPoint.displayName = Point de contact pour le jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_temporal.description = Période temporelle couverte par le jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_temporal.displayName = Couverture temporelle du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_temporal_startDate.description = Date de début de la période temporelle du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_temporal_startDate.displayName = Couverture temporelle du jeu de données - date de début
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_temporal_endDate.description = Date de fin de la période temporelle du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_temporal_endDate.displayName = Couverture temporelle du jeu de données - date de fin
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_spatial.description = Couverture spatiale du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_spatial.displayName = Couverture spatiale du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_accrualPeriodicy.description = La fréquence à laquelle le jeu de données est publié
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_accrualPeriodicy.displayName = Périodicité de publication du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_landingPage.description = Page d'accueil du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_landingPage.displayName = Page d'accueil du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_theme.description = La catégorie principale du jeu de données. Un jeu de données peut avoir des thèmes multiples (valeurs séparées par des virgules)
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_theme.displayName = Thème du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_distribution.description = Connecte un jeu de données à ses propres distributions disponibles
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.dataset_distribution.displayName = Distribution du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_title.description = Un nom donné à la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_title.displayName = Titre de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_description.description = Description textuelle de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_description.displayName = Description de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_issued.description = Date de mise à disposition formelle (par ex. publication) de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_issued.displayName = Distribution publiée le
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_modified.description = La date la plus récente à laquelle la distribution a été changée, mise à jour ou modifiée
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_modified.displayName = Distribution modifiée le
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_licence.description = Lien vers le document décrivant la licence sous laquelle la distribution est mise à disposition
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_licence.displayName = Licence de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_licence_title.description = Licence de la distribution - titre
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_licence_title.displayName = Licence de la distribution - titre
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_licence_description.description = Licence de la distribution - description
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_licence_description.displayName = Licence de la distribution - description
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_licence_type.description = Licence de la distribution - type
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_licence_type.displayName = Licence de la distribution - type
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_rights.description = Informations relatives aux droits détenus dans et sur la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_rights.displayName = Droits de distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_accessUrl.description = Une page de renvoi, un feed, un SPARQL endpoint ou un autre type de ressource qui donne accès à la distribution du jeu de données
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_accessUrl.displayName = URL d'accès de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_downloadUrl.description = Un fichier qui contient la distribution d'un jeu de données dans un format donné
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_downloadUrl.displayName = URL de téléchargement de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_mediaType.description = Le type de média de la distribution selon la définition de IANA
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_mediaType.displayName = Type de média de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_format.description = Le format de fichier de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_format.displayName = Format de la distribution
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_byteSize.description = La taille d'une distribution en bytes
+it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat.DCATDatasetMetadataExporterSettings.distribution_byteSize.displayName = Taille d'une distribution en bytes
+it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.dataeu.DataEUConnectorFactory.name=Portail data.europa.eu
+it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.dataeu.DataEUConnectorFactory.description=Un connecteur pour le portail data.europa.eu
+
+it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud.LODCloudConnectorFactory.name = Connecteur pour le LOD Cloud
+it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lodcloud.LODCloudConnectorFactory.description = Un connecteur d'entrepôt de métadonnées pour le Linked Open Data Cloud
+
+it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.LOVConnectorFactory.name = Connecteur LOV
+it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.lov.LOVConnectorFactory.description = Un connecteur d'entrepôt de métadonnées pour le LOV (Linked Open Vocabularies)
+
+it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.showvoc.ShowVocConnectorFactory.name = ShowVoc
+it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.showvoc.ShowVocConnectorFactory.description = Un connecteur pour ShowVoc
+
+it.uniroma2.art.semanticturkey.extension.impl.rdflifter.rdfdeserializer.RDFDeserializingLifterFactory.name = Lifter RDF de désérialisation
+it.uniroma2.art.semanticturkey.extension.impl.rdflifter.rdfdeserializer.RDFDeserializingLifterFactory.description = Un lifter RDF qui désérialise les données RDF selon une syntaxe concrète RDF
+
+it.uniroma2.art.semanticturkey.extension.impl.rdflifter.zthesdeserializer.ZthesDeserializingLifterFactory.name = Lifter Zthes de désérialisation 
+it.uniroma2.art.semanticturkey.extension.impl.rdflifter.zthesdeserializer.ZthesDeserializingLifterFactory.description = Un lifter RDF qui désérialise les données RDF selon une syntaxe concrète Zthes
+
+it.uniroma2.art.semanticturkey.extension.impl.rdflifter.spreadsheetdeserializer.SpreadsheetDeserializingLifterFactory.name = Lifter de désérialisation Spreadsheet
+it.uniroma2.art.semanticturkey.extension.impl.rdflifter.spreadsheetdeserializer.SpreadsheetDeserializingLifterFactory.description = Un lifter RDF qui désérialise les données RDF selon une syntaxe concrète Spreadsheet
+
+
+it.uniroma2.art.semanticturkey.extension.impl.search.graphdb.GraphDBSearchStrategyFactory.name = Stratégie de recherche GraphDB
+it.uniroma2.art.semanticturkey.extension.impl.search.graphdb.GraphDBSearchStrategyFactory.description = Uses fulltext capabilities of GraphDB repositories Utilise les capacité de recherche en texte intégral des dépôts GraphDB
+
+it.uniroma2.art.semanticturkey.extension.impl.search.regex.RegexSearchStrategyFactory.name = Stratégie de recherche basée sur des expressions régulières
+it.uniroma2.art.semanticturkey.extension.impl.search.regex.RegexSearchStrategyFactory.description = Utilise des expression régulières au travers de SPARQL pour implémenter des fonctionnalités de recherche
+
+it.uniroma2.art.semanticturkey.user.EmailAlreadyUsedException.message = Adresse e-mail {0} déjà utilisée par un autre utilisateur
+it.uniroma2.art.semanticturkey.user.EmailVerificationExpiredException.message = Impossible de vérifier l'adresse e-mail {0}. Aucun compte non vérifié avec cette adresse n'a été trouvé, ou le lien peut avoir expiré
+it.uniroma2.art.semanticturkey.user.IRIAlreadyUsedException.message = IRI {0} déjà utilisé par un autre utilisateur
+it.uniroma2.art.semanticturkey.user.UserActivationExpiredException.message = Impossible d'activer l'utilisateur avec l'adresse e-mail {0}. L'utilisateur a peut-être déjà été activé, ou le lien peut avoir expiré
+it.uniroma2.art.semanticturkey.user.UserNotFoundException.message.with_email = L'utilisateur avec l'e-mail {0} n'existe pas
+it.uniroma2.art.semanticturkey.user.UserNotFoundException.message.with_iri = L'utilisateur avec l'IRI {0} n'existe pas
+
+it.uniroma2.art.semanticturkey.user.UpdateEmailAlreadyUsedException.message = Impossible de mettre à jour l'e-mail de l'utilisateur {0}. L'e-mail {1} est déjà utilisé par un autre utilisateur
+
+it.uniroma2.art.semanticturkey.rbac.RoleNotExistingException.message = Le rôle ''{0}'' n'existe pas
+
+it.uniroma2.art.semanticturkey.rbac.DuplicatedCapabilityException.message = La capacité ''{0}'' est dupliquée dans le rôle ''{1}''
+
+it.uniroma2.art.semanticturkey.rbac.RoleCapabilityUpdateException.message = Échec de mise à jour de la capacité du rôle ''{0}''
+
+it.uniroma2.art.semanticturkey.services.core.Administration.messages.unable_to_export_role =  Impossible d'exporter le rôle ''{0}''. Aucun rôle portant ce nom n'existe
+it.uniroma2.art.semanticturkey.services.core.Administration.messages.unable_to_import_role =  Impossible d'importer le rôle ''{0}''. Un rôle portant ce nom existe déjà dans le projet ''{1}''
+
+it.uniroma2.art.semanticturkey.rbac.InvalidRoleFileException.message = Fichier de rôle invalide
+
+it.uniroma2.art.semanticturkey.user.RoleCreationException.messages.no_role = Le rôle ''{0}'' n'a pas été trouvé
+it.uniroma2.art.semanticturkey.user.RoleCreationException.messages.role_already_exists = Le rôle ''{0}'' existe déjà
+it.uniroma2.art.semanticturkey.user.RoleCreationException.messages.role_already_exists_in_project = Le rôle ''{0}'' existe déjà dans le projet ''{1}''
+
+it.uniroma2.art.semanticturkey.user.ProjectBindingException.messages.no_role = Le rôle ''{0}'' n'a pas été trouvé
+
+it.uniroma2.art.semanticturkey.user.OperationOnResourceDeniedException.messages.missing_scheme_ownership = Vous n'avez pas les droits suffisants pour intervenir sur le schéma sélectionné. Votre groupe ({0}) n'est pas propriétaire de ce schéma.
+it.uniroma2.art.semanticturkey.user.OperationOnResourceDeniedException.messages.missing_schemes_ownership = Vous n'avez pas les droits suffisants pour intervenir sur les schémas sélectionnés. Votre groupe ({0}) n'est propriétaire d'aucun schéma.
+it.uniroma2.art.semanticturkey.user.OperationOnResourceDeniedException.messages.resource_modification_forbidden = Vous n'avez pas les droits suffisants pour modifier {0}. Votre groupe ({1}) n'est pas propriétaire de la ressource à modifier ou du(des) schéma(s) dont relève la ressource.
+it.uniroma2.art.semanticturkey.user.OperationOnResourceDeniedException.messages.resource_deletion_forbidden = Vous n'avez pas les droits suffisants pour supprimer {0}. Votre groupe ({1}) n'est pas propriétaire de la ressource à supprimer ou du(des) schéma(s) dont relève la ressource.
+
+it.uniroma2.art.semanticturkey.user.GroupNotFoundException.message = Le groupe n'a pas été trouvé
+it.uniroma2.art.semanticturkey.user.GroupNotFoundException.message.with_iri = Groupe non trouvé : {0}
+
+it.uniroma2.art.semanticturkey.user.GroupNameAlreadyUsedException.message = Nom {0} déjà utilisé par un autre groupe
+
+it.uniroma2.art.semanticturkey.user.GroupIRIAlreadyUsedException.message = IRI {0} déjà utilisé par un autre groupe
+
+it.uniroma2.art.semanticturkey.services.core.Users.messages.cant_disable_current_user = Impossible de désactiver l'utilisateur connecté actuellement
+
+it.uniroma2.art.semanticturkey.alignment.AlignmentNotMatchingProjectsException.message = Impossible d'ouvrir et de valider le fichier d'alignement fourni. L'une ou les deux ontologies alignées ne correspondent pas aux jeux de données du projet EDOAL
+
+it.uniroma2.art.semanticturkey.alignment.AlignmentNotMatchingCurrentProject.message = Impossible d'ouvrir et de valider le fichier d'alignement fourni. Aucune des deux ontologies ne correspond à l'ontologie du projet en cours
+
+it.uniroma2.art.semanticturkey.alignment.ReversedAlignmentWithCustomRelationsException.message = Le fichier d'alignement est inversé (l'ontologie source du fichier d'alignement est l'ontologie cible de votre projet) et il contient des relations personnalisées. Il n'est possible de travailler avec des fichiers d'alignement inversés que s'ils ne contiennent pas de relations personnalisées. Veuillez inverser l'ordre des ontologies dans le fichier d'alignement et ajuster les relations personnalisées en les remplaçant par leur inverse dans le modèle d'alignement personnalisé que vous adoptez
+
+it.uniroma2.art.semanticturkey.exceptions.ClassWithSubclassesOrInstancesException.message = La class {0} contient une ou plusieurs sous-classe(s) ou  instance(s) ';' supprimez-les au préalable
+
+it.uniroma2.art.semanticturkey.exceptions.NonWorkingGraphUpdateException.message = L'opération nécéssiterait d'altérer des triplets à l'extérieur du graphe de travail
+
+it.uniroma2.art.semanticturkey.exceptions.PropertyWithSubpropertiesException.message = La propriété {0} possède une ou plusieurs sous-propriété(s) ';' supprimez-les au préalable
+
+it.uniroma2.art.semanticturkey.exceptions.ElementAlreadyContainedInCollectionException.message = L'élément {0} est déjà inclus dans la collection {1}
+
+it.uniroma2.art.semanticturkey.exceptions.ConceptWithNarrowerConceptsException.message = Le concept {0} possède des spécifiques ';' supprimez-les au préalable
+
+it.uniroma2.art.semanticturkey.exceptions.CollectionWithNestedCollectionsException.message = La collection {0} possède des collections imbriquées ';' supprimez-les au préalable
+
+it.uniroma2.art.semanticturkey.exceptions.EmptyCollectionException.message = La collection {0} est vide
+
+it.uniroma2.art.semanticturkey.exceptions.ElementNotInCollectionException.message = La collection {1} ne contient pas l'élément {0}
+
+it.uniroma2.art.semanticturkey.exceptions.OtherUsersCommitRejectionException.message = Vous ne pouvez pas rejeter un commit lié à une opération réalisée par un autre utilisateur
+
+it.uniroma2.art.semanticturkey.exceptions.UserSelfDeletionException.message = Un utilisateur ne peut pas se supprimer lui-même
+
+it.uniroma2.art.semanticturkey.exceptions.OldPasswordMismatchException.message = L'ancien mot de passe est erroné
+
+it.uniroma2.art.semanticturkey.services.core.export.NullGraphNotExportedException.message = Le graphe nul contient des triplets qui ne seront pas exportés. Vous pouvez forcer l'export, pour ignorer le problème 
+
+it.uniroma2.art.semanticturkey.services.core.export.UnnamedGraphNotExportedException.message = Certains graphes associés à des noeuds anonymes ne seront pas exportés. Vous pouvez forcer l'export, pour ignorer le problème
+
+it.uniroma2.art.semanticturkey.mdr.services.DatasetAlreadyCatalogedException.message = Un jeu de données correspondant à l'IRI fourni {0} est déjà présent dans l'entrepôt de métadonnées : {1}
+
+it.uniroma2.art.semanticturkey.settings.project.ProjectFacets.shortName = Facettes du projet
+it.uniroma2.art.semanticturkey.settings.project.ProjectFacets.category.description = Catégorie du projet
+it.uniroma2.art.semanticturkey.settings.project.ProjectFacets.category.displayName = Catégorie
+it.uniroma2.art.semanticturkey.settings.project.ProjectFacets.organization.description = Nom de l'organisation proprétaire du projet
+it.uniroma2.art.semanticturkey.settings.project.ProjectFacets.organization.displayName = Organisation
+it.uniroma2.art.semanticturkey.settings.project.ProjectFacets.customFacets.description = Facettes supplémentaires définies par un schéma fourni par l'utilisateur
+it.uniroma2.art.semanticturkey.settings.project.ProjectFacets.customFacets.displayName = Facettes personnalisées
+
+it.uniroma2.art.semanticturkey.properties.STPropertiesSchema.shortName = Schéma de STProperties
+it.uniroma2.art.semanticturkey.properties.STPropertiesSchema.properties.description = Définition de propriété
+it.uniroma2.art.semanticturkey.properties.STPropertiesSchema.properties.displayName = Propriétés
+
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertySchema.shortName = Schéma de STProperty
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertySchema.name.description = Le nom de la propriété
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertySchema.name.displayName = Nom
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertySchema.required.description = Indique si la propriété est obligatoire ou non
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertySchema.required.displayName = Demandé
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertySchema.description.description = Descriptions localisées de la propriété
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertySchema.description.displayName = Description
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertySchema.displayName.description = Nom d'affichage
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertySchema.displayName.displayName = Nom d'affichage localisé de la propriété
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertySchema.type.description = Le type de la valeur de la propriété
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertySchema.type.displayName = Type
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertySchema.enumeration.description = Valeurs autorisées pour la propriété
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertySchema.enumeration.displayName = Énumeration
+
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertyEnumeration.shortName = Énumeration de STProperty
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertyEnumeration.values.description = Les éléments de cette énumération
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertyEnumeration.values.displayName = Valeurs
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertyEnumeration.open.description = Indique si l'énumération autorise d'autres valeurs que celles qui sont fournies
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertyEnumeration.open.displayName = Ouvert
+
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertyType.shortName = Type de STProperty
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertyType.name.description = Le nom du type
+it.uniroma2.art.semanticturkey.properties.dynamic.STPropertyType.name.displayName = Nom
+
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociation.shortName = Association de métadonnées de ressources sauvegardées
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociation.role.description = Rôle de ressource à associer avec un ResourceMetadataPattern
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociation.role.displayName = Rôle
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociation.patternReference.description = Référence au ResourceMetadataPattern qui est invoqué quand une ressource de rôle donné est créée/mise à jour/supprimée
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociation.patternReference.displayName = Référence à ResourceMetadataPattern
+
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataPattern.shortName = Pattern de métadonnées de ressources sauvegardées
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataPattern.description.description = Une description de ce ResourceMetadataPattern
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataPattern.description.displayName = Description
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataPattern.construction.description = Règle PEARL exécutée quand une ressource est créée
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataPattern.construction.displayName = Construction
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataPattern.update.description = Règle PEARL exécutée quand une ressource est mise à jour
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataPattern.update.displayName = Mise à jour
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataPattern.destruction.description = Règle PEARL exécutée quand une ressource est  supprimée
+it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataPattern.destruction.displayName = Suppression
+
+it.uniroma2.art.semanticturkey.config.template.StoredTemplateConfiguration.shortName = Configuration sauvegardée du modèle de visualisation d'une ressource
+it.uniroma2.art.semanticturkey.config.template.StoredTemplateConfiguration.template.description = Modèle qui précise pour chaque type de ressource quelles partitions sont masquées
+it.uniroma2.art.semanticturkey.config.template.StoredTemplateConfiguration.template.displayName = Modèle
+
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLOperation.shortName = Opération SPARQL sauvegardée
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLOperation.sparql.description = Opération SPARQL (i.e. requête ou mise à jour)
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLOperation.sparql.displayName = SPARQL
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLOperation.type.description = Indique si la chaîne SPARQL fournie représente une requête ou une mide à jour
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLOperation.type.displayName = Type
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLOperation.includeInferred.description = Indique s'il faut inclure les déclarations inférées dans l'évaluation de la requête
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLOperation.includeInferred.displayName = Inclure les inférées
+
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization.shortName = Paramétrisation SPARQL sauvegardée
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization.relativeReference.description = Une référence relative à une opération SPARQL sauvegardée
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization.relativeReference.displayName = Référence relative
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization.description.description = Une description de cette paramétrisation
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization.description.displayName = Description
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization.variableBindings.description = Associations de variables
+it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization.variableBindings.displayName = Associations de variables
+
+it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration.shortName = Application de graphe avancé sauvegardée
+it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration.pattern.description =
+it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration.pattern.displayName = Motif
+it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration.nodes.description =
+it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration.nodes.displayName = Noeud
+it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration.prefixMapping.description =
+it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration.prefixMapping.displayName = Mapping des préfixes
+it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration.defaultPredicate.description =
+it.uniroma2.art.semanticturkey.config.sheet2rdf.StoredAdvancedGraphApplicationConfiguration.defaultPredicate.displayName = Prédicat par défaut
+
+it.uniroma2.art.semanticturkey.config.alignmentservices.RemoteAlignmentServiceConfiguration.shortName = Service d'alignement distant
+it.uniroma2.art.semanticturkey.config.alignmentservices.RemoteAlignmentServiceConfiguration.htmlWarning = Lors de l'activation de la <em>transmission des informations d'identification</em>, soyez conscient que le nom d'utilisateur et le mot de passe permettant d'accéder aux jeux de données sont envoyés au service d'alignement distant en clair 
+it.uniroma2.art.semanticturkey.config.alignmentservices.RemoteAlignmentServiceConfiguration.serverURL.description = URL du service d'alignement
+it.uniroma2.art.semanticturkey.config.alignmentservices.RemoteAlignmentServiceConfiguration.serverURL.displayName = Server URL du serveur
+it.uniroma2.art.semanticturkey.config.alignmentservices.RemoteAlignmentServiceConfiguration.username.description = Nom d'utilisateur employé pour accéder au service d'alignement
+it.uniroma2.art.semanticturkey.config.alignmentservices.RemoteAlignmentServiceConfiguration.username.displayName = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.config.alignmentservices.RemoteAlignmentServiceConfiguration.password.description = Mot de passe employé pour accéder au service d'alignement
+it.uniroma2.art.semanticturkey.config.alignmentservices.RemoteAlignmentServiceConfiguration.password.displayName = Mot de passe
+it.uniroma2.art.semanticturkey.config.alignmentservices.RemoteAlignmentServiceConfiguration.forwardCredentials.description = Transmettre au service d'alignement distant les informations d'identification associées au jeu de données 
+it.uniroma2.art.semanticturkey.config.alignmentservices.RemoteAlignmentServiceConfiguration.forwardCredentials.displayName = Transmet les informations d'identification
+
+it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConfiguration.contributorName.description = Prénom du contributeur
+it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConfiguration.contributorName.displayName = Prénom
+it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConfiguration.contributorLastName.description = Nom du contributeur
+it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConfiguration.contributorLastName.displayName = Nom
+it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConfiguration.contributorEmail.description = E-mail du contributeur
+it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConfiguration.contributorEmail.displayName = E-mail
+it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConfiguration.contributorOrganization.description = Organisation du contributeur
+it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConfiguration.contributorOrganization.displayName = Organisation
+it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConfiguration.resourceName.description = Nom de la ressource
+it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConfiguration.resourceName.displayName = Nom de la ressource
+it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConfiguration.baseURI.description = URI de base de la ressource
+it.uniroma2.art.semanticturkey.config.contribution.StoredContributionConfiguration.baseURI.displayName = URI de base
+
+it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration.shortName = Contribution au jeu de données RDF sauvegardé
+it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration.homepage.description = URL de la page d'accueil de la ressource
+it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration.homepage.displayName = page d'accueil
+it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration.description.description = Description de la ressource
+it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration.description.displayName = Description
+it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration.isOwner.description = Indique si le contributeur est le propriétaire de la ressource
+it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration.isOwner.displayName = Est propriétaire
+it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration.model.description = Le modèle sémantique de la ressource
+it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration.model.displayName = Modèle sémantique
+it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration.lexicalizationModel.description = Modèle de lexicalisation  de la ressource
+it.uniroma2.art.semanticturkey.config.contribution.StoredStableResourceContributionConfiguration.lexicalizationModel.displayName = Modèle de lexicalisation
+
+it.uniroma2.art.semanticturkey.config.importer.StoredImportConfiguration.shortName = Configuration d'import sauvegardée
+it.uniroma2.art.semanticturkey.config.importer.StoredImportConfiguration.loaderSpec.description = Un loader optionnel capable de récupérer des données depuis un certain type de source
+it.uniroma2.art.semanticturkey.config.importer.StoredImportConfiguration.loaderSpec.displayName = Spécification du loader
+it.uniroma2.art.semanticturkey.config.importer.StoredImportConfiguration.rdfLifterSpec.description = Un lifter RDF optionnel capable de convertir en triplets des données provenant d'une source non RDF
+it.uniroma2.art.semanticturkey.config.importer.StoredImportConfiguration.rdfLifterSpec.displayName = Spécification du lifter RDF
+it.uniroma2.art.semanticturkey.config.importer.StoredImportConfiguration.format.description = Un format de données optionnel
+it.uniroma2.art.semanticturkey.config.importer.StoredImportConfiguration.format.displayName = Format
+it.uniroma2.art.semanticturkey.config.importer.StoredImportConfiguration.transformationPipeline.description = Une suite de transformateurs RDF appliquée aux données importées
+it.uniroma2.art.semanticturkey.config.importer.StoredImportConfiguration.transformationPipeline.displayName = Pipeline de transformation
+
+it.uniroma2.art.semanticturkey.exceptions.MissingDatasetMetadataException.message = le jeu de données {0} n'est associé à aucune métadonnée
+
+it.uniroma2.art.semanticturkey.exceptions.NoSPARQLEndpointMetadataException.message = le jeu de données {0} n'est associé à aucun SPARQL endpoint
+
+it.uniroma2.art.semanticturkey.ontology.InvalidPrefixException.message = Le préfixe {0} n'est pas valide
+
+it.uniroma2.art.semanticturkey.ontology.PrefixNotDefinedException.message = Le préfixe {0} n'est pas défini
+
+it.uniroma2.art.semanticturkey.services.core.Refactor.exceptionRenameToDuplicated.message = Impossible de renommer la ressource : {0} en : {1} car une ressource possédant ce nom existe déjà
+it.uniroma2.art.semanticturkey.services.core.Refactor.exceptionMoveXLabelAlreadyExisting.message = L'étiquette {0} ne peut pas être employée comme skoxl:prefLabel pour {1} car il existe déjà une ressource ({2}) dont cette étiquette est le skosxl:prefLabel
+it.uniroma2.art.semanticturkey.services.core.Refactor.exceptionMoveXLabelAlreadyExisting2.message = Le xLabel {0} ne peut pas être employé comme skoxl:prefLabel pour {1} car il existe déjà un skosxl:prefLabel pour la langue {2}. Si vous forcez cette opération, l'ancien skosxl:prefLabel sera transformé en skosxl:altLabel
+
+it.uniroma2.art.semanticturkey.services.core.RemoteAlignmentServices.exceptionConfigurationAlreadyExists.message = Une configuration ayant cet identifiant existe déjà : {0}
+
+it.uniroma2.art.semanticturkey.project.ProjectManager.exceptionCloneToDuplicated.message = Le projet : {0} existe déjà ; choisissez un autre nom pour un nouveau projet
+
+it.uniroma2.art.semanticturkey.project.ProjectManager.exceptionImportToDuplicated.message = Le projet : {0} existe déjà ;  choisissez un autre nom pour un nouveau projet
+
+it.uniroma2.art.semanticturkey.project.ProjectManager.exceptionNewDuplicated.message = Le projet : {0} existe déjà ;  choisissez un autre nom pour un nouveau projet
+
+it.uniroma2.art.semanticturkey.services.core.Resources.exceptionDifferentSubject.message = Description de ressource non valide : elle inclus une déclaration relative à une autre ressource {0}
+
+it.uniroma2.art.semanticturkey.services.core.Resources.exceptionCannotDeleteAll.message = Impossible de supprimer tous les triplets de la ressource
+
+it.uniroma2.art.semanticturkey.services.core.resourceview.DatasetNotAccessibleException.message = Le jeu de données {0} n'est pas accessible. Veuillez vérifier que le SPARQL endpoint de ce jeu de données est bien enregistré dans le registre des métadonnées ou qu'il est déréférençable
+
+it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLTargetShapeNotExistingException.message = {0} n'existe pas
+
+it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLNoTargetShapeFromClassIriException.message = {0} n'existe pas
+
+it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLMultipleTargetShapeFromClassIRIException.message = A partir de l'IRI de la classe : {0} ces TargetShape ont été obtenus : {1}
+
+it.uniroma2.art.semanticturkey.exceptions.shacl.SHACLNotEnabledException.message = SHACL n'est pas autorisé dans le projet sélectionné
+
+it.uniroma2.art.semanticturkey.services.core.SKOS.exceptionUnableToAddPrefLabelForNew.message = Le prefLabel {0} ne peut pas être créé car il existe déjà la ressource {1} qui possède ce prefLabel
+it.uniroma2.art.semanticturkey.services.core.SKOS.exceptionUnableToAddPrefLabel.message = Le prefLabel {0} ne peut pas être créé car soit il existe déjà la ressource {1} qui possède ce prefLabel soit cette resource possède déjà un altLabel avec cette valeur
+it.uniroma2.art.semanticturkey.services.core.SKOS.exceptionUnableToAddAltLabel.message = Le altLabel {0} ne peut pas être créé car cette ressource possède déjà un prefLabel avec cette valeur
+it.uniroma2.art.semanticturkey.services.core.SKOS.exceptionAltLabelClash.message = Le prefLabel {0} ne peut pas être créé caril existe déjà une ressource avec le même altLabel
+
+it.uniroma2.art.semanticturkey.services.core.ShowVoc.model.displayName = Modèle
+it.uniroma2.art.semanticturkey.services.core.ShowVoc.lexicalizationModel.displayName = Modèle de lexicalisation
+
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.shortName = Paramétrages du système principal
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.adminList.description = Liste des adresses e-mail des administrateurs
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.adminList.displayName = Administrateurs
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.remoteConfigs.description = Configurations de connexion à des triple stores distants
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.remoteConfigs.displayName = Triple stores distants
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.experimentalFeaturesEnabled.description = Autorise des fonctionnalités expérimentales
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.experimentalFeaturesEnabled.displayName = Fonctionnalités expérimentales autorisées
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.showFlags.description = Représente les langues en utilisant des drapeaux plutôt que leurs codes
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.showFlags.displayName = Montrer les drapeaux
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.emailVerification.description = Indique si un utilisateur doit vérifier l'adresse e-mail afin de compléter son enregistrement
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.emailVerification.displayName = Vérification de l'e-mail
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.homeContent.description = Le contenu de la page d'accueil
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.homeContent.displayName = contenu de la page d'accueil
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.projectCreation.description = Paramétrages relatifs à la création de projet
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.projectCreation.displayName = Création de projet
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.preload.description = Paramétrages relatifs au préchargement de données
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.preload.displayName = Préchargement
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.stDataVersion.description = La version de Semantic Turkey vers laquelle le répertoire de données est mis à jour
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.stDataVersion.displayName = Version des données de ST
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.mail.description = Paramétrages relatifs to mailing
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.mail.displayName = Paramétrages des e-mails
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.showvoc.description = Paramétrages relatifs à ShowVoc
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.showvoc.displayName = Paramétrages de ShowVoc
+
+it.uniroma2.art.semanticturkey.settings.core.PreloadSettings.shortName = Paramétrages du préchargement
+it.uniroma2.art.semanticturkey.settings.core.PreloadSettings.profiler.description = Paramétrages relatifs to the profiler used with preloaded data
+it.uniroma2.art.semanticturkey.settings.core.PreloadSettings.profiler.displayName = Profiler
+
+it.uniroma2.art.semanticturkey.settings.core.PreloadProfilerSettings.shortName = Paramétrages du profiler de préchargement
+it.uniroma2.art.semanticturkey.settings.core.PreloadProfilerSettings.threshold.description = La taille maximale des données qui sont profilées
+it.uniroma2.art.semanticturkey.settings.core.PreloadProfilerSettings.threshold.displayName = Seuil
+
+it.uniroma2.art.semanticturkey.settings.core.ShowVocSettings.shortName = Paramétrages de ShowVoc
+it.uniroma2.art.semanticturkey.settings.core.ShowVocSettings.disableContributions.description = Désactive la soumission de contribution par l'utilisateur
+it.uniroma2.art.semanticturkey.settings.core.ShowVocSettings.disableContributions.displayName = Désactive les contributions
+it.uniroma2.art.semanticturkey.settings.core.ShowVocSettings.vbConnectionConfig.description = Configuration de connexion à l'instance de développement de VocBench
+it.uniroma2.art.semanticturkey.settings.core.ShowVocSettings.vbConnectionConfig.displayName = Instance de développement de VocBench
+
+it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionShowVocSettings.shortName = Configuration de connexion à VocBench
+it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionShowVocSettings.vbURL.description = URL de VocBench
+it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionShowVocSettings.vbURL.displayName = URL de VocBench
+it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionShowVocSettings.stHost.description = Hôte de Semantic Turkey
+it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionShowVocSettings.stHost.displayName = Hôte de Semantic Turkey
+it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionShowVocSettings.adminEmail.description = E-mail de l'administrateur
+it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionShowVocSettings.adminEmail.displayName = E-mail de l'administrateur
+it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionShowVocSettings.adminPassword.description = Mot de passe de l'administrateur
+it.uniroma2.art.semanticturkey.settings.core.VocBenchConnectionShowVocSettings.adminPassword.displayName = Mot de passe de l'administrateur
+
+it.uniroma2.art.semanticturkey.settings.core.MailSettings.shortName = Réglages des e-mail
+it.uniroma2.art.semanticturkey.settings.core.MailSettings.smtp.description = Réglages SMTP
+it.uniroma2.art.semanticturkey.settings.core.MailSettings.smtp.displayName = SMTP
+it.uniroma2.art.semanticturkey.settings.core.MailSettings.from.description = Réglages liés à l'expéditeur des e-mails
+it.uniroma2.art.semanticturkey.settings.core.MailSettings.from.displayName = De
+
+it.uniroma2.art.semanticturkey.settings.core.SmtpMailSettings.shortName = Réglages SMTP
+it.uniroma2.art.semanticturkey.settings.core.SmtpMailSettings.host.description = Hôte SMTP
+it.uniroma2.art.semanticturkey.settings.core.SmtpMailSettings.host.displayName = Hôte
+it.uniroma2.art.semanticturkey.settings.core.SmtpMailSettings.port.description = Port SMTP
+it.uniroma2.art.semanticturkey.settings.core.SmtpMailSettings.port.displayName = Port
+it.uniroma2.art.semanticturkey.settings.core.SmtpMailSettings.auth.description = Indique si une authentification est nécessaire
+it.uniroma2.art.semanticturkey.settings.core.SmtpMailSettings.auth.displayName = Auteur
+it.uniroma2.art.semanticturkey.settings.core.SmtpMailSettings.sslEnabled.description = Indique si le protocole de cryptographie SSL est utilisé
+it.uniroma2.art.semanticturkey.settings.core.SmtpMailSettings.sslEnabled.displayName = SSL activé
+it.uniroma2.art.semanticturkey.settings.core.SmtpMailSettings.starttlsEnabled.description = Indique si le protocole de cryptographie STARTTLS est utilisé
+it.uniroma2.art.semanticturkey.settings.core.SmtpMailSettings.starttlsEnabled.displayName = STARTTLS activé
+it.uniroma2.art.semanticturkey.settings.core.SmtpMailSettings.sslProtocols.description = Spécifie le protocle SSL qui sera activé pour les connexions SSL
+it.uniroma2.art.semanticturkey.settings.core.SmtpMailSettings.sslProtocols.displayName = Protocoles SSL
+
+it.uniroma2.art.semanticturkey.settings.core.FromMailSettings.shortName = Réglages de l'e-mail de l'expéditeur
+it.uniroma2.art.semanticturkey.settings.core.FromMailSettings.address.description = Adresse de l'expéditeur
+it.uniroma2.art.semanticturkey.settings.core.FromMailSettings.address.displayName = Adresse
+it.uniroma2.art.semanticturkey.settings.core.FromMailSettings.password.description = Mot de passe du compte de l'expéditeur
+it.uniroma2.art.semanticturkey.settings.core.FromMailSettings.password.displayName = Mot de passe
+it.uniroma2.art.semanticturkey.settings.core.FromMailSettings.alias.description = Alias de l'adresse
+it.uniroma2.art.semanticturkey.settings.core.FromMailSettings.alias.displayName = Alias
+
+it.uniroma2.art.semanticturkey.settings.core.RemoteTripleStoreSettings.shortName = Réglages du triple store distant
+it.uniroma2.art.semanticturkey.settings.core.RemoteTripleStoreSettings.serverURL.description = URL de base de l'API du triple store distant
+it.uniroma2.art.semanticturkey.settings.core.RemoteTripleStoreSettings.serverURL.displayName = URL du serveur
+it.uniroma2.art.semanticturkey.settings.core.RemoteTripleStoreSettings.username.description = Nom d'utilisateur optionel pour l'authentification avec le triple store
+it.uniroma2.art.semanticturkey.settings.core.RemoteTripleStoreSettings.username.displayName = Nom d'utilisateur
+it.uniroma2.art.semanticturkey.settings.core.RemoteTripleStoreSettings.password.description = Mot de passe optionel pour l'authentification avec le triple store
+it.uniroma2.art.semanticturkey.settings.core.RemoteTripleStoreSettings.password.displayName = Mot de passe
+
+it.uniroma2.art.semanticturkey.settings.core.ProjectCreationSettings.shortName = Réglages pour la création des projets
+it.uniroma2.art.semanticturkey.settings.core.ProjectCreationSettings.aclUniversalAccessDefault.description = Valeur par défaut pour l'accès universel à l'ACL du projet 
+it.uniroma2.art.semanticturkey.settings.core.ProjectCreationSettings.aclUniversalAccessDefault.displayName = Accès universel par défaut à l'ACL
+it.uniroma2.art.semanticturkey.settings.core.ProjectCreationSettings.openAtStartUpDefault.description = Valeur par défaut du flag indiquant si le projet doit être ouvert au démarrage
+it.uniroma2.art.semanticturkey.settings.core.ProjectCreationSettings.openAtStartUpDefault.displayName = Ouvrir au démarrage par défaut
+
+it.uniroma2.art.semanticturkey.settings.core.CoreProjectSettings.shortName = Réglages du projet principal
+it.uniroma2.art.semanticturkey.settings.core.CoreProjectSettings.languages.description = Les langues configurées pour le projet
+it.uniroma2.art.semanticturkey.settings.core.CoreProjectSettings.languages.displayName = Langues
+it.uniroma2.art.semanticturkey.settings.core.CoreProjectSettings.labelClashMode.description = La stratégie de résolution des conflits entre étiquettes
+it.uniroma2.art.semanticturkey.settings.core.CoreProjectSettings.labelClashMode.displayName = Mode de conflit d'étiquettes
+it.uniroma2.art.semanticturkey.settings.core.CoreProjectSettings.resourceView.description = Réglages du projet pour le Resource View
+it.uniroma2.art.semanticturkey.settings.core.CoreProjectSettings.resourceView.displayName = Resource View
+
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewProjectSettings.shortName = Réglages du projet pour le Resource View
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewProjectSettings.customSections.description = Sections personnalisées à utiliser dans les modèles du Resource View
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewProjectSettings.customSections.displayName = Sections personnalisées
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewProjectSettings.templates.description = Le modèle
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewProjectSettings.templates.displayName = Modèles
+
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewCustomSectionSettings.shortName = Réglages de la partie personnalisée du Resource View
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewCustomSectionSettings.matchedProperties.description = Propriétés correspondant à cette section
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewCustomSectionSettings.matchedProperties.displayName = Propriétés correspondantes
+
+it.uniroma2.art.semanticturkey.properties.Language.shortName = Langue
+it.uniroma2.art.semanticturkey.properties.Language.name.description = Nom de la langue
+it.uniroma2.art.semanticturkey.properties.Language.name.displayName = Non
+it.uniroma2.art.semanticturkey.properties.Language.tag.description = Code d'identification de la langue (habituellement conforme à BCP-47)
+it.uniroma2.art.semanticturkey.properties.Language.tag.displayName = Étiquette
+
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.shortName = Réglages utilisateur du projet principal
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.editingLanguage.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.editingLanguage.displayName = Editing language Langue d'édition
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.filterValueLanguages.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.filterValueLanguages.displayName = Langues du filtre de valeurs
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.activeSchemes.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.activeSchemes.displayName = Schémas actifs
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.activeLexicon.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.activeLexicon.displayName = Lexique actif
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.showFlags.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.showFlags.displayName = Montrer les drapeaux
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.projectTheme.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.projectTheme.displayName = Thème du projet
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.classTree.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.classTree.displayName = Préférences pour l'arbre des classes
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.instanceList.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.instanceList.displayName = Préférences pour la liste des instances
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.conceptTree.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.conceptTree.displayName = Préférences pour l'arbre des concepts
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.lexEntryList.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.lexEntryList.displayName = Préférences pour la liste des entrées lexicales
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.graphViewPartitionFilter.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.graphViewPartitionFilter.displayName = Filtre de partition de la vue graphe 
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.resourceView.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.resourceView.displayName = Préférences pour le Resource View
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.hideLiteralGraphNodes.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.hideLiteralGraphNodes.displayName = Hide literal graph nodes Masque les noeuds littéraux du graphe
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.searchSettings.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.searchSettings.displayName = Réglages de la recherche
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.notificationsStatus.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.notificationsStatus.displayName = Statut des notifications
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.sheet2rdfSettings.description =
+it.uniroma2.art.semanticturkey.settings.core.CorePUSettings.sheet2rdfSettings.displayName = Réglages de Sheet2Rdf
+
+it.uniroma2.art.semanticturkey.settings.core.ValueFilterLanguages.shortName = Langues du filtre de valeurs
+it.uniroma2.art.semanticturkey.settings.core.ValueFilterLanguages.languages.description =
+it.uniroma2.art.semanticturkey.settings.core.ValueFilterLanguages.languages.displayName = Langues
+it.uniroma2.art.semanticturkey.settings.core.ValueFilterLanguages.enabled.description =
+it.uniroma2.art.semanticturkey.settings.core.ValueFilterLanguages.enabled.displayName = Autorisé
+
+it.uniroma2.art.semanticturkey.settings.core.ClassTreePreferences.shortName = Préférences pour l'arbre des classes
+it.uniroma2.art.semanticturkey.settings.core.ClassTreePreferences.rootClass.description =
+it.uniroma2.art.semanticturkey.settings.core.ClassTreePreferences.rootClass.displayName = Classe racine
+it.uniroma2.art.semanticturkey.settings.core.ClassTreePreferences.filter.description =
+it.uniroma2.art.semanticturkey.settings.core.ClassTreePreferences.filter.displayName = Filtre
+it.uniroma2.art.semanticturkey.settings.core.ClassTreePreferences.showInstancesNumber.description =
+it.uniroma2.art.semanticturkey.settings.core.ClassTreePreferences.showInstancesNumber.displayName = Montre le nombre d'instances
+
+it.uniroma2.art.semanticturkey.settings.core.ClassTreeFilter.shortName = Filtre de l'arbre des classes
+it.uniroma2.art.semanticturkey.settings.core.ClassTreeFilter.enabled.description =
+it.uniroma2.art.semanticturkey.settings.core.ClassTreeFilter.enabled.displayName = Autorisé
+it.uniroma2.art.semanticturkey.settings.core.ClassTreeFilter.map.description =
+it.uniroma2.art.semanticturkey.settings.core.ClassTreeFilter.map.displayName = Carte
+
+it.uniroma2.art.semanticturkey.settings.core.InstanceListPreferences.shortName = Préférences pour la liste des instances
+it.uniroma2.art.semanticturkey.settings.core.InstanceListPreferences.visualization.description =
+it.uniroma2.art.semanticturkey.settings.core.InstanceListPreferences.visualization.displayName = Visualisation
+it.uniroma2.art.semanticturkey.settings.core.InstanceListPreferences.allowVisualizationChange.description = Indique si les utilisateurs non administrateurs peuvent modifier la visualisation
+it.uniroma2.art.semanticturkey.settings.core.InstanceListPreferences.allowVisualizationChange.displayName = Permet la modification de la visualisation
+it.uniroma2.art.semanticturkey.settings.core.InstanceListPreferences.safeToGoLimit.description =
+it.uniroma2.art.semanticturkey.settings.core.InstanceListPreferences.safeToGoLimit.displayName = Limite du safe-to-go
+
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.shortName = Préférences pour l'arbre des concepts
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.baseBroaderProp.description =
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.baseBroaderProp.displayName = Propriété broader de base
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.broaderProps.description =
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.broaderProps.displayName = Propriétés broader
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.narrowerProps.description =
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.narrowerProps.displayName = Propriétés narrower
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.includeSubProps.description =
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.includeSubProps.displayName = Inclus les sous-propriétés
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.syncInverse.description =
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.syncInverse.displayName = Synchronize inverse
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.visualization.description =
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.visualization.displayName = Visualisation
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.allowVisualizationChange.description = Indique si les utilisateurs non administrateurs peuvent modifier la visualisation
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.allowVisualizationChange.displayName = Permet la modification de la visualisation
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.multischemeMode.description =
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.multischemeMode.displayName = Mode multi-écrans
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.safeToGoLimit.description =
+it.uniroma2.art.semanticturkey.settings.core.ConceptTreePreferences.safeToGoLimit.displayName = Limite du safe-to-go
+
+it.uniroma2.art.semanticturkey.settings.core.LexEntryListPreferences.shortName = Préférences pour la liste des entrées lexicales
+it.uniroma2.art.semanticturkey.settings.core.LexEntryListPreferences.visualization.description =
+it.uniroma2.art.semanticturkey.settings.core.LexEntryListPreferences.visualization.displayName = Visualisation
+it.uniroma2.art.semanticturkey.settings.core.LexEntryListPreferences.allowVisualizationChange.description = Indique si les utilisateurs non administrateurs peuvent modifier la visualisation
+it.uniroma2.art.semanticturkey.settings.core.LexEntryListPreferences.allowVisualizationChange.displayName = Permet la modification de la visualisation
+it.uniroma2.art.semanticturkey.settings.core.LexEntryListPreferences.indexLength.description =
+it.uniroma2.art.semanticturkey.settings.core.LexEntryListPreferences.indexLength.displayName = Longueur de l'index
+it.uniroma2.art.semanticturkey.settings.core.LexEntryListPreferences.safeToGoLimit.description =
+it.uniroma2.art.semanticturkey.settings.core.LexEntryListPreferences.safeToGoLimit.displayName = Limite du safe-to-go
+
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewPreferences.shortName = Préférences pour le Resource View
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewPreferences.defaultConceptType.description =
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewPreferences.defaultConceptType.displayName = Type de concept par défaut
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewPreferences.defaultLexEntryType.description =
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewPreferences.defaultLexEntryType.displayName = Type d'entrée lexicale par défaut
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewPreferences.resViewPartitionFilter.description =
+it.uniroma2.art.semanticturkey.settings.core.ResourceViewPreferences.resViewPartitionFilter.displayName = Filtre de partition du Resource View
+
+it.uniroma2.art.semanticturkey.settings.core.SearchSettings.shortName = Réglages de la recherche
+it.uniroma2.art.semanticturkey.settings.core.SearchSettings.restrictLang.description =
+it.uniroma2.art.semanticturkey.settings.core.SearchSettings.restrictLang.displayName = Restreint à la langue
+it.uniroma2.art.semanticturkey.settings.core.SearchSettings.languages.description =
+it.uniroma2.art.semanticturkey.settings.core.SearchSettings.languages.displayName = Langues
+it.uniroma2.art.semanticturkey.settings.core.SearchSettings.includeLocales.description =
+it.uniroma2.art.semanticturkey.settings.core.SearchSettings.includeLocales.displayName = Inclus les locales
+it.uniroma2.art.semanticturkey.settings.core.SearchSettings.useAutocompletion.description =
+it.uniroma2.art.semanticturkey.settings.core.SearchSettings.useAutocompletion.displayName = Utilise l'autocomplétion
+
+it.uniroma2.art.semanticturkey.settings.core.Sheet2RdfSettings.shortName = Réglages de Sheet2Rdf
+it.uniroma2.art.semanticturkey.settings.core.Sheet2RdfSettings.useHeaders.description =
+it.uniroma2.art.semanticturkey.settings.core.Sheet2RdfSettings.useHeaders.displayName = Utilise les en-têtes
+it.uniroma2.art.semanticturkey.settings.core.Sheet2RdfSettings.namingStrategy.description =
+it.uniroma2.art.semanticturkey.settings.core.Sheet2RdfSettings.namingStrategy.displayName = Stratégie de nommage des FeatureStructure
+
+it.uniroma2.art.semanticturkey.settings.core.CorePGSettings.shortName = Réglagles des groupes des projets principaux
+it.uniroma2.art.semanticturkey.properties.InvalidSettingsUpdateException.message = Réglages non valides :\n{0} 
+it.uniroma2.art.semanticturkey.properties.InvalidConfigurationUpdateException.message = Configuration non valide :\n{0}
