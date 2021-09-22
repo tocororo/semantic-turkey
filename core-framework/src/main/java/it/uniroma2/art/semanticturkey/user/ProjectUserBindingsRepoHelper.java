@@ -84,7 +84,7 @@ public class ProjectUserBindingsRepoHelper {
 					+ NTriplesUtil.toNTriplesString(getRoleIRI(role, puBinding.getProject())) + " .";
 		}
 		for (String lang : puBinding.getLanguages()) {
-			query += " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROP) + " '" + lang + "' .";
+			query += " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROP) + " \"" + lang + "\" .";
 		}
 		if (puBinding.getGroup() != null) {
 			query += " _:binding " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_PROP) + " " 

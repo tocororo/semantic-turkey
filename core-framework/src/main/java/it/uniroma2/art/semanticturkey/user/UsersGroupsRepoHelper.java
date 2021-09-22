@@ -96,18 +96,18 @@ public class UsersGroupsRepoHelper {
 	public void insertGroup(UsersGroup group) {
 		String query = "INSERT DATA {"
 				+ " ?" + BINDING_IRI + " a " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP) + " ."
-				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_SHORT_NAME) + " '" + group.getShortName() + "' .";
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_SHORT_NAME) + " \"" + group.getShortName() + "\" .";
 		if (group.getFullName() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_FULL_NAME) + " '" + group.getFullName() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_FULL_NAME) + " \"" + group.getFullName() + "\" .";
 		}
 		if (group.getDescription() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_DESCRIPTION) + " '" + group.getDescription() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_DESCRIPTION) + " \"" + group.getDescription() + "\" .";
 		}
 		if (group.getWebPage() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_WEB_PAGE) + " '" + group.getWebPage() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_WEB_PAGE) + " \"" + group.getWebPage() + "\" .";
 		}
 		if (group.getLogoUrl() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_LOGO_URL) + " '" + group.getLogoUrl() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.GROUP_LOGO_URL) + " \"" + group.getLogoUrl() + "\" .";
 		}
 		query += " }";
 		

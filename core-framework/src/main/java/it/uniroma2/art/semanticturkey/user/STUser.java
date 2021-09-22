@@ -315,16 +315,14 @@ public class STUser implements UserDetails {
     }
 
     public static String encodeUserIri(IRI iri) {
-        String fileNameCompliantCharacters = "([^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-])+";
-        String replaced = iri.stringValue();
-        replaced = replaced.substring(replaced.indexOf("://") + 3);
-        replaced = replaced.replaceAll(fileNameCompliantCharacters, ".");
+        String encoded = iri.stringValue();
+        encoded = encoded.substring(encoded.indexOf("://") + 3);
         try {
-            replaced = URLEncoder.encode(replaced, "UTF-8");
+            encoded = URLEncoder.encode(encoded, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        return replaced;
+        return encoded;
     }
 
     public static IRI generateUserIri(String email) {

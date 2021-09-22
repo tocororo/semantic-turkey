@@ -52,8 +52,13 @@ import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.storage.StorageManager;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.Role;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.user.UsersRepoHelper;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
+import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.lang3.Functions;
@@ -67,6 +72,9 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.RDFHandlerException;
@@ -75,6 +83,7 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,6 +108,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -170,9 +180,11 @@ public class UpdateRoutines {
 			if (stDataVersionNumber.compareTo(new VersionNumber(9, 0, 0)) < 0) {
 				alignFrom801To90();
 			}
-
 			if (stDataVersionNumber.compareTo(new VersionNumber(10, 0, 0)) < 0) {
 				alignFrom90To10();
+			}
+			if (stDataVersionNumber.compareTo(new VersionNumber(11, 0, 0)) < 0) {
+				alignFrom10To11();
 			}
 
 
@@ -643,6 +655,54 @@ public class UpdateRoutines {
 				STPropertiesManager.storeObjectNodeInYAML(newCoreSystemSettingsNode, newCoreSystemSettingsFile);
 			}
 		}
+	}
+
+	private static void alignFrom10To11() throws IOException {
+		System.out.println("Update routine: 10.x -> 11.0");
+
+		System.out.println("- Updating users' folders name");
+		Map<String, String> renamingMap = new HashMap<>(); //cache <old user folder name> -> <new user folder name>
+		Collection<File> userFolders = UsersManager.getAllUserFolders();
+		for (File f : userFolders) {
+			alignFrom10To11_updateUserFolderName(f, renamingMap);
+		}
+
+		System.out.println("- Updating pu_bindings sub folders name (user)");
+		Collection<File> puBindingFolder = ProjectUserBindingsManager.getAllProjBindingsFolders();
+		for (File f : puBindingFolder) {
+			alignFrom10To11_updatePUBindingFolderName(f, renamingMap);
+		}
+	}
+
+	private static void alignFrom10To11_updateUserFolderName(File userFolder, Map<String, String> renamingMap) throws IOException {
+		UsersRepoHelper userRepoHelper = new UsersRepoHelper();
+		File userDetailsFile = new File(userFolder + File.separator + UsersManager.USERS_DETAILS_FILE_NAME);
+		userRepoHelper.loadUserDetails(userDetailsFile);
+		STUser user = userRepoHelper.listUsers().iterator().next();
+
+		String newFolderName = STUser.encodeUserIri(user.getIRI());
+		File newUserFolder = new File(Resources.getUsersDir() + File.separator + newFolderName);
+		renamingMap.put(userFolder.getName(), newFolderName);
+//		System.out.println("Renaming " + userFolder.getAbsolutePath() + " to " + newUserFolder.getAbsolutePath());
+		userFolder.renameTo(newUserFolder);
+	}
+
+	private static void alignFrom10To11_updatePUBindingFolderName(File pubProjFolder, Map<String, String> renamingMap) {
+		String[] puUserDirectories = pubProjFolder.list(new FilenameFilter() {
+			public boolean accept(File current, String name) {
+				return new File(current, name).isDirectory();
+			}
+		});
+		for (String puUserDirName : puUserDirectories) {
+			if (renamingMap.containsKey(puUserDirName)) {
+				String newName = renamingMap.get(puUserDirName);
+				File oldPubFolder = new File(pubProjFolder, puUserDirName);
+				File newPubFolder = new File(pubProjFolder, newName);
+//				System.out.println("Renaming " + oldPubFolder.getAbsolutePath() + " to " + newPubFolder.getAbsolutePath());
+				oldPubFolder.renameTo(newPubFolder);
+			}
+		}
+
 	}
 
 	private static <T> void convertPropertiesSettingToYAML(Properties properties, String oldProp, ObjectNode settingsObjectNode, String yamlProp, Functions.FailableFunction<String, T, IOException> propValueCoverter) throws IOException {

@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 
 public class UsersManager {
 
-    private static final String USERS_DETAILS_FILE_NAME = "details.ttl";
+    public static final String USERS_DETAILS_FILE_NAME = "details.ttl";
     private static final String USER_FORM_FIELDS_FILE_NAME = "fields.ttl";
 
     public static final int EMAIL_VERIFICATION_EXPIRATION_HOURS = 48;

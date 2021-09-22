@@ -402,7 +402,11 @@ public class ProjectUserBindingsManager {
 		try {
 			ProjectUserBindingsRepoHelper tempPUBindingsRepoHelper = new ProjectUserBindingsRepoHelper();
 			tempPUBindingsRepoHelper.insertBinding(puBinding);
-			tempPUBindingsRepoHelper.saveBindingDetailsFile(getPUBindingDetailsFile(puBinding.getProject(), puBinding.getUser()));
+			File detailsFile = getPUBindingDetailsFile(puBinding.getProject(), puBinding.getUser());
+			if (!detailsFile.exists()) {
+				detailsFile.mkdirs();
+			}
+			tempPUBindingsRepoHelper.saveBindingDetailsFile(detailsFile);
 			tempPUBindingsRepoHelper.shutDownRepository();
 		} catch (IOException e) {
 			throw new ProjectBindingException(e);
@@ -431,7 +435,7 @@ public class ProjectUserBindingsManager {
 	 * Returns all the projects folder under <STData>/pu_bindings/
 	 * @return
 	 */
-	private static Collection<File> getAllProjBindingsFolders() {
+	public static Collection<File> getAllProjBindingsFolders() {
 		Collection<File> projBindingsFolders = new ArrayList<>();
 		File puBindingFolder = Resources.getProjectUserBindingsDir();
 		//get all subfolder of "pu_binding" folder (one subfolder for each project)		
@@ -482,9 +486,6 @@ public class ProjectUserBindingsManager {
 		File bindingFolder = new File(Resources.getProjectUserBindingsDir() + File.separator + 
 				project.getName() + File.separator + 
 				STUser.encodeUserIri(user.getIRI()));
-		if (!bindingFolder.exists()) {
-			bindingFolder.mkdirs();
-		}
 		return new File(bindingFolder + File.separator + PU_BINDING_DETAILS_FILE_NAME);
 	}
 

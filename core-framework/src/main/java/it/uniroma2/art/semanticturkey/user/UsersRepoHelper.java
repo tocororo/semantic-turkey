@@ -92,39 +92,39 @@ public class UsersRepoHelper {
 	public void insertUser(STUser user) {
 		String query = "INSERT DATA {"
 				+ " ?" + BINDING_IRI + " a " + NTriplesUtil.toNTriplesString(UserVocabulary.USER) + " ."
-				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.GIVEN_NAME) + " '" + user.getGivenName() + "' ."
-				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.FAMILY_NAME) + " '" + user.getFamilyName() + "' ."
-				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.MBOX) + " '" + user.getEmail() + "' ."
-				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.PASSWORD) + " '" + user.getPassword() + "' ."
-				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.REGISTRATION_DATE) + " '" + dateFormat.format(user.getRegistrationDate()) + "' ."
-				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.STATUS) + " '" + user.getStatus() + "' .";
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.GIVEN_NAME) + " \"" + user.getGivenName() + "\" ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.FAMILY_NAME) + " \"" + user.getFamilyName() + "\" ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.MBOX) + " \"" + user.getEmail() + "\" ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.PASSWORD) + " \"" + user.getPassword() + "\" ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.REGISTRATION_DATE) + " \"" + dateFormat.format(user.getRegistrationDate()) + "\" ."
+				+ " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.STATUS) + " \"" + user.getStatus() + "\" .";
 		if (user.getUrl() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.URL) + " '" + user.getUrl() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.URL) + " \"" + user.getUrl() + "\" .";
 		}
 		if (user.getAvatarUrl() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.AVATAR_URL) + " '" + user.getAvatarUrl() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.AVATAR_URL) + " \"" + user.getAvatarUrl() + "\" .";
 		}
 		if (user.getPhone() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.PHONE) + " '" + user.getPhone() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(FOAF.PHONE) + " \"" + user.getPhone() + "\" .";
 		}
 		if (user.getAffiliation() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(ORG.MEMBER_OF) + " '" + user.getAffiliation() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(ORG.MEMBER_OF) + " \"" + user.getAffiliation() + "\" .";
 		}
 		if (user.getAddress() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.ADDRESS) + " '" + user.getAddress() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.ADDRESS) + " \"" + user.getAddress() + "\" .";
 		}
 		if (user.getVerificationToken() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.VERIFICATION_TOKEN) + " '" + user.getVerificationToken() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.VERIFICATION_TOKEN) + " \"" + user.getVerificationToken() + "\" .";
 		}
 		if (user.getActivationToken() != null) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.ACTIVATION_TOKEN) + " '" + user.getActivationToken() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.ACTIVATION_TOKEN) + " \"" + user.getActivationToken() + "\" .";
 		}
 		for (String lang : user.getLanguageProficiencies()) {
 			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(UserVocabulary.LANGUAGE_PROFICIENCIES) + 
-					" '" + lang + "' .";
+					" \"" + lang + "\" .";
 		}
 		for (Entry<IRI, String> entry : user.getCustomProperties().entrySet()) {
-			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(entry.getKey()) + " '" + entry.getValue() + "' .";
+			query += " ?" + BINDING_IRI + " " + NTriplesUtil.toNTriplesString(entry.getKey()) + " \"" + entry.getValue() + "\" .";
 		}
 		query += " }";
 		
@@ -352,10 +352,10 @@ public class UsersRepoHelper {
 
 	public void insertUserFormCustomField(UserFormCustomField field) {
 		String query = "INSERT DATA { " +
-			NTriplesUtil.toNTriplesString(field.getIri()) + " " + NTriplesUtil.toNTriplesString(RDFS.LABEL) + " '" + field.getLabel() + "' . " +
+			NTriplesUtil.toNTriplesString(field.getIri()) + " " + NTriplesUtil.toNTriplesString(RDFS.LABEL) + " \"" + field.getLabel() + "\" . " +
 			NTriplesUtil.toNTriplesString(field.getIri()) + " " + NTriplesUtil.toNTriplesString(RDF.VALUE) + " " + field.getPosition() + " . ";
 		if (field.getDescription() != null) {
-			query += NTriplesUtil.toNTriplesString(field.getIri()) + " " + NTriplesUtil.toNTriplesString(SKOS.DEFINITION) + " '" + field.getDescription() + "' . ";
+			query += NTriplesUtil.toNTriplesString(field.getIri()) + " " + NTriplesUtil.toNTriplesString(SKOS.DEFINITION) + " \"" + field.getDescription() + "\" . ";
 		}
 		query += "}";
 		//execute query
