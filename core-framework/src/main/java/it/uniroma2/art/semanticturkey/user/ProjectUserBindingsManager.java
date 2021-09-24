@@ -403,8 +403,9 @@ public class ProjectUserBindingsManager {
 			ProjectUserBindingsRepoHelper tempPUBindingsRepoHelper = new ProjectUserBindingsRepoHelper();
 			tempPUBindingsRepoHelper.insertBinding(puBinding);
 			File detailsFile = getPUBindingDetailsFile(puBinding.getProject(), puBinding.getUser());
-			if (!detailsFile.exists()) {
-				detailsFile.mkdirs();
+			File detailsFileFolder = detailsFile.getParentFile(); 
+			if (!detailsFileFolder.exists()) {
+				detailsFileFolder.mkdirs();
 			}
 			tempPUBindingsRepoHelper.saveBindingDetailsFile(detailsFile);
 			tempPUBindingsRepoHelper.shutDownRepository();
