@@ -1,0 +1,11 @@
+it.uniroma2.art.semanticturkey.constraints.HasDatatype.message = le littéral '${validatedValue}' ne possède pas le type de donnée '{value}'
+it.uniroma2.art.semanticturkey.constraints.HasRole.message = la ressource '${validatedValue}' ne possède pas le rôle '{value}'
+it.uniroma2.art.semanticturkey.constraints.HasType.message = la ressource '${validatedValue}' ne possède pas le type '{value}'
+it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString.message = le littéral '${validatedValue}' n'est pas une chaîne en langage naturel
+it.uniroma2.art.semanticturkey.constraints.LocallyDefined.message = la ressource '${validatedValue}' n'existe pas dans le jeu de données courant
+it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources.message = la ressource '${validatedValue}' n'existe pas dans le jeu de données courant
+it.uniroma2.art.semanticturkey.constraints.NarrowerThan.message = la ressource '${validatedValue}' n'est pas un concept spécifique du concept '{broaderConceptIRI}'
+it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined.message = la ressource '${validatedValue}' existe déjà dans le jeu de données courant
+it.uniroma2.art.semanticturkey.constraints.RegExp.message = la valeur '${validatedValue}' ne correspond pas à l'expression régulière fournie '{regexp}' 
+it.uniroma2.art.semanticturkey.constraints.SubClassOf.message = la ressource '${validatedValue}' n'est pas une sous-classe de la classe '{superClassIRI}'
+it.uniroma2.art.semanticturkey.constraints.SubPropertyOf.message = la ressource '${validatedValue}' n'est pas une sous-propriété de la propriété '{superPropertyIRI}'
