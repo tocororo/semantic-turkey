@@ -3,6 +3,7 @@ date: dd/mm/yyyy
   * added localization for French, thanks to Nathalie Vedovotto for the contribution!
   * fixed a bug that caused issues when registering a user with ' character into the email address, or any other value provided in the registration form
   * updated the function that names the STData/users/<user> and STData/pu_bindings/<proj>/<user>/ directories
+  * fixed a bug regarding the Manchester Syntex Expressions
 
 version 10.1
 date: 21/09/2021

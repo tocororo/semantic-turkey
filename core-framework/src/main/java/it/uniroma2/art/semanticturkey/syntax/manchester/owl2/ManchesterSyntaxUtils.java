@@ -167,7 +167,7 @@ public class ManchesterSyntaxUtils {
 			//Do nothing, since it is just a list of Literal
 		} else if(mci instanceof ManchesterNotClass){
 			ManchesterNotClass mnc = (ManchesterNotClass) mci;
-			performSemanticChecks(mnc, conn, errorMsgList, resourceToPosMap, false, manchExpr);
+			performSemanticChecks(mnc.getNotClass(), conn, errorMsgList, resourceToPosMap, false, manchExpr);
 		} else if(mci instanceof  ManchesterOneOfClass){
 			ManchesterOneOfClass mooc = (ManchesterOneOfClass) mci;
 			List<IRI> instanceList = mooc.getOneOfList();
