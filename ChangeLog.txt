@@ -1,4 +1,4 @@
-version 11.0
+version 10.1.1
 date: dd/mm/yyyy
   * added localization for French, thanks to Nathalie Vedovotto for the contribution!
   * fixed a bug that caused issues when registering a user with ' character into the email address, or any other value provided in the registration form

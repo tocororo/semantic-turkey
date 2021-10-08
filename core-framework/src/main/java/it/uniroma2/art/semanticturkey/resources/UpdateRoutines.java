@@ -58,7 +58,6 @@ import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.user.UsersRepoHelper;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
-import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.lang3.Functions;
@@ -72,9 +71,6 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.RDFHandlerException;
@@ -83,7 +79,6 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,8 +109,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -183,8 +176,8 @@ public class UpdateRoutines {
 			if (stDataVersionNumber.compareTo(new VersionNumber(10, 0, 0)) < 0) {
 				alignFrom90To10();
 			}
-			if (stDataVersionNumber.compareTo(new VersionNumber(11, 0, 0)) < 0) {
-				alignFrom10To11();
+			if (stDataVersionNumber.compareTo(new VersionNumber(10, 1, 1)) < 0) {
+				alignFrom101To1011();
 			}
 
 
@@ -657,8 +650,8 @@ public class UpdateRoutines {
 		}
 	}
 
-	private static void alignFrom10To11() throws IOException {
-		System.out.println("Update routine: 10.x -> 11.0");
+	private static void alignFrom101To1011() throws IOException {
+		System.out.println("Update routine: 10.1 -> 10.1.1");
 
 		System.out.println("- Updating users' folders name");
 		Map<String, String> renamingMap = new HashMap<>(); //cache <old user folder name> -> <new user folder name>
