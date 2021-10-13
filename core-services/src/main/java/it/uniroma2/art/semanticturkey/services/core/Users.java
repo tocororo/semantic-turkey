@@ -322,7 +322,7 @@ public class Users extends STServiceAdapter {
                 //only if registration succeeds (no duplicated email/iri exception) sends verification email
                 try {
                     emailService.sendRegistrationMailToUser(user, vbHostAddress, true);
-                } catch (MessagingException | UnsupportedEncodingException | STPropertyAccessException e) {
+                } catch (Exception e) {
                     //if exception is raised while sending the verification email,
                     //undo the user creation so that no unverified user is pending
                     UsersManager.deleteUser(user);
@@ -337,8 +337,7 @@ public class Users extends STServiceAdapter {
                 try {
                     emailService.sendRegistrationMailToUser(user, vbHostAddress, false);
                     emailService.sendRegistrationMailToAdmin(user, vbHostAddress);
-                } catch (MessagingException | UnsupportedEncodingException | STPropertyAccessException e) {
-                    //catch error when sending email (probably email service not configured)
+                } catch (Exception e) { //catch generic Exception in order to avoid annoying exception raised to the client when the configuration is invalid
                     logger.error(Utilities.printFullStackTrace(e));
                 }
             }
@@ -377,7 +376,11 @@ public class Users extends STServiceAdapter {
         UsersManager.activateNewRegisteredUser(email, token);
         STUser user = UsersManager.getUser(email);
         VbEmailService emailService = new VbEmailService();
-        emailService.sendEnabledMailToUser(user);
+        try {
+            emailService.sendEnabledMailToUser(user);
+        } catch (Exception e) { //catch generic Exception in order to avoid annoying exception raised to the client when the configuration is invalid
+            logger.error(Utilities.printFullStackTrace(e));
+        }
     }
 
     /**
@@ -561,7 +564,7 @@ public class Users extends STServiceAdapter {
             if (oldStatus.equals(UserStatus.NEW)) { //if enabled for the first time send notification
                 try {
                     new VbEmailService().sendEnabledMailToUser(user);
-                } catch (UnsupportedEncodingException | MessagingException | STPropertyAccessException e) {
+                } catch (Exception e) { //catch generic Exception in order to avoid annoying exception raised to the client when the configuration is invalid
                     logger.error(Utilities.printFullStackTrace(e));
                 }
             }
