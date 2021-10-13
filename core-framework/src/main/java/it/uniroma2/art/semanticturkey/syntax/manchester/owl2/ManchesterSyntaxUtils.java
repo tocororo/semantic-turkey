@@ -1,50 +1,79 @@
 package it.uniroma2.art.semanticturkey.syntax.manchester.owl2;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserRuntimeException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedRuntimeException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntacticException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxRuntimeException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ThrowingErrorListenerLexer;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ThrowingErrorListenerParser;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeRestrictionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.LiteralListContext;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ObjectPropertyExpressionContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.errors.ManchesterGenericError;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.errors.ManchesterSemanticError;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers.ParserDatatypeRestrictionExpression;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers.ParserDescription;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers.ParserLiteralEnumerarionRestrictionExpression;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers.ParserObjectPropertyExpression;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.*;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.InverseObjectProperty;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterAndClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterBaseClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterCardClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface.PossType;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterDataConjunction;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterDataRange;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterDatatypeRestriction;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterLiteralListClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterNotClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterOneOfClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterOnlyClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterOrClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterSelfClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterSomeClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterValueClass;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ObjectProperty;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ObjectPropertyExpression;
 import it.uniroma2.art.semanticturkey.vocabulary.XSDFragment;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.LexerNoViableAltException;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
-import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Namespace;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
-import org.eclipse.rdf4j.query.*;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.GraphQueryResult;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserRuntimeException;
-import it.uniroma2.art.semanticturkey.exceptions.NotClassAxiomException;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface.PossType;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionContext;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.ObjectPropertyExpressionContext;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeRestrictionContext;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.LiteralListContext;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ManchesterSyntaxUtils {
 
@@ -513,7 +542,7 @@ public class ManchesterSyntaxUtils {
 			ManchesterCardClass mcc = (ManchesterCardClass) mci;
 			int card = mcc.getCard();
 			Literal cardLiteral = valueFactory.createLiteral(Integer.toString(card),
-					XMLSchema.NON_NEGATIVE_INTEGER);
+					XSD.NON_NEGATIVE_INTEGER);
 			IRI prop = mcc.getProp();
 			PossType type = mcc.getType();
 			ManchesterClassInterface classQualCard = mcc.getClassCard();
@@ -595,7 +624,7 @@ public class ManchesterSyntaxUtils {
 			statList.add(valueFactory.createStatement(selfClass, RDF.TYPE, OWL.RESTRICTION));
 			statList.addAll(generateInverseTriples(valueFactory, msc.hasInverse(), selfClass, prop));
 			statList.add(valueFactory.createStatement(selfClass, valueFactory.createIRI(OWL_SELF),
-					valueFactory.createLiteral("true", XMLSchema.BOOLEAN)));
+					valueFactory.createLiteral("true", XSD.BOOLEAN)));
 			return selfClass;
 		}  else if (mci instanceof ManchesterDatatypeRestriction ) {
 			/*

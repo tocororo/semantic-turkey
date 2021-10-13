@@ -1,17 +1,16 @@
 package it.uniroma2.art.semanticturkey.customform;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
-
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.model.ProjectionOperator;
 import it.uniroma2.art.coda.pearl.model.ProjectionOperator.NodeType;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class CustomFormParseUtils {
 	
@@ -56,7 +55,7 @@ public class CustomFormParseUtils {
 	public static ProjectionOperator getProjectionOperator(CODACore codaCore, String ref) throws PRParserException {
 		// useful prefix-ns mappings in CRE node rule
 		Map<String, String> prefixMapping = new HashMap<String, String>();
-		prefixMapping.put(XMLSchema.PREFIX, XMLSchema.NAMESPACE);
+		prefixMapping.put(XSD.PREFIX, XSD.NAMESPACE);
 		prefixMapping.put("coda", "http://art.uniroma2.it/coda/contracts/");
 		return codaCore.parseProjectionOperator(ref, prefixMapping);
 	}

@@ -1,16 +1,13 @@
 package it.uniroma2.art.semanticturkey.extension.impl.customservice.sparql;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
-
+import com.google.common.collect.ImmutableSet;
+import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
+import it.uniroma2.art.semanticturkey.extension.extpts.customservice.CustomServiceBackend;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -25,7 +22,7 @@ import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryLanguage;
@@ -45,15 +42,16 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sparql.query.QueryStringUtil;
 
-import com.google.common.collect.ImmutableSet;
-
-import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
-import it.uniroma2.art.semanticturkey.extension.extpts.customservice.CustomServiceBackend;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STServiceContext;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
-import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
-import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of the {@link CustomServiceBackend} that uses SPARQL.
@@ -280,15 +278,15 @@ public class SPARQLCustomServiceBackend implements CustomServiceBackend {
 		} else if (TypeUtils.isAssignable(inputType, Value.class)) {
 			return (Value) input;
 		} else if (TypeUtils.isAssignable(inputType, Integer.class)) {
-			return vf.createLiteral(input.toString(), XMLSchema.INT);
+			return vf.createLiteral(input.toString(), XSD.INT);
 		} else if (TypeUtils.isAssignable(inputType, Long.class)) {
-			return vf.createLiteral(input.toString(), XMLSchema.LONG);
+			return vf.createLiteral(input.toString(), XSD.LONG);
 		} else if (TypeUtils.isAssignable(inputType, Float.class)) {
-			return vf.createLiteral(input.toString(), XMLSchema.FLOAT);
+			return vf.createLiteral(input.toString(), XSD.FLOAT);
 		} else if (TypeUtils.isAssignable(inputType, Double.class)) {
-			return vf.createLiteral(input.toString(), XMLSchema.DOUBLE);
+			return vf.createLiteral(input.toString(), XSD.DOUBLE);
 		} else if (TypeUtils.isAssignable(inputType, Boolean.class)) {
-			return vf.createLiteral(input.toString(), XMLSchema.BOOLEAN);
+			return vf.createLiteral(input.toString(), XSD.BOOLEAN);
 		} else {
 			throw new IllegalStateException("Unsupported Java type " + inputType);
 		}

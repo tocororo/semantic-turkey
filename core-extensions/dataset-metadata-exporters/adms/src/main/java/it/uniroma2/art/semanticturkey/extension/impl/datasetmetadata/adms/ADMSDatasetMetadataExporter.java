@@ -1,5 +1,10 @@
 package it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms;
 
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporter;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.vocabulary.ADMSFragment;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -12,18 +17,12 @@ import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
-
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporter;
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterException;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.vocabulary.ADMSFragment;
 
 /**
  * A {@link DatasetMetadataExporter} for the <a href="https://www.w3.org/TR/vocab-adms/">Asset Description
@@ -61,7 +60,7 @@ public class ADMSDatasetMetadataExporter implements DatasetMetadataExporter {
 				metadataModel.setNamespace(FOAF.NS);
 				metadataModel.setNamespace(DCTERMS.NS);
 				metadataModel.setNamespace(DCAT.NS);
-				metadataModel.setNamespace(XMLSchema.NS);
+				metadataModel.setNamespace(XSD.NS);
 				metadataModel.setNamespace(SKOS.NS);
 				metadataModel.setNamespace(ADMSFragment.NS);
 				metadataModel
@@ -93,13 +92,13 @@ public class ADMSDatasetMetadataExporter implements DatasetMetadataExporter {
 				String asset_issued = pluginSettings.asset_issued;
 				if (asset_issued != null && !asset_issued.isEmpty()) {
 					metadataModel.add(valueFactory.createStatement(assetIRI, DCTERMS.ISSUED,
-							valueFactory.createLiteral(asset_issued, XMLSchema.DATE)));
+							valueFactory.createLiteral(asset_issued, XSD.DATE)));
 				}
 
 				String asset_modified = pluginSettings.asset_modified;
 				if (asset_modified != null && !asset_modified.isEmpty()) {
 					metadataModel.add(valueFactory.createStatement(assetIRI, DCTERMS.MODIFIED,
-							valueFactory.createLiteral(asset_modified, XMLSchema.DATE)));
+							valueFactory.createLiteral(asset_modified, XSD.DATE)));
 				}
 
 				String asset_keywords = pluginSettings.asset_keywords;
@@ -247,7 +246,7 @@ public class ADMSDatasetMetadataExporter implements DatasetMetadataExporter {
 						&& !asset_temporal_startDate.isEmpty()) {
 					metadataModel.add(valueFactory.createStatement(asset_temporal_iri,
 							valueFactory.createIRI("http://schema.org/startDate"),
-							valueFactory.createLiteral(asset_temporal_startDate, XMLSchema.DATE)));
+							valueFactory.createLiteral(asset_temporal_startDate, XSD.DATE)));
 				}
 
 				String asset_temporal_endDate = pluginSettings.asset_temporal_endDate;
@@ -255,7 +254,7 @@ public class ADMSDatasetMetadataExporter implements DatasetMetadataExporter {
 						&& !asset_temporal_endDate.isEmpty()) {
 					metadataModel.add(valueFactory.createStatement(asset_temporal_iri,
 							valueFactory.createIRI("http://schema.org/endDate"),
-							valueFactory.createLiteral(asset_temporal_endDate, XMLSchema.DATE)));
+							valueFactory.createLiteral(asset_temporal_endDate, XSD.DATE)));
 				}
 
 				String asset_language = pluginSettings.asset_language;
@@ -397,14 +396,14 @@ public class ADMSDatasetMetadataExporter implements DatasetMetadataExporter {
 					String distribution_issued = pluginSettings.distribution_issued;
 					if (distribution_issued != null && !distribution_issued.isEmpty()) {
 						metadataModel.add(valueFactory.createStatement(asset_distribution_iri, DCTERMS.ISSUED,
-								valueFactory.createLiteral(distribution_issued, XMLSchema.DATE)));
+								valueFactory.createLiteral(distribution_issued, XSD.DATE)));
 					}
 
 					String distribution_modified = pluginSettings.distribution_modified;
 					if (distribution_modified != null && !distribution_modified.isEmpty()) {
 						metadataModel
 								.add(valueFactory.createStatement(asset_distribution_iri, DCTERMS.MODIFIED,
-										valueFactory.createLiteral(distribution_modified, XMLSchema.DATE)));
+										valueFactory.createLiteral(distribution_modified, XSD.DATE)));
 					}
 
 					String distribution_title = pluginSettings.distribution_title;

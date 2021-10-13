@@ -38,7 +38,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.TupleQuery;
@@ -77,76 +77,76 @@ public class Datatypes extends STServiceAdapter {
 	private static final Set<IRI> owl2datatypeMap = ImmutableSet.copyOf(new IRI[]{
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2002/07/owl#real"),
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2002/07/owl#rational"),
-			XMLSchema.DECIMAL,
-			XMLSchema.INTEGER,
-			XMLSchema.NON_NEGATIVE_INTEGER,
-			XMLSchema.NON_POSITIVE_INTEGER,
-			XMLSchema.POSITIVE_INTEGER,
-			XMLSchema.NEGATIVE_INTEGER,
-			XMLSchema.LONG,
-			XMLSchema.INT,
-			XMLSchema.SHORT,
-			XMLSchema.BYTE,
-			XMLSchema.UNSIGNED_LONG,
-			XMLSchema.UNSIGNED_INT,
-			XMLSchema.UNSIGNED_SHORT,
-			XMLSchema.UNSIGNED_BYTE,
-			XMLSchema.STRING,
-			XMLSchema.NORMALIZEDSTRING,
-			XMLSchema.TOKEN,
-			XMLSchema.LANGUAGE,
-			XMLSchema.NAME,
-			XMLSchema.NCNAME,
-			XMLSchema.NMTOKEN,
-			XMLSchema.BOOLEAN,
-			XMLSchema.HEXBINARY,
-			XMLSchema.BASE64BINARY,
-			XMLSchema.ANYURI,
-			XMLSchema.DATETIME,
+			XSD.DECIMAL,
+			XSD.INTEGER,
+			XSD.NON_NEGATIVE_INTEGER,
+			XSD.NON_POSITIVE_INTEGER,
+			XSD.POSITIVE_INTEGER,
+			XSD.NEGATIVE_INTEGER,
+			XSD.LONG,
+			XSD.INT,
+			XSD.SHORT,
+			XSD.BYTE,
+			XSD.UNSIGNED_LONG,
+			XSD.UNSIGNED_INT,
+			XSD.UNSIGNED_SHORT,
+			XSD.UNSIGNED_BYTE,
+			XSD.STRING,
+			XSD.NORMALIZEDSTRING,
+			XSD.TOKEN,
+			XSD.LANGUAGE,
+			XSD.NAME,
+			XSD.NCNAME,
+			XSD.NMTOKEN,
+			XSD.BOOLEAN,
+			XSD.HEXBINARY,
+			XSD.BASE64BINARY,
+			XSD.ANYURI,
+			XSD.DATETIME,
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#dateTimeStamp"),
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral")
 	});
 
 	private static final Set<IRI> rdf11XmlSchemaBuiltinDatatypes = ImmutableSet.copyOf(new IRI[]{
-			XMLSchema.STRING,
-			XMLSchema.BOOLEAN,
-			XMLSchema.DECIMAL,
-			XMLSchema.INTEGER,
-			XMLSchema.DOUBLE,
-			XMLSchema.FLOAT,
-			XMLSchema.DATE,
-			XMLSchema.TIME,
-			XMLSchema.DATETIME,
+			XSD.STRING,
+			XSD.BOOLEAN,
+			XSD.DECIMAL,
+			XSD.INTEGER,
+			XSD.DOUBLE,
+			XSD.FLOAT,
+			XSD.DATE,
+			XSD.TIME,
+			XSD.DATETIME,
 			SimpleValueFactory.getInstance().createIRI("http://www.w3.org/2001/XMLSchema#dateTimeStamp"),
-			XMLSchema.GYEAR,
-			XMLSchema.GMONTH,
-			XMLSchema.GDAY,
-			XMLSchema.GYEARMONTH,
-			XMLSchema.GMONTHDAY,
-			XMLSchema.DURATION,
-			XMLSchema.YEARMONTHDURATION,
-			XMLSchema.DAYTIMEDURATION,
-			XMLSchema.BYTE,
-			XMLSchema.SHORT,
-			XMLSchema.INT,
-			XMLSchema.LONG,
-			XMLSchema.UNSIGNED_BYTE,
-			XMLSchema.UNSIGNED_SHORT,
-			XMLSchema.UNSIGNED_INT,
-			XMLSchema.UNSIGNED_LONG,
-			XMLSchema.POSITIVE_INTEGER,
-			XMLSchema.NON_NEGATIVE_INTEGER,
-			XMLSchema.NEGATIVE_INTEGER,
-			XMLSchema.NON_POSITIVE_INTEGER,
-			XMLSchema.HEXBINARY,
-			XMLSchema.BASE64BINARY,
-			XMLSchema.ANYURI,
-			XMLSchema.LANGUAGE,
-			XMLSchema.NORMALIZEDSTRING,
-			XMLSchema.TOKEN,
-			XMLSchema.NMTOKEN,
-			XMLSchema.NAME,
-			XMLSchema.NCNAME});
+			XSD.GYEAR,
+			XSD.GMONTH,
+			XSD.GDAY,
+			XSD.GYEARMONTH,
+			XSD.GMONTHDAY,
+			XSD.DURATION,
+			XSD.YEARMONTHDURATION,
+			XSD.DAYTIMEDURATION,
+			XSD.BYTE,
+			XSD.SHORT,
+			XSD.INT,
+			XSD.LONG,
+			XSD.UNSIGNED_BYTE,
+			XSD.UNSIGNED_SHORT,
+			XSD.UNSIGNED_INT,
+			XSD.UNSIGNED_LONG,
+			XSD.POSITIVE_INTEGER,
+			XSD.NON_NEGATIVE_INTEGER,
+			XSD.NEGATIVE_INTEGER,
+			XSD.NON_POSITIVE_INTEGER,
+			XSD.HEXBINARY,
+			XSD.BASE64BINARY,
+			XSD.ANYURI,
+			XSD.LANGUAGE,
+			XSD.NORMALIZEDSTRING,
+			XSD.TOKEN,
+			XSD.NMTOKEN,
+			XSD.NAME,
+			XSD.NCNAME});
 
 	private static final Set<IRI> builtinDatatypes = Sets.union(rdf11XmlSchemaBuiltinDatatypes,
 			owl2datatypeMap);
@@ -350,7 +350,7 @@ public class Datatypes extends STServiceAdapter {
 		IRI prop = OWL.EQUIVALENTCLASS;
 		conn.add(conn.getValueFactory().createStatement(datatype, prop, newBnode), getWorkingGraph());
 
-		AnnotatedValue<BNode> annBNode = new AnnotatedValue<BNode>(newBnode);
+		AnnotatedValue<BNode> annBNode = new AnnotatedValue<>(newBnode);
 		annBNode.setAttribute("role", RDFResourceRole.cls.name());
 	}
 
@@ -585,7 +585,7 @@ public class Datatypes extends STServiceAdapter {
 
 			List<Literal> literalTempList = dataOneOf.getLiteralList();
 			for (Literal literal : literalTempList) {
-				literalList.add(new AnnotatedValue<Literal>(literal));
+				literalList.add(new AnnotatedValue<>(literal));
 			}
 			description.setEnumerations(literalList);
 		}

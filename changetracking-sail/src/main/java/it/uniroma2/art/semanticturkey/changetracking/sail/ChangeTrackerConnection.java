@@ -1,31 +1,14 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.datatype.DatatypeFactory;
-import javax.xml.datatype.XMLGregorianCalendar;
-
-import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import it.uniroma2.art.semanticturkey.changetracking.model.HistoryRepositories;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.BLACKLIST;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
 import org.eclipse.rdf4j.IsolationLevel;
 import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
@@ -43,11 +26,10 @@ import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.RDFCollections;
-import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
@@ -63,12 +45,8 @@ import org.eclipse.rdf4j.query.algebra.evaluation.iterator.CollectionIteration;
 import org.eclipse.rdf4j.query.impl.MapBindingSet;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
-import org.eclipse.rdf4j.queryrender.builder.QueryBuilderFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.NotifyingSailConnection;
 import org.eclipse.rdf4j.sail.SailConnectionListener;
@@ -79,13 +57,25 @@ import org.eclipse.rdf4j.sail.helpers.NotifyingSailConnectionWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import it.uniroma2.art.semanticturkey.changetracking.model.HistoryRepositories;
-import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.BLACKLIST;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.XMLGregorianCalendar;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * A {@link NotifyingSailConnection} which is returned by a {@link ChangeTracker}.
@@ -1478,7 +1468,7 @@ public class ChangeTrackerConnection extends NotifyingSailConnectionWrapper {
                                         if (rawValue instanceof Literal) {
                                             Literal rawValueLiteral = (Literal) rawValue;
 
-                                            if (XMLSchema.STRING.equals(rawValueLiteral.getDatatype())) {
+                                            if (XSD.STRING.equals(rawValueLiteral.getDatatype())) {
 
                                                 try {
                                                     Value processedValue = NTriplesUtil

@@ -1,50 +1,9 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.validation.constraints.Size;
-
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.util.RDFCollections;
-import org.eclipse.rdf4j.model.vocabulary.OWL;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.BooleanQuery;
-import org.eclipse.rdf4j.query.GraphQuery;
-import org.eclipse.rdf4j.query.MalformedQueryException;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.query.UpdateExecutionException;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.access.prepost.PreAuthorize;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
@@ -84,6 +43,44 @@ import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
 import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ObjectPropertyExpression;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.util.RDFCollections;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.MalformedQueryException;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.UpdateExecutionException;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import javax.validation.constraints.Size;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * This class provides services for reading the Properties.
@@ -1607,7 +1604,7 @@ public class Properties extends STServiceAdapter {
 			if (range instanceof IRIRange) {
 				IRIRange iriRange = (IRIRange) range;
 				IRI rangeIRI = iriRange.getIRI();
-				if (rangeIRI.getNamespace().equals(XMLSchema.NAMESPACE)) {
+				if (rangeIRI.getNamespace().equals(XSD.NAMESPACE)) {
 					// range with namespace == XMLSchema namespace
 					typesAndRanges.setIsLiteral(true);
 				} else {

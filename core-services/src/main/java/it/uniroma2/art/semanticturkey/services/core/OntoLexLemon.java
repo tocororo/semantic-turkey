@@ -1,65 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import static java.util.stream.Collectors.toSet;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
-
-import it.uniroma2.art.semanticturkey.services.annotations.Deleted;
-import it.uniroma2.art.semanticturkey.services.aspects.ResourceLifecycleEventPublisherInterceptor;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.Literals;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOS;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.BooleanQuery;
-import org.eclipse.rdf4j.query.GraphQuery;
-import org.eclipse.rdf4j.query.MalformedQueryException;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.query.UpdateExecutionException;
-import org.eclipse.rdf4j.query.impl.SimpleDataset;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
-import org.hibernate.validator.constraints.Length;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
-
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
@@ -89,6 +31,7 @@ import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.annotations.Deleted;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
@@ -101,6 +44,58 @@ import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRen
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexiconRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Literals;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.MalformedQueryException;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.UpdateExecutionException;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.hibernate.validator.constraints.Length;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import javax.annotation.Nullable;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * This class provides services for manipulating data based on the W3C OntoLex-Lemon Model.
@@ -161,7 +156,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		modelAdditions.add(newLexiconIRI, RDF.TYPE, LIME.LEXICON);
 		modelAdditions.add(newLexiconIRI, DCTERMS.TITLE, title);
 		modelAdditions.add(newLexiconIRI, LIME.LANGUAGE,
-				SimpleValueFactory.getInstance().createLiteral(language, XMLSchema.LANGUAGE));
+				SimpleValueFactory.getInstance().createLiteral(language, XSD.LANGUAGE));
 
 		RepositoryConnection repoConnection = getManagedConnection();
 
@@ -627,7 +622,7 @@ public class OntoLexLemon extends STServiceAdapter {
 		modelAdditions.add(newLexicalEntryIRI, RDF.TYPE, lexicalEntryCls);
 		modelAdditions.add(newLexicalEntryIRI, ONTOLEX.CANONICAL_FORM, canonicalFormIRI);
 		modelAdditions.add(newLexicalEntryIRI, LIME.LANGUAGE,
-				SimpleValueFactory.getInstance().createLiteral(lexiconLanguage, XMLSchema.LANGUAGE));
+				SimpleValueFactory.getInstance().createLiteral(lexiconLanguage, XSD.LANGUAGE));
 		modelAdditions.add(lexicon, LIME.ENTRY, newLexicalEntryIRI);
 
 		modelAdditions.add(canonicalFormIRI, RDF.TYPE, ONTOLEX.FORM);

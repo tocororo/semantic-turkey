@@ -1,23 +1,21 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
-
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.util.NameTransformer;
-
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
 
 public class AnnotatedResourceWithMembersSerializer extends JsonSerializer<AnnotatedResourceWithMembers<?,?>>{
 
@@ -75,9 +73,9 @@ public class AnnotatedResourceWithMembersSerializer extends JsonSerializer<Annot
 				Literal attrValueLit = (Literal)attrValue;
 				IRI datatype = attrValueLit.getDatatype();
 				
-				if (datatype.equals(XMLSchema.BOOLEAN)) {
+				if (datatype.equals(XSD.BOOLEAN)) {
 					gen.writeBooleanField(unwrapper.transform(attrKey), attrValueLit.booleanValue());
-				} else if (datatype.equals(XMLSchema.INTEGER)) {
+				} else if (datatype.equals(XSD.INTEGER)) {
 					gen.writeNumberField(unwrapper.transform(attrKey), attrValueLit.intValue());
 				} else {
 					
@@ -89,7 +87,7 @@ public class AnnotatedResourceWithMembersSerializer extends JsonSerializer<Annot
 						gen.writeStringField(unwrapper.transform("@language"), languageTag.get());
 						gen.writeEndObject();
 					} else {
-						if (datatype.equals(XMLSchema.STRING)) {
+						if (datatype.equals(XSD.STRING)) {
 							gen.writeStringField(unwrapper.transform(attrKey), attrValueLit.stringValue());
 						} else {
 							gen.writeObjectFieldStart(unwrapper.transform(attrKey));

@@ -37,7 +37,8 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
+import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.Dataset;
@@ -298,8 +299,12 @@ public class SPARQL extends STServiceAdapter {
 				BindingSet bs = result.next();
 				Row row = sheet.createRow(rowIdx);
 				for (int i = 0; i < bindingNames.size(); i++) {
-					Value value = bs.getBinding(bindingNames.get(i)).getValue();
 					Cell cell = row.createCell(i);
+					Value value = null;
+					Binding b = bs.getBinding(bindingNames.get(i));
+					if (b != null) {
+						value = b.getValue();
+					}
 					if (value != null) {
 						setXlsxCellValue(wb, cell, value);
 					} else {
@@ -386,30 +391,30 @@ public class SPARQL extends STServiceAdapter {
 			if (lang != null) {
 				cell.setCellValue(NTriplesUtil.toNTriplesString(value));
 			} else if (dt != null) {
-				if (dt.equals(XMLSchema.DATETIME) || dt.equals(XMLSchema.DATE) || dt.equals(XMLSchema.TIME)) {
+				if (dt.equals(XSD.DATETIME) || dt.equals(XSD.DATE) || dt.equals(XSD.TIME)) {
 					Date date = XMLDatatypeUtil.parseCalendar(label).toGregorianCalendar().getTime();
 					cell.setCellValue(date);
 					CellStyle cellStyle = wb.createCellStyle();
 					CreationHelper createHelper = wb.getCreationHelper();
-					if (dt.equals(XMLSchema.DATETIME)) {
+					if (dt.equals(XSD.DATETIME)) {
 						cellStyle.setDataFormat(createHelper.createDataFormat().getFormat("yyyy-MM-ddThh:mm:ss"));
-					} else if (dt.equals(XMLSchema.DATE)) {
+					} else if (dt.equals(XSD.DATE)) {
 						cellStyle.setDataFormat(createHelper.createDataFormat().getFormat("yyyy-MM-dd"));
 					} else {
 						cellStyle.setDataFormat(createHelper.createDataFormat().getFormat("hh:mm:ss"));
 					}
 					cell.setCellStyle(cellStyle);
-				} else if (dt.equals(XMLSchema.INTEGER) || dt.equals(XMLSchema.INT) ||
-						dt.equals(XMLSchema.POSITIVE_INTEGER) || dt.equals(XMLSchema.NON_POSITIVE_INTEGER) ||
-						dt.equals(XMLSchema.NEGATIVE_INTEGER) || dt.equals(XMLSchema.NON_NEGATIVE_INTEGER)) {
+				} else if (dt.equals(XSD.INTEGER) || dt.equals(XSD.INT) ||
+						dt.equals(XSD.POSITIVE_INTEGER) || dt.equals(XSD.NON_POSITIVE_INTEGER) ||
+						dt.equals(XSD.NEGATIVE_INTEGER) || dt.equals(XSD.NON_NEGATIVE_INTEGER)) {
 					cell.setCellValue(XMLDatatypeUtil.parseInt(label));
-				} else if (dt.equals(XMLSchema.FLOAT)) {
+				} else if (dt.equals(XSD.FLOAT)) {
 					cell.setCellValue(XMLDatatypeUtil.parseFloat(label));
-				} else if (dt.equals(XMLSchema.DOUBLE)) {
+				} else if (dt.equals(XSD.DOUBLE)) {
 					cell.setCellValue(XMLDatatypeUtil.parseDouble(label));
-				} else if (dt.equals(XMLSchema.LONG)) {
+				} else if (dt.equals(XSD.LONG)) {
 					cell.setCellValue(XMLDatatypeUtil.parseLong(label));
-				} else if (dt.equals(XMLSchema.SHORT)) {
+				} else if (dt.equals(XSD.SHORT)) {
 					cell.setCellValue(XMLDatatypeUtil.parseShort(label));
 				} else {
 					cell.setCellValue(label);

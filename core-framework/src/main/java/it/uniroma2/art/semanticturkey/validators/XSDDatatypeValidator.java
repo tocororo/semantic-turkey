@@ -19,7 +19,7 @@ import org.apache.xerces.impl.dv.xs.QNameDV;
 import org.apache.xerces.impl.dv.xs.TimeDV;
 import org.apache.xerces.impl.dv.xs.YearDV;
 import org.apache.xerces.impl.dv.xs.YearMonthDV;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 
 public class XSDDatatypeValidator {
 	
@@ -32,43 +32,43 @@ public class XSDDatatypeValidator {
 	 * @return
 	 */
 	public static boolean isValid(String value, String type){
-		if (type.equals(XMLSchema.STRING.stringValue())){
+		if (type.equals(XSD.STRING.stringValue())){
 			return true;
-		} else if (type.equals(XMLSchema.ANYURI.stringValue())){
+		} else if (type.equals(XSD.ANYURI.stringValue())){
 			return isValidAnyURI(value);
-		} else if (type.equals(XMLSchema.BASE64BINARY.stringValue())){
+		} else if (type.equals(XSD.BASE64BINARY.stringValue())){
 			return isValidBase64Binary(value);
-		} else if (type.equals(XMLSchema.BOOLEAN.stringValue())){
+		} else if (type.equals(XSD.BOOLEAN.stringValue())){
 			return isValidBoolean(value);
-		} else if (type.equals(XMLSchema.DATE.stringValue())){
+		} else if (type.equals(XSD.DATE.stringValue())){
 			return isValidDate(value);
-		} else if (type.equals(XMLSchema.DATETIME.stringValue())){
+		} else if (type.equals(XSD.DATETIME.stringValue())){
 			return isValidDateTime(value);
-		} else if (type.equals(XMLSchema.DECIMAL.stringValue())){
+		} else if (type.equals(XSD.DECIMAL.stringValue())){
 			return isValidDecimal(value);
-		} else if (type.equals(XMLSchema.DOUBLE.stringValue())){
+		} else if (type.equals(XSD.DOUBLE.stringValue())){
 			return isValidDouble(value);
-		} else if (type.equals(XMLSchema.DURATION.stringValue())){
+		} else if (type.equals(XSD.DURATION.stringValue())){
 			return isValidDuration(value);
-		} else if (type.equals(XMLSchema.FLOAT.stringValue())){
+		} else if (type.equals(XSD.FLOAT.stringValue())){
 			return isValidFloat(value);
-		} else if (type.equals(XMLSchema.GDAY.stringValue())){
+		} else if (type.equals(XSD.GDAY.stringValue())){
 			return isValidGDay(value);
-		} else if (type.equals(XMLSchema.GMONTH.stringValue())){
+		} else if (type.equals(XSD.GMONTH.stringValue())){
 			return isValidGMonth(value);
-		} else if (type.equals(XMLSchema.GMONTHDAY.stringValue())){
+		} else if (type.equals(XSD.GMONTHDAY.stringValue())){
 			return isValidGMonthDay(value);
-		} else if (type.equals(XMLSchema.GYEAR.stringValue())){
+		} else if (type.equals(XSD.GYEAR.stringValue())){
 			return isValidGYear(value);
-		} else if (type.equals(XMLSchema.GYEARMONTH.stringValue())){
+		} else if (type.equals(XSD.GYEARMONTH.stringValue())){
 			return isValidGYearMonth(value);
-		} else if (type.equals(XMLSchema.HEXBINARY.stringValue())){
+		} else if (type.equals(XSD.HEXBINARY.stringValue())){
 			return isValidHexBinary(value);
-		} else if (type.equals(XMLSchema.INTEGER.stringValue())){
+		} else if (type.equals(XSD.INTEGER.stringValue())){
 			return isValidInteger(value);
-		} else if (type.equals(XMLSchema.QNAME.stringValue())){
+		} else if (type.equals(XSD.QNAME.stringValue())){
 			return isValidQName(value);
-		} else if (type.equals(XMLSchema.TIME.stringValue())){
+		} else if (type.equals(XSD.TIME.stringValue())){
 			return isValidTime(value);
 		}
 		return true;

@@ -1,5 +1,9 @@
 package it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap;
 
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporter;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -10,17 +14,12 @@ import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
-
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporter;
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterException;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 
 /**
  * A {@link DatasetMetadataExporter} for the
@@ -53,7 +52,7 @@ public class DCATAPDatasetMetadataExporter implements DatasetMetadataExporter {
 				metadataModel.setNamespace(FOAF.NS);
 				metadataModel.setNamespace(DCTERMS.NS);
 				metadataModel.setNamespace(DCAT.NS);
-				metadataModel.setNamespace(XMLSchema.NS);
+				metadataModel.setNamespace(XSD.NS);
 				metadataModel.setNamespace(SKOS.NS);
 
 				// First create the mandatory and recommended classes
@@ -124,7 +123,7 @@ public class DCATAPDatasetMetadataExporter implements DatasetMetadataExporter {
 				String catalogue_releaseDate = pluginSettings.catalogue_releaseDate;
 				if (catalogue_releaseDate != null && !catalogue_releaseDate.isEmpty()) {
 					metadataModel.add(valueFactory.createStatement(catalogueIRI, DCTERMS.ISSUED,
-							valueFactory.createLiteral(catalogue_releaseDate, XMLSchema.DATE)));
+							valueFactory.createLiteral(catalogue_releaseDate, XSD.DATE)));
 				}
 
 				String catalogue_themes = pluginSettings.catalogue_themes;
@@ -139,7 +138,7 @@ public class DCATAPDatasetMetadataExporter implements DatasetMetadataExporter {
 				String catalogue_modificationDate = pluginSettings.catalogue_modificationDate;
 				if (catalogue_modificationDate != null && !catalogue_modificationDate.isEmpty()) {
 					metadataModel.add(valueFactory.createStatement(catalogueIRI, DCTERMS.ISSUED,
-							valueFactory.createLiteral(catalogue_modificationDate, XMLSchema.DATE)));
+							valueFactory.createLiteral(catalogue_modificationDate, XSD.DATE)));
 				}
 
 				/* DATASET */

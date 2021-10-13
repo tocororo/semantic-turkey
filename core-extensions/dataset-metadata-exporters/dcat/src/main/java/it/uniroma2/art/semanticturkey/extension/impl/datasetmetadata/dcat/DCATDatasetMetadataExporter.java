@@ -1,5 +1,9 @@
 package it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat;
 
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporter;
+import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -10,17 +14,12 @@ import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
-
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporter;
-import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterException;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 
 /**
  * A {@link DatasetMetadataExporter} for the <a href="https://www.w3.org/TR/vocab-dcat/">Data Catalog
@@ -53,7 +52,7 @@ public class DCATDatasetMetadataExporter implements DatasetMetadataExporter {
 				metadataModel.setNamespace(FOAF.NS);
 				metadataModel.setNamespace(DCTERMS.NS);
 				metadataModel.setNamespace(DCAT.NS);
-				metadataModel.setNamespace(XMLSchema.NS);
+				metadataModel.setNamespace(XSD.NS);
 				metadataModel.setNamespace(SKOS.NS);
 				
 				//the dataset part (using the property and values regarding the dataset)
@@ -76,13 +75,13 @@ public class DCATDatasetMetadataExporter implements DatasetMetadataExporter {
 				String dataset_issued = pluginSettings.dataset_issued;
 				if(dataset_issued!=null && !dataset_issued.isEmpty()){
 					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.ISSUED, 
-							valueFactory.createLiteral(dataset_issued, XMLSchema.DATE)));
+							valueFactory.createLiteral(dataset_issued, XSD.DATE)));
 				}
 				
 				String dataset_modified = pluginSettings.dataset_modified;
 				if(dataset_modified!=null && !dataset_modified.isEmpty()){
 					metadataModel.add(valueFactory.createStatement(datasetIRI, DCTERMS.MODIFIED, 
-							valueFactory.createLiteral(dataset_modified, XMLSchema.DATE)));
+							valueFactory.createLiteral(dataset_modified, XSD.DATE)));
 				}
 				
 				String dataset_identifier = pluginSettings.dataset_identifier;
@@ -130,13 +129,13 @@ public class DCATDatasetMetadataExporter implements DatasetMetadataExporter {
 				String dataset_temporal_startDate = pluginSettings.dataset_temporal_startDate;
 				if(dataset_temporal_iri!=null && dataset_temporal_startDate!=null && !dataset_temporal_startDate.isEmpty()){
 					metadataModel.add(valueFactory.createStatement(dataset_temporal_iri, valueFactory.createIRI("http://schema.org/startDate"), 
-							valueFactory.createLiteral(dataset_temporal_startDate, XMLSchema.DATE)));
+							valueFactory.createLiteral(dataset_temporal_startDate, XSD.DATE)));
 				}
 
 				String dataset_temporal_endDate = pluginSettings.dataset_temporal_endDate;
 				if(dataset_temporal_iri!=null && dataset_temporal_endDate!=null && !dataset_temporal_endDate.isEmpty()){
 					metadataModel.add(valueFactory.createStatement(dataset_temporal_iri, valueFactory.createIRI("http://schema.org/endDate"), 
-							valueFactory.createLiteral(dataset_temporal_endDate, XMLSchema.DATE)));
+							valueFactory.createLiteral(dataset_temporal_endDate, XSD.DATE)));
 				}
 				
 				String dataset_spatial = pluginSettings.dataset_spatial;
@@ -207,13 +206,13 @@ public class DCATDatasetMetadataExporter implements DatasetMetadataExporter {
 				String distribution_issued = pluginSettings.distribution_issued;
 				if(distribution_issued!=null && !distribution_issued.isEmpty()){
 					metadataModel.add(valueFactory.createStatement(distributionIRI, DCTERMS.ISSUED, 
-							valueFactory.createLiteral(distribution_issued, XMLSchema.DATE)));
+							valueFactory.createLiteral(distribution_issued, XSD.DATE)));
 				}
 				
 				String distribution_modified = pluginSettings.distribution_modified;
 				if(distribution_modified!=null && !distribution_modified.isEmpty()){
 					metadataModel.add(valueFactory.createStatement(distributionIRI, DCTERMS.MODIFIED, 
-							valueFactory.createLiteral(distribution_modified, XMLSchema.DATE)));
+							valueFactory.createLiteral(distribution_modified, XSD.DATE)));
 				}
 				
 				String distribution_licence = pluginSettings.distribution_licence;
@@ -280,7 +279,7 @@ public class DCATDatasetMetadataExporter implements DatasetMetadataExporter {
 				String distribution_byte_size = pluginSettings.distribution_byteSize;
 				if(distribution_byte_size!=null && !distribution_byte_size.isEmpty()){
 					metadataModel.add(valueFactory.createStatement(distributionIRI, DCAT.BYTE_SIZE, 
-							valueFactory.createLiteral(distribution_byte_size, XMLSchema.DECIMAL)));
+							valueFactory.createLiteral(distribution_byte_size, XSD.DECIMAL)));
 				}
 				
 				/*

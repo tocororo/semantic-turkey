@@ -12,7 +12,7 @@ import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.TreeModel;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
@@ -22,7 +22,12 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.rio.*;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFHandler;
+import org.eclipse.rdf4j.rio.RDFHandlerException;
+import org.eclipse.rdf4j.rio.RDFParseException;
+import org.eclipse.rdf4j.rio.RDFWriter;
+import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.AbstractRDFWriter;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
@@ -57,7 +62,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class AlignmentModel {
@@ -417,7 +428,7 @@ public class AlignmentModel {
 				+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.MAP) + " _:cell .\n"
 				+ "_:cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " " + NTriplesUtil.toNTriplesString(cell.getEntity1()) + " .\n"
 				+ "_:cell "	+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " " + NTriplesUtil.toNTriplesString(cell.getEntity2()) + " .\n"
-				+ "_:cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + cell.getMeasure() + "'^^" + NTriplesUtil.toNTriplesString(XMLSchema.FLOAT) + " .\n"
+				+ "_:cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + cell.getMeasure() + "'^^" + NTriplesUtil.toNTriplesString(XSD.FLOAT) + " .\n"
 				+ "_:cell "	+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + cell.getRelation() + "' .\n";
 		if (cell.getMappingProperty() != null) {
 			query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " '" + cell.getMappingProperty() + "' .\n";
@@ -449,7 +460,7 @@ public class AlignmentModel {
 					+ "?alignment " + NTriplesUtil.toNTriplesString(Alignment.MAP) + " _:cell .\n"
 					+ "_:cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " " + NTriplesUtil.toNTriplesString(cell.getEntity1()) + " .\n"
 					+ "_:cell "	+ NTriplesUtil.toNTriplesString(Alignment.ENTITY2) + " " + NTriplesUtil.toNTriplesString(cell.getEntity2()) + " .\n"
-					+ "_:cell "	+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + cell.getMeasure() + "'^^" + NTriplesUtil.toNTriplesString(XMLSchema.FLOAT) + " .\n"
+					+ "_:cell "	+ NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + cell.getMeasure() + "'^^" + NTriplesUtil.toNTriplesString(XSD.FLOAT) + " .\n"
 					+ "_:cell "	+ NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + cell.getRelation() + "' .\n";
 			if (cell.getMappingProperty() != null) {
 				query += "_:cell " + NTriplesUtil.toNTriplesString(Alignment.MAPPING_PROPERTY) + " '" + cell.getMappingProperty() + "' .\n";
@@ -749,7 +760,7 @@ public class AlignmentModel {
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + oldRelation + "' .\n"
 				+ "} INSERT {\n"
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.RELATION) + " '" + newRelation + "' .\n"
-				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + String.format("%s", measure)	+ "'^^" + NTriplesUtil.toNTriplesString(XMLSchema.FLOAT) + " .\n"
+				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.MEASURE) + " '" + String.format("%s", measure)	+ "'^^" + NTriplesUtil.toNTriplesString(XSD.FLOAT) + " .\n"
 				+ "} WHERE { "
 				+ "?cell a " + NTriplesUtil.toNTriplesString(Alignment.CELL) + " .\n"
 				+ "?cell " + NTriplesUtil.toNTriplesString(Alignment.ENTITY1) + " "	+ NTriplesUtil.toNTriplesString(entity1) + " .\n"

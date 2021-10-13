@@ -59,6 +59,7 @@ import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.VOID;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
@@ -192,7 +193,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			conn.setNamespace(DCAT.NS.getPrefix(), DCAT.NS.getName());
 			conn.setNamespace(VOID.NS.getPrefix(), VOID.NS.getName());
 			conn.setNamespace(DCTERMS.NS.getPrefix(), DCTERMS.NS.getName());
-			conn.setNamespace(XMLSchema.NS.getPrefix(), XMLSchema.NS.getName());
+			conn.setNamespace(XSD.NS.getPrefix(), XSD.NS.getName());
 			conn.setNamespace(FOAF.NS.getPrefix(), FOAF.NS.getName());
 			conn.setNamespace(OWL.NS.getPrefix(), OWL.NS.getName());
 			conn.setNamespace(METADATAREGISTRY.NS.getPrefix(), METADATAREGISTRY.NS.getName());
@@ -549,7 +550,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			}
 
 			update.setBinding("lexicalizationModel", lexicalizationModel);
-			update.setBinding("language", vf.createLiteral(language, XMLSchema.LANGUAGE));
+			update.setBinding("language", vf.createLiteral(language, XSD.LANGUAGE));
 
 			if (references != null) {
 				update.setBinding("references", vf.createLiteral(references));

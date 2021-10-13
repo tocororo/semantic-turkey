@@ -1,41 +1,5 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.util.List;
-import java.util.UUID;
-
-import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
-import it.uniroma2.art.semanticturkey.user.STUser;
-import it.uniroma2.art.semanticturkey.user.UsersGroup;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
-import org.eclipse.rdf4j.model.vocabulary.FOAF;
-import org.eclipse.rdf4j.model.vocabulary.VOID;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
-import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFParseException;
-import org.eclipse.rdf4j.rio.RDFWriter;
-import org.eclipse.rdf4j.rio.Rio;
-import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.profiler.LIMEProfiler;
 import it.uniroma2.art.lime.profiler.ProfilerException;
@@ -73,7 +37,42 @@ import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.settings.metadata.ProjectMetadataStore;
 import it.uniroma2.art.semanticturkey.settings.metadata.StoredProjectMetadata;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersGroup;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.FOAF;
+import org.eclipse.rdf4j.model.vocabulary.VOID;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParseException;
+import org.eclipse.rdf4j.rio.RDFWriter;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * This class provides access to the capabilities of <a href="http://art.uniroma2.it/maple/">MAPLE</a>
@@ -116,7 +115,7 @@ public class MAPLE extends STServiceAdapter {
 				metadataConnection.setNamespace(VOID.PREFIX, VOID.NAMESPACE);
 				metadataConnection.setNamespace(LIME.PREFIX, LIME.NAMESPACE);
 				metadataConnection.setNamespace(FOAF.PREFIX, FOAF.NAMESPACE);
-				metadataConnection.setNamespace(XMLSchema.PREFIX, XMLSchema.NAMESPACE);
+				metadataConnection.setNamespace(XSD.PREFIX, XSD.NAMESPACE);
 
 				LIMEProfiler profiler = new LIMEProfiler(metadataConnection, metadataBaseURI,
 						getManagedConnection(), (IRI) getWorkingGraph());
@@ -211,8 +210,8 @@ public class MAPLE extends STServiceAdapter {
 	/**
 	 * Profiles a matching problem between two datasets associated with local projects.
 	 * 
-	 * @param sourceDataset
-	 * @param targetDataset
+	 * @param leftDataset
+	 * @param rightDataset
 	 * @return
 	 * @throws ProfilingException
 	 */

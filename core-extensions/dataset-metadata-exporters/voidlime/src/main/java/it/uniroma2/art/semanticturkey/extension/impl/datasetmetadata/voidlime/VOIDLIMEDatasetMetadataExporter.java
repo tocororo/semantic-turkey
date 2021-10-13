@@ -1,29 +1,5 @@
 package it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.datatype.DatatypeFactory;
-import javax.xml.datatype.XMLGregorianCalendar;
-
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
-import org.eclipse.rdf4j.model.vocabulary.FOAF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.VOID;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.rio.helpers.StatementCollector;
-import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
-
 import it.uniroma2.art.lime.model.repo.LIMERepositoryConnectionWrapper;
 import it.uniroma2.art.lime.model.repo.LIMERepositoryWrapper;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
@@ -34,6 +10,28 @@ import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMe
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.FOAF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.VOID;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.rio.helpers.StatementCollector;
+import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
+
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.XMLGregorianCalendar;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A {@link DatasetMetadataExporter} for the
@@ -206,7 +204,7 @@ public class VOIDLIMEDatasetMetadataExporter implements DatasetMetadataExporter 
 
 				Model metadataModel = new LinkedHashModel();
 				metadataModel.setNamespace(RDFS.NS);
-				metadataModel.setNamespace(XMLSchema.NS);
+				metadataModel.setNamespace(XSD.NS);
 				metadataModel.setNamespace(VOID.NS);
 				metadataModel.setNamespace(LIME.NS);
 				metadataModel.setNamespace(FOAF.NS);

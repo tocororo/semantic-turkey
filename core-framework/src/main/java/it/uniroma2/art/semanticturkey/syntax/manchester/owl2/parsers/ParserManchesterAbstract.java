@@ -1,6 +1,5 @@
 package it.uniroma2.art.semanticturkey.syntax.manchester.owl2.parsers;
 
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserRuntimeException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedRuntimeException;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserBaseListener;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.AtomicContext;
@@ -50,7 +49,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 import java.util.ArrayList;
@@ -341,13 +340,13 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 		} else{
 			Token abbr = datatypeContext.abbr;
 			if(abbr.getText().equals("integer")){
-				return new ManchesterBaseClass(XMLSchema.INTEGER);
+				return new ManchesterBaseClass(XSD.INTEGER);
 			} else if(abbr.getText().equals("decimal")){
-				return new ManchesterBaseClass(XMLSchema.DECIMAL);
+				return new ManchesterBaseClass(XSD.DECIMAL);
 			} else if(abbr.getText().equals("float")){
-				return new ManchesterBaseClass(XMLSchema.FLOAT);
+				return new ManchesterBaseClass(XSD.FLOAT);
 			} else { // == if(abbr.getText().equals("string")){
-				return new ManchesterBaseClass(XMLSchema.STRING);
+				return new ManchesterBaseClass(XSD.STRING);
 			}
 		}
 	}
@@ -497,14 +496,14 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 				sign = "-";
 			}
 			String intValue = sign+literalContext.integerLiteral().INTEGER().getText();
-			return valueFactory.createLiteral(intValue, XMLSchema.INTEGER);
+			return valueFactory.createLiteral(intValue, XSD.INTEGER);
 		} else if (literalContext.decimalLiteral() != null) {
 			String sign = "";
 			if(literalContext.decimalLiteral().sign != null && literalContext.decimalLiteral().sign.getText().equals("-")) {
 				sign = "-";
 			}
 			String decimalValue = sign+literalContext.decimalLiteral().intPart.getText()+"."+literalContext.decimalLiteral().decPart.getText();
-			return valueFactory.createLiteral(decimalValue, XMLSchema.DECIMAL);
+			return valueFactory.createLiteral(decimalValue, XSD.DECIMAL);
 		} else { // == if(literalContext.floatingPointLiteral() != null) {
 			String sign = "";
 			if(literalContext.floatingPointLiteral().sign != null && literalContext.floatingPointLiteral().sign.getText().equals("-")) {
@@ -525,7 +524,7 @@ abstract class ParserManchesterAbstract extends ManchesterOWL2SyntaxParserBaseLi
 			String floatPart = "E"+singExp+exponentContext.expPart.getText();
 			//combine the two parts
 			String completeValue = decimalPart+floatPart;
-			return valueFactory.createLiteral(completeValue, XMLSchema.FLOAT);
+			return valueFactory.createLiteral(completeValue, XSD.FLOAT);
 		}
 	}
 	

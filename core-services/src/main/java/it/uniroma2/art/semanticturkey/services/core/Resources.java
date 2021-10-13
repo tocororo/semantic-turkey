@@ -21,7 +21,6 @@ import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
-
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -30,7 +29,7 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.GraphQueryResult;
 import org.eclipse.rdf4j.query.Update;
@@ -204,7 +203,7 @@ public class Resources extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ')', 'U')")
 	public void setDeprecated(@LocallyDefined @Modified IRI resource) {
 		RepositoryConnection conn = getManagedConnection();
-		Literal literalTrue = conn.getValueFactory().createLiteral("true", XMLSchema.BOOLEAN);
+		Literal literalTrue = conn.getValueFactory().createLiteral("true", XSD.BOOLEAN);
 		conn.add(resource, OWL.DEPRECATED, literalTrue, getWorkingGraph());
 	}
 

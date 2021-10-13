@@ -1,13 +1,10 @@
 package it.uniroma2.art.semanticturkey.changetracking.sail;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.xml.datatype.XMLGregorianCalendar;
-
+import it.uniroma2.art.semanticturkey.changetracking.model.HistoryRepositories;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -21,8 +18,7 @@ import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.SESAME;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.MalformedQueryException;
@@ -42,26 +38,15 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import javax.xml.datatype.XMLGregorianCalendar;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.everyItem;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.stringContainsInOrder;
-
-import it.uniroma2.art.semanticturkey.changetracking.model.HistoryRepositories;
-import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.PROV;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 /**
  * Test class for {@link ChangeTracker}.
@@ -143,8 +128,8 @@ public class ChangeTrackerTest extends AbstractChangeTrackerTest {
 				Literal startTime = startTimeHolder.get();
 				Literal endTime = endTimeHolder.get();
 
-				assertEquals(XMLSchema.DATETIME, startTime.getDatatype());
-				assertEquals(XMLSchema.DATETIME, endTime.getDatatype());
+				assertEquals(XSD.DATETIME, startTime.getDatatype());
+				assertEquals(XSD.DATETIME, endTime.getDatatype());
 
 				XMLGregorianCalendar startTimeValue = Literals.getCalendarValue(startTime, null);
 				XMLGregorianCalendar endTimeValue = Literals.getCalendarValue(endTime, null);

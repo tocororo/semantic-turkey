@@ -1,10 +1,11 @@
 package it.uniroma2.art.semanticturkey.services.core.history;
 
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.core.History.SortingDirection;
+import it.uniroma2.art.semanticturkey.services.tracker.OperationDescription;
+import it.uniroma2.art.semanticturkey.services.tracker.STServiceTracker;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
@@ -12,19 +13,22 @@ import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.SESAME;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.core.History.SortingDirection;
-import it.uniroma2.art.semanticturkey.services.tracker.OperationDescription;
-import it.uniroma2.art.semanticturkey.services.tracker.STServiceTracker;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Utility class for interacting with the support repository.
@@ -59,7 +63,7 @@ public abstract class SupportRepositoryUtils {
 			}
 
 			timeLowerBoundSPARQLFilter = "FILTER(" + timeLowerBoundeVar + " >= " + RenderUtils.toSPARQL(
-					SimpleValueFactory.getInstance().createLiteral(timeLowerBound, XMLSchema.DATETIME))
+					SimpleValueFactory.getInstance().createLiteral(timeLowerBound, XSD.DATETIME))
 					+ ")\n";
 
 		} else {
@@ -74,7 +78,7 @@ public abstract class SupportRepositoryUtils {
 			}
 
 			timeUpperBoundSPARQLFilter = "FILTER(" + timeUpperBoundVar + " <= " + RenderUtils.toSPARQL(
-					SimpleValueFactory.getInstance().createLiteral(timeUpperBound, XMLSchema.DATETIME))
+					SimpleValueFactory.getInstance().createLiteral(timeUpperBound, XSD.DATETIME))
 					+ ")\n";
 
 		} else {

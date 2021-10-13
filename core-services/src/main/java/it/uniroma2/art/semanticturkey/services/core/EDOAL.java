@@ -14,7 +14,6 @@ import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
 import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -28,9 +27,6 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
-import it.uniroma2.art.semanticturkey.settings.core.CorePUSettings;
-import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
-import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.vocabulary.Alignment;
@@ -43,7 +39,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.MalformedQueryException;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.query.TupleQuery;
@@ -59,6 +55,7 @@ import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -68,8 +65,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.toList;
 
@@ -512,11 +507,11 @@ public class EDOAL extends STServiceAdapter {
 			corr.setLeftEntity(processStringiedObjectList(bs.getValue("entity1B").stringValue(), null));
 			corr.setRightEntity(processStringiedObjectList(bs.getValue("entity2B").stringValue(), null));
 			corr.setRelation(
-					processStringiedObjectList(bs.getValue("relationB").stringValue(), XMLSchema.STRING));
+					processStringiedObjectList(bs.getValue("relationB").stringValue(), XSD.STRING));
 			corr.setMappingProperty(
 					processStringiedObjectList(bs.getValue("mappingPropertyB").stringValue(), null));
 			corr.setMeasure(
-					processStringiedObjectList(bs.getValue("measureB").stringValue(), XMLSchema.FLOAT));
+					processStringiedObjectList(bs.getValue("measureB").stringValue(), XSD.FLOAT));
 			return corr;
 		}).collect(toList());
 	}

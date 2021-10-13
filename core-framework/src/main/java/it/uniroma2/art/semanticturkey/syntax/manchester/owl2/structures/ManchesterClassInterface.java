@@ -23,12 +23,12 @@
 
 package it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures;
 
-import java.util.Map;
-
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+
+import java.util.Map;
 
 public abstract class ManchesterClassInterface {
 	private PossType type;
@@ -63,8 +63,8 @@ public abstract class ManchesterClassInterface {
 		- literals representing numbers (xsd:integer , xsd:decimal, xsd:float)
 		- other types of literals
 		*/
-		if (literal.getDatatype() != null && (literal.getDatatype().equals(XMLSchema.INTEGER) || literal.getDatatype().equals(XMLSchema.DECIMAL)
-				|| literal.getDatatype().equals(XMLSchema.FLOAT))) {
+		if (literal.getDatatype() != null && (literal.getDatatype().equals(XSD.INTEGER) || literal.getDatatype().equals(XSD.DECIMAL)
+				|| literal.getDatatype().equals(XSD.FLOAT))) {
 			return literal.stringValue();
 		} else {
 			String valueString = "\"" + NTriplesUtil.escapeString(literal.getLabel()) + "\"";

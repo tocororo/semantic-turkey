@@ -1,21 +1,20 @@
 package it.uniroma2.art.semanticturkey.changetracking;
 
-import java.util.Set;
-
+import it.uniroma2.art.semanticturkey.changetracking.sail.ChangeTracker;
+import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 
-import it.uniroma2.art.semanticturkey.changetracking.sail.ChangeTracker;
-import it.uniroma2.art.semanticturkey.changetracking.sail.config.ChangeTrackerSchema;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
+import java.util.Set;
 
 /**
  * Utility class for the {@link ChangeTracker} sail.
@@ -69,7 +68,7 @@ public abstract class ChangeTrackerUtilities {
 			}
 
 			Literal versionLit = versions.iterator().next();
-			if (!XMLSchema.STRING.equals(versionLit.getDatatype())) {
+			if (!XSD.STRING.equals(versionLit.getDatatype())) {
 				throw new ChangeTrackerDetectionException(
 						"The change tracker reported its version with a datatype different from xsd:string:"
 								+ versionLit.getDatatype());
@@ -94,7 +93,7 @@ public abstract class ChangeTrackerUtilities {
 								+ supportRepositoryIds.toString());
 			}
 			Literal supportRepositoryIdLit = supportRepositoryIds.iterator().next();
-			if (!XMLSchema.STRING.equals(supportRepositoryIdLit.getDatatype())) {
+			if (!XSD.STRING.equals(supportRepositoryIdLit.getDatatype())) {
 				throw new ChangeTrackerDetectionException(
 						"The change tracker reported its support repository identifier with a datatype different from xsd:string: "
 								+ supportRepositoryIdLit.getDatatype());
@@ -120,7 +119,7 @@ public abstract class ChangeTrackerUtilities {
 				}
 
 				Literal serverURLLit = serverURLs.iterator().next();
-				if (!XMLSchema.STRING.equals(serverURLLit.getDatatype())) {
+				if (!XSD.STRING.equals(serverURLLit.getDatatype())) {
 					throw new ChangeTrackerDetectionException(
 							"The change tracker reported its server URL with a datatype different from xsd:string: "
 									+ serverURLLit.getDatatype());
