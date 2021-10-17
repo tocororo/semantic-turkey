@@ -166,11 +166,6 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		query+=serviceForSearches.filterResourceTypeAndSchemeAndLexicons("?resource", "?type", schemes, schemeFilter, null,
 				null);
 
-		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
-		//add the show part according to the Lexicalization Model
-		//query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
-		//		"\n}";
-
 		//adding the nature in the query (will be replaced by the appropriate processor), 
 		//remember to change the SELECT as well
 		query+=NatureRecognitionOrchestrator.getNatureSPARQLWherePart("?resource") +
@@ -222,10 +217,6 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//add the information about the lexicon
 		query+="\nOPTIONAL{ ?lexicon <"+LIME.ENTRY.stringValue()+"> ?resource . }";
 		
-		//NOT DONE ANYMORE, NOW IT USES THE QUERY BUILDER !!!
-		//add the show part according to the Lexicalization Model
-		//query+=ServiceForSearches.addShowPart("?show", serviceForSearches.getLangArray(), stServiceContext.getProject())+
-		//		"\n}";
 
 		//adding the nature in the query (will be replaced by the appropriate processor), 
 		//remember to change the SELECT as well
@@ -323,12 +314,6 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
-		//check if searchString represents a qname and searchMode is SearchMode.startsWith.
-		// In this case, try to expand it via the prefixMap
-		if(searchMode.equals(SearchMode.startsWith) ) {
-			searchString = ServiceForSearches.getUriStartFromQname(searchString, prefixToNamespaceMap);
-		}
-
 		//@formatter:off
 		String query = "SELECT DISTINCT ?resource "+ 
 			"\nWHERE{";
@@ -345,8 +330,10 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			//no roles is selected, so add a simple triple, otherwise the FILTER may not work
 			query += "\n?resource a ?type .";
 		}
-		query += searchModePrepareQueryNoIndexes("?resource", searchString, searchMode)+
-				"\n}";
+		//query += searchModePrepareQueryNoIndexes_UsedForURISearch("?resource", searchString, searchMode)+
+		query += searchModePrepareQueryNoIndexes_UsedForURISearch("?resource", searchString, searchMode,
+				prefixToNamespaceMap)+
+			"\n}";
 		if(maxNumResults>0){
 			query+="\nLIMIT "+maxNumResults;
 		}
@@ -415,8 +402,6 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//@formatter:on
 
 		return query;
-		
-		//return serviceForSearches.executeInstancesSearchQuery(query, stServiceContext.getRGraphs(), getThreadBoundTransaction(stServiceContext));
 	}
 
 
@@ -445,20 +430,11 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			}
 		}
 		if(useURI){
-			String searchStringForUri;
-			if(searchMode.equals(SearchMode.startsWith) ) {
-				//the part related to the URI. Since the indexes are not able to indexing URI, a standard regex is
-				// used
-				//check if searchString represents a qname and searchMode is SearchMode.startsWith.
-				// In this case, try to expand it via the prefixMap
-				searchStringForUri = ServiceForSearches.escapeStringForRegexInSPARQL(
-						ServiceForSearches.getUriStartFromQname(searchString, prefixToNamespaceMap));
-			} else {
-				searchStringForUri = ServiceForSearches.escapeStringForRegexInSPARQL(searchString);
-			}
+
 			query+="\n{"+
 					"\n?resource a ?type . " + // otherwise the filter may not be computed
-					searchModePrepareQueryNoIndexes("?resource", searchStringForUri, searchMode) +
+					searchModePrepareQueryNoIndexes_UsedForURISearch("?resource", searchString, searchMode,
+							prefixToNamespaceMap) +
 
 					"\n}";
 			if(useLexicalizations) {
@@ -551,10 +527,6 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			}
 			query +="\n}";
 		}
-		
-		/*if(useLocalName || useURI || useNotes){
-			query+="\n}";
-		}*/
 		
 		//close the nested query
 		query+="\n}"+
@@ -690,43 +662,32 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			}
 		}
 		return outputString;
-		
-		
-		//OLD
-		/*
-		//replace all hyphens, -, with a whitespace since Lucene in GraphDB have problem with hyphens due to
-		// the tokenization process when creating the indexes
-		outputString = outputString.replace("-", " ");
-		//replace all parenthesis, ( and ), with a whitespace since Lucene in GraphDB have problem with 
-		// parenthesis due to the tokenization process when creating the indexes
-		outputString = outputString.replace("(", " ");
-		outputString = outputString.replace(")", " ");
-		//replace all question marks and exclamation marks with a white space
-		outputString = outputString.replace("?", " ");
-		outputString = outputString.replace("!", " ");
-		
-		return outputString.trim();*/
 	}
 	
-	private String searchModePrepareQueryNoIndexes(String variable, String value, SearchMode searchMode){
+	private String searchModePrepareQueryNoIndexes_UsedForURISearch(String variable, String searchString,
+												SearchMode searchMode, Map<String, String> prefixToNamespaceMap){
 		String query ="";
-		
+		String searchStringForUri;
+
+		searchStringForUri = ServiceForSearches.escapeStringForRegexInSPARQL(
+				ServiceForSearches.getUriStartFromQname(searchString, prefixToNamespaceMap));
+
 		if(searchMode == SearchMode.startsWith){
-			query="\nFILTER regex(str("+variable+"), '^"+value+"', 'i')" +
+			query="\nFILTER regex(str("+variable+"), '^"+searchStringForUri+"', 'i')" +
 					"\nBIND('startsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.endsWith){
-			query="\nFILTER regex(str("+variable+"), '"+value+"$', 'i')" +
+			query="\nFILTER regex(str("+variable+"), '"+searchStringForUri+"$', 'i')" +
 					"\nBIND('endsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.contains){
-			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')" +
+			query="\nFILTER regex(str("+variable+"), '"+searchStringForUri+"', 'i')" +
 					"\nBIND('contains' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.fuzzy){
-			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", false);
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(searchString, ".", false);
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')" +
 					"\nBIND('fuzzy' AS ?attr_matchMode)";
 		} else { // searchMode.equals(exact)
-			query="\nFILTER regex(str("+variable+"), '^"+value+"$', 'i')" +
+			query="\nFILTER regex(str("+variable+"), '^"+searchStringForUri+"$', 'i')" +
 					"\nBIND('exact' AS ?attr_matchMode)";
 		}
 		
