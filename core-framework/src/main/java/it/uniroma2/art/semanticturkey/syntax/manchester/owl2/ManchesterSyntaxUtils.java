@@ -769,11 +769,11 @@ public class ManchesterSyntaxUtils {
 		} else if(iriFacet.equals(XSDFragment.MININCLUSIVE)) {
 			facet = ParserDescription.FACET_LESSEQ;
 		} else if(iriFacet.equals(XSDFragment.MINEXCLUSIVE)) {
-			facet = ParserDescription.FACET_LESS;
+			facet = ParserDescription.FACET_GREATER;
 		} else if(iriFacet.equals(XSDFragment.MAXINCLUSIVE)) {
 			facet = ParserDescription.FACET_GREATEREQ;
 		} else if(iriFacet.equals(XSDFragment.MAXEXCLUSIVE)) {
-			facet = ParserDescription.FACET_GREATER;
+			facet = ParserDescription.FACET_LESS;
 		}
 		return facet;
 	}

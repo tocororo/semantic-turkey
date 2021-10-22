@@ -5,6 +5,7 @@ date: dd/mm/yyyy
   * updated the function that names the STData/users/<user> and STData/pu_bindings/<proj>/<user>/ directories
   * fixed a bug regarding the Manchester Syntex Expressions
   * fixed a bug regarding the fuzzy search on a remote dataset
+  * minor bugfixes
 
 version 10.1
 date: 21/09/2021
