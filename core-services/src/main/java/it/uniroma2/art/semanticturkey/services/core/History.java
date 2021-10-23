@@ -260,7 +260,8 @@ public class History extends STServiceAdapter {
 				" GRAPH "+  RenderUtils.toSPARQL(historyGraph ) + "\n {" +
 				"     ?commit a cl:Commit .                                                    \n" +
 				"     ?commit cl:revisionNumber ?revisionNumber .                             \n" +
-				"     FILTER(str(?revisionNumber) <= '"+tipRevisionNumber+"')                   \n" +
+				//"     FILTER(str(?revisionNumber) <= '"+tipRevisionNumber+"')                   \n" +
+				"     FILTER(?revisionNumber <= "+tipRevisionNumber+")                   	\n" +
 				"     ?commit prov:startedAtTime ?startTime .                                 \n" +
 				"     ?commit prov:endedAtTime ?endTime .                                     \n" +
 
