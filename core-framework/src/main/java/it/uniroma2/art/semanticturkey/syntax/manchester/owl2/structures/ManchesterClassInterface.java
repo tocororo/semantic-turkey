@@ -63,8 +63,10 @@ public abstract class ManchesterClassInterface {
 		- literals representing numbers (xsd:integer , xsd:decimal, xsd:float)
 		- other types of literals
 		*/
-		if (literal.getDatatype() != null && (literal.getDatatype().equals(XSD.INTEGER) || literal.getDatatype().equals(XSD.DECIMAL)
-				|| literal.getDatatype().equals(XSD.FLOAT))) {
+		//if (literal.getDatatype() != null && (literal.getDatatype().equals(XSD.INTEGER) || literal.getDatatype().equals(XSD.DECIMAL)
+		//		|| literal.getDatatype().equals(XSD.FLOAT))) {
+		if (literal.getDatatype() != null && literal.getDatatype().equals(XSD.INTEGER)) {
+			//in case of xsd:integer, do not show the ^^xsd:integer, for all other cases, show the datatype
 			return literal.stringValue();
 		} else {
 			String valueString = "\"" + NTriplesUtil.escapeString(literal.getLabel()) + "\"";
