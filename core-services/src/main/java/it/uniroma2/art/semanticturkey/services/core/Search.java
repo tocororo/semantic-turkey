@@ -109,7 +109,7 @@ public class Search extends STServiceAdapter {
 	public void createIndexes() throws Exception {
 		ValidationUtilities.executeWithoutValidation(
 				ValidationUtilities.isValidationEnabled(stServiceContext), getManagedConnection(), conn -> {
-					instantiateSearchStrategy().initialize(conn);
+					instantiateSearchStrategy().initialize(conn, true);
 				});
 	}
 

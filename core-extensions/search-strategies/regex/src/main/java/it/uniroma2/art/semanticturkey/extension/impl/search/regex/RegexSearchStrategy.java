@@ -42,7 +42,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 
 	@Override
-	public void initialize(RepositoryConnection connection) throws Exception {
+	public void initialize(RepositoryConnection connection, boolean forceCreation) throws Exception {
 		// Nothing to do
 	}
 

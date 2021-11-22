@@ -218,7 +218,7 @@ public class BaseRenderingEngineTest {
 							return new SearchStrategy() {
 
 								@Override
-								public void initialize(RepositoryConnection connection) throws Exception {
+								public void initialize(RepositoryConnection connection, boolean forceCreation) throws Exception {
 									// nothing to do
 								}
 

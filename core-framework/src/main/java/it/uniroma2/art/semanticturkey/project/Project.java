@@ -611,14 +611,24 @@ public abstract class Project extends AbstractProject {
             logger.debug("About to commit the loaded triples");
             conn.commit();
 
-            // If anything has been written, assumes a newly created project, so initialize search
+            // If anything has been written, assumes a newly created project, so initialize search and force the
+            // creation of the indexes, otherwise, do not force it, create only if needed
             if (anyWritten.isTrue()) {
                 conn.begin();
                 SearchStrategy searchStrategy = SearchStrategyUtils.instantiateSearchStrategy(exptManager,
                         STRepositoryInfoUtils
                                 .getSearchStrategy(getRepositoryManager().getSTRepositoryInfo("core")));
                 ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (conn2) -> {
-                    searchStrategy.initialize(conn);
+                    searchStrategy.initialize(conn, true);
+                });
+                conn.commit();
+            } else {
+                conn.begin();
+                SearchStrategy searchStrategy = SearchStrategyUtils.instantiateSearchStrategy(exptManager,
+                        STRepositoryInfoUtils
+                                .getSearchStrategy(getRepositoryManager().getSTRepositoryInfo("core")));
+                ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (conn2) -> {
+                    searchStrategy.initialize(conn, false);
                 });
                 conn.commit();
             }

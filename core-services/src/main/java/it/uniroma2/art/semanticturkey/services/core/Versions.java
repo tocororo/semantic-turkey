@@ -146,7 +146,7 @@ public class Versions extends STServiceAdapter {
 						.instantiateSearchStrategy(exptManager,
 								STRepositoryInfoUtils.getSearchStrategy(getProject().getRepositoryManager()
 										.getSTRepositoryInfo(localRepostoryId)))
-						.initialize(delegateWritableConnection);
+						.initialize(delegateWritableConnection, true);
 
 				outConn.commit();
 			}

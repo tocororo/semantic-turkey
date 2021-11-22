@@ -14,6 +14,8 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
@@ -38,103 +40,246 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 	protected static Logger logger = LoggerFactory.getLogger(GraphDBSearchStrategy.class);
 
+
+	// OLD "Lucene full-text search" https://graphdb.ontotext.com/documentation/9.6/standard/full-text-search.html
 	// private final static String INDEX_NAME="vocbenchIndex";
-	final static private String LUCENEIMPORT = "http://www.ontotext.com/owlim/lucene#";
-	//final static private String LUCENEINDEX = "http://www.ontotext.com/owlim/lucene#vocbench";
-	final static public String LUCENEINDEXLITERAL = "http://www.ontotext.com/owlim/lucene#vocbenchLabel";
-	final static public String LUCENEINDEXLOCALNAME = "http://www.ontotext.com/owlim/lucene#vocbenchLocalName";
+	//final static private String LUCENEIMPORT = "http://www.ontotext.com/owlim/lucene#";
+	//final static public String LUCENEINDEXLITERAL = "http://www.ontotext.com/owlim/lucene#vocbenchLabel";
+	//final static public String LUCENEINDEXLOCALNAME = "http://www.ontotext.com/owlim/lucene#vocbenchLocalName";
+
+
+	// NEW "Lucene GraphDB connector" https://graphdb.ontotext.com/documentation/standard/lucene-graphdb-connector.html
+	final static public String LUCENE_INDEX_LITERAL = "<http://www.ontotext.com/connectors/lucene/instance#labelConnectorLiteral>";
+	final static public String LUCENE_INDEX_URI = "<http://www.ontotext.com/connectors/lucene/instance#resourceConnectorIRI>";
+	final private String LUC_DROPCONNECTOR = "<http://www.ontotext.com/connectors/lucene#dropConnector>";
+	final private String LUC_CREATECONNECTOR = "<http://www.ontotext.com/connectors/lucene#createConnector>";
+	final private String LUC_ENTITIES = "<http://www.ontotext.com/connectors/lucene#entities>";
+	final private String LUC_QUERY = "<http://www.ontotext.com/connectors/lucene#query>";
+	final private String LUC_CONNECTORSTATUS = "<http://www.ontotext.com/connectors/lucene#connectorStatus>";
+	//final static public String PREFIX_LUC = "PREFIX luc: <http://www.ontotext.com/connectors/lucene#>"; // luc
+	//final static public String PREFIX_LUC_INDEX = "PREFIX luc-index: <http://www.ontotext.com/connectors/lucene/instance#>"; // luc-index
+
+
 
 	@Override
-	public void initialize(RepositoryConnection connection) throws Exception {
-		
-			//@formatter:off
-			//the index LUCENEINDEXLABEL indexes labels
-			String query = "PREFIX luc: <"+LUCENEIMPORT+">"+
-					"\nINSERT DATA {"+
-					// index just the literals
-					"\nluc:index luc:setParam \"literal\" ."+ 
-					//to include the literal itself 
-					"\nluc:include luc:setParam \"centre\" ."+ 
-					//to do no hop 
-					"\nluc:moleculeSize luc:setParam \"0\" ."+ 
-					"\n}";
-			
-			//@formatter:on
-			logger.debug("query = " + query);
-			// execute this query
-			Update update = connection.prepareUpdate(query);
-			update.execute();
-			
-			//@formatter:off
-			query="PREFIX luc: <"+LUCENEIMPORT+"> "+
-				"\nINSERT DATA { " +
-				"\n<"+LUCENEINDEXLITERAL+"> luc:createIndex \"true\" . " + 
+	public void initialize(RepositoryConnection connection, boolean forceCreation) throws Exception {
+
+		String query;
+		Update update;
+		TupleQuery tupleQuery;
+		TupleQueryResult tupleQueryResult;
+
+		boolean existingLiteralIndex = false;
+		boolean existingUriIndex = false;
+
+		//first, drop the two connector (since, if they exist, trying to crete them will generate an
+		// exception if you try to create them again)
+
+		// drop the LUCENE_INDEX_LITERAL if it exists (useful if the method is called a second time to fix the index)
+		//@formatter:off
+		query = "SELECT ?cntStatus " +
+				"\nWHERE {" +
+				"\n"+LUCENE_INDEX_LITERAL +" "+LUC_CONNECTORSTATUS+" ?cntStatus ." +
 				"\n}";
-			//@formatter:on
-	
-			logger.debug("query = " + query);
-			// execute this query
-			update = connection.prepareUpdate(query);
-			update.execute();
-	
-			//@formatter:off
-			//the index LUCENEINDEXLOCALNAME indexes localNames
-			query = "PREFIX luc: <"+LUCENEIMPORT+">"+
-					"\nINSERT DATA {"+
-					// index just the URIs
-					"\nluc:index luc:setParam \"uri\" ."+ 
-					//to include the resource itself (for search in its URI) and the literals associated to it
-					"\nluc:include luc:setParam \"centre\" ."+ 
-					//to hop from the literalForm to the concept (in skosxl)
-					"\nluc:moleculeSize luc:setParam \"0\" ."+ 
-					"\n}";
-			
-			//@formatter:on
-			logger.debug("query = " + query);
-			// execute this query
-			update = connection.prepareUpdate(query);
-			update.execute();
-	
-			//@formatter:off
-			query="PREFIX luc: <"+LUCENEIMPORT+"> "+
-				"\nINSERT DATA { " +
-				"\n<"+LUCENEINDEXLOCALNAME+"> luc:createIndex \"true\" . " + 
+		//@formatter:on
+		logger.debug("query = " + query);
+		tupleQuery = connection.prepareTupleQuery(query);
+		tupleQueryResult = tupleQuery.evaluate();
+		if(tupleQueryResult.hasNext()) {
+			existingLiteralIndex = true;
+			if(forceCreation) {
+				//the LUCENE_INDEX_LITERAL exists, so drop it
+				//@formatter:off
+				query = "INSERT DATA {" +
+						"\n" + LUCENE_INDEX_LITERAL + " " + LUC_DROPCONNECTOR + " [] ." +
+						"\n}";
+				//@formatter:on
+
+				logger.debug("query = " + query);
+				update = connection.prepareUpdate(query);
+				update.execute();
+			}
+		}
+
+
+
+		// drop the LUCENE_INDEX_URI if it exists
+		//@formatter:off
+		query = "SELECT ?cntStatus " +
+				"\nWHERE {" +
+				"\n"+LUCENE_INDEX_URI +" "+LUC_CONNECTORSTATUS+" ?cntStatus ." +
 				"\n}";
+		//@formatter:on
+		logger.debug("query = " + query);
+		tupleQuery = connection.prepareTupleQuery(query);
+		tupleQueryResult = tupleQuery.evaluate();
+		if(tupleQueryResult.hasNext()) {
+			existingUriIndex = true;
+			if (forceCreation) {
+				//@formatter:off
+				query = "INSERT DATA {" +
+						"\n"+LUCENE_INDEX_URI+" "+LUC_DROPCONNECTOR+" [] ." +
+						"\n}";
+				//@formatter:on
+
+				logger.debug("query = " + query);
+				update = connection.prepareUpdate(query);
+				update.execute();
+			}
+		}
+
+
+		if (forceCreation || !existingLiteralIndex) {
+			//@formatter:off
+			//the index LUCENE_INDEX_LITERAL indexes Literals
+			query = "INSERT DATA {" +
+					"\n" + LUCENE_INDEX_LITERAL + " " + LUC_CREATECONNECTOR + " '''" +
+					"\n{" +
+					"\n  \"fields\": [" +
+					"\n    {" +
+					"\n      \"fieldName\": \"label\"," +
+					"\n      \"propertyChain\": [" +
+					"\n        \"$literal\"" +
+					"\n      ]," +
+					"\n    }" +
+					"\n  ]," +
+					"\n  \"types\": [" +
+					"\n    \"$untyped\"" +
+					"\n  ]," +
+					"\n}" +
+					"\n''' ." +
+					"\n} ";
 			//@formatter:on
-	
+
 			logger.debug("query = " + query);
 			// execute this query
 			update = connection.prepareUpdate(query);
 			update.execute();
+		}
+
+		if (forceCreation || !existingUriIndex) {
+			//@formatter:off
+			//the index LUCENE_INDEX_URI indexes localNames
+			query = "INSERT DATA {\n" +
+					"\n" + LUCENE_INDEX_URI + " " + LUC_CREATECONNECTOR + " '''\n" +
+					"\n{ " +
+					"\n  \"fields\": [" +
+					"\n    {" +
+					"\n      \"fieldName\": \"iri\"," +
+					"\n      \"propertyChain\": [" +
+					"\n        \"$self\"" +
+					"\n      ]," +
+					"\n    }" +
+					"\n  ]," +
+					"\n  \"types\": [" +
+					"\n    \"$any\"" +
+					"\n  ]," +
+					"\n}" +
+					"\n''' ." +
+					"\n} ";
+			//@formatter:on
+
+			logger.debug("query = " + query);
+			// execute this query
+			update = connection.prepareUpdate(query);
+			update.execute();
+		}
+
+		//@formatter:off
+		// OLD version
+		/*
+		//the index LUCENEINDEXLABEL indexes labels
+		String query = "PREFIX luc: <"+LUCENEIMPORT+">"+
+				"\nINSERT DATA {"+
+				// index just the literals
+				"\nluc:index luc:setParam \"literal\" ."+
+				//to include the literal itself
+				"\nluc:include luc:setParam \"centre\" ."+
+				//to do no hop
+				"\nluc:moleculeSize luc:setParam \"0\" ."+
+				"\n}";
+
+		//@formatter:on
+		logger.debug("query = " + query);
+		// execute this query
+		Update update = connection.prepareUpdate(query);
+		update.execute();
+
+		//@formatter:off
+		query="PREFIX luc: <"+LUCENEIMPORT+"> "+
+			"\nINSERT DATA { " +
+			"\n<"+LUCENEINDEXLITERAL+"> luc:createIndex \"true\" . " +
+			"\n}";
+		//@formatter:on
+
+		logger.debug("query = " + query);
+		// execute this query
+		update = connection.prepareUpdate(query);
+		update.execute();
+
+		//@formatter:off
+		//the index LUCENEINDEXLOCALNAME indexes localNames
+		query = "PREFIX luc: <"+LUCENEIMPORT+">"+
+				"\nINSERT DATA {"+
+				// index just the URIs
+				"\nluc:index luc:setParam \"uri\" ."+
+				//to include the resource itself (for search in its URI) and the literals associated to it
+				"\nluc:include luc:setParam \"centre\" ."+
+				//to hop from the literalForm to the concept (in skosxl)
+				"\nluc:moleculeSize luc:setParam \"0\" ."+
+				"\n}";
+
+		//@formatter:on
+		logger.debug("query = " + query);
+		// execute this query
+		update = connection.prepareUpdate(query);
+		update.execute();
+
+		//@formatter:off
+		query="PREFIX luc: <"+LUCENEIMPORT+"> "+
+			"\nINSERT DATA { " +
+			"\n<"+LUCENEINDEXLOCALNAME+"> luc:createIndex \"true\" . " +
+			"\n}";
+		//@formatter:on
+
+		logger.debug("query = " + query);
+		// execute this query
+		update = connection.prepareUpdate(query);
+		update.execute();
+		*/
 	}
 
 	@Override
 	public void update(RepositoryConnection connection) throws Exception {
+
+		// OLD, not needed anymore with the NEW "Lucene GraphDB connector"
+		/*
 		// it does not work with resources already present in the indexes (it does not consider the new label)
 		// this is not a problem, since now the indexes (both of them) use molecules of size 0
 
-			//update the index for labels
-			//@formatter:off
-			String query = 	"PREFIX luc: <"+LUCENEIMPORT+">" + 
-							"\nINSERT DATA { " +
-							"\n<"+LUCENEINDEXLITERAL+"> luc:updateIndex _:b1 . " +
-							"\n}";
-			//@formatter:on
-			logger.debug("query = " + query);
-			Update update;
-			update = connection.prepareUpdate(query);
-			update.execute();
-	
-			//update the index for localName
-			//@formatter:off
-			query = "PREFIX luc: <"+LUCENEIMPORT+">" + 
-					"\nINSERT DATA { " +
-					"\n<"+LUCENEINDEXLOCALNAME+"> luc:updateIndex _:b1 . " +
-					"\n}";
-			//@formatter:on
-			logger.debug("query = " + query);
-			update = connection.prepareUpdate(query);
-			update.execute();
+		//update the index for labels
+		//@formatter:off
+		String query = 	"PREFIX luc: <"+LUCENEIMPORT+">" +
+						"\nINSERT DATA { " +
+						"\n<"+LUCENEINDEXLITERAL+"> luc:updateIndex _:b1 . " +
+						"\n}";
+		//@formatter:on
+		logger.debug("query = " + query);
+		Update update;
+		update = connection.prepareUpdate(query);
+		update.execute();
+
+		//update the index for localName
+		//@formatter:off
+		query = "PREFIX luc: <"+LUCENEIMPORT+">" +
+				"\nINSERT DATA { " +
+				"\n<"+LUCENEINDEXLOCALNAME+"> luc:updateIndex _:b1 . " +
+				"\n}";
+		//@formatter:on
+		logger.debug("query = " + query);
+		update = connection.prepareUpdate(query);
+		update.execute();
+		*/
 	}
 
 	@Override
@@ -239,14 +384,15 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
 		//@formatter:off
-		String query = "SELECT DISTINCT ?resource ?label"+ 
-			"\nWHERE{";
+		String query =
+				"SELECT DISTINCT ?resource ?label"+
+				"\nWHERE{";
 		
 		if(useLocalName){
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
 					searchSpecificModePrepareQuery("?resource", searchString, searchMode,
-							LUCENEINDEXLOCALNAME, null, false, true)+
+							LUCENE_INDEX_URI, null, false, true)+
 					"\n}"+
 					"\nUNION";
 		}
@@ -258,7 +404,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		//use the indexes to search in the literals, and then get the associated resource
-		query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs,
+		query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENE_INDEX_LITERAL, langs,
 				includeLocales, false);
 		
 		//search in the rdfs:label
@@ -411,19 +557,17 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			boolean includeLocales,  IRI lexModel, boolean searchInRDFSLabel, boolean searchInSKOSLabel, 
 			boolean searchInSKOSXLLabel, boolean searchInOntolex, boolean includeResToLexicalEntry,
 			Map<String, String> prefixToNamespaceMap, boolean specialCaseXLabel) {
-		String query="";
-
 
 		//prepare an inner query, which seems to be working faster (since it executed by GraphDB before the
 		// rest of the query and it uses the Lucene indexes)
-		query+="\n{SELECT ?resource ?type ?attr_matchMode "+
+		String query="\n{SELECT ?resource ?type ?attr_matchMode "+
 				"\nWHERE{";
 
 		if(useLocalName){
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
 					searchSpecificModePrepareQuery("?resource", searchString, searchMode,
-							LUCENEINDEXLOCALNAME, null, false, true)+
+							LUCENE_INDEX_URI, null, false, true)+
 					"\n}";
 			if(useURI || useLexicalizations) {
 				query+="\nUNION";
@@ -445,7 +589,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		if(useLexicalizations){
 			query+="\n{";
 			//use the indexes to search in the literals, and then, in the rest of the query, get the associated resource
-			query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENEINDEXLITERAL, langs,
+			query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENE_INDEX_LITERAL, langs,
 					includeLocales, false);
 
 
@@ -555,7 +699,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		
 		if(indexToUse==null || indexToUse.length()==0) {
 			//if no lucene index is specified, then assume it is the Index_Literal
-			indexToUse = LUCENEINDEXLITERAL;
+			indexToUse = LUCENE_INDEX_LITERAL;
 		}
 		
 		String varToUse;
@@ -573,21 +717,21 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		if(searchMode == SearchMode.startsWith){
-			query= indexPart(variable, indexToUse, valueForIndex, searchMode) +
+			query= indexPart(variable, indexToUse, valueForIndex, searchMode, forLocalName) +
 					// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the
 					//single word, so filter them afterward
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '^"+valueForRegex+"', 'i')" +
 					"\nBIND('startsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.endsWith){
-			query= indexPart(variable, indexToUse, valueForIndex, searchMode) +
+			query= indexPart(variable, indexToUse, valueForIndex, searchMode, forLocalName) +
 					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the
 					//single word, so filter them afterward
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '"+valueForRegex+"$', 'i')" +
 					"\nBIND('endsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.contains){
-			query= indexPart(variable, indexToUse, valueForIndex, searchMode) +
+			query= indexPart(variable, indexToUse, valueForIndex, searchMode, forLocalName) +
 					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the
 					//single word, so filter them afterward
 					queryPart+
@@ -595,7 +739,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\nBIND('contains' AS ?attr_matchMode)";
 			
 		} else if(searchMode == SearchMode.fuzzy){
-			query= indexPart(variable, indexToUse, valueForIndex, searchMode);
+			query= indexPart(variable, indexToUse, valueForIndex, searchMode, forLocalName);
 			//in this case case, you cannot use directly valueForRegex, since the service
 			// will generate a list of values, so use value and let wordsForFuzzySearch clean it
 			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", true);
@@ -605,7 +749,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\nBIND('fuzzy' AS ?attr_matchMode)";
 			
 		} else { // searchMode.equals(exact)
-			query= indexPart(variable, indexToUse, valueForIndex, searchMode) +
+			query= indexPart(variable, indexToUse, valueForIndex, searchMode, forLocalName) +
 					//"\n"+variable+" <"+indexToUse+"> '"+valueForIndex+"' ." +
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '^"+valueForRegex+"$', 'i')" + 
@@ -618,8 +762,54 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		return query;
 	}
 
-	private String indexPart(String variable, String indexToUse, String valueForIndex, SearchMode searchMode){
+	private String indexPart(String variable, String indexToUse, String valueForIndex, SearchMode searchMode,
+							 boolean forLocalName){
 		String query = "";
+
+		String varSearch = variable+"_search";
+		String varForLucene = forLocalName ? variable : variable+"_res_from_Lucene";
+		String varProp = variable+"_prop";
+
+		query = "\n"+varSearch+" a "+indexToUse+" ;";
+
+		// this is needed, since the new lucene index dow not work only on the local name, but on the entire URI, so
+		// the local name is just a part of the uri
+		String startForLocalName = forLocalName ? "*" : "";
+
+		// to avoid problem with languages using different alphabets, add the valueForIndex as it is and then with the part depending
+		// on the searchMode
+		// and use the UNION to combine these two parts
+		if(searchMode == SearchMode.startsWith){
+			query+="\n"+LUC_QUERY+" '("+valueForIndex+")|("+startForLocalName+valueForIndex+"*)' ; ";
+		} else if(searchMode == SearchMode.endsWith){
+			query+="\n"+LUC_QUERY+"  '("+valueForIndex+")|(*"+valueForIndex+")' ; ";
+		} else if(searchMode == SearchMode.contains){
+			query+="\n"+LUC_QUERY+"  '("+valueForIndex+")|(*"+valueForIndex+"*)' ; ";
+
+		} else if(searchMode == SearchMode.fuzzy){
+			//first add valueForIndex to wordForIndex
+			List<String> wordForIndex = new ArrayList<>();
+			wordForIndex.add(valueForIndex);
+			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements
+			//having just letter different form the input one
+			wordForIndex.addAll(ServiceForSearches.wordsForFuzzySearch(valueForIndex, "*", false));
+			String wordForIndexAsString = ServiceForSearches.listToStringForQuery(wordForIndex, "", "");
+			query+="\n"+LUC_QUERY+"  \""+wordForIndexAsString+"\" .";
+
+		} else { // searchMode.equals(exact)
+			query+= "\n" + LUC_QUERY + " '" + valueForIndex + "' .";
+		}
+
+		query += "\n"+LUC_ENTITIES+" "+varForLucene+" .";
+		if(!forLocalName) {
+			query += "\n" + varForLucene + " " + varProp + " " + variable + " .";
+		}
+		//this part is used to place in "variable" the value (the Literal) as expected when this method is called
+		String obtainLiteralPart = "";
+
+
+		// OLD for "Lucene full-text search" !!!
+		/*
 		// to avoid problem with languages using different alphabets, add the valueForIndex as it is and then with the part depending
 		// on the searchMode
 		// and use the UNION to combine these two parts
@@ -643,16 +833,31 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		} else { // searchMode.equals(exact)
 			query = "\n" + variable + " <" + indexToUse + "> '" + valueForIndex + "' .";
 		}
+		*/
 		return query;
 	}
 	
 	private String normalizeStringForLuceneIndex(String inputString, SearchMode searchMode) {
 		String outputString = inputString;
 
+		//@formatter:off
 		//replace all punctuation character except for the underscore <code>_<code>
-		//replace the ' and the - with a whitespace
-		outputString = outputString.replaceAll("\\p{Punct}&&[^_]", " ").replace("\'", " ").replace("-", " ").trim();
-		//if the search mode is not exactMatch, the starting and ending . should be replace with (.)
+		//replace all \ and - with a whitespace
+		//replace the ' with \'
+		outputString = outputString.replaceAll("\\p{Punct}&&[^_]", " ")
+				.replace("\\", " ")
+				.replace("\'", "\\'")
+				.replace("-", " ")
+				.trim();
+		//@formatter:on
+
+		// replace the '(' with '\\('
+		outputString = outputString.replaceAll("\\(", "\\(");
+		// replace the ')' with '\\)'
+		outputString = outputString.replaceAll("\\)", "\\)");
+
+
+		//if the search mode is not exactMatch, the starting and ending . should be replaced with (.)
 		if(!searchMode.equals(SearchMode.exact)){
 			if(outputString.startsWith(".")){
 				outputString = "(.)"+outputString.substring(1);
