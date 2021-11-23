@@ -607,7 +607,9 @@ public class ServiceForSearches {
 		} else if(searchMode == SearchMode.contains){
 			query="\nFILTER regex(str("+variable+"), '"+value+"', 'i')";
 		} else if(searchMode == SearchMode.fuzzy){
-			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", false);
+			//List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", false);
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", true,
+					false, searchMode);
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')";
 		} else { // searchMode.equals(exact)
@@ -617,22 +619,58 @@ public class ServiceForSearches {
 		return query;
 	}
 	
-	public static List<String> wordsForFuzzySearch(String text, String replaceChar, boolean escapeIt){
+	public static List<String> wordsForFuzzySearch(String text, String replaceChar, boolean escapeForRegex,
+												   boolean escapeForLucene, SearchMode searchMode){
 		List<String> wordsList = new ArrayList<>();
-		wordsList.add(replaceChar+escapeOrNot(text, escapeIt));
+		wordsList.add(replaceChar+escapeOrNot(text, escapeForRegex, escapeForLucene, searchMode));
 		for(int i=0; i<text.length(); ++i) {
-			wordsList.add(escapeOrNot(text.substring(0, i), escapeIt)+replaceChar+
-					escapeOrNot(text.substring(i+1), escapeIt));
+			wordsList.add(escapeOrNot(text.substring(0, i), escapeForRegex, escapeForLucene, searchMode)+replaceChar+
+					escapeOrNot(text.substring(i+1), escapeForRegex, escapeForLucene, searchMode));
 		}
-		wordsList.add(escapeOrNot(text, escapeIt)+replaceChar);
+		wordsList.add(escapeOrNot(text, escapeForRegex, escapeForLucene, searchMode)+replaceChar);
 		return wordsList;
 	}
 	
-	private static String escapeOrNot(String text, boolean escapeIt) {
-		if(escapeIt) {
+	private static String escapeOrNot(String text, boolean escapeForRegex, boolean escapeForLucene,
+									  SearchMode searchMode) {
+		if(escapeForRegex) {
 			return ServiceForSearches.escapeStringForRegexInSPARQL(text);
+		} else if (escapeForLucene){
+			return ServiceForSearches.normalizeStringForLuceneIndex(text, searchMode);
 		}
 		return text;
+	}
+
+	public static String normalizeStringForLuceneIndex(String inputString, SearchMode searchMode) {
+		String outputString = inputString;
+
+		//@formatter:off
+		//replace all punctuation character except for the underscore <code>_<code>
+		//replace all \ and - with a whitespace
+		//replace the ' with \'
+		outputString = outputString.replaceAll("\\p{Punct}&&[^_]", " ")
+				.replace("\\", " ")
+				.replace("\'", "\\'")
+				.replace("-", " ")
+				.trim();
+		//@formatter:on
+
+		// replace the '(' with '\\('
+		outputString = outputString.replaceAll("\\(", "\\(");
+		// replace the ')' with '\\)'
+		outputString = outputString.replaceAll("\\)", "\\)");
+
+
+		//if the search mode is not exactMatch, the starting and ending . should be replaced with (.)
+		if(!searchMode.equals(SearchMode.exact)){
+			if(outputString.startsWith(".")){
+				outputString = "(.)"+outputString.substring(1);
+			}
+			if(outputString.endsWith(".")){
+				outputString = outputString.substring(0, outputString.length()-1)+"(.)";
+			}
+		}
+		return outputString;
 	}
 	
 	public static String listToStringForQuery(List<String> wordsList, String startSymbol, String endSymbol) {

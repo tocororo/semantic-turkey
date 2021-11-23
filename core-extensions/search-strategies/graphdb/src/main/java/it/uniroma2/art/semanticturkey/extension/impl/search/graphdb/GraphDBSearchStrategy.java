@@ -695,7 +695,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		String query ="";
 		
 		String valueForRegex = ServiceForSearches.escapeStringForRegexInSPARQL(value);
-		String valueForIndex = normalizeStringForLuceneIndex(value, searchMode);
+		//String valueForIndex = normalizeStringForLuceneIndex(value, searchMode);
 		
 		if(indexToUse==null || indexToUse.length()==0) {
 			//if no lucene index is specified, then assume it is the Index_Literal
@@ -717,21 +717,21 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		if(searchMode == SearchMode.startsWith){
-			query= indexPart(variable, indexToUse, valueForIndex, searchMode, forLocalName) +
+			query= indexPart(variable, indexToUse, value, searchMode, forLocalName) +
 					// the GraphDB indexes (Lucene) consider as the start of the string all the starts of the
 					//single word, so filter them afterward
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '^"+valueForRegex+"', 'i')" +
 					"\nBIND('startsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.endsWith){
-			query= indexPart(variable, indexToUse, valueForIndex, searchMode, forLocalName) +
+			query= indexPart(variable, indexToUse, value, searchMode, forLocalName) +
 					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the
 					//single word, so filter them afterward
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '"+valueForRegex+"$', 'i')" +
 					"\nBIND('endsWith' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.contains){
-			query= indexPart(variable, indexToUse, valueForIndex, searchMode, forLocalName) +
+			query= indexPart(variable, indexToUse, value, searchMode, forLocalName) +
 					// the GraphDB indexes (Lucene) consider as the end of the string all the starts of the
 					//single word, so filter them afterward
 					queryPart+
@@ -739,17 +739,18 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 					"\nBIND('contains' AS ?attr_matchMode)";
 			
 		} else if(searchMode == SearchMode.fuzzy){
-			query= indexPart(variable, indexToUse, valueForIndex, searchMode, forLocalName);
+			query= indexPart(variable, indexToUse, value, searchMode, forLocalName);
 			//in this case case, you cannot use directly valueForRegex, since the service
 			// will generate a list of values, so use value and let wordsForFuzzySearch clean it
-			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", true);
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", true,
+					false, searchMode);
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += queryPart+
 					"\nFILTER regex(str("+varToUse+"), \""+wordForNoIndexAsString+"\", 'i')" +
 					"\nBIND('fuzzy' AS ?attr_matchMode)";
 			
 		} else { // searchMode.equals(exact)
-			query= indexPart(variable, indexToUse, valueForIndex, searchMode, forLocalName) +
+			query= indexPart(variable, indexToUse, value, searchMode, forLocalName) +
 					//"\n"+variable+" <"+indexToUse+"> '"+valueForIndex+"' ." +
 					queryPart+
 					"\nFILTER regex(str("+varToUse+"), '^"+valueForRegex+"$', 'i')" + 
@@ -762,8 +763,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		return query;
 	}
 
-	private String indexPart(String variable, String indexToUse, String valueForIndex, SearchMode searchMode,
+	private String indexPart(String variable, String indexToUse, String value, SearchMode searchMode,
 							 boolean forLocalName){
+		String valueForIndex = ServiceForSearches.normalizeStringForLuceneIndex(value, searchMode);
 		String query = "";
 
 		String varSearch = variable+"_search";
@@ -792,12 +794,13 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			wordForIndex.add(valueForIndex);
 			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements
 			//having just letter different form the input one
-			wordForIndex.addAll(ServiceForSearches.wordsForFuzzySearch(valueForIndex, "*", false));
+			wordForIndex.addAll(ServiceForSearches.wordsForFuzzySearch(value, "*", false,
+					true, searchMode));
 			String wordForIndexAsString = ServiceForSearches.listToStringForQuery(wordForIndex, "", "");
-			query+="\n"+LUC_QUERY+"  \""+wordForIndexAsString+"\" .";
+			query+="\n"+LUC_QUERY+"  \""+wordForIndexAsString+"\" ;";
 
 		} else { // searchMode.equals(exact)
-			query+= "\n" + LUC_QUERY + " '" + valueForIndex + "' .";
+			query+= "\n" + LUC_QUERY + " '" + valueForIndex + "' ;";
 		}
 
 		query += "\n"+LUC_ENTITIES+" "+varForLucene+" .";
@@ -836,7 +839,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		*/
 		return query;
 	}
-	
+
+	/*
 	private String normalizeStringForLuceneIndex(String inputString, SearchMode searchMode) {
 		String outputString = inputString;
 
@@ -868,6 +872,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		return outputString;
 	}
+	 */
 	
 	private String searchModePrepareQueryNoIndexes_UsedForURISearch(String variable, String searchString,
 												SearchMode searchMode, Map<String, String> prefixToNamespaceMap){
@@ -887,7 +892,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			query="\nFILTER regex(str("+variable+"), '"+searchStringForUri+"', 'i')" +
 					"\nBIND('contains' AS ?attr_matchMode)";
 		} else if(searchMode == SearchMode.fuzzy){
-			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(searchString, ".", false);
+			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(searchString, ".", false, false, searchMode);
 			String wordForNoIndexAsString = ServiceForSearches.listToStringForQuery(wordForNoIndex, "^", "$");
 			query += "\nFILTER regex(str("+variable+"), \""+wordForNoIndexAsString+"\", 'i')" +
 					"\nBIND('fuzzy' AS ?attr_matchMode)";
