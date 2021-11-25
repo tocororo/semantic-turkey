@@ -101,7 +101,7 @@ An ANT build file allows to package the xpi for Firefox installation (read READM
 		<lime-api.version>0.4.3</lime-api.version>
 		<guava.version>30.1.1-jre</guava.version>
 		<annotations.version>2.0.1</annotations.version>
-		<sheet2rdf.version>4.2.2</sheet2rdf.version>
+		<sheet2rdf.version>4.2.3-SNAPSHOT</sheet2rdf.version>
 		<coda.version>1.7.3</coda.version>
 		<osgi.version>5.0.0</osgi.version>
 		<maple.version>0.0.9</maple.version>
