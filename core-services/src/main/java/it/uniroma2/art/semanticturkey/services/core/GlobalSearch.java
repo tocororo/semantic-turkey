@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
+import it.uniroma2.art.semanticturkey.exceptions.GlobalSearchIndexLockException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
@@ -36,6 +37,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -82,6 +84,9 @@ public class GlobalSearch extends STServiceAdapter {
 
 	private final int MAX_RESULTS = 100;
 
+	private final int SLEEP_TIME_LOCK = 2000; // 2 sec
+	private final int MAX_SLEEP_TENTATIVE = 300; // 300*2 sec = 600 sec = 10 minutes of tentatives
+
 	// private static String CLASS_ROLE = "class";
 	// private static String CONCEPT_ROLE = "concept";
 	// private static String INSTANCE_ROLE = "instance";
@@ -108,252 +113,270 @@ public class GlobalSearch extends STServiceAdapter {
 		// classloader magic
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
+		int count=0;
 		try {
 			Directory directory = FSDirectory.open(getLuceneDir().toPath());
+			boolean taskCompleted = false;
 
-			SimpleAnalyzer simpleAnalyzer = new SimpleAnalyzer();
-			IndexWriterConfig config = new IndexWriterConfig(simpleAnalyzer);
 			RepositoryConnection conn = getManagedConnection();
 			Map<String, String> resTypeToRoleMap = computeAllRoles(conn);
-			try (IndexWriter writer = new IndexWriter(directory, config)) {
+			do {
+				try {
+					SimpleAnalyzer simpleAnalyzer = new SimpleAnalyzer();
+					IndexWriterConfig config = new IndexWriterConfig(simpleAnalyzer);
+					try (IndexWriter writer = new IndexWriter(directory, config)) {
 
-				//@formatter:off
-				String query;
-				IRI lexModel = getProject().getLexicalizationModel();
-				//prepare the query for the part associated to the LexicalizationModel
-				if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) { //SKOS-XL
-					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
-							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
-							+ "\nWHERE{"
-							+ "\nGRAPH "+ NTriplesUtil.toNTriplesString(getWorkingGraph()) +"{"
-							+ "\n?xlabel skosxl:literalForm ?value ."
-							+ "\nFILTER(isLiteral(?value)) "
-							+ "\nBIND(lang(?value) AS ?lang)"
-							+ "\n?resource ?predicate ?xlabel ."
-							+ "\nFILTER(isIRI(?resource)) "
-							+ "\n?resource a ?resourceType ."
-							+ "\n}"
-							+ "\n}";
-					//add to the index the result of the query
-					addDirectlyToIndex(query, conn, writer, LEXICALIZATION, resTypeToRoleMap);
-				} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) { // SKOS
-					String labelsProp = "( skos:prefLabel, skos:altLabel, skos:hiddenLabel )";
-					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
-							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
-							+ "\nWHERE{"
-							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
-							+ "\n?resource ?predicate ?value ."
-							+ "\nFILTER(isLiteral(?value)) "
-							+ "\nBIND(lang(?value) AS ?lang)"
-							+ "\nFILTER( ?predicate IN "+labelsProp+")"
-							+ "\nFILTER(isIRI(?resource)) "
-							+ "\n?resource a ?resourceType ."
-							+ "\n}"
-							+ "\n}";
-					//add to the index the result of the query
-					addDirectlyToIndex(query, conn, writer, LEXICALIZATION, resTypeToRoleMap);
-				} else if (lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)){ // RDFS
-					String labelsProp = "( rdfs:label )";
-					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
-							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
-							+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
-							+ "\nWHERE{"
-							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
-							+ "\n?resource ?predicate ?value ."
-							+ "\nFILTER(isLiteral(?value)) "
-							+ "\nBIND(lang(?value) AS ?lang)"
-							+ "\nFILTER( ?predicate IN "+labelsProp+")"
-							+ "\nFILTER(isIRI(?resource)) "
-							+ "\n?resource a ?resourceType ."
-							+ "\n}"
-							+ "\n}";
-					//add to the index the result of the query
-					addDirectlyToIndex(query, conn, writer, LEXICALIZATION, resTypeToRoleMap);
-				} else { //ONTOLEX
-					//see for more details https://www.w3.org/2016/05/ontolex/#core
+						//@formatter:off
+						String query;
+						IRI lexModel = getProject().getLexicalizationModel();
+						//prepare the query for the part associated to the LexicalizationModel
+						if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) { //SKOS-XL
+							query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
+									+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
+									+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
+									+ "\nWHERE{"
+									+ "\nGRAPH "+ NTriplesUtil.toNTriplesString(getWorkingGraph()) +"{"
+									+ "\n?xlabel skosxl:literalForm ?value ."
+									+ "\nFILTER(isLiteral(?value)) "
+									+ "\nBIND(lang(?value) AS ?lang)"
+									+ "\n?resource ?predicate ?xlabel ."
+									+ "\nFILTER(isIRI(?resource)) "
+									+ "\n?resource a ?resourceType ."
+									+ "\n}"
+									+ "\n}";
+							//add to the index the result of the query
+							addDirectlyToIndex(query, conn, writer, LEXICALIZATION, resTypeToRoleMap);
+						} else if(lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL)) { // SKOS
+							String labelsProp = "( skos:prefLabel, skos:altLabel, skos:hiddenLabel )";
+							query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
+									+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
+									+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
+									+ "\nWHERE{"
+									+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
+									+ "\n?resource ?predicate ?value ."
+									+ "\nFILTER(isLiteral(?value)) "
+									+ "\nBIND(lang(?value) AS ?lang)"
+									+ "\nFILTER( ?predicate IN "+labelsProp+")"
+									+ "\nFILTER(isIRI(?resource)) "
+									+ "\n?resource a ?resourceType ."
+									+ "\n}"
+									+ "\n}";
+							//add to the index the result of the query
+							addDirectlyToIndex(query, conn, writer, LEXICALIZATION, resTypeToRoleMap);
+						} else if (lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)){ // RDFS
+							String labelsProp = "( rdfs:label )";
+							query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
+									+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
+									+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
+									+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
+									+ "\nWHERE{"
+									+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
+									+ "\n?resource ?predicate ?value ."
+									+ "\nFILTER(isLiteral(?value)) "
+									+ "\nBIND(lang(?value) AS ?lang)"
+									+ "\nFILTER( ?predicate IN "+labelsProp+")"
+									+ "\nFILTER(isIRI(?resource)) "
+									+ "\n?resource a ?resourceType ."
+									+ "\n}"
+									+ "\n}";
+							//add to the index the result of the query
+							addDirectlyToIndex(query, conn, writer, LEXICALIZATION, resTypeToRoleMap);
+						} else { //ONTOLEX
+							//see for more details https://www.w3.org/2016/05/ontolex/#core
 
-					//first get all the LexicalConcept (or Ontology Entity) connected to the LexicalEntry that are 
-					// then connected to the form (the Literal). Take also the LexicalEntry and store them in a List.
-					// Then get just the LexicalEntry and index only those not present in the List constructed in
-					// the first query 
+							//first get all the LexicalConcept (or Ontology Entity) connected to the LexicalEntry that are
+							// then connected to the form (the Literal). Take also the LexicalEntry and store them in a List.
+							// Then get just the LexicalEntry and index only those not present in the List constructed in
+							// the first query
 
-					//construct the complex path from a resource to a LexicalEntry
-					String directResToLexicalEntry = NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
-							"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
-							"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY)+
-							"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES);
-					String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
-							"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_LEXICALIZED_SENSE_OF)+
-							"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.REFERENCE)+
-							"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_REFERENCE_OF)+")"+
-							"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
-							"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
-					String allResToLexicalEntry = " ("+directResToLexicalEntry+"|"+doubleStepResToLexicalEntry+") ";
+							//construct the complex path from a resource to a LexicalEntry
+							String directResToLexicalEntry = NTriplesUtil.toNTriplesString(ONTOLEX.IS_DENOTED_BY) +
+									"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.DENOTES)+
+									"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_EVOKED_BY)+
+									"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.EVOKES);
+							String doubleStepResToLexicalEntry = "("+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICALIZED_SENSE) +
+									"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_LEXICALIZED_SENSE_OF)+
+									"|^"+NTriplesUtil.toNTriplesString(ONTOLEX.REFERENCE)+
+									"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_REFERENCE_OF)+")"+
+									"/(^"+NTriplesUtil.toNTriplesString(ONTOLEX.SENSE)+
+									"|"+NTriplesUtil.toNTriplesString(ONTOLEX.IS_SENSE_OF)+")";
+							String allResToLexicalEntry = " ("+directResToLexicalEntry+"|"+doubleStepResToLexicalEntry+") ";
 
-					String canonicalFormOrOtherForm = " ("+NTriplesUtil.toNTriplesString(ONTOLEX.CANONICAL_FORM)
-								+" | "+NTriplesUtil.toNTriplesString(ONTOLEX.OTHER_FORM)+") ";
+							String canonicalFormOrOtherForm = " ("+NTriplesUtil.toNTriplesString(ONTOLEX.CANONICAL_FORM)
+										+" | "+NTriplesUtil.toNTriplesString(ONTOLEX.OTHER_FORM)+") ";
 
-					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
-							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
-							+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang ?lexicalEntry"
-							+ "\nWHERE{"
-							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
-							+ "\n?lexicalEntry a "+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+ "."
-							+ "\n?resource"+allResToLexicalEntry+"?lexicalEntry ."
-							+ "\n?lexicalEntry "+canonicalFormOrOtherForm+" ?ontoForm ."
-							+ "\n?lexicalEntry ?predicate ?ontoForm ."
-							+ "\n?ontoForm "+NTriplesUtil.toNTriplesString(ONTOLEX.WRITTEN_REP)+" ?value ."
-							+ "\nFILTER(isLiteral(?value)) "
-							+ "\nBIND(lang(?value) AS ?lang)"
-							+ "\nFILTER(isIRI(?resource)) "
-							+ "\n?resource a ?resourceType ."
-							+ "\n}"
-							+ "\n}";
-					logger.debug("query = "+query);
-					TupleQuery tupleQuery = conn.prepareTupleQuery(query);
-					Set<String> lexEntryInInConceptSet = new HashSet<>();
-					Map<String, List<String>> lexConceptToLexEntryMap = new HashMap<>();
-					try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
-						while (tupleQueryResult.hasNext()) {
-							BindingSet bindingSet = tupleQueryResult.next();
-							Value resource = bindingSet.getValue("resource");
-							String resourceIRI = resource.stringValue();
-							String resourceLocalName = ((IRI)resource).getLocalName();
-							String lexEntryIRI = bindingSet.getValue("lexicalEntry").stringValue();
-							String resourceType = bindingSet.getValue("resourceType").stringValue();
-							String predicate = bindingSet.getValue("predicate").stringValue();
-							String value = bindingSet.getValue("value").stringValue();
-							String lang = bindingSet.getValue("lang").stringValue();
-							String repId = getProject().getName();
-							String role = getRoleFromResType(resourceType, resTypeToRoleMap);
-							String type = LEXICALIZATION;
+							query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
+									+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
+									+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
+									+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang ?lexicalEntry"
+									+ "\nWHERE{"
+									+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
+									+ "\n?lexicalEntry a "+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+ "."
+									+ "\n?resource"+allResToLexicalEntry+"?lexicalEntry ."
+									+ "\n?lexicalEntry "+canonicalFormOrOtherForm+" ?ontoForm ."
+									+ "\n?lexicalEntry ?predicate ?ontoForm ."
+									+ "\n?ontoForm "+NTriplesUtil.toNTriplesString(ONTOLEX.WRITTEN_REP)+" ?value ."
+									+ "\nFILTER(isLiteral(?value)) "
+									+ "\nBIND(lang(?value) AS ?lang)"
+									+ "\nFILTER(isIRI(?resource)) "
+									+ "\n?resource a ?resourceType ."
+									+ "\n}"
+									+ "\n}";
+							logger.debug("query = "+query);
+							TupleQuery tupleQuery = conn.prepareTupleQuery(query);
+							Set<String> lexEntryInInConceptSet = new HashSet<>();
+							Map<String, List<String>> lexConceptToLexEntryMap = new HashMap<>();
+							try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
+								while (tupleQueryResult.hasNext()) {
+									BindingSet bindingSet = tupleQueryResult.next();
+									Value resource = bindingSet.getValue("resource");
+									String resourceIRI = resource.stringValue();
+									String resourceLocalName = ((IRI)resource).getLocalName();
+									String lexEntryIRI = bindingSet.getValue("lexicalEntry").stringValue();
+									String resourceType = bindingSet.getValue("resourceType").stringValue();
+									String predicate = bindingSet.getValue("predicate").stringValue();
+									String value = bindingSet.getValue("value").stringValue();
+									String lang = bindingSet.getValue("lang").stringValue();
+									String repId = getProject().getName();
+									String role = getRoleFromResType(resourceType, resTypeToRoleMap);
+									String type = LEXICALIZATION;
 
-							String resourceIRI_repId = resourceIRI+"_"+repId;
-							String lexEntryIRI_repId = lexEntryIRI+"_"+repId;
+									String resourceIRI_repId = resourceIRI+"_"+repId;
+									String lexEntryIRI_repId = lexEntryIRI+"_"+repId;
 
-							if(!lexEntryInInConceptSet.contains(lexEntryIRI_repId)) {
-								lexEntryInInConceptSet.add(lexEntryIRI_repId);
-							}
+									if(!lexEntryInInConceptSet.contains(lexEntryIRI_repId)) {
+										lexEntryInInConceptSet.add(lexEntryIRI_repId);
+									}
 
-							if(lexConceptToLexEntryMap.containsKey(resourceIRI_repId)) {
-								if(lexConceptToLexEntryMap.get(resourceIRI_repId).contains(lexEntryIRI_repId)) {
-									//the couple resourceIRI and lexEntryIRI has already been processed for this repId
-									// so just skip it
-									continue;
+									if(lexConceptToLexEntryMap.containsKey(resourceIRI_repId)) {
+										if(lexConceptToLexEntryMap.get(resourceIRI_repId).contains(lexEntryIRI_repId)) {
+											//the couple resourceIRI and lexEntryIRI has already been processed for this repId
+											// so just skip it
+											continue;
+										}
+									} else {
+										lexConceptToLexEntryMap.put(resourceIRI_repId, new ArrayList<>());
+									}
+									lexConceptToLexEntryMap.get(resourceIRI_repId).add(lexEntryIRI_repId);
+
+									//now add to the index the current element
+									writer.addDocument(addResourceWithLabel(
+											new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang,
+													value, predicate, repId, type, role)));
 								}
-							} else {
-								lexConceptToLexEntryMap.put(resourceIRI_repId, new ArrayList<>());
 							}
-							lexConceptToLexEntryMap.get(resourceIRI_repId).add(lexEntryIRI_repId);
 
-							//now add to the index the current element 
-							writer.addDocument(addResourceWithLabel(
-									new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang,
-											value, predicate, repId, type, role)));
+							//now create a SPARQL query to get all LexicalEntry and check those not already found in the
+							//previous query
+							query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
+									+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
+									+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
+									+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
+									+ "\nWHERE{"
+									+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
+									+ "\n?resource a "+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+ "."
+									+ "\n?resource "+canonicalFormOrOtherForm+" ?ontoForm ."
+									+ "\n?resource ?predicate ?ontoForm ."
+									+ "\n?ontoForm "+NTriplesUtil.toNTriplesString(ONTOLEX.WRITTEN_REP)+" ?value ."
+									+ "\nFILTER(isLiteral(?value)) "
+									+ "\nBIND(lang(?value) AS ?lang)"
+									+ "\nFILTER(isIRI(?resource)) "
+									+ "\n?resource a ?resourceType ."
+									+ "\n}"
+									+ "\n}";
+							logger.debug("query = "+query);
+							tupleQuery = conn.prepareTupleQuery(query);
+							try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
+								while (tupleQueryResult.hasNext()) {
+									BindingSet bindingSet = tupleQueryResult.next();
+									Value resource = bindingSet.getValue("resource");
+									String resourceIRI = resource.stringValue();
+									String resourceLocalName = ((IRI)resource).getLocalName();
+									String resourceType = bindingSet.getValue("resourceType").stringValue();
+									String predicate = bindingSet.getValue("predicate").stringValue();
+									String value = bindingSet.getValue("value").stringValue();
+									String lang = bindingSet.getValue("lang").stringValue();
+									String repId = getProject().getName();
+									String role = getRoleFromResType(resourceType, resTypeToRoleMap);
+									String type = LEXICALIZATION;
+
+									String resourceIRI_repId = resourceIRI+"_"+repId;
+
+									if(lexEntryInInConceptSet.contains(resourceIRI_repId)) {
+										//this LexicalEntry has already being process during the previously query, so just
+										// skip it
+										continue;
+									}
+									//now add to the index the current element (the LexicalEntry)
+									writer.addDocument(addResourceWithLabel(
+											new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang,
+													value, predicate, repId, type, role)));
+								}
+							}
+						}
+						//@formatter:on
+
+
+						//Prepare the query for the skos:note (and all the subproperties)
+						IRI modelType = getProject().getModel();
+						if(modelType.equals(Project.SKOS_MODEL) || modelType.equals(Project.ONTOLEXLEMON_MODEL)) {
+							//@formatter:off
+							query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
+									+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
+									+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
+									+ "\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+									+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
+									+ "\nWHERE{"
+									//do a subquery to get all the subproperties of skos:note
+									+ "\n{SELECT ?predicate "
+									+ "\nWHERE{ "
+									+ "\n?predicate rdfs:subPropertyOf* skos:note ."
+									+ "\n}}"
+									//get both the plain notes and the reified one (consider only the property rdf:value)
+									+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
+									+ "\n{"
+									+ "\n?resource ?predicate ?value ."
+									+ "\nFILTER(isLiteral(?value)) "
+									+ "\nFILTER(isIRI(?resource)) "
+									+ "\nBIND(lang(?value) AS ?lang)"
+									+ "\n?resource a ?resourceType ."
+									+ "\n}"
+									+ "\nUNION"
+									+ "\n{"
+									+ "\n?resource ?predicate ?note ."
+									+ "\n?note rdf:value ?value ."
+									+ "\nFILTER(isLiteral(?value)) "
+									+ "\nFILTER(isIRI(?resource)) "
+									+ "\nBIND(lang(?value) AS ?lang)"
+									+ "\n?resource a ?resourceType ."
+									+ "\n}"
+
+									+ "\n}"
+									+ "\n}";
+							//@formatter:on
+							logger.debug("query = "+query);
+
+							//add to the index the result of the query
+							addDirectlyToIndex(query, conn, writer, NOTE, resTypeToRoleMap);
+
+							taskCompleted = true;
 						}
 					}
 
-					//now create a SPARQL query to get all LexicalEntry and check those not already found in the 
-					//previous query
-					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
-							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
-							+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
-							+ "\nWHERE{"
-							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
-							+ "\n?resource a "+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+ "."
-							+ "\n?resource "+canonicalFormOrOtherForm+" ?ontoForm ."
-							+ "\n?resource ?predicate ?ontoForm ."
-							+ "\n?ontoForm "+NTriplesUtil.toNTriplesString(ONTOLEX.WRITTEN_REP)+" ?value ."
-							+ "\nFILTER(isLiteral(?value)) "
-							+ "\nBIND(lang(?value) AS ?lang)"
-							+ "\nFILTER(isIRI(?resource)) "
-							+ "\n?resource a ?resourceType ."
-							+ "\n}"
-							+ "\n}";
-					logger.debug("query = "+query);
-					tupleQuery = conn.prepareTupleQuery(query);
-					try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
-						while (tupleQueryResult.hasNext()) {
-							BindingSet bindingSet = tupleQueryResult.next();
-							Value resource = bindingSet.getValue("resource");
-							String resourceIRI = resource.stringValue();
-							String resourceLocalName = ((IRI)resource).getLocalName();
-							String resourceType = bindingSet.getValue("resourceType").stringValue();
-							String predicate = bindingSet.getValue("predicate").stringValue();
-							String value = bindingSet.getValue("value").stringValue();
-							String lang = bindingSet.getValue("lang").stringValue();
-							String repId = getProject().getName();
-							String role = getRoleFromResType(resourceType, resTypeToRoleMap);
-							String type = LEXICALIZATION;
-
-							String resourceIRI_repId = resourceIRI+"_"+repId;
-
-							if(lexEntryInInConceptSet.contains(resourceIRI_repId)) {
-								//this LexicalEntry has already being process during the previously query, so just 
-								// skip it
-								continue;
-							}
-							//now add to the index the current element (the LexicalEntry)
-							writer.addDocument(addResourceWithLabel(
-									new ResourceWithLabel(resourceIRI, resourceLocalName, resourceType, lang,
-											value, predicate, repId, type, role)));
-						}
-					}
+				} catch (LockObtainFailedException e) {
+					//the lock is taken so sleep for SLEEP_TIME_LOCK and then check again
+					Thread.sleep(SLEEP_TIME_LOCK);
+					++count;
 				}
-				//@formatter:on
-
-
-				//Prepare the query for the skos:note (and all the subproperties)
-				IRI modelType = getProject().getModel();
-				if(modelType.equals(Project.SKOS_MODEL) || modelType.equals(Project.ONTOLEXLEMON_MODEL)) {
-					//@formatter:off
-					query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
-							+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
-							+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-							+ "\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
-							+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
-							+ "\nWHERE{"
-							//do a subquery to get all the subproperties of skos:note 
-							+ "\n{SELECT ?predicate "
-							+ "\nWHERE{ "
-							+ "\n?predicate rdfs:subPropertyOf* skos:note ."
-							+ "\n}}"
-							//get both the plain notes and the reified one (consider only the property rdf:value)
-							+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
-							+ "\n{"
-							+ "\n?resource ?predicate ?value ."
-							+ "\nFILTER(isLiteral(?value)) "
-							+ "\nFILTER(isIRI(?resource)) "
-							+ "\nBIND(lang(?value) AS ?lang)"
-							+ "\n?resource a ?resourceType ."
-							+ "\n}"
-							+ "\nUNION"
-							+ "\n{"
-							+ "\n?resource ?predicate ?note ."
-							+ "\n?note rdf:value ?value ."
-							+ "\nFILTER(isLiteral(?value)) "
-							+ "\nFILTER(isIRI(?resource)) "
-							+ "\nBIND(lang(?value) AS ?lang)"
-							+ "\n?resource a ?resourceType ."
-							+ "\n}"
-
-							+ "\n}"
-							+ "\n}";
-					//@formatter:on
-					logger.debug("query = "+query);
-
-					//add to the index the result of the query
-					addDirectlyToIndex(query, conn, writer, NOTE, resTypeToRoleMap);
-				}
-			}
+			} while (!taskCompleted && count<MAX_SLEEP_TENTATIVE);
 
 		} finally {
 			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
+		}
+
+		if(count>=MAX_SLEEP_TENTATIVE) {
+			// there was a problem, since there were too many sleep tentatives, so
+			throw new GlobalSearchIndexLockException();
 		}
 	}
 
@@ -541,17 +564,34 @@ public class GlobalSearch extends STServiceAdapter {
 		// classloader magic
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
+		int count=0;
 		try {
 			Directory directory = FSDirectory.open(getLuceneDir().toPath());
-			try (IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new SimpleAnalyzer()))) {
+			boolean taskCompleted = false;
 
-				Builder builderBoolean = new BooleanQuery.Builder();
-				builderBoolean.add(new TermQuery(new Term("repId", projectName)), Occur.MUST);
+			do {
+				try {
+					try (IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new SimpleAnalyzer()))) {
 
-				writer.deleteDocuments(builderBoolean.build());
-			}
+						Builder builderBoolean = new BooleanQuery.Builder();
+						builderBoolean.add(new TermQuery(new Term("repId", projectName)), Occur.MUST);
+
+						writer.deleteDocuments(builderBoolean.build());
+						taskCompleted = true;
+					}
+				} catch (LockObtainFailedException e) {
+					//the lock is taken so sleep for SLEEP_TIME_LOCK and then check again
+					Thread.sleep(SLEEP_TIME_LOCK);
+					++count;
+				}
+			} while (!taskCompleted && count<MAX_SLEEP_TENTATIVE);
 		} finally {
 			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
+		}
+
+		if(count>=MAX_SLEEP_TENTATIVE) {
+			// there was a problem, since there were too many sleep tentatives, so
+			throw new GlobalSearchIndexLockException();
 		}
 	}
 
@@ -566,16 +606,32 @@ public class GlobalSearch extends STServiceAdapter {
 		// classloader magic
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
+		int count=0;
 		try {
 			Directory directory = FSDirectory.open(getLuceneDir().toPath());
-			try (IndexWriter writer = new IndexWriter(directory,
-					new IndexWriterConfig(new SimpleAnalyzer()))) {
+			boolean taskCompleted = false;
 
-				writer.deleteAll();
+			do {
+				try {
+					try (IndexWriter writer = new IndexWriter(directory,
+							new IndexWriterConfig(new SimpleAnalyzer()))) {
 
-			}
+						writer.deleteAll();
+						taskCompleted=true;
+					}
+				} catch (LockObtainFailedException e) {
+					//the lock is taken so sleep for SLEEP_TIME_LOCK and then check again
+					Thread.sleep(SLEEP_TIME_LOCK);
+					++count;
+				}
+			} while (!taskCompleted && count<MAX_SLEEP_TENTATIVE);
 		} finally {
 			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
+		}
+
+		if(count>=MAX_SLEEP_TENTATIVE) {
+			// there was a problem, since there were too many sleep tentatives, so
+			throw new GlobalSearchIndexLockException();
 		}
 	}
 
