@@ -42,20 +42,21 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 
 	// OLD "Lucene full-text search" https://graphdb.ontotext.com/documentation/9.6/standard/full-text-search.html
-	// private final static String INDEX_NAME="vocbenchIndex";
-	//final static private String LUCENEIMPORT = "http://www.ontotext.com/owlim/lucene#";
-	//final static public String LUCENEINDEXLITERAL = "http://www.ontotext.com/owlim/lucene#vocbenchLabel";
-	//final static public String LUCENEINDEXLOCALNAME = "http://www.ontotext.com/owlim/lucene#vocbenchLocalName";
+	//private final static String INDEX_NAME="vocbenchIndex";
+	final static private String LUCENEIMPORT = "http://www.ontotext.com/owlim/lucene#";
+	final static public String LUCENEINDEX_LITERAL = "http://www.ontotext.com/owlim/lucene#vocbenchLabel";
+	final static public String LUCENEINDEX_LOCALNAME = "http://www.ontotext.com/owlim/lucene#vocbenchLocalName";
 
 
-	// NEW "Lucene GraphDB connector" https://graphdb.ontotext.com/documentation/standard/lucene-graphdb-connector.html
-	final static public String LUCENE_INDEX_LITERAL = "<http://www.ontotext.com/connectors/lucene/instance#labelConnectorLiteral>";
-	final static public String LUCENE_INDEX_URI = "<http://www.ontotext.com/connectors/lucene/instance#resourceConnectorIRI>";
-	final private String LUC_DROPCONNECTOR = "<http://www.ontotext.com/connectors/lucene#dropConnector>";
-	final private String LUC_CREATECONNECTOR = "<http://www.ontotext.com/connectors/lucene#createConnector>";
-	final private String LUC_ENTITIES = "<http://www.ontotext.com/connectors/lucene#entities>";
-	final private String LUC_QUERY = "<http://www.ontotext.com/connectors/lucene#query>";
-	final private String LUC_CONNECTORSTATUS = "<http://www.ontotext.com/connectors/lucene#connectorStatus>";
+	// "Lucene GraphDB connector" https://graphdb.ontotext.com/documentation/standard/lucene-graphdb-connector.html
+	//final static public String LUCENE_INDEX_LITERAL = "<http://www.ontotext.com/connectors/lucene/instance#labelConnectorLiteral>";
+	//final static public String LUCENE_INDEX_URI = "<http://www.ontotext.com/connectors/lucene/instance#resourceConnectorIRI>";
+	//final private String LUC_DROPCONNECTOR = "<http://www.ontotext.com/connectors/lucene#dropConnector>";
+	//final private String LUC_CREATECONNECTOR = "<http://www.ontotext.com/connectors/lucene#createConnector>";
+	//final private String LUC_ENTITIES = "<http://www.ontotext.com/connectors/lucene#entities>";
+	//final private String LUC_QUERY = "<http://www.ontotext.com/connectors/lucene#query>";
+	//final private String LUC_CONNECTORSTATUS = "<http://www.ontotext.com/connectors/lucene#connectorStatus>";
+
 	//final static public String PREFIX_LUC = "PREFIX luc: <http://www.ontotext.com/connectors/lucene#>"; // luc
 	//final static public String PREFIX_LUC_INDEX = "PREFIX luc-index: <http://www.ontotext.com/connectors/lucene/instance#>"; // luc-index
 
@@ -64,11 +65,15 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public void initialize(RepositoryConnection connection, boolean forceCreation) throws Exception {
 
+		// the forceCreation is used only when Lucene Connector part is used
+
 		String query;
 		Update update;
 		TupleQuery tupleQuery;
 		TupleQueryResult tupleQueryResult;
 
+		// The following part is using the Lucene Connector (currently in commented since the Lucene FTS is used)
+		/*
 		boolean existingLiteralIndex = false;
 		boolean existingUriIndex = false;
 
@@ -184,12 +189,12 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			update = connection.prepareUpdate(query);
 			update.execute();
 		}
+		*/
 
+		// The Lucene FTS part
 		//@formatter:off
-		// OLD version
-		/*
 		//the index LUCENEINDEXLABEL indexes labels
-		String query = "PREFIX luc: <"+LUCENEIMPORT+">"+
+		query = "PREFIX luc: <"+LUCENEIMPORT+">"+
 				"\nINSERT DATA {"+
 				// index just the literals
 				"\nluc:index luc:setParam \"literal\" ."+
@@ -202,13 +207,13 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//@formatter:on
 		logger.debug("query = " + query);
 		// execute this query
-		Update update = connection.prepareUpdate(query);
+		update = connection.prepareUpdate(query);
 		update.execute();
 
 		//@formatter:off
 		query="PREFIX luc: <"+LUCENEIMPORT+"> "+
 			"\nINSERT DATA { " +
-			"\n<"+LUCENEINDEXLITERAL+"> luc:createIndex \"true\" . " +
+			"\n<"+ LUCENEINDEX_LITERAL +"> luc:createIndex \"true\" . " +
 			"\n}";
 		//@formatter:on
 
@@ -238,7 +243,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//@formatter:off
 		query="PREFIX luc: <"+LUCENEIMPORT+"> "+
 			"\nINSERT DATA { " +
-			"\n<"+LUCENEINDEXLOCALNAME+"> luc:createIndex \"true\" . " +
+			"\n<"+ LUCENEINDEX_LOCALNAME +"> luc:createIndex \"true\" . " +
 			"\n}";
 		//@formatter:on
 
@@ -246,14 +251,11 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		// execute this query
 		update = connection.prepareUpdate(query);
 		update.execute();
-		*/
 	}
 
 	@Override
 	public void update(RepositoryConnection connection) throws Exception {
 
-		// OLD, not needed anymore with the NEW "Lucene GraphDB connector"
-		/*
 		// it does not work with resources already present in the indexes (it does not consider the new label)
 		// this is not a problem, since now the indexes (both of them) use molecules of size 0
 
@@ -261,7 +263,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//@formatter:off
 		String query = 	"PREFIX luc: <"+LUCENEIMPORT+">" +
 						"\nINSERT DATA { " +
-						"\n<"+LUCENEINDEXLITERAL+"> luc:updateIndex _:b1 . " +
+						"\n<"+ LUCENEINDEX_LITERAL +"> luc:updateIndex _:b1 . " +
 						"\n}";
 		//@formatter:on
 		logger.debug("query = " + query);
@@ -273,13 +275,12 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		//@formatter:off
 		query = "PREFIX luc: <"+LUCENEIMPORT+">" +
 				"\nINSERT DATA { " +
-				"\n<"+LUCENEINDEXLOCALNAME+"> luc:updateIndex _:b1 . " +
+				"\n<"+ LUCENEINDEX_LOCALNAME +"> luc:updateIndex _:b1 . " +
 				"\n}";
 		//@formatter:on
 		logger.debug("query = " + query);
 		update = connection.prepareUpdate(query);
 		update.execute();
-		*/
 	}
 
 	@Override
@@ -392,7 +393,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
 					searchSpecificModePrepareQuery("?resource", searchString, searchMode,
-							LUCENE_INDEX_URI, null, false, true)+
+							LUCENEINDEX_LOCALNAME, null, false, true)+
 					"\n}"+
 					"\nUNION";
 		}
@@ -404,7 +405,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		
 		//use the indexes to search in the literals, and then get the associated resource
-		query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENE_INDEX_LITERAL, langs,
+		query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENEINDEX_LITERAL, langs,
 				includeLocales, false);
 		
 		//search in the rdfs:label
@@ -567,7 +568,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			//the part related to the localName (with the indexes)
 			query+="\n{"+
 					searchSpecificModePrepareQuery("?resource", searchString, searchMode,
-							LUCENE_INDEX_URI, null, false, true)+
+							LUCENEINDEX_LOCALNAME, null, false, true)+
 					"\n}";
 			if(useURI || useLexicalizations) {
 				query+="\nUNION";
@@ -589,7 +590,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		if(useLexicalizations){
 			query+="\n{";
 			//use the indexes to search in the literals, and then, in the rest of the query, get the associated resource
-			query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENE_INDEX_LITERAL, langs,
+			query+=searchSpecificModePrepareQuery("?label", searchString, searchMode, LUCENEINDEX_LITERAL, langs,
 					includeLocales, false);
 
 
@@ -699,7 +700,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		
 		if(indexToUse==null || indexToUse.length()==0) {
 			//if no lucene index is specified, then assume it is the Index_Literal
-			indexToUse = LUCENE_INDEX_LITERAL;
+			indexToUse = LUCENEINDEX_LITERAL;
 		}
 		
 		String varToUse;
@@ -740,7 +741,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			
 		} else if(searchMode == SearchMode.fuzzy){
 			query= indexPart(variable, indexToUse, value, searchMode, forLocalName);
-			//in this case case, you cannot use directly valueForRegex, since the service
+			//in this case, you cannot use directly valueForRegex, since the service
 			// will generate a list of values, so use value and let wordsForFuzzySearch clean it
 			List<String> wordForNoIndex = ServiceForSearches.wordsForFuzzySearch(value, ".", true,
 					false, searchMode);
@@ -768,6 +769,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		String valueForIndex = ServiceForSearches.normalizeStringForLuceneIndex(value, searchMode);
 		String query = "";
 
+		// The following part is to use the Lucene Connector, it is commented since the Lucene FTS is used
+		/*
 		String varSearch = variable+"_search";
 		String varForLucene = forLocalName ? variable : variable+"_res_from_Lucene";
 		String varProp = variable+"_prop";
@@ -809,10 +812,10 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		}
 		//this part is used to place in "variable" the value (the Literal) as expected when this method is called
 		String obtainLiteralPart = "";
+		*/
 
+		// for "Lucene FTS"
 
-		// OLD for "Lucene full-text search" !!!
-		/*
 		// to avoid problem with languages using different alphabets, add the valueForIndex as it is and then with the part depending
 		// on the searchMode
 		// and use the UNION to combine these two parts
@@ -829,14 +832,15 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			wordForIndex.add(valueForIndex);
 			//change each letter in the input searchTerm with * (INDEX) or . (NO_INDEX) to get all the elements
 			//having just letter different form the input one
-			wordForIndex.addAll(ServiceForSearches.wordsForFuzzySearch(valueForIndex, "*", false));
+			wordForIndex.addAll(ServiceForSearches.wordsForFuzzySearch(value, "*", false,
+					true, searchMode));
 			String wordForIndexAsString = ServiceForSearches.listToStringForQuery(wordForIndex, "", "");
 			query+="\n"+variable+" <"+indexToUse+"> \""+wordForIndexAsString+"\" .";
 
 		} else { // searchMode.equals(exact)
 			query = "\n" + variable + " <" + indexToUse + "> '" + valueForIndex + "' .";
 		}
-		*/
+
 		return query;
 	}
 
