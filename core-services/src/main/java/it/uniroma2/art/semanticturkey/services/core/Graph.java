@@ -334,7 +334,7 @@ public class Graph extends STServiceAdapter {
 		TupleQueryResult results = tupleQuery.evaluate();
 		while (results.hasNext()) {
 			BindingSet bs = results.next();
-			String prop = bs.getBinding("p").getValue().stringValue();
+			String prop = NTriplesUtil.toNTriplesString(bs.getBinding("p").getValue());
 			Binding d = bs.getBinding("d");
 			Binding r = bs.getBinding("r");
 			boolean isDatatype = Boolean.parseBoolean(bs.getBinding("isDatatype").getValue().stringValue());
@@ -343,17 +343,17 @@ public class Graph extends STServiceAdapter {
 			String range;
 			
 			if (d != null) {
-				domain = d.getValue().stringValue();
+				domain = NTriplesUtil.toNTriplesString(d.getValue());
 			} else { //if there is no domain, set owl:Thing by default
-				domain = OWL.THING.stringValue();
+				domain = NTriplesUtil.toNTriplesString(OWL.THING);
 			}
 			if (r != null) {
-				range = r.getValue().stringValue();
+				range = NTriplesUtil.toNTriplesString(r.getValue());
 			} else { //if there is no range, set the default to rdfs:Literal for the DatatypeProperty, owl:Thing otherwise
 				if (isDatatype) {
-					range = RDFS.LITERAL.stringValue();
+					range = NTriplesUtil.toNTriplesString(RDFS.LITERAL);
 				} else {
-					range = OWL.THING.stringValue();
+					range = NTriplesUtil.toNTriplesString(OWL.THING);
 				}
 			}
 
@@ -372,10 +372,10 @@ public class Graph extends STServiceAdapter {
 		TupleQueryResult results = tupleQuery.evaluate();
 		while (results.hasNext()) {
 			BindingSet bs = results.next();
-			String subj = bs.getBinding("s").getValue().stringValue();
-			String prop = bs.getBinding("p").getValue().stringValue();
-			String obj = bs.getBinding("o").getValue().stringValue();
-			
+			String subj = NTriplesUtil.toNTriplesString(bs.getBinding("s").getValue());
+			String prop = NTriplesUtil.toNTriplesString(bs.getBinding("p").getValue());
+			String obj = NTriplesUtil.toNTriplesString(bs.getBinding("o").getValue());
+
 			ObjectNode graphModelNode = jsonFactory.objectNode();
 			graphModelNode.set("classAxiom", jsonFactory.booleanNode(true));
 			graphModelNode.set("rangeDatatype", jsonFactory.booleanNode(false));
@@ -391,10 +391,11 @@ public class Graph extends STServiceAdapter {
 		TupleQueryResult results = tupleQuery.evaluate();
 		while (results.hasNext()) {
 			BindingSet bs = results.next();
-			String subj = bs.getBinding("s").getValue().stringValue();
-			String prop = bs.getBinding("p").getValue().stringValue();
-			String obj = bs.getBinding("o").getValue().stringValue();
-			
+
+			String subj = NTriplesUtil.toNTriplesString(bs.getBinding("s").getValue());
+			String prop = NTriplesUtil.toNTriplesString(bs.getBinding("p").getValue());
+			String obj = NTriplesUtil.toNTriplesString(bs.getBinding("o").getValue());
+
 			ObjectNode graphModelNode = jsonFactory.objectNode();
 			graphModelNode.set("source", jsonFactory.textNode(subj));
 			graphModelNode.set("link", jsonFactory.textNode(prop));
