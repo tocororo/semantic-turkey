@@ -156,13 +156,14 @@ public class SKOS extends STServiceAdapter {
 			}
 			query +=" }" +
 					"\n?resource rdf:type ?conceptSubClass . " +
-					filterAndOrScheme(schemeFilter, schemes, "?resource", "?scheme", "?subPropInScheme1", false)+
+					filterAndOrScheme(schemeFilter, schemes, "?resource", "?scheme", "?subPropInScheme1",
+							"?subPropTopConcept1", false)+
 					//prepareHierarchicalPartForQueryPart1(broaderProp , narrowerProp, "?aNarrowerConcept",
 					"\nOPTIONAL { " +
 					"\nBIND( EXISTS { " +
 					combinePathWithVarOrIri("?aNarrowerConcept", "?resource", broaderNarrowerPath, false)+"\n" +
 					filterAndOrScheme(schemeFilter, schemes, " ?aNarrowerConcept", "?scheme2",
-									"?subPropInScheme2", true) +
+									"?subPropInScheme2", "?subPropTopConcept2", true) +
 							"} as ?attr_more )" +
 							"\n}" +
 					//adding the nature in the query (will be replaced by the appropriate processor),
@@ -261,7 +262,8 @@ public class SKOS extends STServiceAdapter {
 					"SELECT (count(DISTINCT ?resource) as ?count) WHERE {		\n" +
 					"	?conceptSubClass rdfs:subClassOf* skos:Concept .		\n" +
 					"	?resource rdf:type ?conceptSubClass .					\n" +
-					filterAndOrScheme(schemeFilter, schemes, "?resource", "?scheme", "?subPropInScheme1", false) +
+					filterAndOrScheme(schemeFilter, schemes, "?resource", "?scheme", "?subPropInScheme1",
+							"?subPropTopConcept1",false) +
 					"}";
 			// @formatter:on
 		} else {
@@ -331,7 +333,7 @@ public class SKOS extends STServiceAdapter {
 					"\n?resource rdf:type ?conceptSubClass ." +
 					"\n?conceptSubClass rdfs:subClassOf* skos:Concept ." +
 					filterAndOrScheme(schemeFilter, schemes, "?resource", "?scheme",
-							"?subPropInScheme1", true) +
+							"?subPropInScheme1", "?subPropTopConcept1",true) +
 					"\nOPTIONAL {" +
 					"\nBIND( EXISTS { " +
 					//"?aNarrowerConcept skos:broader|^skos:narrower ?resource .    \n" + OLD
@@ -339,7 +341,7 @@ public class SKOS extends STServiceAdapter {
 					//		"?resource", true, includeSubProperties) + 										 "\n"+
 					combinePathWithVarOrIri("?aNarrowerConcept", "?resource", broaderNarrowerPath, false)+
 					filterAndOrScheme(schemeFilter, schemes, "?aNarrowerConcept", "?scheme2",
-							"?subPropInScheme2", true )+
+							"?subPropInScheme2", "?subPropTopConcept2",true )+
 					"} as ?attr_more ) " +
 					"\n} " +
 					//adding the nature in the query (will be replaced by the appropriate processor),
@@ -445,7 +447,7 @@ public class SKOS extends STServiceAdapter {
 					"\n?resource rdf:type ?conceptSubClass ." +
 					combinePathWithVarOrIri("?concept", "?resource", broaderNarrowerPath, false)+
 					filterAndOrScheme(schemeFilter, schemes, "?resource", "?scheme",
-							"?subPropInScheme", true ) +
+							"?subPropInScheme", "?subPropTopConcept",true ) +
 					generateNatureSPARQLWherePart("?resource") +
 					"\n}" +
 					"\nGROUP BY ?resource ?attr_more";
@@ -1111,12 +1113,17 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'C')")
 	public void addTopConcept(@Modified(role = RDFResourceRole.concept) IRI concept,
-			@LocallyDefined @SchemeAssignment IRI scheme) {
+			@LocallyDefined @SchemeAssignment IRI scheme, @Optional @LocallyDefined IRI topConceptProp) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 
+		//check if the client passed a topConceptProp , otherwise, set it as skos:topConceptOf
+		if (topConceptProp == null) {
+			topConceptProp = org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF;
+		}
+
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
-				org.eclipse.rdf4j.model.vocabulary.SKOS.TOP_CONCEPT_OF, scheme));
+				topConceptProp, scheme));
 		modelAdditions.add(repoConnection.getValueFactory().createStatement(concept,
 				org.eclipse.rdf4j.model.vocabulary.SKOS.IN_SCHEME, scheme));
 		
@@ -2568,12 +2575,14 @@ public class SKOS extends STServiceAdapter {
 	}
 
 	private String filterAndOrScheme(String schemeFilter, List<IRI> schemes, String resourceVar, String schemeVar,
-			String propForInScheme, boolean forInScheme){
+			String propForInScheme, String propForTopConcept, boolean forInScheme){
+		String propForTopConceptInv = propForTopConcept+"_inv";
 		if(schemes==null || schemes.size()==0){
 			//the list of scheme is either null or empty, so just return an empty string
 			return "";
 		}
 		String queryPart = "";
+		// @formatter:off
 		if(schemeFilter.equalsIgnoreCase("and")){
 			if(forInScheme){
 				queryPart+= "\n"+propForInScheme+" rdfs:subPropertyOf* skos:inScheme .";
@@ -2581,29 +2590,47 @@ public class SKOS extends STServiceAdapter {
 					queryPart+="\n"+resourceVar+" "+propForInScheme+" "+NTriplesUtil.toNTriplesString(scheme)+" .";
 				}
 			} else{
+
+				queryPart += "\n"+propForTopConcept+"  rdfs:subPropertyOf* skos:topConceptOf ."+
+						"\n "+propForTopConceptInv+" rdfs:subPropertyOf* skos:hasTopConcept .";
 				for(IRI scheme : schemes) {
-					queryPart += "\n" + resourceVar + " skos:topConceptOf|^skos:hasTopConcept "
-							+ NTriplesUtil.toNTriplesString(scheme) + " .  ";
+					queryPart +=
+							"\n{{" + resourceVar + " " + propForTopConcept + " " + NTriplesUtil.toNTriplesString(scheme) + " .  }" +
+							"\nUNION"+
+							"\n{" + NTriplesUtil.toNTriplesString(scheme) + " " + propForTopConceptInv + " " + resourceVar + " .  }}";
+					//OLD
+					//queryPart += "\n" + resourceVar + " skos:topConceptOf|^skos:hasTopConcept "
+					//		+ NTriplesUtil.toNTriplesString(scheme) + " .  ";
 				}
 			}
 		} else {
 			if(forInScheme){
-				queryPart+= "\n"+propForInScheme+" rdfs:subPropertyOf* skos:inScheme ."+
-						"\n"+resourceVar+" "+propForInScheme+" "+schemeVar+" .";
-			} else {
-				queryPart+="\n"+resourceVar+" skos:topConceptOf|^skos:hasTopConcept ?scheme .  ";
-			}
-			queryPart+= "\nFILTER (";
-			boolean first=true;
-			for(IRI scheme : schemes){
-				if(!first){
-					queryPart+= " || ";
+				queryPart+= "\n"+propForInScheme+" rdfs:subPropertyOf* skos:inScheme .";
+				boolean first = true;
+				for (IRI scheme : schemes) {
+					if (!first) {
+						queryPart+= "\nUNION";
+					}
+					first = false;
+					queryPart+="\n{"+resourceVar+" "+propForInScheme+"  "+NTriplesUtil.toNTriplesString(scheme)+"}";
 				}
-				first=false;
-				queryPart+=schemeVar+"="+NTriplesUtil.toNTriplesString(scheme);
+			} else {
+				queryPart += "\n"+propForTopConcept+"  rdfs:subPropertyOf* skos:topConceptOf ."+
+						"\n "+propForTopConceptInv+" rdfs:subPropertyOf* skos:hasTopConcept .";
+				boolean first = true;
+				for (IRI scheme : schemes) {
+					if (!first) {
+						queryPart+= "\nUNION";
+					}
+					first = false;
+					queryPart +=
+							"\n{" + resourceVar + " " + propForTopConcept + " " + NTriplesUtil.toNTriplesString(scheme) + " .  }" +
+							"\nUNION"+
+							"\n{" + NTriplesUtil.toNTriplesString(scheme) + " " + propForTopConceptInv + " " + resourceVar + " .  }";
+				}
 			}
-			queryPart += ") ";
 		}
+		// @formatter:on
 		return queryPart;
 	}
 

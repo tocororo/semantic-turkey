@@ -1,5 +1,6 @@
 version 10.1.2
 date: dd/mm/yyyy
+  * Better performances in getTopConcepts and getNarrowerConcepts, thanks to Saku Seppälä for the contribution!
   * Added localization for Spanish, thanks to Juan Antonio Pastor Sánchez for the contribution!
   * updated the search functionalities for GraphDB v9.9.0+
   * no longer possible to use a version of GraphDB minor than 9.7.0
