@@ -6,6 +6,7 @@ date: dd/mm/yyyy
   * no longer possible to use a version of GraphDB minor than 9.7.0
   * fixed a bug in the search on a GraphDB containing an Apostrophe or a \
   * fixed a bug in GlobalSearch about concurrent write access to the indexes
+  * added the use of the annotation SubPropertyOf in the services SKOS/addBroaderConcept and SKOS/addTopConcept
   * updated dependency on Sheet2RDF 4.2.3
   * updated dependency on Coda 1.7.4
 
