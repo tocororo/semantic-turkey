@@ -921,7 +921,8 @@ public class SKOS extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, taxonomy)', 'C')")
 	public void addBroaderConcept(
 			@LocallyDefined @Modified(role = RDFResourceRole.concept) IRI concept,
-			@LocallyDefined IRI broaderConcept, @Optional @LocallyDefined IRI broaderProp) {
+			@LocallyDefined IRI broaderConcept,
+			@Optional @LocallyDefined @SubPropertyOf(superPropertyIRI = "http://www.w3.org/2004/02/skos/core#broader") IRI broaderProp) {
 
 		//check if the client passed a broaderProp , otherwise, set it as skos:broader
 		if (broaderProp == null) {
@@ -1113,7 +1114,8 @@ public class SKOS extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(concept, schemes)', 'C')")
 	public void addTopConcept(@Modified(role = RDFResourceRole.concept) IRI concept,
-			@LocallyDefined @SchemeAssignment IRI scheme, @Optional @LocallyDefined IRI topConceptProp) {
+			@LocallyDefined @SchemeAssignment IRI scheme,
+		  	@Optional @LocallyDefined @SubPropertyOf(superPropertyIRI = "http://www.w3.org/2004/02/skos/core#topConceptOf") IRI topConceptProp) {
 		RepositoryConnection repoConnection = getManagedConnection();
 		Model modelAdditions = new LinkedHashModel();
 
