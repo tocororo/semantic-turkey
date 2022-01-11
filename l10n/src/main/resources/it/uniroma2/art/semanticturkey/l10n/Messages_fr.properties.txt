@@ -30,8 +30,8 @@ it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSe
 it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSettings.htmlWarning = Les informations sont stockées sur le serveur sans chiffrement. Soyez conscient du fait que l'administrateur système pourrait y avoir accès. Pour générer le jeton, référez-vous à cette <a target="_blank" href="https://id.atlassian.com/manage/api-tokens">page</a>
 it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSettings.username.description = Nom d'utilisateur
 it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSettings.username.displayName = Nom d'utilisateur
-it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSettings.password.description = Jeton
-it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSettings.password.displayName = Jeton
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSettings.password.description = Jeton ou mot de passe, selon la configuration JIRA 
+it.uniroma2.art.semanticturkey.extension.impl.collaboration.jira.JiraBackendPUSettings.password.displayName = Jeton/Password
 
 it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampIssueCreationForm.shortName = Réglages Freedcamp pour la création d'une nouvelle tâche
 it.uniroma2.art.semanticturkey.extension.impl.collaboration.freedcamp.FreedcampIssueCreationForm.title.description = Titre de la nouvelle tâche
