@@ -3,13 +3,11 @@ package it.uniroma2.art.semanticturkey.security.impl;
 import it.uniroma2.art.semanticturkey.security.STUserDetailsService;
 import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UserException;
-import it.uniroma2.art.semanticturkey.user.UserNotFoundException;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
@@ -35,6 +33,7 @@ public class SAMLUserDetails implements SAMLUserDetailsService {
             loggedUser = UsersManager.getUser(userEmail);
             //UsersManager.getUser() didn't thrown exception => user with the email address exists, so set it in the security context
             UserDetails userDetails = stUserDetailsService.loadUserByUsername(loggedUser.getEmail());
+            //manually log into the Security Context the SAML authenticated user
             Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(auth);
         } catch (UserException u) {
