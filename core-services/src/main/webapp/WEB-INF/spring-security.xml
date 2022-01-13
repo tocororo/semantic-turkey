@@ -102,7 +102,7 @@
 
 
         <session-management>
-            <concurrency-control session-registry-alias="sessionRegistry" max-sessions="10"/>
+            <concurrency-control session-registry-alias="sessionRegistry" max-sessions="99999"/>
         </session-management>
 
     </http>
