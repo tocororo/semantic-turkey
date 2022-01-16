@@ -17,7 +17,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.apache.sshd</groupId>
-			<artifactId>sshd-core</artifactId>
+			<artifactId>sshd-sftp</artifactId>
 			<version>${sshd.version}</version>
 		</dependency>
 	</dependencies>

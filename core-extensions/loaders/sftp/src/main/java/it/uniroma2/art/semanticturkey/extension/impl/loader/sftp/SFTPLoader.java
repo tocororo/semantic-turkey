@@ -16,6 +16,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
+import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.digest.Digest;
 
@@ -61,7 +62,7 @@ public class SFTPLoader implements StreamTargetingLoader {
 				}
 				session.auth().verify(conf.timeout);
 
-				SftpClient sftpClient = session.getSftpClientFactory().createSftpClient(session, null);
+				SftpClient sftpClient = SftpClientFactory.instance().createSftpClient(session);
 
 				try (BufferedInputStream is = new BufferedInputStream(
 						sftpClient.read(conf.sourcePath, OpenMode.Read))) {

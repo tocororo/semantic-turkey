@@ -10,6 +10,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
+import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.digest.Digest;
 
@@ -53,7 +54,7 @@ public class SFTPDeployer implements StreamSourcedDeployer {
 				}
 				session.auth().verify(conf.timeout);
 
-				SftpClient sftpClient = session.getSftpClientFactory().createSftpClient(session, null);
+				SftpClient sftpClient = SftpClientFactory.instance().createSftpClient(session);
 
 				try (BufferedOutputStream os = new BufferedOutputStream(
 						sftpClient.write(conf.destinationPath, OpenMode.Write, OpenMode.Create))) {
