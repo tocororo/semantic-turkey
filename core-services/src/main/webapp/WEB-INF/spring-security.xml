@@ -102,7 +102,7 @@
 
 
         <session-management>
-            <concurrency-control session-registry-alias="sessionRegistry" max-sessions="10"/>
+            <concurrency-control session-registry-alias="sessionRegistry" max-sessions="99999"/>
         </session-management>
 
     </http>
@@ -310,7 +310,8 @@
     </beans:bean>
 
     <!-- SAML Authentication Provider responsible for validating of received SAML messages -->
-    <beans:bean id="samlAuthenticationProvider" class="org.springframework.security.saml.SAMLAuthenticationProvider">
+    <!-- used a custom one (instead of the standard SAMLAuthenticationProvider) in order to ignore the expiration date -->
+    <beans:bean id="samlAuthenticationProvider" class="it.uniroma2.art.semanticturkey.security.impl.STSAMLAuthenticationProvider">
         <!-- OPTIONAL property: can be used to store/load user data after login -->
         <beans:property name="userDetails" ref="samlUserDetails"/>
     </beans:bean>
