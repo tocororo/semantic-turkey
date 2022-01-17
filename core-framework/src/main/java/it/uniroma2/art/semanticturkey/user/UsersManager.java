@@ -230,8 +230,11 @@ public class UsersManager {
      * @param user
      * @throws IOException
      */
-    public static void deleteUser(STUser user) throws IOException, InterruptedException {
+    public static void deleteUser(STUser user) throws IOException, InterruptedException, STPropertyUpdateException, STPropertyAccessException {
         userList.remove(user);
+        if (user.isAdmin()) { //if deleting user was an admin, remove it from admin list
+            removeAdmin(user);
+        }
         // delete its folder from server data
         FileUtils.deleteDirectory(getUserFolder(user));
         // delete the bindings
@@ -632,7 +635,7 @@ public class UsersManager {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static void clearExpiredUnverifiedUser() throws IOException, InterruptedException {
+    public static void clearExpiredUnverifiedUser() throws IOException, InterruptedException, STPropertyUpdateException, STPropertyAccessException {
         long nowMs = new Date().getTime();
         Collection<STUser> unverifiedUsers = listUnverifiedUsers();
         for (STUser user : unverifiedUsers) {

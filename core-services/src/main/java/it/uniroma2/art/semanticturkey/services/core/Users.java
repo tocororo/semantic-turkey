@@ -37,6 +37,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -208,7 +209,7 @@ public class Users extends STServiceAdapter {
     public void createUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
                            @Optional String address, @Optional String affiliation, @Optional String url, @Optional String avatarUrl,
                            @Optional String phone, @Optional Collection<String> languageProficiencies, @Optional Map<IRI, String> customProperties)
-            throws ProjectAccessException, UserException, IOException, InterruptedException {
+            throws ProjectAccessException, UserException, IOException, InterruptedException, STPropertyUpdateException, STPropertyAccessException {
         STUser user;
         if (iri != null) {
             user = new STUser(iri, email, password, givenName, familyName);
@@ -239,6 +240,7 @@ public class Users extends STServiceAdapter {
             }
         }
         UsersManager.clearExpiredUnverifiedUser();
+        user.setStatus(UserStatus.ACTIVE);
         UsersManager.registerUser(user);
     }
 
@@ -361,7 +363,7 @@ public class Users extends STServiceAdapter {
 
     @STServiceOperation(method = RequestMethod.POST)
     public void verifyUserEmail(String email, String token, String vbHostAddress)
-            throws UserException, IOException, MessagingException, STPropertyAccessException, InterruptedException {
+            throws UserException, IOException, MessagingException, STPropertyAccessException, InterruptedException, STPropertyUpdateException {
         UsersManager.clearExpiredUnverifiedUser();
         UsersManager.verifyUser(email, token);
         STUser user = UsersManager.getUser(email);
