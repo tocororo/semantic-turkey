@@ -1,4 +1,4 @@
-version 10.1.2
+version 10.2
 date: dd/mm/yyyy
   * Better performances in getTopConcepts and getNarrowerConcepts, thanks to Saku Seppälä for the contribution!
   * Added localization for Spanish, thanks to Juan Antonio Pastor Sánchez for the contribution!
