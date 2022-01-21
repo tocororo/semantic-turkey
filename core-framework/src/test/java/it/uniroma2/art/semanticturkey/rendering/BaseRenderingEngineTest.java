@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
+import it.uniroma2.art.semanticturkey.exceptions.SearchStatusException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -294,6 +295,11 @@ public class BaseRenderingEngineTest {
 										Map<String, String> prefixToNamespaceMap)
 										throws IllegalStateException {
 									throw new UnsupportedOperationException("Not implemented by the stub");
+								}
+
+								@Override
+								public boolean isSearchPossible(RepositoryConnection connection, boolean throwExceptionIfNotSearchNotPossible) throws SearchStatusException {
+									return true;
 								}
 
 							};

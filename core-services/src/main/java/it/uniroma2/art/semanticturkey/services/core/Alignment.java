@@ -14,6 +14,7 @@ import it.uniroma2.art.semanticturkey.exceptions.DatasetMetadataException;
 import it.uniroma2.art.semanticturkey.exceptions.MissingDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.exceptions.NoSPARQLEndpointMetadataException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInconsistentException;
+import it.uniroma2.art.semanticturkey.exceptions.SearchStatusException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy;
 import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
@@ -180,7 +181,8 @@ public class Alignment extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(resource, alignment)', 'R')")
 	public Collection<AnnotatedValue<Resource>> searchResources(IRI inputRes,
 			ResourcePosition resourcePosition, String[] rolesArray, @Optional List<SearchMode> searchModeList,
-			Map<String, IRI> langToLexModel) throws IllegalStateException, STPropertyAccessException, DatasetMetadataException {
+			Map<String, IRI> langToLexModel) throws IllegalStateException, STPropertyAccessException, DatasetMetadataException,
+			SearchStatusException {
 
 		SearchStrategy regexSearchStrategy = instantiateSearchStrategy(SearchStrategies.REGEX);
 

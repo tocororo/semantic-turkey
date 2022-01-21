@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import it.uniroma2.art.semanticturkey.exceptions.SearchStatusException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
@@ -366,7 +367,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 		return query;
 	}
-	
+
 	private String prepareQueryforResourceUsingSearchString(String searchString, SearchMode searchMode,
 			boolean useLexicalizations,
 			boolean useLocalName, boolean useURI, boolean useNotes, List<String> langs,
@@ -521,6 +522,12 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 		}
 		
 		return query;
+	}
+
+	@Override
+	public boolean isSearchPossible(RepositoryConnection connection, boolean throwExceptionIfNotSearchNotPossible)
+			throws SearchStatusException {
+		return true;
 	}
 
 }

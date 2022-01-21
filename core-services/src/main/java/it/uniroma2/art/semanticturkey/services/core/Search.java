@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import it.uniroma2.art.semanticturkey.exceptions.SearchStatusException;
 import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import org.eclipse.rdf4j.model.IRI;
@@ -193,7 +194,7 @@ public class Search extends STServiceAdapter {
 		for (Namespace ns : Arrays.asList(SKOS.NS, org.eclipse.rdf4j.model.vocabulary.SKOSXL.NS, RDF.NS,
 				RDFS.NS, OWL.NS)) {
 			if (queryProlog.indexOf(ns.getPrefix() + ":") == -1) {
-				newQueryPrologBuilder.append("prefix " + ns.getPrefix() + ":");
+				newQueryPrologBuilder.append("prefix ").append(ns.getPrefix()).append(":");
 				RenderUtils.toSPARQL(SimpleValueFactory.getInstance().createIRI(ns.getName()),
 						newQueryPrologBuilder);
 				newQueryPrologBuilder.append("\n");
@@ -279,7 +280,7 @@ public class Search extends STServiceAdapter {
 			@Optional(defaultValue="false") boolean searchInSKOSLabel,
 			@Optional(defaultValue="false") boolean searchInSKOSXLLabel,
 			@Optional(defaultValue="false") boolean searchInOntolex) 
-					throws IllegalStateException, STPropertyAccessException {
+					throws IllegalStateException, STPropertyAccessException, SearchStatusException {
 		IRI lexModel = getProject().getLexicalizationModel();
 		if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
 			searchInRDFSLabel = true;
@@ -358,7 +359,7 @@ public class Search extends STServiceAdapter {
 					@Optional List<String> langs,
 					@Optional(defaultValue = "false") boolean includeLocales,
 					@Optional List<IRI> predList,
-					@Optional (defaultValue = "30") int maxNumOfResPerQuery) throws STPropertyAccessException {
+					@Optional (defaultValue = "30") int maxNumOfResPerQuery) throws STPropertyAccessException, SearchStatusException {
 
 		// do a search on the ct_project to get the list of annotated value
 		IRI lexModel = getProject().getLexicalizationModel();
@@ -525,7 +526,7 @@ public class Search extends STServiceAdapter {
 			@Optional(defaultValue = "false") boolean searchInSKOSLabel,
 			@Optional(defaultValue = "false") boolean searchInSKOSXLLabel,
 			@Optional(defaultValue = "false") boolean searchInOntolex)
-			throws IllegalStateException, STPropertyAccessException {
+			throws IllegalStateException, STPropertyAccessException, SearchStatusException {
 		IRI lexModel = getProject().getLexicalizationModel();
 		if(lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
 			searchInRDFSLabel = true;
@@ -582,7 +583,7 @@ public class Search extends STServiceAdapter {
 			@Optional(defaultValue="or") String schemeFilter,
 			@Optional List<String> langs, @Optional IRI cls,
 			@Optional(defaultValue = "false") boolean includeLocales)
-			throws IllegalStateException, STPropertyAccessException {
+			throws IllegalStateException, STPropertyAccessException, SearchStatusException {
 
 		return instantiateSearchStrategy().searchStringList(stServiceContext, searchString, rolesArray,
 				useLocalName, searchMode, schemes, schemeFilter, langs, cls, includeLocales);
@@ -611,7 +612,7 @@ public class Search extends STServiceAdapter {
 	public Collection<String> searchURIList(String searchString, @Optional String[] rolesArray,
 			SearchMode searchMode, @Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter, @Optional IRI cls,
 			@Optional(defaultValue="0") @Min(0) int maxNumResults)
-			throws IllegalStateException, STPropertyAccessException {
+			throws IllegalStateException, STPropertyAccessException, SearchStatusException {
 
 		//prepare the namespace map
 		Map <String, String> prefixToNamespaceMap = getProject().getOntologyManager().getNSPrefixMappings(false);
@@ -647,7 +648,7 @@ public class Search extends STServiceAdapter {
 			boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Optional(defaultValue = "false") boolean useNotes, @Optional List<String> langs,
 			@Optional(defaultValue = "false") boolean includeLocales)
-			throws IllegalStateException, STPropertyAccessException {
+			throws IllegalStateException, STPropertyAccessException, SearchStatusException {
 
 		//prepare the namespace map
 		Map <String, String> prefixToNamespaceMap = getProject().getOntologyManager().getNSPrefixMappings(false);
@@ -708,7 +709,7 @@ public class Search extends STServiceAdapter {
 			@Optional(defaultValue = "false") boolean searchInSKOSLabel,
 			@Optional(defaultValue = "false") boolean searchInSKOSXLLabel,
 			@Optional(defaultValue = "false") boolean searchInOntolex)
-			throws IllegalStateException, STPropertyAccessException {
+			throws IllegalStateException, STPropertyAccessException, SearchStatusException {
 
 		//prepare the namespace map
 		Map <String, String> prefixToNamespaceMap = getProject().getOntologyManager().getNSPrefixMappings(false);

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import it.uniroma2.art.semanticturkey.exceptions.SearchStatusException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -46,16 +47,16 @@ public interface SearchStrategy extends Extension {
 			boolean useLexicalizations, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode,
 			@Nullable List<IRI> schemes, String schemeFilter, @Nullable List<String> langs, boolean includeLocales, IRI lexModel,
 			boolean searchInRDFSLabel, boolean searchInSKOSLabel, boolean searchInSKOSXLLabel,
-			boolean searchInOntolex, Map<String, String> prefixToNamespaceMap) throws IllegalStateException, STPropertyAccessException;
+			boolean searchInOntolex, Map<String, String> prefixToNamespaceMap) throws IllegalStateException, STPropertyAccessException, SearchStatusException;
 
 	Collection<String> searchStringList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
 			@Nullable List<IRI> schemes, String schemeFilter, @Nullable List<String> langs, @Nullable IRI cls,
-			boolean includeLocales) throws IllegalStateException, STPropertyAccessException;
+			boolean includeLocales) throws IllegalStateException, STPropertyAccessException, SearchStatusException;
 
 	Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, SearchMode searchMode, @Nullable List<IRI> schemes,
-			String schemeFilter, @Nullable IRI cls, Map<String, String> prefixToNamespaceMap, int maxNumResults) throws IllegalStateException, STPropertyAccessException;
+			String schemeFilter, @Nullable IRI cls, Map<String, String> prefixToNamespaceMap, int maxNumResults) throws IllegalStateException, STPropertyAccessException, SearchStatusException;
 
 	String searchInstancesOfClass(STServiceContext stServiceContext, List<List<IRI>> clsListList,
 			String searchString, boolean  useLexicalizations, boolean useLocalName, boolean useURI, boolean useNotes,
@@ -66,7 +67,7 @@ public interface SearchStrategy extends Extension {
 			@Nullable List<Pair<IRI, List<Value>>> outgoingLinks,
 			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
 			@JsonSerialized List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy,
-			String baseURI, Map<String, String> prefixToNamespaceMap) throws IllegalStateException, STPropertyAccessException;
+			String baseURI, Map<String, String> prefixToNamespaceMap) throws IllegalStateException, STPropertyAccessException, SearchStatusException;
 
 	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode,
 			String indexToUse, List<String> langs, boolean includeLocales, boolean forLocalName);
@@ -76,8 +77,12 @@ public interface SearchStrategy extends Extension {
 			boolean useURI, boolean useNotes, SearchMode searchMode, List<IRI> lexicons, List<String> langs,
 			boolean includeLocales, IRI iri, boolean searchInRDFSLabel, boolean searchInSKOSLabel,
 			boolean searchInSKOSXLLabel, boolean searchInOntolex, Map<String, String> prefixToNamespaceMap)
-			throws IllegalStateException, STPropertyAccessException;
-	
+			throws IllegalStateException, STPropertyAccessException, SearchStatusException;
+
+	boolean isSearchPossible(RepositoryConnection connection, boolean throwExceptionIfNotSearchNotPossible)
+			throws SearchStatusException;
+
+
 	//common methods used by its implementations
 	public default String getAllPathRestToLexicalEntry() {
 		//construct the complex path from a resource to a LexicalEntry

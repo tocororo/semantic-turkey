@@ -7,6 +7,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import it.uniroma2.art.semanticturkey.exceptions.SearchStatusException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
@@ -41,7 +42,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	protected static Logger logger = LoggerFactory.getLogger(GraphDBSearchStrategy.class);
 
 
-	// OLD "Lucene full-text search" https://graphdb.ontotext.com/documentation/9.6/standard/full-text-search.html
+	// "Lucene full-text search" https://graphdb.ontotext.com/documentation/9.6/standard/full-text-search.html
+	// to work it needs that in GraphDB there is the Lucene FTS Plugin : https://github.com/Ontotext-AD/graphdb-lucene-fts-plugin
 	//private final static String INDEX_NAME="vocbenchIndex";
 	final static private String LUCENEIMPORT = "http://www.ontotext.com/owlim/lucene#";
 	final static public String LUCENEINDEX_LITERAL = "http://www.ontotext.com/owlim/lucene#vocbenchLabel";
@@ -64,6 +66,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 	@Override
 	public void initialize(RepositoryConnection connection, boolean forceCreation) throws Exception {
+
+		isSearchPossible(connection, true);
 
 		// the forceCreation is used only when Lucene Connector part is used
 
@@ -256,6 +260,8 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	@Override
 	public void update(RepositoryConnection connection) throws Exception {
 
+		isSearchPossible(connection, true);
+
 		// it does not work with resources already present in the indexes (it does not consider the new label)
 		// this is not a problem, since now the indexes (both of them) use molecules of size 0
 
@@ -289,12 +295,14 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			SearchMode searchMode, @Optional List<IRI> schemes, String schemeFilter, @Optional List<String> langs,
 			boolean includeLocales, IRI lexModel, boolean searchInRDFSLabel,
 			boolean searchInSKOSLabel, boolean searchInSKOSXLLabel, boolean searchInOntolex, Map<String, String> prefixToNamespaceMap)
-					throws IllegalStateException, STPropertyAccessException {
+			throws IllegalStateException, STPropertyAccessException, SearchStatusException {
 
 		logger.debug("searchResource in GraphDBSearchStrategy, searchString="+searchString +", "
 				+ "useLexicalizations="+useLexicalizations+", useNotes="+useNotes+", "
 				+ "useURI="+useURI+", useLocalName="+useLocalName);
-		
+
+		isSearchPossible(getThreadBoundTransaction(stServiceContext), true);
+
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
@@ -333,11 +341,13 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			List<IRI> lexicons, List<String> langs, boolean includeLocales, IRI lexModel,
 			boolean searchInRDFSLabel, boolean searchInSKOSLabel, boolean searchInSKOSXLLabel,
 			boolean searchInOntolex, Map<String, String> prefixToNamespaceMap)
-					throws IllegalStateException, STPropertyAccessException {
+			throws IllegalStateException, STPropertyAccessException, SearchStatusException {
 		
 		logger.debug("searchLexicalEntry in GraphDBSearchStrategy, searchString="+searchString+", "
 				+ "useURI="+useURI+", useLocalName="+useLocalName);
-		
+
+		isSearchPossible(getThreadBoundTransaction(stServiceContext), true);
+
 		//since we are interested just in the LexicalEntry, add this type automatically
 		String[] rolesArray = {RDFResourceRole.ontolexLexicalEntry.name()};
 		
@@ -380,7 +390,10 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			@Optional String[] rolesArray, boolean useLocalName, SearchMode searchMode,
 			@Optional List<IRI> schemes, @Optional(defaultValue="or") String schemeFilter,
 			@Optional List<String> langs, @Optional IRI cls, boolean includeLocales)
-					throws IllegalStateException, STPropertyAccessException {
+			throws IllegalStateException, STPropertyAccessException, SearchStatusException {
+
+		isSearchPossible(getThreadBoundTransaction(stServiceContext), true);
+
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
@@ -457,7 +470,11 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	public Collection<String> searchURIList(STServiceContext stServiceContext, String searchString,
 			@Optional String[] rolesArray, SearchMode searchMode,
 			@Optional List<IRI> schemes, @Optional(defaultValue = "or") String schemeFilter,
-			@Optional IRI cls, Map<String, String> prefixToNamespaceMap, int maxNumResults) throws IllegalStateException, STPropertyAccessException {
+			@Optional IRI cls, Map<String, String> prefixToNamespaceMap, int maxNumResults) throws IllegalStateException,
+			STPropertyAccessException, SearchStatusException {
+
+		isSearchPossible(getThreadBoundTransaction(stServiceContext), true);
+
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
 
@@ -503,7 +520,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
 			@Nullable List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy, String baseURI,
 			Map<String, String> prefixToNamespaceMap)
-					throws IllegalStateException, STPropertyAccessException {
+			throws IllegalStateException, STPropertyAccessException, SearchStatusException {
+
+		isSearchPossible(getThreadBoundTransaction(stServiceContext), true);
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
@@ -908,5 +927,38 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		return query;
 	}
 
-	
+	@Override
+	public boolean isSearchPossible(RepositoryConnection connection, boolean throwExceptionIfNotSearchNotPossible)
+			throws SearchStatusException {
+
+		//check if this check has alredy been done before, if so, behave as before, if not, do a SPARQL query
+		//TODO
+
+		// do a sparql query to get the plugin installed in GraphDB and check if there is the right one ("Lucene", not
+		// "lucene-connector")
+
+		//@formatter:off
+		String query = "select ?s {" +
+				"\n?s <http://www.ontotext.com/owlim/system#listplugins> ?p" +
+				"\n} ";
+		//@formatter:on
+		logger.debug("query = " + query);
+		TupleQuery tupleQuery = connection.prepareTupleQuery(query);
+		tupleQuery.setIncludeInferred(false);
+		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+		while (tupleQueryResult.hasNext()) {
+			Value subjValue = tupleQueryResult.next().getValue("s");
+			String subjValueString = subjValue.stringValue().toLowerCase();
+			if (subjValueString.contains("lucene") && !subjValueString.contains("connector")) {
+				// it has the Lucene full-text search plugin, so return true
+				return true;
+			}
+		}
+		// the Lucene full-text search has not been found
+		if (throwExceptionIfNotSearchNotPossible) {
+			throw new SearchStatusException(GraphDBSearchStrategy.class.getName() + ".message");
+		}
+		// since throwExceptionIfNotSearchNotPossible is false, just return false;
+		return false;
+	}
 }

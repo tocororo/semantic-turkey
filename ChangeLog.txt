@@ -2,7 +2,7 @@ version 10.2
 date: dd/mm/yyyy
   * Better performances in getTopConcepts and getNarrowerConcepts, thanks to Saku Seppälä for the contribution!
   * Added localization for Spanish, thanks to Juan Antonio Pastor Sánchez for the contribution!
-  * to continue to use the search using GraphDB v9.9.0+ it is necessary to add the lucene-fts-plugin folder and wars in the plugin folder in GraphDB
+  * to continue to use the search using GraphDB v9.9.0+ it is necessary to add the lucene-fts-plugin folder and wars in the plugin folder in GraphDB (a check has been added in ST to check for required plugin)
   * fixed a bug in the search on a GraphDB containing an Apostrophe or a \
   * fixed a bug in GlobalSearch about concurrent write access to the indexes
   * fixed a bug in the service that lists EDOAL correspondences
