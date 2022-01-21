@@ -5,6 +5,7 @@ date: dd/mm/yyyy
   * to continue to use the search using GraphDB v9.9.0+ it is necessary to add the lucene-fts-plugin folder and wars in the plugin folder in GraphDB
   * fixed a bug in the search on a GraphDB containing an Apostrophe or a \
   * fixed a bug in GlobalSearch about concurrent write access to the indexes
+  * fixed a bug in the service that lists EDOAL correspondences
   * added the use of the annotation SubPropertyOf in the services SKOS/addBroaderConcept and SKOS/addTopConcept
   * updated Karaf to version 4.2.15, which uses Pax Logging 1.11.13 upgrading to log4j 2.17.1 (and slf4j 1.7.32),
     fixing log4j CVE-2021-44228, CVE-2021-45105, CVE-2021-44832 and logback CVE-2021-42550 issues

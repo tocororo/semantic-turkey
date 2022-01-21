@@ -485,10 +485,10 @@ public class EDOAL extends STServiceAdapter {
 			"    }\n" + 
 			"    ?al align:map ?x.\n" +
 			"    FILTER(sameTerm(?al, ?alignment))\n" +
-			"    service " + (internalFederation ? "<repository:" + Protocol.getRepositoryID(leftRepoEndpoint.stringValue()) + ">" : NTriplesUtil.toNTriplesString(leftRepoEndpoint)) + " {\n" + 
-			"      optional {\n" + 
+			"    	optional {\n" +
+			"    		service " + (internalFederation ? "<repository:" + Protocol.getRepositoryID(leftRepoEndpoint.stringValue()) + ">" : NTriplesUtil.toNTriplesString(leftRepoEndpoint)) + " {\n" +
 			computeIndexingGraphPattern(leftDataset) +
-			"      }\n" + 
+			"	    }\n" +
 			"    }\n" + 
 			"}\n" + 
 			"group by ?x\n" + 
