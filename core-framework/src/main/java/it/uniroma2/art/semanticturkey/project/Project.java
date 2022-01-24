@@ -619,7 +619,7 @@ public abstract class Project extends AbstractProject {
                         STRepositoryInfoUtils
                                 .getSearchStrategy(getRepositoryManager().getSTRepositoryInfo("core")));
                 ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (conn2) -> {
-                    searchStrategy.initialize(conn, true);
+                    searchStrategy.initialize(getName(), conn, true);
                 });
                 conn.commit();
             } else {
@@ -628,7 +628,7 @@ public abstract class Project extends AbstractProject {
                         STRepositoryInfoUtils
                                 .getSearchStrategy(getRepositoryManager().getSTRepositoryInfo("core")));
                 ValidationUtilities.executeWithoutValidation(isValidationEnabled(), conn, (conn2) -> {
-                    searchStrategy.initialize(conn, false);
+                    searchStrategy.initialize(getName(), conn, false);
                 });
                 conn.commit();
             }

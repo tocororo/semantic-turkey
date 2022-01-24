@@ -8,6 +8,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import it.uniroma2.art.semanticturkey.exceptions.SearchStatusException;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
@@ -65,9 +66,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 
 
 	@Override
-	public void initialize(RepositoryConnection connection, boolean forceCreation) throws Exception {
+	public void initialize(String projectName, RepositoryConnection connection, boolean forceCreation) throws Exception {
 
-		isSearchPossible(connection, true);
+		isSearchPossible(projectName, connection, true);
 
 		// the forceCreation is used only when Lucene Connector part is used
 
@@ -258,9 +259,9 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	}
 
 	@Override
-	public void update(RepositoryConnection connection) throws Exception {
+	public void update(String projectName, RepositoryConnection connection) throws Exception {
 
-		isSearchPossible(connection, true);
+		isSearchPossible(projectName, connection, true);
 
 		// it does not work with resources already present in the indexes (it does not consider the new label)
 		// this is not a problem, since now the indexes (both of them) use molecules of size 0
@@ -301,7 +302,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 				+ "useLexicalizations="+useLexicalizations+", useNotes="+useNotes+", "
 				+ "useURI="+useURI+", useLocalName="+useLocalName);
 
-		isSearchPossible(getThreadBoundTransaction(stServiceContext), true);
+		isSearchPossible(stServiceContext.getProject().getName(), getThreadBoundTransaction(stServiceContext), true);
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
@@ -346,7 +347,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 		logger.debug("searchLexicalEntry in GraphDBSearchStrategy, searchString="+searchString+", "
 				+ "useURI="+useURI+", useLocalName="+useLocalName);
 
-		isSearchPossible(getThreadBoundTransaction(stServiceContext), true);
+		isSearchPossible(stServiceContext.getProject().getName(), getThreadBoundTransaction(stServiceContext), true);
 
 		//since we are interested just in the LexicalEntry, add this type automatically
 		String[] rolesArray = {RDFResourceRole.ontolexLexicalEntry.name()};
@@ -392,7 +393,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			@Optional List<String> langs, @Optional IRI cls, boolean includeLocales)
 			throws IllegalStateException, STPropertyAccessException, SearchStatusException {
 
-		isSearchPossible(getThreadBoundTransaction(stServiceContext), true);
+		isSearchPossible(stServiceContext.getProject().getName(), getThreadBoundTransaction(stServiceContext), true);
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
@@ -473,7 +474,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			@Optional IRI cls, Map<String, String> prefixToNamespaceMap, int maxNumResults) throws IllegalStateException,
 			STPropertyAccessException, SearchStatusException {
 
-		isSearchPossible(getThreadBoundTransaction(stServiceContext), true);
+		isSearchPossible(stServiceContext.getProject().getName(), getThreadBoundTransaction(stServiceContext), true);
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 		serviceForSearches.checksPreQuery(searchString, rolesArray, searchMode, false);
@@ -522,7 +523,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			Map<String, String> prefixToNamespaceMap)
 			throws IllegalStateException, STPropertyAccessException, SearchStatusException {
 
-		isSearchPossible(getThreadBoundTransaction(stServiceContext), true);
+		isSearchPossible(stServiceContext.getProject().getName(), getThreadBoundTransaction(stServiceContext), true);
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
 
@@ -928,11 +929,23 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 	}
 
 	@Override
-	public boolean isSearchPossible(RepositoryConnection connection, boolean throwExceptionIfNotSearchNotPossible)
+	public boolean isSearchPossible(String projectName, RepositoryConnection connection, boolean throwExceptionIfNotSearchNotPossible)
 			throws SearchStatusException {
 
-		//check if this check has alredy been done before, if so, behave as before, if not, do a SPARQL query
-		//TODO
+		//check if this check has already been done before, if so, behave as before, if not, do a SPARQL query
+		ProjectManager.SearchStatusValues searchStatusValues = ProjectManager.getSearchStatusForProject(projectName);
+		if(searchStatusValues.equals(ProjectManager.SearchStatusValues.searchOk)) {
+			// the search was checked previously and it was ok, so return true;
+			return true;
+		}
+		if (searchStatusValues.equals(ProjectManager.SearchStatusValues.searchProblem)) {
+			// the search was checked previously and it was NOT ok, so return behave accordingly;
+			if (throwExceptionIfNotSearchNotPossible) {
+				throw new SearchStatusException(GraphDBSearchStrategy.class.getName() + ".message");
+			} else {
+				return false;
+			}
+		}
 
 		// do a sparql query to get the plugin installed in GraphDB and check if there is the right one ("Lucene", not
 		// "lucene-connector")
@@ -951,10 +964,12 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			String subjValueString = subjValue.stringValue().toLowerCase();
 			if (subjValueString.contains("lucene") && !subjValueString.contains("connector")) {
 				// it has the Lucene full-text search plugin, so return true
+				ProjectManager.setSearchStatus(projectName, ProjectManager.SearchStatusValues.searchOk);
 				return true;
 			}
 		}
 		// the Lucene full-text search has not been found
+		ProjectManager.setSearchStatus(projectName, ProjectManager.SearchStatusValues.searchProblem);
 		if (throwExceptionIfNotSearchNotPossible) {
 			throw new SearchStatusException(GraphDBSearchStrategy.class.getName() + ".message");
 		}

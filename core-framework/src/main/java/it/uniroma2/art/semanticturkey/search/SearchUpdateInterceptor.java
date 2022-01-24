@@ -79,7 +79,7 @@ public class SearchUpdateInterceptor implements MethodInterceptor {
 									conn -> {
 										SearchStrategyUtils
 												.instantiateSearchStrategy(exptManager, searchStrategy)
-												.update(connection);
+												.update(stServiceContext.getProject().getName(), connection);
 									});
 							connection.commit();
 						} catch (Exception e) {

@@ -110,7 +110,7 @@ public class Search extends STServiceAdapter {
 	public void createIndexes() throws Exception {
 		ValidationUtilities.executeWithoutValidation(
 				ValidationUtilities.isValidationEnabled(stServiceContext), getManagedConnection(), conn -> {
-					instantiateSearchStrategy().initialize(conn, true);
+					instantiateSearchStrategy().initialize(getProject().getName(), conn, true);
 				});
 	}
 
@@ -125,7 +125,7 @@ public class Search extends STServiceAdapter {
 	public void updateIndexes() throws Exception {
 		ValidationUtilities.executeWithoutValidation(
 				ValidationUtilities.isValidationEnabled(stServiceContext), getManagedConnection(), conn -> {
-					instantiateSearchStrategy().update(getManagedConnection());
+					instantiateSearchStrategy().update(getProject().getName(), getManagedConnection());
 				});
 	}
 

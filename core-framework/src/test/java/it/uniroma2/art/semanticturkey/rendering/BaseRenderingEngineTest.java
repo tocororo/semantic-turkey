@@ -219,12 +219,12 @@ public class BaseRenderingEngineTest {
 							return new SearchStrategy() {
 
 								@Override
-								public void initialize(RepositoryConnection connection, boolean forceCreation) throws Exception {
+								public void initialize(String projectName, RepositoryConnection connection, boolean forceCreation) throws Exception {
 									// nothing to do
 								}
 
 								@Override
-								public void update(RepositoryConnection connection) throws Exception {
+								public void update(String projectName, RepositoryConnection connection) throws Exception {
 									// nothing to do
 								}
 
@@ -298,7 +298,8 @@ public class BaseRenderingEngineTest {
 								}
 
 								@Override
-								public boolean isSearchPossible(RepositoryConnection connection, boolean throwExceptionIfNotSearchNotPossible) throws SearchStatusException {
+								public boolean isSearchPossible(String projectName, RepositoryConnection connection,
+																boolean throwExceptionIfNotSearchNotPossible) throws SearchStatusException {
 									return true;
 								}
 

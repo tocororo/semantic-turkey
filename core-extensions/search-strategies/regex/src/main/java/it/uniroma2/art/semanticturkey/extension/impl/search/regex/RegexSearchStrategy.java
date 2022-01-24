@@ -43,12 +43,12 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 
 
 	@Override
-	public void initialize(RepositoryConnection connection, boolean forceCreation) throws Exception {
+	public void initialize(String projectName, RepositoryConnection connection, boolean forceCreation) throws Exception {
 		// Nothing to do
 	}
 
 	@Override
-	public void update(RepositoryConnection connection) throws Exception {
+	public void update(String projectName, RepositoryConnection connection) throws Exception {
 		// Nothing to do
 	}
 
@@ -525,7 +525,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 	}
 
 	@Override
-	public boolean isSearchPossible(RepositoryConnection connection, boolean throwExceptionIfNotSearchNotPossible)
+	public boolean isSearchPossible(String projectName, RepositoryConnection connection, boolean throwExceptionIfNotSearchNotPossible)
 			throws SearchStatusException {
 		return true;
 	}

@@ -198,6 +198,26 @@ public class ProjectManager {
 
 	private static volatile ExtensionPointManager exptManager;
 
+
+	// Temp part related to the Search Status
+	// TODO decide if such map should be placed here or somewhere else
+
+	public enum SearchStatusValues {
+		searchOk, searchProblem, noInfo
+	}
+
+	private static final Map<String, SearchStatusValues> projectToSearchStatusMap = new HashMap<>();
+
+	public static void setSearchStatus(String projectId, SearchStatusValues searchStatusValues){
+		projectToSearchStatusMap.put(projectId, searchStatusValues);
+	}
+
+	public static SearchStatusValues getSearchStatusForProject(String projectId) {
+		return projectToSearchStatusMap.containsKey(projectId) ? projectToSearchStatusMap.get(projectId) : SearchStatusValues.noInfo;
+	}
+	// end of the Search Status part
+
+
 	private static Set<Project> projectsLockedForAccess = ConcurrentHashMap.newKeySet();
 
 	public static void setExtensionPointManager(ExtensionPointManager exptManager) {
@@ -1643,7 +1663,7 @@ public class ProjectManager {
 								preloadedDataFormat, SimpleValueFactory.getInstance().createIRI(baseURI),
 								transitiveImportAllowance, failedImports);
 						try {
-							searchStrategy.update(conn);
+							searchStrategy.update(projectName, conn);
 						} catch (Exception e) {
 							throw new RuntimeException("Unable to update search index with preoloaded data",
 									e);

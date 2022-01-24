@@ -36,12 +36,12 @@ public interface SearchStrategy extends Extension {
 	 * Performs initialization steps, such as the creation of indexes. It may be a no-op method, if no
 	 * specific initialization is required.
 	 */
-	void initialize(RepositoryConnection connection, boolean forceCreation) throws Exception;
+	void initialize(String projectName, RepositoryConnection connection, boolean forceCreation) throws Exception;
 
 	/**
-	 * Updates support resources (usually created inside {@link SearchStrategy#initialize(RepositoryConnection)}).
+	 * Updates support resources (usually created inside {@link SearchStrategy#initialize(String, RepositoryConnection, boolean)}).
 	 */
-	void update(RepositoryConnection connection) throws Exception;
+	void update(String projectName, RepositoryConnection connection) throws Exception;
 
 	String searchResource(STServiceContext stServiceContext, String searchString, String[] rolesArray,
 			boolean useLexicalizations, boolean useLocalName, boolean useURI, boolean useNotes, SearchMode searchMode,
@@ -79,7 +79,7 @@ public interface SearchStrategy extends Extension {
 			boolean searchInSKOSXLLabel, boolean searchInOntolex, Map<String, String> prefixToNamespaceMap)
 			throws IllegalStateException, STPropertyAccessException, SearchStatusException;
 
-	boolean isSearchPossible(RepositoryConnection connection, boolean throwExceptionIfNotSearchNotPossible)
+	boolean isSearchPossible(String projectName, RepositoryConnection connection, boolean throwExceptionIfNotSearchNotPossible)
 			throws SearchStatusException;
 
 
