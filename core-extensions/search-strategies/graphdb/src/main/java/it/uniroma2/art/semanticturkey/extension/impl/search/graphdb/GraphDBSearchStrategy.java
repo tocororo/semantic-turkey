@@ -969,7 +969,11 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			}
 		}
 		// the Lucene full-text search has not been found
-		ProjectManager.setSearchStatus(projectName, ProjectManager.SearchStatusValues.searchProblem);
+
+		// this part is commented so if the search cannot be done, each time it is checked since the plugin may have been
+		// added by the system administrator
+		//ProjectManager.setSearchStatus(projectName, ProjectManager.SearchStatusValues.searchProblem);
+
 		if (throwExceptionIfNotSearchNotPossible) {
 			throw new SearchStatusException(GraphDBSearchStrategy.class.getName() + ".message");
 		}

@@ -215,6 +215,10 @@ public class ProjectManager {
 	public static SearchStatusValues getSearchStatusForProject(String projectId) {
 		return projectToSearchStatusMap.containsKey(projectId) ? projectToSearchStatusMap.get(projectId) : SearchStatusValues.noInfo;
 	}
+
+	public static void removeSearchStatusForProject(String projectId) {
+		projectToSearchStatusMap.remove(projectId);
+	}
 	// end of the Search Status part
 
 
@@ -1060,6 +1064,8 @@ public class ProjectManager {
 		if (openProjects.isNotConsumed(project)) {
 			tearDownProject(project);
 		}
+
+		removeSearchStatusForProject(projectName);
 
 	}
 
