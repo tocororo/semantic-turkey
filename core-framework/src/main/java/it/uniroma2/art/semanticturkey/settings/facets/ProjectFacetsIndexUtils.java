@@ -57,7 +57,7 @@ public class ProjectFacetsIndexUtils {
 	public static final String PROJECT_DESCRIPTION = "prjDescription";
 
 	public static void createFacetIndexAPI(List<ProjectInfo> projectInfoList)
-			throws PropertyNotFoundException, InvalidProjectNameException, ProjectInexistentException,
+			throws PropertyNotFoundException, InvalidProjectNameException,
 			ProjectAccessException, IOException {
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
@@ -97,8 +97,9 @@ public class ProjectFacetsIndexUtils {
 		}
 	}
 
+
 	private static void addProjectToIndex(ProjectInfo projectInfo, boolean removePrevIndex,
-			IndexWriter writer) throws InvalidProjectNameException, ProjectInexistentException,
+			IndexWriter writer) throws InvalidProjectNameException,
 			ProjectAccessException, IOException {
 		ProjectForIndex projectForIndex = new ProjectForIndex();
 

@@ -339,8 +339,9 @@ public class Projects extends STServiceAdapter {
         return listProjInfo;
     }
 
+
     protected void createFacetIndexIfNeeded() throws ProjectAccessException, PropertyNotFoundException,
-            ProjectInexistentException, IOException, InvalidProjectNameException {
+            IOException, InvalidProjectNameException {
         // check if the lucene dir (for the facets) exists, if not, create the indexes
         if (!ProjectFacetsIndexUtils.isLuceneDirPresent()) {
             // iterate over the existing projects
@@ -358,6 +359,7 @@ public class Projects extends STServiceAdapter {
             ProjectFacetsIndexUtils.createFacetIndexAPI(projInfoList);
         }
     }
+
 
     /**
      * Returns the projects where there is at least a user with the given role
@@ -1586,11 +1588,10 @@ public class Projects extends STServiceAdapter {
                                                            @Optional @JsonSerialized List<List<Map<String, Object>>> orQueryList,
                                                            @Optional(defaultValue = "false") boolean userDependent,
                                                            @Optional(defaultValue = "false") boolean onlyOpen)
-            throws IOException, InvalidProjectNameException, ProjectInexistentException,
-            ProjectAccessException, PropertyNotFoundException {
+            throws IOException, InvalidProjectNameException, ProjectAccessException, PropertyNotFoundException {
         Map<String, List<ProjectInfo>> facetToProjeInfoListMap = new HashMap<>();
 
-        // bagOf and query cannot be both empy/null
+        // bagOf and query cannot be both empty/null
         if ((bagOf == null || bagOf.isEmpty()) && (orQueryList == null || orQueryList.isEmpty())) {
             throw new IllegalArgumentException("bagOf and orQueryList cannot be both null/empty");
         }
@@ -1629,14 +1630,21 @@ public class Projects extends STServiceAdapter {
             IndexSearcher searcher = ProjectFacetsIndexUtils.createSearcher();
             TopDocs topDocs = searcher.search(queryLuc, maxResults);
 
+            List<String> notExistingProjectList = new ArrayList<>();
+
             // now, order the results according to the facet of the bagOf parameter (if specified)
             for (ScoreDoc sd : topDocs.scoreDocs) {
                 Document doc = searcher.doc(sd.doc);
+                ProjectInfo projectInfo = null;
                 String projectName = doc.get(ProjectFacetsIndexUtils.PROJECT_NAME);
-                Project project = ProjectManager.getProjectDescription(projectName);
-                ProjectInfo projectInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R,
-                        LockLevel.NO, userDependent, onlyOpen, project);
-
+                try {
+                    Project project = ProjectManager.getProjectDescription(projectName);
+                    projectInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R,
+                            LockLevel.NO, userDependent, onlyOpen, project);
+                } catch (ProjectInexistentException e) {
+                    // the project does not exist, so remove it
+                    notExistingProjectList.add(projectName);
+                }
                 if (projectInfo == null) {
                     continue;
                 }
@@ -1656,6 +1664,11 @@ public class Projects extends STServiceAdapter {
                     facetToProjeInfoListMap.put(facetValue, new ArrayList<>());
                 }
                 facetToProjeInfoListMap.get(facetValue).add(projectInfo);
+            }
+
+            // remove all the not existing projects from the index
+            for (String projectName : notExistingProjectList) {
+                ProjectFacetsIndexUtils.deleteProjectFromFacetIndex(projectName);
             }
 
         } finally {
