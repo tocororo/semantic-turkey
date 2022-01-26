@@ -1,3 +1,7 @@
+version 10.2.1
+date: dd/mm/yyyy
+  *
+
 version 10.2
 date: 26/01/2022
   * Better performances in getTopConcepts and getNarrowerConcepts, thanks to Saku Seppälä for the contribution!
