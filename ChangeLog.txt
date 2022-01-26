@@ -3,6 +3,7 @@ date: 26/01/2022
   * Better performances in getTopConcepts and getNarrowerConcepts, thanks to Saku Seppälä for the contribution!
   * Added localization for Spanish, thanks to Juan Antonio Pastor Sánchez for the contribution!
   * GraphDB-powered indexed search with GraphDB v9.9.0+ now requires adding the lucene-fts-plugin folder and wars to  GraphDB's plugin folder (ST will check that the plugin is installed when performing search)
+  * Resolved disconnecting issues with SAML authentication: added a configuration setting for ignoring the expiration of the SAML assertion.
   * fixed a bug in the search on a GraphDB containing an Apostrophe or a \
   * fixed a bug in GlobalSearch about concurrent write access to the indexes
   * fixed a bug in the service that lists EDOAL correspondences
