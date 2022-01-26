@@ -1,5 +1,5 @@
 version 10.2
-date: dd/mm/yyyy
+date: 26/01/2022
   * Better performances in getTopConcepts and getNarrowerConcepts, thanks to Saku Seppälä for the contribution!
   * Added localization for Spanish, thanks to Juan Antonio Pastor Sánchez for the contribution!
   * to continue to use the search using GraphDB v9.9.0+ it is necessary to add the lucene-fts-plugin folder and wars in the plugin folder in GraphDB (a check has been added in ST to check for required plugin)
