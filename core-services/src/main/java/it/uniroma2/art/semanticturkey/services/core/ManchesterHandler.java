@@ -431,7 +431,8 @@ public class ManchesterHandler extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public AnnotatedValue<BNode> createRestriction(IRI classIri, IRI exprType, String manchExpr)
+	public AnnotatedValue<BNode> createRestriction(IRI classIri, IRI exprType, String manchExpr,
+												   @Optional(defaultValue="false") boolean skipSemanticCheck)
 			throws ManchesterParserException, ManchesterSyntacticException, ManchesterPrefixNotDefinedException,
 			ManchesterSemanticException {
 		RepositoryConnection conn = getManagedConnection();
@@ -442,7 +443,10 @@ public class ManchesterHandler extends STServiceAdapter {
 
 		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
 		Map<String, Integer> resourceToPosMap = new HashMap<>();
-		ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList, resourceToPosMap, true, manchExpr);
+		if (!skipSemanticCheck) {
+			// do not perform the semantic check before adding the data
+			ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList, resourceToPosMap, true, manchExpr);
+		}
 		if(!errorMsgList.isEmpty()){
 			//there is at least one error, so throw an exception
 			// (at the moment only the first exception is thrown)
