@@ -1,6 +1,6 @@
 version 10.2.1
 date: dd/mm/yyyy
-  *
+  * better semantic checks for the Manchester expressions, with the possibility to disable such checks
 
 version 10.2
 date: 26/01/2022
