@@ -442,9 +442,9 @@ public class ManchesterHandler extends STServiceAdapter {
 				conn.getValueFactory(), prefixToNamespacesMap);
 
 		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
-		Map<String, Integer> resourceToPosMap = new HashMap<>();
 		if (!skipSemanticCheck) {
-			// do not perform the semantic check before adding the data
+			// perform the semantic checks before adding the data
+			Map<String, Integer> resourceToPosMap = new HashMap<>();
 			ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList, resourceToPosMap, true, manchExpr);
 		}
 		if(!errorMsgList.isEmpty()){
@@ -530,7 +530,8 @@ public class ManchesterHandler extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	public AnnotatedValue<BNode> updateExpression(String newManchExpr, BNode bnode)
+	public AnnotatedValue<BNode> updateExpression(String newManchExpr, BNode bnode,
+												  @Optional(defaultValue="false") boolean skipSemanticCheck)
 			throws ManchesterParserException, NotClassAxiomException, ManchesterSyntacticException,
 			ManchesterPrefixNotDefinedException, ManchesterSemanticException {
 		// first of all, parse the new Expression to be sure that it is a valid one
@@ -541,8 +542,11 @@ public class ManchesterHandler extends STServiceAdapter {
 				conn.getValueFactory(), prefixToNamespacesMap);
 
 		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
-		Map<String, Integer> resourceToPosMap = new HashMap<>();
-		ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList, resourceToPosMap, true, newManchExpr);
+		if (!skipSemanticCheck) {
+			// perform the semantic checks before adding the data
+			Map<String, Integer> resourceToPosMap = new HashMap<>();
+			ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList, resourceToPosMap, true, newManchExpr);
+		}
 		if(!errorMsgList.isEmpty()){
 			//there is at least one error, so throw an exception
 			// (at the moment only the first exception is thrown)
