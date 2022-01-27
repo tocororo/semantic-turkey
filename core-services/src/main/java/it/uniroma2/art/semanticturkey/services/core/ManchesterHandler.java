@@ -191,7 +191,7 @@ public class ManchesterHandler extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	public JsonNode checkExpression(String manchExpr) {
+	public JsonNode checkExpression(String manchExpr, @Optional(defaultValue="false") boolean skipSemanticCheck) {
 		JsonNodeFactory jf = JsonNodeFactory.instance;
 		ObjectNode respNode = jf.objectNode();
 		List<ManchesterGenericError> errorMsgList = new ArrayList<>();
@@ -202,9 +202,11 @@ public class ManchesterHandler extends STServiceAdapter {
 		try {
 			ManchesterClassInterface mci = ManchesterSyntaxUtils.parseCompleteExpression(manchExpr, conn.getValueFactory(),
 					prefixToNamespacesMap);
-			//since there were no syntactic exception during the parser, now perform the semantic ones
-			Map<String, Integer> resourceToPosMap = new HashMap<>();
-			ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList, resourceToPosMap, true, manchExpr);
+			//since there were no syntactic exception during the parser, now perform the semantic ones (if requested)
+			if (!skipSemanticCheck) {
+				Map<String, Integer> resourceToPosMap = new HashMap<>();
+				ManchesterSyntaxUtils.performSemanticChecks(mci, getManagedConnection(), errorMsgList, resourceToPosMap, true, manchExpr);
+			}
 		} catch (ManchesterParserException e) {
 			isValid = false;
 			ManchesterSyntacticError manchesterSyntacticError = new ManchesterSyntacticError(e.getMessage(), e.getPos(), e.getOffendingTerm(), e.getExpectedTokenList());

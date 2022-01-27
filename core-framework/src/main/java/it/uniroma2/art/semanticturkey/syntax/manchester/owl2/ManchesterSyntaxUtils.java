@@ -9,6 +9,7 @@ import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntacticE
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntaxRuntimeException;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ThrowingErrorListenerLexer;
 import it.uniroma2.art.semanticturkey.exceptions.manchester.ThrowingErrorListenerParser;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DatatypeRestrictionContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.DescriptionContext;
 import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterOWL2SyntaxParserParser.LiteralListContext;
@@ -266,6 +267,10 @@ public class ManchesterSyntaxUtils {
 		}
 	}
 
+	private static String getLocalizedMessage(String key) {
+		return " "+STMessageSource.getMessage(key)+" ";
+	}
+
 	private static void performPropCheck(IRI propIRI, boolean mustBeObjProp, boolean mustBeDataProp, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap,
 			List<ManchesterGenericError> errorMsgList, int pos) {
 		String propType = "rdf:Property";
@@ -275,10 +280,12 @@ public class ManchesterSyntaxUtils {
 			propType = "owl:ObjectProperty";
 		}
 		String qnameOrIRI = namespaceToPrefixMap.getOrDefault(propIRI.getNamespace(), propIRI.getNamespace())+propIRI.getLocalName();
-		String msg = qnameOrIRI + " should be an "+propType;
+		//String msg = qnameOrIRI + " should be an "+propType; // OLD
+		String msg = qnameOrIRI + getLocalizedMessage(ManchesterSyntaxUtils.class.getName()+".messageProp") +propType;
 		List<IRI> typeList = getTypes(propIRI, conn);
 		boolean exists = false;
 		boolean rightType = false;
+
 		if(!typeList.isEmpty()){
 			exists = true;
 			for(IRI type : typeList){
@@ -301,7 +308,8 @@ public class ManchesterSyntaxUtils {
 	private static boolean performClassCheck(IRI classIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<ManchesterGenericError> errorMsgList,
 			int pos){
 		String qnameOrIRI = namespaceToPrefixMap.getOrDefault(classIRI.getNamespace(), classIRI.getNamespace())+classIRI.getLocalName();
-		String msg = qnameOrIRI + " should be a class";
+		//String msg = qnameOrIRI + " should be a class"; // old
+		String msg = qnameOrIRI + getLocalizedMessage(ManchesterSyntaxUtils.class.getName()+".messageClass");
 		List<IRI> typeList = getTypes(classIRI, conn);
 		boolean exists = false;
 		boolean rightType = false;
@@ -325,7 +333,8 @@ public class ManchesterSyntaxUtils {
 	private static void performInstanceCheck(IRI instanceIRI, RepositoryConnection conn, Map<String, String> namespaceToPrefixMap, List<ManchesterGenericError> errorMsgList,
 			int pos){
 		String qnameOrIRI = namespaceToPrefixMap.getOrDefault(instanceIRI.getNamespace(), instanceIRI.getNamespace())+instanceIRI.getLocalName();
-		String msg = qnameOrIRI + " should be an instance";
+		//String msg = qnameOrIRI + " should be an instance"; // old
+		String msg = qnameOrIRI + getLocalizedMessage(ManchesterSyntaxUtils.class.getName()+".messageInstance");
 		List<IRI> typeOfTypeList = getTypesOfTypes(instanceIRI, conn);
 		boolean exists = false;
 		boolean rightType = false;
@@ -348,7 +357,8 @@ public class ManchesterSyntaxUtils {
 		List<IRI> typeList = new ArrayList<>();
 		String query = "SELECT ?type" +
 				"\nWHERE{" +
-				"\n"+ NTriplesUtil.toNTriplesString(resource)+" a ?type ." +
+				"\n"+ NTriplesUtil.toNTriplesString(resource)+" a ?directType ." +
+				"\n?directType "+NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* ?type ." +
 				"\n}";
 		TupleQuery tupleQuery = conn.prepareTupleQuery(query);
 		tupleQuery.setIncludeInferred(false);
@@ -386,7 +396,9 @@ public class ManchesterSyntaxUtils {
 	private static String ErrorMessageOrEmpty(String resource, boolean exists, boolean rightValue, String errorMsg) {
 		String msg;
 		if(!exists){
-			msg = "Resource "+resource+" is not defined";
+			//msg = "Resource "+resource+" is not defined"; // old
+			msg = getLocalizedMessage(ManchesterSyntaxUtils.class.getName()+".messageResource1")+resource+
+					getLocalizedMessage(ManchesterSyntaxUtils.class.getName()+".messageResource2");
 		} else {
 			if(!rightValue){
 				msg = errorMsg;
