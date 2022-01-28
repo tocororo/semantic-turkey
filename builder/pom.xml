@@ -30,7 +30,7 @@
 		<!-- When updating the version of Karaf, remember to copy from the distribution and then modify the
 		files org.ops4j.pax.logging.cfg, org.ops4j.pax.web.cfg, org.apache.karaf.features.cfg; additionally,
 		update the version of Karaf indicated in branding.properties (module st-console) -->
-		<karaf.version>4.2.1</karaf.version>
+		<karaf.version>4.3.6</karaf.version>
 		<maven.build.timestamp.format>yyyy-MM-dd</maven.build.timestamp.format>
 		<!-- The following property definition is requred because of a bug described 
 			here: https://dzone.com/articles/stamping-version-number-and -->
