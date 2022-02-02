@@ -83,6 +83,10 @@ public class STAuthorizationEvaluator {
 		return UsersManager.getLoggedUser().isAdmin();
 	}
 
+	public boolean isSuperUser() {
+		return UsersManager.getLoggedUser().isSuperUser();
+	}
+
 	/**
 	 * Allows request only when the contextual project is public (i.e. {@link ShowVocConstants#SHOWVOC_VISITOR_EMAIL} has role
 	 * {@link ShowVocConstants.ShowVocRole#PUBLIC}. To use like the following: <code>

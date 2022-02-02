@@ -1,4 +1,5 @@
 adminList: []
+superUserList: []
 mail:
   from:
     address: xxxx@gmail.com

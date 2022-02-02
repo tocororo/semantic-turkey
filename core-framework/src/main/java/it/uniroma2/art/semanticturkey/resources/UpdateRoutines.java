@@ -48,8 +48,11 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
+import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.storage.StorageManager;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
@@ -109,6 +112,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -141,7 +146,7 @@ public class UpdateRoutines {
 
 	protected static Logger logger = LoggerFactory.getLogger(UpdateRoutines.class);
 
-	public static void startUpdatesCheckAndRepair() throws IOException, ProjectAccessException {
+	public static void startUpdatesCheckAndRepair() throws IOException, ProjectAccessException, STPropertyAccessException, STPropertyUpdateException {
 		VersionNumber stVersionNumber = Config.getVersionNumber();
 		VersionNumber stDataVersionNumber = Config.getSTDataVersionNumber();
 		logger.debug("version number of installed Semantic Turkey is: " + stVersionNumber);
@@ -178,6 +183,9 @@ public class UpdateRoutines {
 			}
 			if (stDataVersionNumber.compareTo(new VersionNumber(10, 1, 1)) < 0) {
 				alignFrom101To1011();
+			}
+			if (stDataVersionNumber.compareTo(new VersionNumber(10, 2, 1)) < 0) {
+				alignFrom102To1021();
 			}
 
 
@@ -695,7 +703,40 @@ public class UpdateRoutines {
 				oldPubFolder.renameTo(newPubFolder);
 			}
 		}
+	}
 
+	private static void alignFrom102To1021() throws STPropertyAccessException, STPropertyUpdateException, IOException {
+		System.out.println("Update routine: 10.2 -> 10.2.1");
+
+		/* v 10.2.1 replaced email with IRI in adminList setting */
+		System.out.println("- Updating adminList system setting");
+		/* Administrators are now stored through their IRI, instead of email. So, replace email with users' IRI */
+		//users initialization in UsersManager is run after the UpdateRoutines, so here I need to use UserRepoHelper
+		UsersRepoHelper userRepoHelper = new UsersRepoHelper();
+		Collection<File> userDetailsFolders = UsersManager.getAllUserDetailsFiles();
+		for (File f : userDetailsFolders) {
+			userRepoHelper.loadUserDetails(f);
+		}
+		Collection<STUser> userList = userRepoHelper.listUsers();
+
+		CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
+		//collect admin users => those users which email (or IRI) appears in adminList setting
+		List<STUser> adminUsers = userList.stream()
+				.filter(u -> systemSettings.adminList.contains(u.getEmail()) ||
+						systemSettings.adminList.contains(u.getIRI().stringValue())) //OR with getIRI is to prevent issues in case the update routine was already triggered before
+				.collect(Collectors.toList());
+		//write adminList as list of admini IRI
+		systemSettings.adminList = adminUsers.stream()
+				.map(u-> u.getIRI().stringValue())
+				.collect(Collectors.toSet());
+		STPropertiesManager.setSystemSettings(systemSettings, SemanticTurkeyCoreSettingsManager.class.getName());
+
+		/* v 10.2.1 added superUserList in the system settings file */
+		System.out.println("- Adding superUserList system setting");
+		if (systemSettings.superUserList == null) {
+			systemSettings.superUserList = new HashSet<>();
+		}
+		STPropertiesManager.setSystemSettings(systemSettings, SemanticTurkeyCoreSettingsManager.class.getName());
 	}
 
 	private static <T> void convertPropertiesSettingToYAML(Properties properties, String oldProp, ObjectNode settingsObjectNode, String yamlProp, Functions.FailableFunction<String, T, IOException> propValueCoverter) throws IOException {

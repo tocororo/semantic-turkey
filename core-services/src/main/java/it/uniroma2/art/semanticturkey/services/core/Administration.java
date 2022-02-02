@@ -72,11 +72,13 @@ import java.util.Collection;
 @STService
 @Controller
 public class Administration extends STServiceAdapter {
-	
+
 	/**
-	 * 
+	 *
 	 * @param email
 	 * @throws STPropertyUpdateException
+	 * @throws UserException
+	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
@@ -89,13 +91,42 @@ public class Administration extends STServiceAdapter {
 	 *
 	 * @param email
 	 * @throws STPropertyUpdateException
-	 * @throws JsonProcessingException
+	 * @throws UserException
+	 * @throws STPropertyAccessException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void removeAdministrator(String email) throws STPropertyUpdateException, UserException, STPropertyAccessException {
 		STUser user = UsersManager.getUser(email);
 		UsersManager.removeAdmin(user);
+	}
+
+	/**
+	 *
+	 * @param email
+	 * @throws STPropertyUpdateException
+	 * @throws UserException
+	 * @throws STPropertyAccessException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void setSuperUser(String email) throws STPropertyUpdateException, UserException, STPropertyAccessException {
+		STUser user = UsersManager.getUser(email);
+		UsersManager.addSuperUser(user);
+	}
+
+	/**
+	 *
+	 * @param email
+	 * @throws STPropertyUpdateException
+	 * @throws UserException
+	 * @throws STPropertyAccessException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAdmin()")
+	public void removeSuperUser(String email) throws STPropertyUpdateException, UserException, STPropertyAccessException {
+		STUser user = UsersManager.getUser(email);
+		UsersManager.removeSuperUser(user);
 	}
 
 	/**

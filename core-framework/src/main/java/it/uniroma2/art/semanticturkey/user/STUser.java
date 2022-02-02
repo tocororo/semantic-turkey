@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.user;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.vocabulary.UserVocabulary;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -233,7 +232,11 @@ public class STUser implements UserDetails {
     }
 
     public boolean isAdmin() {
-        return UsersManager.getAdminEmailList().contains(this.email);
+        return UsersManager.getAdminIriSet().contains(this.iri.stringValue());
+    }
+
+    public boolean isSuperUser() {
+        return UsersManager.getSuperUserIriSet().contains(this.iri.stringValue());
     }
 
     public boolean isSamlUser() {
@@ -268,6 +271,7 @@ public class STUser implements UserDetails {
         userJson.set("phone", jsonFactory.textNode(phone));
         userJson.set("status", jsonFactory.textNode(status.name()));
         userJson.set("admin", jsonFactory.booleanNode(isAdmin()));
+        userJson.set("superuser", jsonFactory.booleanNode(isSuperUser()));
         if (isSamlUser()) {
             userJson.set("samlLevel", jsonFactory.textNode(samlLevel.name()));
         }

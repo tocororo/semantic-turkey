@@ -20,7 +20,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -42,7 +41,8 @@ public class UsersManager {
     public static final int EMAIL_VERIFICATION_EXPIRATION_HOURS = 48;
 
     private static Collection<STUser> userList = new ArrayList<>();
-    private static Set<String> adminSet = new HashSet<>();
+    private static Set<String> adminSet = new HashSet<>(); //IRI of admin users
+    private static Set<String> superUserSet = new HashSet<>(); //IRI of super users
 
     private static UserForm userForm;
 
@@ -71,12 +71,13 @@ public class UsersManager {
 
         userRepoHelper.shutDownRepository();
 
-        initAdminList();
+        initSystemRolesLists();
     }
 
-    private static void initAdminList() throws STPropertyAccessException {
+    private static void initSystemRolesLists() throws STPropertyAccessException {
         CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
         adminSet = new HashSet<>(systemSettings.adminList);
+        superUserSet = new HashSet<>(systemSettings.superUserList);
     }
 
     /**
@@ -114,8 +115,16 @@ public class UsersManager {
      *
      * @return
      */
-    public static Collection<String> getAdminEmailList() {
+    public static List<String> getAdminEmailList() {
+        return getAdminUsers().stream().filter(STUser::isAdmin).map(STUser::getEmail).collect(Collectors.toList());
+    }
+
+    public static Set<String> getAdminIriSet() {
         return adminSet;
+    }
+
+    public static Set<String> getSuperUserIriSet() {
+        return superUserSet;
     }
 
     /**
@@ -135,24 +144,53 @@ public class UsersManager {
 
     public static void addAdmin(STUser user) throws STPropertyUpdateException, STPropertyAccessException {
         if (!user.getStatus().equals(UserStatus.ACTIVE)) {
-            throw new IllegalStateException("Cannot grant administrator authority to a non-active user");
+            throw new IllegalArgumentException("Cannot grant administrator authority to a non-active user");
         }
-        adminSet.add(user.getEmail());
+        adminSet.add(user.getIRI().stringValue());
         updateAdminSetting();
     }
 
     public static void removeAdmin(STUser user) throws STPropertyUpdateException, STPropertyAccessException {
-        if (adminSet.size() == 1 && adminSet.contains(user.getEmail())) {
-            throw new IllegalStateException("Cannot remove the sole administrator");
+        if (adminSet.size() == 1 && adminSet.contains(user.getIRI().stringValue())) {
+            throw new IllegalArgumentException("Cannot remove the sole administrator");
         } else {
-            adminSet.remove(user.getEmail());
+            adminSet.remove(user.getIRI().stringValue());
             updateAdminSetting();
         }
     }
 
     private static void updateAdminSetting() throws STPropertyUpdateException, STPropertyAccessException {
         CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
-        systemSettings.adminList = new ArrayList<>(adminSet);
+        systemSettings.adminList = adminSet;
+        STPropertiesManager.setSystemSettings(systemSettings, SemanticTurkeyCoreSettingsManager.class.getName());
+    }
+
+    public static List<STUser> getSuperUsers() {
+        List<STUser> superUsers = new ArrayList<>();
+        for (STUser user : userList) {
+            if (user.isSuperUser()) {
+                superUsers.add(user);
+            }
+        }
+        return superUsers;
+    }
+
+    public static void addSuperUser(STUser user) throws STPropertyUpdateException, STPropertyAccessException {
+        if (!user.getStatus().equals(UserStatus.ACTIVE)) {
+            throw new IllegalArgumentException("Cannot grant superuser authority to a non-active user");
+        }
+        superUserSet.add(user.getIRI().stringValue());
+        updateSuperUserSetting();
+    }
+
+    public static void removeSuperUser(STUser user) throws STPropertyUpdateException, STPropertyAccessException {
+        superUserSet.remove(user.getIRI().stringValue());
+        updateSuperUserSetting();
+    }
+
+    private static void updateSuperUserSetting() throws STPropertyUpdateException, STPropertyAccessException {
+        CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
+        systemSettings.superUserList = superUserSet;
         STPropertiesManager.setSystemSettings(systemSettings, SemanticTurkeyCoreSettingsManager.class.getName());
     }
 
@@ -291,14 +329,7 @@ public class UsersManager {
      * @return
      * @throws IOException
      */
-    public static void updateUserEmail(STUser user, String newValue)
-            throws UserException, STPropertyUpdateException, STPropertyAccessException {
-        // if user was admin, update also the admin setting
-        if (adminSet.contains(user.getEmail())) {
-            adminSet.remove(user.getEmail());
-            adminSet.add(newValue);
-            updateAdminSetting();
-        }
+    public static void updateUserEmail(STUser user, String newValue) throws UserException {
         user.setEmail(newValue);
         createOrUpdateUserDetailsFolder(user);
     }
@@ -456,11 +487,7 @@ public class UsersManager {
 			usersFolder.mkdir();
 		}
         // get all subfolder of "users" folder (one subfolder for each user)
-        String[] userDirectories = usersFolder.list(new FilenameFilter() {
-            public boolean accept(File current, String name) {
-                return new File(current, name).isDirectory();
-            }
-        });
+        String[] userDirectories = usersFolder.list((current, name) -> new File(current, name).isDirectory());
         for (String userDirectory : userDirectories) {
             userFolders.add(new File(usersFolder + File.separator + userDirectory));
         }
@@ -487,7 +514,7 @@ public class UsersManager {
      *
      * @return
      */
-    private static Collection<File> getAllUserDetailsFiles() {
+    public static Collection<File> getAllUserDetailsFiles() {
         Collection<File> userDetailsFolders = new ArrayList<>();
         Collection<File> userFolders = getAllUserFolders();
         for (File f : userFolders) {

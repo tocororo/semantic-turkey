@@ -3,8 +3,10 @@ package it.uniroma2.art.semanticturkey.settings.core;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.properties.Enumeration;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
+import org.eclipse.rdf4j.model.IRI;
 
 import java.util.List;
+import java.util.Set;
 
 public class CoreSystemSettings implements Settings {
 
@@ -15,6 +17,8 @@ public class CoreSystemSettings implements Settings {
 
         public static final String adminList$description = keyBase + ".adminList.description";
         public static final String adminList$displayName = keyBase + ".adminList.displayName";
+        public static final String superUserList$description = keyBase + ".superUserList.description";
+        public static final String superUserList$displayName = keyBase + ".superUserList.displayName";
         public static final String remoteConfigs$description = keyBase
                 + ".remoteConfigs.description";
         public static final String remoteConfigs$displayName = keyBase
@@ -50,7 +54,11 @@ public class CoreSystemSettings implements Settings {
 
     @STProperty(description = "{" + MessageKeys.adminList$description + "}", displayName = "{"
             + MessageKeys.adminList$displayName + "}")
-    public List<String> adminList;
+    public Set<String> adminList;
+
+    @STProperty(description = "{" + MessageKeys.superUserList$description + "}", displayName = "{"
+            + MessageKeys.superUserList$displayName + "}")
+    public Set<String> superUserList;
 
     @STProperty(description = "{" + MessageKeys.remoteConfigs$description
             + "}", displayName = "{" + MessageKeys.remoteConfigs$displayName + "}")

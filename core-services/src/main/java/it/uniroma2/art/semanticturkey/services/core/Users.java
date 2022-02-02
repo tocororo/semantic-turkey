@@ -430,7 +430,7 @@ public class Users extends STServiceAdapter {
      */
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isAuthorized('um(user)', 'U') || @auth.isLoggedUser(#email)")
-    public ObjectNode updateUserEmail(String email, String newEmail) throws UserException, STPropertyUpdateException, STPropertyAccessException {
+    public ObjectNode updateUserEmail(String email, String newEmail) throws UserException {
         STUser user = UsersManager.getUser(email);
         //check if there is already a user that uses the newEmail
         if (UsersManager.isEmailUsed(newEmail)) {

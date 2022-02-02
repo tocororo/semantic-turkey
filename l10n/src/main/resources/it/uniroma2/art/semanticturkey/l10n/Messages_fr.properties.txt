@@ -1001,7 +1001,7 @@ it.uniroma2.art.semanticturkey.services.core.ShowVoc.model.displayName = Modèle
 it.uniroma2.art.semanticturkey.services.core.ShowVoc.lexicalizationModel.displayName = Modèle de lexicalisation
 
 it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.shortName = Paramétrages du système principal
-it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.adminList.description = Liste des adresses e-mail des administrateurs
+it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.adminList.description = Liste des IRI des administrateurs
 it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.adminList.displayName = Administrateurs
 it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.remoteConfigs.description = Configurations de connexion à des triple stores distants
 it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings.remoteConfigs.displayName = Triple stores distants

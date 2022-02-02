@@ -33,6 +33,8 @@ import java.util.Arrays;
 import java.util.UUID;
 
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.storage.StorageManager;
 import org.apache.commons.io.FileUtils;
@@ -130,7 +132,7 @@ public class Resources {
 		} else { // stData exists => check if need to be updated
 			try {
 				UpdateRoutines.startUpdatesCheckAndRepair();
-			} catch (IOException | ProjectAccessException e) {
+			} catch (IOException | ProjectAccessException | STPropertyAccessException | STPropertyUpdateException e) {
 				throw new STInitializationException(e);
 			}
 		}
