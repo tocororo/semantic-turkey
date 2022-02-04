@@ -82,7 +82,7 @@ public class GlobalSearch extends STServiceAdapter {
 	private final String INDEX_ROLE = "resource";
 
 
-	private final int MAX_RESULTS = 100;
+	private final int MAX_RESULTS = 300;
 
 	private final int SLEEP_TIME_LOCK = 2000; // 2 sec
 	private final int MAX_SLEEP_TENTATIVE = 300; // 300*2 sec = 600 sec = 10 minutes of tentatives
@@ -131,15 +131,17 @@ public class GlobalSearch extends STServiceAdapter {
 						IRI lexModel = getProject().getLexicalizationModel();
 						//prepare the query for the part associated to the LexicalizationModel
 						if(lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) { //SKOS-XL
+							String labelsProp = "( skosxl:prefLabel, skosxl:altLabel, skosxl:hiddenLabel )";
 							query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 									+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
-									+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
+									+ "\nSELECT DISTINCT ?resource ?resourceType ?predicate ?value ?lang"
 									+ "\nWHERE{"
 									+ "\nGRAPH "+ NTriplesUtil.toNTriplesString(getWorkingGraph()) +"{"
 									+ "\n?xlabel skosxl:literalForm ?value ."
 									+ "\nFILTER(isLiteral(?value)) "
 									+ "\nBIND(lang(?value) AS ?lang)"
 									+ "\n?resource ?predicate ?xlabel ."
+									+ "\nFILTER( ?predicate IN "+labelsProp+")"
 									+ "\nFILTER(isIRI(?resource)) "
 									+ "\n?resource a ?resourceType ."
 									+ "\n}"
@@ -150,7 +152,7 @@ public class GlobalSearch extends STServiceAdapter {
 							String labelsProp = "( skos:prefLabel, skos:altLabel, skos:hiddenLabel )";
 							query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 									+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
-									+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
+									+ "\nSELECT DISTINCT ?resource ?resourceType ?predicate ?value ?lang"
 									+ "\nWHERE{"
 									+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
 									+ "\n?resource ?predicate ?value ."
@@ -168,7 +170,7 @@ public class GlobalSearch extends STServiceAdapter {
 							query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 									+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
 									+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-									+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
+									+ "\nSELECT DISTINCT ?resource ?resourceType ?predicate ?value ?lang"
 									+ "\nWHERE{"
 									+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
 									+ "\n?resource ?predicate ?value ."
@@ -208,7 +210,7 @@ public class GlobalSearch extends STServiceAdapter {
 							query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 									+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
 									+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-									+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang ?lexicalEntry"
+									+ "\nSELECT DISTINCT ?resource ?resourceType ?predicate ?value ?lang ?lexicalEntry"
 									+ "\nWHERE{"
 									+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
 									+ "\n?lexicalEntry a "+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+ "."
@@ -271,7 +273,7 @@ public class GlobalSearch extends STServiceAdapter {
 							query = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
 									+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
 									+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-									+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
+									+ "\nSELECT DISTINCT  ?resource ?resourceType ?predicate ?value ?lang"
 									+ "\nWHERE{"
 									+ "\nGRAPH "+NTriplesUtil.toNTriplesString(getWorkingGraph()) + "{"
 									+ "\n?resource a "+NTriplesUtil.toNTriplesString(ONTOLEX.LEXICAL_ENTRY)+ "."
@@ -325,7 +327,7 @@ public class GlobalSearch extends STServiceAdapter {
 									+ "\nPREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>"
 									+ "\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
 									+ "\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
-									+ "\nSELECT ?resource ?resourceType ?predicate ?value ?lang"
+									+ "\nSELECT DISTINCT ?resource ?resourceType ?predicate ?value ?lang"
 									+ "\nWHERE{"
 									//do a subquery to get all the subproperties of skos:note
 									+ "\n{SELECT ?predicate "
@@ -574,7 +576,7 @@ public class GlobalSearch extends STServiceAdapter {
 					try (IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new SimpleAnalyzer()))) {
 
 						Builder builderBoolean = new BooleanQuery.Builder();
-						builderBoolean.add(new TermQuery(new Term("repId", projectName)), Occur.MUST);
+						builderBoolean.add(new TermQuery(new Term(INDEX_REPO_ID, projectName)), Occur.MUST);
 
 						writer.deleteDocuments(builderBoolean.build());
 						taskCompleted = true;
@@ -736,11 +738,14 @@ public class GlobalSearch extends STServiceAdapter {
 			}
 
 			BooleanQuery booleanQuery = builderBooleanGlobal.build();
-			if(maxResults==0) {
-				maxResults = MAX_RESULTS;
-			}
 
 			IndexSearcher searcher = createSearcher();
+
+			if(maxResults<=0) {
+				//maxResults = MAX_RESULTS;
+				maxResults = searcher.getIndexReader().maxDoc()>0 ? searcher.getIndexReader().maxDoc() : MAX_RESULTS;
+			}
+
 			TopDocs hits = searcher.search(booleanQuery, maxResults);
 
 			//combine the answers from lucene

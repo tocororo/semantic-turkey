@@ -2,6 +2,7 @@ version 10.2.1
 date: dd/mm/yyyy
   * better semantic checks for the Manchester expressions, with the possibility to disable such checks
   * added the possibility to avoid semantic checks when creating/updating triples from a Manchester expression
+  * fixed several bugs in Global Search (number of returned results, better checks on the creation of the indexes for SKOSXL projects, creting the indexes for OWL projects, deletion of indexes for a specific project)
 
 version 10.2
 date: 26/01/2022
