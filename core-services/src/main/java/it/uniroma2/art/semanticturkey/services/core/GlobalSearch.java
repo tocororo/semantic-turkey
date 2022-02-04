@@ -359,9 +359,9 @@ public class GlobalSearch extends STServiceAdapter {
 							//add to the index the result of the query
 							addDirectlyToIndex(query, conn, writer, NOTE, resTypeToRoleMap);
 
-							taskCompleted = true;
 						}
 					}
+					taskCompleted = true;
 
 				} catch (LockObtainFailedException e) {
 					//the lock is taken so sleep for SLEEP_TIME_LOCK and then check again
