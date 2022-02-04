@@ -266,7 +266,7 @@ public class STLocalRepositoryManager extends LocalRepositoryManager {
 	}
 
 	public static boolean isGraphDBBackEnd(@Nullable String backendType) {
-		return backendType != null && backendType.startsWith("graphdb:");
+		return backendType != null && (backendType.startsWith("graphdb:") || backendType.startsWith("owlim:"));
 	}
 
 	public static @Nullable String detectBackendType(RepositoryImplConfig repoImplConfig) {
