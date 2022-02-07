@@ -1,3 +1,7 @@
+version 10.2.2
+date: dd/mm/yyyy
+  *
+
 version 10.2.1
 date: 07/02/2022
   * better semantic checks for the Manchester expressions, with the possibility to disable such checks
