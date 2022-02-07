@@ -1052,9 +1052,7 @@ public class ProjectManager {
 		// turn
 		if (consumer == ProjectConsumer.SYSTEM) {
 			Set<Project> accessedProjects = openProjects.listAccessedProjects(project);
-			System.out.println("accessed projects set: " + accessedProjects);
 			for (Project accessedProject : accessedProjects) {
-				System.out.println("accessed project: " + accessedProject);
 				disconnectFromProject(project, accessedProject.getName());
 			}
 		}

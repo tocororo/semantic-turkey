@@ -1,7 +1,8 @@
 version 10.2.1
-date: dd/mm/yyyy
+date: 07/02/2022
   * better semantic checks for the Manchester expressions, with the possibility to disable such checks
   * added the possibility to avoid semantic checks when creating/updating triples from a Manchester expression
+  * replaced usage of users' email in favour of IRIs in system settings
   * fixed several bugs in Global Search (number of returned results, better checks on the creation of the indexes for SKOSXL projects, creting the indexes for OWL projects, deletion of indexes for a specific project)
   * fixed the use of Lucene FTS index in "GraphDB SE" projects during searches
 

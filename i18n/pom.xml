@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>it.uniroma2.art.semanticturkey</groupId>
 		<artifactId>semanticturkey</artifactId>
-		<version>10.2.1-SNAPSHOT</version>
+		<version>10.2.1</version>
 	</parent>
 	<artifactId>st-i18n</artifactId>
 	<packaging>bundle</packaging>
