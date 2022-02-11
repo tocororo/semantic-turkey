@@ -68,7 +68,6 @@ public class ResourceMetadata extends STServiceAdapter {
 		//this service could be invoked also when no project is accessed (e.g. when creating a project)
 		Project proj = (stServiceContext.hasContextParameter("project")) ? getProject() : null;
 		Collection<Reference> references = associationStore.getConfigurationReferences(proj, UsersManager.getLoggedUser());
-		List<ResourceMetadataAssociation> associations = new ArrayList<>();
 		for (Reference ref : references) {
 			ResourceMetadataAssociation association = associationStore.getConfiguration(ref);
 			RDFResourceRole role = association.role;

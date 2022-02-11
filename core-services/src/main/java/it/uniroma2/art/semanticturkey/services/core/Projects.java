@@ -301,6 +301,11 @@ public class Projects extends STServiceAdapter {
         return new SHACLSettings();
     }
 
+    @STServiceOperation()
+    public Boolean projectExists(String projectName) throws InvalidProjectNameException {
+        return ProjectManager.projectExists(projectName);
+    }
+
     /**
      * @param consumer
      * @param requestedAccessLevel
@@ -317,7 +322,7 @@ public class Projects extends STServiceAdapter {
                                           @Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel,
                                           @Optional(defaultValue = "false") boolean userDependent,
                                           @Optional(defaultValue = "false") boolean onlyOpen) throws ProjectAccessException,
-            PropertyNotFoundException, ProjectInexistentException, IOException, InvalidProjectNameException {
+            PropertyNotFoundException, IOException, InvalidProjectNameException {
 
         logger.debug("listProjects, asked by consumer: " + consumer);
 
@@ -1550,7 +1555,7 @@ public class Projects extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isAdmin()")
     public void createFacetIndex() throws PropertyNotFoundException, InvalidProjectNameException,
-            ProjectInexistentException, ProjectAccessException, IOException {
+            ProjectAccessException, IOException {
 
         // iterate over the existing projects
         Collection<AbstractProject> abstractProjectCollection = ProjectManager

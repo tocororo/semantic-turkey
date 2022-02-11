@@ -552,8 +552,13 @@ public class ProjectManager {
 			throws InvalidProjectNameException, ProjectInexistentException {
 		File projectDir = resolveProjectNameToDir(projectName);
 		if (!projectDir.exists())
-			throw new ProjectInexistentException("Project: " + " does not exist");
+			throw new ProjectInexistentException("Project: '" + projectName + "' does not exist");
 		return projectDir;
+	}
+
+	public static boolean projectExists(String projectName) throws InvalidProjectNameException {
+		File projectDir = resolveProjectNameToDir(projectName);
+		return projectDir.exists();
 	}
 
 	/**
