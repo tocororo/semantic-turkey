@@ -254,7 +254,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws InvalidProjectNameException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'C')")
+	@PreAuthorize("@auth.isAuthorizedInProject('rbac(user, role)', 'C', #projectName)")
 	public void addRolesToUser(String projectName, String email, String[] roles) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
 		STUser user = UsersManager.getUser(email);
@@ -279,7 +279,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws InvalidProjectNameException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'D')")
+	@PreAuthorize("@auth.isAuthorizedInProject('rbac(user, role)', 'D', #projectName)")
 	public void removeUserFromProject(String projectName, String email) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
 		STUser user = UsersManager.getUser(email);
@@ -294,7 +294,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws ProjectBindingException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'D')")
+	@PreAuthorize("@auth.isAuthorizedInProject('rbac(user, role)', 'D', #projectName)")
 	public void removeRoleFromUser(String projectName, String email, String role) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
 		STUser user = UsersManager.getUser(email);
@@ -310,7 +310,7 @@ public class Administration extends STServiceAdapter {
 	 * @throws ProjectBindingException 
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('rbac(user, role)', 'U')")
+	@PreAuthorize("@auth.isAuthorizedInProject('rbac(user, role)', 'U', #projectName)")
 	public void updateLanguagesOfUserInProject(String projectName, String email, Collection<String> languages) throws ProjectBindingException,
 			InvalidProjectNameException, ProjectInexistentException, ProjectAccessException, UserException {
 		STUser user = UsersManager.getUser(email);

@@ -17,6 +17,9 @@ import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.email.EmailApplicationContext;
+import it.uniroma2.art.semanticturkey.email.EmailService;
+import it.uniroma2.art.semanticturkey.email.EmailServiceFactory;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
 import it.uniroma2.art.semanticturkey.exceptions.ExceptionDAO;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
@@ -67,6 +70,7 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.properties.dynamic.STPropertiesSchema;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
+import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
@@ -94,6 +98,7 @@ import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersGroup;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.ReflectionUtilities;
+import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import it.uniroma2.art.semanticturkey.vocabulary.SUPPORT;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -205,7 +210,7 @@ public class Projects extends STServiceAdapter {
 
     // TODO understand how to specify remote repository / different sail configurations
     @STServiceOperation(method = RequestMethod.POST)
-    @PreAuthorize("@auth.isAdmin()")
+    @PreAuthorize("@auth.isSuperUser(false)")
     public void createProject(ProjectConsumer consumer, String projectName, IRI model,
                               IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
                               @Optional(defaultValue = "false") boolean blacklistingEnabled, RepositoryAccess repositoryAccess,
@@ -229,7 +234,7 @@ public class Projects extends STServiceAdapter {
             ProjectCreationException, ClassNotFoundException, WrongPropertiesException, RBACException,
             UnsupportedModelException, UnsupportedLexicalizationModelException, InvalidConfigurationException,
             STPropertyAccessException, IOException, ReservedPropertyUpdateException, ProjectUpdateException,
-            STPropertyUpdateException, NoSuchConfigurationManager, PropertyNotFoundException {
+            STPropertyUpdateException, NoSuchConfigurationManager, PropertyNotFoundException, ProjectBindingException {
 
         List<Object> preloadRelatedArgs = Arrays.asList(preloadedDataFileName, preloadedDataFormat,
                 transitiveImportAllowance);
@@ -288,6 +293,19 @@ public class Projects extends STServiceAdapter {
             throw new ProjectAccessException(projectName);
         }
         ProjectFacetsIndexUtils.recreateFacetIndexForProjectAPI(projectName, projectInfo);
+
+        STUser loggedUser = UsersManager.getLoggedUser();
+        if (loggedUser.isSuperUser(true)) {
+            //set the superuser as PM of the created project
+            ProjectUserBindingsManager.addRolesToPUBinding(loggedUser, project, Arrays.asList(RBACManager.DefaultRole.PROJECTMANAGER));
+            //send notification to administrators
+            try {
+                EmailService emailService = EmailServiceFactory.getService(EmailApplicationContext.VB); //uses VB service since in SV superuser is not used
+                emailService.sendProjCreationMailToAdmin(loggedUser, project);
+            } catch (Exception e) { //catch generic Exception in order to avoid annoying exception raised to the client when the configuration is invalid
+                logger.error(Utilities.printFullStackTrace(e));
+            }
+        }
     }
 
     /**
@@ -1252,7 +1270,7 @@ public class Projects extends STServiceAdapter {
      * @throws STPropertyAccessException
      */
     @STServiceOperation(method = RequestMethod.POST)
-    @PreAuthorize("@auth.isAdmin()")
+    @PreAuthorize("@auth.isSuperUser(false)")
     public PreloadedDataSummary preloadDataFromFile(MultipartFile preloadedData,
                                                     RDFFormat preloadedDataFormat) throws IOException, RDFParseException, RepositoryException,
             ProfilerException, AssessmentException, STPropertyAccessException {
@@ -1281,7 +1299,7 @@ public class Projects extends STServiceAdapter {
      * @throws STPropertyAccessException
      */
     @STServiceOperation(method = RequestMethod.POST)
-    @PreAuthorize("@auth.isAdmin()")
+    @PreAuthorize("@auth.isSuperUser(false)")
     public PreloadedDataSummary preloadDataFromURL(URL preloadedDataURL,
                                                    @Optional RDFFormat preloadedDataFormat) throws IOException, RDFParseException,
             RepositoryException, ProfilerException, AssessmentException, STPropertyAccessException {
@@ -1353,7 +1371,7 @@ public class Projects extends STServiceAdapter {
      * @throws STPropertyAccessException
      */
     @STServiceOperation(method = RequestMethod.POST)
-    @PreAuthorize("@auth.isAdmin()")
+    @PreAuthorize("@auth.isSuperUser(false)")
     public PreloadedDataSummary preloadDataFromCatalog(String connectorId, String datasetId)
             throws IOException, RDFParseException, RepositoryException, ProfilerException,
             AssessmentException, STPropertyAccessException {

@@ -235,8 +235,29 @@ public class STUser implements UserDetails {
         return UsersManager.getAdminIriSet().contains(this.iri.stringValue());
     }
 
+    /**
+     * Returns true if user is (only) SuperUser
+     * @return
+     */
     public boolean isSuperUser() {
-        return UsersManager.getSuperUserIriSet().contains(this.iri.stringValue());
+        return isSuperUser(true);
+    }
+
+    /**
+     * Returns true if the logged user is a SuperUser.
+     * Argument strict determines if the user needs to be only SuperUser (strict=true), or "at least" SuperUser,
+     * namely even Admin is ok (strict=false).
+     * @param strict
+     * @return
+     */
+    public boolean isSuperUser(boolean strict) {
+        boolean superUser = UsersManager.getSuperUserIriSet().contains(this.iri.stringValue());
+        boolean admin = isAdmin();
+        if (strict) {
+            return superUser && !admin;
+        } else {
+            return superUser || admin;
+        }
     }
 
     public boolean isSamlUser() {

@@ -11,15 +11,6 @@ import java.util.Collection;
 
 public class VbEmailService extends EmailService {
 
-	//placeholders
-	private static final String USER_EMAIL_PLACEHOLDER = "{{user.email}}";
-	private static final String USER_GIVEN_NAME_PLACEHOLDER = "{{user.givenName}}";
-	private static final String USER_FAMILY_NAME_PLACEHOLDER = "{{user.familyName}}";
-	private static final String ADMIN_EMAIL_PLACEHOLDER = "{{admin.email}}";
-	private static final String ADMIN_GIVEN_NAME_PLACEHOLDER = "{{admin.givenName}}";
-	private static final String ADMIN_FAMILY_NAME_PLACEHOLDER = "{{admin.familyName}}";
-	private static final String ADMIN_LIST_PLACEHOLDER = "{{adminList}}";
-
 	private static final String VB_ACTIONS_ROUTE = "UserActions";
 	private static final String VB_ACTIONS_VERIFY = "verify";
 	private static final String VB_ACTIONS_ACTIVATE = "activate";
@@ -151,45 +142,6 @@ public class VbEmailService extends EmailService {
 		EmailSender.sendMail(user.getEmail(), "VocBench account enabled", text);
 	}
 
-	/**
-	 * Replaces references to user placeholders with the info about the given user.
-	 * This must be used only in those email messages which content involves the user
-	 * (e.g. user registered, account enabled, ..., so not in the email-service test message)
-	 * @param text
-	 * @param user
-	 * @return
-	 */
-	private static String replaceUserPlaceholders(String text, STUser user) {
-		String replaced = text;
-		replaced = replaced.replace(USER_EMAIL_PLACEHOLDER, user.getEmail());
-		replaced = replaced.replace(USER_GIVEN_NAME_PLACEHOLDER, user.getGivenName());
-		replaced = replaced.replace(USER_FAMILY_NAME_PLACEHOLDER, user.getFamilyName());
-		return replaced;
-	}
 
-	/**
-	 * Replaces references to (a specific) admin placeholders with the info about the given admin.
-	 * This must be used only in those email messages which content involves the admin
-	 * (e.g. user registered, ..., so not in emails toward the sole user (account enabled) or the email-service test message)
-	 * @param text
-	 * @param admin
-	 * @return
-	 */
-	private static String replaceAdminPlaceholders(String text, STUser admin) {
-		String replaced = text;
-		replaced = replaced.replace(ADMIN_EMAIL_PLACEHOLDER, admin.getEmail());
-		replaced = replaced.replace(ADMIN_GIVEN_NAME_PLACEHOLDER, admin.getGivenName());
-		replaced = replaced.replace(ADMIN_FAMILY_NAME_PLACEHOLDER, admin.getFamilyName());
-		return replaced;
-	}
-
-	private static String replaceGenericPlaceholders(String text) {
-		String replaced = text;
-		if (replaced.contains(ADMIN_LIST_PLACEHOLDER)) {
-			Collection<String> adminEmails = UsersManager.getAdminEmailList();
-			replaced = replaced.replace(ADMIN_LIST_PLACEHOLDER, String.join(", ", adminEmails));
-		}
-		return replaced;
-	}
 
 }

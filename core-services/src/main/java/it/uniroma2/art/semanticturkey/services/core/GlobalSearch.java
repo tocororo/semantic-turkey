@@ -108,7 +108,7 @@ public class GlobalSearch extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@Read
-	// TODO decide the @PreAuthorize
+	@PreAuthorize("@auth.isAdmin()")
 	public void createIndex() throws Exception {
 		// classloader magic
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();

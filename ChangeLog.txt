@@ -1,6 +1,8 @@
 version 10.2.2
 date: dd/mm/yyyy
-  *
+  * introduced SuperUser
+    - allowed SuperUser to create project where it is automatically set as Project Manager.
+  * improved authorization checks to several APIs
 
 version 10.2.1
 date: 07/02/2022

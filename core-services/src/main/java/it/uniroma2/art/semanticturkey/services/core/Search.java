@@ -105,8 +105,7 @@ public class Search extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Write
-	// TODO decide the @PreAuthorize
-	// #@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'w')")
+	@PreAuthorize("@auth.isAdmin()")
 	public void createIndexes() throws Exception {
 		ValidationUtilities.executeWithoutValidation(
 				ValidationUtilities.isValidationEnabled(stServiceContext), getManagedConnection(), conn -> {
@@ -120,8 +119,7 @@ public class Search extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Write
-	// TODO decide the @PreAuthorize
-	// #@PreAuthorize("@auth.isAuthorized('rdf(resource)', 'w')")
+	@PreAuthorize("@auth.isAdmin()")
 	public void updateIndexes() throws Exception {
 		ValidationUtilities.executeWithoutValidation(
 				ValidationUtilities.isValidationEnabled(stServiceContext), getManagedConnection(), conn -> {

@@ -83,8 +83,15 @@ public class STAuthorizationEvaluator {
 		return UsersManager.getLoggedUser().isAdmin();
 	}
 
-	public boolean isSuperUser() {
-		return UsersManager.getLoggedUser().isSuperUser();
+	/**
+	 * Returns true if the logged user is a SuperUser.
+	 * Argument strict determines if the user needs to be only SuperUser (strict=true), or "at least" SuperUser,
+	 * namely even Admin is ok (strict=false).
+	 * @param strict
+	 * @return
+	 */
+	public boolean isSuperUser(boolean strict) {
+		return UsersManager.getLoggedUser().isSuperUser(strict);
 	}
 
 	/**
@@ -149,7 +156,7 @@ public class STAuthorizationEvaluator {
 			ProjectInexistentException, InvalidProjectNameException, HarmingGoalException, JSONException,
 			HaltedEngineException, MalformedGoalException, STPropertyAccessException {
 		if (scope.equals(Scope.SYSTEM)) {
-			return isAdmin();
+			return isSuperUser(false);
 		} else if (scope.equals(Scope.PROJECT)) {
 			if (write) {
 				return isAuthorized("pm(project)", "U");

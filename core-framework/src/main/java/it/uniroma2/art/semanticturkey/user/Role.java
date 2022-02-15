@@ -2,7 +2,7 @@ package it.uniroma2.art.semanticturkey.user;
 
 public class Role {
 	
-	public static enum RoleLevel { system, project };
+	public enum RoleLevel { system, project };
 	
 	private String name;
 	private RoleLevel level;
