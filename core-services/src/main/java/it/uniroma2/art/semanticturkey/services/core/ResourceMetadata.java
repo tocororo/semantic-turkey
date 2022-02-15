@@ -147,12 +147,15 @@ public class ResourceMetadata extends STServiceAdapter {
 	}
 
 	/**
-	 * Returns the reference of the only factory-provided patterns
+	 * Returns the reference of the only factory-provided patterns.
+	 * This service can be used to have the list of only the factory-provided patterns from outside a project.
+	 * In other cases (in the context of a project) it can be used getPatternIdentifiers which returns all of them
+	 * (factory-provided and non)
 	 * @return
 	 * @throws NoSuchConfigurationManager
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('pm(resourceMetadata, pattern)', 'R')")
+	@PreAuthorize("@auth.isSuperUser(false)")
 	public Collection<String> getFactoryPatternIdentifiers() throws NoSuchConfigurationManager {
 		return resourceMetadataManager.getResourceMetadataPatternStore().getFactoryConfigurationReferences();
 	}

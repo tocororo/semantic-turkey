@@ -314,7 +314,7 @@ public class Projects extends STServiceAdapter {
      * @return
      */
     @STServiceOperation
-    @PreAuthorize("@auth.isAuthorized('pm(project)', 'C')")
+    @PreAuthorize("@auth.isSuperUser(false)")
     public SHACLSettings createEmptySHACLSettingsForm() {
         return new SHACLSettings();
     }
