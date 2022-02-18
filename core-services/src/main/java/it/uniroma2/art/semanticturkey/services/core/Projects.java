@@ -1043,7 +1043,7 @@ public class Projects extends STServiceAdapter {
      * @throws ProjectUpdateException
      */
     @STServiceOperation(method = RequestMethod.POST)
-    @PreAuthorize("@auth.isAdmin()")
+    @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'U', #projectName)")
     public void setProjectProperty(String projectName, String propName, @Optional String propValue)
             throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
             ProjectUpdateException, ReservedPropertyUpdateException {
@@ -1070,7 +1070,7 @@ public class Projects extends STServiceAdapter {
      * @throws ProjectAccessException
      */
     @STServiceOperation(method = RequestMethod.POST)
-    @PreAuthorize("@auth.isAdmin()")
+    @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'U', #projectName)")
     public void setProjectFacets(String projectName, ObjectNode facets)
             throws IllegalStateException, NoSuchSettingsManager, STPropertyUpdateException,
             WrongPropertiesException, STPropertyAccessException, ProjectAccessException,

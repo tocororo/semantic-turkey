@@ -112,7 +112,7 @@ public abstract class EmailService {
 			String text = "Dear {{admin.givenName}} {{admin.familyName}},<br>" +
 					"a new project with name " + formatItalic(project.getName()) + " has been created by " +
 					"{{user.givenName}} {{user.familyName}} ({{user.email}}).<br><br>" +
-					"Regards,<br>The VocBench team.";
+					"Regards";
 			text = replaceUserPlaceholders(text, creator);
 			text = replaceAdminPlaceholders(text, admin);
 			text = replaceGenericPlaceholders(text);

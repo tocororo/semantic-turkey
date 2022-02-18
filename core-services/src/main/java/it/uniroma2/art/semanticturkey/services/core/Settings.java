@@ -385,7 +385,7 @@ public class Settings extends STServiceAdapter {
      * @throws ProjectInexistentException
      * @throws InvalidProjectNameException
      */
-    @PreAuthorize("@auth.isAdmin()") //only admin can manage all projects (even closed one)
+    @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'U', #projectName)")
     @STServiceOperation(method = RequestMethod.POST)
     public void storePUSettingProjectDefault(String componentID, String projectName,
             String propertyName, @JsonSerialized JsonNode propertyValue)

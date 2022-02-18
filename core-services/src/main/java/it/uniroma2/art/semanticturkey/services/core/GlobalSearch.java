@@ -108,7 +108,7 @@ public class GlobalSearch extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@Read
-	@PreAuthorize("@auth.isAdmin()")
+	@PreAuthorize("@auth.isAuthorized('pm(project, index)', 'C')")
 	public void createIndex() throws Exception {
 		// classloader magic
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
@@ -561,7 +561,7 @@ public class GlobalSearch extends STServiceAdapter {
 	 * @throws Exception
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAdmin()")
+	@PreAuthorize("@auth.isAuthorizedInProject('pm(project, index)', 'D', #projectName)")
 	public void clearSpecificIndex(String projectName) throws Exception {
 		// classloader magic
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
