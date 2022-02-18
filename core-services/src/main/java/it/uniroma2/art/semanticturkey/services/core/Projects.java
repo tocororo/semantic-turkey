@@ -199,6 +199,7 @@ public class Projects extends STServiceAdapter {
 
     /**
      * Returns the backend type of the context repository
+     *
      * @return
      */
     @STServiceOperation
@@ -212,23 +213,23 @@ public class Projects extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isSuperUser(false)")
     public void createProject(ProjectConsumer consumer, String projectName, IRI model,
-                              IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
-                              @Optional(defaultValue = "false") boolean blacklistingEnabled, RepositoryAccess repositoryAccess,
-                              String coreRepoID,
-                              @Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfiguration\"}}") PluginSpecification coreRepoSailConfigurerSpecification,
-                              @Optional String coreBackendType, String supportRepoID,
-                              @Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfiguration\"}}") PluginSpecification supportRepoSailConfigurerSpecification,
-                              @Optional String supportBackendType,
-                              @Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGenerator\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorConfiguration\"}}") PluginSpecification uriGeneratorSpecification,
-                              @Optional PluginSpecification renderingEngineSpecification,
-                              @Optional @JsonSerialized List<Pair<RDFResourceRole, String>> resourceMetadataAssociations,
-                              @Optional String preloadedDataFileName, @Optional RDFFormat preloadedDataFormat,
-                              @Optional TransitiveImportMethodAllowance transitiveImportAllowance, @Optional String leftDataset,
-                              @Optional String rightDataset, @Optional boolean shaclEnabled,
-                              @Optional @JsonSerialized SHACLSettings shaclSettings, @Optional boolean trivialInferenceEnabled,
-                              @Optional(defaultValue = "false") boolean openAtStartup,
-                              @Optional(defaultValue = "false") boolean globallyAccessible,
-                              @Optional Literal label, @Optional(defaultValue = "false") boolean undoEnabled)
+            IRI lexicalizationModel, String baseURI, boolean historyEnabled, boolean validationEnabled,
+            @Optional(defaultValue = "false") boolean blacklistingEnabled, RepositoryAccess repositoryAccess,
+            String coreRepoID,
+            @Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfiguration\"}}") PluginSpecification coreRepoSailConfigurerSpecification,
+            @Optional String coreBackendType, String supportRepoID,
+            @Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.PredefinedRepositoryConfigurer\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.repositoryimplconfigurer.predefined.RDF4JNativeSailConfiguration\"}}") PluginSpecification supportRepoSailConfigurerSpecification,
+            @Optional String supportBackendType,
+            @Optional(defaultValue = "{\"factoryId\" : \"it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGenerator\", \"configuration\" : {\"@type\" : \"it.uniroma2.art.semanticturkey.extension.impl.urigen.template.NativeTemplateBasedURIGeneratorConfiguration\"}}") PluginSpecification uriGeneratorSpecification,
+            @Optional PluginSpecification renderingEngineSpecification,
+            @Optional @JsonSerialized List<Pair<RDFResourceRole, String>> resourceMetadataAssociations,
+            @Optional String preloadedDataFileName, @Optional RDFFormat preloadedDataFormat,
+            @Optional TransitiveImportMethodAllowance transitiveImportAllowance, @Optional String leftDataset,
+            @Optional String rightDataset, @Optional boolean shaclEnabled,
+            @Optional @JsonSerialized SHACLSettings shaclSettings, @Optional boolean trivialInferenceEnabled,
+            @Optional(defaultValue = "false") boolean openAtStartup,
+            @Optional(defaultValue = "false") boolean globallyAccessible,
+            @Optional Literal label, @Optional(defaultValue = "false") boolean undoEnabled)
             throws ProjectInconsistentException, InvalidProjectNameException, ProjectInexistentException,
             ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
             ProjectCreationException, ClassNotFoundException, WrongPropertiesException, RBACException,
@@ -336,10 +337,10 @@ public class Projects extends STServiceAdapter {
      */
     @STServiceOperation
     public List<ProjectInfo> listProjects(@Optional(defaultValue = "SYSTEM") ProjectConsumer consumer,
-                                          @Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
-                                          @Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel,
-                                          @Optional(defaultValue = "false") boolean userDependent,
-                                          @Optional(defaultValue = "false") boolean onlyOpen) throws ProjectAccessException,
+            @Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
+            @Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel,
+            @Optional(defaultValue = "false") boolean userDependent,
+            @Optional(defaultValue = "false") boolean onlyOpen) throws ProjectAccessException,
             PropertyNotFoundException, IOException, InvalidProjectNameException {
 
         logger.debug("listProjects, asked by consumer: " + consumer);
@@ -397,14 +398,15 @@ public class Projects extends STServiceAdapter {
      */
     @STServiceOperation
     public List<ProjectInfo> listProjectsPerRole(@Optional(defaultValue = "SYSTEM") ProjectConsumer consumer,
-                                                 String role, @Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
-                                                 @Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel,
-                                                 @Optional(defaultValue = "false") boolean onlyOpen) throws ProjectAccessException {
+            String role, @Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
+            @Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel,
+            @Optional(defaultValue = "false") boolean userDependent,
+            @Optional(defaultValue = "false") boolean onlyOpen) throws ProjectAccessException {
         List<ProjectInfo> listProjInfo = new ArrayList<>();
 
         for (AbstractProject absProj : ProjectManager.listProjects(consumer)) {
             ProjectInfo projInfo = getProjectInfoHelper(consumer, requestedAccessLevel, requestedLockLevel,
-                    false, onlyOpen, absProj);
+                    userDependent, onlyOpen, absProj);
             if (projInfo != null) {
                 Collection<ProjectUserBinding> puBindings = ProjectUserBindingsManager
                         .listPUBindingsOfProject(absProj);
@@ -435,8 +437,8 @@ public class Projects extends STServiceAdapter {
      */
     @STServiceOperation
     public ProjectInfo getProjectInfo(@Optional(defaultValue = "SYSTEM") ProjectConsumer consumer,
-                                      @Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
-                                      @Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel, String projectName)
+            @Optional(defaultValue = "R") ProjectACL.AccessLevel requestedAccessLevel,
+            @Optional(defaultValue = "NO") ProjectACL.LockLevel requestedLockLevel, String projectName)
             throws IllegalStateException, ProjectAccessException, InvalidProjectNameException,
             ProjectInexistentException {
         Project proj = ProjectManager.getProject(projectName, true);
@@ -459,8 +461,8 @@ public class Projects extends STServiceAdapter {
      * @throws ProjectAccessException
      */
     public ProjectInfo getProjectInfoHelper(ProjectConsumer consumer,
-                                            ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel,
-                                            boolean userDependent, boolean onlyOpen, AbstractProject absProj) {
+            ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel,
+            boolean userDependent, boolean onlyOpen, AbstractProject absProj) {
         String name = absProj.getName();
         String baseURI = null;
         String defaultNamespace = null;
@@ -702,7 +704,7 @@ public class Projects extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isAdmin()")
     public void updateProjectAccessLevel(String projectName, String consumerName,
-                                         @Optional AccessLevel accessLevel) throws InvalidProjectNameException, ProjectInexistentException,
+            @Optional AccessLevel accessLevel) throws InvalidProjectNameException, ProjectInexistentException,
             ProjectAccessException, ProjectUpdateException, ReservedPropertyUpdateException {
         Project project = ProjectManager.getProject(projectName, true);
         if (accessLevel != null) {
@@ -832,7 +834,7 @@ public class Projects extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isAdmin()")
     public void accessProject(ProjectConsumer consumer, String projectName,
-                              ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
+            ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel)
             throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException,
             ForbiddenProjectAccessException {
         ProjectManager.accessProject(consumer, projectName, requestedAccessLevel, requestedLockLevel);
@@ -943,7 +945,7 @@ public class Projects extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isAdmin()")
     public void exportProject(HttpServletResponse oRes,
-                              @RequestParam(value = "projectName") String projectName)
+            @RequestParam(value = "projectName") String projectName)
             throws IOException, ProjectAccessException {
         File tempServerFile = File.createTempFile("export", ".zip");
         logger.debug("requested to export current project");
@@ -1169,7 +1171,7 @@ public class Projects extends STServiceAdapter {
     @STServiceOperation
     @PreAuthorize("@auth.isAdmin()")
     public Collection<RepositorySummary> getRepositories(String projectName,
-                                                         @Optional(defaultValue = "false") boolean excludeLocal)
+            @Optional(defaultValue = "false") boolean excludeLocal)
             throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
 
         Collection<RepositorySummary> rv = new ArrayList<>();
@@ -1206,7 +1208,7 @@ public class Projects extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isAdmin()")
     public void modifyRepositoryAccessCredentials(String projectName, String repositoryID,
-                                                  @Optional String newUsername, @Optional String newPassword)
+            @Optional String newUsername, @Optional String newPassword)
             throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
         ProjectManager.handleProjectExclusively(projectName, project -> {
             STLocalRepositoryManager repoManager = new STLocalRepositoryManager(
@@ -1239,8 +1241,8 @@ public class Projects extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isAdmin()")
     public void batchModifyRepostoryAccessCredentials(String projectName, String serverURL,
-                                                      @Optional(defaultValue = "false") boolean matchUsername, @Optional String currentUsername,
-                                                      @Optional String newUsername, @Optional String newPassword)
+            @Optional(defaultValue = "false") boolean matchUsername, @Optional String currentUsername,
+            @Optional String newUsername, @Optional String newPassword)
             throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
         ProjectManager.handleProjectExclusively(projectName, project -> {
             STLocalRepositoryManager repoManager = new STLocalRepositoryManager(
@@ -1272,7 +1274,7 @@ public class Projects extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isSuperUser(false)")
     public PreloadedDataSummary preloadDataFromFile(MultipartFile preloadedData,
-                                                    RDFFormat preloadedDataFormat) throws IOException, RDFParseException, RepositoryException,
+            RDFFormat preloadedDataFormat) throws IOException, RDFParseException, RepositoryException,
             ProfilerException, AssessmentException, STPropertyAccessException {
         File preloadedDataFile = preloadedDataStore.preloadData(preloadedData::transferTo);
 
@@ -1301,7 +1303,7 @@ public class Projects extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isSuperUser(false)")
     public PreloadedDataSummary preloadDataFromURL(URL preloadedDataURL,
-                                                   @Optional RDFFormat preloadedDataFormat) throws IOException, RDFParseException,
+            @Optional RDFFormat preloadedDataFormat) throws IOException, RDFParseException,
             RepositoryException, ProfilerException, AssessmentException, STPropertyAccessException {
 
         logger.debug("Preload data from URL = {} (format = {})", preloadedDataURL, preloadedDataFormat);
@@ -1394,7 +1396,7 @@ public class Projects extends STServiceAdapter {
     }
 
     private PreloadedDataSummary preloadDataInternal(@Nullable String baseURI, @Nullable IRI model,
-                                                     @Nullable IRI lexicalizationModel, File preloadedDataFile, RDFFormat preloadedDataFormat)
+            @Nullable IRI lexicalizationModel, File preloadedDataFile, RDFFormat preloadedDataFormat)
             throws RDFParseException, RepositoryException, IOException, ProfilerException,
             AssessmentException, STPropertyAccessException {
 
@@ -1484,7 +1486,7 @@ public class Projects extends STServiceAdapter {
 
                         if (model == null) {
                             model = Models.objectIRI(QueryResults.asModel(
-                                    metadataConn.getStatements(mainDataset, DCTERMS.CONFORMS_TO, null)))
+                                            metadataConn.getStatements(mainDataset, DCTERMS.CONFORMS_TO, null)))
                                     .orElse(null);
                         }
 
@@ -1608,9 +1610,9 @@ public class Projects extends STServiceAdapter {
 
     @STServiceOperation(method = RequestMethod.POST)
     public Map<String, List<ProjectInfo>> retrieveProjects(@Optional String bagOf,
-                                                           @Optional @JsonSerialized List<List<Map<String, Object>>> orQueryList,
-                                                           @Optional(defaultValue = "false") boolean userDependent,
-                                                           @Optional(defaultValue = "false") boolean onlyOpen)
+            @Optional @JsonSerialized List<List<Map<String, Object>>> orQueryList,
+            @Optional(defaultValue = "false") boolean userDependent,
+            @Optional(defaultValue = "false") boolean onlyOpen)
             throws IOException, InvalidProjectNameException, ProjectAccessException, PropertyNotFoundException {
         Map<String, List<ProjectInfo>> facetToProjeInfoListMap = new HashMap<>();
 
@@ -1837,7 +1839,7 @@ public class Projects extends STServiceAdapter {
             } catch (ProjectUpdateException e) {
                 ExceptionUtils.rethrow(e);
             }
-            
+
             try {
                 prjRepMgr.operateOnUnfoldedManager(Project.CORE_REPOSITORY, (modelBasedRepositoryManager, repId) -> {
                     Model repConfig = modelBasedRepositoryManager.getRepositoryConfig(repId);
@@ -1845,7 +1847,7 @@ public class Projects extends STServiceAdapter {
                     Models.setProperty(repConfig, changeTrackerSail, ChangeTrackerSchema.UNDO_ENABLED, Values.literal(undoEnabled));
                     try {
                         modelBasedRepositoryManager.addRepositoryConfig(repConfig);
-                    } catch(Exception e) {
+                    } catch (Exception e) {
                         try {
                             project.setReservedProperty(Project.UNDO_ENABLED_PROP, String.valueOf(undoEnabledOrig));
                         } catch (ProjectUpdateException e2) {
@@ -1886,7 +1888,7 @@ public class Projects extends STServiceAdapter {
         });
         return undoEnabled.toBoolean();
     }
-    
+
     /**
      * Tells whether the change tracker is set up for a <em>closed</em> project.
      *
@@ -1978,7 +1980,7 @@ public class Projects extends STServiceAdapter {
     @PreAuthorize("@auth.isAdmin()")
     @STServiceOperation(method = RequestMethod.POST)
     public void updateRenderingEngineConfiguration(String projectName,
-                                                   PluginSpecification renderingEngineSpecification)
+            PluginSpecification renderingEngineSpecification)
             throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
         ProjectManager.handleProjectExclusively(projectName, project -> {
             try {
@@ -2028,7 +2030,7 @@ public class Projects extends STServiceAdapter {
     @PreAuthorize("@auth.isAdmin()")
     @STServiceOperation(method = RequestMethod.POST)
     public void updateURIGeneratorConfiguration(String projectName,
-                                                PluginSpecification uriGeneratorSpecification)
+            PluginSpecification uriGeneratorSpecification)
             throws ProjectAccessException, InvalidProjectNameException, ProjectInexistentException {
         ProjectManager.handleProjectExclusively(projectName, project -> {
             try {
@@ -2068,7 +2070,7 @@ public class Projects extends STServiceAdapter {
     }
 
     private void updateBoundComponentConfiguration(Project project, String factoryIdProp,
-                                                   String configTypeProp, String configFilename, PluginSpecification componentSpec)
+            String configTypeProp, String configFilename, PluginSpecification componentSpec)
             throws IOException, ProjectUpdateException {
         project.setReservedProperty(factoryIdProp, componentSpec.getFactoryId());
         File componentConfigurationFile = new File(project.getProjectDirectory(), configFilename);

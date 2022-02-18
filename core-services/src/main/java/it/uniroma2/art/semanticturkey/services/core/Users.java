@@ -206,7 +206,7 @@ public class Users extends STServiceAdapter {
      */
     @PreAuthorize("@auth.isAdmin()")
     @STServiceOperation(method = RequestMethod.POST)
-    public void createUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
+    public JsonNode createUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
                            @Optional String address, @Optional String affiliation, @Optional String url, @Optional String avatarUrl,
                            @Optional String phone, @Optional Collection<String> languageProficiencies, @Optional Map<IRI, String> customProperties)
             throws ProjectAccessException, UserException, IOException, InterruptedException, STPropertyUpdateException, STPropertyAccessException {
@@ -242,6 +242,8 @@ public class Users extends STServiceAdapter {
         UsersManager.clearExpiredUnverifiedUser();
         user.setStatus(UserStatus.ACTIVE);
         UsersManager.registerUser(user);
+
+        return user.getAsJsonObject();
     }
 
     /**
@@ -268,7 +270,7 @@ public class Users extends STServiceAdapter {
      * @throws InterruptedException
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void registerUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
+    public JsonNode registerUser(String email, String password, String givenName, String familyName, @Optional IRI iri,
                              @Optional String address, @Optional String affiliation, @Optional String url, @Optional String avatarUrl,
                              @Optional String phone, @Optional Collection<String> languageProficiencies, @Optional Map<IRI, String> customProperties,
                              @Optional String vbHostAddress)
@@ -345,7 +347,7 @@ public class Users extends STServiceAdapter {
             }
             setSamlUserInSecurityContext(loggedUser, user);
         }
-
+        return user.getAsJsonObject();
     }
 
     /**

@@ -163,8 +163,9 @@ public class ShowVoc extends STServiceAdapter {
 	/* ADMINISTRATION */
 
 	/**
-	 * Initializes all that stuff needed in ShowVoc. * - The roles: showvoc-public, showvoc-pristine, showvoc-staging * -
-	 * The visitor user
+	 * Initializes all that stuff needed in ShowVoc.
+	 * - The roles: showvoc-public, showvoc-pristine, showvoc-staging
+	 * - The visitor user
 	 *
 	 * @throws IOException
 	 * @throws UserException
@@ -455,6 +456,7 @@ public class ShowVoc extends STServiceAdapter {
 			String userPassword = createRemoteUser(vbConnector, contribution.contributorEmail,
 					contribution.contributorName, contribution.contributorLastName,
 					contribution.contributorOrganization);
+			//this shouldn't be needed since from v11.0, createUser automatically enable the new user, anyway I leave it in case remote VB uses an old version
 			vbConnector.enableUser(contribution.contributorEmail);
 			vbConnector.addRolesToUser(projectName, contribution.contributorEmail,
 					Collections.singletonList(DefaultRole.RDF_GEEK)); // rdf geek required for sheet2rdf
@@ -604,6 +606,7 @@ public class ShowVoc extends STServiceAdapter {
 
 			String userPassword = createRemoteUser(vbConnector, contributorEmail,
 					pendingContrib.getContributorName(), pendingContrib.getContributorLastName(), null);
+			//this shouldn't be needed since from v11.0, createUser automatically enable the new user, anyway I leave it in case remote VB uses an old version
 			vbConnector.enableUser(contributorEmail);
 			vbConnector.addRolesToUser(projectName, contributorEmail,
 					Collections.singletonList(DefaultRole.RDF_GEEK));
@@ -648,6 +651,7 @@ public class ShowVoc extends STServiceAdapter {
 				// registered
 			String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*?";
 			String tempUserPwd = RandomStringUtils.random(15, characters);
+			//this shouldn't be needed since from v11.0, createUser automatically enable the new user, anyway I leave it in case remote VB uses an old version
 			vbConnector.createUser(email, tempUserPwd, givenName, familyName, organization);
 			vbConnector.enableUser(email);
 			userPassword = tempUserPwd;
