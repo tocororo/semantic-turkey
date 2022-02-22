@@ -12,13 +12,13 @@ public class S2RDFContext {
 
 	private Sheet2RDFCore s2rdfCore;
 	private CODACore codaCore;
-	private File spreadsheetFile;
+	//private File spreadsheetFile;
 	private File pearlFile;
 	private List<SuggOntologyCoda> suggestedTriplesCache; 
 	
-	public S2RDFContext(Sheet2RDFCore s2rdfCore, CODACore codaCore, File spreadsheetFile){
+	public S2RDFContext(Sheet2RDFCore s2rdfCore, CODACore codaCore){
 		this.s2rdfCore = s2rdfCore;
-		this.spreadsheetFile = spreadsheetFile;
+		//this.spreadsheetFile = spreadsheetFile;
 		this.codaCore = codaCore;
 	}
 	
@@ -26,17 +26,17 @@ public class S2RDFContext {
 		return s2rdfCore;
 	}
 	
-	public void setSheet2RDFCore(Sheet2RDFCore s2rdfCore) {
+	/*public void setSheet2RDFCore(Sheet2RDFCore s2rdfCore) {
 		this.s2rdfCore = s2rdfCore;
-	}
+	}*/
 	
-	public File getSpreadsheetFile() {
+	/*public File getSpreadsheetFile() {
 		return spreadsheetFile;
-	}
+	}*/
 	
-	public void setSpreadsheetFile(File excelFile) {
+	/*public void setSpreadsheetFile(File excelFile) {
 		this.spreadsheetFile = excelFile;
-	}
+	}*/
 	
 	public File getPearlFile() {
 		//in case the pearl file has not been set
@@ -73,7 +73,10 @@ public class S2RDFContext {
 	
 	public void close(){
 		this.pearlFile.deleteOnExit();
-		this.spreadsheetFile.deleteOnExit();
+		//this.spreadsheetFile.deleteOnExit();
+		if (s2rdfCore.getSpreadsheetFile()!= null) {
+			s2rdfCore.getSpreadsheetFile().deleteOnExit();
+		}
 	}
 	
 }

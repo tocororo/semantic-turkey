@@ -52,6 +52,7 @@ import it.uniroma2.art.sheet2rdf.coda.CODAConverter;
 import it.uniroma2.art.sheet2rdf.coda.Sheet2RDFCODA;
 import it.uniroma2.art.sheet2rdf.core.MappingStruct;
 import it.uniroma2.art.sheet2rdf.core.Sheet2RDFCore;
+import it.uniroma2.art.sheet2rdf.exception.GenericSheet2RDFException;
 import it.uniroma2.art.sheet2rdf.exception.InvalidWizardStatusException;
 import it.uniroma2.art.sheet2rdf.header.AdvancedGraphApplication;
 import it.uniroma2.art.sheet2rdf.header.GraphApplication;
@@ -124,7 +125,7 @@ public class Sheet2RDF extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     @Read
     public void uploadSpreadsheet(MultipartFile file, @Optional(defaultValue = "columnNumericIndex") FsNamingStrategy fsNamingStrategy)
-            throws IOException {
+            throws IOException, GenericSheet2RDFException {
         String fileName = file.getOriginalFilename();
         //create a temp file (in karaf data/temp folder) to copy the received file 
         File serverSpreadsheetFile = File.createTempFile("sheet", fileName.substring(fileName.lastIndexOf(".")));
@@ -136,8 +137,39 @@ public class Sheet2RDF extends STServiceAdapter {
         // initialize the S2RDFContext and register it
         RepositoryConnection connection = getManagedConnection();
         CODACore codaCore = getInitializedCodaCore(connection);
+
         Sheet2RDFCore s2rdfCore = new Sheet2RDFCore(serverSpreadsheetFile, connection, fsNamingStrategy);
-        S2RDFContext s2rdfCtx = new S2RDFContext(s2rdfCore, codaCore, serverSpreadsheetFile);
+        S2RDFContext s2rdfCtx = new S2RDFContext(s2rdfCore, codaCore);
+
+        String token = stServiceContext.getSessionToken();
+        contextMap.put(token, s2rdfCtx);
+    }
+
+    /**
+     * Uploads an excel file into a server directory
+     *
+     * @param db_base_url
+     * @param db_name
+     * @param db_table
+     * @param db_user
+     * @param db_password
+     * @param fsNamingStrategy
+     * @return
+     * @throws IOException
+     */
+    @STServiceOperation(method = RequestMethod.POST)
+    @Read
+    public void uploadDBInfo(String db_base_url, String db_name, String db_table, String db_user, String db_password,
+                             @Optional(defaultValue = "columnNumericIndex") FsNamingStrategy fsNamingStrategy)
+            throws GenericSheet2RDFException {
+
+        // initialize the S2RDFContext and register it
+        RepositoryConnection connection = getManagedConnection();
+        CODACore codaCore = getInitializedCodaCore(connection);
+
+        Sheet2RDFCore s2rdfCore = new Sheet2RDFCore(db_base_url, db_name, db_table, db_user, db_password, connection, fsNamingStrategy);
+        S2RDFContext s2rdfCtx = new S2RDFContext(s2rdfCore, codaCore);
+
         String token = stServiceContext.getSessionToken();
         contextMap.put(token, s2rdfCtx);
     }
@@ -536,9 +568,9 @@ public class Sheet2RDF extends STServiceAdapter {
      * @return
      */
     @STServiceOperation
-    public JsonNode getTablePreview(int maxRows) {
+    public JsonNode getTablePreview(int maxRows) throws GenericSheet2RDFException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        SheetManager sheetMgr = SheetManagerFactory.getSheetManager(ctx.getSpreadsheetFile());
+        SheetManager sheetMgr = SheetManagerFactory.getSheetManager(ctx.getSheet2RDFCore().getSpreadsheetOrDb());
         ArrayList<ArrayList<String>> table = sheetMgr.getDataTable();
 
         JsonNodeFactory jf = JsonNodeFactory.instance;
@@ -738,7 +770,7 @@ public class Sheet2RDF extends STServiceAdapter {
     @Read
     public JsonNode getTriplesPreview(int maxTableRows) throws UIMAException, PRParserException,
             ComponentProvisioningException, ConverterException, DependencyException, RDFModelNotSetException,
-            ProjectionRuleModelNotSet, UnassignableFeaturePathException {
+            ProjectionRuleModelNotSet, UnassignableFeaturePathException, GenericSheet2RDFException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         JCas jcas = ctx.getSheet2RDFCore().executeAnnotator();
         Sheet2RDFCODA s2rdfCoda = new Sheet2RDFCODA(getManagedConnection(), ctx.getCodaCore());
