@@ -107,7 +107,6 @@ public class GlobalSearch extends STServiceAdapter {
 	//@STServiceOperation
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
-	@Read
 	@PreAuthorize("@auth.isAuthorized('pm(project, index)', 'C')")
 	public void createIndex() throws Exception {
 		// classloader magic

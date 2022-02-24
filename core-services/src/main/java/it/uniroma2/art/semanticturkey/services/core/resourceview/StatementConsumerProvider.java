@@ -1,41 +1,13 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
+import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.event.annotation.EventListener;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.resources.Scope;
-import it.uniroma2.art.semanticturkey.settings.core.CoreProjectSettings;
-import it.uniroma2.art.semanticturkey.settings.core.ResourceViewCustomSectionSettings;
-import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
-import it.uniroma2.art.semanticturkey.settings.events.SettingsDefaultsUpdated;
-import it.uniroma2.art.semanticturkey.settings.events.SettingsEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEvent;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextClosedEvent;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.event.ContextStartedEvent;
-import org.springframework.context.event.ContextStoppedEvent;
-import org.springframework.stereotype.Component;
-
-import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.BroadersStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.ClassAxiomsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.ConstituentsStatementConsumer;
@@ -65,8 +37,36 @@ import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SubPr
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.SubtermsStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.TopConceptOfStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.TypesStatementConsumer;
+import it.uniroma2.art.semanticturkey.settings.core.CoreProjectSettings;
+import it.uniroma2.art.semanticturkey.settings.core.ResourceViewCustomSectionSettings;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
+import it.uniroma2.art.semanticturkey.settings.events.SettingsDefaultsUpdated;
+import it.uniroma2.art.semanticturkey.settings.events.SettingsEvent;
+import org.eclipse.rdf4j.model.IRI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.ContextStartedEvent;
+import org.springframework.context.event.ContextStoppedEvent;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Component
 public class StatementConsumerProvider implements ApplicationListener<ApplicationEvent> {
@@ -90,6 +90,9 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
      * Associates an (open) project with its resource view templates
      */
     private ConcurrentHashMap<String, Map<RDFResourceRole, List<StatementConsumer>>> project2templates;
+
+    @Autowired
+    ProjectWidgetsManager projWidgetMgr;
 
     @Autowired
     public StatementConsumerProvider(CustomFormManager customFormManager,
@@ -224,6 +227,8 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
             }
         });
 
+        registerWidgetsSection(role2template, project);
+
         List<StatementConsumer> template = null;
 
         if (role.isProperty()) {
@@ -254,4 +259,42 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
             return role2template.getOrDefault(RDFResourceRole.individual, Arrays.asList(factoryStatementConsumers.get("properties")));
         }
     }
+
+    /**
+     * Register the "widgets" section (namely the statement consumer) into the RV templates for each role
+     *
+     * This method is called each time a ResourceView is built (ResourceView#getResourceView() -> getTemplateForResourceRole()).
+     * I needed to came up with this solution since the properties consumed by the widgets section depend on
+     * Widget's configuration (namely all the properties for which a widget is mapped to).
+     * The role2template is stored into project2templates which is built when
+     * - a project is open
+     * - template system setting is updated
+     * so, I cannot register the section into project2templates otherwise it wouldn't reflect changes on Widget's config
+     * (e.g. if a new property-widget association is established such property wouldn't be part of the widgets consumer
+     * previously registered).
+     *
+     * @param role2template
+     * @param project
+     */
+    private void registerWidgetsSection(Map<RDFResourceRole, List<StatementConsumer>> role2template, Project project) {
+        Set<IRI> matchedProperties = projWidgetMgr.getWidgetManager(project).listTriggers();
+        /*
+        the widgets section is registered only if mappedProperties is not empty, otherwise its consumer will consume every statement
+        (I guess it is equivalent to ?s ?p ?o where ?p is not bound to any property)
+        */
+        if (!matchedProperties.isEmpty()) {
+            AbstractPropertyMatchingStatementConsumer widgetsStatementConsumer = new AbstractPropertyMatchingStatementConsumer(customFormManager, "widgets", matchedProperties);
+            //in each template, set the consumer as first, otherwise "otherProperties" section will consume any properties
+            for (List<StatementConsumer> consumers : role2template.values()) {
+                StatementConsumer firstConsumer = consumers.get(0);
+                //register the consumer only if not already registered before, otherwise replace it
+                if (firstConsumer instanceof AbstractPropertyMatchingStatementConsumer && ((AbstractPropertyMatchingStatementConsumer) firstConsumer).getSectionName().equals("widgets")) {
+                    consumers.set(0, widgetsStatementConsumer);
+                } else {
+                    consumers.add(0, widgetsStatementConsumer);
+                }
+            }
+        }
+    }
+
 }

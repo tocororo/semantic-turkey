@@ -137,6 +137,10 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 		this(customFormManager, sectionName, matchedProperties, new BehaviorOptions());
 	}
 
+	public String getSectionName() {
+		return this.sectionName;
+	}
+
 	@Override
 	public Set<IRI> getMatchedProperties() {
 		return matchedProperties;
