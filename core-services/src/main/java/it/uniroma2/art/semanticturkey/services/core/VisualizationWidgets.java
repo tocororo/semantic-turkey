@@ -255,7 +255,7 @@ public class VisualizationWidgets extends STServiceAdapter  {
         if (widget != null) { //widget should always exist since this API should be invoked from the client only in such case
 
             //check if values for the required bindings are provided
-            for (WidgetDataBindings b: widget.getBindingSet()) {
+            for (WidgetDataBindings b: widget.getUpdateMandatoryBindings()) {
                 if (!bindings.containsKey(b)) {
                     throw new IllegalArgumentException("Missing value for required binding " + b.toString());
                 }

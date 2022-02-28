@@ -18,6 +18,11 @@ public class AreaWidget extends Widget {
     }
 
     @Override
+    public Set<WidgetDataBindings> getUpdateMandatoryBindings() {
+        return getBindingSet();
+    }
+
+    @Override
     public WidgetDataBindings getIdBinding() {
         return WidgetDataBindings.route_id;
     }

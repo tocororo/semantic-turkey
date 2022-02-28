@@ -10,10 +10,9 @@ public enum WidgetDataBindings {
     //for charts data
     series_collection_id,
     series_id,
-    series_label,
     series_name,
     name,
-    value_label,
     value,
-
+    x_axis_label,
+    y_axis_label,
 }

@@ -47,6 +47,12 @@ public abstract class Widget implements Configuration {
     public abstract Set<WidgetDataBindings> getBindingSet();
 
     /**
+     * Returns the list of bindings that are mandatory in the update
+     * @return
+     */
+    public abstract Set<WidgetDataBindings> getUpdateMandatoryBindings();
+
+    /**
      * Returns the binding used as ID of the resource (e.g. location, trace_id, series_id, series_collection_id)
      * @return
      */
