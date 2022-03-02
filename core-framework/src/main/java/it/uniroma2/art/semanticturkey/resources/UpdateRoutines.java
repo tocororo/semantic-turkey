@@ -113,7 +113,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -195,23 +194,30 @@ public class UpdateRoutines {
 	}
 
 	private static void alignFromPreviousTo3() throws IOException {
-		System.out.println("Update routine: x.y -> 3.0");
+		printAndLogMessage("Update routine: x.y -> 3.0");
+		
+		//Version 3.0.0 added capabilities to some roles
+		printAndLogMessage("Updating role files");
 
-		logger.debug("Version 3.0.0 added capabilities to some roles");
 		// In doubt, update all roles
 		Role[] roles = { DefaultRole.LEXICOGRAPHER, DefaultRole.MAPPER, DefaultRole.ONTOLOGIST,
 				DefaultRole.PROJECTMANAGER, DefaultRole.RDF_GEEK, DefaultRole.THESAURUS_EDITOR,
 				DefaultRole.VALIDATOR };
 		updateRoles(roles);
 
-		logger.debug("Version 3.0.0 added new properties to the default project preferences");
+		printAndLogMessage("Updating PU Settings system default of plugin " + Config.CORE_PLUGIN_ID);
 		updatePUSettingsSystemDefaults(Config.CORE_PLUGIN_ID);
+
+		printAndLogMessage("Updating PU Settings system default of plugin it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
 		updatePUSettingsSystemDefaults("it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
+
+		printAndLogMessage("Update routine x.y -> 3.0 completed");
 	}
 
 	private static void alignFrom3To4() throws IOException {
-		System.out.println("Update routine: 3.0 -> 4.0");
-		logger.debug("Version 4.0.0 renamed some settings files");
+		printAndLogMessage("Update routine: 3.0 -> 4.0");
+		//Version 4.0.0 renamed some settings files
+		printAndLogMessage("Renaming settings files");
 		// users\<username>\plugins\<plugin>\system-preferences.props -> settings.props
 		// users\<username>\plugins\<plugin>\project-preference-defaults.props -> pu-settings-defaults.props
 		List<File> userDirectories = listSubFolders(Resources.getUsersDir());
@@ -262,50 +268,66 @@ public class UpdateRoutines {
 			}
 		}
 
-		logger.debug("Version 4.0.0 added lurker role and added a capability to projectmanager");
+		printAndLogMessage("Adding lurker role and updating projectmanager");
 		Role[] roles = { DefaultRole.LURKER, DefaultRole.PROJECTMANAGER, };
 		updateRoles(roles);
 
-		logger.debug("Version 4.0.0 added groups and pg_bindings folders");
-		System.out.println("- Initializing PG bindings folder");
+		printAndLogMessage("Adding groups and pg_bindings folders");
+		printAndLogMessage("- Initializing PG bindings folder");
 		Resources.initializeGroups();
+
+		printAndLogMessage("Update routine 3.0 -> 4.0 completed");
 	}
 
 	private static void alignFrom4To5() throws IOException {
-		System.out.println("Update routine: 4.0 -> 5.0");
-		logger.debug("Version 5.0.0 added a capability to some roles");
+		printAndLogMessage("Update routine: 4.0 -> 5.0");
+		//Version 5.0.0 added a capability to some roles
+		printAndLogMessage("Updating role files");
 		Role[] roles = { DefaultRole.LEXICOGRAPHER, DefaultRole.MAPPER, DefaultRole.ONTOLOGIST,
 				DefaultRole.PROJECTMANAGER, DefaultRole.RDF_GEEK, DefaultRole.THESAURUS_EDITOR };
 		updateRoles(roles);
 
-		logger.debug("Version 5.0.0 removed a property from the default project preferences");
+		//Version 5.0.0 removed a property from the default project preferences
+		printAndLogMessage("Updating PU Settings system default of plugin " + Config.CORE_PLUGIN_ID);
 		updatePUSettingsSystemDefaults(Config.CORE_PLUGIN_ID);
+
+		printAndLogMessage("Updating PU Settings system default of plugin it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
 		updatePUSettingsSystemDefaults("it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
+
+		printAndLogMessage("Update routine 4.0 -> 5.0 completed");
 	}
 
 	private static void alignFrom5To6() throws IOException {
-		System.out.println("Update routine: 5.0 -> 6.0");
-		logger.debug("Version 6.0.0 added a docs folder under system/");
-		System.out.println("Adding docs/ folder into system/");
+		printAndLogMessage("Update routine: 5.0 -> 6.0");
+		//Version 6.0.0 added a docs folder under system/
+		printAndLogMessage("Adding docs/ folder into system/");
 		Resources.getDocsDir().mkdirs();
 
-		logger.debug("Version 6.0.0 changed a property from the default project preferences");
+		//Version 6.0.0 changed a property from the default project preferences
+		printAndLogMessage("Updating PU Settings system default of plugin " + Config.CORE_PLUGIN_ID);
 		updatePUSettingsSystemDefaults(Config.CORE_PLUGIN_ID);
+
+		printAndLogMessage("Updating PU Settings system default of plugin it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
 		updatePUSettingsSystemDefaults("it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine");
+
+		printAndLogMessage("Update routine 5.0 -> 6.0 completed");
 	}
 
 	private static void alignFrom6To7() throws IOException {
-		System.out.println("Update routine: 6.0 -> 7.0");
-		logger.debug("Version 7.0.0 updated the class_tree_filter in the pu-settings-defaults");
+		printAndLogMessage("Update routine: 6.0 -> 7.0");
+		//Version 7.0.0 updated the class_tree_filter in the pu-settings-defaults
 		Resources.getDocsDir().mkdirs();
+		printAndLogMessage("Updating PU Settings system default of plugin " + Config.CORE_PLUGIN_ID);
 		updatePUSettingsSystemDefaults(Config.CORE_PLUGIN_ID);
+
+		printAndLogMessage("Update routine 6.0 -> 7.0 completed");
 	}
 
 	private static void alignFrom7To8()
 			throws UnsupportedRDFormatException, IOException, ProjectAccessException {
-		System.out.println("Update routine: 7.0 -> 8.0");
-		System.out.println("- Updating the namespace associated with the metadata registry");
-		logger.debug("Version 8.0 changed the namespace associated with the metadata registry");
+		printAndLogMessage("Update routine: 7.0 -> 8.0");
+		printAndLogMessage("- Updating the namespace associated with the metadata registry");
+		//Version 8.0 changed the namespace associated with the metadata registry
 		File catalogFile = new File(Config.getDataDir(), "metadataRegistry/catalog.ttl");
 		if (catalogFile.exists()) {
 			replaceNamespaceDefinition(
@@ -313,14 +335,15 @@ public class UpdateRoutines {
 					new SimpleNamespace("mdr", "http://semanticturkey.uniroma2.it/ns/mdr#"), catalogFile);
 		}
 
-		logger.debug(
-				"Version 8.0 added capabilities about customService, invokableReporter and resourceMetadata");
+		//Version 8.0 added capabilities about customService, invokableReporter and resourceMetadata
+		printAndLogMessage("Updating role files");
 		Role[] roles = { DefaultRole.LEXICOGRAPHER, DefaultRole.LURKER, DefaultRole.MAPPER,
 				DefaultRole.ONTOLOGIST, DefaultRole.PROJECTMANAGER, DefaultRole.RDF_GEEK,
 				DefaultRole.THESAURUS_EDITOR, DefaultRole.VALIDATOR };
 		updateRoles(roles);
 
-		logger.debug("Version 8.0 added predefined custom services and invokable reporters");
+		//Version 8.0 added predefined custom services and invokable reporters
+		printAndLogMessage("Adding predefined custom services and invokable reporters");
 		updateCustomServices("it.uniroma2.art.semanticturkey.customservice.OntoLexLemonReport",
 				"it.uniroma2.art.semanticturkey.customservice.OWLReport",
 				"it.uniroma2.art.semanticturkey.customservice.SKOSReport");
@@ -330,8 +353,8 @@ public class UpdateRoutines {
 
 		// set the default <undetermined, DublinCore metadata> association if project has
 		// updateForRoles: resource, and DC properties as creation and modification properties
-		logger.debug("Version 8.0 replaced updateForRoles with the resource metadata mechanism");
-		System.out.println("- Replacing 'updateForRoles' with the resource metadata mechanism");
+		//Version 8.0 replaced updateForRoles with the resource metadata mechanism
+		printAndLogMessage("- Replacing 'updateForRoles' with the resource metadata mechanism");
 
 		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		for (AbstractProject absProj : ProjectManager.listProjects()) {
@@ -356,31 +379,36 @@ public class UpdateRoutines {
 				}
 			}
 		}
+
+		printAndLogMessage("Update routine 7.0 -> 8.0 completed");
 	}
 
 	private static void alignFrom8To801() throws IOException {
-		System.out.println("Update routine: 8.0 -> 8.0.1");
-		logger.debug("Version 8.0.1 updated the languages in the project-settings-defaults");
+		printAndLogMessage("Update routine: 8.0 -> 8.0.1");
+		//Version 8.0.1 updated the languages in the project-settings-defaults
+		printAndLogMessage("Updating languages in project-settings-defaults");
 		updateProjectSettingsDefaults();
+		printAndLogMessage("Update routine 8.0 -> 8.0.1 completed");
 	}
 
 	private static void alignFrom801To90() throws IOException {
-		System.out.println("Update routine: 8.0.1 -> 9.0");
-		logger.debug(
-				"Version 9.0 updated the URIGenerator and the RenderingEngine to the new style (including persistence of properties as YAML). Upgrade deferred on the fist attempt to obtain the description of the project, because we need the extension point manager");
+		printAndLogMessage("Update routine: 8.0.1 -> 9.0");
+		//Version 9.0 updated the URIGenerator and the RenderingEngine to the new style (including persistence of properties as YAML).
+		//Upgrade deferred on the fist attempt to obtain the description of the project, because we need the extension point manager
 
+		printAndLogMessage("Migrating RenderingEngine properties file to YAML format");
 		updateStoredPropertiesForComponentRenaming(
 				"it.uniroma2.art.semanticturkey.plugin.extpts.RenderingEngine",
 				"it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine");
 
+		printAndLogMessage("Update routine 8.0.1 -> 9.0 completed");
 	}
 
 	private static void alignFrom90To10() throws IOException {
-		System.out.println("Update routine: 9.0 -> 10.0");
-		System.out.println("- Updating Semantic Turkey core settings to the new style (including persistence of properties as YAML)");
-		System.out.println("- Add stuff related to documentation generation");
-		logger.debug(
-				"Version 10.0 updated Semantic Turkey core settings to the new style (including persistence of properties as YAML) and add stuff related to documentation generation");
+		printAndLogMessage("Update routine: 9.0 -> 10.0");
+		//Version 10.0 updated Semantic Turkey core settings to the new style (including persistence of properties as YAML) and add stuff related to documentation generation
+		printAndLogMessage("- Updating Semantic Turkey core settings to the new style (including persistence of properties as YAML)");
+		printAndLogMessage("- Adding stuff related to documentation generation");
 
 		ObjectMapper om = STPropertiesManager.createObjectMapper();
 
@@ -474,6 +502,7 @@ public class UpdateRoutines {
 			}
 		}
 
+		printAndLogMessage("Update routine 9.0 -> 10.0 completed");
 	}
 
 	private static void alignFrom90to10_upgradeDocgenRelatedStuff() throws IOException {
@@ -659,20 +688,22 @@ public class UpdateRoutines {
 	}
 
 	private static void alignFrom101To1011() throws IOException {
-		System.out.println("Update routine: 10.1 -> 10.1.1");
+		printAndLogMessage("Update routine: 10.1 -> 10.1.1");
 
-		System.out.println("- Updating users' folders name");
+		printAndLogMessage("- Updating users' folders name");
 		Map<String, String> renamingMap = new HashMap<>(); //cache <old user folder name> -> <new user folder name>
 		Collection<File> userFolders = UsersManager.getAllUserFolders();
 		for (File f : userFolders) {
 			alignFrom10To11_updateUserFolderName(f, renamingMap);
 		}
 
-		System.out.println("- Updating pu_bindings sub folders name (user)");
+		printAndLogMessage("- Updating pu_bindings sub folders name (user)");
 		Collection<File> puBindingFolder = ProjectUserBindingsManager.getAllProjBindingsFolders();
 		for (File f : puBindingFolder) {
 			alignFrom10To11_updatePUBindingFolderName(f, renamingMap);
 		}
+
+		printAndLogMessage("Update routine 10.1 -> 10.1.1 completed");
 	}
 
 	private static void alignFrom10To11_updateUserFolderName(File userFolder, Map<String, String> renamingMap) throws IOException {
@@ -684,7 +715,7 @@ public class UpdateRoutines {
 		String newFolderName = STUser.encodeUserIri(user.getIRI());
 		File newUserFolder = new File(Resources.getUsersDir() + File.separator + newFolderName);
 		renamingMap.put(userFolder.getName(), newFolderName);
-//		System.out.println("Renaming " + userFolder.getAbsolutePath() + " to " + newUserFolder.getAbsolutePath());
+		printAndLogMessage("Renaming " + userFolder.getAbsolutePath() + " to " + newUserFolder.getAbsolutePath());
 		userFolder.renameTo(newUserFolder);
 	}
 
@@ -699,17 +730,17 @@ public class UpdateRoutines {
 				String newName = renamingMap.get(puUserDirName);
 				File oldPubFolder = new File(pubProjFolder, puUserDirName);
 				File newPubFolder = new File(pubProjFolder, newName);
-//				System.out.println("Renaming " + oldPubFolder.getAbsolutePath() + " to " + newPubFolder.getAbsolutePath());
+				printAndLogMessage("Renaming " + oldPubFolder.getAbsolutePath() + " to " + newPubFolder.getAbsolutePath());
 				oldPubFolder.renameTo(newPubFolder);
 			}
 		}
 	}
 
 	private static void alignFrom102To1021() throws STPropertyAccessException, STPropertyUpdateException, IOException {
-		System.out.println("Update routine: 10.2 -> 10.2.1");
+		printAndLogMessage("Update routine: 10.2 -> 10.2.1");
 
 		/* v 10.2.1 replaced email with IRI in adminList setting */
-		System.out.println("- Updating adminList system setting");
+		printAndLogMessage("- Updating adminList system setting");
 		/* Administrators are now stored through their IRI, instead of email. So, replace email with users' IRI */
 		//users initialization in UsersManager is run after the UpdateRoutines, so here I need to use UserRepoHelper
 		UsersRepoHelper userRepoHelper = new UsersRepoHelper();
@@ -732,23 +763,25 @@ public class UpdateRoutines {
 		STPropertiesManager.setSystemSettings(systemSettings, SemanticTurkeyCoreSettingsManager.class.getName());
 
 		/* v 10.2.1 added superUserList in the system settings file */
-		System.out.println("- Adding superUserList system setting");
+		printAndLogMessage("- Adding superUserList system setting");
 		if (systemSettings.superUserList == null) {
 			systemSettings.superUserList = new HashSet<>();
 		}
 		STPropertiesManager.setSystemSettings(systemSettings, SemanticTurkeyCoreSettingsManager.class.getName());
+
+		printAndLogMessage("Update routine 10.2 -> 10.2.1 completed");
 	}
 
-	private static <T> void convertPropertiesSettingToYAML(Properties properties, String oldProp, ObjectNode settingsObjectNode, String yamlProp, Functions.FailableFunction<String, T, IOException> propValueCoverter) throws IOException {
-		convertPropertiesSettingToYAML(properties, oldProp, settingsObjectNode, Collections.singletonList(yamlProp), propValueCoverter);
+	private static <T> void convertPropertiesSettingToYAML(Properties properties, String oldProp, ObjectNode settingsObjectNode, String yamlProp, Functions.FailableFunction<String, T, IOException> propValueConverter) throws IOException {
+		convertPropertiesSettingToYAML(properties, oldProp, settingsObjectNode, Collections.singletonList(yamlProp), propValueConverter);
 	}
 
 
-	private static <T> void convertPropertiesSettingToYAML(Properties properties, String oldProp, ObjectNode settingsObjectNode, List<String> yamlPropPath, Functions.FailableFunction<String, T, IOException> propValueCoverter) throws IOException {
+	private static <T> void convertPropertiesSettingToYAML(Properties properties, String oldProp, ObjectNode settingsObjectNode, List<String> yamlPropPath, Functions.FailableFunction<String, T, IOException> propValueConverter) throws IOException {
 		String oldPropValue = properties.getProperty(oldProp);
 
 		if (StringUtils.isNoneEmpty(oldPropValue)) {
-			T yamlValue = propValueCoverter.apply(oldPropValue);
+			T yamlValue = propValueConverter.apply(oldPropValue);
 
 			ObjectNode ctxObj = settingsObjectNode;
 
@@ -988,12 +1021,12 @@ public class UpdateRoutines {
 
 	private static void updateStoredPropertiesForComponentRenaming(String oldName, String newName)
 			throws IOException {
-		System.out.println("- Updating: " + oldName + " -> " + newName);
+		printAndLogMessage("- Updating: " + oldName + " -> " + newName);
 		applyToComponentFolders(oldName, d -> d.renameTo(new File(d.getParentFile(), newName)));
 	}
 
 	private static void updateCustomServices(String... serviceID) throws IOException {
-		Arrays.stream(serviceID).forEach(s -> System.out.println("- Updating CustomService " + s));
+		Arrays.stream(serviceID).forEach(s -> printAndLogMessage("- Updating CustomService " + s));
 
 		File configFolder = STPropertiesManager
 				.getSystemPropertyFolder(CustomServiceDefinitionStore.class.getName());
@@ -1007,7 +1040,7 @@ public class UpdateRoutines {
 	}
 
 	private static void updateInvokableReporters(String... reporterID) throws IOException {
-		Arrays.stream(reporterID).forEach(r -> System.out.println("- Updating InvokableReporter " + r));
+		Arrays.stream(reporterID).forEach(r -> printAndLogMessage("- Updating InvokableReporter " + r));
 		File configFolder = STPropertiesManager
 				.getSystemPropertyFolder(InvokableReporterStore.class.getName());
 		FileUtils.forceMkdir(configFolder);
@@ -1098,7 +1131,7 @@ public class UpdateRoutines {
 	private static void updateRoles(Role[] roles) throws IOException {
 		File rolesDir = RBACManager.getRolesDir(null);
 		for (Role r : roles) {
-			System.out.println("- Updating role " + r);
+			printAndLogMessage("- Updating role " + r);
 			Utilities.copy(
 					Resources.class.getClassLoader().getResourceAsStream(
 							"/it/uniroma2/art/semanticturkey/rbac/roles/role_" + r.getName() + ".pl"),
@@ -1108,7 +1141,7 @@ public class UpdateRoutines {
 
 	private static void updatePUSettingsSystemDefaults(String pluginId) throws IOException {
 		File targetFile = STPropertiesManager.getPUSettingsSystemDefaultsFile(pluginId);
-		System.out.println("- Updating: " + targetFile.getAbsolutePath());
+		printAndLogMessage("- Updating: " + targetFile.getAbsolutePath());
 		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
 				"/it/uniroma2/art/semanticturkey/properties/" + pluginId + "/pu-settings-defaults.props"), targetFile);
 	}
@@ -1116,7 +1149,7 @@ public class UpdateRoutines {
 	@SuppressWarnings("unused")
 	private static void updateProjectSettingsDefaults() throws IOException {
 		File targetFile = STPropertiesManager.getProjectSettingsDefaultsFile(Config.CORE_PLUGIN_ID);
-		System.out.println("- Updating: " + targetFile.getAbsolutePath());
+		printAndLogMessage("- Updating: " + targetFile.getAbsolutePath());
 		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
 				"/it/uniroma2/art/semanticturkey/properties/it.uniroma2.art.semanticturkey/project-settings-defaults.props"),
 				targetFile);
@@ -1171,7 +1204,7 @@ public class UpdateRoutines {
 	private static void renameFile(File parentFolder, String fromName, String toName) {
 		File fromFile = new File(parentFolder, fromName);
 		File toFile = new File(parentFolder, toName);
-		System.out.println("- Renaming: " + fromFile.getAbsolutePath() + " -> " + toFile.getAbsolutePath());
+		printAndLogMessage("- Renaming: " + fromFile.getAbsolutePath() + " -> " + toFile.getAbsolutePath());
 		if (fromFile.exists()) {
 			if (toFile.exists()) {
 				toFile.delete();
@@ -1180,4 +1213,9 @@ public class UpdateRoutines {
 		}
 	}
 
+
+	private static void printAndLogMessage(String msg) {
+		logger.info(msg);
+		System.out.println(msg);
+	}
 }
