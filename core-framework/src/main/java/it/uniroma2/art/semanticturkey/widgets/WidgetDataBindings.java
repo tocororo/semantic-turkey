@@ -13,6 +13,6 @@ public enum WidgetDataBindings {
     series_name,
     name,
     value,
-    x_axis_label,
-    y_axis_label,
+    value_label,
+    series_label,
 }

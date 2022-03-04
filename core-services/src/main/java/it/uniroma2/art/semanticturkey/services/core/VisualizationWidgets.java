@@ -195,10 +195,10 @@ public class VisualizationWidgets extends STServiceAdapter  {
         if (widget != null) { //widget should always exist since this API should be invoked from the client only in such case
 
             String retrieveQuery = widget.retrieve;
-            retrieveQuery = retrieveQuery.replace("<trigger>", RenderUtils.toSeRQL(predicate));
 
             TupleQuery tq = getManagedConnection().prepareTupleQuery(retrieveQuery);
             tq.setBinding("resource", resource);
+            tq.setBinding("trigger", predicate);
 
             SimpleDataset dataset = new SimpleDataset();
             dataset.setDefaultInsertGraph((IRI) getWorkingGraph());

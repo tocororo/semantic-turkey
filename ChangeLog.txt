@@ -3,6 +3,7 @@ date: dd/mm/yyyy
   * introduced SuperUser
     - allowed SuperUser to create project where it is automatically set as Project Manager.
   * improved authorization checks to several APIs
+  * improved messaging in the update routines
   * updated dependency on Sheet2RDF 5.0.0-SNAPSHOT (to manage DB tables)
 
 version 10.2.1

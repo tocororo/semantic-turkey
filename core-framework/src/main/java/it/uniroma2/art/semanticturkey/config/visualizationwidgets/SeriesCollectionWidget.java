@@ -14,7 +14,7 @@ public class SeriesCollectionWidget extends Widget {
 
     @Override
     public Set<WidgetDataBindings> getBindingSet() {
-        return ImmutableSet.of(WidgetDataBindings.series_collection_id, WidgetDataBindings.y_axis_label, WidgetDataBindings.x_axis_label, WidgetDataBindings.series_name, WidgetDataBindings.name, WidgetDataBindings.value);
+        return ImmutableSet.of(WidgetDataBindings.series_collection_id, WidgetDataBindings.series_label, WidgetDataBindings.value_label, WidgetDataBindings.series_name, WidgetDataBindings.name, WidgetDataBindings.value);
     }
 
     @Override
