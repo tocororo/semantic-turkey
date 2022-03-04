@@ -1,5 +1,6 @@
 version 10.2.2
 date: dd/mm/yyyy
+  * added a connector to EcoPortal and other catalogs based on OntoPortal
   * introduced SuperUser
     - allowed SuperUser to create project where it is automatically set as Project Manager.
   * improved authorization checks to several APIs

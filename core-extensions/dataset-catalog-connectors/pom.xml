@@ -12,5 +12,6 @@
   	<module>lod-cloud</module>
   	<module>lov</module>
   	<module>showvoc</module>
+  	<module>ontoportal</module>
   </modules>
 </project>
