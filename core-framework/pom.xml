@@ -393,10 +393,12 @@
 			<artifactId>org.everit.json.schema</artifactId>
 			<version>${everit.json.schema.version}</version>
 		</dependency>
+<!--
 		<dependency>
 			<groupId>com.cronutils</groupId>
 			<artifactId>cron-utils</artifactId>
 			<version>${cron-utils.version}</version>
 		</dependency>
+-->
 	</dependencies>
 </project>

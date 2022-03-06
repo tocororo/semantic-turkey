@@ -2,9 +2,7 @@ package it.uniroma2.art.semanticturkey.settings.notification;
 
 import java.util.TimeZone;
 
-import com.cronutils.model.CronType;
-import com.cronutils.validation.Cron;
-
+import it.uniroma2.art.semanticturkey.constraints.SpringCron;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
@@ -31,7 +29,7 @@ public class NotificationSystemSettings implements Settings {
 
 		@STProperty(description = "{" + MessageKeys.expression$description +"}", displayName = "{" + MessageKeys.expression$displayName +"}")
 		@Required
-		@Cron(type = CronType.SPRING)
+		@SpringCron
 		public String expression;
 
 		@STProperty(description = "{" + MessageKeys.zone$description +"}", displayName = "{" + MessageKeys.zone$displayName +"}")

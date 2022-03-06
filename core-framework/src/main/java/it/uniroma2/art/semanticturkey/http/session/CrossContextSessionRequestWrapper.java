@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.http.session;
 
+import org.apache.commons.collections4.EnumerationUtils;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -14,8 +16,6 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionContext;
-
-import org.apache.commons.collections.EnumerationUtils;
 
 public class CrossContextSessionRequestWrapper extends HttpServletRequestWrapper {
 
