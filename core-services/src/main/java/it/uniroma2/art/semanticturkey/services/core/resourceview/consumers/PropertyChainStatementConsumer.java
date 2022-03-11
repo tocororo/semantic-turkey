@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview.consumers;
 
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer.BehaviorOptions.CollectionBehavior;
@@ -10,8 +11,8 @@ import java.util.Collections;
 
 public class PropertyChainStatementConsumer extends AbstractPropertyMatchingStatementConsumer {
 
-	public PropertyChainStatementConsumer(ProjectCustomViewsManager projCvManager) {
-		super(projCvManager, "subPropertyChains",
+	public PropertyChainStatementConsumer(CustomFormManager cfManager, ProjectCustomViewsManager projCvManager) {
+		super(cfManager, projCvManager, "subPropertyChains",
 				Collections.singleton(OWL.PROPERTYCHAINAXIOM),
 				new BehaviorOptions().setCollectionBehavior(CollectionBehavior.ALWAYS_ASSUME_COLLECTION)
 						.setRenderingEngineBehavior(RenderingEngineBehavior.EXCLUDE));

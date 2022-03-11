@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview.consumers;
 
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
@@ -21,8 +22,8 @@ public class RDFSMembersStatementConsumer extends AbstractPropertyMatchingStatem
 	private static final Pattern uriPattern = Pattern
 			.compile("^http://www\\.w3\\.org/1999/02/22-rdf-syntax-ns#_\\d+$");
 
-	public RDFSMembersStatementConsumer(ProjectCustomViewsManager projCvManager) {
-		super(projCvManager, "rdfsMembers", Collections.singleton(RDFS.MEMBER),
+	public RDFSMembersStatementConsumer(CustomFormManager cfManager, ProjectCustomViewsManager projCvManager) {
+		super(cfManager, projCvManager, "rdfsMembers", Collections.singleton(RDFS.MEMBER),
 				new BehaviorOptions().setRootPropertiesBehavior(RootPropertiesBehavior.HIDE));
 	}
 

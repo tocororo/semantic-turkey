@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core.resourceview;
 
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
@@ -114,22 +115,25 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 		}
 	}
 
+	private CustomFormManager customFormManager;
 	private ProjectCustomViewsManager projCvManager;
 	private String sectionName;
 	private Set<IRI> matchedProperties;
 	private BehaviorOptions behaviorOptions;
 
-	public AbstractPropertyMatchingStatementConsumer(ProjectCustomViewsManager projCvManager, String sectionName,
+	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager,
+			ProjectCustomViewsManager projCvManager, String sectionName,
 			Set<IRI> matchedProperties, BehaviorOptions behaviorOptions) {
 		this.projCvManager = projCvManager;
+		this.customFormManager = customFormManager;
 		this.sectionName = sectionName;
 		this.matchedProperties = matchedProperties;
 		this.behaviorOptions = behaviorOptions;
 	}
 
-	public AbstractPropertyMatchingStatementConsumer(ProjectCustomViewsManager projCvManager, String sectionName,
-			Set<IRI> matchedProperties) {
-		this(projCvManager, sectionName, matchedProperties, new BehaviorOptions());
+	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager,
+			ProjectCustomViewsManager projCvManager, String sectionName, Set<IRI> matchedProperties) {
+		this(customFormManager, projCvManager, sectionName, matchedProperties, new BehaviorOptions());
 	}
 
 	public String getSectionName() {
@@ -310,8 +314,8 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 			}
 			addShowViaDedicatedOrGenericRendering(annotatedPredicate, resource2attributes,
 					predicate2resourceCreShow, null, statements, true);
-//			annotatedPredicate.setAttribute("hasCustomRange",
-//					customFormManager.existsCustomFormGraphForResource(project, predicate));
+			annotatedPredicate.setAttribute("hasCustomRange",
+					customFormManager.existsCustomFormGraphForResource(project, predicate));
 			annotatedPredicate.setAttribute("hasCustomView",
 					projCvManager.getCustomViewManager(project).associationExists(predicate));
 

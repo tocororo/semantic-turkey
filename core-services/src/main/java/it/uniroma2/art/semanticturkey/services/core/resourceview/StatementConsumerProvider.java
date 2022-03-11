@@ -96,40 +96,40 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
 
     @Autowired
     public StatementConsumerProvider(CustomFormManager customFormManager, ProjectCustomViewsManager projCvManager,
-                                     ObjectFactory<CODACoreProvider> codaProvider, SemanticTurkeyCoreSettingsManager coreSettingsManager) {
+             ObjectFactory<CODACoreProvider> codaProvider, SemanticTurkeyCoreSettingsManager coreSettingsManager) {
         this.projCvManager = projCvManager;
         this.coreSettingsManager = coreSettingsManager;
 
         factoryStatementConsumers = new LinkedHashMap<>();
-        factoryStatementConsumers.put("types", new TypesStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("classaxioms", new ClassAxiomsStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("datatypeDefinitions", new DatatypeDefinitionsStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("lexicalizations", new LexicalizationsStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("broaders", new BroadersStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("equivalentProperties", new EquivalentPropertyStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("disjointProperties", new PropertyDisjointWithStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("superproperties", new SubPropertyOfStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("subPropertyChains", new PropertyChainStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("facets", new PropertyFacetsStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("domains", new DomainsStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("ranges", new RangesStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("imports", new OntologyImportsStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("properties", new OtherPropertiesStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("topconceptof", new TopConceptOfStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("schemes", new InSchemeStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("members", new SKOSCollectionMembersStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("membersOrdered", new SKOSOrderedCollectionMembersStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("labelRelations", new LabelRelationsStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("notes", new SKOSNotesStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("lexicalForms", new LexicalFormsStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("lexicalSenses", new LexicalSensesStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("denotations", new DenotationsStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("evokedLexicalConcepts", new EvokedLexicalConcepts(projCvManager));
+        factoryStatementConsumers.put("types", new TypesStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("classaxioms", new ClassAxiomsStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("datatypeDefinitions", new DatatypeDefinitionsStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("lexicalizations", new LexicalizationsStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("broaders", new BroadersStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("equivalentProperties", new EquivalentPropertyStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("disjointProperties", new PropertyDisjointWithStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("superproperties", new SubPropertyOfStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("subPropertyChains", new PropertyChainStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("facets", new PropertyFacetsStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("domains", new DomainsStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("ranges", new RangesStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("imports", new OntologyImportsStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("properties", new OtherPropertiesStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("topconceptof", new TopConceptOfStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("schemes", new InSchemeStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("members", new SKOSCollectionMembersStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("membersOrdered", new SKOSOrderedCollectionMembersStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("labelRelations", new LabelRelationsStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("notes", new SKOSNotesStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("lexicalForms", new LexicalFormsStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("lexicalSenses", new LexicalSensesStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("denotations", new DenotationsStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("evokedLexicalConcepts", new EvokedLexicalConcepts(customFormManager, projCvManager));
         factoryStatementConsumers.put("formBasedPreview", new FormBasedPreviewStatementConsumer(customFormManager, codaProvider));
-        factoryStatementConsumers.put("subterms", new SubtermsStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("constituents", new ConstituentsStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("formRepresentations", new FormRepresentationsStatementConsumer(projCvManager));
-        factoryStatementConsumers.put("rdfsMembers", new RDFSMembersStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("subterms", new SubtermsStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("constituents", new ConstituentsStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("formRepresentations", new FormRepresentationsStatementConsumer(customFormManager, projCvManager));
+        factoryStatementConsumers.put("rdfsMembers", new RDFSMembersStatementConsumer(customFormManager, projCvManager));
 
         project2templates = new ConcurrentHashMap<>();
     }
@@ -176,7 +176,7 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
         Map<String, ResourceViewCustomSectionSettings> customSectionsSettings = Optional.ofNullable(coreProjectSettings.resourceView).map(s -> s.customSections).orElse(Collections.emptyMap());
         Map<RDFResourceRole, List<String>> templatesSettings = Optional.ofNullable(coreProjectSettings.resourceView).map(s -> s.templates).orElse(Collections.emptyMap());
 
-        Map<String, StatementConsumer> customSections = customSectionsSettings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> new AbstractPropertyMatchingStatementConsumer(projCvManager, entry.getKey(), entry.getValue().matchedProperties)));
+        Map<String, StatementConsumer> customSections = customSectionsSettings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> new AbstractPropertyMatchingStatementConsumer(customFormManager, projCvManager, entry.getKey(), entry.getValue().matchedProperties)));
 
         Map<RDFResourceRole, List<StatementConsumer>> projectTemplates = new HashMap<>();
 

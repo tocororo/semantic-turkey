@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview.consumers;
 
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.core.OntoLexLemon;
@@ -16,8 +17,8 @@ import java.util.Objects;
 
 public class ConstituentsStatementConsumer extends AbstractPropertyMatchingStatementConsumer {
 
-	public ConstituentsStatementConsumer(ProjectCustomViewsManager projCvManager) {
-		super(projCvManager, "constituents", Collections.singleton(DECOMP.CONSTITUENT));
+	public ConstituentsStatementConsumer(CustomFormManager cfManager, ProjectCustomViewsManager projCvManager) {
+		super(cfManager, projCvManager, "constituents", Collections.singleton(DECOMP.CONSTITUENT));
 	}
 
 	@Override

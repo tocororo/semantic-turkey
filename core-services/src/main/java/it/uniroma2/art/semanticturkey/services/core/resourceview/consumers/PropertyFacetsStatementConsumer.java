@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.services.core.resourceview.consumers;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
@@ -53,8 +54,8 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 
 	private AbstractPropertyMatchingStatementConsumer inverseOfMatcher;
 
-	public PropertyFacetsStatementConsumer(ProjectCustomViewsManager projCvManager) {
-		inverseOfMatcher = new AbstractPropertyMatchingStatementConsumer(projCvManager, "inverseOf",
+	public PropertyFacetsStatementConsumer(CustomFormManager cfManager, ProjectCustomViewsManager projCvManager) {
+		inverseOfMatcher = new AbstractPropertyMatchingStatementConsumer(cfManager, projCvManager, "inverseOf",
 				Collections.singleton(OWL.INVERSEOF)) {
 			@Override
 			protected boolean shouldRetainEmptyGroup(IRI prop, Resource resource,

@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview.consumers;
 
 import com.google.common.collect.Sets;
+import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
 import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer.BehaviorOptions.RootPropertiesBehavior;
@@ -18,8 +19,8 @@ public class ClassAxiomsStatementConsumer extends AbstractPropertyMatchingStatem
 			// OWL.Res.DISJOINTUNIONOF,
 			OWL.ONEOF, OWL.UNIONOF };
 
-	public ClassAxiomsStatementConsumer(ProjectCustomViewsManager projCvManager) {
-		super(projCvManager, "classaxioms", Sets.newLinkedHashSet(Arrays.asList(relevantProperties)),
+	public ClassAxiomsStatementConsumer(CustomFormManager cfManager, ProjectCustomViewsManager projCvManager) {
+		super(cfManager, projCvManager, "classaxioms", Sets.newLinkedHashSet(Arrays.asList(relevantProperties)),
 				new BehaviorOptions().setRootPropertiesBehavior(RootPropertiesBehavior.SHOW));
 	}
 
