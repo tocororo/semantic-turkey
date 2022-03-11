@@ -118,6 +118,7 @@ public class SemanticTurkey implements BundleActivator {
 
 	public void start(BundleContext arg0) throws Exception {
 		String extensionDir = new File(System.getProperty("user.dir")).toURI().toString();
+		logger.info("ST Home Directory: " + extensionDir);
 		System.out.println("ST Home Directory: " + extensionDir);
 		// sets the context class loader so that e.g. we can use the registered service providers under META-INF/services
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
@@ -127,7 +128,8 @@ public class SemanticTurkey implements BundleActivator {
 		} finally {
 			Thread.currentThread().setContextClassLoader(oldCtxClassLoader);
 		}
-		System.out.println("ST Started");
+		logger.info("ST Starting ...");
+		System.out.println("ST Starting ...");
 	}
 
 	public void stop(BundleContext arg0) throws Exception {

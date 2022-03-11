@@ -54,5 +54,7 @@ public class ProjectStarter {
                 }
             }
         }
+        logger.info("ST Started");
+        System.out.println("ST Started");
     }
 }
