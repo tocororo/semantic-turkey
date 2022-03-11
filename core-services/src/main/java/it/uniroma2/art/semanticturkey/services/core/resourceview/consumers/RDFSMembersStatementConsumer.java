@@ -1,5 +1,14 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview.consumers;
 
+import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer.BehaviorOptions.RootPropertiesBehavior;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -7,23 +16,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer.BehaviorOptions.RootPropertiesBehavior;
-
 public class RDFSMembersStatementConsumer extends AbstractPropertyMatchingStatementConsumer {
 
 	private static final Pattern uriPattern = Pattern
 			.compile("^http://www\\.w3\\.org/1999/02/22-rdf-syntax-ns#_\\d+$");
 
-	public RDFSMembersStatementConsumer(CustomFormManager customFormManager) {
-		super(customFormManager, "rdfsMembers", Collections.singleton(RDFS.MEMBER),
+	public RDFSMembersStatementConsumer(ProjectCustomViewsManager projCvManager) {
+		super(projCvManager, "rdfsMembers", Collections.singleton(RDFS.MEMBER),
 				new BehaviorOptions().setRootPropertiesBehavior(RootPropertiesBehavior.HIDE));
 	}
 

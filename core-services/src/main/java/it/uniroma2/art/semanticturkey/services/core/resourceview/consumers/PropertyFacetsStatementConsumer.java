@@ -1,16 +1,20 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview.consumers;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toSet;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
+import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
+import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
+import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
+import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
+import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsListSection;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyFacetsSection.FacetStructure;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
@@ -25,22 +29,16 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
-import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
-import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
-import it.uniroma2.art.semanticturkey.data.nature.NatureRecognitionOrchestrator;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.PredicateObjectsListSection;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.ResourceViewSection;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.consumers.PropertyFacetsSection.FacetStructure;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toSet;
 
 public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 
@@ -55,8 +53,8 @@ public class PropertyFacetsStatementConsumer extends AbstractStatementConsumer {
 
 	private AbstractPropertyMatchingStatementConsumer inverseOfMatcher;
 
-	public PropertyFacetsStatementConsumer(CustomFormManager customFormManager) {
-		inverseOfMatcher = new AbstractPropertyMatchingStatementConsumer(customFormManager, "inverseOf",
+	public PropertyFacetsStatementConsumer(ProjectCustomViewsManager projCvManager) {
+		inverseOfMatcher = new AbstractPropertyMatchingStatementConsumer(projCvManager, "inverseOf",
 				Collections.singleton(OWL.INVERSEOF)) {
 			@Override
 			protected boolean shouldRetainEmptyGroup(IRI prop, Resource resource,

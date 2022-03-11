@@ -1,16 +1,14 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview.consumers;
 
-import java.util.Arrays;
-
+import com.google.common.collect.Sets;
+import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer.BehaviorOptions.RootPropertiesBehavior;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 
-import com.google.common.collect.Sets;
-
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer.BehaviorOptions.RootPropertiesBehavior;
+import java.util.Arrays;
 
 public class ClassAxiomsStatementConsumer extends AbstractPropertyMatchingStatementConsumer {
 
@@ -20,8 +18,8 @@ public class ClassAxiomsStatementConsumer extends AbstractPropertyMatchingStatem
 			// OWL.Res.DISJOINTUNIONOF,
 			OWL.ONEOF, OWL.UNIONOF };
 
-	public ClassAxiomsStatementConsumer(CustomFormManager customFormManager) {
-		super(customFormManager, "classaxioms", Sets.newLinkedHashSet(Arrays.asList(relevantProperties)),
+	public ClassAxiomsStatementConsumer(ProjectCustomViewsManager projCvManager) {
+		super(projCvManager, "classaxioms", Sets.newLinkedHashSet(Arrays.asList(relevantProperties)),
 				new BehaviorOptions().setRootPropertiesBehavior(RootPropertiesBehavior.SHOW));
 	}
 

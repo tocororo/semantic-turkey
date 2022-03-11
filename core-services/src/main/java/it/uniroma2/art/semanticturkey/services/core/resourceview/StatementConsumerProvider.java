@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core.resourceview;
 
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.event.annotation.EventListener;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -42,7 +43,6 @@ import it.uniroma2.art.semanticturkey.settings.core.ResourceViewCustomSectionSet
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.settings.events.SettingsDefaultsUpdated;
 import it.uniroma2.art.semanticturkey.settings.events.SettingsEvent;
-import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectFactory;
@@ -64,7 +64,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -79,6 +78,7 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
     private ProjectManager.ProjectEventHandler prjEventHandler;
 
     private CustomFormManager customFormManager;
+    private ProjectCustomViewsManager projCvManager;
     private SemanticTurkeyCoreSettingsManager coreSettingsManager;
 
     /**
@@ -92,44 +92,44 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
     private ConcurrentHashMap<String, Map<RDFResourceRole, List<StatementConsumer>>> project2templates;
 
     @Autowired
-    ProjectWidgetsManager projWidgetMgr;
+    ProjectCustomViewsManager projWidgetMgr;
 
     @Autowired
-    public StatementConsumerProvider(CustomFormManager customFormManager,
+    public StatementConsumerProvider(CustomFormManager customFormManager, ProjectCustomViewsManager projCvManager,
                                      ObjectFactory<CODACoreProvider> codaProvider, SemanticTurkeyCoreSettingsManager coreSettingsManager) {
-        this.customFormManager = customFormManager;
+        this.projCvManager = projCvManager;
         this.coreSettingsManager = coreSettingsManager;
 
         factoryStatementConsumers = new LinkedHashMap<>();
-        factoryStatementConsumers.put("types", new TypesStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("classaxioms", new ClassAxiomsStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("datatypeDefinitions", new DatatypeDefinitionsStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("lexicalizations", new LexicalizationsStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("broaders", new BroadersStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("equivalentProperties", new EquivalentPropertyStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("disjointProperties", new PropertyDisjointWithStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("superproperties", new SubPropertyOfStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("subPropertyChains", new PropertyChainStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("facets", new PropertyFacetsStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("domains", new DomainsStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("ranges", new RangesStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("imports", new OntologyImportsStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("properties", new OtherPropertiesStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("topconceptof", new TopConceptOfStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("schemes", new InSchemeStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("members", new SKOSCollectionMembersStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("membersOrdered", new SKOSOrderedCollectionMembersStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("labelRelations", new LabelRelationsStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("notes", new SKOSNotesStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("lexicalForms", new LexicalFormsStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("lexicalSenses", new LexicalSensesStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("denotations", new DenotationsStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("evokedLexicalConcepts", new EvokedLexicalConcepts(customFormManager));
+        factoryStatementConsumers.put("types", new TypesStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("classaxioms", new ClassAxiomsStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("datatypeDefinitions", new DatatypeDefinitionsStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("lexicalizations", new LexicalizationsStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("broaders", new BroadersStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("equivalentProperties", new EquivalentPropertyStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("disjointProperties", new PropertyDisjointWithStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("superproperties", new SubPropertyOfStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("subPropertyChains", new PropertyChainStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("facets", new PropertyFacetsStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("domains", new DomainsStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("ranges", new RangesStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("imports", new OntologyImportsStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("properties", new OtherPropertiesStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("topconceptof", new TopConceptOfStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("schemes", new InSchemeStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("members", new SKOSCollectionMembersStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("membersOrdered", new SKOSOrderedCollectionMembersStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("labelRelations", new LabelRelationsStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("notes", new SKOSNotesStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("lexicalForms", new LexicalFormsStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("lexicalSenses", new LexicalSensesStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("denotations", new DenotationsStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("evokedLexicalConcepts", new EvokedLexicalConcepts(projCvManager));
         factoryStatementConsumers.put("formBasedPreview", new FormBasedPreviewStatementConsumer(customFormManager, codaProvider));
-        factoryStatementConsumers.put("subterms", new SubtermsStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("constituents", new ConstituentsStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("formRepresentations", new FormRepresentationsStatementConsumer(customFormManager));
-        factoryStatementConsumers.put("rdfsMembers", new RDFSMembersStatementConsumer(customFormManager));
+        factoryStatementConsumers.put("subterms", new SubtermsStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("constituents", new ConstituentsStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("formRepresentations", new FormRepresentationsStatementConsumer(projCvManager));
+        factoryStatementConsumers.put("rdfsMembers", new RDFSMembersStatementConsumer(projCvManager));
 
         project2templates = new ConcurrentHashMap<>();
     }
@@ -176,7 +176,7 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
         Map<String, ResourceViewCustomSectionSettings> customSectionsSettings = Optional.ofNullable(coreProjectSettings.resourceView).map(s -> s.customSections).orElse(Collections.emptyMap());
         Map<RDFResourceRole, List<String>> templatesSettings = Optional.ofNullable(coreProjectSettings.resourceView).map(s -> s.templates).orElse(Collections.emptyMap());
 
-        Map<String, StatementConsumer> customSections = customSectionsSettings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> new AbstractPropertyMatchingStatementConsumer(customFormManager, entry.getKey(), entry.getValue().matchedProperties)));
+        Map<String, StatementConsumer> customSections = customSectionsSettings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> new AbstractPropertyMatchingStatementConsumer(projCvManager, entry.getKey(), entry.getValue().matchedProperties)));
 
         Map<RDFResourceRole, List<StatementConsumer>> projectTemplates = new HashMap<>();
 
@@ -227,8 +227,6 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
             }
         });
 
-        registerWidgetsSection(role2template, project);
-
         List<StatementConsumer> template = null;
 
         if (role.isProperty()) {
@@ -257,43 +255,6 @@ public class StatementConsumerProvider implements ApplicationListener<Applicatio
         } else {
             // if no template has been found, fallback to the one for individuals. If this is not defined (e.g. corrupted settings), fallback to a simple properties listing
             return role2template.getOrDefault(RDFResourceRole.individual, Arrays.asList(factoryStatementConsumers.get("properties")));
-        }
-    }
-
-    /**
-     * Register the "widgets" section (namely the statement consumer) into the RV templates for each role
-     *
-     * This method is called each time a ResourceView is built (ResourceView#getResourceView() -> getTemplateForResourceRole()).
-     * I needed to came up with this solution since the properties consumed by the widgets section depend on
-     * Widget's configuration (namely all the properties for which a widget is mapped to).
-     * The role2template is stored into project2templates which is built when
-     * - a project is open
-     * - template system setting is updated
-     * so, I cannot register the section into project2templates otherwise it wouldn't reflect changes on Widget's config
-     * (e.g. if a new property-widget association is established such property wouldn't be part of the widgets consumer
-     * previously registered).
-     *
-     * @param role2template
-     * @param project
-     */
-    private void registerWidgetsSection(Map<RDFResourceRole, List<StatementConsumer>> role2template, Project project) {
-        Set<IRI> matchedProperties = projWidgetMgr.getWidgetManager(project).listTriggers();
-        /*
-        the widgets section is registered only if mappedProperties is not empty, otherwise its consumer will consume every statement
-        (I guess it is equivalent to ?s ?p ?o where ?p is not bound to any property)
-        */
-        if (!matchedProperties.isEmpty()) {
-            AbstractPropertyMatchingStatementConsumer widgetsStatementConsumer = new AbstractPropertyMatchingStatementConsumer(customFormManager, "widgets", matchedProperties);
-            //in each template, set the consumer as first, otherwise "otherProperties" section will consume any properties
-            for (List<StatementConsumer> consumers : role2template.values()) {
-                StatementConsumer firstConsumer = consumers.get(0);
-                //register the consumer only if not already registered before, otherwise replace it
-                if (firstConsumer instanceof AbstractPropertyMatchingStatementConsumer && ((AbstractPropertyMatchingStatementConsumer) firstConsumer).getSectionName().equals("widgets")) {
-                    consumers.set(0, widgetsStatementConsumer);
-                } else {
-                    consumers.add(0, widgetsStatementConsumer);
-                }
-            }
         }
     }
 

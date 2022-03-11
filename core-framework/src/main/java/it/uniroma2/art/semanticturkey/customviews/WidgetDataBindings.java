@@ -1,4 +1,4 @@
-package it.uniroma2.art.semanticturkey.widgets;
+package it.uniroma2.art.semanticturkey.customviews;
 
 public enum WidgetDataBindings {
 

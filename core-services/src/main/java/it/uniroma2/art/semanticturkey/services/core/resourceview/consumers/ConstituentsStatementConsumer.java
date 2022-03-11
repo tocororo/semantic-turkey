@@ -1,24 +1,23 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview.consumers;
 
+import it.uniroma2.art.lime.model.vocabulary.DECOMP;
+import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.core.OntoLexLemon;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-
-import it.uniroma2.art.lime.model.vocabulary.DECOMP;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.core.OntoLexLemon;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer;
-
 public class ConstituentsStatementConsumer extends AbstractPropertyMatchingStatementConsumer {
 
-	public ConstituentsStatementConsumer(CustomFormManager customFormManager) {
-		super(customFormManager, "constituents", Collections.singleton(DECOMP.CONSTITUENT));
+	public ConstituentsStatementConsumer(ProjectCustomViewsManager projCvManager) {
+		super(projCvManager, "constituents", Collections.singleton(DECOMP.CONSTITUENT));
 	}
 
 	@Override

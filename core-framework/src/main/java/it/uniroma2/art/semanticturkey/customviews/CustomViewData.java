@@ -1,6 +1,5 @@
-package it.uniroma2.art.semanticturkey.widgets;
+package it.uniroma2.art.semanticturkey.customviews;
 
-import it.uniroma2.art.semanticturkey.config.visualizationwidgets.Widget;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import org.eclipse.rdf4j.model.Value;
 
@@ -8,23 +7,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class WidgetData {
+public class CustomViewData {
 
-    private Widget.DataType widgetDataType;
+    private CustomViewModelEnum model;
     //list of bindings map (binding-value) for the same id of the represented data (e.g. trace_id for area/route, series_id for series, ...)
     private List<Map<String, AnnotatedValue<Value>>> bindingsList;
 
-    public WidgetData(Widget.DataType widgetDataType) {
-        this.widgetDataType = widgetDataType;
+    public CustomViewData(CustomViewModelEnum model) {
+        this.model = model;
         bindingsList = new ArrayList<>();
     }
 
-    public Widget.DataType getWidgetDataType() {
-        return widgetDataType;
+    public CustomViewModelEnum getModel() {
+        return model;
     }
 
-    public void setWidgetDataType(Widget.DataType widgetDataType) {
-        this.widgetDataType = widgetDataType;
+    public void setModel(CustomViewModelEnum model) {
+        this.model = model;
     }
 
     public List<Map<String, AnnotatedValue<Value>>> getBindingsList() {
@@ -40,13 +39,13 @@ public class WidgetData {
     }
 
     /**
-     * Returns the value of the data identifier (e.g. for a route, should return the value of trace_id)
-     * @param idBinding
+     * Returns the value for the given binding
+     * @param bindingName
      * @return
      */
-    public AnnotatedValue<Value> getId(String idBinding) {
+    public AnnotatedValue<Value> getBindingValue(String bindingName) {
         if (!bindingsList.isEmpty()) {
-            return bindingsList.get(0).get(idBinding);
+            return bindingsList.get(0).get(bindingName);
         }
         return null;
     }

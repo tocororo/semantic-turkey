@@ -329,16 +329,17 @@
 			class="it.uniroma2.art.semanticturkey.config.resourcemetadata.ResourceMetadataAssociationStore" />
 	</osgi:service>
 
-	<!-- Publishes the stores about Widgets -->
+	<!-- Publishes the stores about CustomViews -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
-			class="it.uniroma2.art.semanticturkey.config.visualizationwidgets.WidgetStore" />
+				class="it.uniroma2.art.semanticturkey.config.customview.CustomViewStore" />
 	</osgi:service>
 	<osgi:service auto-export="interfaces">
 		<bean
-			class="it.uniroma2.art.semanticturkey.config.visualizationwidgets.WidgetAssociationStore" />
+				class="it.uniroma2.art.semanticturkey.config.customview.CustomViewAssociationStore" />
 	</osgi:service>
+
 
 	<!-- Publishes the stores about Remote Alignment Services -->
 

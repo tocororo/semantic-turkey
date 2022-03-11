@@ -1,9 +1,26 @@
 package it.uniroma2.art.semanticturkey.services.core.resourceview;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Multimap;
+import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
+import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
+import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer.BehaviorOptions.RenderingEngineBehavior;
+import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,29 +36,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Multimap;
-
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
-import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
-import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.core.resourceview.AbstractPropertyMatchingStatementConsumer.BehaviorOptions.RenderingEngineBehavior;
-import it.uniroma2.art.semanticturkey.vocabulary.STVocabUtilities;
+import static java.util.stream.Collectors.*;
 
 public class AbstractPropertyMatchingStatementConsumer extends AbstractStatementConsumer {
 
@@ -119,22 +114,22 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 		}
 	}
 
-	private CustomFormManager customFormManager;
+	private ProjectCustomViewsManager projCvManager;
 	private String sectionName;
 	private Set<IRI> matchedProperties;
 	private BehaviorOptions behaviorOptions;
 
-	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager, String sectionName,
+	public AbstractPropertyMatchingStatementConsumer(ProjectCustomViewsManager projCvManager, String sectionName,
 			Set<IRI> matchedProperties, BehaviorOptions behaviorOptions) {
-		this.customFormManager = customFormManager;
+		this.projCvManager = projCvManager;
 		this.sectionName = sectionName;
 		this.matchedProperties = matchedProperties;
 		this.behaviorOptions = behaviorOptions;
 	}
 
-	public AbstractPropertyMatchingStatementConsumer(CustomFormManager customFormManager, String sectionName,
+	public AbstractPropertyMatchingStatementConsumer(ProjectCustomViewsManager projCvManager, String sectionName,
 			Set<IRI> matchedProperties) {
-		this(customFormManager, sectionName, matchedProperties, new BehaviorOptions());
+		this(projCvManager, sectionName, matchedProperties, new BehaviorOptions());
 	}
 
 	public String getSectionName() {
@@ -190,7 +185,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 			Map<Value, List<Statement>> statementsByObject = pendingDirectKnowledge
 					.filter(resource, predicate, null).stream().collect(groupingBy(Statement::getObject));
 
-			List<AnnotatedValue<?>> predicateValues = new ArrayList<AnnotatedValue<?>>(
+			List<AnnotatedValue<?>> predicateValues = new ArrayList<>(
 					statementsByObject.keySet().size());
 
 			for (Map.Entry<Value, List<Statement>> entry : statementsByObject.entrySet()) {
@@ -236,7 +231,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 								graphs1.addAll(firstElementAndGraphs.getValue());
 								graphs1.addAll(cumulativeGraphs);
 
-								AnnotatedValue<? extends Value> annotatedMember = new AnnotatedValue<Value>(
+								AnnotatedValue<? extends Value> annotatedMember = new AnnotatedValue<>(
 										firstElement);
 
 								if (firstElement instanceof Resource) {
@@ -307,7 +302,7 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 				continue; // Skip irrelevant empty outer group
 			}
 
-			AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<IRI>(predicate);
+			AnnotatedValue<IRI> annotatedPredicate = new AnnotatedValue<>(predicate);
 
 			addNature(annotatedPredicate, resource2attributes);
 			if ("".equals(annotatedPredicate.getAttributes().get("nature"))) {
@@ -315,8 +310,10 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 			}
 			addShowViaDedicatedOrGenericRendering(annotatedPredicate, resource2attributes,
 					predicate2resourceCreShow, null, statements, true);
-			annotatedPredicate.setAttribute("hasCustomRange",
-					customFormManager.existsCustomFormGraphForResource(project, predicate));
+//			annotatedPredicate.setAttribute("hasCustomRange",
+//					customFormManager.existsCustomFormGraphForResource(project, predicate));
+			annotatedPredicate.setAttribute("hasCustomView",
+					projCvManager.getCustomViewManager(project).associationExists(predicate));
 
 			if (behaviorOptions.getRootPropertiesBehavior() == BehaviorOptions.RootPropertiesBehavior.SHOW
 					|| (behaviorOptions

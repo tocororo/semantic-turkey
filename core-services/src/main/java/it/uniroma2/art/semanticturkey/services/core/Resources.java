@@ -21,6 +21,7 @@ import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
 import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
+import org.eclipse.rdf4j.common.net.ParsedIRI;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -28,6 +29,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.GraphQuery;
@@ -53,11 +55,14 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import static java.util.stream.Collectors.joining;
@@ -459,6 +464,50 @@ public class Resources extends STServiceAdapter {
 		GraphQuery gq = conn.prepareGraphQuery(query);
 		gq.setBinding("s", resource);
 		return gq.evaluate();
+	}
+
+	/**
+	 * Used to check if a list of IRIs/QNames (manually entered by the user client-side) is correct.
+	 * The list is written as a sequence of comma separated IRIs or QNames.
+	 * Returns a list of annotated IRIs
+	 * In case of invalid IRIs or QName with unknown prefix, it throws a IllegalArgumentException.
+	 *
+	 * @param iriList
+	 * @return
+	 */
+	@STServiceOperation
+	public List<AnnotatedValue<IRI>> validateIRIList(String iriList) {
+		ArrayList<AnnotatedValue<IRI>> chain = new ArrayList<>();
+		SimpleValueFactory svf = SimpleValueFactory.getInstance();
+
+		Map<String, String> allMappings = getProject().getOntologyManager().getNSPrefixMappings(false);
+
+		String[] splitted = iriList.split(",");
+		for (String s : splitted) {
+			String iri = s.trim();
+			if (iri.contains(":") && !iri.contains(":/")) { //is QName => resolve it to a complete IRI
+				boolean prefFound = false;
+				for (Map.Entry<String, String> entry: allMappings.entrySet()) {
+					if (iri.startsWith(entry.getKey()+":")) {
+						iri = iri.replace(entry.getKey()+":", entry.getValue());
+						prefFound = true;
+						break;
+					}
+				}
+				if (!prefFound) {
+					throw new IllegalArgumentException("'" + s + "' is not a valid QName. Unknown prefix '"
+							+ iri.substring(0, iri.indexOf(":")) + "'.");
+				}
+			}
+
+			try {
+				new ParsedIRI(iri);
+			} catch (URISyntaxException e) {
+				throw new IllegalArgumentException("'" + iri + "' is not a valid URI");
+			}
+			chain.add(new AnnotatedValue<>(svf.createIRI(iri)));
+		}
+		return chain;
 	}
 
 }
