@@ -52,6 +52,7 @@ import it.uniroma2.art.sheet2rdf.coda.CODAConverter;
 import it.uniroma2.art.sheet2rdf.coda.Sheet2RDFCODA;
 import it.uniroma2.art.sheet2rdf.core.MappingStruct;
 import it.uniroma2.art.sheet2rdf.core.Sheet2RDFCore;
+import it.uniroma2.art.sheet2rdf.db.AvailableDBDriverName;
 import it.uniroma2.art.sheet2rdf.exception.GenericSheet2RDFException;
 import it.uniroma2.art.sheet2rdf.exception.InvalidWizardStatusException;
 import it.uniroma2.art.sheet2rdf.header.AdvancedGraphApplication;
@@ -160,6 +161,7 @@ public class Sheet2RDF extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     @Read
     public void uploadDBInfo(String db_base_url, String db_name, String db_table, String db_user, String db_password,
+                             AvailableDBDriverName.Values db_driverName,
                              @Optional(defaultValue = "columnNumericIndex") FsNamingStrategy fsNamingStrategy)
             throws GenericSheet2RDFException {
 
@@ -167,11 +169,22 @@ public class Sheet2RDF extends STServiceAdapter {
         RepositoryConnection connection = getManagedConnection();
         CODACore codaCore = getInitializedCodaCore(connection);
 
-        Sheet2RDFCore s2rdfCore = new Sheet2RDFCore(db_base_url, db_name, db_table, db_user, db_password, connection, fsNamingStrategy);
+        Sheet2RDFCore s2rdfCore = new Sheet2RDFCore(db_base_url, db_name, db_table, db_user, db_password, db_driverName,
+                connection, fsNamingStrategy);
         S2RDFContext s2rdfCtx = new S2RDFContext(s2rdfCore, codaCore);
 
         String token = stServiceContext.getSessionToken();
         contextMap.put(token, s2rdfCtx);
+    }
+
+    @STServiceOperation
+    @Read
+    public List<String> getSupportedDBDrivers(){
+        List<String> availabelDBDriverNameList = new ArrayList<>();
+        for(AvailableDBDriverName.Values availabbleDBDriverName : AvailableDBDriverName.Values.values()){
+            availabelDBDriverNameList.add(availabbleDBDriverName.name());
+        }
+        return availabelDBDriverNameList;
     }
 
     /**
