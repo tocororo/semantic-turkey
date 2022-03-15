@@ -12,8 +12,8 @@ public class PropertyChainView extends CustomView {
     public static class MessageKeys {
         public static final String keyBase = "it.uniroma2.art.semanticturkey.config.customview.PropertyChainView";
         public static final String shortName = keyBase + ".shortName";
-        public static final String propertyChain$description = keyBase + ".propertyChain.description";
-        public static final String propertyChain$displayName = keyBase + ".propertyChain.displayName";
+        public static final String properties$description = keyBase + ".properties.description";
+        public static final String properties$displayName = keyBase + ".properties.displayName";
     }
 
     @Override
@@ -21,8 +21,8 @@ public class PropertyChainView extends CustomView {
         return CustomViewModelEnum.property_chain;
     }
 
-    @STProperty(description = "{" + MessageKeys.propertyChain$description + "}", displayName = "{" + MessageKeys.propertyChain$displayName + "}")
+    @STProperty(description = "{" + MessageKeys.properties$description + "}", displayName = "{" + MessageKeys.properties$displayName + "}")
     @Required
-    public List<IRI> propertyChain;
+    public List<IRI> properties;
 
 }
