@@ -1,22 +1,13 @@
 package it.uniroma2.art.semanticturkey.customviews;
 
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import org.eclipse.rdf4j.model.Value;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class CustomViewData {
 
     private CustomViewModelEnum model;
-    //list of bindings map (binding-value) for the same id of the represented data (e.g. trace_id for area/route, series_id for series, ...)
-    private List<Map<String, AnnotatedValue<Value>>> bindingsList;
-
-    public CustomViewData(CustomViewModelEnum model) {
-        this.model = model;
-        bindingsList = new ArrayList<>();
-    }
+    private List<CustomViewValueDescription> data;
+    private ViewsEnum defaultView;
+//    private SingleValueUpdate valueUpdate;
 
     public CustomViewModelEnum getModel() {
         return model;
@@ -26,28 +17,27 @@ public class CustomViewData {
         this.model = model;
     }
 
-    public List<Map<String, AnnotatedValue<Value>>> getBindingsList() {
-        return bindingsList;
+    public List<CustomViewValueDescription> getData() {
+        return data;
     }
 
-    public void setBindingsList(List<Map<String, AnnotatedValue<Value>>> bindingsList) {
-        this.bindingsList = bindingsList;
+    public void setData(List<CustomViewValueDescription> data) {
+        this.data = data;
     }
 
-    public void addBindings(Map<String, AnnotatedValue<Value>> bindings) {
-        this.bindingsList.add(bindings);
+    public ViewsEnum getDefaultView() {
+        return defaultView;
     }
 
-    /**
-     * Returns the value for the given binding
-     * @param bindingName
-     * @return
-     */
-    public AnnotatedValue<Value> getBindingValue(String bindingName) {
-        if (!bindingsList.isEmpty()) {
-            return bindingsList.get(0).get(bindingName);
-        }
-        return null;
+    public void setDefaultView(ViewsEnum defaultView) {
+        this.defaultView = defaultView;
     }
 
+//    public SingleValueUpdate getValueUpdate() {
+//        return valueUpdate;
+//    }
+//
+//    public void setValueUpdate(SingleValueUpdate valueUpdate) {
+//        this.valueUpdate = valueUpdate;
+//    }
 }

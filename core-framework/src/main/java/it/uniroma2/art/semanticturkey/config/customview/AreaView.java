@@ -24,4 +24,5 @@ public class AreaView extends AbstractSparqlBasedCustomView {
         return CustomViewDataBindings.route_id;
     }
 
+
 }

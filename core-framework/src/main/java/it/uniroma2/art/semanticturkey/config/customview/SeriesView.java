@@ -24,4 +24,5 @@ public class SeriesView extends AbstractSparqlBasedCustomView {
         return CustomViewDataBindings.series_id;
     }
 
+
 }

@@ -40,9 +40,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 @STService
@@ -144,67 +142,15 @@ public class CustomViews extends STServiceAdapter  {
 
     @Read
     @STServiceOperation()
-    public List<CustomViewData> getViewData(Resource resource, IRI property) throws STPropertyAccessException, NoSuchConfigurationManager {
+    public CustomViewData getViewData(Resource resource, IRI property) throws STPropertyAccessException, NoSuchConfigurationManager {
         ObjectMapper objectMapper = new ObjectMapper();
-
-        List<CustomViewData> dataList = new ArrayList<>();
 
         CustomViewsManager cvMgr = new CustomViewsManager(getProject(), exptManager);
         CustomView customView = cvMgr.getCustomViewsForProperty(property);
-//        if (customView != null) { //cv should always exist since this API should be invoked from the client only in such case
-//
-//            String retrieveQuery = customView.retrieve;
-//
-//            TupleQuery tq = getManagedConnection().prepareTupleQuery(retrieveQuery);
-//            tq.setBinding("resource", resource);
-//            tq.setBinding("trigprop", property);
-//
-//            SimpleDataset dataset = new SimpleDataset();
-//            dataset.setDefaultInsertGraph((IRI) getWorkingGraph());
-//            dataset.addDefaultGraph((IRI) getWorkingGraph());
-//            dataset.addDefaultRemoveGraph((IRI) getWorkingGraph());
-//            tq.setDataset(dataset);
-//
-//            TupleQueryResult results = tq.evaluate();
-//
-//            /**
-//             * according to the type, here I need to group the returned data into the response
-//             * - point: location, latitude, longitude; no need to group, each record is a single data set
-//             * - area/route: route_id, location, latitude, longitude; grouped by polyline_id
-//             * - series: series_id, series_label, value_label, name, value; grouped by series_id
-//             * - series_collection: series_collection_id, series_label, value_label, series_name, name, value; grouped by series_collection_id
-//             */
-//            //first cache the results into a list of mappings binding-value
-//            List<Map<String, AnnotatedValue<Value>>> records = new ArrayList<>();
-//            while (results.hasNext()) {
-//                Map<String, AnnotatedValue<Value>> record = new HashMap<>();
-//                BindingSet bs = results.next();
-//                bs.forEach(b-> {
-//                    record.put(b.getName(), new AnnotatedValue<>(b.getValue()));
-//                });
-//                records.add(record);
-//            }
-//            //iterate over the cache and add the records to the widgetData list grouped by the id value
-//            for (Map<String, AnnotatedValue<Value>> record : records) {
-//                //look for the widget data for the given id value (if already collected)
-//                CustomViewData vd = dataList.stream().filter(data -> {
-//                    AnnotatedValue<Value> recordId = record.get(customView.getIdBinding().name());
-//                    AnnotatedValue<Value> wdId = data.getBindingValue(customView.getIdBinding().name());
-//                    return recordId.getValue().equals(wdId.getValue());
-//                }).findFirst().orElse(null);
-//                if (vd != null) {
-//                    //if the given ID value has been already collected/grouped, add a new record to it
-//                    vd.addBindings(record);
-//                } else { //otherwise create a new WidgetData
-//                    vd = new CustomViewData(customView.getModelType());
-//                    vd.addBindings(record);
-//                    dataList.add(vd);
-//                }
-//            }
-//        }
-        return dataList;
+        //no need to check if customView is not null since this API should be invoked from the client only in such case
+        return customView.getData(getManagedConnection(), resource, property, (IRI) getWorkingGraph());
     }
-//
+
 //    @Write
 //    @STServiceOperation(method = RequestMethod.POST)
 //    @PreAuthorize("@auth.isAuthorized('rdf(resource)', 'U')")

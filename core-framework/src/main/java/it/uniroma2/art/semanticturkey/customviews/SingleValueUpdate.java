@@ -7,18 +7,27 @@ import java.util.List;
 
 public class SingleValueUpdate {
 
-    public enum ValueSelectionMode {
+    public enum UpdateMode {
         none, //no update in widget
         inline, //inline NT editing
-        picker //value picker
+        picker, //value picker
+        widget, //the widget is aware of the update mode, no chance to customize it
     }
 
     private String field;
-    private ValueSelectionMode updateMode;
+    private UpdateMode updateMode;
     private String updateQuery;
     private RDFTypesEnum valueType;
     private IRI datatype;
     private List<IRI> classes;
+
+    public SingleValueUpdate() {
+        this(UpdateMode.none);
+    }
+
+    public SingleValueUpdate(UpdateMode updateMode) {
+        this.updateMode = updateMode;
+    }
 
     public String getField() {
         return field;
@@ -28,11 +37,11 @@ public class SingleValueUpdate {
         this.field = field;
     }
 
-    public ValueSelectionMode getUpdateMode() {
+    public UpdateMode getUpdateMode() {
         return updateMode;
     }
 
-    public void setUpdateMode(ValueSelectionMode updateMode) {
+    public void setUpdateMode(UpdateMode updateMode) {
         this.updateMode = updateMode;
     }
 

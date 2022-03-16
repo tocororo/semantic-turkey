@@ -1,10 +1,14 @@
 package it.uniroma2.art.semanticturkey.config.customview;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
+import it.uniroma2.art.semanticturkey.customviews.CustomViewData;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewModelEnum;
 import it.uniroma2.art.semanticturkey.customviews.ViewsEnum;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 public abstract class CustomView implements Configuration {
 
@@ -26,6 +30,8 @@ public abstract class CustomView implements Configuration {
     public ViewsEnum suggestedView;
 
     public abstract CustomViewModelEnum getModelType();
+
+    public abstract CustomViewData getData(RepositoryConnection connection, Resource resource, IRI property, IRI workingGraph);
 
 //    /**
 //     * Returns the list of bindings that the retrieve query must return
