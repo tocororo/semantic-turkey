@@ -2,9 +2,9 @@ package it.uniroma2.art.semanticturkey.config.customview;
 
 import it.uniroma2.art.semanticturkey.customviews.CustomViewData;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewModelEnum;
-import it.uniroma2.art.semanticturkey.customviews.CustomViewValueDescription;
-import it.uniroma2.art.semanticturkey.customviews.SingleValueUpdate;
-import it.uniroma2.art.semanticturkey.customviews.VectorData;
+import it.uniroma2.art.semanticturkey.customviews.CustomViewObjectDescription;
+import it.uniroma2.art.semanticturkey.customviews.CustomViewRenderedValue;
+import it.uniroma2.art.semanticturkey.customviews.UpdateInfo;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
@@ -15,7 +15,6 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,7 +46,7 @@ public class DynamicVectorView extends CustomView {
 
     @Required
     @STProperty(description = "{" + MessageKeys.update$description + "}", displayName = "{" + MessageKeys.update$displayName + "}")
-    public List<SingleValueUpdate> update;
+    public List<UpdateInfo> update;
 
     @Override
     public CustomViewData getData(RepositoryConnection connection, Resource resource, IRI property, IRI workingGraph) {
@@ -56,7 +55,6 @@ public class DynamicVectorView extends CustomView {
         cvData.setModel(getModelType());
         cvData.setDefaultView(suggestedView);
 
-        System.out.println("retrieve " + retrieve);
         TupleQuery tupleQuery = connection.prepareTupleQuery(retrieve);
         tupleQuery.setBinding("resource", resource);
         tupleQuery.setBinding("trigprop", property);
@@ -69,31 +67,31 @@ public class DynamicVectorView extends CustomView {
 
         TupleQueryResult results = tupleQuery.evaluate();
 
-        List<CustomViewValueDescription> valueDescriptions = new ArrayList<>();
+        List<CustomViewObjectDescription> objDescriptions = new ArrayList<>();
         while (results.hasNext()) {
             BindingSet bs = results.next();
 
             String objectVar = getRetrieveObjectVariable();
             Value object = bs.getValue(objectVar);
 
-            List<VectorData> vectorDataList = new ArrayList<>();
+            List<CustomViewRenderedValue> renderedValueList = new ArrayList<>();
 
             Map<String, String> variableFieldMap = getValueVariablesFields();
             for (Map.Entry<String, String> entry : variableFieldMap.entrySet()) {
                 String var = entry.getKey();
                 String field = entry.getValue();
                 Value value = bs.getValue(var);
-                VectorData vectorData = new VectorData(field, value);
-                SingleValueUpdate updateInfo = update.stream().filter(u -> u.getField().equals(field)).findFirst().get();
-                vectorData.setUpdateInfo(updateInfo);
-                vectorDataList.add(vectorData);
+                CustomViewRenderedValue renderedValue = new CustomViewRenderedValue(field, value);
+                UpdateInfo updateInfo = update.stream().filter(u -> u.getField().equals(field)).findFirst().get();
+                renderedValue.setUpdateInfo(updateInfo);
+                renderedValueList.add(renderedValue);
             }
-            CustomViewValueDescription vd = new CustomViewValueDescription();
-            vd.setValue(object);
-            vd.setDescription(vectorDataList);
-            valueDescriptions.add(vd);
+            CustomViewObjectDescription cvObjectDescr = new CustomViewObjectDescription();
+            cvObjectDescr.setResource(object);
+            cvObjectDescr.setDescription(renderedValueList);
+            objDescriptions.add(cvObjectDescr);
         }
-        cvData.setData(valueDescriptions);
+        cvData.setData(objDescriptions);
 
         return cvData;
     }

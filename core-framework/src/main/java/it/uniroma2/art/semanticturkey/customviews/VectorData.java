@@ -6,7 +6,7 @@ public class VectorData {
 
     private String headerName;
     private Value value; //cell content
-    private SingleValueUpdate updateInfo; //provides info on how to update the value
+    private UpdateInfo updateInfo; //provides info on how to update the value
 
     public VectorData() {}
 
@@ -31,11 +31,11 @@ public class VectorData {
         this.value = value;
     }
 
-    public SingleValueUpdate getUpdateInfo() {
+    public UpdateInfo getUpdateInfo() {
         return updateInfo;
     }
 
-    public void setUpdateInfo(SingleValueUpdate updateInfo) {
+    public void setUpdateInfo(UpdateInfo updateInfo) {
         this.updateInfo = updateInfo;
     }
 

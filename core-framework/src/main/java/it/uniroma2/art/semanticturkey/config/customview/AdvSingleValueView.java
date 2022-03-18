@@ -2,8 +2,9 @@ package it.uniroma2.art.semanticturkey.config.customview;
 
 import it.uniroma2.art.semanticturkey.customviews.CustomViewData;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewModelEnum;
-import it.uniroma2.art.semanticturkey.customviews.CustomViewValueDescription;
-import it.uniroma2.art.semanticturkey.customviews.SingleValueUpdate;
+import it.uniroma2.art.semanticturkey.customviews.CustomViewObjectDescription;
+import it.uniroma2.art.semanticturkey.customviews.CustomViewRenderedValue;
+import it.uniroma2.art.semanticturkey.customviews.UpdateInfo;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
@@ -43,7 +44,7 @@ public class AdvSingleValueView extends CustomView {
 
     @Required
     @STProperty(description = "{" + MessageKeys.update$description + "}", displayName = "{" + MessageKeys.update$displayName + "}")
-    public SingleValueUpdate update;
+    public UpdateInfo update;
 
     @Override
     public CustomViewData getData(RepositoryConnection connection, Resource resource, IRI property, IRI workingGraph) {
@@ -64,18 +65,21 @@ public class AdvSingleValueView extends CustomView {
 
         TupleQueryResult results = tupleQuery.evaluate();
 
-        List<CustomViewValueDescription> valueDescriptions = new ArrayList<>();
+        List<CustomViewObjectDescription> valueDescriptions = new ArrayList<>();
         while (results.hasNext()) {
             BindingSet bs = results.next();
             String objectVar = getRetrieveObjectVariable();
             //if objectVar is value (e.g. resource $trigprop ?value), object and value will clash and the value description is the same value
             Value object = bs.getValue(objectVar);
             Value value = bs.getValue("value");
-            CustomViewValueDescription vd = new CustomViewValueDescription();
-            vd.setValue(object);
-            vd.setDescription(value);
-            vd.setUpdateInfo(this.update);
-            valueDescriptions.add(vd);
+            CustomViewRenderedValue renderedValue = new CustomViewRenderedValue(value);
+            renderedValue.setField(objectVar);
+            renderedValue.setUpdateInfo(new UpdateInfo(objectVar, UpdateInfo.UpdateMode.widget));
+
+            CustomViewObjectDescription cvObjectDescr = new CustomViewObjectDescription();
+            cvObjectDescr.setResource(object);
+            cvObjectDescr.setDescription(renderedValue);
+            valueDescriptions.add(cvObjectDescr);
         }
         cvData.setData(valueDescriptions);
 

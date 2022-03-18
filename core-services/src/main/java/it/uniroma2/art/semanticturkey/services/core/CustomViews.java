@@ -6,10 +6,12 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
+import it.uniroma2.art.semanticturkey.config.customview.AbstractSparqlBasedCustomView;
 import it.uniroma2.art.semanticturkey.config.customview.AdvSingleValueView;
 import it.uniroma2.art.semanticturkey.config.customview.AreaView;
 import it.uniroma2.art.semanticturkey.config.customview.CustomView;
 import it.uniroma2.art.semanticturkey.config.customview.CustomViewAssociation;
+import it.uniroma2.art.semanticturkey.config.customview.CustomViewDataBindings;
 import it.uniroma2.art.semanticturkey.config.customview.DynamicVectorView;
 import it.uniroma2.art.semanticturkey.config.customview.PointView;
 import it.uniroma2.art.semanticturkey.config.customview.PropertyChainView;
@@ -35,8 +37,13 @@ import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
+import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
@@ -151,39 +158,38 @@ public class CustomViews extends STServiceAdapter  {
         return customView.getData(getManagedConnection(), resource, property, (IRI) getWorkingGraph());
     }
 
-//    @Write
-//    @STServiceOperation(method = RequestMethod.POST)
-//    @PreAuthorize("@auth.isAuthorized('rdf(resource)', 'U')")
-//    public void updateWidgetData(Resource resource, IRI predicate, Map<WidgetDataBindings, Value> bindings) throws NoSuchConfigurationManager, STPropertyAccessException {
-//        WidgetsManager wm = new WidgetsManager(getProject(), exptManager);
-//        Widget widget = wm.getWidgetForTrigger(predicate);
-//        if (widget != null) { //widget should always exist since this API should be invoked from the client only in such case
-//
-//            //check if values for the required bindings are provided
-//            for (WidgetDataBindings b: widget.getUpdateMandatoryBindings()) {
-//                if (!bindings.containsKey(b)) {
-//                    throw new IllegalArgumentException("Missing value for required binding " + b.toString());
-//                }
+    @Write
+    @STServiceOperation(method = RequestMethod.POST)
+    public void updateSparqlBasedData(Resource resource, IRI property, Map<CustomViewDataBindings, Value> bindings) throws NoSuchConfigurationManager, STPropertyAccessException {
+        CustomViewsManager cvMgr = new CustomViewsManager(getProject(), exptManager);
+        //by construction, this service should be invoked only if the property has a sparql-based custom view associated
+        //(e.g. maps/charts views), so I avoid checks for null CV and cast to AbstractSparqlBasedCustomView
+        AbstractSparqlBasedCustomView customView = (AbstractSparqlBasedCustomView) cvMgr.getCustomViewsForProperty(property);
+        //check if values for the required bindings are provided
+//        for (CustomViewDataBindings b: customView.getUpdateMandatoryBindings()) {
+//            if (!bindings.containsKey(b)) {
+//                throw new IllegalArgumentException("Missing value for required binding " + b.toString());
 //            }
-//
-//            String updateQuery = widget.update;
-//            updateQuery = updateQuery.replace("<trigger>", RenderUtils.toSPARQL(predicate));
-//            Update update = getManagedConnection().prepareUpdate(updateQuery);
-//
-//            for (Entry<WidgetDataBindings, Value> binding: bindings.entrySet()) {
-//                update.setBinding(binding.getKey().toString(), binding.getValue());
-//            }
-//            update.setBinding("resource", resource);
-//
-//            SimpleDataset dataset = new SimpleDataset();
-//            dataset.setDefaultInsertGraph((IRI) getWorkingGraph());
-//            dataset.addDefaultGraph((IRI) getWorkingGraph());
-//            dataset.addDefaultRemoveGraph((IRI) getWorkingGraph());
-//            update.setDataset(dataset);
-//
-//            update.execute();
 //        }
-//    }
+
+        String updateQuery = customView.update;
+        Update update = getManagedConnection().prepareUpdate(updateQuery);
+
+        //bind placeholders and provided variables
+        update.setBinding("resource", resource);
+        update.setBinding("trigprop", property);
+        for (Map.Entry<CustomViewDataBindings, Value> binding: bindings.entrySet()) {
+            update.setBinding(binding.getKey().toString(), binding.getValue());
+        }
+
+        SimpleDataset dataset = new SimpleDataset();
+        dataset.setDefaultInsertGraph((IRI) getWorkingGraph());
+        dataset.addDefaultGraph((IRI) getWorkingGraph());
+        dataset.addDefaultRemoveGraph((IRI) getWorkingGraph());
+        update.setDataset(dataset);
+
+        update.execute();
+    }
 
 
 }

@@ -5,9 +5,23 @@ import java.util.List;
 public class CustomViewData {
 
     private CustomViewModelEnum model;
-    private List<CustomViewValueDescription> data;
+    private List<CustomViewObjectDescription> data;
     private ViewsEnum defaultView;
-//    private SingleValueUpdate valueUpdate;
+    private UpdateMode updateMode;
+
+    public CustomViewData() {}
+
+    public CustomViewData(CustomViewModelEnum model) {
+        this.model = model;
+    }
+
+    public UpdateMode getUpdateMode() {
+        return updateMode;
+    }
+
+    public void setUpdateMode(UpdateMode updateMode) {
+        this.updateMode = updateMode;
+    }
 
     public CustomViewModelEnum getModel() {
         return model;
@@ -17,11 +31,11 @@ public class CustomViewData {
         this.model = model;
     }
 
-    public List<CustomViewValueDescription> getData() {
+    public List<CustomViewObjectDescription> getData() {
         return data;
     }
 
-    public void setData(List<CustomViewValueDescription> data) {
+    public void setData(List<CustomViewObjectDescription> data) {
         this.data = data;
     }
 

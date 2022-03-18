@@ -5,7 +5,7 @@ import org.eclipse.rdf4j.model.IRI;
 
 import java.util.List;
 
-public class SingleValueUpdate {
+public class UpdateInfo {
 
     public enum UpdateMode {
         none, //no update in widget
@@ -21,11 +21,16 @@ public class SingleValueUpdate {
     private IRI datatype;
     private List<IRI> classes;
 
-    public SingleValueUpdate() {
+    public UpdateInfo() {
         this(UpdateMode.none);
     }
 
-    public SingleValueUpdate(UpdateMode updateMode) {
+    public UpdateInfo(UpdateMode updateMode) {
+        this(null, updateMode);
+    }
+
+    public UpdateInfo(String field, UpdateMode updateMode) {
+        this.field = field;
         this.updateMode = updateMode;
     }
 

@@ -2,8 +2,9 @@ package it.uniroma2.art.semanticturkey.config.customview;
 
 import it.uniroma2.art.semanticturkey.customviews.CustomViewData;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewModelEnum;
-import it.uniroma2.art.semanticturkey.customviews.CustomViewValueDescription;
-import it.uniroma2.art.semanticturkey.customviews.SingleValueUpdate;
+import it.uniroma2.art.semanticturkey.customviews.CustomViewObjectDescription;
+import it.uniroma2.art.semanticturkey.customviews.CustomViewRenderedValue;
+import it.uniroma2.art.semanticturkey.customviews.UpdateInfo;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
@@ -64,16 +65,17 @@ public class PropertyChainView extends CustomView {
         TupleQueryResult results = tupleQuery.evaluate();
 
 
-        List<CustomViewValueDescription> valueDescriptions = new ArrayList<>();
+        List<CustomViewObjectDescription> valueDescriptions = new ArrayList<>();
         while (results.hasNext()) {
             BindingSet bs = results.next();
             Resource object = (Resource) bs.getValue("obj");
             Value value = bs.getValue("value");
-            CustomViewValueDescription vd = new CustomViewValueDescription();
-            vd.setValue(object);
-            vd.setDescription(value);
-            vd.setUpdateInfo(new SingleValueUpdate(SingleValueUpdate.UpdateMode.widget));
-            valueDescriptions.add(vd);
+            CustomViewRenderedValue renderedValue = new CustomViewRenderedValue("value", value);
+            renderedValue.setUpdateInfo(new UpdateInfo(UpdateInfo.UpdateMode.widget));
+            CustomViewObjectDescription cvObjectDescr = new CustomViewObjectDescription();
+            cvObjectDescr.setResource(object);
+            cvObjectDescr.setDescription(renderedValue);
+            valueDescriptions.add(cvObjectDescr);
         }
         cvData.setData(valueDescriptions);
 

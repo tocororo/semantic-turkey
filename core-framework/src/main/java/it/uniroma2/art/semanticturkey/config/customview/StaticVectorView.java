@@ -2,9 +2,9 @@ package it.uniroma2.art.semanticturkey.config.customview;
 
 import it.uniroma2.art.semanticturkey.customviews.CustomViewData;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewModelEnum;
-import it.uniroma2.art.semanticturkey.customviews.CustomViewValueDescription;
-import it.uniroma2.art.semanticturkey.customviews.SingleValueUpdate;
-import it.uniroma2.art.semanticturkey.customviews.VectorData;
+import it.uniroma2.art.semanticturkey.customviews.CustomViewObjectDescription;
+import it.uniroma2.art.semanticturkey.customviews.CustomViewRenderedValue;
+import it.uniroma2.art.semanticturkey.customviews.UpdateInfo;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
@@ -50,8 +50,6 @@ public class StaticVectorView extends CustomView {
         cvData.setModel(getModelType());
         cvData.setDefaultView(suggestedView);
 
-        String objectVar = "?obj";
-
         Map<IRI, String> propValueMap = new HashMap<>();
         List<String> valuesVariables = new ArrayList<>();
         List<String> whereBlocks = new ArrayList<>();
@@ -61,11 +59,11 @@ public class StaticVectorView extends CustomView {
             String valueVarName = "value" + i;
             propValueMap.put(prop, valueVarName);
             valuesVariables.add("?" + valueVarName);
-            whereBlocks.add("OPTIONAL { " + objectVar + " " + RenderUtils.toSPARQL(prop) + " ?value" + i + " . }");
+            whereBlocks.add("OPTIONAL { ?obj " + RenderUtils.toSPARQL(prop) + " ?value" + i + " . }");
         }
 
-        String query = "SELECT " + objectVar + " " + String.join(" ", valuesVariables) + " WHERE { \n" +
-                "   $resource $trigprop " + objectVar + " . \n" +
+        String query = "SELECT ?obj " + String.join(" ", valuesVariables) + " WHERE { \n" +
+                "   $resource $trigprop ?obj . \n" +
                 String.join("\n", whereBlocks) + " \n" +
                 "}";
 
@@ -81,28 +79,31 @@ public class StaticVectorView extends CustomView {
 
         TupleQueryResult results = tupleQuery.evaluate();
 
-        List<CustomViewValueDescription> valueDescriptions = new ArrayList<>();
+        List<CustomViewObjectDescription> objDescriptions = new ArrayList<>();
         while (results.hasNext()) {
             BindingSet bs = results.next();
-            Resource object = (Resource) bs.getValue("obj");
 
-            List<VectorData> vectorDataList = new ArrayList<>();
+            Value object = bs.getValue("obj");
 
-            for (Map.Entry<IRI, String> propValueEntry : propValueMap.entrySet()) {
-                IRI prop = propValueEntry.getKey();
-                String var = propValueEntry.getValue();
-                Value value = bs.getValue(var);
-                VectorData vectorData = new VectorData(NTriplesUtil.toNTriplesString(prop), value);
-                vectorDataList.add(vectorData);
+            if (object.isResource()) { //if not a resource, namely a literal, the object cannot be represented as table
+                List<CustomViewRenderedValue> renderedValueList = new ArrayList<>();
+
+                for (Map.Entry<IRI, String> propValueEntry : propValueMap.entrySet()) {
+                    IRI prop = propValueEntry.getKey();
+                    String var = propValueEntry.getValue();
+                    Value value = bs.getValue(var);
+                    CustomViewRenderedValue renderedValue = new CustomViewRenderedValue(NTriplesUtil.toNTriplesString(prop), value);
+                    renderedValue.setUpdateInfo(new UpdateInfo(UpdateInfo.UpdateMode.widget));
+                    renderedValueList.add(renderedValue);
+                }
+
+                CustomViewObjectDescription cvObjectDescr = new CustomViewObjectDescription();
+                cvObjectDescr.setResource(object);
+                cvObjectDescr.setDescription(renderedValueList);
+                objDescriptions.add(cvObjectDescr);
             }
-
-            CustomViewValueDescription vd = new CustomViewValueDescription();
-            vd.setValue(object);
-            vd.setDescription(vectorDataList);
-            vd.setUpdateInfo(new SingleValueUpdate(SingleValueUpdate.UpdateMode.widget));
-            valueDescriptions.add(vd);
         }
-        cvData.setData(valueDescriptions);
+        cvData.setData(objDescriptions);
 
         return cvData;
     }
