@@ -74,7 +74,7 @@ public class AdvSingleValueView extends CustomView {
             Value value = bs.getValue("value");
             CustomViewRenderedValue renderedValue = new CustomViewRenderedValue(value);
             renderedValue.setField(objectVar);
-            renderedValue.setUpdateInfo(new UpdateInfo(objectVar, UpdateInfo.UpdateMode.widget));
+            renderedValue.setUpdateInfo(update);
 
             CustomViewObjectDescription cvObjectDescr = new CustomViewObjectDescription();
             cvObjectDescr.setResource(object);

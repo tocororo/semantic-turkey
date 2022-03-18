@@ -9,9 +9,11 @@ import java.util.Map;
 public class SparqlBasedViewDTO {
 
     private List<Map<String, Value>> bindingsList; //list of binding mappings: binding name -> value
+    private UpdateMode updateMode;
 
     public SparqlBasedViewDTO() {
         bindingsList = new ArrayList<>();
+        this.updateMode = UpdateMode.widget;
     }
 
     public List<Map<String, Value>> getBindingsList() {
@@ -36,6 +38,14 @@ public class SparqlBasedViewDTO {
             return bindingsList.get(0).get(bindingName);
         }
         return null;
+    }
+
+    public UpdateMode getUpdateMode() {
+        return updateMode;
+    }
+
+    public void setUpdateMode(UpdateMode updateMode) {
+        this.updateMode = updateMode;
     }
 
 }

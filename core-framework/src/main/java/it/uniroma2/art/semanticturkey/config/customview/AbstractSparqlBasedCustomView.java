@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.config.customview;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewData;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewObjectDescription;
 import it.uniroma2.art.semanticturkey.customviews.SparqlBasedViewDTO;
+import it.uniroma2.art.semanticturkey.customviews.UpdateInfo;
 import it.uniroma2.art.semanticturkey.customviews.UpdateMode;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
@@ -49,12 +50,6 @@ public abstract class AbstractSparqlBasedCustomView extends CustomView {
         CustomViewData cvData = new CustomViewData(this.getModelType());
         cvData.setDefaultView(suggestedView);
 
-        if (this.update == null || this.update.isEmpty()) {
-            cvData.setUpdateMode(UpdateMode.none); //if no update is provided, update is disabled
-        } else {
-            cvData.setUpdateMode(UpdateMode.widget); //otherwise, it is handled by widget
-        }
-
         TupleQuery tupleQuery = connection.prepareTupleQuery(retrieve);
         tupleQuery.setBinding("resource", resource);
         tupleQuery.setBinding("trigprop", property);
@@ -99,6 +94,9 @@ public abstract class AbstractSparqlBasedCustomView extends CustomView {
             } else { //otherwise create a new WidgetData
                 SparqlBasedViewDTO dto = new SparqlBasedViewDTO();
                 dto.addBindings(record);
+                if (this.update == null || this.update.isEmpty()) { //if no update is provided, disable update
+                    dto.setUpdateMode(UpdateMode.none);
+                }
                 cvObjectDescr = new CustomViewObjectDescription(recordId);
                 cvObjectDescr.setDescription(dto);
                 objDescriptions.add(cvObjectDescr);

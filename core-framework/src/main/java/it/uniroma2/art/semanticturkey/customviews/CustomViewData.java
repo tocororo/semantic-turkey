@@ -7,20 +7,11 @@ public class CustomViewData {
     private CustomViewModelEnum model;
     private List<CustomViewObjectDescription> data;
     private ViewsEnum defaultView;
-    private UpdateMode updateMode;
 
     public CustomViewData() {}
 
     public CustomViewData(CustomViewModelEnum model) {
         this.model = model;
-    }
-
-    public UpdateMode getUpdateMode() {
-        return updateMode;
-    }
-
-    public void setUpdateMode(UpdateMode updateMode) {
-        this.updateMode = updateMode;
     }
 
     public CustomViewModelEnum getModel() {
