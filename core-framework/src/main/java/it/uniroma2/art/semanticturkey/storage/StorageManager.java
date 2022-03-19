@@ -78,7 +78,7 @@ public abstract class StorageManager {
         return storageDirectory;
     }
 
-    private static File getFile(Reference ref) {
+    public static File getFile(Reference ref) {
         File storageDirectory = getStorageDirectory(ref);
 
         String path = ref.getIdentifier();
@@ -117,6 +117,22 @@ public abstract class StorageManager {
     public static void createDirectory(Reference dir) {
         File dirFile = getFile(dir);
         dirFile.mkdirs();
+    }
+
+    /**
+     * Creates a new directory, if it does now exist.
+     * Returns true if the directory was created, false otherwise
+     * @param dir a reference to the directory
+     * @return true if the directory was created, false otherwise
+     */
+    public static boolean createDirectoryIfNotExisting(Reference dir) {
+        File dirFile = getFile(dir);
+        if (!dirFile.exists()) {
+            dirFile.mkdirs();
+            return true;
+        }
+        return false;
+
     }
 
     /**

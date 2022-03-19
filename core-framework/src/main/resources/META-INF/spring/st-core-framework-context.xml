@@ -198,6 +198,13 @@
 			class="it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsStore" />
 	</osgi:service>
 
+	<!-- Publishes the DownloadSettingsManager -->
+
+	<osgi:service auto-export="interfaces">
+		<bean
+				class="it.uniroma2.art.semanticturkey.settings.download.DownloadSettingsManager" />
+	</osgi:service>
+
 	<!-- Publishes the NotificationSystemSettingsManager -->
 
 	<bean id="notificationSystemSettingsManager"

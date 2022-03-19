@@ -6,6 +6,7 @@ date: dd/mm/yyyy
   * improved authorization checks to several APIs
   * improved messaging in the update routines
   * added support in Sheet2RDF for single tables in MySQL, MariaDB and PostgreSQL
+  * added the possibility to create downloads of the main graph
   * updated dependency on CODA 1.7.5-SNAPSHOT
   * updated dependency on MAPLE 0.0.11-SNAPSHOT
   * updated dependency on Sheet2RDF 5.0.0-SNAPSHOT (to manage DB tables)
