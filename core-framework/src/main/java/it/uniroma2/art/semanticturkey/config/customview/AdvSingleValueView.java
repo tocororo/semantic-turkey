@@ -13,13 +13,15 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Map;
+import java.util.Set;
 
 public class AdvSingleValueView extends CustomView {
 
@@ -66,15 +68,27 @@ public class AdvSingleValueView extends CustomView {
         TupleQueryResult results = tupleQuery.evaluate();
 
         List<CustomViewObjectDescription> valueDescriptions = new ArrayList<>();
+        String objectVar = CustomViewSparqlUtils.getRetrieveObjectVariable(retrieve);
+        Set<String> pivotsVars = CustomViewSparqlUtils.getReturnedPivotVariables(retrieve);
+
         while (results.hasNext()) {
             BindingSet bs = results.next();
-            String objectVar = getRetrieveObjectVariable();
             //if objectVar is value (e.g. resource $trigprop ?value), object and value will clash and the value description is the same value
             Value object = bs.getValue(objectVar);
             Value value = bs.getValue("value");
+
             CustomViewRenderedValue renderedValue = new CustomViewRenderedValue(value);
             renderedValue.setField(objectVar);
             renderedValue.setUpdateInfo(update);
+
+            Map<String, Value> pivotRefs = new HashMap<>();
+            for (String pivotVar : pivotsVars) {
+                if (bs.hasBinding(pivotVar)) {
+                    Value pivot = bs.getValue(pivotVar);
+                    pivotRefs.put(pivotVar, pivot);
+                }
+            }
+            renderedValue.setPivots(pivotRefs);
 
             CustomViewObjectDescription cvObjectDescr = new CustomViewObjectDescription();
             cvObjectDescr.setResource(object);
@@ -86,21 +100,30 @@ public class AdvSingleValueView extends CustomView {
         return cvData;
     }
 
-    /**
-     * Returns the variable name of the trigprop object in the retrieve query
-     * e.g. $resource $trigprop ?myObject => myObject
-     * @return
-     */
-    private String getRetrieveObjectVariable() {
-        String VAR_PATTERN = "[$|?]([a-zA-Z0-9_]+)"; //group capture only the var name (without ? or $)
-        String OBJ_PATTERN = "\\$resource\\s*\\$trigprop\\s*" + VAR_PATTERN + "\\s*\\.";
-        Pattern pattern = Pattern.compile(OBJ_PATTERN);
-        Matcher matcher = pattern.matcher(retrieve);
-        if (matcher.find()) {
-            return matcher.group(1); //group 0 is the whole captured pattern; 1 is the one in VAR_PATTERN
-        } else {
-            return null; //should never happen: retrieve query should be checked when submitted
+    public void updateData(RepositoryConnection connection, Resource resource, IRI property, Value oldValue, Value newValue, Map<String, Value> pivots, IRI workingGraph) {
+
+        Update u = connection.prepareUpdate(update.getUpdateQuery());
+
+        //bind placeholders and provided variables
+        u.setBinding("resource", resource);
+        u.setBinding("trigprop", property);
+        u.setBinding("value", newValue);
+        u.setBinding("oldValue", oldValue);
+
+        if (pivots != null) {
+            for (Map.Entry<String, Value> pivot: pivots.entrySet()) {
+                u.setBinding(pivot.getKey(), pivot.getValue());
+            }
         }
+
+        SimpleDataset dataset = new SimpleDataset();
+        dataset.setDefaultInsertGraph(workingGraph);
+        dataset.addDefaultGraph(workingGraph);
+        dataset.addDefaultRemoveGraph(workingGraph);
+        u.setDataset(dataset);
+
+        u.execute();
     }
+
 
 }

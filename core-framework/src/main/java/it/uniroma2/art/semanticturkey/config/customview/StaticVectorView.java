@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -106,6 +107,31 @@ public class StaticVectorView extends CustomView {
         cvData.setData(objDescriptions);
 
         return cvData;
+    }
+
+    public void updateData(RepositoryConnection connection, Resource resource, IRI property, IRI fieldProp, Value oldValue, Value newValue, IRI workingGraph) {
+        String updateQuery = "DELETE {  ?pivot " + RenderUtils.toSPARQL(fieldProp) + " ?oldValue . } \n" +
+                    "INSERT {  ?pivot " + RenderUtils.toSPARQL(fieldProp) + " ?value . } \n" +
+                    "WHERE { \n" +
+                    "   $resource $trigprop ?pivot . \n" +
+                    "   ?pivot " + RenderUtils.toSPARQL(fieldProp) + " ?oldValue . \n" +
+                    "}";
+
+        Update u = connection.prepareUpdate(updateQuery);
+
+        //bind placeholders and provided variables
+        u.setBinding("resource", resource);
+        u.setBinding("trigprop", property);
+        u.setBinding("value", newValue);
+        u.setBinding("oldValue", oldValue);
+
+        SimpleDataset dataset = new SimpleDataset();
+        dataset.setDefaultInsertGraph(workingGraph);
+        dataset.addDefaultGraph(workingGraph);
+        dataset.addDefaultRemoveGraph(workingGraph);
+        u.setDataset(dataset);
+
+        u.execute();
     }
 
 }

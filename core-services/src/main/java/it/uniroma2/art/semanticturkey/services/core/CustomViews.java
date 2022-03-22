@@ -25,14 +25,13 @@ import it.uniroma2.art.semanticturkey.customviews.CustomViewsManager;
 import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
 import it.uniroma2.art.semanticturkey.customviews.ViewsEnum;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
-import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
@@ -43,12 +42,14 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+
+import static java.util.stream.Collectors.joining;
 
 @STService
 public class CustomViews extends STServiceAdapter  {
@@ -149,10 +150,10 @@ public class CustomViews extends STServiceAdapter  {
 
     @Read
     @STServiceOperation()
-    public CustomViewData getViewData(Resource resource, IRI property) throws STPropertyAccessException, NoSuchConfigurationManager {
+    public CustomViewData getViewData(Resource resource, IRI property) {
         ObjectMapper objectMapper = new ObjectMapper();
 
-        CustomViewsManager cvMgr = new CustomViewsManager(getProject(), exptManager);
+        CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
         CustomView customView = cvMgr.getCustomViewsForProperty(property);
         //no need to check if customView is not null since this API should be invoked from the client only in such case
         return customView.getData(getManagedConnection(), resource, property, (IRI) getWorkingGraph());
@@ -160,17 +161,18 @@ public class CustomViews extends STServiceAdapter  {
 
     @Write
     @STServiceOperation(method = RequestMethod.POST)
-    public void updateSparqlBasedData(Resource resource, IRI property, Map<CustomViewDataBindings, Value> bindings) throws NoSuchConfigurationManager, STPropertyAccessException {
-        CustomViewsManager cvMgr = new CustomViewsManager(getProject(), exptManager);
+    public void updateSparqlBasedData(Resource resource, IRI property, Map<CustomViewDataBindings, Value> bindings) {
+        CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
+
         //by construction, this service should be invoked only if the property has a sparql-based custom view associated
         //(e.g. maps/charts views), so I avoid checks for null CV and cast to AbstractSparqlBasedCustomView
         AbstractSparqlBasedCustomView customView = (AbstractSparqlBasedCustomView) cvMgr.getCustomViewsForProperty(property);
         //check if values for the required bindings are provided
-//        for (CustomViewDataBindings b: customView.getUpdateMandatoryBindings()) {
-//            if (!bindings.containsKey(b)) {
-//                throw new IllegalArgumentException("Missing value for required binding " + b.toString());
-//            }
-//        }
+        for (CustomViewDataBindings b: customView.getUpdateMandatoryBindings()) {
+            if (!bindings.containsKey(b)) {
+                throw new IllegalArgumentException("Missing value for required binding " + b.toString());
+            }
+        }
 
         String updateQuery = customView.update;
         Update update = getManagedConnection().prepareUpdate(updateQuery);
@@ -189,6 +191,37 @@ public class CustomViews extends STServiceAdapter  {
         update.setDataset(dataset);
 
         update.execute();
+    }
+
+    @Write
+    @STServiceOperation(method = RequestMethod.POST)
+    public void updateSingleValueData(Resource resource, IRI property, Value oldValue, Value newValue, @Optional Map<String, Value> pivots) {
+        CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
+        CustomView cv = cvMgr.getCustomViewsForProperty(property);
+
+        if (cv instanceof AdvSingleValueView) {
+            ((AdvSingleValueView)cv).updateData(getManagedConnection(), resource, property, oldValue, newValue, pivots, (IRI) getWorkingGraph());
+        } else if (cv instanceof PropertyChainView) {
+            ((PropertyChainView)cv).updateData(getManagedConnection(), resource, property, oldValue, newValue, (IRI) getWorkingGraph());
+        }
+    }
+
+    @Write
+    @STServiceOperation(method = RequestMethod.POST)
+    public void updateStaticVectorData(Resource resource, IRI property, IRI fieldProperty, Value oldValue, Value newValue) {
+        CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
+        StaticVectorView cv = (StaticVectorView) cvMgr.getCustomViewsForProperty(property);
+
+        cv.updateData(getManagedConnection(), resource, property, fieldProperty, oldValue, newValue, (IRI) getWorkingGraph());
+    }
+
+    @Write
+    @STServiceOperation(method = RequestMethod.POST)
+    public void updateDynamicVectorData(Resource resource, IRI property, String fieldName, Value oldValue, Value newValue, Map<String, Value> pivots) {
+        CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
+        DynamicVectorView cv = (DynamicVectorView) cvMgr.getCustomViewsForProperty(property);
+
+        cv.updateData(getManagedConnection(), resource, property, fieldName, oldValue, newValue, pivots, (IRI) getWorkingGraph());
     }
 
 

@@ -2,10 +2,13 @@ package it.uniroma2.art.semanticturkey.customviews;
 
 import org.eclipse.rdf4j.model.Value;
 
+import java.util.Map;
+
 public class CustomViewRenderedValue {
 
     private String field;
     private Value resource;
+    private Map<String, Value> pivots;
     private UpdateInfo updateInfo;
 
     public CustomViewRenderedValue() {}
@@ -33,6 +36,14 @@ public class CustomViewRenderedValue {
 
     public void setResource(Value resource) {
         this.resource = resource;
+    }
+
+    public Map<String, Value> getPivots() {
+        return pivots;
+    }
+
+    public void setPivots(Map<String, Value> pivots) {
+        this.pivots = pivots;
     }
 
     public UpdateInfo getUpdateInfo() {

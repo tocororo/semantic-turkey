@@ -3,7 +3,6 @@ package it.uniroma2.art.semanticturkey.config.customview;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewData;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewObjectDescription;
 import it.uniroma2.art.semanticturkey.customviews.SparqlBasedViewDTO;
-import it.uniroma2.art.semanticturkey.customviews.UpdateInfo;
 import it.uniroma2.art.semanticturkey.customviews.UpdateMode;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
@@ -20,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class AbstractSparqlBasedCustomView extends CustomView {
 
@@ -45,6 +45,8 @@ public abstract class AbstractSparqlBasedCustomView extends CustomView {
      * @return
      */
     public abstract CustomViewDataBindings getIdBinding();
+
+    public abstract Set<CustomViewDataBindings> getUpdateMandatoryBindings();
 
     public CustomViewData getData(RepositoryConnection connection, Resource resource, IRI property, IRI workingGraph) {
         CustomViewData cvData = new CustomViewData(this.getModelType());
