@@ -1,25 +1,7 @@
 package it.uniroma2.art.semanticturkey.customform;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Properties;
-import java.util.stream.Collectors;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
+import it.uniroma2.art.semanticturkey.project.Project;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +12,20 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import it.uniroma2.art.semanticturkey.project.Project;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Properties;
 
 public class CustomFormXMLHelper {
 	
@@ -46,8 +41,6 @@ public class CustomFormXMLHelper {
 	private static final String CUSTOM_FORM_TYPE_ATTR = "type";
 	private static final String CUSTOM_FORM_DESCRIPTION_TAG = "description";
 	private static final String CUSTOM_FORM_REF_TAG = "ref";
-	private static final String CUSTOM_FORM_SHOW_PROP_CHAIN_ATTR = "showPropertyChain";
-	private static final String CUSTOM_FORM_TABLE_PREVIEW_TAG = "tablePreview";
 	private static final String CUSTOM_FORM_TABLE_PREVIEW_PROPERTY_TAG = "property";
 
 	private static final String FORM_COLLECTION_ROOT_TAG = "formCollection";
@@ -373,36 +366,7 @@ public class CustomFormXMLHelper {
 			ref = ref.trim();
 
 			if (type.equals(CustomForm.Types.graph.toString())){
-				CustomFormGraph cf = new CustomFormGraph(id, name, description, ref);
-
-				SimpleValueFactory valueFactory = SimpleValueFactory.getInstance();
-
-				//showPropChain
-				List<IRI> showPropChain = new ArrayList<>();
-				String showPropChainString = refElement.getAttribute(CUSTOM_FORM_SHOW_PROP_CHAIN_ATTR);
-				//from string to List<IRI>
-				if (showPropChainString != null && !showPropChainString.isEmpty()) {
-					String[] splittedChain = showPropChainString.split(",");
-					for (String s : splittedChain) {
-						showPropChain.add(valueFactory.createIRI(s));
-					}
-				}
-				cf.setShowPropertyChain(showPropChain);
-
-				//preview table properties
-				List<IRI> previewTableProps = new ArrayList<>();
-				Node tablePreviewNode = doc.getElementsByTagName(CUSTOM_FORM_TABLE_PREVIEW_TAG).item(0);
-				if (tablePreviewNode != null && tablePreviewNode.getNodeType() == Node.ELEMENT_NODE) {
-					Element tablePreviewEl = (Element) tablePreviewNode;
-					NodeList propertyNodes = tablePreviewEl.getElementsByTagName(CUSTOM_FORM_TABLE_PREVIEW_PROPERTY_TAG);
-					for (int i = 0; i < propertyNodes.getLength(); i++) {
-						Node propNode = propertyNodes.item(i);
-						previewTableProps.add(valueFactory.createIRI(propNode.getTextContent()));
-					}
-				}
-				cf.setPreviewTableProperties(previewTableProps);
-
-				return cf;
+				return new CustomFormGraph(id, name, description, ref);
 			} else if (type.equals(CustomForm.Types.node.toString())){
 				return new CustomFormNode(id, name, description, ref);
 			} else {
@@ -670,26 +634,7 @@ public class CustomFormXMLHelper {
 			Element refElement = doc.createElement(CUSTOM_FORM_REF_TAG);
 			CDATASection cdata = doc.createCDATASection(customForm.getRef());
 			refElement.appendChild(cdata);
-			
-			List<IRI> propChain = customForm.getShowPropertyChain();
-			if (propChain.size() > 0) {
-				List<String> iriList = propChain.stream()
-						.map(Value::stringValue)
-						.collect(Collectors.toList());
-				refElement.setAttribute(CUSTOM_FORM_SHOW_PROP_CHAIN_ATTR, String.join(",", iriList));
-			}
 			creElement.appendChild(refElement);
-
-			List<IRI> previewTableProps = customForm.getPreviewTableProperties();
-			if (previewTableProps.size() > 0) {
-				Element tablePreviewEl = doc.createElement(CUSTOM_FORM_TABLE_PREVIEW_TAG);
-				for (IRI p: previewTableProps) {
-					Element propEl = doc.createElement(CUSTOM_FORM_TABLE_PREVIEW_PROPERTY_TAG);
-					propEl.setTextContent(p.stringValue());
-					tablePreviewEl.appendChild(propEl);
-				}
-				creElement.appendChild(tablePreviewEl);
-			}
 
 			// write the content into xml file
 			TransformerFactory transformerFactory = TransformerFactory.newInstance();

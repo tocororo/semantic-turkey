@@ -4,8 +4,9 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.config.customview.CustomView;
+import it.uniroma2.art.semanticturkey.config.customview.PropertyChainView;
+import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -53,7 +54,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -84,12 +84,12 @@ public class Docgen extends STServiceAdapter {
     }
 
     @Autowired
-    private CustomFormManager customFormManager;
+    private ProjectCustomViewsManager projCvMgr;
 
     @STServiceOperation
     @Read
     @PreAuthorize("@auth.isAuthorized('rdf', 'R')")
-    public OWLDocumentation buildOWLDocumentation() throws Exception {
+    public OWLDocumentation buildOWLDocumentation() {
         RepositoryConnection con = getManagedConnection();
         List<String> computedLanguages = BaseRenderingEngine.computeLanguages(stServiceContext, "*");
 
@@ -576,20 +576,18 @@ public class Docgen extends STServiceAdapter {
     }
 
     private Collection<List<IRI>> getChainsForPredicate(IRI pred) {
-        return customFormManager.getCustomForms(getProject(), pred).stream()
-                .filter(CustomFormGraph.class::isInstance)
-                .map(CustomFormGraph.class::cast)
-                .map(cf -> {
-                    return cf.getShowPropertyChain();
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        CustomView cv = projCvMgr.getCustomViewManager(getProject()).getCustomViewForProperty(pred);
+        if (cv instanceof PropertyChainView) {
+            return Collections.singletonList(((PropertyChainView) cv).properties);
+        } else {
+            return new ArrayList<>();
+        }
     }
 
     @STServiceOperation
     @Read
     @PreAuthorize("@auth.isAuthorized('rdf', 'R')")
-    public SKOSDocumentation buildSKOSDocumentation() throws Exception {
+    public SKOSDocumentation buildSKOSDocumentation() {
         RepositoryConnection con = getManagedConnection();
         List<String> computedLanguages = BaseRenderingEngine.computeLanguages(stServiceContext, "*");
 
@@ -767,7 +765,7 @@ public class Docgen extends STServiceAdapter {
             showLit.getLanguage().ifPresent(l -> annotatedValue.setAttribute("language", l));
         } else {
             Optional.ofNullable(annotatedValue.getLanguage()).ifPresent(l -> annotatedValue.setAttribute("language", l));
-            if (!Objects.equals(annotatedValue.getDatatype(), RDF.LANGSTRING)) {
+            if (!Objects.equals(annotatedValue.getDatatype(), RDF.LANGSTRING.stringValue())) {
                 annotatedValue.setAttribute("datatype", ModelUtilities.toLiteral(((Literal) annotatedValue.getValue()).getDatatype(), prefixesToNamespaceMap));
             }
         }

@@ -5,6 +5,7 @@ import it.uniroma2.art.semanticturkey.customviews.CustomViewModelEnum;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewObjectDescription;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewRenderedValue;
 import it.uniroma2.art.semanticturkey.customviews.UpdateInfo;
+import it.uniroma2.art.semanticturkey.customviews.UpdateMode;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
@@ -15,7 +16,6 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import java.util.ArrayList;
@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 public class DynamicVectorView extends CustomView {
 
@@ -37,11 +36,6 @@ public class DynamicVectorView extends CustomView {
         public static final String update$displayName = keyBase + ".update.displayName";
     }
 
-    @Override
-    public CustomViewModelEnum getModelType() {
-        return CustomViewModelEnum.dynamic_vector;
-    }
-
     @Required
     @STProperty(description = "{" + MessageKeys.retrieve$description + "}", displayName = "{" + MessageKeys.retrieve$displayName + "}")
     public String retrieve;
@@ -49,6 +43,11 @@ public class DynamicVectorView extends CustomView {
     @Required
     @STProperty(description = "{" + MessageKeys.update$description + "}", displayName = "{" + MessageKeys.update$displayName + "}")
     public List<UpdateInfo> update;
+
+    @Override
+    public CustomViewModelEnum getModelType() {
+        return CustomViewModelEnum.dynamic_vector;
+    }
 
     @Override
     public CustomViewData getData(RepositoryConnection connection, Resource resource, IRI property, IRI workingGraph) {

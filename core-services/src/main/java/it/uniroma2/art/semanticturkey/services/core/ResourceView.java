@@ -33,10 +33,11 @@ import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGELOG;
-import it.uniroma2.art.semanticturkey.changetracking.vocabulary.CHANGETRACKER;
 import it.uniroma2.art.semanticturkey.changetracking.vocabulary.VALIDATION;
-import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
-import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
+import it.uniroma2.art.semanticturkey.config.customview.CustomView;
+import it.uniroma2.art.semanticturkey.config.customview.PropertyChainView;
+import it.uniroma2.art.semanticturkey.customviews.CustomViewsManager;
+import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourceLocator;
@@ -85,8 +86,6 @@ import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.utilities.ErrorRecoveringValueFactory;
 import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
-import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
-import org.apache.commons.collections4.PredicateUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -164,7 +163,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -183,7 +181,7 @@ public class ResourceView extends STServiceAdapter {
     @Autowired
     private StatementConsumerProvider statementConsumerProvider;
     @Autowired
-    private CustomFormManager customFormManager;
+    private ProjectCustomViewsManager projCvMgr;
     @Autowired
     private MetadataRegistryBackend metadataRegistryBackend;
     @Autowired
@@ -1206,17 +1204,12 @@ public class ResourceView extends STServiceAdapter {
             if (useGroupBy) {
                 Multimap<List<IRI>, IRI> chain2pred = HashMultimap.create();
 
+                CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
                 for (IRI pred : resourcePredicates) {
-                    customFormManager.getCustomForms(getProject(), pred).stream()
-                            .filter(CustomFormGraph.class::isInstance).map(CustomFormGraph.class::cast)
-                            .forEach(cf -> {
-                                List<IRI> chain = cf.getShowPropertyChain();
-
-                                if (chain == null || chain.isEmpty())
-                                    return;
-
-                                chain2pred.put(chain, pred);
-                            });
+                    CustomView cv = cvMgr.getCustomViewForProperty(pred);
+                    if (cv instanceof PropertyChainView) {
+                        chain2pred.put(((PropertyChainView) cv).properties, pred);
+                    }
                 }
 
                 int i = 0;

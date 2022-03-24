@@ -46,10 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-
-import static java.util.stream.Collectors.joining;
 
 @STService
 public class CustomViews extends STServiceAdapter  {
@@ -149,12 +146,12 @@ public class CustomViews extends STServiceAdapter  {
     /* ==== DATA ==== */
 
     @Read
-    @STServiceOperation()
+    @STServiceOperation
     public CustomViewData getViewData(Resource resource, IRI property) {
         ObjectMapper objectMapper = new ObjectMapper();
 
         CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
-        CustomView customView = cvMgr.getCustomViewsForProperty(property);
+        CustomView customView = cvMgr.getCustomViewForProperty(property);
         //no need to check if customView is not null since this API should be invoked from the client only in such case
         return customView.getData(getManagedConnection(), resource, property, (IRI) getWorkingGraph());
     }
@@ -166,7 +163,7 @@ public class CustomViews extends STServiceAdapter  {
 
         //by construction, this service should be invoked only if the property has a sparql-based custom view associated
         //(e.g. maps/charts views), so I avoid checks for null CV and cast to AbstractSparqlBasedCustomView
-        AbstractSparqlBasedCustomView customView = (AbstractSparqlBasedCustomView) cvMgr.getCustomViewsForProperty(property);
+        AbstractSparqlBasedCustomView customView = (AbstractSparqlBasedCustomView) cvMgr.getCustomViewForProperty(property);
         //check if values for the required bindings are provided
         for (CustomViewDataBindings b: customView.getUpdateMandatoryBindings()) {
             if (!bindings.containsKey(b)) {
@@ -197,7 +194,7 @@ public class CustomViews extends STServiceAdapter  {
     @STServiceOperation(method = RequestMethod.POST)
     public void updateSingleValueData(Resource resource, IRI property, Value oldValue, Value newValue, @Optional Map<String, Value> pivots) {
         CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
-        CustomView cv = cvMgr.getCustomViewsForProperty(property);
+        CustomView cv = cvMgr.getCustomViewForProperty(property);
 
         if (cv instanceof AdvSingleValueView) {
             ((AdvSingleValueView)cv).updateData(getManagedConnection(), resource, property, oldValue, newValue, pivots, (IRI) getWorkingGraph());
@@ -210,7 +207,7 @@ public class CustomViews extends STServiceAdapter  {
     @STServiceOperation(method = RequestMethod.POST)
     public void updateStaticVectorData(Resource resource, IRI property, IRI fieldProperty, Value oldValue, Value newValue) {
         CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
-        StaticVectorView cv = (StaticVectorView) cvMgr.getCustomViewsForProperty(property);
+        StaticVectorView cv = (StaticVectorView) cvMgr.getCustomViewForProperty(property);
 
         cv.updateData(getManagedConnection(), resource, property, fieldProperty, oldValue, newValue, (IRI) getWorkingGraph());
     }
@@ -219,7 +216,7 @@ public class CustomViews extends STServiceAdapter  {
     @STServiceOperation(method = RequestMethod.POST)
     public void updateDynamicVectorData(Resource resource, IRI property, String fieldName, Value oldValue, Value newValue, Map<String, Value> pivots) {
         CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
-        DynamicVectorView cv = (DynamicVectorView) cvMgr.getCustomViewsForProperty(property);
+        DynamicVectorView cv = (DynamicVectorView) cvMgr.getCustomViewForProperty(property);
 
         cv.updateData(getManagedConnection(), resource, property, fieldName, oldValue, newValue, pivots, (IRI) getWorkingGraph());
     }

@@ -5,6 +5,7 @@ import it.uniroma2.art.semanticturkey.customviews.CustomViewModelEnum;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewObjectDescription;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewRenderedValue;
 import it.uniroma2.art.semanticturkey.customviews.UpdateInfo;
+import it.uniroma2.art.semanticturkey.customviews.UpdateMode;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
@@ -25,11 +26,6 @@ import java.util.Set;
 
 public class AdvSingleValueView extends CustomView {
 
-    @Override
-    public CustomViewModelEnum getModelType() {
-        return CustomViewModelEnum.adv_single_value;
-    }
-
     public static class MessageKeys {
         public static final String keyBase = "it.uniroma2.art.semanticturkey.config.customview.AbstractSparqlBasedCustomView";
 
@@ -47,6 +43,11 @@ public class AdvSingleValueView extends CustomView {
     @Required
     @STProperty(description = "{" + MessageKeys.update$description + "}", displayName = "{" + MessageKeys.update$displayName + "}")
     public UpdateInfo update;
+
+    @Override
+    public CustomViewModelEnum getModelType() {
+        return CustomViewModelEnum.adv_single_value;
+    }
 
     @Override
     public CustomViewData getData(RepositoryConnection connection, Resource resource, IRI property, IRI workingGraph) {

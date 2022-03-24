@@ -7,13 +7,6 @@ import java.util.List;
 
 public class UpdateInfo {
 
-    public enum UpdateMode {
-        none, //no update in widget
-        inline, //inline NT editing
-        picker, //value picker
-        widget, //the widget is aware of the update mode, no chance to customize it
-    }
-
     private String field;
     private UpdateMode updateMode;
     private String updateQuery;

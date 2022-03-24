@@ -5,6 +5,7 @@ import it.uniroma2.art.semanticturkey.customviews.CustomViewModelEnum;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewObjectDescription;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewRenderedValue;
 import it.uniroma2.art.semanticturkey.customviews.UpdateInfo;
+import it.uniroma2.art.semanticturkey.customviews.UpdateMode;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
@@ -20,7 +21,6 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static java.util.stream.Collectors.joining;
 
@@ -73,7 +73,7 @@ public class PropertyChainView extends CustomView {
             Resource object = (Resource) bs.getValue("obj");
             Value value = bs.getValue("value");
             CustomViewRenderedValue renderedValue = new CustomViewRenderedValue("value", value);
-            renderedValue.setUpdateInfo(new UpdateInfo(UpdateInfo.UpdateMode.widget));
+            renderedValue.setUpdateInfo(new UpdateInfo(UpdateMode.widget));
             CustomViewObjectDescription cvObjectDescr = new CustomViewObjectDescription();
             cvObjectDescr.setResource(object);
             cvObjectDescr.setDescription(renderedValue);

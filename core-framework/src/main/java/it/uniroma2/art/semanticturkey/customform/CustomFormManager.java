@@ -1,20 +1,10 @@
 package it.uniroma2.art.semanticturkey.customform;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-
-import javax.annotation.PostConstruct;
-
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.resources.Resources;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.query.GraphQuery;
@@ -23,8 +13,15 @@ import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.stereotype.Component;
 
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.resources.Resources;
+import javax.annotation.PostConstruct;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 @Component
 public class CustomFormManager {
@@ -607,17 +604,15 @@ public class CustomFormManager {
 	 * @param name
 	 * @param description
 	 * @param ref
-	 * @param showPropChain
 	 * @return
 	 * @throws DuplicateIdException 
 	 */
-	public CustomFormGraph createCustomFormGraph(Project project, String id, String name, String description, String ref,
-		 	List<IRI> showPropChain, List<IRI> previewTableProps) throws DuplicateIdException {
+	public CustomFormGraph createCustomFormGraph(Project project, String id, String name, String description, String ref) throws DuplicateIdException {
 		//check if a FormCollection with the same ID already exists at system level
 		if (cfModelMap.get(SYSTEM_LEVEL_ID).getCustomFormById(id) != null) {
 			throw new DuplicateIdException("A CustomForm with id '" + id + "' already exists at system level");
 		}
-		return cfModelMap.get(project.getName()).createCustomFormGraph(id, name, description, ref, showPropChain, previewTableProps);
+		return cfModelMap.get(project.getName()).createCustomFormGraph(id, name, description, ref);
 	}
 
 	/**
@@ -680,9 +675,8 @@ public class CustomFormManager {
 		cfModelMap.get(project.getName()).updateCustomFormNode(customForm, name, description, ref);
 	}
 
-	public void updateCustomFormGraph(Project project, CustomFormGraph customForm, String name, String description,
-		  String ref, List<IRI> showPropChain, List<IRI> previewTableProps) {
-		cfModelMap.get(project.getName()).updateCustomFormGraph(customForm, name, description, ref, showPropChain, previewTableProps);
+	public void updateCustomFormGraph(Project project, CustomFormGraph customForm, String name, String description, String ref) {
+		cfModelMap.get(project.getName()).updateCustomFormGraph(customForm, name, description, ref);
 	}
 	
 	/**

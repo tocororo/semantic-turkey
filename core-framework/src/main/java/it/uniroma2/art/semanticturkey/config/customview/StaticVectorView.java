@@ -5,6 +5,7 @@ import it.uniroma2.art.semanticturkey.customviews.CustomViewModelEnum;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewObjectDescription;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewRenderedValue;
 import it.uniroma2.art.semanticturkey.customviews.UpdateInfo;
+import it.uniroma2.art.semanticturkey.customviews.UpdateMode;
 import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 import org.eclipse.rdf4j.model.IRI;
@@ -94,7 +95,7 @@ public class StaticVectorView extends CustomView {
                     String var = propValueEntry.getValue();
                     Value value = bs.getValue(var);
                     CustomViewRenderedValue renderedValue = new CustomViewRenderedValue(NTriplesUtil.toNTriplesString(prop), value);
-                    renderedValue.setUpdateInfo(new UpdateInfo(UpdateInfo.UpdateMode.widget));
+                    renderedValue.setUpdateInfo(new UpdateInfo(UpdateMode.widget));
                     renderedValueList.add(renderedValue);
                 }
 

@@ -234,14 +234,11 @@ public class CustomFormModel {
 	
 	// CUSTOM FORM
 	
-	public CustomFormGraph createCustomFormGraph(String id, String name, String description, String ref,
-			 List<IRI> showPropChain, List<IRI> previewTableProps) throws DuplicateIdException {
+	public CustomFormGraph createCustomFormGraph(String id, String name, String description, String ref) throws DuplicateIdException {
 		if (getCustomFormById(id) != null) {
 			throw new DuplicateIdException("A CustomForm with id '" + id + "' already exists in project " + project.getName());
 		}
 		CustomFormGraph form = new CustomFormGraph(id, name, description, ref);
-		form.setShowPropertyChain(showPropChain);
-		form.setPreviewTableProperties(previewTableProps);
 		customForms.add(form);
 		// serialize the CustomForm (only if add() doesn't throw a DuplicateIdException)
 		form.save(new File(CustomFormManager.getFormsFolder(project), id + ".xml"));
@@ -314,13 +311,10 @@ public class CustomFormModel {
 		customForm.save(new File(CustomFormManager.getFormsFolder(project), customForm.getId() + ".xml"));
 	}
 
-	public void updateCustomFormGraph(CustomFormGraph customForm, String name, String description, String ref,
-		  List<IRI> showPropChain, List<IRI> previewTableProps) {
+	public void updateCustomFormGraph(CustomFormGraph customForm, String name, String description, String ref) {
 		customForm.setName(name);
 		customForm.setDescription(description);
 		customForm.setRef(ref);
-		customForm.setShowPropertyChain(showPropChain);
-		customForm.setPreviewTableProperties(previewTableProps);
 		customForm.save(new File(CustomFormManager.getFormsFolder(project), customForm.getId() + ".xml"));
 	}
 

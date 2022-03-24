@@ -78,7 +78,7 @@ public class CustomViewsManager {
      * @param property
      * @return
      */
-    public CustomView getCustomViewsForProperty(IRI property) {
+    public CustomView getCustomViewForProperty(IRI property) {
         CustomViewAssociation wa = getAssociationForProperty(property);
         if (wa != null) {
             return customViews.get(wa.customViewRef);

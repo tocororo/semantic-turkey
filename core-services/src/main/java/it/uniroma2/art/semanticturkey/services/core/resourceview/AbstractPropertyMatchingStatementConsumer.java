@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core.resourceview;
 
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
+import it.uniroma2.art.semanticturkey.config.customview.CustomView;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
@@ -316,8 +317,12 @@ public class AbstractPropertyMatchingStatementConsumer extends AbstractStatement
 					predicate2resourceCreShow, null, statements, true);
 			annotatedPredicate.setAttribute("hasCustomRange",
 					customFormManager.existsCustomFormGraphForResource(project, predicate));
-			annotatedPredicate.setAttribute("hasCustomView",
-					projCvManager.getCustomViewManager(project).associationExists(predicate));
+
+			CustomView cv = projCvManager.getCustomViewManager(project).getCustomViewForProperty(predicate);
+			if (cv != null) {
+				annotatedPredicate.setAttribute("customViewModel", cv.getModelType().name());
+			}
+
 
 			if (behaviorOptions.getRootPropertiesBehavior() == BehaviorOptions.RootPropertiesBehavior.SHOW
 					|| (behaviorOptions

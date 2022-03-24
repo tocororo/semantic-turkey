@@ -39,14 +39,12 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.resource.metadata.FeatureDescription;
 import org.apache.uima.resource.metadata.TypeDescription;
 import org.apache.uima.resource.metadata.TypeSystemDescription;
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -72,41 +70,8 @@ public class CustomFormGraph extends CustomForm {
 
 	private String annotationTypeName;// UIMA type taken from pearl rule (rule ....)
 
-	private List<IRI> showPropertyChain;
-	private List<IRI> previewTableProperties;
-
 	CustomFormGraph(String id, String name, String description, String ref) {
 		super(id, name, description, ref);
-		showPropertyChain = new ArrayList<>();
-		previewTableProperties = new ArrayList<>();
-	}
-
-	/**
-	 * Returns the property chain that suggests which of the property in the pearl determines the value to
-	 * show instead of the URL
-	 * 
-	 * @return
-	 */
-	public List<IRI> getShowPropertyChain() {
-		return this.showPropertyChain;
-	}
-
-	public void setShowPropertyChain(List<IRI> propertyChain) {
-		if (propertyChain == null) {
-			propertyChain = new ArrayList<>();
-		}
-		this.showPropertyChain = propertyChain;
-	}
-
-	public List<IRI> getPreviewTableProperties() {
-		return this.previewTableProperties;
-	}
-
-	public void setPreviewTableProperties(List<IRI> properties) {
-		if (properties == null) {
-			properties = new ArrayList<>();
-		}
-		this.previewTableProperties = properties;
 	}
 
 	/**
