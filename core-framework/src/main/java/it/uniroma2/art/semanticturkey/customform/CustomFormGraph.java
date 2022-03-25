@@ -7,6 +7,7 @@ import it.uniroma2.art.coda.exception.DependencyException;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
+import it.uniroma2.art.coda.exception.ValueNotPresentDueToConfigurationException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.pearl.model.ConverterArgumentExpression;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
@@ -424,8 +425,8 @@ public class CustomFormGraph extends CustomForm {
 					uts.addDeleteTriples(suggOntCoda.getAllDeleteARTTriple());
 				}
 			}
-		} catch (PRParserException | ComponentProvisioningException | ConverterException | DependencyException
-				| UIMAException | RDFModelNotSetException e) {
+		} catch (PRParserException | ComponentProvisioningException | ConverterException | DependencyException |
+				UIMAException | RDFModelNotSetException | ValueNotPresentDueToConfigurationException e) {
 			throw new CODAException(e);
 		}
 		return uts;
@@ -491,8 +492,8 @@ public class CustomFormGraph extends CustomForm {
 					uts.addDeleteTriples(suggOntCoda.getAllDeleteARTTriple());
 				}
 			}
-		} catch (PRParserException | ComponentProvisioningException | ConverterException | DependencyException
-				| UIMAException | RDFModelNotSetException e) {
+		} catch (PRParserException | ComponentProvisioningException | ConverterException | DependencyException |
+				UIMAException | RDFModelNotSetException | ValueNotPresentDueToConfigurationException e) {
 			throw new CODAException(e);
 		}
 		return uts;

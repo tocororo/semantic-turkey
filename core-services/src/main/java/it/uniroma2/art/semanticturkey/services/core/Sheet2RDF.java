@@ -14,6 +14,7 @@ import it.uniroma2.art.coda.exception.DependencyException;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
+import it.uniroma2.art.coda.exception.ValueNotPresentDueToConfigurationException;
 import it.uniroma2.art.coda.exception.parserexception.NodeNotDefinedException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.exception.parserexception.PrefixNotDefinedException;
@@ -783,7 +784,8 @@ public class Sheet2RDF extends STServiceAdapter {
     @Read
     public JsonNode getTriplesPreview(int maxTableRows) throws UIMAException, PRParserException,
             ComponentProvisioningException, ConverterException, DependencyException, RDFModelNotSetException,
-            ProjectionRuleModelNotSet, UnassignableFeaturePathException, GenericSheet2RDFException {
+            ProjectionRuleModelNotSet, UnassignableFeaturePathException, GenericSheet2RDFException,
+            ValueNotPresentDueToConfigurationException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         JCas jcas = ctx.getSheet2RDFCore().executeAnnotator();
         Sheet2RDFCODA s2rdfCoda = new Sheet2RDFCODA(getManagedConnection(), ctx.getCodaCore());

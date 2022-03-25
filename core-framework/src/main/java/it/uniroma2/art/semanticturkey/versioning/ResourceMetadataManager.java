@@ -6,6 +6,7 @@ import it.uniroma2.art.coda.exception.DependencyException;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
 import it.uniroma2.art.coda.exception.RDFModelNotSetException;
 import it.uniroma2.art.coda.exception.UnassignableFeaturePathException;
+import it.uniroma2.art.coda.exception.ValueNotPresentDueToConfigurationException;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
 import it.uniroma2.art.coda.pearl.model.PlaceholderStruct;
 import it.uniroma2.art.coda.pearl.model.ProjectionRule;
@@ -346,7 +347,7 @@ public class ResourceMetadataManager {
 			}
 		} catch (PRParserException | UIMAException | ComponentProvisioningException | ConverterException |
 				DependencyException | RDFModelNotSetException | ProjectionRuleModelNotSet |
-				UnassignableFeaturePathException e) {
+				UnassignableFeaturePathException | ValueNotPresentDueToConfigurationException e) {
 			e.printStackTrace();
 		}
 		return uts;
