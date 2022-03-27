@@ -5,11 +5,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchExtensionException;
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.RDFReporter;
 import it.uniroma2.art.semanticturkey.extension.extpts.reformattingexporter.ReformattingException;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
+import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectACL;
+import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.project.STLocalRepositoryManager;
+import it.uniroma2.art.semanticturkey.project.STRepositoryInfo;
+import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
@@ -22,8 +30,17 @@ import it.uniroma2.art.semanticturkey.services.annotations.Write;
 import it.uniroma2.art.semanticturkey.services.core.export.ExportPreconditionViolationException;
 import it.uniroma2.art.semanticturkey.services.core.export.TransformationPipeline;
 import it.uniroma2.art.semanticturkey.services.core.sparql.Graph2TupleQueryResultAdapter;
+import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
+import it.uniroma2.art.semanticturkey.settings.facets.ProjectFacetsIndexUtils;
 import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
+import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.LetterTokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CreationHelper;
@@ -31,6 +48,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.eclipse.rdf4j.http.protocol.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
@@ -56,6 +74,8 @@ import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
+import org.eclipse.rdf4j.repository.http.config.HTTPRepositoryConfig;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -65,6 +85,7 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import javax.annotation.Nullable;
@@ -76,9 +97,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -93,8 +116,13 @@ import java.util.UUID;
 @STService
 public class SPARQL extends STServiceAdapter {
 
+	private static final int MAX_FEDERATION_HINTS = 10;
+
 	@Autowired
 	private ExtensionPointManager exptManager;
+
+	@Autowired
+	private Projects projectsService;
 
 	private static final Logger logger = LoggerFactory.getLogger(SPARQL.class);
 
@@ -570,4 +598,97 @@ public class SPARQL extends STServiceAdapter {
 		preparedUpdate.setMaxExecutionTime(maxExecTime);
 	}
 
+	public static class FederatedEndpointSuggestion {
+		public String endpointURL;
+		public String endpointLabel;
+	}
+
+	@STServiceOperation(method = RequestMethod.GET)
+	@Read
+	@PreAuthorize("@auth.isAuthorized('rdf(sparql)', 'R')")
+	public List<FederatedEndpointSuggestion> suggestEndpointsForFederation(String query) throws ProjectAccessException, PropertyNotFoundException, InvalidProjectNameException, IOException {
+		// checks that the current repository on the contextual project is hosted on GDB
+		String ctxRepoId = STServiceContextUtils.getRepostoryId(stServiceContext);
+
+		STLocalRepositoryManager ctxProjRepoMgr = getProject().getRepositoryManager();
+		boolean ctxProjOnGDB = ctxProjRepoMgr.getSTRepositoryInfo(ctxRepoId).map(STRepositoryInfo::getBackendType).map(STLocalRepositoryManager::isGraphDBBackEnd).orElse(Boolean.FALSE);
+
+		if (!ctxProjOnGDB) {
+			return Collections.emptyList();
+		}
+
+		RepositoryImplConfig ctxRepoConfig = STLocalRepositoryManager.getUnfoldedRepositoryImplConfig(ctxProjRepoMgr.getRepositoryConfig(ctxRepoId));
+		if (!(ctxRepoConfig instanceof HTTPRepositoryConfig)) {
+			return Collections.emptyList();
+		}
+
+		String ctxServerURL = Protocol.getServerLocation(((HTTPRepositoryConfig) ctxRepoConfig).getURL());
+
+
+		List<String> queryTokens = tokenize(query);
+
+		List<FederatedEndpointSuggestion> results = new ArrayList<>();
+		for (Project proj : ProjectManager.listOpenProjects(getProject())) {
+				if (proj.getName().equals(getProject().getName())) {
+					continue; // skip potential self-federations
+				}
+
+				if (queryTokens.stream().noneMatch(t -> StringUtils.containsIgnoreCase(proj.getName(), t))) {
+					continue; // skip non-matching projects
+				}
+
+				STLocalRepositoryManager projRepoMgr = proj.getRepositoryManager();
+				java.util.Optional<STRepositoryInfo> coreRepoInfo = projRepoMgr.getSTRepositoryInfo(Project.CORE_REPOSITORY);
+
+				String repId = coreRepoInfo.flatMap(info -> {
+					if (!STLocalRepositoryManager.isGraphDBBackEnd(info.getBackendType())) return java.util.Optional.empty(); // skip non-GDB repos
+
+					RepositoryImplConfig repoConfig = STLocalRepositoryManager.getUnfoldedRepositoryImplConfig(projRepoMgr.getRepositoryConfig(Project.CORE_REPOSITORY));
+
+					if (repoConfig instanceof HTTPRepositoryConfig) {
+
+						String repoURL = ((HTTPRepositoryConfig) repoConfig).getURL();
+						String serverURL = Protocol.getServerLocation(repoURL);
+						String repoId = Protocol.getRepositoryID(repoURL);
+						if (ctxServerURL.equals(serverURL)) {
+							return java.util.Optional.of(Protocol.getRepositoryID(repoId));
+						}
+
+					}
+
+					return java.util.Optional.empty();
+				}).orElse(null);
+
+				if (repId != null) {
+					FederatedEndpointSuggestion aResult = new FederatedEndpointSuggestion();
+					aResult.endpointLabel = ObjectUtils.firstNonNull(proj.getLabels().get(LocaleContextHolder.getLocale().getLanguage()), proj.getName());
+					aResult.endpointURL = "repository:" + repId;
+					results.add(aResult);
+				}
+
+				if (results.size() == MAX_FEDERATION_HINTS) {
+					break;
+				}
+			}
+
+			return results;
+
+	}
+
+	protected List<String> tokenize(String query) throws IOException {
+		List<String> tokens = new ArrayList<>();
+
+		LetterTokenizer queryBaseTokenizer = new LetterTokenizer();
+		queryBaseTokenizer.setReader(new StringReader(query));
+		TokenStream tokenizer = new LowerCaseFilter(queryBaseTokenizer);
+		tokenizer.reset();
+		while (tokenizer.incrementToken()) {
+			CharTermAttribute tokAttr = tokenizer.getAttribute(CharTermAttribute.class);
+			String tok = String.valueOf(tokAttr.buffer(), 0, tokAttr.length());
+			tokens.add(tok);
+		}
+		tokenizer.end();
+		tokenizer.close();
+		return tokens;
+	}
 }

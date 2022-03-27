@@ -132,6 +132,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -292,6 +293,29 @@ public class ProjectManager {
 
 	public static Collection<AbstractProject> listProjects() throws ProjectAccessException {
 		return listProjects(null);
+	}
+
+	/**
+	 * lists the open projects. If <code>consumer</code> is not null, filters the list by reporting only the projects
+	 * which contain <code>consumer</code> in their ACL
+	 *
+	 * @param consumer
+	 *            if <code>null</code>, all the open projects
+	 * @return
+	 * @throws ProjectAccessException
+	 */
+	public static Collection<Project> listOpenProjects(ProjectConsumer consumer) throws ProjectAccessException {
+		Set<Project> allOpenProjects = openProjects.listAccessedProjects(ProjectConsumer.SYSTEM);
+
+		if (consumer == null) {
+			return new ArrayList<>(allOpenProjects);
+		} else {
+			return allOpenProjects.stream().filter(proj -> checkAccessibility(consumer, proj, AccessLevel.R, LockLevel.NO).affirmative).collect(Collectors.toList());
+		}
+	}
+
+	public static Collection<Project> listOpenProjects() throws ProjectAccessException {
+		return listOpenProjects(null);
 	}
 
 	/**
