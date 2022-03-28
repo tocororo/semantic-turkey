@@ -56,6 +56,7 @@ import it.uniroma2.art.sheet2rdf.core.Sheet2RDFCore;
 import it.uniroma2.art.sheet2rdf.db.AvailableDBDriverName;
 import it.uniroma2.art.sheet2rdf.exception.GenericSheet2RDFException;
 import it.uniroma2.art.sheet2rdf.exception.InvalidWizardStatusException;
+import it.uniroma2.art.sheet2rdf.exception.NotExistingSheetException;
 import it.uniroma2.art.sheet2rdf.header.AdvancedGraphApplication;
 import it.uniroma2.art.sheet2rdf.header.GraphApplication;
 import it.uniroma2.art.sheet2rdf.header.NodeConversion;
@@ -63,7 +64,6 @@ import it.uniroma2.art.sheet2rdf.header.SimpleGraphApplication;
 import it.uniroma2.art.sheet2rdf.header.SimpleHeader;
 import it.uniroma2.art.sheet2rdf.header.SubjectHeader;
 import it.uniroma2.art.sheet2rdf.sheet.SheetManager;
-import it.uniroma2.art.sheet2rdf.sheet.SheetManagerFactory;
 import it.uniroma2.art.sheet2rdf.utils.FsNamingStrategy;
 import it.uniroma2.art.sheet2rdf.utils.S2RDFUtils;
 import it.uniroma2.art.sheet2rdf.utils.StatusHandler;
@@ -103,7 +103,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -188,9 +187,14 @@ public class Sheet2RDF extends STServiceAdapter {
         return availabelDBDriverNameList;
     }
 
+    @STServiceOperation
+    public List<String> listSheetNames() {
+        S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+        return ctx.getSheet2RDFCore().getSheetNames();
+    }
+
     /**
-     * Returns an array list containing the headers of the Excel file's data sheet
-     *
+     * Returns all the headers (mapping structs) of all the available sheets
      * @return
      * @throws DOMException
      */
@@ -198,14 +202,58 @@ public class Sheet2RDF extends STServiceAdapter {
     @Read
     public JsonNode getHeaders() throws DOMException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
 
         JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-        ObjectNode responseJson = jsonFactory.objectNode();
+        ArrayNode structsResp = jsonFactory.arrayNode();
+
+        Sheet2RDFCore s2rdfCore = ctx.getSheet2RDFCore();
+        Map<String, MappingStruct> mappingStructMap = s2rdfCore.getMappingStructMap();
+
+        for (Entry<String, MappingStruct> entry : mappingStructMap.entrySet()) {
+            ObjectNode sheetHeadersJson = jsonFactory.objectNode();
+
+            String sheetName = entry.getKey();
+            MappingStruct ms = entry.getValue();
+
+            ObjectNode mappingStructJson = jsonFactory.objectNode();
+            //subject header
+            JsonNode subjHeaderJson = ms.getSubjectHeaderAsJson();
+            mappingStructJson.set("subject", subjHeaderJson);
+            //simple headers: headers of the sheet columns
+            ArrayNode headerJsonArray = jsonFactory.arrayNode();
+            List<SimpleHeader> headers = ms.getHeaders();
+            for (SimpleHeader h : headers) {
+                headerJsonArray.add(ms.getSimpleHeaderAsJson(h));
+            }
+            mappingStructJson.set("headers", headerJsonArray);
+
+            sheetHeadersJson.set("sheetName", jsonFactory.textNode(sheetName));
+            sheetHeadersJson.set("headers", mappingStructJson);
+
+            structsResp.add(sheetHeadersJson);
+        }
+
+        return structsResp;
+    }
+
+    /**
+     * Returns an array list containing the headers of the given sheet
+     *
+     * @return
+     * @throws DOMException
+     */
+    @STServiceOperation
+    @Read
+    public JsonNode getSheetHeaders(String sheetName) throws DOMException {
+        S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
+
+        JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
+        ObjectNode mappingStructJson = jsonFactory.objectNode();
 
         //subject header
         JsonNode subjHeaderJson = mappingStruct.getSubjectHeaderAsJson();
-        responseJson.set("subject", subjHeaderJson);
+        mappingStructJson.set("subject", subjHeaderJson);
 
         //simple headers: headers of the sheet columns
         ArrayNode headerJsonArray = jsonFactory.arrayNode();
@@ -213,9 +261,9 @@ public class Sheet2RDF extends STServiceAdapter {
         for (SimpleHeader h : headers) {
             headerJsonArray.add(mappingStruct.getSimpleHeaderAsJson(h));
         }
-        responseJson.set("headers", headerJsonArray);
+        mappingStructJson.set("headers", headerJsonArray);
 
-        return responseJson;
+        return mappingStructJson;
     }
 
     /**
@@ -227,17 +275,17 @@ public class Sheet2RDF extends STServiceAdapter {
      */
     @STServiceOperation
     @Read
-    public JsonNode getHeaderFromId(String headerId) {
+    public JsonNode getHeaderFromId(String sheetName, String headerId) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
         return mappingStruct.getSimpleHeaderAsJson(h);
     }
 
     @STServiceOperation(method = RequestMethod.POST)
-    public void ignoreHeader(String headerId, boolean ignore) {
+    public void ignoreHeader(String sheetName, String headerId, boolean ignore) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
         h.setIgnore(ignore);
     }
@@ -251,9 +299,9 @@ public class Sheet2RDF extends STServiceAdapter {
      * @param type     the optional rdf:type of the node
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void addSimpleGraphApplicationToHeader(String headerId, IRI property, String nodeId, @Optional IRI type) {
+    public void addSimpleGraphApplicationToHeader(String sheetName, String headerId, IRI property, String nodeId, @Optional IRI type) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
         SimpleGraphApplication g = new SimpleGraphApplication();
         g.setProperty(property);
@@ -263,10 +311,10 @@ public class Sheet2RDF extends STServiceAdapter {
     }
 
     @STServiceOperation(method = RequestMethod.POST)
-    public void addAdvancedGraphApplicationToHeader(String headerId, String graphPattern, List<String> nodeIds,
+    public void addAdvancedGraphApplicationToHeader(String sheetName, String headerId, String graphPattern, List<String> nodeIds,
             Map<String, String> prefixMapping, @Optional IRI defaultPredicate) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
         AdvancedGraphApplication g = new AdvancedGraphApplication();
         g.setPattern(graphPattern);
@@ -286,10 +334,10 @@ public class Sheet2RDF extends STServiceAdapter {
      * @param type     the optional rdf:type of the node
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void updateSimpleGraphApplication(String headerId, String graphId, IRI property, String nodeId,
+    public void updateSimpleGraphApplication(String sheetName, String headerId, String graphId, IRI property, String nodeId,
             @Optional IRI type) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
         for (GraphApplication g : h.getGraphApplications()) {
             if (g.getId().equals(graphId) && g instanceof SimpleGraphApplication) {
@@ -312,10 +360,10 @@ public class Sheet2RDF extends STServiceAdapter {
      * @param defaultPredicate predicate for the fallback of the pred placeholder in the pattern
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void updateAdvancedGraphApplication(String headerId, String graphId, String graphPattern, List<String> nodeIds,
+    public void updateAdvancedGraphApplication(String sheetName, String headerId, String graphId, String graphPattern, List<String> nodeIds,
             Map<String, String> prefixMapping, @Optional IRI defaultPredicate) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
         for (GraphApplication g : h.getGraphApplications()) {
             if (g.getId().equals(graphId) && g instanceof AdvancedGraphApplication) {
@@ -336,9 +384,9 @@ public class Sheet2RDF extends STServiceAdapter {
      * @param delete
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void updateGraphApplicationDelete(String headerId, String graphId, boolean delete) {
+    public void updateGraphApplicationDelete(String sheetName, String headerId, String graphId, boolean delete) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
         for (GraphApplication g : h.getGraphApplications()) {
             if (g.getId().equals(graphId)) {
@@ -354,9 +402,9 @@ public class Sheet2RDF extends STServiceAdapter {
      * @param graphId  id of the existing graph application
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void removeGraphApplicationFromHeader(String headerId, String graphId) {
+    public void removeGraphApplicationFromHeader(String sheetName, String headerId, String graphId) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
         h.getGraphApplications().removeIf(graphApplication -> graphApplication.getId().equals(graphId));
     }
@@ -369,9 +417,9 @@ public class Sheet2RDF extends STServiceAdapter {
      */
     @STServiceOperation
     @Read
-    public Boolean isNodeIdAlreadyUsed(String nodeId) {
+    public Boolean isNodeIdAlreadyUsed(String sheetName, String nodeId) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         if (nodeId.equals(mappingStruct.getSubjectHeader().getNodeConversion().getNodeId())) {
             return true;
         }
@@ -388,7 +436,7 @@ public class Sheet2RDF extends STServiceAdapter {
     /**
      * Creates and adds a node to a header.
      * Note: This service does not perform any check on node ID collision. This check should be done separately
-     * via {@link #isNodeIdAlreadyUsed(String)}
+     * via {@link #isNodeIdAlreadyUsed(String, String)}
      * Note 2: The creation of a node doesn't imply that it is used in a graph application.
      * This needs to be done separately (with add/update Simple/Advanced GraphApplicationToHeader}
      *
@@ -403,12 +451,12 @@ public class Sheet2RDF extends STServiceAdapter {
      */
     @Read
     @STServiceOperation(method = RequestMethod.POST)
-    public void addNodeToHeader(String headerId, String nodeId, RDFCapabilityType converterCapability,
+    public void addNodeToHeader(String sheetName, String headerId, String nodeId, RDFCapabilityType converterCapability,
             String converterContract, @Optional String converterDatatypeUri, @Optional String converterLanguage,
             @Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize,
             @Optional String memoizeId) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
         //create node and add it to the header
         NodeConversion n = new NodeConversion();
@@ -430,12 +478,12 @@ public class Sheet2RDF extends STServiceAdapter {
 
     @Read
     @STServiceOperation(method = RequestMethod.POST)
-    public void updateNodeInHeader(String headerId, String nodeId, RDFCapabilityType converterCapability,
+    public void updateNodeInHeader(String sheetName, String headerId, String nodeId, RDFCapabilityType converterCapability,
             String converterContract, @Optional String converterDatatypeUri, @Optional String converterLanguage,
             @Optional Map<String, String> converterParams, @Optional(defaultValue = "false") boolean memoize,
             @Optional String memoizeId) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
 
         List<NodeConversion> nodes = h.getNodeConversions();
@@ -460,9 +508,9 @@ public class Sheet2RDF extends STServiceAdapter {
     }
 
     @STServiceOperation(method = RequestMethod.POST)
-    public void renameNodeId(String headerId, String nodeId, String newNodeId) {
+    public void renameNodeId(String sheetName, String headerId, String nodeId, String newNodeId) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
 
         //check if newNodeId is already used in some header
         for (SimpleHeader h : mappingStruct.getHeaders()) {
@@ -506,9 +554,9 @@ public class Sheet2RDF extends STServiceAdapter {
      * @param nodeId   id of the existing node
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void removeNodeFromHeader(String headerId, String nodeId) {
+    public void removeNodeFromHeader(String sheetName, String headerId, String nodeId) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         SimpleHeader h = mappingStruct.getHeaderFromId(headerId);
         //remove the node
         h.getNodeConversions().removeIf(nodeConversion -> nodeConversion.getNodeId().equals(nodeId));
@@ -524,9 +572,9 @@ public class Sheet2RDF extends STServiceAdapter {
      * @param headerId
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void replicateMultipleHeader(String headerId) {
+    public void replicateMultipleHeader(String sheetName, String headerId) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         SimpleHeader sourceHeader = mappingStruct.getHeaderFromId(headerId);
         mappingStruct.replicateMultipleHeader(sourceHeader);
     }
@@ -542,11 +590,11 @@ public class Sheet2RDF extends STServiceAdapter {
      */
     @Read
     @STServiceOperation(method = RequestMethod.POST)
-    public void updateSubjectHeader(String headerId, String converterContract, @Optional Map<String, String> converterParams,
+    public void updateSubjectHeader(String sheetName, String headerId, String converterContract, @Optional Map<String, String> converterParams,
             @Optional IRI type, @Optional(defaultValue = "[]") @JsonSerialized List<Pair<IRI, Value>> additionalPredObjs,
             @Optional(defaultValue = "false") boolean memoize, @Optional String memoizeId) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct mappingStruct = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         SubjectHeader subjHeader = mappingStruct.getSubjectHeader();
         subjHeader.setId(headerId);
         //update the converter in the node conversion
@@ -582,10 +630,10 @@ public class Sheet2RDF extends STServiceAdapter {
      * @return
      */
     @STServiceOperation
-    public JsonNode getTablePreview(int maxRows) throws GenericSheet2RDFException {
+    public JsonNode getTablePreview(String sheetName, int maxRows) throws GenericSheet2RDFException, NotExistingSheetException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        SheetManager sheetMgr = SheetManagerFactory.getSheetManager(ctx.getSheet2RDFCore().getSpreadsheetOrDb());
-        ArrayList<ArrayList<String>> table = sheetMgr.getDataTable();
+        SheetManager sheetMgr = ctx.getSheet2RDFCore().getSpreadsheetManager().getSheetManager(sheetName);
+        List<List<String>> table = sheetMgr.getDataTable();
 
         JsonNodeFactory jf = JsonNodeFactory.instance;
         ObjectNode respJson = jf.objectNode();
@@ -624,12 +672,12 @@ public class Sheet2RDF extends STServiceAdapter {
      * @throws IOException
      */
     @STServiceOperation
-    public JsonNode getPearl() throws IOException {
+    public JsonNode getPearl(String sheetName) throws IOException {
         File pearlFile = File.createTempFile("pearl", ".pr");
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         Sheet2RDFCore s2rdfCore = ctx.getSheet2RDFCore();
-        s2rdfCore.generatePearlFile(pearlFile);
-        ctx.setPearlFile(pearlFile);
+        s2rdfCore.generatePearlFile(pearlFile, sheetName);
+        ctx.setPearlFile(sheetName, pearlFile);
         String pearl = S2RDFUtils.pearlFileToString(pearlFile);
         return JsonNodeFactory.instance.textNode(pearl);
     }
@@ -641,9 +689,9 @@ public class Sheet2RDF extends STServiceAdapter {
      * @throws FileNotFoundException
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public void savePearl(String pearlCode) throws IOException {
+    public void savePearl(String sheetName, String pearlCode) throws IOException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        OutputStream os = new FileOutputStream(ctx.getPearlFile());
+        OutputStream os = new FileOutputStream(ctx.getPearlFile(sheetName));
         BufferedWriter bf = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
         bf.write(pearlCode);
         bf.flush();
@@ -744,7 +792,7 @@ public class Sheet2RDF extends STServiceAdapter {
      * @throws IOException
      */
     @STServiceOperation(method = RequestMethod.POST)
-    public JsonNode uploadPearl(MultipartFile file) throws IOException {
+    public JsonNode uploadPearl(String sheetName, MultipartFile file) throws IOException {
         //upload the file on the server (in karaf data/temp folder)
         S2RDFContext s2rdfCtx = contextMap.get(stServiceContext.getSessionToken());
         File pearlServerFile = File.createTempFile("pearl", ".pr");
@@ -753,7 +801,7 @@ public class Sheet2RDF extends STServiceAdapter {
         stream.write(bytes);
         stream.close();
         //update the pearl in the context
-        s2rdfCtx.setPearlFile(pearlServerFile);
+        s2rdfCtx.setPearlFile(sheetName, pearlServerFile);
 
         String pearlCode = S2RDFUtils.pearlFileToString(pearlServerFile);
         return JsonNodeFactory.instance.textNode(pearlCode);
@@ -782,15 +830,15 @@ public class Sheet2RDF extends STServiceAdapter {
      */
     @STServiceOperation
     @Read
-    public JsonNode getTriplesPreview(int maxTableRows) throws UIMAException, PRParserException,
+    public JsonNode getTriplesPreview(String sheetName, int maxTableRows) throws UIMAException, PRParserException,
             ComponentProvisioningException, ConverterException, DependencyException, RDFModelNotSetException,
             ProjectionRuleModelNotSet, UnassignableFeaturePathException, GenericSheet2RDFException,
-            ValueNotPresentDueToConfigurationException {
+            NotExistingSheetException, ValueNotPresentDueToConfigurationException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        JCas jcas = ctx.getSheet2RDFCore().executeAnnotator();
+        JCas jcas = ctx.getSheet2RDFCore().executeAnnotator(sheetName);
         Sheet2RDFCODA s2rdfCoda = new Sheet2RDFCODA(getManagedConnection(), ctx.getCodaCore());
-        List<SuggOntologyCoda> listSuggOntCoda = s2rdfCoda.suggestTriples(jcas, ctx.getPearlFile());
-        ctx.setSuggestedTriples(listSuggOntCoda);
+        List<SuggOntologyCoda> listSuggOntCoda = s2rdfCoda.suggestTriples(jcas, ctx.getPearlFile(sheetName));
+        ctx.setSuggestedTriples(sheetName, listSuggOntCoda);
 
         JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
         ObjectNode respJson = jsonFactory.objectNode();
@@ -848,9 +896,9 @@ public class Sheet2RDF extends STServiceAdapter {
      */
     @STServiceOperation
     @Write
-    public void addTriples() {
+    public void addTriples(String sheetName) {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        List<SuggOntologyCoda> suggTriples = ctx.getCachedSuggestedTriples();
+        List<SuggOntologyCoda> suggTriples = ctx.getCachedSuggestedTriples(sheetName);
         RepositoryConnection connection = getManagedConnection();
         for (SuggOntologyCoda sugg : suggTriples) {
             List<CODATriple> triples = sugg.getAllInsertARTTriple();
@@ -867,11 +915,11 @@ public class Sheet2RDF extends STServiceAdapter {
     }
 
     @STServiceOperation
-    public void exportTriples(HttpServletResponse oRes, RDFFormat outputFormat)
+    public void exportTriples(HttpServletResponse oRes, String sheetName, RDFFormat outputFormat)
             throws IOException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         //Write suggested triples in a temporary model
-        List<SuggOntologyCoda> suggTriples = ctx.getCachedSuggestedTriples();
+        List<SuggOntologyCoda> suggTriples = ctx.getCachedSuggestedTriples(sheetName);
 
         Repository rep = new SailRepository(new MemoryStore());
         rep.init();
@@ -924,9 +972,9 @@ public class Sheet2RDF extends STServiceAdapter {
      * @throws JsonGenerationException
      */
     @STServiceOperation
-    public void exportStatus(HttpServletResponse oRes) throws IOException {
+    public void exportSheetStatus(HttpServletResponse oRes, String sheetName) throws IOException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct ms = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct ms = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         File tempServerFile = File.createTempFile("sheet2rdf_status", ".json");
         try {
             StatusHandler statusHandler = new StatusHandler(ms);
@@ -943,6 +991,11 @@ public class Sheet2RDF extends STServiceAdapter {
         }
     }
 
+    @STServiceOperation
+    public void exportGlobalStatus(HttpServletResponse oRes, String sheetName) throws IOException {
+        //TODO
+    }
+
     /**
      * @param statusFile
      * @throws InvalidWizardStatusException Load a JSON file that represents the status of the conversion and restore the mapping struct
@@ -951,13 +1004,18 @@ public class Sheet2RDF extends STServiceAdapter {
      */
     @Read
     @STServiceOperation(method = RequestMethod.POST)
-    public void importStatus(MultipartFile statusFile) throws IOException, InvalidWizardStatusException {
+    public void importSheetStatus(MultipartFile statusFile, String sheetName) throws IOException, InvalidWizardStatusException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        MappingStruct ms = ctx.getSheet2RDFCore().getMappingStruct();
+        MappingStruct ms = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         File inputServerFile = File.createTempFile("sheet2rdf_status", statusFile.getOriginalFilename());
         statusFile.transferTo(inputServerFile);
         StatusHandler statusHandler = new StatusHandler(ms);
         statusHandler.fromJson(inputServerFile, getManagedConnection());
+    }
+
+    @STServiceOperation
+    public void importGlobalStatus(MultipartFile statusFile) throws IOException, InvalidWizardStatusException {
+        //TODO
     }
 
 
@@ -1017,9 +1075,7 @@ public class Sheet2RDF extends STServiceAdapter {
     private Map<String, Object> resolveConverterParamsMap(Map<String, String> convParamsMap) {
         Map<String, Object> resolvedConvParams = new LinkedHashMap<>();
         ObjectMapper mapper = new ObjectMapper();
-        Iterator<Entry<String, String>> itEntries = convParamsMap.entrySet().iterator();
-        while (itEntries.hasNext()) {
-            Entry<String, String> entry = itEntries.next();
+        for (Entry<String, String> entry : convParamsMap.entrySet()) {
             String value = entry.getValue();
             if (value.startsWith("{")) { //value is a map => convert it
                 try {

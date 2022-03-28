@@ -1,41 +1,5 @@
 package it.uniroma2.art.semanticturkey.services;
 
-import static java.util.stream.Collectors.toList;
-
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-
-import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadata;
-import it.uniroma2.art.semanticturkey.services.events.ResourceDeleted;
-import it.uniroma2.art.semanticturkey.user.STUser;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.queryrender.RenderUtils;
-import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
-import org.springframework.beans.factory.ObjectFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.transaction.PlatformTransactionManager;
-
 import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.ConverterException;
 import it.uniroma2.art.coda.exception.ProjectionRuleModelNotSet;
@@ -68,13 +32,47 @@ import it.uniroma2.art.semanticturkey.project.STRepositoryInfoUtils;
 import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.search.SearchStrategyUtils;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadata;
 import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
+import it.uniroma2.art.semanticturkey.services.events.ResourceDeleted;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.services.support.STServiceContextUtils;
 import it.uniroma2.art.semanticturkey.sparql.SPARQLUtilities;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.tx.STServiceAspect;
+import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.Update;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+import org.springframework.beans.factory.ObjectFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.PlatformTransactionManager;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Base class of Semantic Turkey services.

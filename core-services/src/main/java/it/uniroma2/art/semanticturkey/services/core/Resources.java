@@ -78,8 +78,8 @@ public class Resources extends STServiceAdapter {
 		public static final String keyBase = "it.uniroma2.art.semanticturkey.services.core.Resources";
 		public static final String exceptionDifferentSubject$message = keyBase + ".exceptionDifferentSubject.message";
 		public static final String exceptionCannotDeleteAll$message = keyBase + ".exceptionCannotDeleteAll.message";
-	};
-	
+	}
+
 	@Autowired
 	private ResourceLocator resourceLocator;
 

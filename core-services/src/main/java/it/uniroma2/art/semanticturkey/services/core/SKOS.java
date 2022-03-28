@@ -2124,59 +2124,7 @@ public class SKOS extends STServiceAdapter {
 		update.execute();
 	}
 
-//	/**
-//	 * TODO move to STServiceAdapter
-//	 * @param repoConn
-//	 * @param subject
-//	 * @param predicate
-//	 * @param value
-//	 * @throws PRParserException
-//	 */
-//	protected void removeReifiedValue(RepositoryConnection repoConn, Resource subject, IRI predicate,
-//			Resource value) throws PRParserException {
-//		// remove resource as object in the triple <s, p, o> for the given subject and predicate
-//		repoConn.remove(subject, predicate, value, getWorkingGraph());
-//
-//		CODACore codaCore = getInitializedCodaCore(repoConn);
-//		CustomFormGraph cf = cfManager.getCustomFormGraphSeed(getProject(), codaCore, repoConn,
-//				value, Collections.singleton(predicate), false);
-//
-//		Update update;
-//		if (cf == null) {
-//			/*
-//			 * If property hasn't a CustomForm simply delete all triples where resource occurs. note: this
-//			 * case should never be verified cause this service should be called only when the predicate has a
-//			 * CustomForm
-//			 */
-//			StringBuilder queryBuilder = new StringBuilder();
-//			queryBuilder.append("delete { ");
-//			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
-//			queryBuilder.append(" <" + value.stringValue() + "> ?p1 ?o1 . ");
-//			queryBuilder.append(" ?s2 ?p2 <" + value.stringValue() + "> . ");
-//			queryBuilder.append(" }"); //close graph {}
-//			queryBuilder.append(" } where { ");
-//			queryBuilder.append(" <" + value.stringValue() + "> ?p1 ?o1 . ");
-//			queryBuilder.append(" ?s2 ?p2 <" + value.stringValue() + "> . ");
-//			queryBuilder.append(" }");
-//			update = repoConn.prepareUpdate(queryBuilder.toString());
-//		} else { // otherwise remove with a SPARQL delete the graph defined by the CustomFormGraph
-//			StringBuilder queryBuilder = new StringBuilder();
-//			queryBuilder.append("delete { ");
-//			queryBuilder.append("graph " + NTriplesUtil.toNTriplesString(getWorkingGraph()) + " {");
-//			queryBuilder.append(cf.getGraphSectionAsString(codaCore, false));
-//			queryBuilder.append(" }"); //close graph {}
-//			queryBuilder.append(" } where { ");
-//			queryBuilder.append(cf.getGraphSectionAsString(codaCore, true));
-//			queryBuilder.append(" }");
-//			update = repoConn.prepareUpdate(queryBuilder.toString());
-//			update.setBinding(cf.getEntryPointPlaceholder(codaCore).substring(1), value);
-//		}
-//		update.setIncludeInferred(false);
-//		update.execute();
-//		shutDownCodaCore(codaCore);
-//	}
 
-	
 	/**
 	 * Generates a new URI for a SKOS concept, optionally given its accompanying preferred label and concept
 	 * scheme. The actual generation of the URI is delegated to {@link #generateIRI(String, Map)}, which in

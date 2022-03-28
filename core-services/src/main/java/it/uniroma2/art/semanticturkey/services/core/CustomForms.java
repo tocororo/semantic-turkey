@@ -603,7 +603,7 @@ public class CustomForms extends STServiceAdapter {
 			Collection<UserPromptStruct> form = cForm.getForm(codaCore);
 			shutDownCodaCore(codaCore);
 			JsonNodeFactory jsonFactory = JsonNodeFactory.instance;
-			ArrayNode formArrayNode = jsonFactory.arrayNode();
+			ArrayNode fieldListNode = jsonFactory.arrayNode();
 			for (UserPromptStruct formEntry : form) {
 				ObjectNode formEntryNode = jsonFactory.objectNode();
 				formEntryNode.set("placeholderId", jsonFactory.textNode(formEntry.getPlaceholderId()));
@@ -624,7 +624,7 @@ public class CustomForms extends STServiceAdapter {
 					 * argument, so remove the element from formEntry and add it as argument of converter xml
 					 * element
 					 */
-					for (JsonNode entry : formArrayNode) {
+					for (JsonNode entry : fieldListNode) {
 						if (entry.get("placeholderId").textValue().equals(phLangId)) {
 							ObjectNode convArgNode = jsonFactory.objectNode();
 							convArgNode.set("userPrompt",
@@ -679,9 +679,9 @@ public class CustomForms extends STServiceAdapter {
 				}
 				formEntryNode.set("annotations", annotationsNode);
 
-				formArrayNode.add(formEntryNode);
+				fieldListNode.add(formEntryNode);
 			}
-			return formArrayNode;
+			return fieldListNode;
 		} else {
 			throw new CustomFormException(
 					"CustomForm with id " + id + " not found in project " + getProject().getName());
