@@ -133,7 +133,7 @@ public class VersionNumber implements Comparable<VersionNumber> {
         if (revisionCompare != 0) {
         	return revisionCompare;
 		}
-		if (this.isSnapshot() && o.isSnapshot()) {
+        if (this.isSnapshot() && o.isSnapshot() || !this.isSnapshot() && !o.isSnapshot()) {
 			return 0;
 		} else if (this.isSnapshot() && !o.isSnapshot()) {
 			return -1;

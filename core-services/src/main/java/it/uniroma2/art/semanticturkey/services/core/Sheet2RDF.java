@@ -975,11 +975,10 @@ public class Sheet2RDF extends STServiceAdapter {
     public void exportSheetStatus(HttpServletResponse oRes, String sheetName) throws IOException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         MappingStruct ms = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
-        File tempServerFile = File.createTempFile("sheet2rdf_status", ".json");
+        File tempServerFile = File.createTempFile(sheetName + " - status", ".json");
         try {
-            StatusHandler statusHandler = new StatusHandler(ms);
-            statusHandler.toJson(tempServerFile);
-            oRes.setHeader("Content-Disposition", "attachment; filename=alignment.rdf");
+            StatusHandler.exportSheetStatus(ms, tempServerFile);
+            oRes.setHeader("Content-Disposition", "attachment; filename=" + sheetName + " - status.json");
             oRes.setContentType(RDFFormat.RDFXML.getDefaultMIMEType());
             oRes.setContentLength((int) tempServerFile.length());
             try (InputStream is = new FileInputStream(tempServerFile)) {
@@ -992,8 +991,24 @@ public class Sheet2RDF extends STServiceAdapter {
     }
 
     @STServiceOperation
-    public void exportGlobalStatus(HttpServletResponse oRes, String sheetName) throws IOException {
-        //TODO
+    public void exportGlobalStatus(HttpServletResponse oRes) throws IOException {
+        S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+        Map<String, MappingStruct> msMap = ctx.getSheet2RDFCore().getMappingStructMap();
+        File tempServerFile = File.createTempFile("sheet2rdf - status", ".json");
+
+        try {
+            StatusHandler.exportGlobalStatus(msMap, tempServerFile);
+
+            oRes.setHeader("Content-Disposition", "attachment; filename=sheet2rdf - status.json");
+            oRes.setContentType(RDFFormat.RDFXML.getDefaultMIMEType());
+            oRes.setContentLength((int) tempServerFile.length());
+            try (InputStream is = new FileInputStream(tempServerFile)) {
+                IOUtils.copy(is, oRes.getOutputStream());
+            }
+            oRes.flushBuffer();
+        } finally {
+            tempServerFile.delete();
+        }
     }
 
     /**
@@ -1009,13 +1024,17 @@ public class Sheet2RDF extends STServiceAdapter {
         MappingStruct ms = ctx.getSheet2RDFCore().getMappingStruct(sheetName);
         File inputServerFile = File.createTempFile("sheet2rdf_status", statusFile.getOriginalFilename());
         statusFile.transferTo(inputServerFile);
-        StatusHandler statusHandler = new StatusHandler(ms);
-        statusHandler.fromJson(inputServerFile, getManagedConnection());
+        StatusHandler.restoreSheetStatus(inputServerFile, ms, getManagedConnection());
     }
 
-    @STServiceOperation
+    @Read
+    @STServiceOperation(method = RequestMethod.POST)
     public void importGlobalStatus(MultipartFile statusFile) throws IOException, InvalidWizardStatusException {
-        //TODO
+        S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
+        Map<String, MappingStruct> msMap = ctx.getSheet2RDFCore().getMappingStructMap();
+        File inputServerFile = File.createTempFile("sheet2rdf_status", statusFile.getOriginalFilename());
+        statusFile.transferTo(inputServerFile);
+        StatusHandler.restoreGlobalStatus(inputServerFile, msMap, getManagedConnection());
     }
 
 
