@@ -416,7 +416,7 @@ public class CustomFormGraph extends CustomForm {
 
 			// run coda with the given pearl and the cas just created.
 			//No need to init the projection rule model (already done in createTypeSystemDescription)
-			codaCore.setJCas(jcas);
+			codaCore.setJCas(jcas, true);
 			while (codaCore.isAnotherAnnotationPresent()) {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
 				// get only triples of relevant annotations (those triples that start with it.uniroma2.
@@ -483,7 +483,7 @@ public class CustomFormGraph extends CustomForm {
 
 			// run coda with the given pearl and the cas just created.
 			initProjectionRuleModel(codaCore);
-			codaCore.setJCas(jcas);
+			codaCore.setJCas(jcas, true);
 			while (codaCore.isAnotherAnnotationPresent()) {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
 				// get only triples of relevant annotations (those triples that start with it.uniroma2.

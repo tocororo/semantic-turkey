@@ -336,7 +336,7 @@ public class ResourceMetadataManager {
 //			analyseCas(aCAS);
 
 			// run coda with the given pearl and the cas just created (the pearl has been set to codaCore in createTypeSystemDescription)
-			codaCore.setJCas(jcas);
+			codaCore.setJCas(jcas, true);
 			while (codaCore.isAnotherAnnotationPresent()) {
 				SuggOntologyCoda suggOntCoda = codaCore.processNextAnnotation();
 				// get only triples of relevant annotations (those triples that start with it.uniroma2.
