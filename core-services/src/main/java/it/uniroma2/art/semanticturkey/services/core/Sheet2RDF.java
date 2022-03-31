@@ -63,7 +63,7 @@ import it.uniroma2.art.sheet2rdf.header.NodeConversion;
 import it.uniroma2.art.sheet2rdf.header.SimpleGraphApplication;
 import it.uniroma2.art.sheet2rdf.header.SimpleHeader;
 import it.uniroma2.art.sheet2rdf.header.SubjectHeader;
-import it.uniroma2.art.sheet2rdf.sheet.SheetManager;
+import it.uniroma2.art.sheet2rdf.sheet.S2RDFSheet;
 import it.uniroma2.art.sheet2rdf.utils.FsNamingStrategy;
 import it.uniroma2.art.sheet2rdf.utils.S2RDFUtils;
 import it.uniroma2.art.sheet2rdf.utils.StatusHandler;
@@ -630,10 +630,10 @@ public class Sheet2RDF extends STServiceAdapter {
      * @return
      */
     @STServiceOperation
-    public JsonNode getTablePreview(String sheetName, int maxRows) throws GenericSheet2RDFException, NotExistingSheetException {
+    public JsonNode getTablePreview(String sheetName, int maxRows) throws NotExistingSheetException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
-        SheetManager sheetMgr = ctx.getSheet2RDFCore().getSpreadsheetManager().getSheetManager(sheetName);
-        List<List<String>> table = sheetMgr.getDataTable();
+        S2RDFSheet sheet = ctx.getSheet2RDFCore().getSpreadsheetManager().getSheet(sheetName);
+        List<List<String>> table = sheet.getTableContent();
 
         JsonNodeFactory jf = JsonNodeFactory.instance;
         ObjectNode respJson = jf.objectNode();
@@ -650,7 +650,7 @@ public class Sheet2RDF extends STServiceAdapter {
         respJson.set("rows", rowsJsonArray);
         for (int r = 0; r < rowsToReturn; r++) {
             ObjectNode rowJson = jf.objectNode();
-            rowJson.set("idx", jf.numberNode(r + 1));
+            rowJson.set("idx", jf.numberNode(r));
             ArrayNode cellsJsonArray = jf.arrayNode();
             rowJson.set("cells", cellsJsonArray);
             for (int c = 0; c < table.get(0).size(); c++) {
@@ -832,7 +832,7 @@ public class Sheet2RDF extends STServiceAdapter {
     @Read
     public JsonNode getTriplesPreview(String sheetName, int maxTableRows) throws UIMAException, PRParserException,
             ComponentProvisioningException, ConverterException, DependencyException, RDFModelNotSetException,
-            ProjectionRuleModelNotSet, UnassignableFeaturePathException, GenericSheet2RDFException,
+            ProjectionRuleModelNotSet, UnassignableFeaturePathException,
             NotExistingSheetException, ValueNotPresentDueToConfigurationException {
         S2RDFContext ctx = contextMap.get(stServiceContext.getSessionToken());
         JCas jcas = ctx.getSheet2RDFCore().executeAnnotator(sheetName);

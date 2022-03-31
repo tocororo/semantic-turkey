@@ -15,6 +15,8 @@ public class Sheet2RdfSettings implements STProperties {
         public static final String useHeaders$displayName = keyBase + ".useHeaders.displayName";
         public static final String namingStrategy$description = keyBase + ".namingStrategy.description";
         public static final String namingStrategy$displayName = keyBase + ".namingStrategy.displayName";
+        public static final String maxRowsTablePreview$description = keyBase + ".maxRowsTablePreview.description";
+        public static final String maxRowsTablePreview$displayName = keyBase + ".maxRowsTablePreview.displayName";
     }
 
     @Override
@@ -31,5 +33,8 @@ public class Sheet2RdfSettings implements STProperties {
     @Enumeration({"columnAlphabeticIndex", "columnNumericIndex", "normalizedHeaderName"})
     public String namingStrategy;
 
+    @STProperty(description = "{" + MessageKeys.maxRowsTablePreview$description
+            + "}", displayName = "{" + MessageKeys.maxRowsTablePreview$displayName + "}")
+    public int maxRowsTablePreview;
 
 }
