@@ -2731,7 +2731,7 @@ public class SKOS extends STServiceAdapter {
         System.out.println(m.getGenericReturnType());
     }
 
-    private class CustomConstructorOutcome {
+    private static class CustomConstructorOutcome {
         private final IRI newResource;
         private final IRI xLabel;
         public CustomConstructorOutcome(IRI newResource, IRI xLabel) {

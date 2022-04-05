@@ -11,7 +11,6 @@ import it.uniroma2.art.coda.provisioning.ComponentProvisioningException;
 import it.uniroma2.art.coda.structures.CODATriple;
 import it.uniroma2.art.semanticturkey.customform.CODACoreProvider;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
-import it.uniroma2.art.semanticturkey.customform.CustomFormException;
 import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormManager;
 import it.uniroma2.art.semanticturkey.customform.CustomFormParseUtils;
@@ -46,7 +45,6 @@ import it.uniroma2.art.semanticturkey.user.UsersManager;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -217,42 +215,6 @@ public class STServiceAdapter implements STService, NewerNewStyleService {
 	protected void shutDownCodaCore(CODACore codaCore) {
 		codaCore.setRepositoryConnection(null);
 		codaCore.stopAndClose();
-	}
-
-	/**
-	 * Enrich the <code>modelAdditions</code> and <code>modelAdditions</code> with the triples to add and
-	 * remove suggested by CODA running the PEARL rule defined in the CustomForm with the given
-	 * <code>cfId</code>
-	 */
-	protected void enrichWithCustomForm(RepositoryConnection repoConn, Model modelAdditions,
-			Model modelRemovals, CustomForm cForm, Map<String, Object> userPromptMap, StandardForm stdForm)
-			throws CODAException, CustomFormException {
-		CODACore codaCore = getInitializedCodaCore(repoConn);
-		try {
-			if (cForm.isTypeGraph()) {
-				CustomFormGraph cfGraph = cForm.asCustomFormGraph();
-				SessionFormData sessionData = new SessionFormData();
-				sessionData.addSessionParameter(SessionFormData.Data.user,
-						UsersManager.getLoggedUser().getIRI().stringValue());
-				UpdateTripleSet updates = cfGraph.executePearl(codaCore, userPromptMap, stdForm,
-						sessionData);
-				shutDownCodaCore(codaCore);
-
-				for (CODATriple t : updates.getInsertTriples()) {
-					modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-				}
-				for (CODATriple t : updates.getDeleteTriples()) {
-					modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-				}
-			} else {
-				throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
-						+ "' as constructor since it is not of type 'graph'");
-			}
-		} catch (ProjectionRuleModelNotSet | UnassignableFeaturePathException e) {
-			throw new CODAException(e);
-		} finally {
-			shutDownCodaCore(codaCore);
-		}
 	}
 
 	protected UpdateTripleSet runCustomConstructor(RepositoryConnection repoConn, CustomFormGraph cForm, Map<String, Object> userPromptMap, StandardForm stdForm) throws CODAException {

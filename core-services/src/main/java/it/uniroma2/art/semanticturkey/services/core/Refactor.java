@@ -1,12 +1,16 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.structures.CODATriple;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
+import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
+import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
@@ -53,7 +57,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -324,8 +327,8 @@ public class Refactor extends STServiceAdapter {
 	public void SKOStoSKOSXL(boolean reifyNotes) throws URIGenerationException {
 		logger.debug("request to refactor SKOS data to SKOSXL");
 
-		List<ConceptLabelValueGraph> conceptLabelValueGraphList = new ArrayList<ConceptLabelValueGraph>();
-		List<ConceptNoteValueGraph> conceptNoteValueGraphList = new ArrayList<ConceptNoteValueGraph>();
+		List<ConceptLabelValueGraph> conceptLabelValueGraphList = new ArrayList<>();
+		List<ConceptNoteValueGraph> conceptNoteValueGraphList = new ArrayList<>();
 
 		IRI workingGraph = (IRI) getWorkingGraph();
 		String workingGraphString = SPARQLHelp.toSPARQL(workingGraph);
@@ -426,10 +429,10 @@ public class Refactor extends STServiceAdapter {
 			Literal value = conceptLabelValueGraph.getValue();
 			IRI graph = conceptLabelValueGraph.getGraph();
 
-			Map<String, Value> valueMapping = new HashMap<String, Value>();
+			Map<String, Value> valueMapping = new HashMap<>();
 			valueMapping.put(URIGenerator.Parameters.lexicalForm, value);
 			valueMapping.put(URIGenerator.Parameters.lexicalizedResource, concept);
-			Value skosxlLabelType = null;
+			Value skosxlLabelType;
 			if (labelType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.PREF_LABEL)) {
 				skosxlLabelType = SKOSXL.PREF_LABEL;
 			} else if (labelType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.ALT_LABEL)) {
@@ -481,7 +484,7 @@ public class Refactor extends STServiceAdapter {
 				Literal value = conceptNoteValueGraph.getValue();
 				IRI graph = conceptNoteValueGraph.getGraph();
 
-				Map<String, Value> valueMapping = new HashMap<String, Value>();
+				Map<String, Value> valueMapping = new HashMap<>();
 				valueMapping.put(URIGenerator.Parameters.lexicalForm, value);
 				valueMapping.put(URIGenerator.Parameters.lexicalizedResource, concept);
 				valueMapping.put(URIGenerator.Parameters.noteProperty, noteType);
@@ -630,11 +633,12 @@ public class Refactor extends STServiceAdapter {
 			@LocallyDefinedResources List<IRI> conceptSchemes, @Optional CustomFormValue customFormValue)
 			throws URIGenerationException, CustomFormException, CODAException,
 			NonExistingLiteralFormForResourceException {
-		Model modelAdditions = new LinkedHashModel();
-		Model modelRemovals = new LinkedHashModel();
+
 		RepositoryConnection repoConnection = getManagedConnection();
 
-		IRI newConceptIRI = null;
+		Model modelAdditions = new LinkedHashModel();
+		Model modelRemovals = new LinkedHashModel();
+
 		// get the label from the input xLabel
 		RepositoryResult<Statement> repositoryResult = repoConnection.getStatements(xLabel,
 				SKOSXL.LITERAL_FORM, null, getUserNamedGraphs());
@@ -643,34 +647,72 @@ public class Refactor extends STServiceAdapter {
 			throw new NonExistingLiteralFormForResourceException(xLabel);
 		}
 		Literal label = Models.objectLiteral(tempModel).get();
+
+
+
 		if (newConcept == null) {
-			for (IRI conceptScheme : conceptSchemes) {
-				newConceptIRI = generateConceptIRI(label, Arrays.asList(conceptScheme));
-			}
-		} else {
-			newConceptIRI = newConcept;
+			newConcept = generateConceptIRI(label, conceptSchemes);
 		}
 
-		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newConceptIRI,
-				RDFResourceRole.concept); // set created for versioning
+		if (customFormValue != null) {
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
+			if (cForm.isTypeGraph()) {
+				CustomFormGraph cfGraph = (CustomFormGraph) cForm;
+				CODACore codaCore = getInitializedCodaCore(repoConnection);
+				boolean cfResCreationDelegated = cfGraph.isResourceCreationDelegated(codaCore);
+				if (cfResCreationDelegated) {
+					/* if CC is delegated to create the resource IRI (e.g. through "resource uri(coda:randIdGen())" or
+					"resource uri userPrompt/customIriField") set newConcept to null since it will be overwritten by CC */
+					newConcept = null;
+				}
+
+				StandardForm stdForm = new StandardForm();
+				if (newConcept != null) {
+					stdForm.addFormEntry(StandardForm.Prompt.resource, newConcept.stringValue());
+				}
+				stdForm.addFormEntry(StandardForm.Prompt.xLabel, xLabel.stringValue());
+				stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
+				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
+
+				UpdateTripleSet updateTripleSet = runCustomConstructor(repoConnection, cfGraph, customFormValue.getUserPromptMap(), stdForm);
+
+				if (cfResCreationDelegated) {
+					//CC was delegated to create resource IRI => get it now that the CF has been executed
+					newConcept = (IRI) detectGraphEntry(updateTripleSet.getInsertTriples());
+					checkNotLocallyDefined(repoConnection, newConcept);
+				}
+
+				for (CODATriple t : updateTripleSet.getInsertTriples()) {
+					modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+				}
+				for (CODATriple t : updateTripleSet.getDeleteTriples()) {
+					modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+				}
+			} else {
+				throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
+						+ "' as constructor since it is not of type 'graph'");
+			}
+		}
 
 		// add the new concept (just generated using the passed xLabel or the IRI passed by the user)
-		modelAdditions.add(newConceptIRI, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT);
-
+		modelAdditions.add(newConcept, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT);
 		// add the passed xLabel to the new concept as skosxl:prefLabel
-		modelAdditions.add(newConceptIRI, SKOSXL.PREF_LABEL, xLabel);
+		modelAdditions.add(newConcept, SKOSXL.PREF_LABEL, xLabel);
 
 		// add the new concept to the desired scheme
 		for (IRI conceptScheme : conceptSchemes) {
-			modelAdditions.add(newConceptIRI, SKOS.IN_SCHEME, conceptScheme);
+			modelAdditions.add(newConcept, SKOS.IN_SCHEME, conceptScheme);
 		}
 		if (broaderConcept != null) {
-			modelAdditions.add(newConceptIRI, SKOS.BROADER, broaderConcept);
+			modelAdditions.add(newConcept, SKOS.BROADER, broaderConcept);
 		} else {
 			for (IRI conceptScheme : conceptSchemes) {
-				modelAdditions.add(newConceptIRI, SKOS.TOP_CONCEPT_OF, conceptScheme);
+				modelAdditions.add(newConcept, SKOS.TOP_CONCEPT_OF, conceptScheme);
 			}
 		}
+
+		//set versioning metadata
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newConcept, RDFResourceRole.concept);
 
 		// find out what property exists between the passed xLabel and the old concept
 		// oldConcept can be null
@@ -699,33 +741,11 @@ public class Refactor extends STServiceAdapter {
 		}
 		tupleQueryResult.close();
 
-		// repositoryResult = repoConnection.getStatements(oldConcept, null, xLabel, getUserNamedGraphs());
-		/*
-		 * tempModel = QueryResults.asModel(repositoryResult); if(!Models.predicate(tempModel).isPresent()){
-		 * throw new NonExistingPredicateBetweenResourcesExpcetion(oldConcept, xLabel); } IRI predicate =
-		 * Models.predicate(tempModel).get(); modelRemovals.add(oldConcept, predicate, xLabel);
-		 */
-
-		// CustomForm further info
-		if (customFormValue != null) {
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, newConceptIRI.stringValue());
-			if (xLabel != null) {
-				stdForm.addFormEntry(StandardForm.Prompt.xLabel, xLabel.stringValue());
-				stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
-				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
-			}
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm,
-					customFormValue.getUserPromptMap(), stdForm);
-		}
-
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 
-		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newConceptIRI);
+		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<>(newConcept);
 		annotatedValue.setAttribute("role", RDFResourceRole.concept.name());
-		// TODO compute show
 		return annotatedValue;
 	}
 
