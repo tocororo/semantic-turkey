@@ -14,7 +14,7 @@ public class CustomFormNode extends CustomForm {
 
 	@Override
 	public Collection<UserPromptStruct> getForm(CODACore codaCore) throws PRParserException {
-		Collection<UserPromptStruct> form = new ArrayList<UserPromptStruct>();
+		Collection<UserPromptStruct> form = new ArrayList<>();
 		String ref = getRef();
 		UserPromptStruct upStruct = CustomFormParseUtils.createUserPromptForNodeForm(ref, codaCore);
 		form.add(upStruct);

@@ -4,15 +4,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.structures.CODATriple;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
+import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
+import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeDataOneOf;
@@ -26,7 +30,6 @@ import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntacticE
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
-import it.uniroma2.art.semanticturkey.services.annotations.Created;
 import it.uniroma2.art.semanticturkey.services.annotations.Deleted;
 import it.uniroma2.art.semanticturkey.services.annotations.Modified;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
@@ -705,8 +708,6 @@ public class Properties extends STServiceAdapter {
 		logger.debug("request to check whether at least one of the subproperties of the property "
 				+ property.stringValue() + " is used");
 
-		ObjectNode response = JsonNodeFactory.instance.objectNode();
-
 		String query = "ASK" + "\nWHERE{" + "\n ?subProp <"
 				+ org.eclipse.rdf4j.model.vocabulary.RDFS.SUBPROPERTYOF.stringValue() + ">+ <"
 				+ property.stringValue() + "> ." + "\n ?subj ?subProp ?obj ." + "\n}";
@@ -720,9 +721,11 @@ public class Properties extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
 	public AnnotatedValue<IRI> createProperty(IRI propertyType,
-			@NotLocallyDefined @Created(role = RDFResourceRole.property) IRI newProperty,
+			@Optional @NotLocallyDefined IRI newProperty,
 			@Optional IRI superProperty, @Optional CustomFormValue customFormValue)
 			throws CODAException, CustomFormException {
+
+		RepositoryConnection repoConnection = getManagedConnection();
 
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
@@ -733,27 +736,53 @@ public class Properties extends STServiceAdapter {
 			throw new IllegalArgumentException(propertyType.stringValue() + " is not a valid property type");
 		}
 
+		if (customFormValue != null) {
+			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
+			if (cForm.isTypeGraph()) {
+				CustomFormGraph cfGraph = (CustomFormGraph) cForm;
+				CODACore codaCore = getInitializedCodaCore(repoConnection);
+				boolean cfResCreationDelegated = cfGraph.isResourceCreationDelegated(codaCore);
+				if (!cfResCreationDelegated && newProperty == null) {
+					throw new IllegalStateException("Cannot create a resource without providing its IRI or without using a CustomForm with the delegation");
+				}
+
+				StandardForm stdForm = new StandardForm();
+				if (newProperty != null) {
+					stdForm.addFormEntry(StandardForm.Prompt.resource, newProperty.stringValue());
+				}
+
+				UpdateTripleSet updateTripleSet = runCustomConstructor(repoConnection, cfGraph, customFormValue.getUserPromptMap(), stdForm);
+
+				if (cfResCreationDelegated) {
+					//CC was delegated to create resource IRI => get it now that the CF has been executed
+					newProperty = (IRI) detectGraphEntry(updateTripleSet.getInsertTriples());
+					checkNotLocallyDefined(repoConnection, newProperty);
+				}
+				for (CODATriple t : updateTripleSet.getInsertTriples()) {
+					modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+				}
+				for (CODATriple t : updateTripleSet.getDeleteTriples()) {
+					modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+				}
+			} else {
+				throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
+						+ "' as constructor since it is not of type 'graph'");
+			}
+		} else if (newProperty == null) {
+			//both customFormValue and newClass null
+			throw new IllegalStateException("Cannot create a resource without providing its IRI or without using a CustomForm with the delegation");
+		}
+
 		modelAdditions.add(newProperty, RDF.TYPE, propertyType);
 
 		if (superProperty != null) {
 			modelAdditions.add(newProperty, RDFS.SUBPROPERTYOF, superProperty);
 		}
 
-		RepositoryConnection repoConnection = getManagedConnection();
-
-		// CustomForm further info
-		if (customFormValue != null) {
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, newProperty.stringValue());
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm,
-					customFormValue.getUserPromptMap(), stdForm);
-		}
-
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 
-		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newProperty);
+		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<>(newProperty);
 		if (propertyType.equals(OWL.OBJECTPROPERTY)) {
 			annotatedValue.setAttribute("role", RDFResourceRole.objectProperty.name());
 		} else if (propertyType.equals(OWL.DATATYPEPROPERTY)) {
@@ -767,6 +796,7 @@ public class Properties extends STServiceAdapter {
 		}
 		annotatedValue.setAttribute("explicit", true);
 
+		//set versioning metadata
 		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newProperty,
 				RDFResourceRole.valueOf(annotatedValue.getAttributes().get("role").stringValue()));
 
@@ -1445,7 +1475,6 @@ public class Properties extends STServiceAdapter {
 			tupleQuery.setBinding("literal", literal);
 			try (TupleQueryResult tupleQueryResult = tupleQuery.evaluate()) {
 				if (tupleQueryResult.hasNext()) {
-					found = true;
 					BindingSet bindingSet = tupleQueryResult.next();
 					Resource desiredElem = (Resource) bindingSet.getValue("desiredElem");
 					Resource next = (Resource) bindingSet.getValue("next");
@@ -1475,9 +1504,9 @@ public class Properties extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'R')")
 	public Collection<AnnotatedValue<Literal>> getDatarangeLiterals(BNode datarange) {
 		logger.debug("getLiteralEnumeration");
-		Collection<AnnotatedValue<Literal>> literalList = new ArrayList<AnnotatedValue<Literal>>();
+		Collection<AnnotatedValue<Literal>> literalList = new ArrayList<>();
 
-		DataRangeDataOneOf dataOneOf = null;
+		DataRangeDataOneOf dataOneOf;
 		DataRangeAbstract dataRangeAbstract = ParseDataRange.getLiteralEnumeration(datarange,
 				getManagedConnection());
 		if (dataRangeAbstract instanceof DataRangeDataOneOf) {
@@ -1491,7 +1520,7 @@ public class Properties extends STServiceAdapter {
 		List<Literal> literalTempList = dataOneOf.getLiteralList();
 
 		for (Literal literal : literalTempList) {
-			literalList.add(new AnnotatedValue<Literal>(literal));
+			literalList.add(new AnnotatedValue<>(literal));
 		}
 
 		return literalList;
@@ -1701,7 +1730,7 @@ class EnumeratedDatatype extends Range {
 
 		ArrayNode literalsArray = JsonNodeFactory.instance.arrayNode();
 		for (Literal aLit : literals) {
-			literalsArray.addPOJO(new AnnotatedValue<Literal>(aLit));
+			literalsArray.addPOJO(new AnnotatedValue<>(aLit));
 		}
 		ObjectNode enumObj = JsonNodeFactory.instance.objectNode();
 		enumObj.set("oneOf", literalsArray);

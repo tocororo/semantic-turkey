@@ -594,9 +594,8 @@ public class CustomForms extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	@Read
-	// This service has no authorization in that the UI representation of a CF is necessary for prompting data
-	public JsonNode getCustomFormRepresentation(String id) throws
-			PRParserException, RDFModelNotSetException, CustomFormException {
+	// This service requires no authorization since the UI representation of a CF is necessary for prompting data
+	public JsonNode getCustomFormRepresentation(String id) throws PRParserException, RDFModelNotSetException, CustomFormException {
 		CustomForm cForm = cfManager.getCustomForm(getProject(), id);
 		if (cForm != null) {
 			CODACore codaCore = getInitializedCodaCore(getManagedConnection());
@@ -607,6 +606,7 @@ public class CustomForms extends STServiceAdapter {
 			for (UserPromptStruct formEntry : form) {
 				ObjectNode formEntryNode = jsonFactory.objectNode();
 				formEntryNode.set("placeholderId", jsonFactory.textNode(formEntry.getPlaceholderId()));
+				formEntryNode.set("featureName", jsonFactory.textNode(formEntry.getFeatureName()));
 				formEntryNode.set("userPrompt", jsonFactory.textNode(formEntry.getUserPromptName()));
 				formEntryNode.set("type", jsonFactory.textNode(formEntry.getRdfType()));
 				formEntryNode.set("mandatory", jsonFactory.booleanNode(formEntry.isMandatory()));

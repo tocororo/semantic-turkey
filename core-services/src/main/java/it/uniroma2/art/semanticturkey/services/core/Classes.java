@@ -1,13 +1,42 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import static java.util.stream.Collectors.joining;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.structures.CODATriple;
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
+import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
+import it.uniroma2.art.semanticturkey.customform.CustomForm;
+import it.uniroma2.art.semanticturkey.customform.CustomFormException;
+import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
+import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
+import it.uniroma2.art.semanticturkey.customform.StandardForm;
+import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
+import it.uniroma2.art.semanticturkey.exceptions.CODAException;
+import it.uniroma2.art.semanticturkey.exceptions.ClassWithSubclassesOrInstancesException;
+import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
+import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntacticException;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.STServiceContext;
+import it.uniroma2.art.semanticturkey.services.annotations.Deleted;
+import it.uniroma2.art.semanticturkey.services.annotations.Modified;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
+import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
+import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
+import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
+import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -33,40 +62,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
-import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
-import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
-import it.uniroma2.art.semanticturkey.customform.CustomForm;
-import it.uniroma2.art.semanticturkey.customform.CustomFormException;
-import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
-import it.uniroma2.art.semanticturkey.customform.StandardForm;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.exceptions.CODAException;
-import it.uniroma2.art.semanticturkey.exceptions.ClassWithSubclassesOrInstancesException;
-import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterParserException;
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterPrefixNotDefinedException;
-import it.uniroma2.art.semanticturkey.exceptions.manchester.ManchesterSyntacticException;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.STServiceContext;
-import it.uniroma2.art.semanticturkey.services.annotations.Created;
-import it.uniroma2.art.semanticturkey.services.annotations.Deleted;
-import it.uniroma2.art.semanticturkey.services.annotations.Modified;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
-import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.services.aspects.ResourceLevelChangeMetadataSupport;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilderProcessor;
-import it.uniroma2.art.semanticturkey.sparql.GraphPattern;
-import it.uniroma2.art.semanticturkey.sparql.GraphPatternBuilder;
-import it.uniroma2.art.semanticturkey.sparql.ProjectionElementBuilder;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.ManchesterSyntaxUtils;
-import it.uniroma2.art.semanticturkey.syntax.manchester.owl2.structures.ManchesterClassInterface;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * This class provides services for manipulating OWL/RDFS classes.
@@ -324,33 +326,34 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(cls)', 'C')")
-	public AnnotatedValue<IRI> createClass(@NotLocallyDefined @Created(role=RDFResourceRole.cls) IRI newClass, 
+	public AnnotatedValue<IRI> createClass(@Optional @NotLocallyDefined IRI newClass,
 			@LocallyDefined IRI superClass,
 			@Optional @LocallyDefined @SubClassOf(superClassIRI = "http://www.w3.org/2000/01/rdf-schema#Class") IRI classType,
-			@Optional CustomFormValue customFormValue)
-					throws CODAException, CustomFormException {
+			@Optional CustomFormValue customFormValue) throws CODAException, CustomFormException {
+
+		RepositoryConnection repoConnection = getManagedConnection();
 		
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
+
+		if (customFormValue != null) {
+			newClass = generateResourceWithCustomConstructor(repoConnection, newClass, customFormValue, modelAdditions, modelRemovals);
+		} else if (newClass == null) {
+			//both customFormValue and newClass null
+			throw new IllegalStateException("Cannot create a resource without providing its IRI or without using a CustomForm with the delegation");
+		}
 		
 		IRI classCls = (classType != null) ? classType : OWL.CLASS;
 		modelAdditions.add(newClass, RDF.TYPE, classCls);
 		modelAdditions.add(newClass, RDFS.SUBCLASSOF, superClass);
-		
-		RepositoryConnection repoConnection = getManagedConnection();
 
-		//CustomForm further info
-		if (customFormValue != null) {
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, newClass.stringValue());
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, customFormValue.getUserPromptMap(), stdForm);
-		}
+		//set versioning metadata
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newClass, RDFResourceRole.cls);
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 		
-		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newClass);
+		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<>(newClass);
 		annotatedValue.setAttribute("role", RDFResourceRole.cls.name());
 		annotatedValue.setAttribute("explicit", true);
 		return annotatedValue; 
@@ -405,29 +408,28 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(individual)', 'C')")
-	public AnnotatedValue<IRI> createInstance(@NotLocallyDefined IRI newInstance, @LocallyDefined IRI cls,
+	public AnnotatedValue<IRI> createInstance(@Optional @NotLocallyDefined IRI newInstance, @LocallyDefined IRI cls,
 			@Optional CustomFormValue customFormValue)
 					throws CODAException, CustomFormException {
+
+		RepositoryConnection repoConnection = getManagedConnection();
 		
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
+
+		if (customFormValue != null) {
+			newInstance = generateResourceWithCustomConstructor(repoConnection, newInstance, customFormValue, modelAdditions, modelRemovals);
+		} else if (newInstance == null) {
+			//both customFormValue and newInstance null
+			throw new IllegalStateException("Cannot create a resource without providing its IRI or without using a CustomForm with the delegation");
+		}
 		
 		modelAdditions.add(newInstance, RDF.TYPE, cls);
-		
-		RepositoryConnection repoConnection = getManagedConnection();
-
-		//CustomForm further info
-		if (customFormValue != null) {
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, newInstance.stringValue());
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-			enrichWithCustomForm(repoConnection, modelAdditions, modelRemovals, cForm, customFormValue.getUserPromptMap(), stdForm);
-		}
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 		
-		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<IRI>(newInstance);
+		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<>(newInstance);
 		if (cls.equals(SKOS.CONCEPT)) {
 			annotatedValue.setAttribute("role", RDFResourceRole.concept.name());
 		} else if (cls.equals(SKOS.CONCEPT_SCHEME)) {
@@ -442,7 +444,8 @@ public class Classes extends STServiceAdapter {
 			annotatedValue.setAttribute("role", RDFResourceRole.individual.name());
 		}
 		annotatedValue.setAttribute("explicit", true);
-		
+
+		//set versioning metadata
 		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newInstance,
 				RDFResourceRole.valueOf(annotatedValue.getAttributes().get("role").stringValue()));
 		
@@ -681,7 +684,57 @@ public class Classes extends STServiceAdapter {
 		//remove the triple linking the cls to the list
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(cls, prop, collectionBNode));
 	}
-	
+
+	/**
+	 * Initialize the new created resource by running the CF provided within the {@code customFormValue}.
+	 * The updates produced by the CF execution are added to {@code modelAdditions} and {@code modelRemovals}
+	 * Returns the IRI of the creating resource, which is:
+	 * - generated through the CC, in case it is delegated, OR
+	 * - the same provided in input ({@code newResource}) or randomly generated if not provided
+	 * @param repoConnection
+	 * @param newResource
+	 * @param customFormValue
+	 * @param modelAdditions
+	 * @param modelRemovals
+	 * @return
+	 * @throws CODAException
+	 * @throws CustomFormException
+	 */
+	private IRI generateResourceWithCustomConstructor(RepositoryConnection repoConnection, IRI newResource,
+			CustomFormValue customFormValue, Model modelAdditions, Model modelRemovals) throws CODAException, CustomFormException {
+		CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
+		if (cForm.isTypeGraph()) {
+			CustomFormGraph cfGraph = (CustomFormGraph) cForm;
+			CODACore codaCore = getInitializedCodaCore(repoConnection);
+			boolean cfResCreationDelegated = cfGraph.isResourceCreationDelegated(codaCore);
+			if (!cfResCreationDelegated && newResource == null) {
+				throw new IllegalStateException("Cannot create a resource without providing its IRI or without using a CustomForm with the delegation");
+			}
+
+			StandardForm stdForm = new StandardForm();
+			if (newResource != null) {
+				stdForm.addFormEntry(StandardForm.Prompt.resource, newResource.stringValue());
+			}
+
+			UpdateTripleSet updateTripleSet = runCustomConstructor(repoConnection, cfGraph, customFormValue.getUserPromptMap(), stdForm);
+
+			if (cfResCreationDelegated) {
+				//CC was delegated to create resource IRI => get it now that the CF has been executed
+				newResource = (IRI) detectGraphEntry(updateTripleSet.getInsertTriples());
+				checkNotLocallyDefined(repoConnection, newResource);
+			}
+			for (CODATriple t : updateTripleSet.getInsertTriples()) {
+				modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+			}
+			for (CODATriple t : updateTripleSet.getDeleteTriples()) {
+				modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+			}
+			return newResource;
+		} else {
+			throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
+					+ "' as constructor since it is not of type 'graph'");
+		}
+	}
 	
 }
 
@@ -785,4 +838,5 @@ class FixedRoleProcessor implements QueryBuilderProcessor {
 	public Map<Value, Literal> processBindings(STServiceContext context, List<BindingSet> resultTable) {
 		return null;
 	}
+
 }

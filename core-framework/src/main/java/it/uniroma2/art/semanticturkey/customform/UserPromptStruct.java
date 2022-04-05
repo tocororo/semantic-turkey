@@ -1,17 +1,17 @@
 package it.uniroma2.art.semanticturkey.customform;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import it.uniroma2.art.coda.pearl.model.ConverterArgumentExpression;
 import it.uniroma2.art.coda.pearl.model.ConverterMention;
 import it.uniroma2.art.coda.pearl.model.ConverterRDFLiteralArgument;
 import it.uniroma2.art.coda.pearl.model.annotation.Annotation;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class UserPromptStruct {
 	
 	private String placeholderId; //id of the CODA placeholder (triple: PH - projectionOperator - FS)
+	private String featureName; //stdForm or userPrompt
 	private String userPromptName; //name of the feature userPrompt/example
 	private String rdfType; //uri or literal
 	private String literalDatatype; //optional datatype of the literal converter
@@ -44,7 +44,15 @@ public class UserPromptStruct {
 	public void setPlaceholderId(String placeholderId) {
 		this.placeholderId = placeholderId;
 	}
-	
+
+	public String getFeatureName() {
+		return featureName;
+	}
+
+	public void setFeatureName(String featurePath) {
+		this.featureName = featurePath;
+	}
+
 	public String getUserPromptName() {
 		return userPromptName;
 	}
@@ -149,11 +157,12 @@ public class UserPromptStruct {
 		s += "\nliteralLang: " + literalLang;
 		s += "\nconverter: " + converter.getURI();
 		s += "\nconverterArg: ";
-		Iterator<ConverterArgumentExpression> itArgs = converter.getAdditionalArguments().iterator();
-		while (itArgs.hasNext()) { //TODO here I assume that all the arguments of a converter are literal. Handle better
-			s += "\n\t" + ((ConverterRDFLiteralArgument) itArgs.next()).getLiteralValue().getLabel();
+		for (ConverterArgumentExpression converterArgumentExpression : converter.getAdditionalArguments()) {
+			//TODO here I assume that all the arguments of a converter are literal. Handle better
+			s += "\n\t" + ((ConverterRDFLiteralArgument) converterArgumentExpression).getLiteralValue().getLabel();
 		}
 		s += "\nmandatory: " + mandatory;
 		return s;
 	}
+
 }

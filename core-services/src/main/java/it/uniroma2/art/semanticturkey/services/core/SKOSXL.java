@@ -376,7 +376,7 @@ public class SKOSXL extends STServiceAdapter {
 			checkIfAddPrefLabelIsPossible(repoConnection, literal, false, conceptSchemeList);
 		}
 		if(checkExistingAltLabel) {
-			checkIfPrefAltLabelClash(repoConnection, literal, concept);
+			checkIfPrefAltLabelClash(repoConnection, literal);
 		}
 		
 
@@ -592,8 +592,7 @@ public class SKOSXL extends STServiceAdapter {
 		}
 	}
 	
-	public static void checkIfPrefAltLabelClash(RepositoryConnection repoConnection, Literal newLabel, 
-			Resource resource) throws PrefAltLabelClashException{
+	public static void checkIfPrefAltLabelClash(RepositoryConnection repoConnection, Literal newLabel) throws PrefAltLabelClashException{
 		//see if there is no other resource that has a altLabel with the same Literal 
 		String query = "ASK {"+
 				"\n?resource "+NTriplesUtil.toNTriplesString(org.eclipse.rdf4j.model.vocabulary.SKOSXL.ALT_LABEL)+" "+

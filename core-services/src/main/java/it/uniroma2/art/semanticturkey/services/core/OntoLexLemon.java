@@ -2,7 +2,9 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
+import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
+import it.uniroma2.art.coda.structures.CODATriple;
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
@@ -17,12 +19,17 @@ import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
+import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
+import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.NonWorkingGraphUpdateException;
+import it.uniroma2.art.semanticturkey.exceptions.PrefAltLabelClashException;
+import it.uniroma2.art.semanticturkey.exceptions.PrefPrefLabelClashException;
+import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
@@ -112,7 +119,6 @@ public class OntoLexLemon extends STServiceAdapter {
 			.createIRI("https://globalwordnet.github.io/schemas/wn");
 	public static final IRI MORPHOSYNTACTIC_PROPERTY = SimpleValueFactory.getInstance()
 			.createIRI("http://www.lexinfo.net/ontology/3.0/lexinfo#morphosyntacticProperty");
-	public static final IRI SKOS_DEFINITION_PROPERTY = SKOS.DEFINITION;
 	public static final IRI WN_DEFINITION = SimpleValueFactory.getInstance()
 			.createIRI("https://globalwordnet.github.io/schemas/wn#definition");
 	static final IRI WN_PART_OF_SPEECH = SimpleValueFactory.getInstance()
@@ -139,40 +145,33 @@ public class OntoLexLemon extends STServiceAdapter {
 			@Optional @LanguageTaggedString Literal title, @Optional CustomFormValue customFormValue)
 			throws CODAException, CustomFormException, URIGenerationException {
 
+		RepositoryConnection repoConnection = getManagedConnection();
+
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 
-		IRI newLexiconIRI;
-
 		if (newLexicon == null) {
-			newLexiconIRI = generateLexiconURI(title);
-		} else {
-			newLexiconIRI = newLexicon;
+			newLexicon = generateLexiconURI(title);
 		}
 
-		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newLexiconIRI,
-				RDFResourceRole.limeLexicon); // set created for versioning
+		if (customFormValue != null) {
+			newLexicon = generateResourceWithCustomConstructor(repoConnection, newLexicon, null,
+					customFormValue, modelAdditions, modelRemovals);
+		}
 
-		modelAdditions.add(newLexiconIRI, RDF.TYPE, LIME.LEXICON);
-		modelAdditions.add(newLexiconIRI, DCTERMS.TITLE, title);
-		modelAdditions.add(newLexiconIRI, LIME.LANGUAGE,
+		modelAdditions.add(newLexicon, RDF.TYPE, LIME.LEXICON);
+		modelAdditions.add(newLexicon, DCTERMS.TITLE, title);
+		modelAdditions.add(newLexicon, LIME.LANGUAGE,
 				SimpleValueFactory.getInstance().createLiteral(language, XSD.LANGUAGE));
 
-		RepositoryConnection repoConnection = getManagedConnection();
 
-		// enrich with custom form
-		if (customFormValue != null) {
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, newLexiconIRI.stringValue());
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-			enrichWithCustomForm(getManagedConnection(), modelAdditions, modelRemovals, cForm,
-					customFormValue.getUserPromptMap(), stdForm);
-		}
+		//set versioning metadata
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newLexicon, RDFResourceRole.limeLexicon);
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 
-		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<>(newLexiconIRI);
+		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<>(newLexicon);
 		annotatedValue.setAttribute("role", RDFResourceRole.limeLexicon.name());
 		annotatedValue.setAttribute("explicit", true);
 		return annotatedValue;
@@ -476,7 +475,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', definitions)','C')")
 	public void addDefinition(@LocallyDefined @Modified Resource resource, Literal value,
-			@Optional @LocallyDefined Resource lexicon) throws CODAException, URIGenerationException {
+			@Optional @LocallyDefined Resource lexicon) throws URIGenerationException {
 		RepositoryConnection con = getManagedConnection();
 		IRI pred = getDefinitionPredicate(lexicon, con);
 		addDefininitionInternal(resource, value, con, pred);
@@ -507,7 +506,7 @@ public class OntoLexLemon extends STServiceAdapter {
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', definitions)','D')")
 	public void removeDefinition(@LocallyDefined @Modified Resource resource, Value value,
-			@Optional @LocallyDefined Resource lexicon) throws PRParserException, URIGenerationException {
+			@Optional @LocallyDefined Resource lexicon) throws URIGenerationException {
 		RepositoryConnection con = getManagedConnection();
 		IRI pred = getDefinitionPredicate(lexicon, con);
 
@@ -607,45 +606,35 @@ public class OntoLexLemon extends STServiceAdapter {
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 
-		IRI newLexicalEntryIRI;
 		if (newLexicalEntry == null) {
-			newLexicalEntryIRI = generateLexicalEntryURI(canonicalForm, lexicon);
-		} else {
-			newLexicalEntryIRI = newLexicalEntry;
+			newLexicalEntry = generateLexicalEntryURI(canonicalForm, lexicon);
 		}
 
-		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newLexicalEntryIRI,
-				RDFResourceRole.ontolexLexicalEntry); // set created for versioning
+		if (customFormValue != null) {
+			newLexicalEntry = generateResourceWithCustomConstructor(repConn, newLexicalEntry, lexicon,
+					customFormValue, modelAdditions, modelRemovals);
+		}
 
-		IRI canonicalFormIRI = generateFormIRI(newLexicalEntryIRI, canonicalForm, ONTOLEX.CANONICAL_FORM);
+		IRI canonicalFormIRI = generateFormIRI(newLexicalEntry, canonicalForm, ONTOLEX.CANONICAL_FORM);
 
-		modelAdditions.add(newLexicalEntryIRI, RDF.TYPE, lexicalEntryCls);
-		modelAdditions.add(newLexicalEntryIRI, ONTOLEX.CANONICAL_FORM, canonicalFormIRI);
-		modelAdditions.add(newLexicalEntryIRI, LIME.LANGUAGE,
+		modelAdditions.add(newLexicalEntry, RDF.TYPE, lexicalEntryCls);
+		modelAdditions.add(newLexicalEntry, ONTOLEX.CANONICAL_FORM, canonicalFormIRI);
+		modelAdditions.add(newLexicalEntry, LIME.LANGUAGE,
 				SimpleValueFactory.getInstance().createLiteral(lexiconLanguage, XSD.LANGUAGE));
-		modelAdditions.add(lexicon, LIME.ENTRY, newLexicalEntryIRI);
+		modelAdditions.add(lexicon, LIME.ENTRY, newLexicalEntry);
 
 		modelAdditions.add(canonicalFormIRI, RDF.TYPE, ONTOLEX.FORM);
 		modelAdditions.add(canonicalFormIRI, ONTOLEX.WRITTEN_REP, canonicalForm);
 
-		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(canonicalFormIRI,
-				RDFResourceRole.ontolexForm); // set created for versioning
+		//set versioning metadata
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newLexicalEntry, RDFResourceRole.ontolexLexicalEntry);
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(canonicalFormIRI, RDFResourceRole.ontolexForm);
 
-		// enrich with custom form
-		if (customFormValue != null) {
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, newLexicalEntryIRI.stringValue());
-			stdForm.addFormEntry(StandardForm.Prompt.lexicon, lexicon.stringValue());
-
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-			enrichWithCustomForm(getManagedConnection(), modelAdditions, modelRemovals, cForm,
-					customFormValue.getUserPromptMap(), stdForm);
-		}
 
 		repConn.add(modelAdditions, getWorkingGraph());
 		repConn.remove(modelRemovals, getWorkingGraph());
 
-		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<>(newLexicalEntryIRI);
+		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<>(newLexicalEntry);
 		annotatedValue.setAttribute("role", RDFResourceRole.ontolexLexicalEntry.name());
 		annotatedValue.setAttribute("explicit", true);
 		return annotatedValue;
@@ -1489,24 +1478,22 @@ public class OntoLexLemon extends STServiceAdapter {
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 
-		IRI newFormIRI;
-
 		if (newForm == null) {
-			newFormIRI = generateFormIRI(lexicalEntry, writtenRep, property);
-		} else {
-			newFormIRI = newForm;
+			newForm = generateFormIRI(lexicalEntry, writtenRep, property);
 		}
 
-		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newFormIRI,
-				RDFResourceRole.ontolexForm); // set created for versioning
+		if (customFormValue != null) {
+			newForm = generateResourceWithCustomConstructor(repoConnection, newForm, null,
+					customFormValue, modelAdditions, modelRemovals);
+		}
 
-		modelAdditions.add(newFormIRI, RDF.TYPE, ONTOLEX.FORM);
-		modelAdditions.add(newFormIRI, ONTOLEX.WRITTEN_REP, writtenRep);
+		modelAdditions.add(newForm, RDF.TYPE, ONTOLEX.FORM);
+		modelAdditions.add(newForm, ONTOLEX.WRITTEN_REP, writtenRep);
+		modelAdditions.add(lexicalEntry, property, newForm);
 
-		modelAdditions.add(lexicalEntry, property, newFormIRI);
-
-		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry,
-				RDFResourceRole.ontolexLexicalEntry);
+		//set versioning metadata
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(newForm, RDFResourceRole.ontolexForm);
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(lexicalEntry, RDFResourceRole.ontolexLexicalEntry);
 
 		if (replaces) {
 			Model previousFormStatements = QueryResults
@@ -1526,15 +1513,6 @@ public class OntoLexLemon extends STServiceAdapter {
 
 				return removedStatements;
 			}).forEach(modelRemovals::addAll);
-		}
-
-		// enrich with custom form
-		if (customFormValue != null) {
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, newFormIRI.stringValue());
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-			enrichWithCustomForm(getManagedConnection(), modelAdditions, modelRemovals, cForm,
-					customFormValue.getUserPromptMap(), stdForm);
 		}
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
@@ -1701,8 +1679,6 @@ public class OntoLexLemon extends STServiceAdapter {
 		}
 		RepositoryConnection conn = getManagedConnection();
 
-		Resource workingGraph = getWorkingGraph();
-
 		boolean lexicalEntryLocallyDefined = isLocallyDefined(lexicalEntry);
 		boolean referenceLocallyDefined = isLocallyDefined(reference);
 
@@ -1748,6 +1724,11 @@ public class OntoLexLemon extends STServiceAdapter {
 		if (createSense) {
 			IRI lexicalSenseIRI = generateLexicalSenseIRI(lexicalEntry, reference);
 
+			if (customFormValue != null) {
+				lexicalSenseIRI = generateResourceWithCustomConstructor(conn, lexicalSenseIRI, null,
+						customFormValue, modelAdditions, modelRemovals);
+			}
+
 			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(lexicalSenseIRI,
 					RDFResourceRole.ontolexLexicalSense);
 
@@ -1764,15 +1745,6 @@ public class OntoLexLemon extends STServiceAdapter {
 			if (referenceLocallyDefined) {
 				modelAdditions.add(reference, ONTOLEX.IS_REFERENCE_OF, lexicalSenseIRI);
 				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(reference);
-			}
-			// enrich with custom form
-			if (customFormValue != null) {
-				StandardForm stdForm = new StandardForm();
-				stdForm.addFormEntry(StandardForm.Prompt.resource, lexicalSenseIRI.stringValue());
-
-				CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-				enrichWithCustomForm(getManagedConnection(), modelAdditions, modelRemovals, cForm,
-						customFormValue.getUserPromptMap(), stdForm);
 			}
 
 		}
@@ -2126,6 +2098,11 @@ public class OntoLexLemon extends STServiceAdapter {
 		if (createSense) {
 			IRI lexicalSenseIRI = generateLexicalSenseIRI(lexicalEntry, concept);
 
+			if (customFormValue != null) {
+				lexicalSenseIRI = generateResourceWithCustomConstructor(conn, lexicalSenseIRI, null,
+						customFormValue, modelAdditions, modelRemovals);
+			}
+
 			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(lexicalSenseIRI,
 					RDFResourceRole.ontolexLexicalSense);
 
@@ -2142,15 +2119,6 @@ public class OntoLexLemon extends STServiceAdapter {
 			if (conceptLocallyDefined) {
 				modelAdditions.add(concept, ONTOLEX.LEXICALIZED_SENSE, lexicalSenseIRI);
 				ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addModifiedResource(concept);
-			}
-			// enrich with custom form
-			if (customFormValue != null) {
-				StandardForm stdForm = new StandardForm();
-				stdForm.addFormEntry(StandardForm.Prompt.resource, lexicalSenseIRI.stringValue());
-
-				CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-				enrichWithCustomForm(getManagedConnection(), modelAdditions, modelRemovals, cForm,
-						customFormValue.getUserPromptMap(), stdForm);
 			}
 
 		}
@@ -2722,40 +2690,29 @@ public class OntoLexLemon extends STServiceAdapter {
 			@Optional CustomFormValue customFormValue)
 			throws CODAException, CustomFormException, URIGenerationException {
 
+		RepositoryConnection repoConnection = getManagedConnection();
+
 		Model modelAdditions = new LinkedHashModel();
 		Model modelRemovals = new LinkedHashModel();
 
-		IRI newTranslationSetIRI;
-
 		if (newTranslationSet == null) {
-			newTranslationSetIRI = generateTranslationSetURI();
-		} else {
-			newTranslationSetIRI = newTranslationSet;
+			newTranslationSet = generateTranslationSetURI();
 		}
 
-		ResourceLevelChangeMetadataSupport.currentVersioningMetadata()
-				.addCreatedResource(newTranslationSetIRI, RDFResourceRole.vartransTranslationSet); // set
-																									// created
-																									// for
-																									// versioning
-
-		modelAdditions.add(newTranslationSetIRI, RDF.TYPE, VARTRANS.TRANSLATION_SET);
-
-		RepositoryConnection repoConnection = getManagedConnection();
-
-		// enrich with custom form
 		if (customFormValue != null) {
-			StandardForm stdForm = new StandardForm();
-			stdForm.addFormEntry(StandardForm.Prompt.resource, newTranslationSetIRI.stringValue());
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-			enrichWithCustomForm(getManagedConnection(), modelAdditions, modelRemovals, cForm,
-					customFormValue.getUserPromptMap(), stdForm);
+			newTranslationSet = generateResourceWithCustomConstructor(repoConnection, newTranslationSet, null,
+					customFormValue, modelAdditions, modelRemovals);
 		}
+
+		modelAdditions.add(newTranslationSet, RDF.TYPE, VARTRANS.TRANSLATION_SET);
+
+		//set versioning metadata
+		ResourceLevelChangeMetadataSupport.currentVersioningMetadata() .addCreatedResource(newTranslationSet, RDFResourceRole.vartransTranslationSet);
 
 		repoConnection.add(modelAdditions, getWorkingGraph());
 		repoConnection.remove(modelRemovals, getWorkingGraph());
 
-		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<>(newTranslationSetIRI);
+		AnnotatedValue<IRI> annotatedValue = new AnnotatedValue<>(newTranslationSet);
 		annotatedValue.setAttribute("role", RDFResourceRole.vartransTranslationSet.name());
 		annotatedValue.setAttribute("explicit", true);
 		return annotatedValue;
@@ -2989,7 +2946,7 @@ public class OntoLexLemon extends STServiceAdapter {
 						} else {
 							return s1;
 						}
-					}).map(stmt -> (Long) Long.parseLong(stmt.getPredicate().stringValue()
+					}).map(stmt -> Long.parseLong(stmt.getPredicate().stringValue()
 							.substring("http://www.w3.org/1999/02/22-rdf-syntax-ns#_".length())));
 
 			if (positionHolder.isPresent()) {
@@ -3005,6 +2962,74 @@ public class OntoLexLemon extends STServiceAdapter {
 			return true;
 		} else {
 			return false;
+		}
+	}
+
+	/**
+	 * Initialize the new created resource by running the CF provided within the {@code customFormValue}.
+	 * The updates produced by the CF execution are added to {@code modelAdditions} and {@code modelRemovals}
+	 * Returns the IRI of the creating resource, which is:
+	 * - generated through the CC, in case it is delegated, OR
+	 * - the same provided in input ({@code newResource}) or randomly generated if not provided
+	 *
+	 * @param repoConnection
+	 * @param newResource
+	 * @param lexicon to provide only when creating a lexEntry
+	 * @param customFormValue
+	 * @param modelAdditions
+	 * @param modelRemovals
+	 * @return
+	 * @throws CustomFormException
+	 * @throws CODAException
+	 * @throws PrefPrefLabelClashException
+	 * @throws URIGenerationException
+	 * @throws PrefAltLabelClashException
+	 * @throws UnsupportedLexicalizationModelException
+	 */
+	private IRI generateResourceWithCustomConstructor(RepositoryConnection repoConnection,
+			IRI newResource, IRI lexicon, CustomFormValue customFormValue,
+			Model modelAdditions, Model modelRemovals)
+			throws CustomFormException, CODAException {
+		CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
+		if (cForm.isTypeGraph()) {
+			CustomFormGraph cfGraph = (CustomFormGraph) cForm;
+			CODACore codaCore = getInitializedCodaCore(repoConnection);
+			boolean cfResCreationDelegated = cfGraph.isResourceCreationDelegated(codaCore);
+			if (cfResCreationDelegated) {
+                /*
+                if CC is delegated to create the resource IRI (e.g. through "resource uri(coda:randIdGen())" or
+                "resource uri userPrompt/customIriField") set newResource to null,
+                 */
+				newResource = null;
+			}
+
+			StandardForm stdForm = new StandardForm();
+			if (newResource != null) {
+				stdForm.addFormEntry(StandardForm.Prompt.resource, newResource.stringValue());
+			}
+			if (lexicon != null) {
+				stdForm.addFormEntry(StandardForm.Prompt.lexicon, lexicon.stringValue());
+			}
+
+			UpdateTripleSet updateTripleSet = runCustomConstructor(repoConnection, cfGraph, customFormValue.getUserPromptMap(), stdForm);
+
+			if (cfResCreationDelegated) {
+				//CC was delegated to create resource IRI => get it now that the CF has been executed
+				newResource = (IRI) detectGraphEntry(updateTripleSet.getInsertTriples());
+				checkNotLocallyDefined(repoConnection, newResource);
+			}
+
+			for (CODATriple t : updateTripleSet.getInsertTriples()) {
+				modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+			}
+			for (CODATriple t : updateTripleSet.getDeleteTriples()) {
+				modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
+			}
+
+			return newResource;
+		} else {
+			throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
+					+ "' as constructor since it is not of type 'graph'");
 		}
 	}
 
