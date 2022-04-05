@@ -4,19 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.structures.CODATriple;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
 import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
-import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.FormCollection;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
-import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeAbstract;
 import it.uniroma2.art.semanticturkey.datarange.DataRangeDataOneOf;
@@ -720,8 +716,7 @@ public class Properties extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Write
 	@PreAuthorize("@auth.isAuthorized('rdf(property)', 'C')")
-	public AnnotatedValue<IRI> createProperty(IRI propertyType,
-			@Optional @NotLocallyDefined IRI newProperty,
+	public AnnotatedValue<IRI> createProperty(IRI propertyType, @Optional @NotLocallyDefined IRI newProperty,
 			@Optional IRI superProperty, @Optional CustomFormValue customFormValue)
 			throws CODAException, CustomFormException {
 
@@ -737,37 +732,10 @@ public class Properties extends STServiceAdapter {
 		}
 
 		if (customFormValue != null) {
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-			if (cForm.isTypeGraph()) {
-				CustomFormGraph cfGraph = (CustomFormGraph) cForm;
-				CODACore codaCore = getInitializedCodaCore(repoConnection);
-				boolean cfResCreationDelegated = cfGraph.isResourceCreationDelegated(codaCore);
-				if (!cfResCreationDelegated && newProperty == null) {
-					throw new IllegalStateException("Cannot create a resource without providing its IRI or without using a CustomForm with the delegation");
-				}
-
-				StandardForm stdForm = new StandardForm();
-				if (newProperty != null) {
-					stdForm.addFormEntry(StandardForm.Prompt.resource, newProperty.stringValue());
-				}
-
-				UpdateTripleSet updateTripleSet = runCustomConstructor(repoConnection, cfGraph, customFormValue.getUserPromptMap(), stdForm);
-
-				if (cfResCreationDelegated) {
-					//CC was delegated to create resource IRI => get it now that the CF has been executed
-					newProperty = (IRI) detectGraphEntry(updateTripleSet.getInsertTriples());
-					checkNotLocallyDefined(repoConnection, newProperty);
-				}
-				for (CODATriple t : updateTripleSet.getInsertTriples()) {
-					modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-				}
-				for (CODATriple t : updateTripleSet.getDeleteTriples()) {
-					modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-				}
-			} else {
-				throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
-						+ "' as constructor since it is not of type 'graph'");
-			}
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.type, propertyType.stringValue());
+			newProperty = generateResourceWithCustomConstructor(repoConnection, newProperty,
+					customFormValue, stdForm, modelAdditions, modelRemovals);
 		} else if (newProperty == null) {
 			//both customFormValue and newClass null
 			throw new IllegalStateException("Cannot create a resource without providing its IRI or without using a CustomForm with the delegation");

@@ -2,9 +2,7 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
-import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
-import it.uniroma2.art.coda.structures.CODATriple;
 import it.uniroma2.art.lime.model.vocabulary.DECOMP;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.model.vocabulary.ONTOLEX;
@@ -17,19 +15,13 @@ import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
-import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
-import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
-import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.NonWorkingGraphUpdateException;
-import it.uniroma2.art.semanticturkey.exceptions.PrefAltLabelClashException;
-import it.uniroma2.art.semanticturkey.exceptions.PrefPrefLabelClashException;
-import it.uniroma2.art.semanticturkey.exceptions.UnsupportedLexicalizationModelException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerationException;
 import it.uniroma2.art.semanticturkey.extension.extpts.urigen.URIGenerator;
 import it.uniroma2.art.semanticturkey.ontology.OntologyManager;
@@ -155,8 +147,10 @@ public class OntoLexLemon extends STServiceAdapter {
 		}
 
 		if (customFormValue != null) {
-			newLexicon = generateResourceWithCustomConstructor(repoConnection, newLexicon, null,
-					customFormValue, modelAdditions, modelRemovals);
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.type, LIME.LEXICON.stringValue());
+			newLexicon = generateResourceWithCustomConstructor(repoConnection, newLexicon,
+					customFormValue, stdForm, modelAdditions, modelRemovals);
 		}
 
 		modelAdditions.add(newLexicon, RDF.TYPE, LIME.LEXICON);
@@ -611,8 +605,11 @@ public class OntoLexLemon extends STServiceAdapter {
 		}
 
 		if (customFormValue != null) {
-			newLexicalEntry = generateResourceWithCustomConstructor(repConn, newLexicalEntry, lexicon,
-					customFormValue, modelAdditions, modelRemovals);
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.type, lexicalEntryCls.stringValue());
+			stdForm.addFormEntry(StandardForm.Prompt.lexicon, lexicon.stringValue());
+			newLexicalEntry = generateResourceWithCustomConstructor(repConn, newLexicalEntry,
+					customFormValue, stdForm, modelAdditions, modelRemovals);
 		}
 
 		IRI canonicalFormIRI = generateFormIRI(newLexicalEntry, canonicalForm, ONTOLEX.CANONICAL_FORM);
@@ -1483,8 +1480,10 @@ public class OntoLexLemon extends STServiceAdapter {
 		}
 
 		if (customFormValue != null) {
-			newForm = generateResourceWithCustomConstructor(repoConnection, newForm, null,
-					customFormValue, modelAdditions, modelRemovals);
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.type, ONTOLEX.FORM.stringValue());
+			newForm = generateResourceWithCustomConstructor(repoConnection, newForm,
+					customFormValue, stdForm, modelAdditions, modelRemovals);
 		}
 
 		modelAdditions.add(newForm, RDF.TYPE, ONTOLEX.FORM);
@@ -1725,8 +1724,10 @@ public class OntoLexLemon extends STServiceAdapter {
 			IRI lexicalSenseIRI = generateLexicalSenseIRI(lexicalEntry, reference);
 
 			if (customFormValue != null) {
-				lexicalSenseIRI = generateResourceWithCustomConstructor(conn, lexicalSenseIRI, null,
-						customFormValue, modelAdditions, modelRemovals);
+				StandardForm stdForm = new StandardForm();
+				stdForm.addFormEntry(StandardForm.Prompt.type, lexicalSenseCls.stringValue());
+				lexicalSenseIRI = generateResourceWithCustomConstructor(conn, lexicalSenseIRI,
+						customFormValue, stdForm, modelAdditions, modelRemovals);
 			}
 
 			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(lexicalSenseIRI,
@@ -2099,8 +2100,10 @@ public class OntoLexLemon extends STServiceAdapter {
 			IRI lexicalSenseIRI = generateLexicalSenseIRI(lexicalEntry, concept);
 
 			if (customFormValue != null) {
-				lexicalSenseIRI = generateResourceWithCustomConstructor(conn, lexicalSenseIRI, null,
-						customFormValue, modelAdditions, modelRemovals);
+				StandardForm stdForm = new StandardForm();
+				stdForm.addFormEntry(StandardForm.Prompt.type, lexicalSenseCls.stringValue());
+				lexicalSenseIRI = generateResourceWithCustomConstructor(conn, lexicalSenseIRI,
+						customFormValue, stdForm, modelAdditions, modelRemovals);
 			}
 
 			ResourceLevelChangeMetadataSupport.currentVersioningMetadata().addCreatedResource(lexicalSenseIRI,
@@ -2700,8 +2703,10 @@ public class OntoLexLemon extends STServiceAdapter {
 		}
 
 		if (customFormValue != null) {
-			newTranslationSet = generateResourceWithCustomConstructor(repoConnection, newTranslationSet, null,
-					customFormValue, modelAdditions, modelRemovals);
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.type, VARTRANS.TRANSLATION_SET.stringValue());
+			newTranslationSet = generateResourceWithCustomConstructor(repoConnection, newTranslationSet,
+					customFormValue, stdForm, modelAdditions, modelRemovals);
 		}
 
 		modelAdditions.add(newTranslationSet, RDF.TYPE, VARTRANS.TRANSLATION_SET);
@@ -2962,74 +2967,6 @@ public class OntoLexLemon extends STServiceAdapter {
 			return true;
 		} else {
 			return false;
-		}
-	}
-
-	/**
-	 * Initialize the new created resource by running the CF provided within the {@code customFormValue}.
-	 * The updates produced by the CF execution are added to {@code modelAdditions} and {@code modelRemovals}
-	 * Returns the IRI of the creating resource, which is:
-	 * - generated through the CC, in case it is delegated, OR
-	 * - the same provided in input ({@code newResource}) or randomly generated if not provided
-	 *
-	 * @param repoConnection
-	 * @param newResource
-	 * @param lexicon to provide only when creating a lexEntry
-	 * @param customFormValue
-	 * @param modelAdditions
-	 * @param modelRemovals
-	 * @return
-	 * @throws CustomFormException
-	 * @throws CODAException
-	 * @throws PrefPrefLabelClashException
-	 * @throws URIGenerationException
-	 * @throws PrefAltLabelClashException
-	 * @throws UnsupportedLexicalizationModelException
-	 */
-	private IRI generateResourceWithCustomConstructor(RepositoryConnection repoConnection,
-			IRI newResource, IRI lexicon, CustomFormValue customFormValue,
-			Model modelAdditions, Model modelRemovals)
-			throws CustomFormException, CODAException {
-		CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-		if (cForm.isTypeGraph()) {
-			CustomFormGraph cfGraph = (CustomFormGraph) cForm;
-			CODACore codaCore = getInitializedCodaCore(repoConnection);
-			boolean cfResCreationDelegated = cfGraph.isResourceCreationDelegated(codaCore);
-			if (cfResCreationDelegated) {
-                /*
-                if CC is delegated to create the resource IRI (e.g. through "resource uri(coda:randIdGen())" or
-                "resource uri userPrompt/customIriField") set newResource to null,
-                 */
-				newResource = null;
-			}
-
-			StandardForm stdForm = new StandardForm();
-			if (newResource != null) {
-				stdForm.addFormEntry(StandardForm.Prompt.resource, newResource.stringValue());
-			}
-			if (lexicon != null) {
-				stdForm.addFormEntry(StandardForm.Prompt.lexicon, lexicon.stringValue());
-			}
-
-			UpdateTripleSet updateTripleSet = runCustomConstructor(repoConnection, cfGraph, customFormValue.getUserPromptMap(), stdForm);
-
-			if (cfResCreationDelegated) {
-				//CC was delegated to create resource IRI => get it now that the CF has been executed
-				newResource = (IRI) detectGraphEntry(updateTripleSet.getInsertTriples());
-				checkNotLocallyDefined(repoConnection, newResource);
-			}
-
-			for (CODATriple t : updateTripleSet.getInsertTriples()) {
-				modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-			}
-			for (CODATriple t : updateTripleSet.getDeleteTriples()) {
-				modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-			}
-
-			return newResource;
-		} else {
-			throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
-					+ "' as constructor since it is not of type 'graph'");
 		}
 	}
 

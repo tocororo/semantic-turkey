@@ -1,16 +1,11 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.structures.CODATriple;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
-import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
-import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
-import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.ClassWithSubclassesOrInstancesException;
@@ -337,7 +332,10 @@ public class Classes extends STServiceAdapter {
 		Model modelRemovals = new LinkedHashModel();
 
 		if (customFormValue != null) {
-			newClass = generateResourceWithCustomConstructor(repoConnection, newClass, customFormValue, modelAdditions, modelRemovals);
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.type, classType.stringValue());
+			newClass = generateResourceWithCustomConstructor(repoConnection, newClass,
+					customFormValue, stdForm, modelAdditions, modelRemovals);
 		} else if (newClass == null) {
 			//both customFormValue and newClass null
 			throw new IllegalStateException("Cannot create a resource without providing its IRI or without using a CustomForm with the delegation");
@@ -418,7 +416,10 @@ public class Classes extends STServiceAdapter {
 		Model modelRemovals = new LinkedHashModel();
 
 		if (customFormValue != null) {
-			newInstance = generateResourceWithCustomConstructor(repoConnection, newInstance, customFormValue, modelAdditions, modelRemovals);
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.type, cls.stringValue());
+			newInstance = generateResourceWithCustomConstructor(repoConnection, newInstance,
+					customFormValue, stdForm, modelAdditions, modelRemovals);
 		} else if (newInstance == null) {
 			//both customFormValue and newInstance null
 			throw new IllegalStateException("Cannot create a resource without providing its IRI or without using a CustomForm with the delegation");
@@ -685,57 +686,6 @@ public class Classes extends STServiceAdapter {
 		modelRemovals.add(repoConnection.getValueFactory().createStatement(cls, prop, collectionBNode));
 	}
 
-	/**
-	 * Initialize the new created resource by running the CF provided within the {@code customFormValue}.
-	 * The updates produced by the CF execution are added to {@code modelAdditions} and {@code modelRemovals}
-	 * Returns the IRI of the creating resource, which is:
-	 * - generated through the CC, in case it is delegated, OR
-	 * - the same provided in input ({@code newResource}) or randomly generated if not provided
-	 * @param repoConnection
-	 * @param newResource
-	 * @param customFormValue
-	 * @param modelAdditions
-	 * @param modelRemovals
-	 * @return
-	 * @throws CODAException
-	 * @throws CustomFormException
-	 */
-	private IRI generateResourceWithCustomConstructor(RepositoryConnection repoConnection, IRI newResource,
-			CustomFormValue customFormValue, Model modelAdditions, Model modelRemovals) throws CODAException, CustomFormException {
-		CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-		if (cForm.isTypeGraph()) {
-			CustomFormGraph cfGraph = (CustomFormGraph) cForm;
-			CODACore codaCore = getInitializedCodaCore(repoConnection);
-			boolean cfResCreationDelegated = cfGraph.isResourceCreationDelegated(codaCore);
-			if (!cfResCreationDelegated && newResource == null) {
-				throw new IllegalStateException("Cannot create a resource without providing its IRI or without using a CustomForm with the delegation");
-			}
-
-			StandardForm stdForm = new StandardForm();
-			if (newResource != null) {
-				stdForm.addFormEntry(StandardForm.Prompt.resource, newResource.stringValue());
-			}
-
-			UpdateTripleSet updateTripleSet = runCustomConstructor(repoConnection, cfGraph, customFormValue.getUserPromptMap(), stdForm);
-
-			if (cfResCreationDelegated) {
-				//CC was delegated to create resource IRI => get it now that the CF has been executed
-				newResource = (IRI) detectGraphEntry(updateTripleSet.getInsertTriples());
-				checkNotLocallyDefined(repoConnection, newResource);
-			}
-			for (CODATriple t : updateTripleSet.getInsertTriples()) {
-				modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-			}
-			for (CODATriple t : updateTripleSet.getDeleteTriples()) {
-				modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-			}
-			return newResource;
-		} else {
-			throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
-					+ "' as constructor since it is not of type 'graph'");
-		}
-	}
-	
 }
 
 	

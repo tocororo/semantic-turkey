@@ -1,16 +1,11 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import it.uniroma2.art.coda.core.CODACore;
-import it.uniroma2.art.coda.structures.CODATriple;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
-import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
-import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
-import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
 import it.uniroma2.art.semanticturkey.exceptions.DuplicatedResourceException;
@@ -655,47 +650,17 @@ public class Refactor extends STServiceAdapter {
 		}
 
 		if (customFormValue != null) {
-			CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-			if (cForm.isTypeGraph()) {
-				CustomFormGraph cfGraph = (CustomFormGraph) cForm;
-				CODACore codaCore = getInitializedCodaCore(repoConnection);
-				boolean cfResCreationDelegated = cfGraph.isResourceCreationDelegated(codaCore);
-				if (cfResCreationDelegated) {
-					/* if CC is delegated to create the resource IRI (e.g. through "resource uri(coda:randIdGen())" or
-					"resource uri userPrompt/customIriField") set newConcept to null since it will be overwritten by CC */
-					newConcept = null;
-				}
-
-				StandardForm stdForm = new StandardForm();
-				if (newConcept != null) {
-					stdForm.addFormEntry(StandardForm.Prompt.resource, newConcept.stringValue());
-				}
-				stdForm.addFormEntry(StandardForm.Prompt.xLabel, xLabel.stringValue());
-				stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
-				stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
-
-				UpdateTripleSet updateTripleSet = runCustomConstructor(repoConnection, cfGraph, customFormValue.getUserPromptMap(), stdForm);
-
-				if (cfResCreationDelegated) {
-					//CC was delegated to create resource IRI => get it now that the CF has been executed
-					newConcept = (IRI) detectGraphEntry(updateTripleSet.getInsertTriples());
-					checkNotLocallyDefined(repoConnection, newConcept);
-				}
-
-				for (CODATriple t : updateTripleSet.getInsertTriples()) {
-					modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-				}
-				for (CODATriple t : updateTripleSet.getDeleteTriples()) {
-					modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-				}
-			} else {
-				throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
-						+ "' as constructor since it is not of type 'graph'");
-			}
+			StandardForm stdForm = new StandardForm();
+			stdForm.addFormEntry(StandardForm.Prompt.type, SKOS.CONCEPT.stringValue());
+			stdForm.addFormEntry(StandardForm.Prompt.xLabel, xLabel.stringValue());
+			stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
+			stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
+			newConcept = generateResourceWithCustomConstructor(repoConnection, newConcept,
+					customFormValue, stdForm, modelAdditions, modelRemovals);
 		}
 
 		// add the new concept (just generated using the passed xLabel or the IRI passed by the user)
-		modelAdditions.add(newConcept, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT);
+		modelAdditions.add(newConcept, RDF.TYPE, SKOS.CONCEPT);
 		// add the passed xLabel to the new concept as skosxl:prefLabel
 		modelAdditions.add(newConcept, SKOSXL.PREF_LABEL, xLabel);
 

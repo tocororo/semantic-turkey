@@ -1,21 +1,16 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import it.uniroma2.art.coda.core.CODACore;
 import it.uniroma2.art.coda.exception.parserexception.PRParserException;
-import it.uniroma2.art.coda.structures.CODATriple;
 import it.uniroma2.art.semanticturkey.constraints.LanguageTaggedString;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
 import it.uniroma2.art.semanticturkey.constraints.NotLocallyDefined;
 import it.uniroma2.art.semanticturkey.constraints.SubClassOf;
 import it.uniroma2.art.semanticturkey.constraints.SubPropertyOf;
-import it.uniroma2.art.semanticturkey.customform.CustomForm;
 import it.uniroma2.art.semanticturkey.customform.CustomFormException;
-import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customform.CustomFormValue;
 import it.uniroma2.art.semanticturkey.customform.SpecialValue;
 import it.uniroma2.art.semanticturkey.customform.StandardForm;
-import it.uniroma2.art.semanticturkey.customform.UpdateTripleSet;
 import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.AltPrefLabelClashException;
 import it.uniroma2.art.semanticturkey.exceptions.CODAException;
@@ -700,14 +695,15 @@ public class SKOS extends STServiceAdapter {
         IRI xLabelIRI = checkAndCreateLexicalization(newConcept, label, conceptSchemes, checkExistingPrefLabel, checkExistingAltLabel);
 
         if (customFormValue != null) {
-            CustomConstructorOutcome outcome = generateResourceWithCustomConstructor(repoConnection, newConcept, label, xLabelIRI, conceptSchemes,
-                    customFormValue, modelAdditions, modelRemovals, checkExistingPrefLabel, checkExistingAltLabel);
-            newConcept = outcome.getNewResource();
-            xLabelIRI = outcome.getxLabel();
+            StandardForm stdForm = new StandardForm();
+            stdForm.addFormEntry(StandardForm.Prompt.type, conceptCls.stringValue());
+            enrichStandardFormWithLexicalization(stdForm, xLabelIRI, label);
+            newConcept = generateResourceWithCustomConstructor(repoConnection, newConcept,
+                    customFormValue, stdForm, modelAdditions, modelRemovals);
         }
 
         //populate modelAdditions
-        addLexicalization(newConcept, label, xLabelIRI, modelAdditions);
+        enrichModelAdditionsWithLexicalization(newConcept, label, xLabelIRI, modelAdditions);
 
         if (conceptCls == null) {
             conceptCls = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT;
@@ -765,19 +761,22 @@ public class SKOS extends STServiceAdapter {
         }
         IRI xLabelIRI = checkAndCreateLexicalization(newScheme, label, null, true, checkExistingAltLabel);
 
-        if (customFormValue != null) {
-            CustomConstructorOutcome outcome = generateResourceWithCustomConstructor(repoConnection, newScheme, label, xLabelIRI,
-                    null, customFormValue, modelAdditions, modelRemovals, true, checkExistingAltLabel);
-            newScheme = outcome.getNewResource();
-            xLabelIRI = outcome.getxLabel();
-        }
-
-        //populate modelAdditions
-        addLexicalization(newScheme, label, xLabelIRI, modelAdditions);
-
         if (schemeCls == null) {
             schemeCls = org.eclipse.rdf4j.model.vocabulary.SKOS.CONCEPT_SCHEME;
         }
+
+        if (customFormValue != null) {
+            StandardForm stdForm = new StandardForm();
+            stdForm.addFormEntry(StandardForm.Prompt.type, schemeCls.stringValue());
+            enrichStandardFormWithLexicalization(stdForm, xLabelIRI, label);
+
+            newScheme = generateResourceWithCustomConstructor(repoConnection, newScheme,
+                    customFormValue, stdForm, modelAdditions, modelRemovals);
+        }
+
+        //populate modelAdditions
+        enrichModelAdditionsWithLexicalization(newScheme, label, xLabelIRI, modelAdditions);
+
         modelAdditions.add(newScheme, RDF.TYPE, schemeCls);
 
         //set versioning metadata
@@ -1660,16 +1659,6 @@ public class SKOS extends STServiceAdapter {
         }
         IRI xLabelIRI = checkAndCreateLexicalization(newCollectionRes, label, null, true, checkExistingAltLabel);
 
-        if (customFormValue != null) {
-            CustomConstructorOutcome outcome = generateResourceWithCustomConstructor(repoConnection, newCollection, label, xLabelIRI,
-                    null, customFormValue, modelAdditions, modelRemovals, true, checkExistingAltLabel);
-            newCollectionRes = outcome.getNewResource();
-            xLabelIRI = outcome.getxLabel();
-        }
-
-        //populate modelAdditions
-        addLexicalization(newCollectionRes, label, xLabelIRI, modelAdditions);
-
         if (collectionCls != null) {
             /* check consistency between collection type an class: @SubClassOf just check that collectionCls is
              * subClassOf Collection, but if collectionCls is subClassOf OrderedCollection and collectionType
@@ -1688,6 +1677,17 @@ public class SKOS extends STServiceAdapter {
         } else {
             collectionCls = collectionType;
         }
+
+        if (customFormValue != null) {
+            StandardForm stdForm = new StandardForm();
+            stdForm.addFormEntry(StandardForm.Prompt.type, collectionCls.stringValue());
+            enrichStandardFormWithLexicalization(stdForm, xLabelIRI, label);
+            newCollectionRes = generateResourceWithCustomConstructor(repoConnection, newCollection,
+                    customFormValue, stdForm, modelAdditions, modelRemovals);
+        }
+
+        //populate modelAdditions
+        enrichModelAdditionsWithLexicalization(newCollectionRes, label, xLabelIRI, modelAdditions);
 
         if (collectionType.equals(org.eclipse.rdf4j.model.vocabulary.SKOS.COLLECTION)) {
             modelAdditions.add(newCollectionRes, RDF.TYPE, collectionCls);
@@ -2242,7 +2242,7 @@ public class SKOS extends STServiceAdapter {
      * @param modelAdditions
      * @throws UnsupportedLexicalizationModelException
      */
-    private void addLexicalization(Resource resource, Literal label, IRI xLabelIRI, Model modelAdditions)
+    private void enrichModelAdditionsWithLexicalization(Resource resource, Literal label, IRI xLabelIRI, Model modelAdditions)
             throws UnsupportedLexicalizationModelException {
         IRI lexModel = getProject().getLexicalizationModel();
         if (lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL) || lexModel.equals(Project.ONTOLEXLEMON_LEXICALIZATION_MODEL)) {
@@ -2260,103 +2260,27 @@ public class SKOS extends STServiceAdapter {
     }
 
     /**
-     * Initialize the new created resource (and the xLabel in case of SKOSXL lex model),
-     * by running the CF provided within the {@code customFormValue}.
-     * The updates produced by the CF execution are added to {@code modelAdditions} and {@code modelRemovals}
-     *
-     * Returns an object containing
-     * - the IRI of the creating resource, which is:
-     *      - generated through the CC, in case it is delegated, OR
-     *      - the same provided in input ({@code newResource}) or randomly generated if not provided
-     * - the IRI of the xLabel (if lex model is SKOSXL)
-     *
-     * @param repoConnection
-     * @param newResource the resource being created. It is the one generated in the calling service (e.g. createConcept, createCollection, ...)
-     *                    and represents the fallback IRI in case the CC is not delegated to the resource IRI creation
+     * Add lexicalization info to the StandardForm according the lexicalization model
+     * (e.g. the literal label must be assigned to stdForm/label in SKOS, to stdForm/lexicalForm in SKOSXL)
+     * @param stdForm
+     * @param xLabel
      * @param label
-     * @param xLabel pref label of the resource being created (to provide in case of SKOSXL lex model)
-     * @param conceptSchemes to provide in case of concept creation for checking the existence of duplicated pref label in the same schemes
-     * @param customFormValue
-     * @param checkExistingPrefLabel
-     * @param checkPrefAltLabelClash
-     * @param modelAdditions
-     * @param modelRemovals
-     * @return
-     * @throws CustomFormException
-     * @throws CODAException
-     * @throws PrefPrefLabelClashException
-     * @throws URIGenerationException
-     * @throws PrefAltLabelClashException
-     * @throws UnsupportedLexicalizationModelException
      */
-    private CustomConstructorOutcome generateResourceWithCustomConstructor(RepositoryConnection repoConnection,
-            IRI newResource, Literal label, IRI xLabel, List<IRI> conceptSchemes, CustomFormValue customFormValue,
-            Model modelAdditions, Model modelRemovals, boolean checkExistingPrefLabel, boolean checkPrefAltLabelClash)
-            throws CustomFormException, CODAException, PrefPrefLabelClashException,
-            URIGenerationException, PrefAltLabelClashException, UnsupportedLexicalizationModelException {
-        CustomForm cForm = cfManager.getCustomForm(getProject(), customFormValue.getCustomFormId());
-        if (cForm.isTypeGraph()) {
-            CustomFormGraph cfGraph = (CustomFormGraph) cForm;
-            CODACore codaCore = getInitializedCodaCore(repoConnection);
-            boolean cfResCreationDelegated = cfGraph.isResourceCreationDelegated(codaCore);
-            if (cfResCreationDelegated) {
-                /*
-                if CC is delegated to create the resource IRI (e.g. through "resource uri(coda:randIdGen())" or
-                "resource uri userPrompt/customIriField") set newResource to null,
-                since it will be overwritten by CC, and repeat the generation of xLabel IRI
-                (given that the IRI of the resource being created is no more valid).
-                Note that in this case, the xLabel IRI generation will have a null lexicalized resource argument.
-                We agreed to be ok with that since, in case a CC "overrides" the automatic generation of a resource IRI,
-                such IRI, which is not available until CC is run, cannot be used in the generation of the xLabel IRI
-                (Memo: lexicalized resource is provided as argument in the generation of an xLabel IRI since
-                it could eventually be referenced in the xLabel IRI template)
-                 */
-                newResource = null;
-                if (getProject().getLexicalizationModel().equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
-                    xLabel = checkAndCreateLexicalization(newResource, label, conceptSchemes, checkExistingPrefLabel, checkPrefAltLabelClash);
-                }
+    private void enrichStandardFormWithLexicalization(StandardForm stdForm, IRI xLabel, Literal label) {
+        IRI lexModel = getProject().getLexicalizationModel();
+        if (lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) || lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
+            if (label != null) {
+                stdForm.addFormEntry(StandardForm.Prompt.label, label.getLabel());
+                stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
             }
-
-            StandardForm stdForm = new StandardForm();
-            if (newResource != null) {
-                stdForm.addFormEntry(StandardForm.Prompt.resource, newResource.stringValue());
+        } else if (lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
+            if (xLabel != null) {
+                stdForm.addFormEntry(StandardForm.Prompt.xLabel, xLabel.stringValue());
+                stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
+                stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
             }
-            IRI lexModel = getProject().getLexicalizationModel();
-            if (lexModel.equals(Project.SKOS_LEXICALIZATION_MODEL) || lexModel.equals(Project.RDFS_LEXICALIZATION_MODEL)) {
-                if (label != null) {
-                    stdForm.addFormEntry(StandardForm.Prompt.label, label.getLabel());
-                    stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
-                }
-            } else if (lexModel.equals(Project.SKOSXL_LEXICALIZATION_MODEL)) {
-                if (xLabel != null) {
-                    stdForm.addFormEntry(StandardForm.Prompt.xLabel, xLabel.stringValue());
-                    stdForm.addFormEntry(StandardForm.Prompt.lexicalForm, label.getLabel());
-                    stdForm.addFormEntry(StandardForm.Prompt.labelLang, label.getLanguage().orElse(null));
-                }
-            }
-
-            UpdateTripleSet updateTripleSet = runCustomConstructor(repoConnection, cfGraph, customFormValue.getUserPromptMap(), stdForm);
-
-            if (cfResCreationDelegated) {
-                //CC was delegated to create resource IRI => get it now that the CF has been executed
-                newResource = (IRI) detectGraphEntry(updateTripleSet.getInsertTriples());
-                checkNotLocallyDefined(repoConnection, newResource);
-            }
-
-            for (CODATriple t : updateTripleSet.getInsertTriples()) {
-                modelAdditions.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-            }
-            for (CODATriple t : updateTripleSet.getDeleteTriples()) {
-                modelRemovals.add(t.getSubject(), t.getPredicate(), t.getObject(), getWorkingGraph());
-            }
-
-            return new CustomConstructorOutcome(newResource, xLabel);
-        } else {
-            throw new CustomFormException("Cannot execute CustomForm with id '" + cForm.getId()
-                    + "' as constructor since it is not of type 'graph'");
         }
     }
-
 
     /**
      * Generates a new URI for a SKOSXL Label, based on the provided mandatory parameters. The actual
@@ -2731,20 +2655,6 @@ public class SKOS extends STServiceAdapter {
         System.out.println(m.getGenericReturnType());
     }
 
-    private static class CustomConstructorOutcome {
-        private final IRI newResource;
-        private final IRI xLabel;
-        public CustomConstructorOutcome(IRI newResource, IRI xLabel) {
-            this.newResource = newResource;
-            this.xLabel = xLabel;
-        }
-        public IRI getNewResource() {
-            return newResource;
-        }
-        public IRI getxLabel() {
-            return xLabel;
-        }
-    }
 }
 
 class CollectionsMoreProcessor implements QueryBuilderProcessor {

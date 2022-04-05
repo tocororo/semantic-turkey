@@ -13,6 +13,7 @@ public class StandardForm {
 		public static final String lexicalForm = "lexicalForm"; //TODO check
 		public static final String schemes = "schemes";
 		public static final String lexicon = "lexicon"; //lexicon of a new created lexicalEntry
+		public static final String type = "type"; //type of the creating resource
 	}
 	
 	Map<String, Object> form;
