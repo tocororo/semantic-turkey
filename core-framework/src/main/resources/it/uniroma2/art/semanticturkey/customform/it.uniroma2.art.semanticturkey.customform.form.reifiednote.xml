@@ -8,12 +8,12 @@ prefix	coda: 	<http://art.uniroma2.it/coda/contracts/>
 			
 rule it.uniroma2.art.semanticturkey.customform.form.reifiednote id:reifiednote {
 	nodes = {
- 		reifNoteId uri(coda:randIdGen("note", {})) .
+ 		resource uri(coda:randIdGen("note", {})) .
 		noteLang literal userPrompt/lang .
 		noteLit literal(coda:langString($noteLang)) userPrompt/note .
 	}
 	graph = {
-		$reifNoteId rdf:value $noteLit .
+		$resource rdf:value $noteLit .
 	}
 }
 ]]></ref>

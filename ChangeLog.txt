@@ -3,6 +3,7 @@ date: dd/mm/yyyy
   * added a connector to EcoPortal and other catalogs based on OntoPortal
   * introduced SuperUser
     - allowed SuperUser to create project where it is automatically set as Project Manager.
+  * improved management of special variables in CFs, and the definition of CC vs CR
   * improved authorization checks to several APIs
   * improved messaging in the update routines
   * added support in Sheet2RDF for single tables in MySQL, MariaDB and PostgreSQL

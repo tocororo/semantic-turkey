@@ -186,6 +186,9 @@ public class UpdateRoutines {
 			if (stDataVersionNumber.compareTo(new VersionNumber(10, 2, 1)) < 0) {
 				alignFrom102To1021();
 			}
+			if (stDataVersionNumber.compareTo(new VersionNumber(11, 0, 0)) < 0) {
+				alignFrom10_2_1To11_0();
+			}
 
 
 			Config.setSTDataVersionNumber(stVersionNumber);
@@ -356,7 +359,6 @@ public class UpdateRoutines {
 		//Version 8.0 replaced updateForRoles with the resource metadata mechanism
 		printAndLogMessage("- Replacing 'updateForRoles' with the resource metadata mechanism");
 
-		Collection<AbstractProject> projects = ProjectManager.listProjects();
 		for (AbstractProject absProj : ProjectManager.listProjects()) {
 			if (absProj instanceof Project) {
 				Project proj = (Project) absProj;
@@ -550,8 +552,6 @@ public class UpdateRoutines {
 			try (FileInputStream fis = new FileInputStream(renderingEnginePUSettingsFile)) {
 				properties.load(fis);
 			}
-
-			ValueFactory vf = SimpleValueFactory.getInstance();
 
 			ObjectNode newRenderingEnginePUSettingsNode = JsonNodeFactory.instance.objectNode();
 			convertPropertiesSettingToYAML(properties, "languages", newRenderingEnginePUSettingsNode, "languages", String::valueOf);
@@ -770,6 +770,22 @@ public class UpdateRoutines {
 		STPropertiesManager.setSystemSettings(systemSettings, SemanticTurkeyCoreSettingsManager.class.getName());
 
 		printAndLogMessage("Update routine 10.2 -> 10.2.1 completed");
+	}
+
+	private static void alignFrom10_2_1To11_0() throws IOException {
+		printAndLogMessage("Update routine: 10.2.1 -> 11.0");
+
+		/* v11.0 added stdForm/type to the CF generictemplate and introduced the "resource" reserved variable in reifiednote */
+		printAndLogMessage("- Updating adminList system setting");
+		File formsFolder = CustomFormManager.getFormsFolder(null);
+		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
+						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml"),
+				new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml"));
+		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
+						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml"),
+				new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml"));
+
+		printAndLogMessage("Update routine 10.2.1 -> 11.0 completed");
 	}
 
 	private static <T> void convertPropertiesSettingToYAML(Properties properties, String oldProp, ObjectNode settingsObjectNode, String yamlProp, Functions.FailableFunction<String, T, IOException> propValueConverter) throws IOException {

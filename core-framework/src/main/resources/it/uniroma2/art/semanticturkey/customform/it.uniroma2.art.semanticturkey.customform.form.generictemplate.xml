@@ -31,6 +31,9 @@ rule it.uniroma2.art.semanticturkey.customform.form.generictemplate id:template 
 	
 		//uri of the new resource
 		resource uri stdForm/resource .
+
+		//type of the new resource
+		type uri stdForm/type .
 		
 		//in case of SKOS project, the label of the resource is a simple literal
 		label literal stdForm/label .
