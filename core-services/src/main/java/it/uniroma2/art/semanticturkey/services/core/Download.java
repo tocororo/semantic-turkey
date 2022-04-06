@@ -119,7 +119,7 @@ public class Download  extends STServiceAdapter {
             String date = Long.toString(new Date().getTime());
             SingleDownload singleDownload = new SingleDownload();
             singleDownload.fileName = resultFile.getName();
-            singleDownload.date = date;
+            singleDownload.timestamp = date;
             singleDownload.langToLocalizedMap = langToLocalizedMap;
             singleDownload.format = format.getName();
 
