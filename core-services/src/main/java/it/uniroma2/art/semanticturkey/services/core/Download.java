@@ -2,7 +2,6 @@ package it.uniroma2.art.semanticturkey.services.core;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import it.uniroma2.art.coda.converters.commons.DateTimeUtils;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -33,8 +32,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -61,7 +59,8 @@ public class Download  extends STServiceAdapter {
     @PreAuthorize("@auth.isAdmin()")
     @Read
     public void createDownload(String fileName, String localized, String lang, RDFFormat format,
-                               @Optional(defaultValue = "true") boolean zipFile) throws IOException, NoSuchSettingsManager {
+                               @Optional(defaultValue = "true") boolean zipFile,
+                               @Optional(defaultValue = "false") boolean overwrite) throws IOException, NoSuchSettingsManager {
         // check if the DOWNLOAD_DIR_NAME exist in the project folder, if not, create it
         checkAndInCaseCreateFolder();
 
@@ -73,16 +72,26 @@ public class Download  extends STServiceAdapter {
         Reference ref = parseReference(PROJ +"/"+DOWNLOAD_DIR_NAME+"/"+fileName);
 
         File file = StorageManager.getFile(ref);
+
+        if(file.exists() && !overwrite ) {
+            throw new FileAlreadyExistsException(file.getName());
+        }
+
         try (OutputStream out = new FileOutputStream(file)) {
             RDFHandler rdfHandler = Rio.createWriter(format, out);
             getManagedConnection().export(rdfHandler, getWorkingGraph());
         }
+
+
 
         File resultFile = file;
         // zip the file
         if (zipFile) {
             Reference refZip = parseReference(PROJ + "/" + DOWNLOAD_DIR_NAME + "/" + fileName + ".zip");
             File zippedFile = StorageManager.getFile(refZip);
+            if(zippedFile.exists() && !overwrite) {
+                throw new FileAlreadyExistsException(zippedFile.getName());
+            }
             try (OutputStream out = new FileOutputStream(zippedFile)) {
                 try (ZipOutputStream zout = new ZipOutputStream(out)) {
                     //zout.setLevel(9);
@@ -116,10 +125,9 @@ public class Download  extends STServiceAdapter {
             if(!localized.isEmpty() && !lang.isEmpty()) {
                 langToLocalizedMap.put(lang, localized);
             }
-            String date = Long.toString(new Date().getTime());
             SingleDownload singleDownload = new SingleDownload();
             singleDownload.fileName = resultFile.getName();
-            singleDownload.timestamp = date;
+            singleDownload.timestamp = new Date().getTime();
             singleDownload.langToLocalizedMap = langToLocalizedMap;
             singleDownload.format = format.getName();
 

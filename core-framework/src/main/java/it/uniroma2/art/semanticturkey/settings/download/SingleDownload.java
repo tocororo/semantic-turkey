@@ -51,7 +51,7 @@ public class SingleDownload implements Settings {
 
     @STProperty(description = "{" + SingleDownload.MessageKeys.timestamp$description
             + "}", displayName = "{" + SingleDownload.MessageKeys.timestamp$displayName + "}")
-    public String timestamp;
+    public long timestamp;
 
 
     @STProperty(description = "{" + SingleDownload.MessageKeys.format$description
