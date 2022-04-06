@@ -204,7 +204,6 @@ public class Download  extends STServiceAdapter {
 
     @STServiceOperation
     //@PreAuthorize("@auth.isAdmin()") // TODO decide the right @PreAuthorize
-    @Read
     public DownloadProjectSettings getDownloadInfoList() throws NoSuchSettingsManager, IOException {
         // check if the DOWNLOAD_DIR_NAME exist in the project folder, if not, create it
         checkAndInCaseCreateFolder();
@@ -270,7 +269,6 @@ public class Download  extends STServiceAdapter {
      */
     @STServiceOperation
     //@PreAuthorize("@auth.isAdmin()") // TODO decide the right @PreAuthorize
-    @Read
     public void getFile(HttpServletResponse oRes, String fileName) throws IOException {
         String filePath = PROJ +"/"+DOWNLOAD_DIR_NAME+"/"+fileName;
         Reference ref = parseReference(filePath);
@@ -280,9 +278,19 @@ public class Download  extends STServiceAdapter {
 
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isAdmin()")
-    @Read
     public void updateLocalized(String fileName, String localized, String lang) throws NoSuchSettingsManager {
+        Map<String, String> localizedMap = new HashMap<>();
+        localizedMap.put(lang, localized);
+        this.updateLocalizedMapInternal(fileName, localizedMap);
+    }
 
+    @STServiceOperation(method = RequestMethod.POST)
+    @PreAuthorize("@auth.isAdmin()")
+    public void updateLocalizedMap(String fileName, Map<String, String> localizedMap) throws NoSuchSettingsManager {
+        this.updateLocalizedMapInternal(fileName, localizedMap);
+    }
+
+    public void updateLocalizedMapInternal(String fileName, Map<String, String> localizedMap) throws NoSuchSettingsManager {
         try {
             DownloadProjectSettings downloadProjectSettings = (DownloadProjectSettings) exptManager.getSettings(getProject(),
                     null, null, DownloadSettingsManager.class.getName(), Scope.PROJECT);
@@ -296,21 +304,17 @@ public class Download  extends STServiceAdapter {
                 return;
             }
             SingleDownload singleDownload = fileNameToSingleDownloadMap.get(fileName);
-            singleDownload.langToLocalizedMap.put(lang, localized);
+            singleDownload.langToLocalizedMap = localizedMap;;
 
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode objectNode = mapper.valueToTree(downloadProjectSettings);
 
             exptManager.storeSettings(DownloadSettingsManager.class.getName(), getProject(), null, null,
                     Scope.PROJECT, objectNode);
-
-
         } catch (STPropertyAccessException | STPropertyUpdateException | WrongPropertiesException e) {
             throw new RuntimeException(e); // this should not happen
         }
-
     }
-
 
     // this function check if there is the DOWNLOAD_DIR_NAME in the project folder, if, not, such directory is created
     private void checkAndInCaseCreateFolder(){
