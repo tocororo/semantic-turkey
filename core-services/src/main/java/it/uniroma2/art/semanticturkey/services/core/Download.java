@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.coda.converters.commons.DateTimeUtils;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
-import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -38,6 +37,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +65,7 @@ public class Download  extends STServiceAdapter {
         // check if the DOWNLOAD_DIR_NAME exist in the project folder, if not, create it
         checkAndInCaseCreateFolder();
 
-        String extSuffix = getExtentionFromFormat(format);
+        String extSuffix = getExtensionFromFormat(format);
 
         // add the FILE_FORMAT_SUFFIX to the fileName, if not already present
         fileName = fileName.endsWith(extSuffix) ? fileName : fileName+extSuffix;
@@ -74,8 +74,8 @@ public class Download  extends STServiceAdapter {
 
         File file = StorageManager.getFile(ref);
         try (OutputStream out = new FileOutputStream(file)) {
-            RDFHandler rdfHanlder = Rio.createWriter(format, out);
-            getManagedConnection().export(rdfHanlder, getWorkingGraph());
+            RDFHandler rdfHandler = Rio.createWriter(format, out);
+            getManagedConnection().export(rdfHandler, getWorkingGraph());
         }
 
         File resultFile = file;
@@ -116,7 +116,7 @@ public class Download  extends STServiceAdapter {
             if(!localized.isEmpty() && !lang.isEmpty()) {
                 langToLocalizedMap.put(lang, localized);
             }
-            String date = DateTimeFormatter.ofPattern(DateTimeUtils.DATE_PATTERN_ISO_8601).format(LocalDate.now());
+            String date = Long.toString(new Date().getTime());
             SingleDownload singleDownload = new SingleDownload();
             singleDownload.fileName = resultFile.getName();
             singleDownload.date = date;
@@ -138,10 +138,9 @@ public class Download  extends STServiceAdapter {
 
     }
 
-    @STServiceOperation(method = RequestMethod.POST)
+    @STServiceOperation
     @PreAuthorize("@auth.isAdmin()")
-    @Read
-    public List<RDFFormat> getAvailableFormats() throws IOException {
+    public List<RDFFormat> getAvailableFormats() {
         List<RDFFormat> availableFormatsList = new ArrayList<>();
 
         // add the supported formats
@@ -155,7 +154,6 @@ public class Download  extends STServiceAdapter {
 
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isAdmin()")
-    @Read
     public void removeDownload(String fileName) throws IOException, NoSuchSettingsManager {
 
         // remove the file fileName
@@ -199,7 +197,7 @@ public class Download  extends STServiceAdapter {
     @STServiceOperation
     //@PreAuthorize("@auth.isAdmin()") // TODO decide the right @PreAuthorize
     @Read
-    public Settings getDownloadInfoList() throws NoSuchSettingsManager, IOException {
+    public DownloadProjectSettings getDownloadInfoList() throws NoSuchSettingsManager, IOException {
         // check if the DOWNLOAD_DIR_NAME exist in the project folder, if not, create it
         checkAndInCaseCreateFolder();
 
@@ -275,7 +273,7 @@ public class Download  extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     @PreAuthorize("@auth.isAdmin()")
     @Read
-    public void updateLocalized(String fileName, String localized, String lang) throws IOException, NoSuchSettingsManager {
+    public void updateLocalized(String fileName, String localized, String lang) throws NoSuchSettingsManager {
 
         try {
             DownloadProjectSettings downloadProjectSettings = (DownloadProjectSettings) exptManager.getSettings(getProject(),
@@ -313,7 +311,7 @@ public class Download  extends STServiceAdapter {
         // TODO decide whether to use the information that the directory did not existed before or not
     }
 
-    private String getExtentionFromFormat(RDFFormat format) {
+    private String getExtensionFromFormat(RDFFormat format) {
         if (RDFFormat.RDFXML.equals(format)) {
             return ".rdf";
         } else if (RDFFormat.NTRIPLES.equals(format)) {

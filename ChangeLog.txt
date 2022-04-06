@@ -1,4 +1,4 @@
-version 10.2.2
+version 11.0
 date: dd/mm/yyyy
   * added a connector to EcoPortal and other catalogs based on OntoPortal
   * introduced SuperUser

@@ -23,10 +23,10 @@ public class SingleDownload implements Settings {
                 + ".langToLocalizedMap.description";
         public static final String langToLocalizedMap$displayName = keyBase
                 + ".langToLocalizedMap.displayName";
-        public static final String date$description = keyBase
-                + ".date.description";
-        public static final String date$displayName = keyBase
-                + ".date.displayName";
+        public static final String timestamp$description = keyBase
+                + ".timestamp.description";
+        public static final String timestamp$displayName = keyBase
+                + ".timestamp.displayName";
         public static final String format$description = keyBase
                 + ".format.description";
         public static final String format$displayName = keyBase
@@ -49,9 +49,9 @@ public class SingleDownload implements Settings {
     public Map<String, String> langToLocalizedMap;
 
 
-    @STProperty(description = "{" + SingleDownload.MessageKeys.date$description
-            + "}", displayName = "{" + SingleDownload.MessageKeys.date$displayName + "}")
-    public String date;
+    @STProperty(description = "{" + SingleDownload.MessageKeys.timestamp$description
+            + "}", displayName = "{" + SingleDownload.MessageKeys.timestamp$displayName + "}")
+    public String timestamp;
 
 
     @STProperty(description = "{" + SingleDownload.MessageKeys.format$description
