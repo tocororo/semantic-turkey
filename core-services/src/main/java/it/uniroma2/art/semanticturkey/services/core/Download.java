@@ -48,7 +48,7 @@ import java.util.zip.ZipOutputStream;
  */
 
 @STService
-public class Download  extends STServiceAdapter {
+public class Download extends STServiceAdapter {
 
     private final String DOWNLOAD_DIR_NAME = "download";
     private final String PROJ = "proj:";
@@ -56,24 +56,24 @@ public class Download  extends STServiceAdapter {
     private static Logger logger = LoggerFactory.getLogger(Download.class);
 
     @STServiceOperation(method = RequestMethod.POST)
-    @PreAuthorize("@auth.isAdmin()")
+    @PreAuthorize("@auth.isAuthorized('pm(project, downloads)', 'C')")
     @Read
     public void createDownload(String fileName, String localized, String lang, RDFFormat format,
-                               @Optional(defaultValue = "true") boolean zipFile,
-                               @Optional(defaultValue = "false") boolean overwrite) throws IOException, NoSuchSettingsManager {
+            @Optional(defaultValue = "true") boolean zipFile,
+            @Optional(defaultValue = "false") boolean overwrite) throws IOException, NoSuchSettingsManager {
         // check if the DOWNLOAD_DIR_NAME exist in the project folder, if not, create it
         checkAndInCaseCreateFolder();
 
         String extSuffix = getExtensionFromFormat(format);
 
         // add the FILE_FORMAT_SUFFIX to the fileName, if not already present
-        fileName = fileName.endsWith(extSuffix) ? fileName : fileName+extSuffix;
+        fileName = fileName.endsWith(extSuffix) ? fileName : fileName + extSuffix;
 
-        Reference ref = parseReference(PROJ +"/"+DOWNLOAD_DIR_NAME+"/"+fileName);
+        Reference ref = parseReference(PROJ + "/" + DOWNLOAD_DIR_NAME + "/" + fileName);
 
         File file = StorageManager.getFile(ref);
 
-        if(file.exists() && !overwrite ) {
+        if (file.exists() && !overwrite) {
             throw new FileAlreadyExistsException(file.getName());
         }
 
@@ -83,13 +83,12 @@ public class Download  extends STServiceAdapter {
         }
 
 
-
         File resultFile = file;
         // zip the file
         if (zipFile) {
             Reference refZip = parseReference(PROJ + "/" + DOWNLOAD_DIR_NAME + "/" + fileName + ".zip");
             File zippedFile = StorageManager.getFile(refZip);
-            if(zippedFile.exists() && !overwrite) {
+            if (zippedFile.exists() && !overwrite) {
                 throw new FileAlreadyExistsException(zippedFile.getName());
             }
             try (OutputStream out = new FileOutputStream(zippedFile)) {
@@ -115,14 +114,14 @@ public class Download  extends STServiceAdapter {
         try {
             DownloadProjectSettings downloadProjectSettings = (DownloadProjectSettings) exptManager.getSettings(getProject(),
                     null, null, DownloadSettingsManager.class.getName(), Scope.PROJECT);
-            if (downloadProjectSettings.fileNameToSingleDownloadMap == null ) {
+            if (downloadProjectSettings.fileNameToSingleDownloadMap == null) {
                 downloadProjectSettings.fileNameToSingleDownloadMap = new HashMap<>();
             }
             Map<String, SingleDownload> fileNameToSingleDownloadMap = downloadProjectSettings.fileNameToSingleDownloadMap;
 
 
             Map<String, String> langToLocalizedMap = new HashMap<>();
-            if(!localized.isEmpty() && !lang.isEmpty()) {
+            if (!localized.isEmpty() && !lang.isEmpty()) {
                 langToLocalizedMap.put(lang, localized);
             }
             SingleDownload singleDownload = new SingleDownload();
@@ -147,7 +146,7 @@ public class Download  extends STServiceAdapter {
     }
 
     @STServiceOperation
-    @PreAuthorize("@auth.isAdmin()")
+    @PreAuthorize("@auth.isAuthorized('pm(project, downloads)', 'R')")
     public List<RDFFormat> getAvailableFormats() {
         List<RDFFormat> availableFormatsList = new ArrayList<>();
 
@@ -161,11 +160,11 @@ public class Download  extends STServiceAdapter {
     }
 
     @STServiceOperation(method = RequestMethod.POST)
-    @PreAuthorize("@auth.isAdmin()")
+    @PreAuthorize("@auth.isAuthorized('pm(project, downloads)', 'D')")
     public void removeDownload(String fileName) throws IOException, NoSuchSettingsManager {
 
         // remove the file fileName
-        String filePath = PROJ +"/"+DOWNLOAD_DIR_NAME+"/"+fileName;
+        String filePath = PROJ + "/" + DOWNLOAD_DIR_NAME + "/" + fileName;
         //Reference ref = parseReference(filePath);
         //StorageManager.deleteFile(ref);
         deleteFile(filePath);
@@ -203,7 +202,6 @@ public class Download  extends STServiceAdapter {
 
 
     @STServiceOperation
-    //@PreAuthorize("@auth.isAdmin()") // TODO decide the right @PreAuthorize
     public DownloadProjectSettings getDownloadInfoList() throws NoSuchSettingsManager, IOException {
         // check if the DOWNLOAD_DIR_NAME exist in the project folder, if not, create it
         checkAndInCaseCreateFolder();
@@ -211,9 +209,9 @@ public class Download  extends STServiceAdapter {
 
         // get the list of the download
         List<String> fileList = new ArrayList<>();
-        Reference ref = parseReference(PROJ +"/"+DOWNLOAD_DIR_NAME);
+        Reference ref = parseReference(PROJ + "/" + DOWNLOAD_DIR_NAME);
         Collection<DirectoryEntryInfo> directoryEntryInfoCollection = StorageManager.list(ref);
-        for(DirectoryEntryInfo directoryEntryInfo : directoryEntryInfoCollection) {
+        for (DirectoryEntryInfo directoryEntryInfo : directoryEntryInfoCollection) {
             String fileName = directoryEntryInfo.getName();
             fileList.add(fileName);
         }
@@ -223,7 +221,7 @@ public class Download  extends STServiceAdapter {
         try {
             DownloadProjectSettings downloadProjectSettings = (DownloadProjectSettings) exptManager.getSettings(getProject(),
                     null, null, DownloadSettingsManager.class.getName(), Scope.PROJECT);
-            if (downloadProjectSettings.fileNameToSingleDownloadMap == null ) {
+            if (downloadProjectSettings.fileNameToSingleDownloadMap == null) {
                 downloadProjectSettings.fileNameToSingleDownloadMap = new HashMap<>();
             }
             fileInSettingList.addAll(downloadProjectSettings.fileNameToSingleDownloadMap.keySet());
@@ -233,8 +231,8 @@ public class Download  extends STServiceAdapter {
 
         // do the clean up
         for (String fileName : fileList) {
-            if(!fileInSettingList.contains(fileName)) {
-                String filePath = PROJ +"/"+DOWNLOAD_DIR_NAME+"/"+fileName;
+            if (!fileInSettingList.contains(fileName)) {
+                String filePath = PROJ + "/" + DOWNLOAD_DIR_NAME + "/" + fileName;
                 deleteFile(filePath);
             }
         }
@@ -248,7 +246,7 @@ public class Download  extends STServiceAdapter {
         try {
             DownloadProjectSettings downloadProjectSettings = (DownloadProjectSettings) exptManager.getSettings(getProject(),
                     null, null, DownloadSettingsManager.class.getName(), Scope.PROJECT);
-            if (downloadProjectSettings.fileNameToSingleDownloadMap == null ) {
+            if (downloadProjectSettings.fileNameToSingleDownloadMap == null) {
                 downloadProjectSettings.fileNameToSingleDownloadMap = new HashMap<>();
             }
 
@@ -263,21 +261,21 @@ public class Download  extends STServiceAdapter {
 
     /**
      * Downloads a file
-     * @param oRes the response object to which the file will be written to
+     *
+     * @param oRes     the response object to which the file will be written to
      * @param fileName the name of the file to download from this project
      * @return
      */
     @STServiceOperation
-    //@PreAuthorize("@auth.isAdmin()") // TODO decide the right @PreAuthorize
     public void getFile(HttpServletResponse oRes, String fileName) throws IOException {
-        String filePath = PROJ +"/"+DOWNLOAD_DIR_NAME+"/"+fileName;
+        String filePath = PROJ + "/" + DOWNLOAD_DIR_NAME + "/" + fileName;
         Reference ref = parseReference(filePath);
         StorageManager.getFileContent(oRes.getOutputStream(), ref, oRes::setContentLength);
     }
 
 
     @STServiceOperation(method = RequestMethod.POST)
-    @PreAuthorize("@auth.isAdmin()")
+    @PreAuthorize("@auth.isAuthorized('pm(project, downloads)', 'U')")
     public void updateLocalized(String fileName, String localized, String lang) throws NoSuchSettingsManager {
         Map<String, String> localizedMap = new HashMap<>();
         localizedMap.put(lang, localized);
@@ -285,7 +283,7 @@ public class Download  extends STServiceAdapter {
     }
 
     @STServiceOperation(method = RequestMethod.POST)
-    @PreAuthorize("@auth.isAdmin()")
+    @PreAuthorize("@auth.isAuthorized('pm(project, downloads)', 'U')")
     public void updateLocalizedMap(String fileName, Map<String, String> localizedMap) throws NoSuchSettingsManager {
         this.updateLocalizedMapInternal(fileName, localizedMap);
     }
@@ -295,7 +293,7 @@ public class Download  extends STServiceAdapter {
             DownloadProjectSettings downloadProjectSettings = (DownloadProjectSettings) exptManager.getSettings(getProject(),
                     null, null, DownloadSettingsManager.class.getName(), Scope.PROJECT);
 
-            if (downloadProjectSettings.fileNameToSingleDownloadMap == null ) {
+            if (downloadProjectSettings.fileNameToSingleDownloadMap == null) {
                 downloadProjectSettings.fileNameToSingleDownloadMap = new HashMap<>();
             }
             Map<String, SingleDownload> fileNameToSingleDownloadMap = downloadProjectSettings.fileNameToSingleDownloadMap;
@@ -304,7 +302,7 @@ public class Download  extends STServiceAdapter {
                 return;
             }
             SingleDownload singleDownload = fileNameToSingleDownloadMap.get(fileName);
-            singleDownload.langToLocalizedMap = localizedMap;;
+            singleDownload.langToLocalizedMap = localizedMap;
 
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode objectNode = mapper.valueToTree(downloadProjectSettings);
@@ -317,8 +315,8 @@ public class Download  extends STServiceAdapter {
     }
 
     // this function check if there is the DOWNLOAD_DIR_NAME in the project folder, if, not, such directory is created
-    private void checkAndInCaseCreateFolder(){
-        Reference refDir = parseReference(PROJ +"/"+DOWNLOAD_DIR_NAME);
+    private void checkAndInCaseCreateFolder() {
+        Reference refDir = parseReference(PROJ + "/" + DOWNLOAD_DIR_NAME);
         boolean created = StorageManager.createDirectoryIfNotExisting(refDir);
         // TODO decide whether to use the information that the directory did not existed before or not
     }
@@ -346,7 +344,7 @@ public class Download  extends STServiceAdapter {
         try {
             DownloadProjectSettings downloadProjectSettings = (DownloadProjectSettings) exptManager.getSettings(getProject(),
                     null, null, DownloadSettingsManager.class.getName(), Scope.PROJECT);
-            if (downloadProjectSettings.fileNameToSingleDownloadMap == null ) {
+            if (downloadProjectSettings.fileNameToSingleDownloadMap == null) {
                 downloadProjectSettings.fileNameToSingleDownloadMap = new HashMap<>();
             }
             Map<String, SingleDownload> fileNameToSingleDownloadMap = downloadProjectSettings.fileNameToSingleDownloadMap;
