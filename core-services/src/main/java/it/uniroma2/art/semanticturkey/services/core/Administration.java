@@ -4,7 +4,6 @@ import alice.tuprolog.InvalidTheoryException;
 import alice.tuprolog.MalformedGoalException;
 import alice.tuprolog.NoMoreSolutionException;
 import alice.tuprolog.NoSolutionException;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -19,11 +18,9 @@ import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
-import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.DataSize;
-import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.InvalidRoleFileException;
@@ -143,7 +140,6 @@ public class Administration extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAdmin()")
 	public void setDataDir(String path) throws IOException {
-		File file = new File(path);	
 		File oldDir = Resources.getSemTurkeyDataDir();
 		Config.setDataDirProp(path);
 		Resources.initSemTurkeyDataDir(); //update the data dir (and sub-dir) reference in memory

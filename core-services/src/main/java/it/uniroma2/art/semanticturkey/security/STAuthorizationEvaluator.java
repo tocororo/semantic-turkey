@@ -13,6 +13,7 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.showvoc.ShowVocConstants;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -54,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -152,26 +154,61 @@ public class STAuthorizationEvaluator {
 		return this.isAuthorized(prologCapability, "{}", crudv, projectName);
 	}
 
-	public boolean isSettingsActionAuthorized(Scope scope, boolean write) throws ProjectAccessException,
+	public boolean isSettingsActionAuthorized(Scope scope, String crud) throws ProjectAccessException,
 			ProjectInexistentException, InvalidProjectNameException, HarmingGoalException, JSONException,
 			HaltedEngineException, MalformedGoalException, STPropertyAccessException {
 		if (scope.equals(Scope.SYSTEM)) {
 			return isSuperUser(false);
 		} else if (scope.equals(Scope.PROJECT)) {
-			if (write) {
-				return isAuthorized("pm(project)", "U");
-			} else {
+			if (crud.equals("R")) { //only read
 				return true; //PROJECT settings can be read by any user (e.g. project languages)
+			} else {
+				return isAuthorized("pm(project)", crud);
 			}
 		} else if (scope.equals(Scope.PROJECT_GROUP)) {
-			if (write) {
-				return isAuthorized("pm(project, group)", "U");
-			} else {
+			if (crud.equals("R")) { //only read
 				return true; //PROJECT_GROUP settings can be read by any user (e.g. group limitations)
+			} else {
+				return isAuthorized("pm(project, group)", crud);
 			}
 		} else { //scope: USER, PROJECT_USER
 			return true; //it is enough that the user is logged
 		}
+	}
+
+	/**
+	 * Useful for authorizing file operation (read/create file)
+	 * @param dir
+	 * @param crud
+	 * @return
+	 * @throws ProjectAccessException
+	 * @throws ProjectInexistentException
+	 * @throws InvalidProjectNameException
+	 * @throws HarmingGoalException
+	 * @throws JSONException
+	 * @throws HaltedEngineException
+	 * @throws MalformedGoalException
+	 * @throws STPropertyAccessException
+	 */
+	public boolean isFileActionAuthorized(String dir, String crud) throws ProjectAccessException,
+			ProjectInexistentException,InvalidProjectNameException, HarmingGoalException, JSONException,
+			HaltedEngineException, MalformedGoalException, STPropertyAccessException {
+		Reference ref = parseReference(dir);
+		Project project = ref.getProject().orElse(null);
+		STUser user = ref.getUser().orElse(null);
+		Scope scope;
+		if (project == null && user == null) {
+			scope = Scope.SYSTEM;
+		} else if (project != null) {
+			if (user != null) {
+				scope = Scope.PROJECT_USER;
+			} else {
+				scope = Scope.PROJECT;
+			}
+		} else {
+			scope = Scope.USER;
+		}
+		return isSettingsActionAuthorized(scope, crud);
 	}
 
 	/**
@@ -538,6 +575,34 @@ public class STAuthorizationEvaluator {
 	 */
 	public boolean isLoggedUser(String email) {
 		return (UsersManager.getLoggedUser().getEmail().equalsIgnoreCase(email));
+	}
+
+	/**
+	 * Copied from {@link it.uniroma2.art.semanticturkey.services.STServiceAdapter#parseReference(String)};
+	 * @param relativeReference
+	 * @return
+	 */
+	private Reference parseReference(String relativeReference) {
+		int colonPos = relativeReference.indexOf(":");
+
+		if (colonPos == -1)
+			throw new IllegalArgumentException("Invalid reference: " + relativeReference);
+
+		Scope scope = Scope.deserializeScope(relativeReference.substring(0, colonPos));
+		String identifier = relativeReference.substring(colonPos + 1);
+
+		switch (scope) {
+			case SYSTEM:
+				return new Reference(null, null, identifier);
+			case PROJECT:
+				return new Reference(stServiceContext.getProject(), null, identifier);
+			case USER:
+				return new Reference(null, UsersManager.getLoggedUser(), identifier);
+			case PROJECT_USER:
+				return new Reference(stServiceContext.getProject(), UsersManager.getLoggedUser(), identifier);
+			default:
+				throw new IllegalArgumentException("Unsupported scope: " + scope);
+		}
 	}
 
 }

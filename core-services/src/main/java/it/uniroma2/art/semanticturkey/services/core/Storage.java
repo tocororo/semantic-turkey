@@ -54,7 +54,7 @@ public class Storage extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAdmin()")
+	@PreAuthorize("@auth.isFileActionAuthorized(#dir, 'R')")
 	public Collection<DirectoryEntryInfo> list(String dir) {
 		Reference ref = parseReference(dir);
 		return StorageManager.list(ref);
@@ -66,7 +66,7 @@ public class Storage extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAdmin()")
+	@PreAuthorize("@auth.isFileActionAuthorized(#dir, 'C')")
 	public void createDirectory(String dir) {
 		Reference ref = parseReference(dir);
 		StorageManager.createDirectory(ref);
@@ -79,7 +79,7 @@ public class Storage extends STServiceAdapter {
 	 * @throws IOException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAdmin()")
+	@PreAuthorize("@auth.isFileActionAuthorized(#dir, 'D')")
 	public void deleteDirectory(String dir) throws IOException {
 		Reference ref = parseReference(dir);
 		StorageManager.deleteDirectory(ref);
@@ -93,7 +93,7 @@ public class Storage extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAdmin()")
+	@PreAuthorize("@auth.isFileActionAuthorized(#path, 'C')")
 	public void createFile(MultipartFile data, String path, @Optional  boolean overwrite) throws IOException {
 		Reference ref = parseReference(path);
 		try (InputStream is = data.getInputStream()) {
@@ -107,7 +107,7 @@ public class Storage extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAdmin()")
+	@PreAuthorize("@auth.isFileActionAuthorized(#path, 'D')")
 	public void deleteFile(String path) throws IOException {
 		Reference ref = parseReference(path);
 		StorageManager.deleteFile(ref);
@@ -120,7 +120,7 @@ public class Storage extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-	@PreAuthorize("@auth.isAdmin()")
+	@PreAuthorize("@auth.isFileActionAuthorized(#path, 'R')")
 	public void getFile(HttpServletResponse oRes, String path) throws IOException {
 		Reference ref = parseReference(path);
 		StorageManager.getFileContent(oRes.getOutputStream(), ref, oRes::setContentLength);

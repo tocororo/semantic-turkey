@@ -171,38 +171,11 @@ public class Download extends STServiceAdapter {
 
         // update the YAML file
         removeSettingsEntry(fileName);
-        /*
-        try {
-            DownloadProjectSettings downloadProjectSettings = (DownloadProjectSettings) exptManager.getSettings(getProject(),
-                    null, null, DownloadSettingsManager.class.getName(), Scope.PROJECT);
-            if (downloadProjectSettings.fileNameToSingleDownloadMap == null ) {
-                downloadProjectSettings.fileNameToSingleDownloadMap = new HashMap<>();
-            }
-            Map<String, SingleDownload> fileNameToSingleDownloadMap = downloadProjectSettings.fileNameToSingleDownloadMap;
-            if (!fileNameToSingleDownloadMap.containsKey(fileName)) {
-                // the desired fileName does not exist in the config file, so return;
-                return;
-            }
-
-            fileNameToSingleDownloadMap.remove(fileName);
-
-            ObjectMapper mapper = new ObjectMapper();
-            ObjectNode objectNode = mapper.valueToTree(downloadProjectSettings);
-
-            exptManager.storeSettings(DownloadSettingsManager.class.getName(), getProject(), null, null,
-                    Scope.PROJECT, objectNode);
-
-
-        } catch (STPropertyAccessException | STPropertyUpdateException | WrongPropertiesException e) {
-            throw new RuntimeException(e); // this should not happen
-        }
-         */
-
     }
 
 
     @STServiceOperation
-    public DownloadProjectSettings getDownloadInfoList() throws NoSuchSettingsManager, IOException {
+    public DownloadProjectSettings getDownloadInfoList() throws NoSuchSettingsManager {
         // check if the DOWNLOAD_DIR_NAME exist in the project folder, if not, create it
         checkAndInCaseCreateFolder();
 
@@ -229,13 +202,7 @@ public class Download extends STServiceAdapter {
             throw new RuntimeException(e); // this should not happen
         }
 
-        // do the clean up
-        for (String fileName : fileList) {
-            if (!fileInSettingList.contains(fileName)) {
-                String filePath = PROJ + "/" + DOWNLOAD_DIR_NAME + "/" + fileName;
-                deleteFile(filePath);
-            }
-        }
+        //cleanup: delete entry in settings if the related file is not in download dir
         for (String fileName : fileInSettingList) {
             if (!fileList.contains(fileName)) {
                 removeSettingsEntry(fileName);
