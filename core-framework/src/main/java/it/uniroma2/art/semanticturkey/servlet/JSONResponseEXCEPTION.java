@@ -36,25 +36,20 @@ import org.json.JSONObject;
  */
 public class JSONResponseEXCEPTION extends JSONResponseProblem implements ResponseException {
 
-	JSONResponseEXCEPTION(JSONObject json_content, String request, Exception e) throws JSONException {
-		super(json_content,request);
-		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.responseType, ServiceVocabulary.type_exception);
-		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.exceptionName, e.getClass().getCanonicalName());
-		setStackTrace(e);
-	}
-
 	JSONResponseEXCEPTION(JSONObject json_content, String request, String msg) throws JSONException {
 		super(json_content, request);
 		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.responseType, ServiceVocabulary.type_exception);
 		setMessage(msg);
 	}
 
-	JSONResponseEXCEPTION(JSONObject json_content, String request, Exception e, String msg) throws JSONException {
+	JSONResponseEXCEPTION(JSONObject json_content, String request, Exception e, String msg, boolean reportStackTrace) throws JSONException {
 		super(json_content, request);
 		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.responseType, ServiceVocabulary.type_exception);
 		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.exceptionName, e.getClass().getCanonicalName());
 		setMessage(msg);
-		setStackTrace(e);
+		if (reportStackTrace) {
+			setStackTrace(e);
+		}
 	}
 
 	public boolean isAffirmative() {

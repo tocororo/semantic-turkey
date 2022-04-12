@@ -37,12 +37,7 @@ import org.json.JSONObject;
 
 public class JSONResponseERROR extends JSONResponseProblem {
 
-	JSONResponseERROR(JSONObject json_content, String request) throws JSONException {
-		super(json_content,request);
-		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.responseType, ServiceVocabulary.type_error);
-	}
-
-	JSONResponseERROR(JSONObject json_content, String request, Exception e, String msg) throws JSONException {
+	JSONResponseERROR(JSONObject json_content, String request, Exception e, String msg, boolean reportStackTrace) throws JSONException {
 		super(json_content, request);
 		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.responseType, ServiceVocabulary.type_error);
 		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.exceptionName, e.getClass().getCanonicalName());

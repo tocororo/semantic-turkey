@@ -45,6 +45,8 @@ public class CoreSystemSettings implements Settings {
         public static final String showvoc$displayName = keyBase + ".showvoc.displayName";
         public static final String authService$description = keyBase + ".authService.description";
         public static final String authService$displayName = keyBase + ".authService.displayName";
+        public static final String errorReporting$description = keyBase + ".errorReporting.description";
+        public static final String errorReporting$displayName = keyBase + ".errorReporting.displayName";
     }
 
     @Override
@@ -106,6 +108,8 @@ public class CoreSystemSettings implements Settings {
     @Enumeration({"Default", "SAML"})
     public String authService = "Default";
 
-
+    @STProperty(description = "{" + MessageKeys.errorReporting$description + "}", displayName = "{"
+            + MessageKeys.errorReporting$displayName + "}")
+    public ErrorReportingSettings errorReporting;
 
 }

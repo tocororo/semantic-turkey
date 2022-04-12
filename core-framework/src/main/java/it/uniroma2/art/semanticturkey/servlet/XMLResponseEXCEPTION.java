@@ -31,30 +31,23 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 public class XMLResponseEXCEPTION extends XMLResponseProblem implements ResponseException {
-	
-	XMLResponseEXCEPTION(Document xml, String request, Exception e) {
-		super(xml, request);
-		Element stackElement = xml.createElement(ServiceVocabulary.stackTrace);
-		getResponseElement().appendChild(stackElement);
-		getResponseElement().setAttribute(ServiceVocabulary.responseType, ServiceVocabulary.type_exception);
-		getResponseElement().setAttribute(ServiceVocabulary.exceptionName, e.getClass().getCanonicalName());
-		setStackTrace(e);
-	}
-	
+
 	XMLResponseEXCEPTION(Document xml, String request, String msg) {
 		super(xml, request);
 		getResponseElement().setAttribute(ServiceVocabulary.responseType, ServiceVocabulary.type_exception);
 		setMessage(msg);
 	}
 
-	XMLResponseEXCEPTION(Document xml, String request, Exception e, String msg) {
+	XMLResponseEXCEPTION(Document xml, String request, Exception e, String msg, boolean reportStackTrace) {
 		super(xml, request);
-		Element stackElement = xml.createElement(ServiceVocabulary.stackTrace);
-		getResponseElement().appendChild(stackElement);
 		getResponseElement().setAttribute(ServiceVocabulary.responseType, ServiceVocabulary.type_exception);
 		getResponseElement().setAttribute(ServiceVocabulary.exceptionName, e.getClass().getCanonicalName());
 		setMessage(msg);
-		setStackTrace(e);
+		if (reportStackTrace) {
+			Element stackElement = xml.createElement(ServiceVocabulary.stackTrace);
+			getResponseElement().appendChild(stackElement);
+			setStackTrace(e);
+		}
 	}
 
 	public boolean isAffirmative() {

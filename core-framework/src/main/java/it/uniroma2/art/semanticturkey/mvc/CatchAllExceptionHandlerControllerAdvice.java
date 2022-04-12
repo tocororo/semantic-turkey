@@ -1,9 +1,22 @@
 package it.uniroma2.art.semanticturkey.mvc;
 
 import java.io.StringWriter;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
+import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 
+import it.uniroma2.art.semanticturkey.event.annotation.EventListener;
+import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.resources.Scope;
+import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
+import it.uniroma2.art.semanticturkey.settings.core.ErrorReportingSettings;
+import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
+import it.uniroma2.art.semanticturkey.settings.events.SettingsEvent;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.eclipse.rdf4j.exceptions.ValidationException;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -14,6 +27,7 @@ import org.hibernate.validator.method.MethodConstraintViolation;
 import org.hibernate.validator.method.MethodConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +52,39 @@ import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
 public class CatchAllExceptionHandlerControllerAdvice {
 
 	private static Logger logger = LoggerFactory.getLogger(CatchAllExceptionHandlerControllerAdvice.class);
+
+	private AtomicReference<ErrorReportingSettings> errorReportingSettings = new AtomicReference<>();
+
+	@Autowired
+	protected ExtensionPointManager exptMgr;
+
+	@EventListener
+	public void onSettingsUpdated(SettingsEvent event) {
+		// skips events not related to the core settings
+		if (!Objects.equals(event.getSettingsManager().getId(), SemanticTurkeyCoreSettingsManager.class.getName())) return;
+
+		// skips events not related to the system settings (or their defaults)
+		if (!Objects.equals(event.getScope(), Scope.SYSTEM)) return;
+
+		errorReportingSettings.set(null);
+	}
+
+	@Nullable
+	public ErrorReportingSettings getErrorReportingSettings() {
+		return errorReportingSettings.updateAndGet(current -> {
+			if (current != null) {
+				return current;
+			}
+
+			try {
+				CoreSystemSettings coreSystemSettings = (CoreSystemSettings) exptMgr.getSettings(null, null, null, SemanticTurkeyCoreSettingsManager.class.getName(), Scope.SYSTEM);
+				return coreSystemSettings.errorReporting;
+			} catch (STPropertyAccessException|NoSuchSettingsManager e) {
+				ExceptionUtils.rethrow(e);
+				return null; // never reached
+			}
+		});
+	}
 
 	/**
 	 * In st-core-services some methods are secured with @PreAuthorized annotation. When an authenticated user
@@ -78,7 +125,7 @@ public class CatchAllExceptionHandlerControllerAdvice {
 
 			ServletUtilities servUtils = ServletUtilities.getService();
 			Response stResp = servUtils.createExceptionResponse(extractServicRequestName(request), ex,
-					errorMsg.toString());
+					errorMsg.toString(), getErrorReportingSettings());
 
 			return formatResponse(stResp, request);
 
@@ -104,7 +151,7 @@ public class CatchAllExceptionHandlerControllerAdvice {
 
 		// Despite MethodConstraintViolationException being a RuntimeException, return an ST exception
 		Response stResp = servUtils.createExceptionResponse(extractServicRequestName(request), ex,
-				errorMsg.toString());
+				errorMsg.toString(), getErrorReportingSettings());
 
 		return formatResponse(stResp, request);
 	}
@@ -119,10 +166,10 @@ public class CatchAllExceptionHandlerControllerAdvice {
 
 		if (ex instanceof RuntimeException) {
 			// if a RuntimeException (i.e., unexpected failure), return an ST error
-			stResp = servUtils.createErrorResponse(extractServicRequestName(request), ex, ex.toString());
+			stResp = servUtils.createErrorResponse(extractServicRequestName(request), ex, ex.toString(), getErrorReportingSettings());
 		} else {
 			// otherwise, it is a foreseen failure, therefore return an ST exception
-			stResp = servUtils.createExceptionResponse(extractServicRequestName(request), ex, ex.toString());
+			stResp = servUtils.createExceptionResponse(extractServicRequestName(request), ex, ex.toString(), getErrorReportingSettings());
 		}
 		return formatResponse(stResp, request);
 	}

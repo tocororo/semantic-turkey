@@ -1,5 +1,6 @@
 version 11.0
 date: dd/mm/yyyy
+  * added the possibility to hide the stack trace in error responses
   * added a connector to EcoPortal and other catalogs based on OntoPortal
   * introduced SuperUser
     - allowed SuperUser to create project where it is automatically set as Project Manager.

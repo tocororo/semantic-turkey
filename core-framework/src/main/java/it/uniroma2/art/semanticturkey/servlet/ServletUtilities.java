@@ -23,6 +23,7 @@
 
 package it.uniroma2.art.semanticturkey.servlet;
 
+import it.uniroma2.art.semanticturkey.settings.core.ErrorReportingSettings;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -32,6 +33,8 @@ import org.w3c.dom.Document;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.RepliesStatus;
 import it.uniroma2.art.semanticturkey.servlet.ServiceVocabulary.SerializationType;
 import it.uniroma2.art.semanticturkey.utilities.XMLHelp;
+
+import javax.annotation.Nullable;
 
 /**Classe che contiene le utilities per le servlet, oltre ad alcuni metodi di supporto la maggior parte dei metodi
  * dichiarati aggiungono elementi xml al documento che costituiscono le risposte alle servlet invocate da client*/
@@ -67,8 +70,8 @@ public class ServletUtilities {
 		return null;
 	}
 
-	public JSONResponseEXCEPTION createExceptionResponse(String request, Exception ex, String msg) {
-		return (JSONResponseEXCEPTION) createExceptionResponse(request, ex, msg, SerializationType.json);
+	public JSONResponseEXCEPTION createExceptionResponse(String request, Exception ex, String msg, @Nullable ErrorReportingSettings errorReportingSettings) {
+		return (JSONResponseEXCEPTION) createExceptionResponse(request, ex, msg, SerializationType.json, errorReportingSettings);
 	}
 
 	/**
@@ -78,14 +81,14 @@ public class ServletUtilities {
 	 * @return
 	 * @throws JSONException
 	 */
-	public ResponseProblem createExceptionResponse(String request, Exception ex, String msg, SerializationType ser_type) {
+	public ResponseProblem createExceptionResponse(String request, Exception ex, String msg, SerializationType ser_type, @Nullable ErrorReportingSettings errorReportingSettings) {
 		if (ser_type == SerializationType.xml) {
 			Document xml = XMLHelp.createNewDoc();
-			return new XMLResponseEXCEPTION(xml, request, ex, msg);
+			return new XMLResponseEXCEPTION(xml, request, ex, msg, ErrorReportingSettings.shouldReportStackTrace(errorReportingSettings));
 		} else {
 			JSONObject json_content = new JSONObject();
 			try {
-				return new JSONResponseEXCEPTION(json_content, request, ex, msg);
+				return new JSONResponseEXCEPTION(json_content, request, ex, msg, ErrorReportingSettings.shouldReportStackTrace(errorReportingSettings));
 			} catch (JSONException e) {
 				logger.error("Error in Json response creation:" + e.getMessage());
 				e.printStackTrace();
@@ -98,17 +101,18 @@ public class ServletUtilities {
 	 * produces an xml document telling the client that some error has occurred
 	 * 
 	 * @param value
+	 * @param errorReportingSettings
 	 * @return
 	 * @throws JSONException
 	 */
-	public ResponseProblem createErrorResponse(String request, Exception ex, String msg, SerializationType ser_type) {
+	public ResponseProblem createErrorResponse(String request, Exception ex, String msg, SerializationType ser_type, @Nullable ErrorReportingSettings errorReportingSettings) {
 		if (ser_type == SerializationType.xml) {
 			Document xml = XMLHelp.createNewDoc();
 			return new XMLResponseERROR(xml, request, msg);
 		} else {
 			JSONObject json_content = new JSONObject();
 			try {
-				return new JSONResponseERROR(json_content, request, ex, msg);
+				return new JSONResponseERROR(json_content, request, ex, msg, ErrorReportingSettings.shouldReportStackTrace(errorReportingSettings));
 			} catch (JSONException e) {
 				logger.error("Error in Json response creation:" + e.getMessage());
 				e.printStackTrace();
@@ -117,8 +121,8 @@ public class ServletUtilities {
 		return null;
 	}
 
-	public JSONResponseERROR createErrorResponse(String request, Exception ex, String msg) {
-		return (JSONResponseERROR) createErrorResponse(request, ex, msg, SerializationType.json);
+	public JSONResponseERROR createErrorResponse(String request, Exception ex, String msg, @Nullable ErrorReportingSettings errorReportingSettings) {
+		return (JSONResponseERROR) createErrorResponse(request, ex, msg, SerializationType.json, errorReportingSettings);
 	}
 
 	public ResponseProblem createNoSuchHandlerExceptionResponse(String request, SerializationType ser_type) {
