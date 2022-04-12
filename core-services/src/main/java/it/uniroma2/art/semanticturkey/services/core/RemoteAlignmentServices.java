@@ -653,6 +653,11 @@ public class RemoteAlignmentServices extends STServiceAdapter {
         return configurations;
     }
 
+    @STServiceOperation
+    public RemoteAlignmentServiceConfiguration getRemoteAlignmentServiceForm() {
+        return new RemoteAlignmentServiceConfiguration();
+    }
+
     /**
      * Adds a configuration for a remote alignment service. Optionally, the configuration can be set as
      * default (it is automatically set as default if it is the first).
