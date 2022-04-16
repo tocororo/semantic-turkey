@@ -1,12 +1,9 @@
 package it.uniroma2.art.semanticturkey.event.annotation;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-import java.util.List;
-import java.util.stream.Collectors;
-
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import it.uniroma2.art.semanticturkey.event.Event;
+import it.uniroma2.art.semanticturkey.event.annotation.TransactionalEventListener.Phase;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.springframework.aop.framework.AopProxyUtils;
@@ -21,13 +18,15 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.SmartApplicationListener;
 import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.core.InfrastructureProxy;
 import org.springframework.core.Ordered;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-
-import it.uniroma2.art.semanticturkey.event.Event;
-import it.uniroma2.art.semanticturkey.event.annotation.TransactionalEventListener.Phase;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A {@link BeanPostProcessor} that registers {@link EventListener}s bound to bean methods annotated with
@@ -170,10 +169,11 @@ public class EventListenerAnnotationBeanPostProcessor
 
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-		processBeanInternal(bean, beanName, EventListener.class, MethodInvocationEventListener.class);
-		processBeanInternal(bean, beanName, TransactionalEventListener.class,
-				MethodInvocationTransactionalEventListener.class);
-
+		if (!(bean instanceof  InfrastructureProxy)) { // skip proxies representing imported services, which have to be processed in the context of their originating bundles
+			processBeanInternal(bean, beanName, EventListener.class, MethodInvocationEventListener.class);
+			processBeanInternal(bean, beanName, TransactionalEventListener.class,
+					MethodInvocationTransactionalEventListener.class);
+		}
 		return bean;
 
 	}

@@ -1,5 +1,7 @@
 version 11.0
 date: dd/mm/yyyy
+  * resolved a bug concerning repeated delivery of the same event to event listeners. Among the other issues, this might
+    cause the generation of multiple resource metadata
   * added the possibility to hide the stack trace in error responses
   * added a connector to EcoPortal and other catalogs based on OntoPortal
   * introduced SuperUser
