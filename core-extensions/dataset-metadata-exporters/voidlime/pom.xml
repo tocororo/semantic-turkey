@@ -15,6 +15,11 @@
 			<artifactId>st-core-framework</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>it.uniroma2.art.semanticturkey</groupId>
+			<artifactId>st-metadata-registry-bindings</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

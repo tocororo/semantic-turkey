@@ -1,9 +1,16 @@
 package it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcat;
 
+import com.google.common.collect.ImmutableMap;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterException;
+import it.uniroma2.art.semanticturkey.extension.settings.Settings;
+import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
+import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryStateException;
+import it.uniroma2.art.semanticturkey.mdr.core.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.resources.Scope;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -20,6 +27,10 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.annotation.Nullable;
+import java.util.Map;
 
 /**
  * A {@link DatasetMetadataExporter} for the <a href="https://www.w3.org/TR/vocab-dcat/">Data Catalog
@@ -300,7 +311,24 @@ public class DCATDatasetMetadataExporter implements DatasetMetadataExporter {
 			tempMetadataRepository.shutDown();
 		}
 	}
-	
+
+	@Override
+	public Map<Scope, Settings> importFromMetadataRegistry(Project project) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
+		STMetadataRegistryBackend metadataRegistryBackend = factory.getMetadataRegistryBackend();
+
+		@Nullable  IRI mdrIRI = metadataRegistryBackend.findDatasetForProject(project);
+
+		DCATDatasetMetadataExporterSettings settings = new DCATDatasetMetadataExporterSettings();
+
+		if (mdrIRI != null) {
+			DatasetMetadata datasetMetadata = metadataRegistryBackend.getDatasetMetadata(mdrIRI);
+
+			datasetMetadata.getTitle().ifPresent(s -> settings.dataset_title = s);
+			datasetMetadata.getDescription().ifPresent(s -> settings.dataset_description = s);
+		}
+		return ImmutableMap.of(Scope.PROJECT, settings);
+	}
+
 	public Literal generateLiteralWithLang(String inputLiteral, ValueFactory valueFactory){
 		Literal literal;
 		

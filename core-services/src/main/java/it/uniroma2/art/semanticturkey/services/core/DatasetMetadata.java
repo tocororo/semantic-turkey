@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -13,6 +14,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.uniroma2.art.semanticturkey.extension.ExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
+import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryStateException;
+import it.uniroma2.art.semanticturkey.mdr.core.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import org.apache.commons.io.IOUtils;
@@ -153,6 +156,18 @@ public class DatasetMetadata extends STServiceAdapter {
 		return exptManager.getSettings(getProject(), null, null, componentID, scope);
 	}
 
+	/**
+	 * Imports the settings for a metadata vocabulary from the metadata registry.
+	 *
+	 * @param componentID
+	 * @return
+	 */
+	@STServiceOperation
+	public Map<Scope, Settings> importMetadataVocabularySettingsFromMetadataRegistry(PluginSpecification exporterSpecification) throws WrongPropertiesException, STPropertyAccessException, InvalidConfigurationException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
+
+		DatasetMetadataExporter exporter = exptManager.instantiateExtension(DatasetMetadataExporter.class, exporterSpecification);
+		return exporter.importFromMetadataRegistry(getProject());
+	}
 	/**
 	 * { @link getMetadataVocabularySettings } and { @link storeMetadataVocabularySettings } allows the
 	 * management of settings at different levels (expecially project).

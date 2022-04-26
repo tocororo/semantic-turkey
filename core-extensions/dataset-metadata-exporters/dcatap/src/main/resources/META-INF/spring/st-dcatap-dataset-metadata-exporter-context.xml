@@ -5,11 +5,17 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd">
 
+	<!-- Imports the STMetadataRegistryBackend -->
+	<osgi:reference id="metadataRegistryBackend"
+					interface="it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend" />
+
 	<!-- Publishes the DCATAPDatasetMetadataExporter extension -->
 
 	<osgi:service auto-export="interfaces">
 		<bean
-			class="it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterFactory" />
+			class="it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterFactory">
+			<constructor-arg index="0" ref="metadataRegistryBackend" />
+		</bean>
 	</osgi:service>
 
 </beans>

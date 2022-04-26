@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap;
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.settings.ProjectSettingsManager;
 import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
+import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
 
 /**
  * Factory for the instantiation of {@link DCATAPDatasetMetadataExporter}.
@@ -12,11 +13,17 @@ import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 public class DCATAPDatasetMetadataExporterFactory
 		implements NonConfigurableExtensionFactory<DCATAPDatasetMetadataExporter>,
 		ProjectSettingsManager<DCATAPDatasetMetadataExporterSettings> {
-	
+
 	public static class MessageKeys {
 		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.dcatap.DCATAPDatasetMetadataExporterFactory";
 		private static final String name = keyBase + ".name";
 		private static final String description = keyBase + ".description";
+	}
+
+	private final STMetadataRegistryBackend metadataRegistryBackend;
+
+	public DCATAPDatasetMetadataExporterFactory(STMetadataRegistryBackend metadataRegistryBackend) {
+		this.metadataRegistryBackend = metadataRegistryBackend;
 	}
 
 	@Override
@@ -32,5 +39,9 @@ public class DCATAPDatasetMetadataExporterFactory
 	@Override
 	public DCATAPDatasetMetadataExporter createInstance() {
 		return new DCATAPDatasetMetadataExporter(this);
+	}
+
+	STMetadataRegistryBackend getMetadataRegistryBackend() {
+		return metadataRegistryBackend;
 	}
 }

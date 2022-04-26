@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime;
 import it.uniroma2.art.semanticturkey.extension.NonConfigurableExtensionFactory;
 import it.uniroma2.art.semanticturkey.extension.settings.ProjectSettingsManager;
 import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
+import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
 
 /**
  * Factory for the instantiation of {@link VOIDLIMEDatasetMetadataExporter}.
@@ -12,11 +13,18 @@ import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 public class VOIDLIMEDatasetMetadataExporterFactory
 		implements NonConfigurableExtensionFactory<VOIDLIMEDatasetMetadataExporter>,
 		ProjectSettingsManager<VOIDLIMEDatasetMetadataExporterSettings> {
-	
+
+
 	public static class MessageKeys {
 		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.voidlime.VOIDLIMEDatasetMetadataExporterFactory";
 		private static final String name = keyBase + ".name";
 		private static final String description = keyBase + ".description";
+	}
+
+	private final STMetadataRegistryBackend metadataRegistryBackend;
+
+	public VOIDLIMEDatasetMetadataExporterFactory(STMetadataRegistryBackend metadataRegistryBackend) {
+		this.metadataRegistryBackend = metadataRegistryBackend;
 	}
 
 	@Override
@@ -32,5 +40,9 @@ public class VOIDLIMEDatasetMetadataExporterFactory
 	@Override
 	public VOIDLIMEDatasetMetadataExporter createInstance() {
 		return new VOIDLIMEDatasetMetadataExporter(this);
+	}
+
+	STMetadataRegistryBackend getMetadataRegistryBackend() {
+		return metadataRegistryBackend;
 	}
 }
