@@ -6,7 +6,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -166,7 +165,7 @@ public class DatasetMetadata extends STServiceAdapter {
 	public Settings importMetadataVocabulariesFromMetadataRegistry(PluginSpecification exporterSpecification, Scope scope) throws WrongPropertiesException, STPropertyAccessException, InvalidConfigurationException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
 
 		DatasetMetadataExporter exporter = exptManager.instantiateExtension(DatasetMetadataExporter.class, exporterSpecification);
-		return exporter.importFromMetadataRegistry(getProject()).get(scope);
+		return exporter.importFromMetadataRegistry(getProject(), scope);
 	}
 	/**
 	 * { @link getMetadataVocabularySettings } and { @link storeMetadataVocabularySettings } allows the

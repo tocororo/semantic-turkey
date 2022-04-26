@@ -1,7 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata;
 
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
-import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryStateException;
 import it.uniroma2.art.semanticturkey.mdr.core.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.resources.Scope;
@@ -26,7 +25,7 @@ public interface DatasetMetadataExporter extends Extension {
 	Model produceDatasetMetadata(Project project, RepositoryConnection conn, IRI dataGraph)
 			throws DatasetMetadataExporterException, STPropertyAccessException;
 
-	default Map<Scope, Settings> importFromMetadataRegistry(Project project) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
-		return Collections.emptyMap();
+	default Settings importFromMetadataRegistry(Project project, Scope scope) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
+		return null;
 	}
 }

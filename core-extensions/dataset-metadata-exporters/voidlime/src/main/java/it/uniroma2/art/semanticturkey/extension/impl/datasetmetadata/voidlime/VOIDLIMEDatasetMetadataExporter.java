@@ -32,7 +32,6 @@ import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Nullable;
 import javax.xml.datatype.DatatypeConfigurationException;
@@ -233,7 +232,9 @@ public class VOIDLIMEDatasetMetadataExporter implements DatasetMetadataExporter 
 	}
 
 	@Override
-	public Map<Scope, Settings> importFromMetadataRegistry(Project project) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
+	public Settings importFromMetadataRegistry(Project project, Scope scope) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
+		if (scope != Scope.PROJECT) return null;
+
 		STMetadataRegistryBackend metadataRegistryBackend = factory.getMetadataRegistryBackend();
 
 		@Nullable IRI mdrIRI = metadataRegistryBackend.findDatasetForProject(project);
@@ -248,7 +249,7 @@ public class VOIDLIMEDatasetMetadataExporter implements DatasetMetadataExporter 
 			datasetMetadata.getUriSpace().ifPresent(s -> settings.dataset_uriSpace = s);
 			datasetMetadata.getSparqlEndpointMetadata().ifPresent(s -> settings.dataset_sparqlEndpoint = s.getEndpoint().stringValue());
 		}
-		return ImmutableMap.of(Scope.PROJECT, settings);
+		return settings;
 	}
 
 

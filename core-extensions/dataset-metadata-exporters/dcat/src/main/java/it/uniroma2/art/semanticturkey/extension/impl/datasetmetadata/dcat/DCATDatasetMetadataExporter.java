@@ -27,7 +27,6 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -313,7 +312,9 @@ public class DCATDatasetMetadataExporter implements DatasetMetadataExporter {
 	}
 
 	@Override
-	public Map<Scope, Settings> importFromMetadataRegistry(Project project) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
+	public Settings importFromMetadataRegistry(Project project, Scope scope) throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
+		if (scope != Scope.PROJECT) return null;
+
 		STMetadataRegistryBackend metadataRegistryBackend = factory.getMetadataRegistryBackend();
 
 		@Nullable  IRI mdrIRI = metadataRegistryBackend.findDatasetForProject(project);
@@ -326,7 +327,7 @@ public class DCATDatasetMetadataExporter implements DatasetMetadataExporter {
 			datasetMetadata.getTitle().ifPresent(s -> settings.dataset_title = s);
 			datasetMetadata.getDescription().ifPresent(s -> settings.dataset_description = s);
 		}
-		return ImmutableMap.of(Scope.PROJECT, settings);
+		return settings;
 	}
 
 	public Literal generateLiteralWithLang(String inputLiteral, ValueFactory valueFactory){
