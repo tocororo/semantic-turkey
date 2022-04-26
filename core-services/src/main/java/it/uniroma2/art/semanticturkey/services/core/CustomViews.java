@@ -43,6 +43,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -158,6 +159,7 @@ public class CustomViews extends STServiceAdapter  {
 
     @Write
     @STServiceOperation(method = RequestMethod.POST)
+    @PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', values)', 'U')")
     public void updateSparqlBasedData(Resource resource, IRI property, Map<CustomViewDataBindings, Value> bindings) {
         CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
 
@@ -192,6 +194,7 @@ public class CustomViews extends STServiceAdapter  {
 
     @Write
     @STServiceOperation(method = RequestMethod.POST)
+    @PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', values)', '{lang: [''' +@auth.langof(#oldValue)+ ''', ''' +@auth.langof(#newValue)+ ''']}', 'U')")
     public void updateSingleValueData(Resource resource, IRI property, Value oldValue, Value newValue, @Optional Map<String, Value> pivots) {
         CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
         CustomView cv = cvMgr.getCustomViewForProperty(property);
@@ -205,6 +208,7 @@ public class CustomViews extends STServiceAdapter  {
 
     @Write
     @STServiceOperation(method = RequestMethod.POST)
+    @PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', values)', '{lang: [''' +@auth.langof(#oldValue)+ ''', ''' +@auth.langof(#newValue)+ ''']}', 'U')")
     public void updateStaticVectorData(Resource resource, IRI property, IRI fieldProperty, Value oldValue, Value newValue) {
         CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
         StaticVectorView cv = (StaticVectorView) cvMgr.getCustomViewForProperty(property);
@@ -214,6 +218,7 @@ public class CustomViews extends STServiceAdapter  {
 
     @Write
     @STServiceOperation(method = RequestMethod.POST)
+    @PreAuthorize("@auth.isAuthorized('rdf(' +@auth.typeof(#resource)+ ', values)', '{lang: [''' +@auth.langof(#oldValue)+ ''', ''' +@auth.langof(#newValue)+ ''']}', 'U')")
     public void updateDynamicVectorData(Resource resource, IRI property, String fieldName, Value oldValue, Value newValue, Map<String, Value> pivots) {
         CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
         DynamicVectorView cv = (DynamicVectorView) cvMgr.getCustomViewForProperty(property);

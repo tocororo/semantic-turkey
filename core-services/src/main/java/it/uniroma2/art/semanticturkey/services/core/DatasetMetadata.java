@@ -163,10 +163,10 @@ public class DatasetMetadata extends STServiceAdapter {
 	 * @return
 	 */
 	@STServiceOperation
-	public Map<Scope, Settings> importMetadataVocabularySettingsFromMetadataRegistry(PluginSpecification exporterSpecification) throws WrongPropertiesException, STPropertyAccessException, InvalidConfigurationException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
+	public Settings importMetadataVocabulariesFromMetadataRegistry(PluginSpecification exporterSpecification, Scope scope) throws WrongPropertiesException, STPropertyAccessException, InvalidConfigurationException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
 
 		DatasetMetadataExporter exporter = exptManager.instantiateExtension(DatasetMetadataExporter.class, exporterSpecification);
-		return exporter.importFromMetadataRegistry(getProject());
+		return exporter.importFromMetadataRegistry(getProject()).get(scope);
 	}
 	/**
 	 * { @link getMetadataVocabularySettings } and { @link storeMetadataVocabularySettings } allows the
