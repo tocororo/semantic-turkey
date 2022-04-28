@@ -48,6 +48,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -337,6 +338,17 @@ public class CustomFormGraph extends CustomForm {
 			}
 		}
 		return entryPoint;
+	}
+
+	public Collection<GraphElement> getGraphSection(CODACore codaCore) throws PRParserException {
+		ProjectionRulesModel prRuleModel = initProjectionRuleModel(codaCore);
+		Map<String, ProjectionRule> prRuleMap = prRuleModel.getProjRule();
+		Iterator<ProjectionRule> prRulesIt = prRuleMap.values().iterator();
+		if (prRulesIt.hasNext()) {
+			ProjectionRule projRule = prRulesIt.next();
+			return projRule.getInsertGraphList();
+		}
+		return Collections.emptyList();
 	}
 
 	/**

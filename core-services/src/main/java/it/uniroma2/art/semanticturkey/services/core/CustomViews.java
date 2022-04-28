@@ -5,6 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.coda.core.CODACore;
+import it.uniroma2.art.coda.exception.parserexception.PRParserException;
+import it.uniroma2.art.coda.pearl.model.GraphElement;
+import it.uniroma2.art.coda.pearl.model.GraphStruct;
+import it.uniroma2.art.coda.pearl.model.OptionalGraphStruct;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemBNode;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemPlaceholder;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemUri;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElemVar;
+import it.uniroma2.art.coda.pearl.model.graph.GraphSingleElement;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.config.customview.AbstractSparqlBasedCustomView;
 import it.uniroma2.art.semanticturkey.config.customview.AdvSingleValueView;
@@ -19,6 +29,8 @@ import it.uniroma2.art.semanticturkey.config.customview.RouteView;
 import it.uniroma2.art.semanticturkey.config.customview.SeriesCollectionView;
 import it.uniroma2.art.semanticturkey.config.customview.SeriesView;
 import it.uniroma2.art.semanticturkey.config.customview.StaticVectorView;
+import it.uniroma2.art.semanticturkey.customform.CustomForm;
+import it.uniroma2.art.semanticturkey.customform.CustomFormGraph;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewData;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewModelEnum;
 import it.uniroma2.art.semanticturkey.customviews.CustomViewsManager;
@@ -37,20 +49,28 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.SimpleDataset;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @STService
-public class CustomViews extends STServiceAdapter  {
+public class CustomViews extends STServiceAdapter {
 
     //TODO authorizations for all the services
 
@@ -107,6 +127,286 @@ public class CustomViews extends STServiceAdapter  {
         return projCvMgr.getCustomViewManager(getProject()).getCustomView(reference);
     }
 
+    /**
+     * Suggests a sparql select for a dynamic-vector CV starting from the graph section of the provided CF
+     * @param cfId ID of a CustomForm with type graph
+     * @return
+     * @throws PRParserException
+     */
+    @STServiceOperation
+    @Read
+    public String suggestDynamicVectorCVFromCustomForm(String cfId) throws PRParserException {
+        CustomForm cForm = cfManager.getCustomForm(getProject(), cfId);
+        if (cForm != null && cForm.isTypeGraph()) {
+            CustomFormGraph cFormGraph = (CustomFormGraph) cForm;
+
+            RepositoryConnection repoConn = getManagedConnection();
+            CODACore codaCore = getInitializedCodaCore(repoConn);
+
+            Collection<GraphElement> pearlGraphSection = cFormGraph.getGraphSection(codaCore);
+            Set<String> objectPlaceholders = new LinkedHashSet<>();
+            collectObjectPHsInGraphElements(pearlGraphSection, objectPlaceholders);
+
+            Map<String, String> phReplacementMap = new HashMap<>();
+            String entryPointPh = cFormGraph.getEntryPointPlaceholder(codaCore);
+            phReplacementMap.put(entryPointPh, "?pivot");
+            for (String ph : objectPlaceholders) {
+                phReplacementMap.put(ph, ph.replace("$", "?") + "_value");
+            }
+
+            Map<String, String> prefixNsMapping = new HashMap<>();
+            Iterations.stream(repoConn.getNamespaces()).forEach(ns -> prefixNsMapping.put(ns.getPrefix(), ns.getName()));
+
+            Set<String> requiredPrefix = new HashSet<>(); //collects the prefixes used in the query in order to be declared later
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("SELECT * WHERE { \n");
+            sb.append("\t$resource $trigprop ?pivot . \n");
+            computeAndAppendGraphSectionQuery(pearlGraphSection, sb, phReplacementMap, prefixNsMapping, requiredPrefix, 1);
+            sb.append("}");
+
+            //prepend the prefix declaration
+            String query = "";
+            for (String pref: requiredPrefix) {
+                query += "PREFIX " + pref + ":\t<" + prefixNsMapping.get(pref) + ">\n";
+            }
+            if (!requiredPrefix.isEmpty()) {
+                query += "\n";
+            }
+            query += sb;
+            return query;
+        } else {
+            throw new IllegalArgumentException(
+                    "CustomForm with id " + cfId + " not found or not a valid CustomForm of type graph");
+        }
+    }
+
+    /**
+     * Suggests a sparql select for an adv-single-value CV starting from the graph section of the provided CF
+     * @param cfId ID of a CustomForm with type graph
+     * @param chosenPh specifies the placeholder that represents the value to be shown in the view
+     *                 (required when the CF has multiple placeholders as object in graph section. In such case,
+     *                 if this parameter is not provided, an IllegalStateException is thrown)
+     * @return
+     * @throws PRParserException
+     */
+    @STServiceOperation
+    @Read
+    public String suggestAdvSingleValueCVFromCustomForm(String cfId, @Optional String chosenPh) throws PRParserException {
+        CustomForm cForm = cfManager.getCustomForm(getProject(), cfId);
+        if (cForm != null && cForm.isTypeGraph()) {
+            CustomFormGraph cFormGraph = (CustomFormGraph) cForm;
+
+            RepositoryConnection repoConn = getManagedConnection();
+            CODACore codaCore = getInitializedCodaCore(repoConn);
+
+            Collection<GraphElement> pearlGraphSection = cFormGraph.getGraphSection(codaCore);
+            Set<String> objectPlaceholders = new LinkedHashSet<>();
+            collectObjectPHsInGraphElements(pearlGraphSection, objectPlaceholders);
+
+            String targetObj = null;
+
+            if (objectPlaceholders.size() == 1) {
+                targetObj = objectPlaceholders.iterator().next();
+            } else if (objectPlaceholders.size() > 1) {
+                if (chosenPh != null) {
+                    if (objectPlaceholders.contains(chosenPh)) {
+                        targetObj = chosenPh;
+                    } else {
+                        throw new IllegalArgumentException("The provided placeholder " + chosenPh + " never appears as object in the CustomForm pearl.");
+                    }
+                } else {
+                    throw new IllegalStateException("Multiple placeholders as object in graph section of CustomForm " + cfId + ". Expected parameter chosenPh not provided.");
+                }
+            }
+
+            Map<String, String> phReplacementMap = new HashMap<>();
+            String entryPointPh = cFormGraph.getEntryPointPlaceholder(codaCore);
+            phReplacementMap.put(entryPointPh, "?pivot");
+            phReplacementMap.put(targetObj, "$value");
+
+            Map<String, String> prefixNsMapping = new HashMap<>();
+            Iterations.stream(repoConn.getNamespaces()).forEach(ns -> prefixNsMapping.put(ns.getPrefix(), ns.getName()));
+
+            Set<String> requiredPrefix = new HashSet<>(); //collects the prefixes used in the query in order to be declared later
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("SELECT * WHERE { \n");
+            sb.append("\t$resource $trigprop ?pivot . \n");
+            List<GraphElement> pathToTargetObj = new ArrayList<>();
+            computePathToObject(pearlGraphSection, entryPointPh, targetObj, pathToTargetObj);
+            computeAndAppendGraphSectionQuery(pathToTargetObj, sb, phReplacementMap, prefixNsMapping, requiredPrefix, 1);
+            sb.append("}");
+
+            //prepend the prefix declaration
+            String query = "";
+            for (String pref: requiredPrefix) {
+                query += "PREFIX " + pref + ":\t<" + prefixNsMapping.get(pref) + ">\n";
+            }
+            if (!requiredPrefix.isEmpty()) {
+                query += "\n";
+            }
+            query += sb;
+            return query;
+        } else {
+            throw new IllegalArgumentException(
+                    "CustomForm with id " + cfId + " not found or not a valid CustomForm of type graph");
+        }
+    }
+
+    /**
+     * Returns the list of placeholders that appear as objects of triples in the graph section of the provided CF.
+     * This API can be invoked before {@link #suggestAdvSingleValueCVFromCustomForm(String, String)} in order
+     * to check if the optional param <code>chosenPh</code> needs to be provided
+     * @param cfId
+     * @return
+     * @throws PRParserException
+     */
+    @STServiceOperation
+    @Read
+    public Set<String> getValueCandidates(String cfId) throws PRParserException {
+        CustomForm cForm = cfManager.getCustomForm(getProject(), cfId);
+        if (cForm != null && cForm.isTypeGraph()) {
+            CustomFormGraph cFormGraph = (CustomFormGraph) cForm;
+            CODACore codaCore = getInitializedCodaCore(getManagedConnection());
+            Set<String> objectPlaceholders = new LinkedHashSet<>();
+            collectObjectPHsInGraphElements(cFormGraph.getGraphSection(codaCore), objectPlaceholders);
+            return objectPlaceholders;
+        } else {
+            throw new IllegalArgumentException(
+                    "CustomForm with id " + cfId + " not found or not a valid CustomForm of type graph");
+        }
+    }
+
+    /**
+     * Returns all the placeholders that appears as object in the graph pearl section
+     * @param graphElements
+     * @param objectPlaceholders
+     */
+    private void collectObjectPHsInGraphElements(Collection<GraphElement> graphElements, Set<String> objectPlaceholders) {
+        for (GraphElement graphElem : graphElements) {
+            if (!graphElem.isOptionalGraphStruct()) {
+                GraphStruct gs = graphElem.asGraphStruct();
+                GraphSingleElement gsObj = gs.getObject();
+                if (gsObj instanceof GraphSingleElemPlaceholder || gsObj instanceof GraphSingleElemVar) {
+                    objectPlaceholders.add(gsObj.getValueAsString());
+                }
+            } else { // Optional
+                OptionalGraphStruct optGS = graphElem.asOptionalGraphStruct();
+                collectObjectPHsInGraphElements(optGS.getOptionalTriples(), objectPlaceholders);
+            }
+        }
+    }
+
+    /**
+     * Given a graph section (list of graph elements), converts it to a SPARQL query.
+     * The conversion replaces PEARL placeholder/variables with SPARQL variables according the provided replacement map.
+     * @param graphElements
+     * @param sb
+     * @param phReplacementMap
+     * @param prefixMapping
+     * @param requiredPrefix set of prefixes used in the sparql query
+     * @param indent
+     */
+    private void computeAndAppendGraphSectionQuery(Collection<GraphElement> graphElements, StringBuilder sb,
+            Map<String, String> phReplacementMap, Map<String, String> prefixMapping, Set<String> requiredPrefix, int indent) {
+        for (GraphElement graphElem : graphElements) {
+            if (!graphElem.isOptionalGraphStruct()) {
+                GraphStruct gs = graphElem.asGraphStruct();
+                String subj = getSingleValueAsString(gs.getSubject(), prefixMapping, requiredPrefix);
+                String pred = getSingleValueAsString(gs.getPredicate(), prefixMapping, requiredPrefix);
+                String obj = getSingleValueAsString(gs.getObject(), prefixMapping, requiredPrefix);
+
+                for (Map.Entry<String, String> phReplacement : phReplacementMap.entrySet()) {
+                    subj = subj.replace(phReplacement.getKey(), phReplacement.getValue());
+                    pred = pred.replace(phReplacement.getKey(), phReplacement.getValue());
+                    obj = obj.replace(phReplacement.getKey(), phReplacement.getValue());
+                }
+                //rewrite the placeholders ($foo) as variable (?foo) (skip those PHs written as $foo on purpose in the replacement map, like $value)
+                if (subj.startsWith("$") && !phReplacementMap.containsValue(subj)) {
+                    subj = subj.replace("$", "?");
+                }
+                if (pred.startsWith("$") && !phReplacementMap.containsValue(pred)) {
+                    pred = pred.replace("$", "?");
+                }
+                if (obj.startsWith("$") && !phReplacementMap.containsValue(obj)) {
+                    obj = obj.replace("$", "?");
+                }
+
+                appendIndentation(sb, indent);
+                sb.append(subj + " " + pred + " " + obj + " .\n");
+            } else { // Optional
+                OptionalGraphStruct optGS = graphElem.asOptionalGraphStruct();
+
+                appendIndentation(sb, indent);
+                sb.append("OPTIONAL {\n");
+                indent += 1;
+                computeAndAppendGraphSectionQuery(optGS.getOptionalTriples(), sb, phReplacementMap, prefixMapping, requiredPrefix, indent);
+                indent -= 1;
+                appendIndentation(sb, indent);
+                sb.append("}\n");
+            }
+        }
+    }
+
+    /**
+     * Compute a path of triples (graph elements) that goes from the provided entry point to the target object
+     * @param graphElements
+     * @param entryPoint
+     * @param targetObject
+     * @param path the path that is populated
+     */
+    private void computePathToObject(Collection<GraphElement> graphElements, String entryPoint, String targetObject, List<GraphElement> path) {
+        for (GraphElement graphElem : graphElements) {
+            if (!graphElem.isOptionalGraphStruct()) {
+                GraphStruct gs = graphElem.asGraphStruct();
+                //no need to check the class of object, if equals returns true, it means that the object was a var (?foo) or ph ($bar)
+                if (gs.getObject().getValueAsString().equals(targetObject)) {
+                    //target object found
+                    path.add(0, graphElem);
+                    if (!gs.getSubject().getValueAsString().equals(entryPoint)) {
+                        computePathToObject(graphElements, entryPoint, gs.getSubject().getValueAsString(), path);
+                    }
+                }
+            } else { // Optional
+                OptionalGraphStruct optGS = graphElem.asOptionalGraphStruct();
+                computePathToObject(optGS.getOptionalTriples(), entryPoint, targetObject, path);
+            }
+        }
+    }
+
+    /**
+     * Returns a string representation of a GraphSingleElement. In case the element is an IRI, tries to collapse it as qname.
+     * @param elem
+     * @param prefixMapping
+     * @param requiredPrefix
+     * @return
+     */
+    private String getSingleValueAsString(GraphSingleElement elem, Map<String, String> prefixMapping, Set<String> requiredPrefix) {
+        if (elem instanceof GraphSingleElemBNode) {
+            return "?bnodeVar_" + ((GraphSingleElemBNode) elem).getBnodeIdentifier();
+        } else if (elem instanceof GraphSingleElemUri) {
+            GraphSingleElemUri elemUri = (GraphSingleElemUri)elem;
+            //check if URI can be "qNamed"
+            for (Map.Entry<String, String> prefNs : prefixMapping.entrySet()) {
+                if (elemUri.getURI().startsWith(prefNs.getValue())) {
+                    requiredPrefix.add(prefNs.getKey()); //add the prefix to the required list, so that it will be declared in query
+                    return elemUri.getURI().replace(prefNs.getValue(), prefNs.getKey() + ":");
+                }
+            }
+            return elem.getValueAsString();
+        } else {
+            return elem.getValueAsString();
+        }
+    }
+
+    private void appendIndentation(StringBuilder sb, int indent) {
+        for (int i = 0; i < indent; i++) {
+            sb.append("\t");
+        }
+    }
+
+
     /* ==== ASSOCIATIONS ==== */
 
     @STServiceOperation()
@@ -118,7 +418,6 @@ public class CustomViews extends STServiceAdapter  {
         Map<String, CustomViewAssociation> associationsMap = wm.listRefAssociationsMap();
         for (String ref : associationsMap.keySet()) {
             CustomViewAssociation association = associationsMap.get(ref);
-            IRI property = association.property;
             String widgetRef = association.customViewRef;
             if (wm.customViewExists(widgetRef)) {
                 ObjectNode associationNode = jsonFactory.objectNode();
@@ -149,8 +448,6 @@ public class CustomViews extends STServiceAdapter  {
     @Read
     @STServiceOperation
     public CustomViewData getViewData(Resource resource, IRI property) {
-        ObjectMapper objectMapper = new ObjectMapper();
-
         CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
         CustomView customView = cvMgr.getCustomViewForProperty(property);
         //no need to check if customView is not null since this API should be invoked from the client only in such case
@@ -167,7 +464,7 @@ public class CustomViews extends STServiceAdapter  {
         //(e.g. maps/charts views), so I avoid checks for null CV and cast to AbstractSparqlBasedCustomView
         AbstractSparqlBasedCustomView customView = (AbstractSparqlBasedCustomView) cvMgr.getCustomViewForProperty(property);
         //check if values for the required bindings are provided
-        for (CustomViewDataBindings b: customView.getUpdateMandatoryBindings()) {
+        for (CustomViewDataBindings b : customView.getUpdateMandatoryBindings()) {
             if (!bindings.containsKey(b)) {
                 throw new IllegalArgumentException("Missing value for required binding " + b.toString());
             }
@@ -179,7 +476,7 @@ public class CustomViews extends STServiceAdapter  {
         //bind placeholders and provided variables
         update.setBinding("resource", resource);
         update.setBinding("trigprop", property);
-        for (Map.Entry<CustomViewDataBindings, Value> binding: bindings.entrySet()) {
+        for (Map.Entry<CustomViewDataBindings, Value> binding : bindings.entrySet()) {
             update.setBinding(binding.getKey().toString(), binding.getValue());
         }
 
@@ -200,9 +497,9 @@ public class CustomViews extends STServiceAdapter  {
         CustomView cv = cvMgr.getCustomViewForProperty(property);
 
         if (cv instanceof AdvSingleValueView) {
-            ((AdvSingleValueView)cv).updateData(getManagedConnection(), resource, property, oldValue, newValue, pivots, (IRI) getWorkingGraph());
+            ((AdvSingleValueView) cv).updateData(getManagedConnection(), resource, property, oldValue, newValue, pivots, (IRI) getWorkingGraph());
         } else if (cv instanceof PropertyChainView) {
-            ((PropertyChainView)cv).updateData(getManagedConnection(), resource, property, oldValue, newValue, (IRI) getWorkingGraph());
+            ((PropertyChainView) cv).updateData(getManagedConnection(), resource, property, oldValue, newValue, (IRI) getWorkingGraph());
         }
     }
 
