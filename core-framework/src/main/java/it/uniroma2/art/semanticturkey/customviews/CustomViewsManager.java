@@ -102,6 +102,9 @@ public class CustomViewsManager {
 
     public void storeCustomViewFromFile(Reference reference, File srcFile) throws IOException, STPropertyAccessException {
         File cvFile = getCustomViewFile(reference.getIdentifier());
+        if (!cvFile.getParentFile().exists()) { // if path doesn't exist, first create it
+            cvFile.getParentFile().mkdirs();
+        }
         Utilities.copy(srcFile, cvFile);
         CustomView customView = customViewsStore.getConfiguration(reference);
         customViews.put(reference.getRelativeReference(), customView);
