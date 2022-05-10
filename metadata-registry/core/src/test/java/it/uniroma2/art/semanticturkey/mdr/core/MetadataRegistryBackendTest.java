@@ -7,18 +7,24 @@ import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 
+import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.DCAT3FRAGMENT;
+import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.STMETADATAREGISTRY;
 import org.apache.commons.io.FileUtils;
 import org.apache.sling.testing.mock.osgi.junit.OsgiContext;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -83,10 +89,109 @@ public class MetadataRegistryBackendTest {
 	}
 
 	@Test
+	public void testCreateAbstractDataset() throws MetadataRegistryWritingException {
+		metadataRegistryBackend.createAbstractDataset(
+				"AGROVOC",
+				"http://aims.fao.org/aos/agrovoc#",
+				Values.literal("AGROVOC multilingual thesaurus", "en"),
+				Values.literal("The AGROVOC thesaurus contains more than 38 000 concepts in 39 languages covering topics related to food, nutrition, agriculture, fisheries, forestry, environment and other related domains", "en")
+			);
+		try (RepositoryConnection con = metadataRegistryBackend.getConnection()) {
+			con.export(Rio.createWriter(RDFFormat.TURTLE, System.out));
+		}
+
+	}
+
+	@Test
+	public void testCreateDataset() throws MetadataRegistryWritingException {
+		Distribution distribution = new Distribution(
+				null,
+				METADATAREGISTRY.SPARQL_ENDPOINT,
+				Values.iri("https://agrovoc.fao.org/sparql"),
+				null);
+
+		metadataRegistryBackend.createConcreteDataset(
+				"AGROVOC",
+				"http://aims.fao.org/aos/agrovoc#",
+				Values.literal("AGROVOC multilingual thesaurus", "en"),
+				Values.literal("The AGROVOC thesaurus contains more than 38 000 concepts in 39 languages covering topics related to food, nutrition, agriculture, fisheries, forestry, environment and other related domains", "en"),
+				true,
+				distribution,
+				null
+		);
+		try (RepositoryConnection con = metadataRegistryBackend.getConnection()) {
+			con.export(Rio.createWriter(RDFFormat.TURTLE, System.out));
+		}
+
+	}
+
+	@Test
+	public void testCreateDatasetsForAGROVOC() throws MetadataRegistryWritingException {
+		// AGROVOC Abstract DatasetSpecification
+		IRI agrovocAbstractDataset = metadataRegistryBackend.createAbstractDataset(
+				"AGROVOC",
+				"http://aims.fao.org/aos/agrovoc#",
+				Values.literal("AGROVOC multilingual thesaurus", "en"),
+				Values.literal("The AGROVOC thesaurus contains more than 38 000 concepts in 39 languages covering topics related to food, nutrition, agriculture, fisheries, forestry, environment and other related domains", "en")
+		);
+
+		// AGROVOC Online SPARQL Endpoint
+		{
+			Distribution distribution = new Distribution(
+					null,
+					METADATAREGISTRY.SPARQL_ENDPOINT,
+					Values.iri("https://agrovoc.fao.org/sparql"),
+					null);
+			metadataRegistryBackend.createConcreteDataset(
+					"AGROVOC_LOD",
+					"http://aims.fao.org/aos/agrovoc#",
+					Values.literal("AGROVOC multilingual thesaurus", "en"),
+					Values.literal("The AGROVOC thesaurus contains more than 38 000 concepts in 39 languages covering topics related to food, nutrition, agriculture, fisheries, forestry, environment and other related domains", "en"),
+					true,
+					distribution,
+					new AbstractDatasetAttachment(agrovocAbstractDataset, METADATAREGISTRY.LOD, null, null)
+			);
+		}
+
+		// AGROVOC master development project
+		{
+			Distribution distribution = new Distribution(
+					null,
+					STMETADATAREGISTRY.PROJECT,
+					null,
+					"AGROVOC_core");
+			metadataRegistryBackend.createConcreteDataset(
+					"AGROVOC_PROJECT",
+					"http://aims.fao.org/aos/agrovoc#",
+					Values.literal("AGROVOC multilingual thesaurus", "en"),
+					Values.literal("The AGROVOC thesaurus contains more than 38 000 concepts in 39 languages covering topics related to food, nutrition, agriculture, fisheries, forestry, environment and other related domains", "en"),
+					true,
+					distribution,
+					new AbstractDatasetAttachment(agrovocAbstractDataset, METADATAREGISTRY.MASTER, null, null)
+			);
+		}
+
+		try (RepositoryConnection con = metadataRegistryBackend.getConnection()) {
+			con.export(Rio.createWriter(RDFFormat.TURTLE, System.out).set(BasicWriterSettings.PRETTY_PRINT, true).set(BasicWriterSettings.INLINE_BLANK_NODES, true).set(BasicWriterSettings.BASE_DIRECTIVE, true));
+		}
+
+		Collection<CatalogRecord2> rootDatasets = metadataRegistryBackend.listRootDatasets();
+		System.out.println("Root datasets");
+		System.out.println(rootDatasets);
+
+		System.out.println("Connected datasets");
+		Collection<CatalogRecord2> connectedDatasets = metadataRegistryBackend.listConnectedDatasets(rootDatasets.iterator().next().getDataset().getIdentity());
+		System.out.println(connectedDatasets);
+
+	}
+
+
+	@Ignore
+	@Test
 	public void test() throws IllegalArgumentException, MetadataRegistryWritingException, IOException,
 			NoSuchDatasetMetadataException, MetadataRegistryStateException {
 
-		// Adds the Agrovoc Dataset
+		// Adds the Agrovoc DatasetSpecification
 
 		IRI agrovocCatalogRecordIRI = metadataRegistryBackend.addDataset(
 				vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"),
@@ -334,10 +439,10 @@ public class MetadataRegistryBackendTest {
 		ValueFactory vf = SimpleValueFactory.getInstance();
 		IRI agrovocDataset = vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc");
 		metadataRegistryBackend.addDataset(agrovocDataset, "http://aims.fao.org/aos/agrovoc/",
-				"Agrovoc Dataset", true, vf.createIRI("http://agrovoc.fao.org/sparql"));
+				"Agrovoc DatasetSpecification", true, vf.createIRI("http://agrovoc.fao.org/sparql"));
 
 		IRI eurovocDataset = vf.createIRI("http://eurovoc.europa.eu/void.ttl#EuroVoc");
-		metadataRegistryBackend.addDataset(eurovocDataset, "http://eurovoc.europa.eu/", "EuroVoc Dataset",
+		metadataRegistryBackend.addDataset(eurovocDataset, "http://eurovoc.europa.eu/", "EuroVoc DatasetSpecification",
 				true, null);
 
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {

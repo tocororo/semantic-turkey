@@ -14,6 +14,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -37,6 +39,15 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.xml.stream.FactoryConfigurationError;
 
+import it.uniroma2.art.semanticturkey.mdr.core.AbstractDatasetSpecification;
+import it.uniroma2.art.semanticturkey.mdr.core.AbstractDatasetAttachment;
+import it.uniroma2.art.semanticturkey.mdr.core.CatalogRecord2;
+import it.uniroma2.art.semanticturkey.mdr.core.ConcreteDatasetSpecification;
+import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata2;
+import it.uniroma2.art.semanticturkey.mdr.core.DatasetSpecification;
+import it.uniroma2.art.semanticturkey.mdr.core.Distribution;
+import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.DCAT3FRAGMENT;
+import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.STMETADATAREGISTRY;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.IsolationLevels;
@@ -51,6 +62,7 @@ import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.eclipse.rdf4j.model.vocabulary.DCAT;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
@@ -58,7 +70,6 @@ import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.VOID;
-import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
@@ -81,7 +92,6 @@ import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterFactory;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
-import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
@@ -122,6 +132,7 @@ import it.uniroma2.art.semanticturkey.utilities.RDF4JUtilities;
  */
 public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
+	private static final IRI ADMS_VERSION_NOTES = Values.iri("http://www.w3.org/ns/adms#versionNotes");
 	private static final Logger logger = LoggerFactory.getLogger(MetadataRegistryBackendImpl.class);
 
 	private static final String METADATA_REGISTRY_DIRECTORY = "metadataRegistry";
@@ -182,7 +193,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 	/**
 	 * Initializes the RDF4J {@link Repository} used to managed the RDF content of the metadata registry.
-	 * 
+	 *
 	 * @throws RepositoryException
 	 * @throws MetadataRegistryIntializationException
 	 */
@@ -197,6 +208,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			conn.setNamespace(FOAF.NS.getPrefix(), FOAF.NS.getName());
 			conn.setNamespace(OWL.NS.getPrefix(), OWL.NS.getName());
 			conn.setNamespace(METADATAREGISTRY.NS.getPrefix(), METADATAREGISTRY.NS.getName());
+			conn.setNamespace(STMETADATAREGISTRY.NS.getPrefix(), STMETADATAREGISTRY.NS.getName());
 			conn.setNamespace("", DEFAULTNS);
 
 			if (catalogFile.exists()) {
@@ -205,6 +217,11 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				} catch (RDFParseException | RepositoryException | IOException e) {
 					throw new MetadataRegistryIntializationException(e);
 				}
+			}
+
+			if (!conn.hasStatement(null, RDF.TYPE, DCAT.CATALOG, false)) {
+				IRI catalog = conn.getValueFactory().createIRI(conn.getNamespace("") + "catalog");
+				conn.add(catalog, RDF.TYPE, DCAT.CATALOG);
 			}
 		}
 	}
@@ -268,7 +285,311 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		return conn;
 	}
 
-	/*
+	@Override
+	public IRI createAbstractDataset(String datasetLocalName, String uriSpace, Literal title, Literal description) throws MetadataRegistryWritingException {
+		AbstractDatasetSpecification abstractDatasetSpecification = new AbstractDatasetSpecification(null, uriSpace, title, description);
+		return createDataset(datasetLocalName, abstractDatasetSpecification, null);
+	}
+
+	@Override
+	public IRI createConcreteDataset(String datasetLocalName, String uriSpace, Literal title, Literal description, Boolean dereferenceable, Distribution distribution, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
+		ConcreteDatasetSpecification concreteDatasetSpecification = new ConcreteDatasetSpecification(null, uriSpace, title, description, dereferenceable, distribution);
+		return createDataset(datasetLocalName, concreteDatasetSpecification, abstractDatasetAttachment);
+	}
+
+	protected IRI createDataset(String datasetLocalName, DatasetSpecification dataset, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
+		IRI datasetIRI;
+
+		try (RepositoryConnection conn = getConnection()) {
+			ValueFactory vf = conn.getValueFactory();
+			if (datasetLocalName == null) {
+				datasetLocalName = UUID.randomUUID().toString();
+			}
+
+			String recordLocalName = "record_" + datasetLocalName;
+			String distributionLocalName = "distribution_" + datasetLocalName;
+
+			datasetIRI = vf.createIRI(conn.getNamespace(""), datasetLocalName);
+			IRI recordIRI = vf.createIRI(conn.getNamespace(""), recordLocalName);
+			IRI distributionIRI = vf.createIRI(conn.getNamespace(""), distributionLocalName);
+
+			dataset.setIdentity(datasetIRI);
+
+			if (dataset.getDistribution() != null) {
+				dataset.getDistribution().setIdentity(distributionIRI);
+			}
+
+			Update update = conn.prepareUpdate("PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" +
+					"PREFIX dct: <http://purl.org/dc/terms/>\n" +
+					"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
+					"PREFIX void: <http://rdfs.org/ns/void#>\n" +
+					"\n" +
+					"INSERT {\n" +
+					"    ?catalog\n" +
+					"        dcat:record ?record ;\n" +
+					"        dcat:dataset ?dataset\n" +
+					"        .\n" +
+					"        \n" +
+					"    ?record a dcat:CatalogRecord ;\n" +
+					"        dct:issued ?now ;\n" +
+					"        foaf:primaryTopic ?dataset \n" +
+					"        .\n" +
+					"\n" +
+					"}\n" +
+					"WHERE {\n" +
+					"    BIND(NOW() as ?now)\n" +
+					"    ?catalog a dcat:Catalog .\n" +
+					"}");
+			update.setBinding("dataset", datasetIRI);
+			update.setBinding("record", recordIRI);
+			update.execute();
+
+			Model model = new LinkedHashModel();
+			dataset.export(model, vf);
+			if (abstractDatasetAttachment != null) {
+				abstractDatasetAttachment.export(model, vf, dataset.getIdentity());
+			}
+			conn.add(model);
+
+		}
+
+		saveToFile();
+
+		return datasetIRI;
+	}
+
+	@Override
+	public Collection<CatalogRecord2> listRootDatasets() {
+		try(RepositoryConnection con = getConnection()) {
+			TupleQuery query = con.prepareTupleQuery("PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" +
+					"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
+					"PREFIX mdr: <http://semanticturkey.uniroma2.it/ns/mdr#>\n" +
+					"PREFIX void: <http://rdfs.org/ns/void#>\n" +
+					"\n" +
+					"SELECT *\n" +
+					"WHERE " +
+					"{\n" +
+					"    ?dataset ^foaf:primaryTopic ?record .\n" +
+					"    FILTER EXISTS {\n" +
+					"        [] dcat:record ?record .\n" +
+					"    " +
+					"}\n" +
+					"    FILTER NOT EXISTS {\n" +
+					"        [] mdr:master|mdr:lod|dcat:hasVersion ?dataset .\n" +
+					"    " +
+					"}\n" +
+					"    {\n" +
+					"    " +
+					"   ?record ?record_p ?record_o .   \n" +
+					"    } UNION " +
+					"{\n" +
+					"        ?dataset ?dataset_p ?dataset_o \n" +
+					"    " +
+					"} UNION {\n" +
+					"        ?dataset (mdr:master|mdr:lod|dcat:hasVersion) / void:uriSpace ?otherURISpace\n" +
+					"    " +
+					"} UNION {\n" +
+					"         ?dataset dcat:distribution/rdf:type ?distributionType\n" +
+					"    }\n" +
+					"}\n" +
+					"ORDER BY asc(?dataset) asc(?record)\n");
+			try (TupleQueryResult result = query.evaluate()) {
+				return parseCatalogRecords(result);
+			}
+		}
+	}
+
+	@Override
+	public Collection<CatalogRecord2> listConnectedDatasets(IRI abstractDataset) {
+		try(RepositoryConnection con = getConnection()) {
+			TupleQuery query = con.prepareTupleQuery("PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" +
+					"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
+					"PREFIX mdr: <http://semanticturkey.uniroma2.it/ns/mdr#>\n" +
+					"PREFIX void: <http://rdfs.org/ns/void#>\n" +
+					"\n" +
+					"SELECT *\n" +
+					"WHERE " +
+					"{\n" +
+					"    ?dataset ^foaf:primaryTopic ?record .\n" +
+					"    FILTER EXISTS {\n" +
+					"        [] dcat:record ?record .\n" +
+					"    " +
+					"}\n" +
+					"    VALUES(?datasetRelProp) {\n" +
+					"        (mdr:master)(mdr:lod)(mdr:hasVersion)\n" +
+					"    " +
+					"}\n" +
+					"    ?abstractDataset ?datasetRelProp ?dataset .\n" +
+					"    {\n" +
+					"       ?record ?record_p ?record_o ." +
+					"   \n" +
+					"    " +
+					"} UNION" +
+					" {\n" +
+					"        ?dataset ?dataset_p ?dataset_o \n" +
+					"    " +
+					"} UNION {\n" +
+					"        ?dataset (mdr:master|mdr:lod|dcat:hasVersion) / void:uriSpace ?otherURISpace\n" +
+					"    " +
+					"} UNION {\n" +
+					"         ?dataset dcat:distribution/rdf:type ?distributionType\n" +
+					"    }\n" +
+					"}\n" +
+					"ORDER BY asc(?dataset) asc(?record)\n");
+			query.setBinding("abstractDataset", abstractDataset);
+			try (TupleQueryResult result = query.evaluate()) {
+				return parseCatalogRecords(result);
+			}
+		}
+	}
+
+	private Collection<CatalogRecord2> parseCatalogRecords(TupleQueryResult result) {
+		List<CatalogRecord2> catalogRecordList = new ArrayList<>();
+		IRI dataset = null;
+		List<BindingSet> bindingSetList = new ArrayList<>();
+		boolean done = false;
+		while (!done) {
+			IRI currentDataset = null;
+
+			BindingSet bs = null;
+
+			if (result.hasNext()) {
+				bs = result.next();
+				currentDataset = (IRI) bs.getValue("dataset");
+			} else {
+				done = true;
+			}
+
+			if (currentDataset != dataset) {
+				if (dataset != null) {
+					catalogRecordList.addAll(parseCatalogRecords(bindingSetList, dataset));
+					bindingSetList.clear();
+				}
+				dataset = currentDataset;
+			}
+
+			if (bs != null) {
+				bindingSetList.add(bs);
+			}
+		}
+		return catalogRecordList;
+	}
+
+	private Collection<CatalogRecord2> parseCatalogRecords(List<BindingSet> bindingSetList, IRI datasetIRI) {
+		String uriSpace = null;
+		Set<String> otherURISpaces = new TreeSet<>();
+		List<Literal> titles = new ArrayList<>();
+		List<Literal> descriptions = new ArrayList<>();
+		DatasetMetadata2.DatasetRole datasetRole = DatasetMetadata2.DatasetRole.ROOT;
+		DatasetMetadata2.DatasetNature datasetNature = DatasetMetadata2.DatasetNature.ABSTRACT;
+		Literal versionInfo = null;
+		Literal versionNotes = null;
+
+		List<CatalogRecord2> catalogRecords = new ArrayList<>();
+
+		for (BindingSet bs : bindingSetList) {
+			IRI datasetProperty = (IRI)bs.getValue("dataset_p");
+			Value datasetPropertyValue = bs.getValue("dataset_o");
+
+			if (Objects.equals(datasetProperty, VOID.URI_SPACE)) {
+				uriSpace = datasetPropertyValue.stringValue();
+			} else if (Objects.equals(datasetProperty, DCTERMS.TITLE)) {
+				titles.add((Literal)datasetPropertyValue);
+			} else if (Objects.equals(datasetProperty, DCTERMS.DESCRIPTION)) {
+				descriptions.add((Literal)datasetPropertyValue);
+			} else if (Objects.equals(datasetProperty, OWL.VERSIONINFO)) {
+				versionInfo = (Literal)datasetPropertyValue;
+			} else if (Objects.equals(datasetProperty, ADMS_VERSION_NOTES)) {
+				versionNotes = (Literal)datasetPropertyValue;
+			}
+
+			Value otherURISpace = bs.getValue("otherURISpace");
+
+			if (otherURISpace != null) {
+				otherURISpaces.add(otherURISpace.stringValue());
+			}
+
+			IRI datasetRelProp = (IRI)bs.getValue("datasetRelProp");
+
+			if (Objects.equals(datasetRelProp, METADATAREGISTRY.MASTER)) {
+				datasetRole = DatasetMetadata2.DatasetRole.MASTER;
+			} else if (Objects.equals(datasetRelProp, METADATAREGISTRY.LOD)) {
+				datasetRole = DatasetMetadata2.DatasetRole.LOD;
+			} else if (Objects.equals(datasetRelProp, DCAT3FRAGMENT.HAS_VERSION)) {
+				datasetRole = DatasetMetadata2.DatasetRole.VERSION;
+			}
+
+			Value distributionType = bs.getValue("distributionType");
+
+			DatasetMetadata2.DatasetNature newNature = null;
+
+			if (METADATAREGISTRY.SPARQL_ENDPOINT.equals(distributionType)) {
+				newNature = DatasetMetadata2.DatasetNature.SPARQL_ENDPOINT;
+			} else if (METADATAREGISTRY.RDF4J_HTTP_REPOSITORY.equals(distributionType)) {
+				newNature = DatasetMetadata2.DatasetNature.RDF4J_REPOSITORY;
+			} else if (METADATAREGISTRY.GRAPHDB_REPOSITORY.equals(distributionType)) {
+				newNature = DatasetMetadata2.DatasetNature.GRAPHDB_REPOSITORY;
+			} else if (STMETADATAREGISTRY.PROJECT.equals(distributionType)) {
+				newNature = DatasetMetadata2.DatasetNature.PROJECT;
+			}
+
+			if (newNature != null) {
+				if (datasetNature != DatasetMetadata2.DatasetNature.ABSTRACT && newNature != datasetNature) {
+					datasetNature = DatasetMetadata2.DatasetNature.MIX;
+				} else {
+					datasetNature = newNature;
+				}
+			}
+		}
+
+		otherURISpaces.remove(uriSpace);
+
+		DatasetMetadata2 datasetMetadata = new DatasetMetadata2(
+				datasetIRI,
+				datasetNature,
+				uriSpace,
+				otherURISpaces,
+				titles,
+				descriptions,
+				datasetRole,
+				versionInfo,
+				versionNotes);
+
+		ZonedDateTime recordIssued = null;
+		ZonedDateTime recordModified = null;
+		IRI recordIRI = null;
+
+		for (BindingSet bs : bindingSetList) {
+			IRI record = (IRI)bs.getValue("record");
+
+			if (record == null) continue;
+
+			if (record != recordIRI) {
+				if (recordIRI != null) {
+					CatalogRecord2 catalogRecord = new CatalogRecord2(recordIRI, recordIssued, recordModified, datasetMetadata);
+					catalogRecords.add(catalogRecord);
+				}
+				recordIRI = record;
+				recordIssued = null;
+				recordModified = null;
+			}
+			IRI recordProperty = (IRI)bs.getValue("record_p");
+			Value recordPropertyValue = bs.getValue("record_o");
+
+			if (DCTERMS.ISSUED.equals(recordProperty)) {
+				recordIssued = Literals.getCalendarValue(recordPropertyValue, null).toGregorianCalendar().toZonedDateTime();
+			} else if (DCTERMS.MODIFIED.equals(recordProperty)) {
+				recordModified = Literals.getCalendarValue(recordPropertyValue, null).toGregorianCalendar().toZonedDateTime();
+			}
+		}
+
+		CatalogRecord2 catalogRecord = new CatalogRecord2(recordIRI, recordIssued, recordModified, datasetMetadata);
+		catalogRecords.add(catalogRecord);
+
+		return catalogRecords;
+	}
+
+		/*
 	 * (non-Javadoc)
 	 * 
 	 * @see it.uniroma2.art.semanticturkey.resources.M#addDataset(org.eclipse.rdf4j.model.IRI,
@@ -1164,7 +1485,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 			tupleQuerySb.append(
 			// @formatter:off
-				"   ?dataset a void:Dataset .                                                        \n" +
+				"   ?dataset a void:DatasetSpecification .                                                        \n" +
 				wrapWithOptional.apply("datasetUriSpace",
 				"     ?dataset void:uriSpace ?datasetUriSpace .                                      \n"
 				) +
@@ -1446,7 +1767,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			IRI datasetSPARQLEndpoint = null;
 			String datasetUriSpace = null;
 
-			// Second Attempt: the provided IRI is the void:Dataset
+			// Second Attempt: the provided IRI is the void:DatasetSpecification
 			if (voidDataset == null && statements.contains(iri, RDF.TYPE, VOID.DATASET)) {
 				logger.debug("The provided IRI is actually a VoID dataset");
 				voidDataset = iri;
@@ -1498,7 +1819,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					logger.debug("using the retrieved VoID download URL: {}", voidDownloadAddress);
 				}
 
-				// Try to download the void:Dataset
+				// Try to download the void:DatasetSpecification
 				try {
 					logger.debug("Downloading VoID description from URL: {}", voidDownloadAddress);
 					rdfLoader.load(voidDownloadAddress, null, null, new StatementCollector(voidStatements));

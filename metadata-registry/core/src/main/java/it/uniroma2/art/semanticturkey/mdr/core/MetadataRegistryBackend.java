@@ -10,6 +10,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
@@ -22,7 +23,57 @@ import it.uniroma2.art.maple.orchestration.AssessmentException;
 public interface MetadataRegistryBackend {
 
 	/**
-	 * Adds a abstract version of a void:Dataset together with the dcat:CatalogRecord.
+	 * Creates a new abstract dataset.
+	 *
+	 * @param datasetLocalName  if {@code null} passed, a named is generated for the dataset
+	 * @param uriSpace the <em>current</em> URI space of the dataset, as its concrete distributions may introduce futher
+	 *                 ones
+	 * @param title the <em>current</em> title of the dataset
+	 * @param description the <em>current</em> description of the dataset
+	 * @return the IRI of the newly created dataset
+	 */
+	IRI createAbstractDataset(String datasetLocalName, String uriSpace, Literal title, Literal description) throws MetadataRegistryWritingException;
+
+	/**
+	 * Creates a new concrete dataset.
+	 *
+	 * @param datasetLocalName  if {@code null} passed, a named is generated for the dataset
+	 * @param uriSpace the <em>current</em> URI space of the dataset, as its concrete distributions may introduce futher
+	 *                 ones
+	 * @param title the <em>current</em> title of the dataset
+	 * @param description the <em>current</em> description of the dataset
+	 * @param dereferenceable whether the dataset is dereferenceable: <code>null</code> means unknown
+	 * @param distribution the distribution associated with the dataset, which also determines the dataset nature
+	 * @param abstractDatasetAttachment optional connection to an abstract dataset
+	 * @return the IRI of the newly created dataset
+	 */
+	IRI createConcreteDataset(String datasetLocalName,
+					  String uriSpace,
+					  Literal title,
+					  Literal description,
+					  Boolean dereferenceable,
+					  Distribution distribution,
+					  AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException;
+
+	/**
+	 * Returns root datasets, i.e. datasets (either abstract or concrete) that are not connect to another (abstract)
+	 * dataset (e.g. as a version, master copy or LOD version thereof)
+	 * @return a collection of records for root datasets
+	 */
+	Collection<CatalogRecord2> listRootDatasets();
+
+	/**
+	 * Returns the datasets connected to a given abstract dataset, e.g. as a version, master copy or LOD version thereof
+	 *
+	 * @param abstractDataset an abstract dataset
+	 * @return a collection of datasets connected to the given abstract dataset
+	 */
+	Collection<CatalogRecord2> listConnectedDatasets(IRI abstractDataset);
+
+	/// --- OLD METHODS --- ///
+
+	/**
+	 * Adds a abstract version of a void:DatasetSpecification together with the dcat:CatalogRecord.
 	 * 
 	 * @param dataset
 	 *            if {@code null} passed, a local IRI is created

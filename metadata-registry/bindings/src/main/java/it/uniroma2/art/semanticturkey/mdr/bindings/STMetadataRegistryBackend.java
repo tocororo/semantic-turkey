@@ -5,6 +5,8 @@ import org.eclipse.rdf4j.model.IRI;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.project.Project;
 
+import java.util.Collection;
+
 /**
  * A binding of {@link MetadataRegistryBackend} to Semantic Turkey.
  * 

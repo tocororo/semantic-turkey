@@ -40,6 +40,21 @@ public abstract class METADATAREGISTRY {
 	/** http://semanticturkey.uniroma2.it/ns/mdr#noAggregation */
 	public static final IRI NO_AGGREGATION;
 
+	/** http://semanticturkey.uniroma2.it/ns/mdr#SPARQLEndpoint */
+	public static final IRI SPARQL_ENDPOINT;
+
+	/** http://semanticturkey.uniroma2.it/ns/mdr#RDF4JHTTPRepository */
+	public static final IRI RDF4J_HTTP_REPOSITORY;
+
+	/** http://semanticturkey.uniroma2.it/ns/mdr#GRAPHDBRepository */
+	public static final IRI GRAPHDB_REPOSITORY;
+
+	/** http://semanticturkey.uniroma2.it/ns/mdr#lod */
+	public static final IRI LOD;
+
+	/** http://semanticturkey.uniroma2.it/ns/mdr#master */
+	public static final IRI MASTER;
+
 	static {
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
@@ -48,6 +63,11 @@ public abstract class METADATAREGISTRY {
 		NO_DEREFERENCIATION = vf.createIRI(NAMESPACE, "noDereferenciation");
 		SPARQL_ENDPOINT_LIMITATION = vf.createIRI(NAMESPACE, "sparqlEndpointLimitation");
 		NO_AGGREGATION = vf.createIRI(NAMESPACE, "noAggregation");
+		SPARQL_ENDPOINT = vf.createIRI(NAMESPACE, "SPARQLEndpoint");
+		RDF4J_HTTP_REPOSITORY = vf.createIRI(NAMESPACE, "RDF4JHTTPRepository");
+		GRAPHDB_REPOSITORY = vf.createIRI(NAMESPACE, "GRAPHDBRepository");
+		LOD = vf.createIRI(NAMESPACE, "lod");
+		MASTER = vf.createIRI(NAMESPACE, "master");
 	}
 
 	public static Optional<IRI> getDereferenciationSystem(Boolean b) {

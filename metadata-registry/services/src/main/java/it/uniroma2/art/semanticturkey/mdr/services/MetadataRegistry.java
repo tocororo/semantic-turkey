@@ -8,7 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import it.uniroma2.art.semanticturkey.mdr.core.AbstractDatasetAttachment;
+import it.uniroma2.art.semanticturkey.mdr.core.CatalogRecord2;
+import it.uniroma2.art.semanticturkey.mdr.core.Distribution;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 
@@ -56,7 +61,86 @@ public class MetadataRegistry extends STServiceAdapter {
 	}
 
 	/**
-	 * Adds a abstract version of a void:Dataset together with the dcat:CatalogRecord.
+	 * Creates a new abstract dataset.
+	 *
+	 * @param datasetLocalName  if {@code null} passed, a named is generated for the dataset
+	 * @param uriSpace the <em>current</em> URI space of the dataset, as its concrete distributions may introduce futher
+	 *                 ones
+	 * @param title the <em>current</em> title of the dataset
+	 * @param description the <em>current</em> description of the dataset
+	 * @return the IRI of the newly created dataset
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
+	public AnnotatedValue<IRI> createAbstractDataset(String datasetLocalName,
+													 String uriSpace,
+													 @Optional Literal title,
+													 @Optional Literal description)
+			throws MetadataRegistryWritingException {
+		IRI datasetIRI = metadataRegistryBackend.createAbstractDataset(datasetLocalName, uriSpace, title, description);
+		return new AnnotatedValue<>(datasetIRI);
+	}
+
+	/**
+	 * Creates a new concrete dataset.
+	 *
+	 * @param datasetLocalName  if {@code null} passed, a named is generated for the dataset
+	 * @param uriSpace the <em>current</em> URI space of the dataset, as its concrete distributions may introduce futher
+	 *                 ones
+	 * @param title the <em>current</em> title of the dataset
+	 * @param description the <em>current</em> description of the dataset
+	 * @param dereferenceable whether the dataset is dereferenceable: <code>null</code> means unknown
+	 * @param distribution the distribution associated with the dataset, which also determines the dataset nature
+	 * @param abstractDatasetAttachment optional connection to an abstract dataset
+	 * @return the IRI of the newly created dataset
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
+	public AnnotatedValue<IRI> createConcreteDataset(String datasetLocalName,
+													 String uriSpace,
+													 @Optional Literal title,
+													 @Optional Literal description,
+													 @Optional Boolean dereferenceable,
+													 @Optional @JsonSerialized Distribution distribution,
+													 @Optional @JsonSerialized AbstractDatasetAttachment abstractDatasetAttachment)
+			throws MetadataRegistryWritingException {
+		IRI datasetIRI = metadataRegistryBackend.createConcreteDataset(
+				datasetLocalName,
+				uriSpace,
+				title,
+				description,
+				dereferenceable,
+				distribution,
+				abstractDatasetAttachment);
+		return new AnnotatedValue<>(datasetIRI);
+	}
+
+
+	/**
+	 * Returns root datasets, i.e. datasets (either abstract or concrete) that are not connect to another (abstract)
+	 * dataset (e.g. as a version, master copy or LOD version thereof)
+	 * @return a collection of records for root datasets
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+	public Collection<CatalogRecord2> listRootDatasets() {
+		return metadataRegistryBackend.listRootDatasets();
+	}
+
+	/**
+	 * Returns the datasets connected to a given abstract dataset, e.g. as a version, master copy or LOD version thereof
+	 *
+	 * @param abstractDataset an abstract dataset
+	 * @return a collection of datasets connected to the given abstract dataset
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+	public Collection<CatalogRecord2> listConnectedDatasets(IRI abstractDataset) {
+		return metadataRegistryBackend.listConnectedDatasets(abstractDataset);
+	}
+
+	/**
+	 * Adds a abstract version of a void:DatasetSpecification together with the dcat:CatalogRecord.
 	 * 
 	 * @param dataset
 	 *            if not passed, a local IRI is created
