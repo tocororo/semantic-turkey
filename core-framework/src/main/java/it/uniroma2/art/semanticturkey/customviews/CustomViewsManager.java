@@ -5,6 +5,7 @@ import it.uniroma2.art.semanticturkey.config.customview.CustomView;
 import it.uniroma2.art.semanticturkey.config.customview.CustomViewAssociation;
 import it.uniroma2.art.semanticturkey.config.customview.CustomViewAssociationStore;
 import it.uniroma2.art.semanticturkey.config.customview.CustomViewStore;
+import it.uniroma2.art.semanticturkey.config.impl.ConfigurationSupport;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -12,8 +13,10 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
+import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import org.eclipse.rdf4j.model.IRI;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -72,6 +75,11 @@ public class CustomViewsManager {
         return customViews.get(reference);
     }
 
+    public File getCustomViewFile(String id) {
+        File folder = ConfigurationSupport.getConfigurationFolder(customViewsStore, project);
+        return new File(folder, id + ".cfg");
+    }
+
     /**
      * Given a property, returns the CV associated, if any, null otherwise
      *
@@ -90,6 +98,13 @@ public class CustomViewsManager {
     public void storeCustomView(Reference reference, CustomView customView) throws STPropertyUpdateException, WrongPropertiesException, IOException {
         customViewsStore.storeConfiguration(reference, customView);
         customViews.put(reference.getRelativeReference(), customView); //update the cached list
+    }
+
+    public void storeCustomViewFromFile(Reference reference, File srcFile) throws IOException, STPropertyAccessException {
+        File cvFile = getCustomViewFile(reference.getIdentifier());
+        Utilities.copy(srcFile, cvFile);
+        CustomView customView = customViewsStore.getConfiguration(reference);
+        customViews.put(reference.getRelativeReference(), customView);
     }
 
     public void deleteCustomView(Reference reference) throws ConfigurationNotFoundException {

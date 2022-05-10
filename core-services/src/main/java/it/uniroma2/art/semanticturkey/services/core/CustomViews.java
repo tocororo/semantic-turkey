@@ -38,6 +38,7 @@ import it.uniroma2.art.semanticturkey.customviews.ProjectCustomViewsManager;
 import it.uniroma2.art.semanticturkey.customviews.ViewsEnum;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
 import it.uniroma2.art.semanticturkey.resources.Reference;
@@ -49,6 +50,8 @@ import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.utilities.Utilities;
+import org.apache.commons.io.IOUtils;
 import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -58,8 +61,13 @@ import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -90,6 +98,21 @@ public class CustomViews extends STServiceAdapter {
     @STServiceOperation(method = RequestMethod.POST)
     public void createCustomView(String reference, @JsonSerialized ObjectNode definition, CustomViewModelEnum model)
             throws IOException, WrongPropertiesException, STPropertyUpdateException {
+        CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
+        if (cvMgr.customViewExists(reference)) {
+            throw new IllegalArgumentException("A CustomView with the same ID already exists");
+        }
+        this.storeCustomView(reference, definition, model);
+    }
+
+    @STServiceOperation(method = RequestMethod.POST)
+    public void updateCustomView(String reference, @JsonSerialized ObjectNode definition, CustomViewModelEnum model)
+            throws IOException, WrongPropertiesException, STPropertyUpdateException {
+        this.storeCustomView(reference, definition, model);
+    }
+
+    private void storeCustomView(String reference, @JsonSerialized ObjectNode definition, CustomViewModelEnum model)
+            throws IOException, WrongPropertiesException, STPropertyUpdateException {
         ObjectMapper mapper = STPropertiesManager.createObjectMapper(exptManager);
         CustomView cv;
         if (model.equals(CustomViewModelEnum.area)) {
@@ -116,6 +139,8 @@ public class CustomViews extends STServiceAdapter {
         Reference ref = parseReference(reference);
         projCvMgr.getCustomViewManager(getProject()).storeCustomView(ref, cv);
     }
+
+
 
     @STServiceOperation(method = RequestMethod.POST)
     public void deleteCustomView(String reference) throws ConfigurationNotFoundException {
@@ -521,6 +546,51 @@ public class CustomViews extends STServiceAdapter {
         DynamicVectorView cv = (DynamicVectorView) cvMgr.getCustomViewForProperty(property);
 
         cv.updateData(getManagedConnection(), resource, property, fieldName, oldValue, newValue, pivots, (IRI) getWorkingGraph());
+    }
+
+
+
+    @STServiceOperation
+//    @PreAuthorize("@auth.isAuthorized('cform(form)', 'R')")
+    public void exportCustomView(HttpServletResponse oRes, String reference)
+            throws IOException {
+        CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
+        CustomView cv = cvMgr.getCustomView(reference);
+        if (cv == null) {
+            throw new IllegalArgumentException(
+                    "Impossible to export '" + reference + "'. A CustomView for this reference doesn't exists");
+        }
+
+        Reference ref = parseReference(reference);
+        File cvFile = cvMgr.getCustomViewFile(ref.getIdentifier());
+
+        oRes.setHeader("Content-Disposition", "attachment; filename=" + ref.getIdentifier() + ".cfg");
+        oRes.setContentType("text/plain");
+        oRes.setContentLength((int) cvFile.length());
+        try (InputStream is = new FileInputStream(cvFile)) {
+            IOUtils.copy(is, oRes.getOutputStream());
+        }
+        oRes.flushBuffer();
+    }
+
+    @STServiceOperation(method = RequestMethod.POST)
+//    @PreAuthorize("@auth.isAuthorized('cform(form)', 'C')")
+    public void importCustomView(MultipartFile inputFile, String reference) throws IOException, STPropertyAccessException {
+
+        CustomViewsManager cvMgr = projCvMgr.getCustomViewManager(getProject());
+        if (cvMgr.customViewExists(reference)) {
+            throw new IllegalArgumentException("A CustomView with the same ID already exists");
+        }
+
+        // create a temp file (in karaf data/temp folder) to copy the received file
+        File tempServerFile = File.createTempFile("cvImport", inputFile.getOriginalFilename());
+        try {
+            Reference ref = parseReference(reference);
+            inputFile.transferTo(tempServerFile);
+            cvMgr.storeCustomViewFromFile(ref, tempServerFile);
+        } finally {
+            tempServerFile.delete();
+        }
     }
 
 
