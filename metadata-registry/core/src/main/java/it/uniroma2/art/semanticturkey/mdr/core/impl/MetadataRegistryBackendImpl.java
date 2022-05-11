@@ -443,6 +443,18 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 	}
 
+	@Override
+	public void connectToAbstractDataset(IRI dataset, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
+		try (RepositoryConnection conn = getConnection()) {
+			Model model = new LinkedHashModel();
+			ValueFactory vf = conn.getValueFactory();
+			abstractDatasetAttachment.export(model, vf, dataset);
+			conn.add(model);
+		}
+
+		saveToFile();
+	}
+
 	private Collection<CatalogRecord2> parseCatalogRecords(TupleQueryResult result) {
 		List<CatalogRecord2> catalogRecordList = new ArrayList<>();
 		IRI dataset = null;

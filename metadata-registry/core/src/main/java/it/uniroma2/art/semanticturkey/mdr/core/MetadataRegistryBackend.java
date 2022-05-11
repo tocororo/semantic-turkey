@@ -70,6 +70,14 @@ public interface MetadataRegistryBackend {
 	 */
 	Collection<CatalogRecord2> listConnectedDatasets(IRI abstractDataset);
 
+	/**
+	 * Connect a root concrete dataset to an abstract dataset
+	 * @param dataset
+	 * @param abstractDatasetAttachment
+	 */
+	void connectToAbstractDataset(IRI dataset, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException;
+
+
 	/// --- OLD METHODS --- ///
 
 	/**

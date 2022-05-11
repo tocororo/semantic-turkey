@@ -140,6 +140,17 @@ public class MetadataRegistry extends STServiceAdapter {
 	}
 
 	/**
+	 * Connect a root concrete dataset to an abstract dataset
+	 * @param dataset
+	 * @param abstractDatasetAttachment
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
+	public void connectToAbstractDataset(IRI dataset, @JsonSerialized AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
+		metadataRegistryBackend.connectToAbstractDataset(dataset, abstractDatasetAttachment);
+	}
+
+	/**
 	 * Adds a abstract version of a void:DatasetSpecification together with the dcat:CatalogRecord.
 	 * 
 	 * @param dataset
