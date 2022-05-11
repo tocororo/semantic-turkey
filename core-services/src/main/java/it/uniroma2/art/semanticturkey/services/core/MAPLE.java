@@ -225,7 +225,7 @@ public class MAPLE extends STServiceAdapter {
 
 		IRI leftDatasetIRI = metadataRegistryBackend.findDatasetForProject(leftDataset, true);
 		IRI rightDatasetIRI = metadataRegistryBackend.findDatasetForProject(rightDataset, true);
-		
+
 		try (RepositoryConnection metadataConn = metadataRegistryBackend.getConnection()) {
 			return mediationFramework.profileAlignmentScenario(metadataConn, leftDatasetIRI, rightDatasetIRI);
 		}

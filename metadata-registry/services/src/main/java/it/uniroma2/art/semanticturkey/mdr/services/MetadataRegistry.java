@@ -61,27 +61,6 @@ public class MetadataRegistry extends STServiceAdapter {
 	}
 
 	/**
-	 * Creates a new abstract dataset.
-	 *
-	 * @param datasetLocalName  if {@code null} passed, a named is generated for the dataset
-	 * @param uriSpace the <em>current</em> URI space of the dataset, as its concrete distributions may introduce futher
-	 *                 ones
-	 * @param title the <em>current</em> title of the dataset
-	 * @param description the <em>current</em> description of the dataset
-	 * @return the IRI of the newly created dataset
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
-	public AnnotatedValue<IRI> createAbstractDataset(String datasetLocalName,
-													 String uriSpace,
-													 @Optional Literal title,
-													 @Optional Literal description)
-			throws MetadataRegistryWritingException {
-		IRI datasetIRI = metadataRegistryBackend.createAbstractDataset(datasetLocalName, uriSpace, title, description);
-		return new AnnotatedValue<>(datasetIRI);
-	}
-
-	/**
 	 * Creates a new concrete dataset.
 	 *
 	 * @param datasetLocalName  if {@code null} passed, a named is generated for the dataset
@@ -160,6 +139,7 @@ public class MetadataRegistry extends STServiceAdapter {
 	 * @param uriSpace
 	 * @param title
 	 * @param description
+	 * @param dereferenceable
 	 * @return  the newly created abstract dataset
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
@@ -171,7 +151,8 @@ public class MetadataRegistry extends STServiceAdapter {
 										String datasetLocalName,
 										String uriSpace,
 										@Optional Literal title,
-										@Optional Literal description) throws MetadataRegistryWritingException {
+										@Optional Literal description,
+									    @Optional Boolean dereferenceable) throws MetadataRegistryWritingException {
 		IRI abstractDatasetIRI = metadataRegistryBackend.spawnNewAbstractDataset(
 				dataset1,
 				abstractDatasetAttachment1,
@@ -180,7 +161,8 @@ public class MetadataRegistry extends STServiceAdapter {
 				datasetLocalName,
 				uriSpace,
 				title,
-				description);
+				description,
+				dereferenceable);
 		return new AnnotatedValue<>(abstractDatasetIRI);
 	}
 

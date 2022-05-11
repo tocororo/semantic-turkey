@@ -89,20 +89,6 @@ public class MetadataRegistryBackendTest {
 	}
 
 	@Test
-	public void testCreateAbstractDataset() throws MetadataRegistryWritingException {
-		metadataRegistryBackend.createAbstractDataset(
-				"AGROVOC",
-				"http://aims.fao.org/aos/agrovoc#",
-				Values.literal("AGROVOC multilingual thesaurus", "en"),
-				Values.literal("The AGROVOC thesaurus contains more than 38 000 concepts in 39 languages covering topics related to food, nutrition, agriculture, fisheries, forestry, environment and other related domains", "en")
-			);
-		try (RepositoryConnection con = metadataRegistryBackend.getConnection()) {
-			con.export(Rio.createWriter(RDFFormat.TURTLE, System.out));
-		}
-
-	}
-
-	@Test
 	public void testCreateDataset() throws MetadataRegistryWritingException {
 		Distribution distribution = new Distribution(
 				null,
@@ -127,14 +113,6 @@ public class MetadataRegistryBackendTest {
 
 	@Test
 	public void testCreateDatasetsForAGROVOC() throws MetadataRegistryWritingException {
-		// AGROVOC Abstract DatasetSpecification
-		IRI agrovocAbstractDataset = metadataRegistryBackend.createAbstractDataset(
-				"AGROVOC",
-				"http://aims.fao.org/aos/agrovoc#",
-				Values.literal("AGROVOC multilingual thesaurus", "en"),
-				Values.literal("The AGROVOC thesaurus contains more than 38 000 concepts in 39 languages covering topics related to food, nutrition, agriculture, fisheries, forestry, environment and other related domains", "en")
-		);
-
 		// AGROVOC Online SPARQL Endpoint
 		{
 			Distribution distribution = new Distribution(
@@ -149,7 +127,7 @@ public class MetadataRegistryBackendTest {
 					Values.literal("The AGROVOC thesaurus contains more than 38 000 concepts in 39 languages covering topics related to food, nutrition, agriculture, fisheries, forestry, environment and other related domains", "en"),
 					true,
 					distribution,
-					new AbstractDatasetAttachment(agrovocAbstractDataset, METADATAREGISTRY.LOD, null, null)
+					null
 			);
 		}
 
@@ -167,7 +145,7 @@ public class MetadataRegistryBackendTest {
 					Values.literal("The AGROVOC thesaurus contains more than 38 000 concepts in 39 languages covering topics related to food, nutrition, agriculture, fisheries, forestry, environment and other related domains", "en"),
 					true,
 					distribution,
-					new AbstractDatasetAttachment(agrovocAbstractDataset, METADATAREGISTRY.MASTER, null, null)
+					null
 			);
 		}
 
@@ -178,10 +156,6 @@ public class MetadataRegistryBackendTest {
 		Collection<CatalogRecord2> rootDatasets = metadataRegistryBackend.listRootDatasets();
 		System.out.println("Root datasets");
 		System.out.println(rootDatasets);
-
-		System.out.println("Connected datasets");
-		Collection<CatalogRecord2> connectedDatasets = metadataRegistryBackend.listConnectedDatasets(rootDatasets.iterator().next().getDataset().getIdentity());
-		System.out.println(connectedDatasets);
 
 	}
 

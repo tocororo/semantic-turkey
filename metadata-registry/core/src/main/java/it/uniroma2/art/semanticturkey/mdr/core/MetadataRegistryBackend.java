@@ -23,18 +23,6 @@ import it.uniroma2.art.maple.orchestration.AssessmentException;
 public interface MetadataRegistryBackend {
 
 	/**
-	 * Creates a new abstract dataset.
-	 *
-	 * @param datasetLocalName  if {@code null} passed, a named is generated for the dataset
-	 * @param uriSpace the <em>current</em> URI space of the dataset, as its concrete distributions may introduce futher
-	 *                 ones
-	 * @param title the <em>current</em> title of the dataset
-	 * @param description the <em>current</em> description of the dataset
-	 * @return the IRI of the newly created dataset
-	 */
-	IRI createAbstractDataset(String datasetLocalName, String uriSpace, Literal title, Literal description) throws MetadataRegistryWritingException;
-
-	/**
 	 * Creates a new concrete dataset.
 	 *
 	 * @param datasetLocalName  if {@code null} passed, a named is generated for the dataset
@@ -87,6 +75,7 @@ public interface MetadataRegistryBackend {
 	 * @param uriSpace
 	 * @param title
 	 * @param description
+	 * @param dereferenceable
 	 * @return
 	 */
 	IRI spawnNewAbstractDataset(IRI dataset1,
@@ -96,7 +85,7 @@ public interface MetadataRegistryBackend {
 								String datasetLocalName,
 								String uriSpace,
 								Literal title,
-								Literal description) throws MetadataRegistryWritingException;
+								Literal description, Boolean dereferenceable) throws MetadataRegistryWritingException;
 
 	/// --- OLD METHODS --- ///
 

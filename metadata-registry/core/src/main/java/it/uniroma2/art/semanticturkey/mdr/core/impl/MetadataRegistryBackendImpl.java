@@ -288,12 +288,6 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	}
 
 	@Override
-	public IRI createAbstractDataset(String datasetLocalName, String uriSpace, Literal title, Literal description) throws MetadataRegistryWritingException {
-		AbstractDatasetSpecification abstractDatasetSpecification = new AbstractDatasetSpecification(null, uriSpace, title, description);
-		return createDataset(datasetLocalName, abstractDatasetSpecification, null, null, null, true);
-	}
-
-	@Override
 	public IRI createConcreteDataset(String datasetLocalName, String uriSpace, Literal title, Literal description, Boolean dereferenceable, Distribution distribution, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
 		ConcreteDatasetSpecification concreteDatasetSpecification = new ConcreteDatasetSpecification(null, uriSpace, title, description, dereferenceable, distribution);
 		return createDataset(datasetLocalName, concreteDatasetSpecification, abstractDatasetAttachment, null, null, true);
@@ -477,8 +471,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 									   String datasetLocalName,
 									   String uriSpace,
 									   Literal title,
-									   Literal description) throws MetadataRegistryWritingException {
-		AbstractDatasetSpecification abstractDatasetSpecification = new AbstractDatasetSpecification(null, uriSpace, title, description);
+									   Literal description,
+									   Boolean dereferenceable) throws MetadataRegistryWritingException {
+		AbstractDatasetSpecification abstractDatasetSpecification = new AbstractDatasetSpecification(null, uriSpace, title, description, dereferenceable);
 		return createDataset(datasetLocalName, abstractDatasetSpecification, null, (Model model, IRI abstractDatasetIRI) -> {
 			abstractDatasetAttachment1.setAbstractDataset(abstractDatasetIRI);
 			abstractDatasetAttachment2.setAbstractDataset(abstractDatasetIRI);
