@@ -151,6 +151,40 @@ public class MetadataRegistry extends STServiceAdapter {
 	}
 
 	/**
+	 * Spawn a new abstract dataset grouping two existing root concrete datasets
+	 * @param dataset1
+	 * @param abstractDatasetAttachment1
+	 * @param dataset2
+	 * @param abstractDatasetAttachment2
+	 * @param datasetLocalName
+	 * @param uriSpace
+	 * @param title
+	 * @param description
+	 * @return  the newly created abstract dataset
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
+	public AnnotatedValue<IRI> spawnNewAbstractDataset(IRI dataset1,
+										@JsonSerialized AbstractDatasetAttachment abstractDatasetAttachment1,
+										IRI dataset2,
+										@JsonSerialized AbstractDatasetAttachment abstractDatasetAttachment2,
+										String datasetLocalName,
+										String uriSpace,
+										@Optional Literal title,
+										@Optional Literal description) throws MetadataRegistryWritingException {
+		IRI abstractDatasetIRI = metadataRegistryBackend.spawnNewAbstractDataset(
+				dataset1,
+				abstractDatasetAttachment1,
+				dataset2,
+				abstractDatasetAttachment2,
+				datasetLocalName,
+				uriSpace,
+				title,
+				description);
+		return new AnnotatedValue<>(abstractDatasetIRI);
+	}
+
+	/**
 	 * Adds a abstract version of a void:DatasetSpecification together with the dcat:CatalogRecord.
 	 * 
 	 * @param dataset

@@ -77,6 +77,26 @@ public interface MetadataRegistryBackend {
 	 */
 	void connectToAbstractDataset(IRI dataset, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException;
 
+	/**
+	 * Spawn a new abstract dataset grouping two existing root concrete datasets
+	 * @param dataset1
+	 * @param abstractDatasetAttachment1
+	 * @param dataset2
+	 * @param abstractDatasetAttachment2
+	 * @param datasetLocalName
+	 * @param uriSpace
+	 * @param title
+	 * @param description
+	 * @return
+	 */
+	IRI spawnNewAbstractDataset(IRI dataset1,
+								AbstractDatasetAttachment abstractDatasetAttachment1,
+								IRI dataset2,
+								AbstractDatasetAttachment abstractDatasetAttachment2,
+								String datasetLocalName,
+								String uriSpace,
+								Literal title,
+								Literal description) throws MetadataRegistryWritingException;
 
 	/// --- OLD METHODS --- ///
 

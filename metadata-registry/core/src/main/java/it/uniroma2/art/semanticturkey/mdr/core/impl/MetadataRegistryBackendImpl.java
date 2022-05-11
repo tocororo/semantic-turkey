@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -288,16 +289,16 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	@Override
 	public IRI createAbstractDataset(String datasetLocalName, String uriSpace, Literal title, Literal description) throws MetadataRegistryWritingException {
 		AbstractDatasetSpecification abstractDatasetSpecification = new AbstractDatasetSpecification(null, uriSpace, title, description);
-		return createDataset(datasetLocalName, abstractDatasetSpecification, null);
+		return createDataset(datasetLocalName, abstractDatasetSpecification, null, null);
 	}
 
 	@Override
 	public IRI createConcreteDataset(String datasetLocalName, String uriSpace, Literal title, Literal description, Boolean dereferenceable, Distribution distribution, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
 		ConcreteDatasetSpecification concreteDatasetSpecification = new ConcreteDatasetSpecification(null, uriSpace, title, description, dereferenceable, distribution);
-		return createDataset(datasetLocalName, concreteDatasetSpecification, abstractDatasetAttachment);
+		return createDataset(datasetLocalName, concreteDatasetSpecification, abstractDatasetAttachment, null);
 	}
 
-	protected IRI createDataset(String datasetLocalName, DatasetSpecification dataset, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
+	protected IRI createDataset(String datasetLocalName, DatasetSpecification dataset, AbstractDatasetAttachment abstractDatasetAttachment, BiConsumer<Model, IRI> postOperation) throws MetadataRegistryWritingException {
 		IRI datasetIRI;
 
 		try (RepositoryConnection conn = getConnection()) {
@@ -348,6 +349,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			dataset.export(model, vf);
 			if (abstractDatasetAttachment != null) {
 				abstractDatasetAttachment.export(model, vf, dataset.getIdentity());
+			}
+			if (postOperation != null) {
+				postOperation.accept(model, datasetIRI);
 			}
 			conn.add(model);
 
@@ -453,6 +457,25 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 
 		saveToFile();
+	}
+
+	@Override
+	public IRI spawnNewAbstractDataset(IRI dataset1,
+									   AbstractDatasetAttachment abstractDatasetAttachment1,
+									   IRI dataset2,
+									   AbstractDatasetAttachment abstractDatasetAttachment2,
+									   String datasetLocalName,
+									   String uriSpace,
+									   Literal title,
+									   Literal description) throws MetadataRegistryWritingException {
+		AbstractDatasetSpecification abstractDatasetSpecification = new AbstractDatasetSpecification(null, uriSpace, title, description);
+		return createDataset(datasetLocalName, abstractDatasetSpecification, null, (Model model, IRI abstractDatasetIRI) -> {
+			abstractDatasetAttachment1.setAbstractDataset(abstractDatasetIRI);
+			abstractDatasetAttachment2.setAbstractDataset(abstractDatasetIRI);
+			abstractDatasetAttachment1.export(model, SimpleValueFactory.getInstance(), dataset1);
+			abstractDatasetAttachment2.export(model, SimpleValueFactory.getInstance(), dataset2);
+
+		});
 	}
 
 	private Collection<CatalogRecord2> parseCatalogRecords(TupleQueryResult result) {
