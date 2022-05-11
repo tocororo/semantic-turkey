@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.DCAT3FRAGMENT;
 import it.uniroma2.art.semanticturkey.utilities.IRI2StringConverter;
 import it.uniroma2.art.semanticturkey.utilities.String2IRIConverter;
+import org.apache.commons.lang3.ObjectUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -36,7 +37,7 @@ public class AbstractDatasetAttachment {
         this.versionInfo = versionInfo;
         this.versionNotes = versionNotes;
 
-        if ((versionInfo != null || versionNotes != null) && relation != DCAT3FRAGMENT.HAS_VERSION) {
+        if ((versionInfo != null || versionNotes != null) && ObjectUtils.notEqual(relation, DCAT3FRAGMENT.HAS_VERSION)) {
             throw new IllegalArgumentException("Either version info or version notes is non null, but relation with the abstract dataset is not dcat:hasVersion");
         }
     }
