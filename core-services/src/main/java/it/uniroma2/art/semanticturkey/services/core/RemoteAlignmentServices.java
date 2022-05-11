@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
 
+import it.uniroma2.art.maple.orchestration.ProfilingException;
 import it.uniroma2.art.semanticturkey.properties.*;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import org.apache.commons.io.FileUtils;
@@ -51,8 +52,10 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.HttpContext;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.DCAT;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -370,7 +373,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
     @STServiceOperation
     public List<TaskDTO> listTasks(Project leftDataset, @Optional Project rightDataset,
                                    boolean allowReordering) throws AlignmentServiceException {
-        IRI leftDatasetIRI = metadataRegistryBackend.findDatasetForProject(leftDataset);
+        IRI leftDatasetIRI = metadataRegistryBackend.findDatasetForProject(leftDataset, true);
 
         if (leftDatasetIRI == null) {
             throw new IllegalArgumentException(
@@ -379,7 +382,7 @@ public class RemoteAlignmentServices extends STServiceAdapter {
 
         IRI rightDatasetIRI;
         if (rightDataset != null) {
-            rightDatasetIRI = metadataRegistryBackend.findDatasetForProject(rightDataset);
+            rightDatasetIRI = metadataRegistryBackend.findDatasetForProject(rightDataset, true);
             if (rightDatasetIRI == null) {
                 throw new IllegalArgumentException(
                         "Unable to find metadata about project: " + rightDataset.getName());

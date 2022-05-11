@@ -46,9 +46,11 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.DCAT;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.VOID;
@@ -65,6 +67,7 @@ import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
+import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -220,9 +223,9 @@ public class MAPLE extends STServiceAdapter {
 			Project rightDataset, @JsonSerialized @Optional(defaultValue = "{}") ProfilerOptions options)
 			throws ProfilingException {
 
-		IRI leftDatasetIRI = metadataRegistryBackend.findDatasetForProject(leftDataset);
-		IRI rightDatasetIRI = metadataRegistryBackend.findDatasetForProject(rightDataset);
-
+		IRI leftDatasetIRI = metadataRegistryBackend.findDatasetForProject(leftDataset, true);
+		IRI rightDatasetIRI = metadataRegistryBackend.findDatasetForProject(rightDataset, true);
+		
 		try (RepositoryConnection metadataConn = metadataRegistryBackend.getConnection()) {
 			return mediationFramework.profileAlignmentScenario(metadataConn, leftDatasetIRI, rightDatasetIRI);
 		}

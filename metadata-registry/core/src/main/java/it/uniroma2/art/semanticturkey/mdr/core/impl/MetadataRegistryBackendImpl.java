@@ -80,6 +80,7 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.Update;
 import org.eclipse.rdf4j.query.impl.MapBindingSet;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
 import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -289,16 +290,19 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	@Override
 	public IRI createAbstractDataset(String datasetLocalName, String uriSpace, Literal title, Literal description) throws MetadataRegistryWritingException {
 		AbstractDatasetSpecification abstractDatasetSpecification = new AbstractDatasetSpecification(null, uriSpace, title, description);
-		return createDataset(datasetLocalName, abstractDatasetSpecification, null, null);
+		return createDataset(datasetLocalName, abstractDatasetSpecification, null, null, null, true);
 	}
 
 	@Override
 	public IRI createConcreteDataset(String datasetLocalName, String uriSpace, Literal title, Literal description, Boolean dereferenceable, Distribution distribution, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
 		ConcreteDatasetSpecification concreteDatasetSpecification = new ConcreteDatasetSpecification(null, uriSpace, title, description, dereferenceable, distribution);
-		return createDataset(datasetLocalName, concreteDatasetSpecification, abstractDatasetAttachment, null);
+		return createDataset(datasetLocalName, concreteDatasetSpecification, abstractDatasetAttachment, null, null, true);
 	}
 
-	protected IRI createDataset(String datasetLocalName, DatasetSpecification dataset, AbstractDatasetAttachment abstractDatasetAttachment, BiConsumer<Model, IRI> postOperation) throws MetadataRegistryWritingException {
+	protected IRI createDataset(String datasetLocalName,
+								DatasetSpecification dataset,
+								AbstractDatasetAttachment abstractDatasetAttachment,
+								BiConsumer<Model, IRI> postOperation, IRI ctx, boolean save) throws MetadataRegistryWritingException {
 		IRI datasetIRI;
 
 		try (RepositoryConnection conn = getConnection()) {
@@ -316,7 +320,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 			dataset.setIdentity(datasetIRI);
 
-			if (dataset.getDistribution() != null) {
+			if (dataset.getDistribution() != null && dataset.getDistribution().getIdentity() == null) {
 				dataset.getDistribution().setIdentity(distributionIRI);
 			}
 
@@ -343,6 +347,10 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					"}");
 			update.setBinding("dataset", datasetIRI);
 			update.setBinding("record", recordIRI);
+			SimpleDataset ds = new SimpleDataset();
+			ds.setDefaultInsertGraph(ctx);
+			ds.addDefaultRemoveGraph(ctx);
+			update.setDataset(ds);
 			update.execute();
 
 			Model model = new LinkedHashModel();
@@ -353,11 +361,13 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			if (postOperation != null) {
 				postOperation.accept(model, datasetIRI);
 			}
-			conn.add(model);
+			conn.add(model, ctx);
 
 		}
 
-		saveToFile();
+		if (save) {
+			saveToFile();
+		}
 
 		return datasetIRI;
 	}
@@ -475,7 +485,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			abstractDatasetAttachment1.export(model, SimpleValueFactory.getInstance(), dataset1);
 			abstractDatasetAttachment2.export(model, SimpleValueFactory.getInstance(), dataset2);
 
-		});
+		}, null, true);
 	}
 
 	private Collection<CatalogRecord2> parseCatalogRecords(TupleQueryResult result) {
