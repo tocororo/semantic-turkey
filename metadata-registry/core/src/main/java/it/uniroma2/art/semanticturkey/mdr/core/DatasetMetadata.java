@@ -25,6 +25,7 @@ import it.uniroma2.art.semanticturkey.utilities.String2IRIConverter;
 public class DatasetMetadata {
 
 	private final IRI identity;
+	private final Optional<IRI> distribution;
 	private final Optional<String> uriSpace;
 	private final Optional<String> title;
 	private final Optional<String> description;
@@ -34,14 +35,15 @@ public class DatasetMetadata {
 
 	@JsonCreator
 	public DatasetMetadata(
-			@JsonProperty("identity") @JsonDeserialize(converter = String2IRIConverter.class) IRI identity,
-			@JsonProperty("uriSpace") @Nullable String uriSpace,
-			@JsonProperty("title") @Nullable String title,
-			@JsonProperty("description") @Nullable String description,
-			@JsonProperty("dereferenciationSystem") @JsonDeserialize(converter = String2IRIConverter.class) @Nullable IRI dereferenciationSystem,
-			@JsonProperty("sparqlEndpointMetadata") @Nullable SPARQLEndpointMedatadata endpointMetadata,
-			@JsonProperty("versionInfo") @Nullable String versionInfo) {
+            @JsonProperty("identity") @JsonDeserialize(converter = String2IRIConverter.class) IRI identity,
+			@JsonProperty("identity") @JsonDeserialize(converter = String2IRIConverter.class) IRI distribution, @JsonProperty("uriSpace") @Nullable String uriSpace,
+            @JsonProperty("title") @Nullable String title,
+            @JsonProperty("description") @Nullable String description,
+            @JsonProperty("dereferenciationSystem") @JsonDeserialize(converter = String2IRIConverter.class) @Nullable IRI dereferenciationSystem,
+            @JsonProperty("sparqlEndpointMetadata") @Nullable SPARQLEndpointMedatadata endpointMetadata,
+            @JsonProperty("versionInfo") @Nullable String versionInfo) {
 		this.identity = identity;
+		this.distribution = Optional.ofNullable(distribution);
 		this.uriSpace = Optional.ofNullable(uriSpace);
 		this.title = Optional.ofNullable(title);
 		this.description = Optional.ofNullable(description);
@@ -53,6 +55,11 @@ public class DatasetMetadata {
 	@JsonSerialize(converter = IRI2StringConverter.class)
 	public IRI getIdentity() {
 		return identity;
+	}
+
+	@JsonSerialize(converter = Optional2StringConverter.class)
+	public Optional<IRI> getDistribution() {
+		return distribution;
 	}
 
 	@JsonSerialize(converter = Optional2StringConverter.class)

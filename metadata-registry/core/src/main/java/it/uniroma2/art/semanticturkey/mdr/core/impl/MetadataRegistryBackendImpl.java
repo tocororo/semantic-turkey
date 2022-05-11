@@ -1494,11 +1494,12 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		try (RepositoryConnection conn = getConnection()) {
 			StringBuilder tupleQuerySb = new StringBuilder(
 			// @formatter:off
+				"PREFIX dcat: <http://www.w3.org/ns/dcat#>                                          \n" +
 				"PREFIX dcterms: <http://purl.org/dc/terms/>                                          \n" +
 				"PREFIX void: <http://rdfs.org/ns/void#>                                              \n" +
 				"PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdr#>                          \n" +
 				"PREFIX owl: <http://www.w3.org/2002/07/owl#>                                         \n" +
-				"SELECT ?dataset (MIN(?datasetUriSpace) as ?datasetUriSpaceT) (MIN(?datasetTitle) as ?datasetTitleT) (MIN(?datasetDescription) as ?datasetDescriptionT) \n" +
+				"SELECT ?dataset (MIN(?distribution) as ?distributionT) (MIN(?datasetUriSpace) as ?datasetUriSpaceT) (MIN(?datasetTitle) as ?datasetTitleT) (MIN(?datasetDescription) as ?datasetDescriptionT) \n" +
 			    "       (MIN(?datasetDereferenciationSystem) as ?datasetDereferenciationSystemT) \n" +
 				"       (GROUP_CONCAT(CONCAT(STR(?datasetSPARQLEndpoint), \"|_|\", COALESCE(STR(?datasetSPARQLEndpointLimitation), \"-\")); separator=\"|_|\") as ?datasetSPARQLEndpointT) \n" +
 				"       (MIN(?datasetVersionInfo) as ?datasetVersionInfoT) \n" +
@@ -1525,8 +1526,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 			tupleQuerySb.append(
 			// @formatter:off
-				"   ?dataset a void:DatasetSpecification .                                                        \n" +
-				wrapWithOptional.apply("datasetUriSpace",
+				"   [] dcat:dataset ?dataset .                                                        \n" +
+				" 	?dataset dcat:distribution ?distribution .                                        \n" +
+						wrapWithOptional.apply("datasetUriSpace",
 				"     ?dataset void:uriSpace ?datasetUriSpace .                                      \n"
 				) +
 				wrapWithOptional.apply("datasetTitle",
@@ -1540,7 +1542,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" 	?dataset mdreg:dereferenciationSystem ?datasetDereferenciationSystem .            \n"
 				) + 
 				wrapWithOptional.apply("datasetSPARQLEndpoint",
-				" 	?dataset void:sparqlEndpoint ?datasetSPARQLEndpoint .                           \n" +
+				" 	    ?distribution void:sparqlEndpoint ?datasetSPARQLEndpoint .                        \n" +
 				"   OPTIONAL { ?datasetSPARQLEndpoint mdreg:sparqlEndpointLimitation ?datasetSPARQLEndpointLimitation . } \n"
 				)+
 				wrapWithOptional.apply("datasetVersionInfo",
@@ -1712,6 +1714,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		IRI dataset = (IRI) bs.getValue("dataset");
 
 		@Nullable
+		IRI distribution = (IRI)bs.getValue("distributionT");
+
+		@Nullable
 		String uriSpace = Optional.ofNullable(bs.getValue("datasetUriSpaceT")).map(Value::stringValue)
 				.filter(s -> !s.isEmpty()).orElse(null);
 		@Nullable
@@ -1760,7 +1765,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		String versionInfo = Optional.ofNullable(bs.getValue("datasetVersionInfoT")).map(Value::stringValue)
 				.orElse(null);
 
-		return new DatasetMetadata(dataset, uriSpace, title, description, dereferenciationSystem,
+		return new DatasetMetadata(dataset, distribution, uriSpace, title, description, dereferenciationSystem,
 				sparqlEndpointMetadata, versionInfo);
 	}
 
@@ -1994,7 +1999,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			}
 
 			if (datasetUriSpace != null) {
-				return ImmutablePair.of(new DatasetMetadata(voidDataset, datasetUriSpace,
+				return ImmutablePair.of(new DatasetMetadata(voidDataset, null, datasetUriSpace,
 						datasetTitle != null ? datasetTitle.stringValue() : null,
 						datasetDescription != null ? datasetDescription.stringValue() : null,
 						METADATAREGISTRY.getDereferenciationSystem(datasetDeferenceable).orElse(null),
