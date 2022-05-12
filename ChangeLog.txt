@@ -1,18 +1,21 @@
 version 11.0
-date: dd/mm/yyyy
+date: 12/05/2022
   * resolved a bug concerning repeated delivery of the same event to event listeners. Among the other issues, this might
     cause the generation of multiple resource metadata
-  * added the possibility to hide the stack trace in error responses
+  * added a setting for hiding the stack trace in error responses
   * added a connector to EcoPortal and other catalogs based on OntoPortal
-  * introduced SuperUser
-    - allowed SuperUser to create project where it is automatically set as Project Manager.
-  * improved management of special variables in CFs, and the definition of CC vs CR
-  * improved authorization checks to several APIs
+  * introduced SuperUsers
+    - allowed SuperUser to create projects and then get the role Project Manager automatically assigned to them.
+  * introduced a renewed model for CFs, with a more general management of CCs vs CRs
+  * introduced support for Custom Views (CVs) and possibility to match data on specific widgets
+  * improved authorization checks on several APIs
   * improved messaging in the update routines
-  * added support in Sheet2RDF for single tables in MySQL, MariaDB and PostgreSQL
-  * added the possibility to create downloads of the main graph
-  * added a service to suggest SPARQL endpoints for federation (by searching matching repositories hosted on the same
-    GraphDB server than the contextual project)
+  * added support in Sheet2RDF for DB, with drivers for MySQL, MariaDB and PostgreSQL
+  * added support for multiple sheets/tables in Sheet2RDF
+  * added the possibility to create distribution downloads of the hosted datasets
+  * added a service to suggest SPARQL endpoints in "local federated" queries, i.e. by searching matching repositories hosted on the same
+    GraphDB server of the project being queries)
+  * added import of general MDR-stored variables (e.g. title of the dataset) into the various metadata vocabulary editors
   * updated dependency on CODA 1.7.5
   * updated dependency on MAPLE 0.0.11
   * updated dependency on Sheet2RDF 5.0.0 (to manage DB tables)
