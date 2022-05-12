@@ -14,7 +14,7 @@ date: dd/mm/yyyy
   * added a service to suggest SPARQL endpoints for federation (by searching matching repositories hosted on the same
     GraphDB server than the contextual project)
   * updated dependency on CODA 1.7.5
-  * updated dependency on MAPLE 0.0.11-SNAPSHOT
+  * updated dependency on MAPLE 0.0.11
   * updated dependency on Sheet2RDF 5.0.0 (to manage DB tables)
   * updated various dependencies
 
