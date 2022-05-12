@@ -13,7 +13,7 @@
     <parent>
         <groupId>it.uniroma2.art.semanticturkey</groupId>
         <artifactId>semanticturkey</artifactId>
-        <version>11.0-SNAPSHOT</version>
+        <version>11.0</version>
     </parent>
     <artifactId>st-font</artifactId>
     <packaging>bundle</packaging>

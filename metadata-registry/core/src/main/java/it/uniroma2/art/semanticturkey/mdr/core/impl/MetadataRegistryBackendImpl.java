@@ -424,7 +424,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					"    " +
 					"}\n" +
 					"    VALUES(?datasetRelProp) {\n" +
-					"        (mdr:master)(mdr:lod)(mdr:hasVersion)\n" +
+					"        (mdr:master)(mdr:lod)(dcat:hasVersion)\n" +
 					"    " +
 					"}\n" +
 					"    ?abstractDataset ?datasetRelProp ?dataset .\n" +
