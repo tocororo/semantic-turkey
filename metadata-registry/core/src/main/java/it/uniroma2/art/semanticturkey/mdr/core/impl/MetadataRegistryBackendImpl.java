@@ -727,9 +727,10 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			// @formatter:off
 				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                  \n" +
 				"PREFIX void: <http://rdfs.org/ns/void#>                                    \n" +
+				"PREFIX dcat: <http://www.w3.org/ns/dcat#>									\n" +
 				"	                                                                        \n" +
 				"DESCRIBE * WHERE {                                                         \n" +
-				"  ?catalogRecord (foaf:topic|foaf:primaryTopic)/void:subset* ?dataset      \n" +
+				"  ?catalogRecord (foaf:topic|foaf:primaryTopic)/(dcat:distribution/void:subset*)? ?dataset      \n" +
 				"}                                                                          \n"
 				// @formatter:on
 			);
