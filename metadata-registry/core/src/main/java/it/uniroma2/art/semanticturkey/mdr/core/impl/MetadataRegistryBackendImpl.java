@@ -137,8 +137,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	private static final IRI ADMS_VERSION_NOTES = Values.iri("http://www.w3.org/ns/adms#versionNotes");
 	private static final Logger logger = LoggerFactory.getLogger(MetadataRegistryBackendImpl.class);
 
-	private static final String METADATA_REGISTRY_DIRECTORY = "metadataRegistry";
-	private static final String METADATA_REGISTRY_FILE = "catalog.ttl";
+	public static final String METADATA_REGISTRY_DIRECTORY = "metadataRegistry";
+	public static final String METADATA_REGISTRY_FILE = "catalog.ttl";
 	private static final RDFFormat CATALOG_FORMAT = RDFFormat.TURTLE;
 
 	public static final String DEFAULTNS = "http://semanticturkey.uniroma2.it/metadataregistry/";

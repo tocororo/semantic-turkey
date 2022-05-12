@@ -42,6 +42,7 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.extension.ExtensionPointManager;
 import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
 import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine;
+import it.uniroma2.art.semanticturkey.mdr.core.impl.MetadataRegistryBackendImpl;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
@@ -776,7 +777,7 @@ public class UpdateRoutines {
 		printAndLogMessage("Update routine: 10.2.1 -> 11.0");
 
 		/* v11.0 added stdForm/type to the CF generictemplate and introduced the "resource" reserved variable in reifiednote */
-		printAndLogMessage("- Updating adminList system setting");
+		printAndLogMessage("- Updating CustomForm for reified note and generic template");
 		File formsFolder = CustomFormManager.getFormsFolder(null);
 		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
 						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.reifiednote.xml"),
@@ -784,6 +785,14 @@ public class UpdateRoutines {
 		Utilities.copy(Resources.class.getClassLoader().getResourceAsStream(
 						"/it/uniroma2/art/semanticturkey/customform/it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml"),
 				new File(formsFolder, "it.uniroma2.art.semanticturkey.customform.form.generictemplate.xml"));
+
+		/* v11.0 updated MDR, so delete the old catalog.ttl */
+		printAndLogMessage("- Deleting old MDR catalog.ttl file");
+		File registryDirectory = new File(Config.getDataDir(), MetadataRegistryBackendImpl.METADATA_REGISTRY_DIRECTORY);
+		File catalogFile = new File(registryDirectory, MetadataRegistryBackendImpl.METADATA_REGISTRY_FILE);
+		if (catalogFile.exists()) {
+			catalogFile.delete();
+		}
 
 		printAndLogMessage("Update routine 10.2.1 -> 11.0 completed");
 	}
