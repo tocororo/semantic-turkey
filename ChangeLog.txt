@@ -1,3 +1,7 @@
+version 11.0.1
+date: dd/mm/2022
+  *
+
 version 11.0
 date: 12/05/2022
   * resolved a bug concerning repeated delivery of the same event to event listeners. Among the other issues, this might
