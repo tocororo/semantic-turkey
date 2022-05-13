@@ -146,7 +146,6 @@ public class Download extends STServiceAdapter {
     }
 
     @STServiceOperation
-    @PreAuthorize("@auth.isAuthorized('pm(project, downloads)', 'R')")
     public List<RDFFormat> getAvailableFormats() {
         List<RDFFormat> availableFormatsList = new ArrayList<>();
 
