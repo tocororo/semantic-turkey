@@ -77,7 +77,12 @@ public class UsersManager {
     private static void initSystemRolesLists() throws STPropertyAccessException {
         CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
         adminSet = new HashSet<>(systemSettings.adminList);
-        superUserSet = new HashSet<>(systemSettings.superUserList);
+        if (systemSettings.superUserList != null) {
+            superUserSet = new HashSet<>(systemSettings.superUserList);
+        } else {
+            superUserSet = new HashSet<>();
+        }
+
     }
 
     /**
