@@ -56,8 +56,8 @@ public class ADMSDatasetMetadataExporterSettings implements Settings {
 		public static final String asset_identifier$displayName = keyBase + ".asset_identifier.displayName";
 		public static final String asset_identifier_notation$description = keyBase + ".asset_identifier_notation.description";
 		public static final String asset_identifier_notation$displayName = keyBase + ".asset_identifier_notation.displayName";
-		public static final String asset_identifie_creator$description = keyBase + ".asset_identifie_creator.description";
-		public static final String asset_identifie_creator$displayName = keyBase + ".asset_identifie_creator.displayName";
+		public static final String asset_identifier_creator$description = keyBase + ".asset_identifier_creator.description";
+		public static final String asset_identifier_creator$displayName = keyBase + ".asset_identifier_creator.displayName";
 		public static final String asset_identifier_schemeAgency$description = keyBase + ".asset_identifier_schemeAgency.description";
 		public static final String asset_identifier_schemeAgency$displayName = keyBase + ".asset_identifier_schemeAgency.displayName";
 		public static final String asset_temporal$description = keyBase + ".asset_temporal.description";
@@ -78,8 +78,8 @@ public class ADMSDatasetMetadataExporterSettings implements Settings {
 		public static final String asset_includedAsset$displayName = keyBase + ".asset_includedAsset.displayName";
 		public static final String asset_sample$description = keyBase + ".asset_sample.description";
 		public static final String asset_sample$displayName = keyBase + ".asset_sample.displayName";
-		public static final String asset_traslation$description = keyBase + ".asset_traslation.description";
-		public static final String asset_traslation$displayName = keyBase + ".asset_traslation.displayName";
+		public static final String asset_translation$description = keyBase + ".asset_translation.description";
+		public static final String asset_translation$displayName = keyBase + ".asset_translation.displayName";
 		public static final String asset_prev$description = keyBase + ".asset_prev.description";
 		public static final String asset_prev$displayName = keyBase + ".asset_prev.displayName";
 		public static final String asset_last$description = keyBase + ".asset_last.description";
@@ -104,8 +104,8 @@ public class ADMSDatasetMetadataExporterSettings implements Settings {
 		public static final String distribution_title$displayName = keyBase + ".distribution_title.displayName";
 		public static final String distribution_description$description = keyBase + ".distribution_description.description";
 		public static final String distribution_description$displayName = keyBase + ".distribution_description.displayName";
-		public static final String distribution_accessUurl$description = keyBase + ".distribution_accessUurl.description";
-		public static final String distribution_accessUurl$displayName = keyBase + ".distribution_accessUurl.displayName";
+		public static final String distribution_accessUrl$description = keyBase + ".distribution_accessUrl.description";
+		public static final String distribution_accessUrl$displayName = keyBase + ".distribution_accessUrl.displayName";
 		public static final String distribution_downloadUrl$description = keyBase + ".distribution_downloadUrl.description";
 		public static final String distribution_downloadUrl$displayName = keyBase + ".distribution_downloadUrl.displayName";
 		public static final String distribution_licence$description = keyBase + ".distribution_licence.description";
@@ -193,8 +193,8 @@ public class ADMSDatasetMetadataExporterSettings implements Settings {
 	@STProperty(description = "{" + MessageKeys.asset_identifier_notation$description + "}")
 	public String asset_identifier_notation;
 
-	@STProperty(description = "{" + MessageKeys.asset_identifie_creator$description + "}")
-	public String asset_identifie_creator;
+	@STProperty(description = "{" + MessageKeys.asset_identifier_creator$description + "}")
+	public String asset_identifier_creator;
 
 	@STProperty(description = "{" + MessageKeys.asset_identifier_schemeAgency$description + "}")
 	public String asset_identifier_schemeAgency;
@@ -226,8 +226,8 @@ public class ADMSDatasetMetadataExporterSettings implements Settings {
 	@STProperty(description = "{" + MessageKeys.asset_sample$description + "}")
 	public String asset_sample;
 
-	@STProperty(description = "{" + MessageKeys.asset_traslation$description + "}")
-	public String asset_traslation;
+	@STProperty(description = "{" + MessageKeys.asset_translation$description + "}")
+	public String asset_translation;
 
 	@STProperty(description = "{" + MessageKeys.asset_prev$description + "}")
 	public String asset_prev;
@@ -272,8 +272,8 @@ public class ADMSDatasetMetadataExporterSettings implements Settings {
 	@STProperty(description = "{" + MessageKeys.distribution_description$description + "}")
 	public String distribution_description;
 
-	@STProperty(description = "{" + MessageKeys.distribution_accessUurl$description + "}")
-	public String distribution_accessUurl;
+	@STProperty(description = "{" + MessageKeys.distribution_accessUrl$description + "}")
+	public String distribution_accessUrl;
 
 	@STProperty(description = "{" + MessageKeys.distribution_downloadUrl$description + "}")
 	public String distribution_downloadUrl;

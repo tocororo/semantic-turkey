@@ -1,6 +1,5 @@
 package it.uniroma2.art.semanticturkey.extension.impl.datasetmetadata.adms;
 
-import com.google.common.collect.ImmutableMap;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporter;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterException;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
@@ -32,7 +31,6 @@ import org.eclipse.rdf4j.rio.helpers.StatementCollector;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 
 import javax.annotation.Nullable;
-import java.util.Map;
 
 /**
  * A {@link DatasetMetadataExporter} for the <a href="https://www.w3.org/TR/vocab-adms/">Asset Description
@@ -224,14 +222,14 @@ public class ADMSDatasetMetadataExporter implements DatasetMetadataExporter {
 							generateLiteralWithType(asset_identifier_notation, valueFactory)));
 				}
 
-				String asset_identifie_creator = pluginSettings.asset_identifie_creator;
-				if (asset_identifier_iri != null && asset_identifie_creator != null
-						&& !asset_identifie_creator.isEmpty()) {
-					IRI asset_identifie_creator_iri = valueFactory.createIRI(asset_identifie_creator);
+				String asset_identifier_creator = pluginSettings.asset_identifier_creator;
+				if (asset_identifier_iri != null && asset_identifier_creator != null
+						&& !asset_identifier_creator.isEmpty()) {
+					IRI asset_identifier_creator_iri = valueFactory.createIRI(asset_identifier_creator);
 					metadataModel.add(
-							valueFactory.createStatement(asset_identifie_creator_iri, RDF.TYPE, FOAF.AGENT));
+							valueFactory.createStatement(asset_identifier_creator_iri, RDF.TYPE, FOAF.AGENT));
 					metadataModel.add(valueFactory.createStatement(assetIRI, DCTERMS.CREATOR,
-							asset_identifie_creator_iri));
+							asset_identifier_creator_iri));
 				}
 
 				String asset_identifier_schemeAgency = pluginSettings.asset_identifier_schemeAgency;
@@ -319,13 +317,13 @@ public class ADMSDatasetMetadataExporter implements DatasetMetadataExporter {
 							valueFactory.createStatement(assetIRI, ADMSFragment.SAMPLE, asset_sample_iri));
 				}
 
-				String asset_traslation = pluginSettings.asset_traslation;
-				if (asset_traslation != null && !asset_traslation.isEmpty()) {
-					IRI asset_traslation_iri = valueFactory.createIRI(asset_traslation);
-					metadataModel.add(valueFactory.createStatement(asset_traslation_iri, RDF.TYPE,
+				String asset_translation = pluginSettings.asset_translation;
+				if (asset_translation != null && !asset_translation.isEmpty()) {
+					IRI asset_translation_iri = valueFactory.createIRI(asset_translation);
+					metadataModel.add(valueFactory.createStatement(asset_translation_iri, RDF.TYPE,
 							ADMSFragment.ASSETCLASS));
 					metadataModel.add(valueFactory.createStatement(assetIRI, ADMSFragment.TRANSLATION,
-							asset_traslation_iri));
+							asset_translation_iri));
 				}
 
 				String asset_prev = pluginSettings.asset_prev;
@@ -429,10 +427,10 @@ public class ADMSDatasetMetadataExporter implements DatasetMetadataExporter {
 										generateLiteralWithLang(distribution_description, valueFactory)));
 					}
 
-					String distribution_accessUurl = pluginSettings.distribution_accessUurl;
-					if (distribution_accessUurl != null && !distribution_accessUurl.isEmpty()) {
+					String distribution_accessUrl = pluginSettings.distribution_accessUrl;
+					if (distribution_accessUrl != null && !distribution_accessUrl.isEmpty()) {
 						metadataModel.add(valueFactory.createStatement(asset_distribution_iri,
-								DCAT.ACCESS_URL, valueFactory.createIRI(distribution_accessUurl)));
+								DCAT.ACCESS_URL, valueFactory.createIRI(distribution_accessUrl)));
 					}
 
 					String distribution_downloadUrl = pluginSettings.distribution_downloadUrl;
