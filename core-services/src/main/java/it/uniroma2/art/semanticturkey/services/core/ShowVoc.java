@@ -362,7 +362,7 @@ public class ShowVoc extends STServiceAdapter {
 					supportBackendType, uriGeneratorSpecification, renderingEngineSpecification,
 					resourceMetadataAssociations, preloadedDataFile, preloadedDataFormat,
 					transitiveImportAllowance, failedImports, leftDataset, rightDataset, false, null, false,
-					false, false, false);
+					false, null, false);
 
 			Reference reference = parseReference(configurationReference);
 

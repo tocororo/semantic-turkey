@@ -1,5 +1,7 @@
 package it.uniroma2.art.semanticturkey.settings.core;
 
+import it.uniroma2.art.semanticturkey.project.ProjectACL;
+import it.uniroma2.art.semanticturkey.properties.Enumeration;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
 
@@ -24,7 +26,8 @@ public class ProjectCreationSettings implements STProperties {
 
 	@STProperty(description = "{" + MessageKeys.aclUniversalAccessDefault$description + "}", displayName = "{"
 			+ MessageKeys.aclUniversalAccessDefault$displayName + "}")
-	public Boolean aclUniversalAccessDefault;
+	@Enumeration({ "R", "RW", "EXT" })
+	public ProjectACL.AccessLevel aclUniversalAccessDefault;
 
 	@STProperty(description = "{" + MessageKeys.openAtStartUpDefault$description + "}", displayName = "{"
 			+ MessageKeys.openAtStartUpDefault$displayName + "}")

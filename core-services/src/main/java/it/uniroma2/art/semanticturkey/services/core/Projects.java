@@ -228,7 +228,7 @@ public class Projects extends STServiceAdapter {
             @Optional String rightDataset, @Optional boolean shaclEnabled,
             @Optional @JsonSerialized SHACLSettings shaclSettings, @Optional boolean trivialInferenceEnabled,
             @Optional(defaultValue = "false") boolean openAtStartup,
-            @Optional(defaultValue = "false") boolean globallyAccessible,
+            @Optional AccessLevel universalAccess,
             @Optional Literal label, @Optional(defaultValue = "false") boolean undoEnabled)
             throws ProjectInconsistentException, InvalidProjectNameException, ProjectInexistentException,
             ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
@@ -278,7 +278,7 @@ public class Projects extends STServiceAdapter {
                     supportRepoSailConfigurerSpecification, supportBackendType, uriGeneratorSpecification,
                     renderingEngineSpecification, resourceMetadataAssociations, preloadedDataFile,
                     preloadedDataFormat, transitiveImportAllowance, failedImports, leftDataset, rightDataset,
-                    shaclEnabled, shaclSettings, trivialInferenceEnabled, openAtStartup, globallyAccessible, undoEnabled);
+                    shaclEnabled, shaclSettings, trivialInferenceEnabled, openAtStartup, universalAccess, undoEnabled);
             deletePreloadedDataFile = true;
         } finally {
             if (preloadedDataFileName != null) {
@@ -646,13 +646,8 @@ public class Projects extends STServiceAdapter {
         ProjectACL projectAcl = project.getACL();
 
         String availableAclLevel = null;
-        // universal access level is valid for every project consumers except for SYSTEM
-        AccessLevel aclUniversal = (consumer != ProjectConsumer.SYSTEM) ? projectAcl.getUniversalAccessLevel()
-                : null;
         AccessLevel aclForConsumer = projectAcl.getAccessLevelForConsumer(consumer);
-        if (aclUniversal != null) {
-            availableAclLevel = aclUniversal.name();
-        } else if (aclForConsumer != null) {
+        if (aclForConsumer != null) {
             availableAclLevel = aclForConsumer.name();
         }
         consumerNode.set("availableACLLevel", jsonFactory.textNode(availableAclLevel));

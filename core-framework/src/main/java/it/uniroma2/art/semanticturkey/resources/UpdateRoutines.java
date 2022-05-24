@@ -45,6 +45,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.rendering.RenderingEngine
 import it.uniroma2.art.semanticturkey.mdr.core.impl.MetadataRegistryBackendImpl;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
+import it.uniroma2.art.semanticturkey.project.ProjectACL;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
 import it.uniroma2.art.semanticturkey.properties.STProperties;
@@ -189,6 +190,9 @@ public class UpdateRoutines {
 			}
 			if (stDataVersionNumber.compareTo(new VersionNumber(11, 0, 0)) < 0) {
 				alignFrom10_2_1To11_0();
+			}
+			if (stDataVersionNumber.compareTo(new VersionNumber(11, 0, 1)) < 0) {
+				alignFrom11To11_0_1();
 			}
 
 
@@ -795,6 +799,35 @@ public class UpdateRoutines {
 		}
 
 		printAndLogMessage("Update routine 10.2.1 -> 11.0 completed");
+	}
+
+	private static void alignFrom11To11_0_1() throws STPropertyAccessException, IOException {
+		printAndLogMessage("Update routine: 11.0 -> 11.0.1");
+
+		/* v11.0.1 replaced boolean aclUniversalAccessDefault with valid AccessLevel value */
+		printAndLogMessage("- Updating aclUniversalAccessDefault system core settings");
+
+		/*
+		here I need to read system settings file with ObjectMapper and not with API STPropertiesManager.getSystemSettings
+		since openAtStartUpDefault has been refactored (from Boolean to enum) and the API would fail to load the settings file
+		 */
+		ObjectMapper om = STPropertiesManager.createObjectMapper();
+		File systemSettingsFile = STPropertiesManager.getSystemSettingsFile(SemanticTurkeyCoreSettingsManager.class.getName());
+		ObjectNode objNode = (ObjectNode) om.readTree(systemSettingsFile);
+		JsonNode projectCreationNode = objNode.get("projectCreation");
+		if (projectCreationNode != null) {
+			System.out.println("projectCreationNode " + projectCreationNode);
+			boolean aclUniversalAccessDefault = projectCreationNode.get("aclUniversalAccessDefault").asBoolean();
+			System.out.println("aclUniversalAccessDefault " + aclUniversalAccessDefault);
+			if (aclUniversalAccessDefault) {
+				((ObjectNode)projectCreationNode).set("aclUniversalAccessDefault", JsonNodeFactory.instance.textNode(ProjectACL.AccessLevel.R.toString()));
+				STPropertiesManager.storeObjectNodeInYAML(objNode, systemSettingsFile);
+			}
+		}
+//		CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
+//		System.out.println(systemSettings.projectCreation.aclUniversalAccessDefault);
+
+		printAndLogMessage("Update routine 11.0 -> 11.0.1 completed");
 	}
 
 	private static <T> void convertPropertiesSettingToYAML(Properties properties, String oldProp, ObjectNode settingsObjectNode, String yamlProp, Functions.FailableFunction<String, T, IOException> propValueConverter) throws IOException {

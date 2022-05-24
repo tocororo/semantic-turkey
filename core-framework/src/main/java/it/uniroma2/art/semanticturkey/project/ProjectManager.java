@@ -73,6 +73,7 @@ import it.uniroma2.art.semanticturkey.trivialinference.sail.config.TrivialInfere
 import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
 import it.uniroma2.art.semanticturkey.user.ProjectGroupBindingsManager;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.utilities.ModelBasedRepositoryManager;
 import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
@@ -304,7 +305,7 @@ public class ProjectManager {
 	 * @return
 	 * @throws ProjectAccessException
 	 */
-	public static Collection<Project> listOpenProjects(ProjectConsumer consumer) throws ProjectAccessException {
+	public static Collection<Project> listOpenProjects(ProjectConsumer consumer) {
 		Set<Project> allOpenProjects = openProjects.listAccessedProjects(ProjectConsumer.SYSTEM);
 
 		if (consumer == null) {
@@ -314,7 +315,7 @@ public class ProjectManager {
 		}
 	}
 
-	public static Collection<Project> listOpenProjects() throws ProjectAccessException {
+	public static Collection<Project> listOpenProjects() {
 		return listOpenProjects(null);
 	}
 
@@ -954,16 +955,19 @@ public class ProjectManager {
 	}
 
 	public static AccessResponse checkAccessibility(ProjectConsumer consumer, Project project,
-			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel) {
+			ProjectACL.AccessLevel requestedAccessLevel, ProjectACL.LockLevel requestedLockLevel
+//			, STUser user
+	) {
 
 		ProjectACL acl = project.getACL();
 
 		// statically checking accessibility to the project through the projects' ACL
-		if (!acl.isAccessibleFrom(consumer, requestedAccessLevel, requestedLockLevel))
+		if (!acl.isAccessibleFrom(consumer, requestedAccessLevel, requestedLockLevel)) {
 			return new AccessResponse(false,
 					"the Access Control List of project " + project.getName()
 							+ " forbids access from consumer " + consumer.getName() + " with access level: "
 							+ requestedAccessLevel + " and lock level: " + requestedLockLevel);
+		}
 
 		// only if project is already open, dynamically checks its runtime status and its accessibility
 		if (openProjects.isOpen(project)) {
@@ -993,7 +997,6 @@ public class ProjectManager {
 				return new AccessResponse(false, "AccessLevel " + ProjectACL.AccessLevel.R
 						+ " forbids request for an R lock on project " + project);
 		}
-
 		return new AccessResponse(true);
 	}
 
@@ -1424,7 +1427,7 @@ public class ProjectManager {
                                         RDFFormat preloadedDataFormat, TransitiveImportMethodAllowance transitiveImportAllowance,
                                         Set<IRI> failedImports, String leftDataset, String rightDataset, boolean shaclEnabled,
                                         SHACLSettings shaclSettings, boolean trivialInferenceEnabled, boolean openAtStartup,
-                                        boolean globallyAccessible, boolean undoEnabled) throws InvalidProjectNameException, ProjectInexistentException,
+                                        AccessLevel universalAccess, boolean undoEnabled) throws InvalidProjectNameException, ProjectInexistentException,
 			ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
 			ProjectCreationException, ClassNotFoundException, WrongPropertiesException, RBACException,
 			UnsupportedModelException, UnsupportedLexicalizationModelException, ProjectInconsistentException,
@@ -1725,8 +1728,8 @@ public class ProjectManager {
 				rightDatasetProject.getACL().grantAccess(projectBeingCreated, AccessLevel.R);
 			}
 
-			if (globallyAccessible) {
-				project.getACL().grantUniversalAccess(AccessLevel.R);
+			if (universalAccess != null) {
+				project.getACL().grantUniversalAccess(universalAccess);
 			}
 
 			// init the resource metadata associations

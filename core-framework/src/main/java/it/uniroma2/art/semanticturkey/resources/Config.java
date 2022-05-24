@@ -30,6 +30,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import it.uniroma2.art.semanticturkey.properties.STProperties;
 import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
@@ -133,8 +136,14 @@ public class Config {
 			//check if the "new" settings file is available in SemanticTurkeyCoreSettingsManager plugin folder
 			File newSystemSettingsFile = STPropertiesManager.getSystemSettingsFile(SemanticTurkeyCoreSettingsManager.class.getName());
 			if (newSystemSettingsFile.exists()) { //in case gets this version number
-				CoreSystemSettings coreSystemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
-				versionCode = coreSystemSettings.stDataVersion;
+				/*
+				here I need to read system settings file with ObjectMapper and not with API STPropertiesManager.getSystemSettings
+				since in case of refactoring of settings (e.g. in v11.0.1 openAtStartUpDefault changed from Boolean to enum)
+				the API would fail to load the settings file
+				 */
+				ObjectMapper om = STPropertiesManager.createObjectMapper();
+				JsonNode objNode = om.readTree(newSystemSettingsFile);
+				versionCode = objNode.get("stDataVersion").asText();
 			} else { //otherwise gets it from the old system properties file
 				File oldCoreSettingsFile = STPropertiesManager.getSystemSettingsFile(Config.CORE_PLUGIN_ID);
 				try (FileInputStream fis = new FileInputStream(oldCoreSettingsFile)) {
@@ -143,9 +152,12 @@ public class Config {
 					versionCode = properties.getProperty(stDataVersionNumberPropName);
 				};
 			}
-		} catch (STPropertyAccessException | IOException e) {
+		} catch (IOException e) {
 			return new VersionNumber(0, 0, 0);
 		}
+//		} catch (STPropertyAccessException | IOException e) {
+//			return new VersionNumber(0, 0, 0);
+//		}
 		return new VersionNumber(versionCode);
 	}
 	

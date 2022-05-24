@@ -13,8 +13,6 @@ import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
-import it.uniroma2.art.semanticturkey.resources.Reference;
-import it.uniroma2.art.semanticturkey.showvoc.ShowVocConstants;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
@@ -28,11 +26,13 @@ import it.uniroma2.art.semanticturkey.rbac.HarmingGoalException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACProcessor;
 import it.uniroma2.art.semanticturkey.rbac.TheoryNotFoundException;
+import it.uniroma2.art.semanticturkey.resources.Reference;
 import it.uniroma2.art.semanticturkey.resources.Scope;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
 import it.uniroma2.art.semanticturkey.services.STServiceContext;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
+import it.uniroma2.art.semanticturkey.showvoc.ShowVocConstants;
 import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryUtils;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
@@ -55,9 +55,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * http://stackoverflow.com/a/14904130/5805661
