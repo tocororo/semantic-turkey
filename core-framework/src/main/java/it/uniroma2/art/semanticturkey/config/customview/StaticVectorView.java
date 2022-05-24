@@ -22,6 +22,7 @@ import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,7 +53,7 @@ public class StaticVectorView extends CustomView {
         cvData.setModel(getModelType());
         cvData.setDefaultView(suggestedView);
 
-        Map<IRI, String> propValueMap = new HashMap<>();
+        Map<IRI, String> propValueMap = new LinkedHashMap<>();
         List<String> valuesVariables = new ArrayList<>();
         List<String> whereBlocks = new ArrayList<>();
 
