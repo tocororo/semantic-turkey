@@ -26,6 +26,7 @@ package it.uniroma2.art.semanticturkey.resources;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
@@ -54,7 +55,6 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager.DefaultRole;
-import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
 import it.uniroma2.art.semanticturkey.storage.StorageManager;
 import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
@@ -747,6 +747,7 @@ public class UpdateRoutines {
 		/* v 10.2.1 replaced email with IRI in adminList setting */
 		printAndLogMessage("- Updating adminList system setting");
 		/* Administrators are now stored through their IRI, instead of email. So, replace email with users' IRI */
+
 		//users initialization in UsersManager is run after the UpdateRoutines, so here I need to use UserRepoHelper
 		UsersRepoHelper userRepoHelper = new UsersRepoHelper();
 		Collection<File> userDetailsFolders = UsersManager.getAllUserDetailsFiles();
@@ -755,24 +756,40 @@ public class UpdateRoutines {
 		}
 		Collection<STUser> userList = userRepoHelper.listUsers();
 
-		CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
-		//collect admin users => those users which email (or IRI) appears in adminList setting
+		/*
+		cannot read adminList by parsing system settings using API
+		STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
+		since in v11.0.1 CoreSystemSettings -> ProjectCreationSettings -> aclUniversalAccessDefault has been refactored
+		from Boolean to AccessLevel, so such API could not parse system settings file accordingly
+		the model defined by CoreSystemSettings
+		 */
+		ObjectMapper om = STPropertiesManager.createObjectMapper();
+		File systemSettingsFile = STPropertiesManager.getSystemSettingsFile(SemanticTurkeyCoreSettingsManager.class.getName());
+		ObjectNode systemSettingsNode = (ObjectNode) om.readTree(systemSettingsFile);
+		ArrayNode adminListNode = (ArrayNode) systemSettingsNode.get("adminList");
+		List<String> adminList = new ArrayList<>();
+		for (JsonNode adminNode : adminListNode) {
+			adminList.add(adminNode.asText());
+		}
+
 		List<STUser> adminUsers = userList.stream()
-				.filter(u -> systemSettings.adminList.contains(u.getEmail()) ||
-						systemSettings.adminList.contains(u.getIRI().stringValue())) //OR with getIRI is to prevent issues in case the update routine was already triggered before
-				.collect(Collectors.toList());
-		//write adminList as list of admini IRI
-		systemSettings.adminList = adminUsers.stream()
-				.map(u-> u.getIRI().stringValue())
-				.collect(Collectors.toSet());
-		STPropertiesManager.setSystemSettings(systemSettings, SemanticTurkeyCoreSettingsManager.class.getName());
+			.filter(u -> adminList.contains(u.getEmail()) ||
+					adminList.contains(u.getIRI().stringValue())) //OR with getIRI is to prevent issues in case the update routine was already triggered before
+			.collect(Collectors.toList());
+
+		//replace the old admin identifiers (likely email) with the IRIs
+		for (int i = 0; i < adminUsers.size(); i++) {
+			adminListNode.set(i, JsonNodeFactory.instance.textNode(adminUsers.get(i).getIRI().stringValue()));
+		}
 
 		/* v 10.2.1 added superUserList in the system settings file */
 		printAndLogMessage("- Adding superUserList system setting");
-		if (systemSettings.superUserList == null) {
-			systemSettings.superUserList = new HashSet<>();
+		if (systemSettingsNode.get("superUserList") == null) {
+			systemSettingsNode.set("superUserList", JsonNodeFactory.instance.arrayNode());
 		}
-		STPropertiesManager.setSystemSettings(systemSettings, SemanticTurkeyCoreSettingsManager.class.getName());
+
+		STPropertiesManager.storeObjectNodeInYAML(systemSettingsNode, systemSettingsFile);
+
 
 		printAndLogMessage("Update routine 10.2 -> 10.2.1 completed");
 	}
@@ -816,17 +833,14 @@ public class UpdateRoutines {
 		ObjectNode objNode = (ObjectNode) om.readTree(systemSettingsFile);
 		JsonNode projectCreationNode = objNode.get("projectCreation");
 		if (projectCreationNode != null) {
-			System.out.println("projectCreationNode " + projectCreationNode);
 			boolean aclUniversalAccessDefault = projectCreationNode.get("aclUniversalAccessDefault").asBoolean();
-			System.out.println("aclUniversalAccessDefault " + aclUniversalAccessDefault);
 			if (aclUniversalAccessDefault) {
 				((ObjectNode)projectCreationNode).set("aclUniversalAccessDefault", JsonNodeFactory.instance.textNode(ProjectACL.AccessLevel.R.toString()));
-				STPropertiesManager.storeObjectNodeInYAML(objNode, systemSettingsFile);
+			} else {
+				((ObjectNode)projectCreationNode).remove("aclUniversalAccessDefault");
 			}
+			STPropertiesManager.storeObjectNodeInYAML(objNode, systemSettingsFile);
 		}
-//		CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
-//		System.out.println(systemSettings.projectCreation.aclUniversalAccessDefault);
-
 		printAndLogMessage("Update routine 11.0 -> 11.0.1 completed");
 	}
 
