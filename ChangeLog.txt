@@ -1,6 +1,8 @@
 version 11.0.1
 date: dd/mm/2022
-  * Introduced the new access level "EXT" for universal project accessibility
+  * introduced the new access level "EXT" for universal project accessibility
+  * updated dependency on CODA 1.7.6
+  * updated dependency on Sheet2RDF 5.0.2
 
 version 11.0
 date: 12/05/2022
