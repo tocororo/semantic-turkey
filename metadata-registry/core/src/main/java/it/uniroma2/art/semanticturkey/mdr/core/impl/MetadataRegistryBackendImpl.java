@@ -1094,22 +1094,24 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			checkLocallyDefined(conn, dataset);
 			Update update = conn.prepareUpdate(
 			// @formatter:off
+				" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                       \n" +
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
 				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
 				" PREFIX void: <http://rdfs.org/ns/void#>                                         \n" +
 				"                                                                                 \n" +
 				" DELETE {                                                                        \n" +
 				"   ?record dcterms:modified ?oldModified .                                       \n" +
-				"   ?dataset void:sparqlEndpoint ?oldEndpoint .                                   \n" +
+				"   ?distribution void:sparqlEndpoint ?oldEndpoint .                              \n" +
 				" }                                                                               \n" +
 				" INSERT {                                                                        \n" +
 				"   ?record dcterms:modified ?now .                                               \n" +
-				"   ?dataset void:sparqlEndpoint ?endpoint .                                      \n" + 
+				"   ?distribution void:sparqlEndpoint ?endpoint .                                 \n" +
 				" }                                                                               \n" +
 				" WHERE {                                                                         \n" +
 				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
+				"   ?dataset dcat:distribution ?distribution .                                    \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
-				"   OPTIONAL { ?dataset void:sparqlEndpoint ?oldEndpoint }                        \n" +
+				"   OPTIONAL { ?distribution void:sparqlEndpoint ?oldEndpoint }                   \n" +
 				"   BIND(NOW() AS ?now)                                                           \n" +
 				" }                                                                               \n"
 				// @formatter:on
@@ -1176,6 +1178,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		try (RepositoryConnection conn = getConnection()) {
 			Update update = conn.prepareUpdate(
 			// @formatter:off
+				" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                       \n" +
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
 				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
 				" PREFIX void: <http://rdfs.org/ns/void#>                                         \n" +
@@ -1189,7 +1192,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"   ?endpoint mdreg:sparqlEndpointLimitation ?limitation .                        \n" + 
 				" }                                                                               \n" +
 				" WHERE {                                                                         \n" +
-				"   ?dataset void:sparqlEndpoint ?endpoint .                                      \n" +
+				"   ?dataset dcat:distribution ?distribution .                                    \n" +
+				"   ?distribution void:sparqlEndpoint ?endpoint .                                 \n" +
 				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
 				"   BIND(NOW() AS ?now)                                                           \n" +
@@ -1210,6 +1214,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		try (RepositoryConnection conn = getConnection()) {
 			Update update = conn.prepareUpdate(
 			// @formatter:off
+				" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                       \n" +
 				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
 				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
 				" PREFIX void: <http://rdfs.org/ns/void#>                                         \n" +
@@ -1223,7 +1228,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"   ?record dcterms:modified ?now .                                               \n" +
 				" }                                                                               \n" +
 				" WHERE {                                                                         \n" +
-				"   ?dataset void:sparqlEndpoint ?endpoint .                                      \n" +
+				"   ?dataset dcat:distribution ?distribution .                                    \n" +
+				"   ?distribution void:sparqlEndpoint ?endpoint .                                 \n" +
 				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
 				"   BIND(NOW() AS ?now)                                                           \n" +
