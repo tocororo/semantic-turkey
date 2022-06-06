@@ -8,7 +8,8 @@ import com.google.common.base.MoreObjects;
 public class DatasetSearchResultPage {
     @JsonProperty(required = false)
     private String message;
-    private boolean success;
+    @JsonProperty(required = false)
+    private boolean success = true;
     private DatasetSearchResultContainer result;
 
     public boolean isSuccess() {
