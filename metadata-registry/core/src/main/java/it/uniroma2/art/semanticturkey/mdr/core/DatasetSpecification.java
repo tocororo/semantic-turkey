@@ -5,6 +5,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.DCAT;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -42,6 +43,9 @@ public class DatasetSpecification {
         if (distribution != null) {
             model.add(identity, DCAT.HAS_DISTRIBUTION, distribution.getIdentity());
             distribution.export(model, vf);
+            if (uriSpace != null) { // override distribution urispace per backward compatibility
+                Models.setProperty(model, distribution.getIdentity(), VOID.URI_SPACE, vf.createLiteral(uriSpace));
+            }
         }
     }
 

@@ -87,6 +87,14 @@ public interface MetadataRegistryBackend {
 								Literal title,
 								Literal description, Boolean dereferenceable) throws MetadataRegistryWritingException;
 
+	/**
+	 * Returns metadata about a given catalog record
+	 *
+	 * @param catalogRecord a catalog record
+	 * @return metadata about the provided catalog record or null if none is found
+	 */
+	CatalogRecord2 getCatalogRecordMetadata(IRI catalogRecord);
+
 	/// --- OLD METHODS --- ///
 
 	/**

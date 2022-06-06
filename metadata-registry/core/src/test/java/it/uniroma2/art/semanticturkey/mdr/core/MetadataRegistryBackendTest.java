@@ -159,123 +159,27 @@ public class MetadataRegistryBackendTest {
 
 	}
 
-
-	@Ignore
 	@Test
-	public void test() throws IllegalArgumentException, MetadataRegistryWritingException, IOException,
-			NoSuchDatasetMetadataException, MetadataRegistryStateException {
-
-		// Adds the Agrovoc DatasetSpecification
-
-		IRI agrovocCatalogRecordIRI = metadataRegistryBackend.addDataset(
-				vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"),
-				"http://aims.fao.org/aos/agrovoc/", "Agrovoc", true,
-				vf.createIRI("http://agrovoc.fao.org/sparql"));
-
-		// Tests that the dataset is available via the catalog record
-
-		Collection<CatalogRecord> records = metadataRegistryBackend.getCatalogRecords();
-
-		assertThat(records, hasSize(1));
-
-		CatalogRecord agrovocCatalogRecord = records.iterator().next();
-
-		assertThat(agrovocCatalogRecord.getIdentity(), equalTo(agrovocCatalogRecordIRI));
-		assertThat(agrovocCatalogRecord.getIssued(), is(notNullValue()));
-		assertThat(agrovocCatalogRecord.getModified(), is(nullValue()));
-
-		DatasetMetadata agrovocDataset = agrovocCatalogRecord.getAbstractDataset();
-
-		assertAgrovocDataset(agrovocDataset);
-
-		assertThat(agrovocDataset.getVersionInfo().isPresent(), is(false));
-
-		assertThat(agrovocCatalogRecord.getVersions(), is(empty()));
-
-		// Tests that the dataset is available via direct lookup
-
-		agrovocDataset = metadataRegistryBackend
-				.getDatasetMetadata(vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"));
-
-		assertAgrovocDataset(agrovocDataset);
-
-		// Adds a fictional version of the Agrovoc dataset
-
-		metadataRegistryBackend.addDatasetVersion(agrovocCatalogRecordIRI, null, "999.99");
-
-		records = metadataRegistryBackend.getCatalogRecords();
-
-		assertThat(records, hasSize(1));
-
-		agrovocCatalogRecord = records.iterator().next();
-
-		assertThat(agrovocCatalogRecord.getModified(), is(notNullValue()));
-
-		agrovocDataset = agrovocCatalogRecord.getAbstractDataset();
-		List<DatasetMetadata> agrovocVersions = agrovocCatalogRecord.getVersions();
-
-		assertThat(agrovocVersions, hasSize(1));
-
-		DatasetMetadata agrovoc999_99 = agrovocVersions.iterator().next();
-
-		assertThat(agrovoc999_99.getVersionInfo().orElseThrow(() -> new AssertionError("Empty optional")),
-				is(equalTo("999.99")));
-
-		// Adds an embedded lexicalization set for Agrovoc
-
-		metadataRegistryBackend.addEmbeddedLexicalizationSet(agrovocDataset.getIdentity(), null, null,
-				SKOSXL_LEXICALIZATION_MODEL, "en", BigInteger.valueOf(1000), BigInteger.valueOf(2000),
-				BigInteger.valueOf(2000), BigDecimal.valueOf(1), BigDecimal.valueOf(2));
-
-		Collection<LexicalizationSetMetadata> agrovocEmbeddedLexicalizationSets = metadataRegistryBackend
-				.getEmbeddedLexicalizationSets(agrovocDataset.getIdentity());
-
-		assertThat(agrovocEmbeddedLexicalizationSets, hasSize(1));
-
-		LexicalizationSetMetadata agrovocLexicalizatioSet = agrovocEmbeddedLexicalizationSets.iterator()
-				.next();
-
-		assertThat(agrovocLexicalizatioSet.getReferenceDataset(), equalTo(agrovocDataset.getIdentity()));
-		assertFalse(agrovocLexicalizatioSet.getLexiconDataset().isPresent());
-		assertThat(agrovocLexicalizatioSet.getLexicalizationModel(), equalTo(SKOSXL_LEXICALIZATION_MODEL));
-		assertThat(agrovocLexicalizatioSet.getLanguage(), equalTo("en"));
-
-		assertThat(agrovocLexicalizatioSet.getReferences().get(), equalTo(BigInteger.valueOf(1000)));
-		assertThat(agrovocLexicalizatioSet.getReferences().get(), equalTo(BigInteger.valueOf(1000)));
-		assertThat(agrovocLexicalizatioSet.getLexicalEntries().get(), equalTo(BigInteger.valueOf(2000)));
-		assertThat(agrovocLexicalizatioSet.getLexicalizations().get(), equalTo(BigInteger.valueOf(2000)));
-		assertThat(agrovocLexicalizatioSet.getPercentage().get(), equalTo(BigDecimal.valueOf(1)));
-		assertThat(agrovocLexicalizatioSet.getAvgNumOfLexicalizations().get(),
-				equalTo(BigDecimal.valueOf(2)));
-
-	}
-
-	@Test
-	public void testDiscoverAgrovocFromResource() throws MetadataDiscoveryException {
+	public void testDiscoverAgrovocFromResource() throws MetadataDiscoveryException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(
 				SimpleValueFactory.getInstance().createIRI("http://aims.fao.org/aos/agrovoc/c_12332"));
 
-		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
-				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
-				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
-
-		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
+		CatalogRecord2 catalogRecord = metadataRegistryBackend.getCatalogRecordMetadata(catalogRecordIRI);
+		DatasetMetadata agrovocDataset = metadataRegistryBackend.getDatasetMetadata(catalogRecord.getDataset().getIdentity());
 		Collection<LexicalizationSetMetadata> agrovocLexicalizationSets = metadataRegistryBackend
 				.getEmbeddedLexicalizationSets(agrovocDataset.getIdentity());
+
 		assertAgrovocDataset(agrovocDataset);
 		assertAgrovocLexicalizationSets(agrovocLexicalizationSets);
 	}
 
 	@Test
-	public void testDiscoverAgrovocFromVoID() throws MetadataDiscoveryException {
+	public void testDiscoverAgrovocFromVoID() throws MetadataDiscoveryException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(SimpleValueFactory.getInstance()
 				.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"));
 
-		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
-				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
-				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
-
-		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
+		CatalogRecord2 catalogRecord = metadataRegistryBackend.getCatalogRecordMetadata(catalogRecordIRI);
+		DatasetMetadata agrovocDataset = metadataRegistryBackend.getDatasetMetadata(catalogRecord.getDataset().getIdentity());
 		Collection<LexicalizationSetMetadata> agrovocLexicalizationSets = metadataRegistryBackend
 				.getEmbeddedLexicalizationSets(agrovocDataset.getIdentity());
 
@@ -284,8 +188,6 @@ public class MetadataRegistryBackendTest {
 	}
 
 	public static void assertAgrovocDataset(DatasetMetadata agrovocDataset) throws AssertionError {
-		assertThat(agrovocDataset.getIdentity(), equalTo(SimpleValueFactory.getInstance()
-				.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc")));
 		assertThat(agrovocDataset.getUriSpace().orElseThrow(() -> new AssertionError("Empty optional")),
 				equalTo("http://aims.fao.org/aos/agrovoc/"));
 		assertThat(agrovocDataset.getTitle().orElseThrow(() -> new AssertionError("Empty optional")),
@@ -309,48 +211,36 @@ public class MetadataRegistryBackendTest {
 	}
 
 	@Test
-	public void testDiscoverFOAFFromResource() throws MetadataDiscoveryException {
+	public void testDiscoverFOAFFromResource() throws MetadataDiscoveryException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(
 				SimpleValueFactory.getInstance().createIRI("http://xmlns.com/foaf/0.1/Person"));
 
-		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
-				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
-				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
-
-		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
-		assertFOAFDataset(agrovocDataset);
+		CatalogRecord2 catalogRecord = metadataRegistryBackend.getCatalogRecordMetadata(catalogRecordIRI);
+		DatasetMetadata foafDataset = metadataRegistryBackend.getDatasetMetadata(catalogRecord.getDataset().getIdentity());
+		assertFOAFDataset(foafDataset);
 	}
 
 	@Test
-	public void testDiscoverFOAFFromURISpace() throws MetadataDiscoveryException {
+	public void testDiscoverFOAFFromURISpace() throws MetadataDiscoveryException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		IRI catalogRecordIRI = metadataRegistryBackend
 				.discoverDataset(SimpleValueFactory.getInstance().createIRI("http://xmlns.com/foaf/0.1/"));
 
-		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
-				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
-				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
-
-		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
-		assertFOAFDataset(agrovocDataset);
+		CatalogRecord2 catalogRecord = metadataRegistryBackend.getCatalogRecordMetadata(catalogRecordIRI);
+		DatasetMetadata foafDataset = metadataRegistryBackend.getDatasetMetadata(catalogRecord.getDataset().getIdentity());
+		assertFOAFDataset(foafDataset);
 	}
 
 	@Test
-	public void testDiscoverFOAFFromBaseURIWithoutEndingSlash() throws MetadataDiscoveryException {
+	public void testDiscoverFOAFFromBaseURIWithoutEndingSlash() throws MetadataDiscoveryException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		IRI catalogRecordIRI = metadataRegistryBackend
 				.discoverDataset(SimpleValueFactory.getInstance().createIRI("http://xmlns.com/foaf/0.1"));
 
-		CatalogRecord catalogRecord = metadataRegistryBackend.getCatalogRecords().stream()
-				.filter(record -> Objects.equal(record.getIdentity(), catalogRecordIRI)).findAny()
-				.orElseThrow(() -> new AssertionError("Unable to find the newly created catalog record"));
-
-		DatasetMetadata agrovocDataset = catalogRecord.getAbstractDataset();
-		assertFOAFDataset(agrovocDataset);
-
+		CatalogRecord2 catalogRecord = metadataRegistryBackend.getCatalogRecordMetadata(catalogRecordIRI);
+		DatasetMetadata foafDataset = metadataRegistryBackend.getDatasetMetadata(catalogRecord.getDataset().getIdentity());
+		assertFOAFDataset(foafDataset);
 	}
 
 	public static void assertFOAFDataset(DatasetMetadata foafDataset) throws AssertionError {
-		assertThat(foafDataset.getIdentity(),
-				equalTo(SimpleValueFactory.getInstance().createIRI("http://xmlns.com/foaf/0.1/")));
 		assertThat(foafDataset.getUriSpace().orElseThrow(() -> new AssertionError("Empty optional")),
 				equalTo("http://xmlns.com/foaf/0.1/"));
 		assertThat(foafDataset.getTitle().orElseThrow(() -> new AssertionError("Empty optional")),
@@ -365,9 +255,20 @@ public class MetadataRegistryBackendTest {
 	@Test
 	public void testAssessmentOfDBPediaLexicalizationModel()
 			throws IllegalArgumentException, MetadataRegistryWritingException, AssessmentException {
-		IRI dbpediaDataset = vf.createIRI("http://dbpedia.org/void/Dataset");
-		metadataRegistryBackend.addDataset(dbpediaDataset, "http://dbpedia.org/resource/", "DBpedia", true,
-				vf.createIRI("http://dbpedia.org/sparql"));
+		Distribution distribution = new Distribution(
+				null,
+				METADATAREGISTRY.SPARQL_ENDPOINT,
+				Values.iri("http://dbpedia.org/sparql"),
+				null);
+		IRI dbpediaDataset = metadataRegistryBackend.createConcreteDataset(
+				"DBPedia_LOD",
+				"http://dbpedia.org/resource/",
+				Values.literal("DBpedia", "en"),
+				Values.literal("DBpedia", "en"),
+				true,
+				distribution,
+				null
+		);
 
 		metadataRegistryBackend.discoverLexicalizationSets(dbpediaDataset);
 
@@ -381,11 +282,20 @@ public class MetadataRegistryBackendTest {
 	@Test
 	public void testAssessmentOfAgrovocLexicalizationModel()
 			throws IllegalArgumentException, MetadataRegistryWritingException, AssessmentException {
-		IRI agrovocDataset = vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc");
-		metadataRegistryBackend.addDataset(agrovocDataset, "http://aims.fao.org/aos/agrovoc/", "Agrovoc",
-				true, vf.createIRI("http://agrovoc.fao.org/sparql"));
-
-		metadataRegistryBackend.discoverLexicalizationSets(agrovocDataset);
+		Distribution distribution = new Distribution(
+				null,
+				METADATAREGISTRY.SPARQL_ENDPOINT,
+				Values.iri("http://agrovoc.fao.org/sparql"),
+				null);
+		IRI dbpediaDataset = metadataRegistryBackend.createConcreteDataset(
+				"AGROVOC_LOD",
+				"http://aims.fao.org/aos/agrovoc/",
+				Values.literal("Agrovoc", "en"),
+				Values.literal("Agrovoc", "en"),
+				true,
+				distribution,
+				null
+		);
 
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
 			conn.export(

@@ -34,6 +34,8 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
@@ -52,9 +54,12 @@ import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.STMETADATAREGISTRY;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.IsolationLevels;
+import org.eclipse.rdf4j.common.iteration.CloseableIteration;
+import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
@@ -85,6 +90,7 @@ import org.eclipse.rdf4j.queryrender.RenderUtils;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.repository.util.RDFLoader;
@@ -403,6 +409,40 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					"ORDER BY asc(?dataset) asc(?record)\n");
 			try (TupleQueryResult result = query.evaluate()) {
 				return parseCatalogRecords(result);
+			}
+		}
+	}
+
+	@Override
+	public CatalogRecord2 getCatalogRecordMetadata(IRI catalogRecord) {
+		try(RepositoryConnection con = getConnection()) {
+			TupleQuery query = con.prepareTupleQuery("PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" +
+					"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
+					"PREFIX mdr: <http://semanticturkey.uniroma2.it/ns/mdr#>\n" +
+					"PREFIX void: <http://rdfs.org/ns/void#>\n" +
+					"\n" +
+					"SELECT *\n" +
+					"WHERE " +
+					"{\n" +
+					"    ?dataset ^foaf:primaryTopic ?record .\n" +
+					"    {\n" +
+					"    " +
+					"   ?record ?record_p ?record_o .   \n" +
+					"    } UNION " +
+					"{\n" +
+					"        ?dataset ?dataset_p ?dataset_o \n" +
+					"    " +
+					"} UNION {\n" +
+					"        ?dataset (mdr:master|mdr:lod|dcat:hasVersion) / void:uriSpace ?otherURISpace\n" +
+					"    " +
+					"} UNION {\n" +
+					"         ?dataset dcat:distribution/rdf:type ?distributionType\n" +
+					"    }\n" +
+					"}\n" +
+					"ORDER BY asc(?dataset) asc(?record)\n");
+			query.setBinding("record", catalogRecord);
+			try (TupleQueryResult result = query.evaluate()) {
+				return parseCatalogRecords(result).stream().findFirst().orElse(null);
 			}
 		}
 	}
@@ -876,6 +916,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>                         \n" +
 				"PREFIX void: <http://rdfs.org/ns/void#>                           \n" +
 				"PREFIX lime: <http://www.w3.org/ns/lemon/lime#>                   \n" +
+				"PREFIX dcat: <http://www.w3.org/ns/dcat#>                         \n" +
 				"                                                                  \n" +
 				"DELETE {                                                          \n" +
 				"  ?record dcterms:modified ?oldModified .                         \n" +
@@ -883,10 +924,10 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"INSERT {                                                          \n" +
 				"  ?record dcterms:modified ?now .                                 \n" +
 				"		                                                           \n" +
-				"  ?dataset void:subset ?lexicalizationSet .                       \n" +
+				"  ?lexicalizedDataset void:subset ?lexicalizationSet .            \n" +
                 "                                                                  \n" +
 				"  ?lexicalizationSet a lime:LexicalizationSet ;                   \n" +
-				"	lime:referenceDataset ?dataset ;                               \n" +
+				"	lime:referenceDataset ?lexicalizedDataset ;                    \n" +
 				"	lime:lexiconDataset ?lexiconDataset ;                          \n" +
 				"	lime:lexicalizationModel ?lexicalizationModel ;                \n" +
 				"	lime:language ?language ;                                      \n" +
@@ -898,7 +939,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"	.                                                              \n" +
 				"}                                                                 \n" +
 				"WHERE {                                                           \n" +
-				"  ?record foaf:primaryTopic|foaf:topic ?dataset .                 \n" +                                
+				"  ?record (foaf:primaryTopic|foaf:topic) ?dataset .               \n" +
+				"  ?dataset dcat:distribution ?lexicalizedDataset .                \n" +
 				"  OPTIONAL { ?record dcterms:modified ?oldModified . }            \n" +
 				"  BIND(NOW() AS ?now)                                             \n" +
 				"}                                                                 \n"
@@ -1588,12 +1630,14 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 			TupleQuery tupleQuery = conn.prepareTupleQuery(
 			// @formatter:off
+				"PREFIX dcat: <http://www.w3.org/ns/dcat#>                                                     \n" +
 				"PREFIX dcterms: <http://purl.org/dc/terms/>                                                   \n" +
 				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                                     \n" +
 				"PREFIX void: <http://rdfs.org/ns/void#>                                                       \n" +
 				"PREFIX lime: <http://www.w3.org/ns/lemon/lime#>                                               \n" +
 				"                                                                                              \n" +
 				"SELECT * WHERE {                                                                              \n" +
+				"  ?dataset dcat:distribution ?lexicalizationSetReferenceDataset .                             \n" +
 				"  ?lexicalizationSetReferenceDataset void:subset ?lexicalizationSet .                         \n" +
                 "                                                                                              \n" +
 				"  ?lexicalizationSet a lime:LexicalizationSet .                                               \n" +
@@ -1621,7 +1665,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"}                                                                                             \n"
 				// @formatter:on
 			);
-			tupleQuery.setBinding("lexicalizationSetReferenceDataset", dataset);
+			tupleQuery.setBinding("dataset", dataset);
 			return QueryResults.stream(tupleQuery.evaluate()).map(this::bindingset2lexicalizationsetmetadata)
 					.collect(toList());
 		}
@@ -2037,13 +2081,40 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		DatasetMetadata datasetMetadata = pair.getLeft();
 		Model voidStatements = pair.getRight();
 		try {
-			IRI catalogRecordIRI = addDataset(datasetMetadata.getIdentity(),
-					datasetMetadata.getUriSpace().orElse(null), datasetMetadata.getTitle().orElse(null),
-					datasetMetadata.getDereferenciationSystem()
-							.map(u -> METADATAREGISTRY.STANDARD_DEREFERENCIATION.equals(u)).orElse(null),
-					datasetMetadata.getSparqlEndpoint().orElse(null));
-
 			IRI voidDataset = datasetMetadata.getIdentity();
+			String datasetLocalName = datasetMetadata.getUriSpace().isPresent() ? ModelUtilities.guessPrefix(datasetMetadata.getUriSpace().get(), new RepositoryResult<>(new CloseableIteration<Namespace, RepositoryException>() {
+				@Override
+				public void close() throws RepositoryException {
+
+				}
+
+				@Override
+				public boolean hasNext() throws RepositoryException {
+					return false;
+				}
+
+				@Override
+				public Namespace next() throws RepositoryException {
+					return null;
+				}
+
+				@Override
+				public void remove() throws RepositoryException {
+
+				}
+			})): UUID.randomUUID().toString();
+
+			Distribution distribution = new Distribution(voidDataset, METADATAREGISTRY.SPARQL_ENDPOINT, datasetMetadata.getSparqlEndpoint().orElse(null), null);
+			IRI datasetIRI = createConcreteDataset(
+					datasetLocalName,
+					datasetMetadata.getUriSpace().orElse(null),
+					datasetMetadata.getTitle().map(Values::literal).orElse(null),
+					datasetMetadata.getDescription().map(Values::literal).orElse(null),
+					datasetMetadata.getDereferenciationSystem().map(METADATAREGISTRY.STANDARD_DEREFERENCIATION::equals).orElse(null),
+					distribution,
+					null
+			);
+
 
 			if (voidDataset != null) {
 				for (IRI subset : Models.objectIRIs(voidStatements.filter(voidDataset, VOID.SUBSET, null))) {
@@ -2075,14 +2146,20 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 						if (language == null || lexicalizationModel == null)
 							continue;
 
-						addEmbeddedLexicalizationSet(voidDataset, null, lexiconDataset, lexicalizationModel,
+						addEmbeddedLexicalizationSet(datasetIRI, null, lexiconDataset, lexicalizationModel,
 								language, references, lexicalEntries, lexicalizations, percentage,
 								avgNumOfLexicalizations);
 					}
 				}
 			}
 
-			return catalogRecordIRI;
+			try (RepositoryConnection repConn = getConnection()) {
+				return QueryResults.stream(
+						repConn.getStatements(null, FOAF.PRIMARY_TOPIC, datasetIRI, false))
+						.findFirst()
+						.map(s -> (IRI)s.getSubject())
+						.orElseThrow(() -> new IllegalStateException("Could not find catalog record for dataset " + datasetIRI));
+			}
 
 		} catch (Exception e) {
 			throw new MetadataDiscoveryException(e);
@@ -2099,13 +2176,15 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	@Override
 	public synchronized void discoverLexicalizationSets(IRI dataset)
 			throws AssessmentException, MetadataRegistryWritingException {
-		Function<RepositoryConnection, Model> computeDatasetDescription = conn -> QueryResults
-				.asModel(conn.prepareGraphQuery("DESCRIBE * WHERE { " + RenderUtils.toSPARQL(dataset) + " <"
-						+ VOID.SUBSET + ">* ?dataset  }").evaluate());
 
 		try (RepositoryConnection metadataConn = metadataRegistry.getConnection()) {
+			IRI distribution = QueryResults.stream(metadataConn.getStatements(dataset, DCAT.HAS_DISTRIBUTION, null)).map(s -> (IRI)s.getObject()).findAny().orElseThrow(() -> new IllegalStateException("Could not find distribution for dataset: " + dataset));
+			Function<RepositoryConnection, Model> computeDatasetDescription = conn -> QueryResults
+					.asModel(conn.prepareGraphQuery("DESCRIBE * WHERE { " + RenderUtils.toSPARQL(distribution) + " <"
+							+ VOID.SUBSET + ">* ?dataset  }").evaluate());
+
 			Model originalDescription = computeDatasetDescription.apply(metadataConn);
-			mediationFramework.discoverLexicalizationSets(metadataConn, dataset);
+			mediationFramework.discoverLexicalizationSets(metadataConn, distribution);
 			Model possibilyUpdatedDescription = computeDatasetDescription.apply(metadataConn);
 
 			if (!Models.isomorphic(originalDescription, possibilyUpdatedDescription)) {
