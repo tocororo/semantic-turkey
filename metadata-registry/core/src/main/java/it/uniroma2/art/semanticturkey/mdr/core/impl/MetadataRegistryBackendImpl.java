@@ -1102,16 +1102,19 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" DELETE {                                                                        \n" +
 				"   ?record dcterms:modified ?oldModified .                                       \n" +
 				"   ?distribution void:sparqlEndpoint ?oldEndpoint .                              \n" +
+				"   ?oldEndpoint ?oldEndpointP ?oldEndpointO .                                    \n" +
 				" }                                                                               \n" +
 				" INSERT {                                                                        \n" +
 				"   ?record dcterms:modified ?now .                                               \n" +
 				"   ?distribution void:sparqlEndpoint ?endpoint .                                 \n" +
+				"   ?endpoint ?oldEndpointP ?oldEndpointO .                                       \n" +
 				" }                                                                               \n" +
 				" WHERE {                                                                         \n" +
 				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
 				"   ?dataset dcat:distribution ?distribution .                                    \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
 				"   OPTIONAL { ?distribution void:sparqlEndpoint ?oldEndpoint }                   \n" +
+				"   OPTIONAL { ?oldEndpoint ?oldEndpointP ?oldEndpointO }                         \n" +
 				"   BIND(NOW() AS ?now)                                                           \n" +
 				" }                                                                               \n"
 				// @formatter:on
