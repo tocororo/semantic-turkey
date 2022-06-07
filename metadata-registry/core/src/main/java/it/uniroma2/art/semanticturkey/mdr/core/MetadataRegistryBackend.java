@@ -214,7 +214,19 @@ public interface MetadataRegistryBackend {
 	 * @throws IllegalArgumentException
 	 * @throws MetadataRegistryWritingException
 	 */
-	void setTitle(IRI dataset, String title)
+	void setTitle(IRI dataset, Literal title)
+			throws IllegalArgumentException, MetadataRegistryWritingException;
+
+	/**
+	 * Sets the description of a dataset.
+	 *
+	 * @param dataset
+	 * @param description
+	 *            if {@code null}, the description is left unspecified
+	 * @throws IllegalArgumentException
+	 * @throws MetadataRegistryWritingException
+	 */
+	void setDescription(IRI dataset, Literal description)
 			throws IllegalArgumentException, MetadataRegistryWritingException;
 
 	/**

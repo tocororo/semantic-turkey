@@ -1130,7 +1130,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	}
 
 	@Override
-	public synchronized void setTitle(IRI dataset, String title)
+	public synchronized void setTitle(IRI dataset, Literal title)
 			throws IllegalArgumentException, MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
 			checkLocallyDefined(conn, dataset);
@@ -1158,7 +1158,44 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			);
 			update.setBinding("dataset", dataset);
 			if (title != null) {
-				update.setBinding("title", conn.getValueFactory().createLiteral(title));
+				update.setBinding("title", title);
+			}
+			update.execute();
+		}
+
+		saveToFile();
+	}
+
+	@Override
+	public synchronized void setDescription(IRI dataset, Literal description)
+			throws IllegalArgumentException, MetadataRegistryWritingException {
+		try (RepositoryConnection conn = getConnection()) {
+			checkLocallyDefined(conn, dataset);
+			Update update = conn.prepareUpdate(
+				// @formatter:off
+				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
+				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
+				" PREFIX void: <http://rdfs.org/ns/void#>                                         \n" +
+				"                                                                                 \n" +
+				" DELETE {                                                                        \n" +
+				"   ?record dcterms:modified ?oldModified .                                       \n" +
+				"   ?dataset dcterms:description ?oldDescription .                                \n" +
+				" }                                                                               \n" +
+				" INSERT {                                                                        \n" +
+				"   ?record dcterms:modified ?now .                                               \n" +
+				"   ?dataset dcterms:description ?description .                                   \n" +
+				" }                                                                               \n" +
+				" WHERE {                                                                         \n" +
+				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
+				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
+				"   OPTIONAL { ?dataset dcterms:description ?oldDescription }                     \n" +
+				"   BIND(NOW() AS ?now)                                                           \n" +
+				" }                                                                               \n"
+				// @formatter:on
+			);
+			update.setBinding("dataset", dataset);
+			if (description != null) {
+				update.setBinding("description", description);
 			}
 			update.execute();
 		}

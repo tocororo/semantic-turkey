@@ -254,9 +254,25 @@ public class MetadataRegistry extends STServiceAdapter {
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
-	public void setTitle(IRI dataset, @Optional String title)
+	public void setTitle(IRI dataset, @Optional Literal title)
 			throws IllegalArgumentException, MetadataRegistryWritingException {
 		metadataRegistryBackend.setTitle(dataset, title);
+	}
+
+	/**
+	 * Sets the description of a dataset.
+	 *
+	 * @param dataset
+	 * @param description
+	 *            if {@code null}, the description is left unspecified
+	 * @throws IllegalArgumentException
+	 * @throws MetadataRegistryWritingException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
+	public void setDescription(IRI dataset, @Optional Literal description)
+			throws IllegalArgumentException, MetadataRegistryWritingException {
+		metadataRegistryBackend.setDescription(dataset, description);
 	}
 
 	/**
