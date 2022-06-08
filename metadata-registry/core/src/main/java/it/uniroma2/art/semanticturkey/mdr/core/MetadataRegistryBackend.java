@@ -98,44 +98,12 @@ public interface MetadataRegistryBackend {
 	/// --- OLD METHODS --- ///
 
 	/**
-	 * Adds a abstract version of a void:DatasetSpecification together with the dcat:CatalogRecord.
-	 * 
-	 * @param dataset
-	 *            if {@code null} passed, a local IRI is created
-	 * @param uriSpace
-	 * @param title
-	 * @param dereferenceable
-	 *            if {@code true}, set to {@code mdreg:standardDereferenciation}; if {@code false}, set to
-	 *            {@code mdreg:noDereferenciation}
-	 * @param sparqlEndpoint
-	 * @return the IRI of the dcat:CatalogRecord created for it
-	 * @throws IllegalArgumentException
-	 * @throws MetadataRegistryWritingException
-	 */
-	IRI addDataset(IRI dataset, String uriSpace, String title, Boolean dereferenceable, IRI sparqlEndpoint)
-			throws IllegalArgumentException, MetadataRegistryWritingException;
-
-	/**
 	 * Deletes a dcat:CatalogRecord
 	 * 
 	 * @param catalogRecord
 	 * @throws MetadataRegistryWritingException
 	 */
 	void deleteCatalogRecord(IRI catalogRecord) throws MetadataRegistryWritingException;
-
-	/**
-	 * Adds {@code dataset} to the specified {@code catalogRecord} as a specific {@code versionInfo}.
-	 * 
-	 * @param catalogRecord
-	 * @param dataset
-	 *            if not {@code null}, a local IRI is created
-	 * @param versionInfo
-	 * @throws IllegalArgumentException
-	 * @throws IOException
-	 * @throws MetadataRegistryWritingException
-	 */
-	void addDatasetVersion(IRI catalogRecord, IRI dataset, String versionInfo)
-			throws IllegalArgumentException, MetadataRegistryWritingException;
 
 	/**
 	 * Deletes a dataset version. The provided {@code dataset} is the identity of the specific version that
@@ -260,15 +228,8 @@ public interface MetadataRegistryBackend {
 	 * 
 	 * @return
 	 */
+	// @TODO delete when removed from assisted search???
 	Collection<CatalogRecord> getCatalogRecords();
-
-	/**
-	 * Returns a catalog record
-	 * 
-	 * @param catalogRecord
-	 * @return
-	 */
-	CatalogRecord getCatalogRecord(IRI catalogRecord) throws NoSuchCatalogRecordException;
 
 	/**
 	 * Returns the metadata associated with the given dataset

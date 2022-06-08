@@ -36,6 +36,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.rdflifter.LiftingExceptio
 import it.uniroma2.art.semanticturkey.extension.impl.rendering.BaseRenderingEngine;
 import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.mdr.core.Distribution;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryWritingException;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.METADATAREGISTRY;
 import it.uniroma2.art.semanticturkey.ontology.TransitiveImportMethodAllowance;
@@ -107,6 +108,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -672,11 +674,10 @@ public class ShowVoc extends STServiceAdapter {
 			}
 		}
 		String uriSpace = config.uriSpace != null ? config.uriSpace : config.baseURI.stringValue();
-		IRI record = metadataRegistryBackend.addDataset(config.identity, uriSpace, config.resourceName,
-				dereferenciability, config.sparqlEndpoint);
+		Distribution datasetDistribution = new Distribution(config.identity, METADATAREGISTRY.SPARQL_ENDPOINT, config.sparqlEndpoint, null);
+		IRI datasetIRI = metadataRegistryBackend.createConcreteDataset(null, uriSpace, Values.literal(config.resourceName), null,
+				dereferenciability, datasetDistribution, null);
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
-			Model model = QueryResults.asModel(conn.getStatements(record, FOAF.PRIMARY_TOPIC, null));
-			IRI datasetIRI = Models.objectIRI(model).orElse(null);
 			if (config.sparqlLimitations != null && !config.sparqlLimitations.isEmpty()) {
 				// if it's not empty, set just the first since at the moment we have just a limitation
 				// (aggregation)

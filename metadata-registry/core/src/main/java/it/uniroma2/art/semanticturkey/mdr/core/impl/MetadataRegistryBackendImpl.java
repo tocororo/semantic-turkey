@@ -669,87 +669,6 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		return catalogRecords;
 	}
 
-		/*
-	 * (non-Javadoc)
-	 * 
-	 * @see it.uniroma2.art.semanticturkey.resources.M#addDataset(org.eclipse.rdf4j.model.IRI,
-	 * java.lang.String, java.lang.String, java.lang.Boolean, org.eclipse.rdf4j.model.IRI)
-	 */
-	@Override
-	public synchronized IRI addDataset(@Nullable IRI dataset, String uriSpace, @Nullable String title,
-			@Nullable Boolean dereferenceable, @Nullable IRI sparqlEndpoint)
-			throws IllegalArgumentException, MetadataRegistryWritingException {
-
-		IRI record;
-
-		try (RepositoryConnection conn = getConnection()) {
-			ValueFactory vf = conn.getValueFactory();
-
-			checkNotLocallyDefined(conn, dataset);
-
-			Update update = conn.prepareUpdate(
-			// @formatter:off
-				" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                  \n" +
-				" PREFIX dcterms: <http://purl.org/dc/terms/>                                \n" +
-				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                  \n" +
-				" PREFIX void: <http://rdfs.org/ns/void#>                                    \n" +
-				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdr#>                  \n" +
-				"                                                                            \n" +
-				" INSERT {                                                                   \n" +
-				"   ?catalog a dcat:Catalog ;                                                \n" +
-				"     dcat:dataset ?dataset ;                                                \n" +
-				"     dcat:record ?record .                                                  \n" +
-				" 	                                                                         \n" +
-				"   ?record a dcat:CatalogRecord ;                                           \n" +
-				"     dcterms:issued ?now ;                                                  \n" +
-				"     foaf:primaryTopic ?dataset .                                           \n" +
-				" 		                                                                     \n" +
-				"   ?dataset a void:Dataset ;                                                \n" +
-				"     void:uriSpace ?uriSpace ;                                              \n" +
-				"     dcterms:title ?title ;                                                 \n" +
-				"     void:sparqlEndpoint ?sparqlEndpoint ;                                  \n" +
-				"     mdreg:dereferenciationSystem ?dereferenciationSystem .                 \n" +
-				" }                                                                          \n" +
-				" WHERE {                                                                    \n" +
-				"   OPTIONAL {                                                               \n" +
-				"     ?catalogT a dcat:Catalog .                                             \n" +
-				"   }                                                                        \n" +
-				"   BIND(IF(BOUND(?catalogT), ?catalogT, ?catalogExt) as ?catalog)           \n" +
-				"   BIND(NOW() AS ?now)                                                      \n" +
-				" }                                                                          \n"
-				// @formatter:on
-			);
-
-			update.setBinding("dataset",
-					dataset != null ? dataset : vf.createIRI(DEFAULTNS, UUID.randomUUID().toString()));
-
-			record = vf.createIRI(DEFAULTNS, UUID.randomUUID().toString());
-			update.setBinding("record", record);
-
-			update.setBinding("uriSpace", vf.createLiteral(uriSpace));
-			if (title != null) {
-				update.setBinding("title", vf.createLiteral(title));
-			}
-			if (dereferenceable != null) {
-				update.setBinding("dereferenciationSystem",
-						dereferenceable ? METADATAREGISTRY.STANDARD_DEREFERENCIATION
-								: METADATAREGISTRY.NO_DEREFERENCIATION);
-			}
-			if (sparqlEndpoint != null) {
-				update.setBinding("sparqlEndpoint", sparqlEndpoint);
-			}
-
-			update.setBinding("catalogExt", vf.createIRI(DEFAULTNS + UUID.randomUUID().toString()));
-
-			update.execute();
-		}
-
-		saveToFile();
-
-		return record;
-
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -776,76 +695,6 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			);
 			query.setBinding("catalogRecord", catalogRecord);
 			conn.remove(QueryResults.asModel(query.evaluate()));
-		}
-
-		saveToFile();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see it.uniroma2.art.semanticturkey.resources.M#addDatasetVersion(org.eclipse.rdf4j.model.IRI,
-	 * org.eclipse.rdf4j.model.IRI, java.lang.String)
-	 */
-	@Override
-	public synchronized void addDatasetVersion(IRI catalogRecord, @Nullable IRI dataset, String versionInfo)
-			throws IllegalArgumentException, MetadataRegistryWritingException {
-		try (RepositoryConnection conn = getConnection()) {
-			checkLocallyDefined(conn, catalogRecord);
-			checkNotLocallyDefined(conn, dataset);
-
-			ValueFactory vf = conn.getValueFactory();
-
-			checkLocallyDefined(conn, catalogRecord);
-			checkNotLocallyDefined(conn, dataset);
-
-			BooleanQuery constraintQuery = conn.prepareBooleanQuery(
-			// @formatter:off
-				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>             \n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>          \n" +
-                "                                                       \n" +
-				" ASK {                                                 \n" +
-				"   ?record foaf:topic [                                \n" +
-				"     owl:versionInfo ?versionInfo                      \n" +
-				"   ]                                                   \n" +
-				" }                                                     \n"
-				// @formatter:on
-			);
-			constraintQuery.setIncludeInferred(false);
-			constraintQuery.setBinding("record", catalogRecord);
-			constraintQuery.setBinding("versionInfo", vf.createLiteral(versionInfo));
-			if (constraintQuery.evaluate()) {
-				throw new IllegalArgumentException(
-						"Catalog record already contains this version: " + versionInfo);
-			}
-
-			Update update = conn.prepareUpdate(
-			// @formatter:off
-				" PREFIX dcterms: <http://purl.org/dc/terms/>                                \n" +
-				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                  \n" +
-				" PREFIX void: <http://rdfs.org/ns/void#>                                    \n" +
-				"                                                                            \n" +
-				" DELETE {                                                                   \n" +
-				"   ?record dcterms:modified ?oldModified .                                  \n" +
-				" }                                                                          \n" +
-				" INSERT {                                                                   \n" +
-				"   ?record dcterms:modified ?now ;                                          \n" +
-				"     foaf:topic ?dataset .                                                  \n" +
-				" 		                                                                     \n" +
-				"   ?dataset a void:Dataset ;                                                \n" +
-				"     owl:versionInfo ?versionInfo .                                         \n" +
-				" }                                                                          \n" +
-				" WHERE {                                                                    \n" +
-				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                     \n" +
-				"   BIND(NOW() AS ?now)                                                      \n" +
-				" }                                                                          \n"
-				// @formatter:on
-			);
-			update.setBinding("record", catalogRecord);
-			update.setBinding("dataset",
-					dataset != null ? dataset : vf.createIRI(DEFAULTNS, UUID.randomUUID().toString()));
-			update.setBinding("versionInfo", vf.createLiteral(versionInfo));
-			update.execute();
 		}
 
 		saveToFile();
@@ -1418,12 +1267,6 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	}
 
 	@Override
-	public CatalogRecord getCatalogRecord(IRI catalogRecord) throws NoSuchCatalogRecordException {
-		return getCatalogRecords().stream().filter(r -> catalogRecord.equals(r.getIdentity())).findAny()
-				.orElseThrow(() -> new NoSuchCatalogRecordException(catalogRecord));
-	}
-
-	@Override
 	public DatasetMetadata getDatasetMetadata(IRI dataset)
 			throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		MapBindingSet bindings = new MapBindingSet();
@@ -1443,7 +1286,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"PREFIX dct: <http://purl.org/dc/terms/>\n" +
 				"SELECT ?linkset ?targetDataset ?targetDatasetUriSpace ?targetDatasetTitle ?g ?registeredTargetDataset ?registeredTargetDatasetTitle ?linkCount ?linkPredicate {\n" + 
 				"  ?sourceDataset void:subset ?linkset .\n" + 
-				"  ?linkset a void:Linkset ;\n" + 
+				"  ?linkset a void:Linkset ;\n" +
 				"    void:subjectsTarget ?sourceDataset ;\n" + 
 				"    void:objectsTarget ?targetDataset\n" + 
 				"    .\n" + 

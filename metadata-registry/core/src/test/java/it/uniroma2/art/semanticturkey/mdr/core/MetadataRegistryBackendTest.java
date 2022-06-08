@@ -321,13 +321,14 @@ public class MetadataRegistryBackendTest {
 		 * @formatter:on
 		 */
 		ValueFactory vf = SimpleValueFactory.getInstance();
-		IRI agrovocDataset = vf.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc");
-		metadataRegistryBackend.addDataset(agrovocDataset, "http://aims.fao.org/aos/agrovoc/",
-				"Agrovoc DatasetSpecification", true, vf.createIRI("http://agrovoc.fao.org/sparql"));
+		Distribution agrovocDistribution = new Distribution(Values.iri("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"), METADATAREGISTRY.SPARQL_ENDPOINT, Values.iri("http://agrovoc.fao.org/sparql"), null);
+		IRI agrovocDataset = metadataRegistryBackend.createConcreteDataset("agrovoc", "http://aims.fao.org/aos/agrovoc/",
+				Values.literal("Agrovoc DatasetSpecification"), null, true, agrovocDistribution, null);
 
-		IRI eurovocDataset = vf.createIRI("http://eurovoc.europa.eu/void.ttl#EuroVoc");
-		metadataRegistryBackend.addDataset(eurovocDataset, "http://eurovoc.europa.eu/", "EuroVoc DatasetSpecification",
-				true, null);
+
+		Distribution eurovocDistribution = new Distribution(Values.iri("http://eurovoc.europa.eu/void.ttl#EuroVoc"), METADATAREGISTRY.SPARQL_ENDPOINT, null, null);
+		metadataRegistryBackend.createConcreteDataset("eurovoc", "http://eurovoc.europa.eu/",
+				Values.literal("EuroVoc DatasetSpecification"), null, true, eurovocDistribution, null);
 
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
 			Update update = conn.prepareUpdate(

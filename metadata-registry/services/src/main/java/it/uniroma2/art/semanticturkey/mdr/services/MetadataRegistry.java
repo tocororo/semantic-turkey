@@ -167,50 +167,6 @@ public class MetadataRegistry extends STServiceAdapter {
 	}
 
 	/**
-	 * Adds a abstract version of a void:DatasetSpecification together with the dcat:CatalogRecord.
-	 * 
-	 * @param dataset
-	 *            if not passed, a local IRI is created
-	 * @param uriSpace
-	 * @param title
-	 * @param dereferenceable
-	 *            if {@code true}, set to {@code mdreg:standardDereferenciation}; if {@code false}, set to
-	 *            {@code mdreg:noDereferenciation}
-	 * @param sparqlEndpoint
-	 * @return the IRI of the dcat:CatalogRecord created for it
-	 * @throws MetadataRegistryStateException
-	 * @throws IllegalArgumentException
-	 * @throws MetadataRegistryWritingException
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
-	public AnnotatedValue<IRI> addDataset(@Optional IRI dataset, String uriSpace, @Optional String title,
-			@Optional Boolean dereferenceable, @Optional IRI sparqlEndpoint) throws IllegalArgumentException,
-			MetadataRegistryStateException, MetadataRegistryWritingException {
-		IRI catalogRecord = metadataRegistryBackend.addDataset(dataset, uriSpace, title, dereferenceable,
-				sparqlEndpoint);
-		return new AnnotatedValue<>(catalogRecord);
-	}
-
-	/**
-	 * Adds {@code dataset} to the specified {@code catalogRecord} as a specific {@code versionInfo}.
-	 * 
-	 * @param catalogRecord
-	 * @param dataset
-	 *            if not passed, a local IRI is created
-	 * @param versionInfo
-	 * @throws IOException
-	 * @throws IllegalArgumentException
-	 * @throws MetadataRegistryWritingException
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'C')")
-	public void addDatasetVersion(IRI catalogRecord, @Optional IRI dataset, String versionInfo)
-			throws IllegalArgumentException, MetadataRegistryWritingException {
-		metadataRegistryBackend.addDatasetVersion(catalogRecord, dataset, versionInfo);
-	}
-
-	/**
 	 * Sets whether a dataset is derefereanceable or not. If {@code value} is {@code true}, then sets
 	 * {@code mdreg:standardDereferenciation} and if {@code false} sets {@code mdreg:noDereferenciation}. If
 	 * {@value} is not passed, the dereferenciation system is left unspecified.
@@ -327,35 +283,12 @@ public class MetadataRegistry extends STServiceAdapter {
 	}
 
 	/**
-	 * Deletes a dataset version
-	 * 
-	 * @param dataset
-	 * @throws MetadataRegistryWritingException
-	 */
-	@STServiceOperation(method = RequestMethod.POST)
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'D')")
-	public void deleteDatasetVersion(IRI dataset) throws MetadataRegistryWritingException {
-		metadataRegistryBackend.deleteDatasetVersion(dataset);
-	}
-
-	/**
 	 * Returns the catalog records
 	 */
 	@STServiceOperation
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
 	public Collection<CatalogRecord> getCatalogRecords() {
 		return metadataRegistryBackend.getCatalogRecords();
-	}
-
-	/**
-	 * Returns a catalog record
-	 * 
-	 * @throws NoSuchCatalogRecordException
-	 */
-	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
-	public CatalogRecord getCatalogRecord(IRI catalogRecord) throws NoSuchCatalogRecordException {
-		return metadataRegistryBackend.getCatalogRecord(catalogRecord);
 	}
 
 	/**
