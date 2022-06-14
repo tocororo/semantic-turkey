@@ -1282,10 +1282,14 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			//@formatter:off
 				"PREFIX void: <http://rdfs.org/ns/void#>\n" + 
 				"PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" + 
-				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" + 
+				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
 				"PREFIX dct: <http://purl.org/dc/terms/>\n" +
-				"SELECT ?linkset ?targetDataset ?targetDatasetUriSpace ?targetDatasetTitle ?g ?registeredTargetDataset ?registeredTargetDatasetTitle ?linkCount ?linkPredicate {\n" + 
-				"  ?sourceDataset void:subset ?linkset .\n" + 
+						"PREFIX mdr: <http://semanticturkey.uniroma2.it/ns/mdr#>\n" +
+						"PREFIX stmdr: <http://semanticturkey.uniroma2.it/ns/stmdr#>\n" +
+						"\n" +
+				"SELECT ?linkset ?targetDataset ?targetDatasetUriSpace ?targetDatasetTitle ?registeredTargetDataset ?registeredTargetProjectName ?registeredTargetDatasetTitle ?linkCount ?linkPredicate {\n" +
+				"  ?dataset dcat:distribution ?sourceDataset .\n" +
+				"  ?sourceDataset void:subset ?linkset .\n" +
 				"  ?linkset a void:Linkset ;\n" +
 				"    void:subjectsTarget ?sourceDataset ;\n" + 
 				"    void:objectsTarget ?targetDataset\n" + 
@@ -1302,15 +1306,26 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"    OPTIONAL {\n" +
 				"      ?record a dcat:CatalogRecord ;\n" +
 				"        foaf:primaryTopic ?registeredTargetDataset .\n" +
-				"      ?registeredTargetDataset void:uriSpace ?targetDatasetUriSpace ;\n" +
-				"      OPTIONAL { GRAPH ?g { ?record a dcat:CatalogRecord . }}\n" +
-				"      OPTIONAL { ?registeredTargetDataset dct:title ?registeredTargetDatasetTitle . }\n" +
-				"    }\n" +
-				"  }  \n" +
-				"}"
-				//@formatter:on
+						"      ?registeredTargetDataset void:uriSpace ?targetDatasetUriSpace .\n" +
+						"      FILTER NOT EXISTS {\n" +
+						"        [] mdr:master|mdr:lod|dcat:hasVersion ?registeredTargetDataset .\n" +
+						"      " +
+						"}\n" +
+						"      OPTIONAL {\n" +
+						"    " +
+						"    ?registeredTargetDataset dcat:distribution [\n" +
+						"            a stmdr:Project ;\n" +
+						"            foaf:name ?registeredTargetProjectName\n" +
+						"          ]\n" +
+						"          .\n" +
+						"      }\n" +
+						"      OPTIONAL { ?registeredTargetDataset dct:title ?registeredTargetDatasetTitle . }\n" +
+						"    }\n" +
+						"  }\n" +
+						"}"
+					//@formatter:on
 			);
-			query.setBinding("sourceDataset", dataset);
+			query.setBinding("dataset", dataset);
 			List<BindingSet> queryResults = QueryResults.asList(query.evaluate());
 
 			Map<Value, List<BindingSet>> bindingSetsForLinkset = queryResults.stream()
@@ -1352,14 +1367,18 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 							List<Literal> titles = bss.stream()
 									.map(bs -> (Literal) bs.getValue("registeredTargetDatasetTitle"))
 									.filter(Objects::nonNull).distinct().collect(toList());
-							Optional<IRI> graph = bss.stream().map(bs -> (IRI) bs.getValue("g"))
-									.filter(Objects::nonNull).findAny();
+							Optional<String> projectName = bss.stream()
+									.map(bs -> bs.getValue("registeredTargetProjectName"))
+									.filter(Objects::nonNull)
+									.map(Value::stringValue)
+									.findAny();
+
 							Target target = new Target();
 							target.setDataset(entry2.getKey());
 							target.setUriSpace(targetDatasetUriSpace);
 							target.setTitles(titles);
-							graph.flatMap(MetadataRegistryBackendImpl::computeProjectFromContext)
-									.ifPresent(target::setProjectName);
+							projectName.ifPresent(target::setProjectName);
+
 							return target;
 						}).collect(toList());
 
