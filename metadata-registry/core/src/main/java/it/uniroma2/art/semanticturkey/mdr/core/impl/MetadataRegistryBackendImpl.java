@@ -2136,7 +2136,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	public Model extractProfile(IRI dataset) {
 		try (RepositoryConnection conn = getConnection()) {
 			return QueryResults.asModel(conn.prepareGraphQuery("DESCRIBE * WHERE { "
-					+ RenderUtils.toSPARQL(dataset) + " <" + VOID.SUBSET + ">* ?dataset  }").evaluate());
+					+ RenderUtils.toSPARQL(dataset) + " (<" + DCAT.HAS_DISTRIBUTION + ">/<" + VOID.SUBSET + ">*)? ?dataset  }").evaluate());
 		}
 	}
 

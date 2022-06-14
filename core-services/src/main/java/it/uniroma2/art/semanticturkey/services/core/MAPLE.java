@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
+import com.google.common.collect.Streams;
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.lime.profiler.LIMEProfiler;
 import it.uniroma2.art.lime.profiler.ProfilerException;
@@ -14,9 +15,13 @@ import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
 import it.uniroma2.art.semanticturkey.data.access.LocalResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.RemoteResourcePosition;
 import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
 import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.STMETADATAREGISTRY;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectACL.AccessLevel;
@@ -42,17 +47,20 @@ import it.uniroma2.art.semanticturkey.user.STUser;
 import it.uniroma2.art.semanticturkey.user.UsersGroup;
 import it.uniroma2.art.semanticturkey.user.UsersManager;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.DCAT;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.FOAF;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.VOID;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -67,6 +75,7 @@ import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
+import org.eclipse.rdf4j.rio.WriterConfig;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,8 +83,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * This class provides access to the capabilities of <a href="http://art.uniroma2.it/maple/">MAPLE</a>
@@ -260,12 +273,16 @@ public class MAPLE extends STServiceAdapter {
 			ForbiddenProjectAccessException, InvalidConfigurationException, ProfilingException {
 
 		Pair<IRI, Model> targetDatasetDescription = getDatasetDescriptionFromResourcePosition(targetPosition);
+		IRI datasetIRI = targetDatasetDescription.getKey();
+		Model datasetDescription = targetDatasetDescription.getValue();
+
+		IRI distribution = Models.getPropertyIRI(datasetDescription, datasetIRI, DCAT.HAS_DISTRIBUTION)
+				.orElseThrow(() -> new IllegalArgumentException("The provided dataset is abstract: " + datasetIRI));
 
 		List<ResourceLexicalizationSet> resourceLexicalizationSets = mediationFramework
 				.discoverLexicalizationSetsForResource(getManagedConnection(), sourceResource);
 		return mediationFramework.profileSingleResourceMatchingProblem(sourceResource,
-				resourceLexicalizationSets, targetDatasetDescription.getKey(),
-				targetDatasetDescription.getValue());
+				resourceLexicalizationSets, distribution, datasetDescription);
 	}
 
 	protected Pair<IRI, Model> getDatasetDescriptionFromResourcePosition(ResourcePosition targetPosition)
@@ -273,10 +290,10 @@ public class MAPLE extends STServiceAdapter {
 			STPropertyAccessException, NoSuchSettingsManager, ForbiddenProjectAccessException,
 			InvalidConfigurationException, RepositoryException, IllegalArgumentException {
 		// The variables below will be initialized differently depending on the kind of target
-		Pair<IRI, Model> targetDatasetDecription;
+		Pair<IRI, Model> targetDatasetDescription;
 
 		if (targetPosition instanceof LocalResourcePosition) { // local project
-			targetDatasetDecription = getProjectMetadata(
+			targetDatasetDescription = getProjectMetadata(
 					((LocalResourcePosition) targetPosition).getProject());
 		} else if (targetPosition instanceof RemoteResourcePosition) { // remote dataset
 			// Extracts metadata from the metadata registry
@@ -287,14 +304,41 @@ public class MAPLE extends STServiceAdapter {
 				Model targetDatasetProfile = metadataRegistryBackend
 						.extractProfile(targetDatasetMetadata.getIdentity());
 
-				targetDatasetDecription = ImmutablePair.of(targetDatasetMetadata.getIdentity(),
+				Collection<String> projectNames = Models.getPropertyIRIs(targetDatasetProfile, targetDatasetMetadata.getIdentity(), DCAT.HAS_DISTRIBUTION).stream().flatMap(
+						d -> {
+							if (targetDatasetProfile.contains(d, RDF.TYPE, STMETADATAREGISTRY.PROJECT)) {
+								return Streams.stream(Models.getPropertyLiteral(targetDatasetProfile, d, FOAF.NAME).map(Value::stringValue));
+							} else {
+								return Stream.of();
+							}
+						}
+				).collect(Collectors.toList());
+
+				// Checks accessibility of local projects
+				for (String projectName : projectNames) {
+					try {
+						Project project = ProjectManager.getProject(projectName, true);
+						// Checks accessibility in case of another local project
+						if (!project.equals(getProject())) {
+							AccessResponse accessResponse = ProjectManager.checkAccessibility(getProject(), project,
+									AccessLevel.R, LockLevel.NO);
+							if (!accessResponse.isAffirmative()) {
+								throw new ForbiddenProjectAccessException(accessResponse.getMsg());
+							}
+						}
+					} catch (ProjectAccessException|InvalidProjectNameException|ProjectInexistentException e) {
+						ExceptionUtils.rethrow(e);
+					}
+				}
+
+				targetDatasetDescription = ImmutablePair.of(targetDatasetMetadata.getIdentity(),
 						targetDatasetProfile);
 			}
 
 		} else {
 			throw new IllegalArgumentException("Unsupported resource position");
 		}
-		return targetDatasetDecription;
+		return targetDatasetDescription;
 	}
 
 	protected Pair<IRI, Model> getProjectMetadata(Project project) throws RDFParseException,
