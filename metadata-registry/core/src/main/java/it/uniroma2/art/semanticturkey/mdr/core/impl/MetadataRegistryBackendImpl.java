@@ -34,8 +34,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
@@ -46,6 +44,7 @@ import it.uniroma2.art.semanticturkey.mdr.core.AbstractDatasetSpecification;
 import it.uniroma2.art.semanticturkey.mdr.core.AbstractDatasetAttachment;
 import it.uniroma2.art.semanticturkey.mdr.core.CatalogRecord2;
 import it.uniroma2.art.semanticturkey.mdr.core.ConcreteDatasetSpecification;
+import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata2;
 import it.uniroma2.art.semanticturkey.mdr.core.DatasetSpecification;
 import it.uniroma2.art.semanticturkey.mdr.core.Distribution;
@@ -116,8 +115,6 @@ import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
 import it.uniroma2.art.semanticturkey.mdr.core.CatalogRecord;
-import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
-import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata.SPARQLEndpointMedatadata;
 import it.uniroma2.art.semanticturkey.mdr.core.LexicalizationSetMetadata;
 import it.uniroma2.art.semanticturkey.mdr.core.LinksetMetadata;
 import it.uniroma2.art.semanticturkey.mdr.core.LinksetMetadata.Target;
@@ -127,7 +124,6 @@ import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryCreationException
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryIntializationException;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryStateException;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryWritingException;
-import it.uniroma2.art.semanticturkey.mdr.core.NoSuchCatalogRecordException;
 import it.uniroma2.art.semanticturkey.mdr.core.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.METADATAREGISTRY;
 import it.uniroma2.art.semanticturkey.utilities.ModelUtilities;
@@ -404,6 +400,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					"    " +
 					"} UNION {\n" +
 					"         ?dataset dcat:distribution/rdf:type ?distributionType\n" +
+					"    } UNION {\n" +
+					"     ?dataset dcat:distribution/void:sparqlEndpoint ?sparqlEndpoint .\n" +
+					"     OPTIONAL { ?sparqlEndpoint ?sparqlEndpoint_p ?sparqlEndpoint_o } .\n" +
 					"    }\n" +
 					"}\n" +
 					"ORDER BY asc(?dataset) asc(?record)\n");
@@ -437,9 +436,12 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					"    " +
 					"} UNION {\n" +
 					"         ?dataset dcat:distribution/rdf:type ?distributionType\n" +
+					"    } UNION {\n" +
+					"     ?dataset dcat:distribution/void:sparqlEndpoint ?sparqlEndpoint .\n" +
+					"     OPTIONAL { ?sparqlEndpoint ?sparqlEndpoint_p ?sparqlEndpoint_o } .\n" +
 					"    }\n" +
 					"}\n" +
-					"ORDER BY asc(?dataset) asc(?record)\n");
+					"ORDER BY asc(?dataset) asc(?record)");
 			query.setBinding("record", catalogRecord);
 			try (TupleQueryResult result = query.evaluate()) {
 				return parseCatalogRecords(result).stream().findFirst().orElse(null);
@@ -481,7 +483,10 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					"    " +
 					"} UNION {\n" +
 					"         ?dataset dcat:distribution/rdf:type ?distributionType\n" +
-					"    }\n" +
+					"    } UNION {\n" +
+					"         ?dataset dcat:distribution/void:sparqlEndpoint ?sparqlEndpoint .\n" +
+					"         OPTIONAL { ?sparqlEndpoint ?sparqlEndpoint_p ?sparqlEndpoint_o } .\n" +
+					"   }\n" +
 					"}\n" +
 					"ORDER BY asc(?dataset) asc(?record)\n");
 			query.setBinding("abstractDataset", abstractDataset);
@@ -558,6 +563,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	private Collection<CatalogRecord2> parseCatalogRecords(List<BindingSet> bindingSetList, IRI datasetIRI) {
 		String uriSpace = null;
 		Set<String> otherURISpaces = new TreeSet<>();
+		Map<IRI, Set<IRI>> sparqlEndpoints2Limitations = new HashMap<>();
+		IRI dereferenciationSystem = null;
+		DatasetMetadata2.SPARQLEndpointMedatadata endpointMetadata = null;
 		List<Literal> titles = new ArrayList<>();
 		List<Literal> descriptions = new ArrayList<>();
 		DatasetMetadata2.DatasetRole datasetRole = DatasetMetadata2.DatasetRole.ROOT;
@@ -581,6 +589,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				versionInfo = (Literal)datasetPropertyValue;
 			} else if (Objects.equals(datasetProperty, ADMS_VERSION_NOTES)) {
 				versionNotes = (Literal)datasetPropertyValue;
+			} else if (Objects.equals(datasetProperty, METADATAREGISTRY.DEREFERENCIATION_SYSTEM)) {
+				dereferenciationSystem = (IRI)datasetPropertyValue;
 			}
 
 			Value otherURISpace = bs.getValue("otherURISpace");
@@ -620,15 +630,33 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					datasetNature = newNature;
 				}
 			}
+
+			IRI sparqlEndpoint = (IRI)bs.getValue("sparqlEndpoint");
+			if (sparqlEndpoint != null) {
+				Set<IRI> limitationsSet = sparqlEndpoints2Limitations.computeIfAbsent(sparqlEndpoint, iri -> new HashSet<>());
+				if (Objects.equals(bs.getValue("sparqlEndpoint_p"), METADATAREGISTRY.SPARQL_ENDPOINT_LIMITATION)) {
+					limitationsSet.add((IRI) bs.getValue("sparqlEndpoint_o"));
+				}
+			}
 		}
 
 		otherURISpaces.remove(uriSpace);
+
+		endpointMetadata = sparqlEndpoints2Limitations
+				.entrySet()
+				.stream()
+				.findFirst()
+				.map(sparqlEndpointEntry -> new DatasetMetadata2.SPARQLEndpointMedatadata(
+						sparqlEndpointEntry.getKey(), sparqlEndpointEntry.getValue()
+				)).orElse(null);
 
 		DatasetMetadata2 datasetMetadata = new DatasetMetadata2(
 				datasetIRI,
 				datasetNature,
 				uriSpace,
 				otherURISpaces,
+				dereferenciationSystem,
+				endpointMetadata,
 				titles,
 				descriptions,
 				datasetRole,
@@ -1688,7 +1716,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				.map(Value::stringValue).filter(s -> !s.isEmpty()).orElse(null);
 
 		@Nullable
-		SPARQLEndpointMedatadata sparqlEndpointMetadata;
+		DatasetMetadata.SPARQLEndpointMedatadata sparqlEndpointMetadata;
 		if (sparqlEndpointSpec != null) {
 			String[] sparqlEndpointParts = sparqlEndpointSpec.split("\\|_\\|");
 
@@ -1709,7 +1737,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					endpointLimitations.add(vf.createIRI(endpointLimitation));
 				}
 			}
-			sparqlEndpointMetadata = new SPARQLEndpointMedatadata(sparqlEndpoint, endpointLimitations);
+			sparqlEndpointMetadata = new DatasetMetadata.SPARQLEndpointMedatadata(sparqlEndpoint, endpointLimitations);
 		} else {
 			sparqlEndpointMetadata = null;
 		}

@@ -299,7 +299,7 @@ public class MetadataRegistry extends STServiceAdapter {
 	 */
 	@STServiceOperation
 	// @PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')") //project wide service, could be
-	// invoked without a ctx_project, so without capabililties
+	// invoked without a ctx_project, so without capabilities
 	public DatasetMetadata getDatasetMetadata(IRI dataset)
 			throws NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		return metadataRegistryBackend.getDatasetMetadata(dataset);
