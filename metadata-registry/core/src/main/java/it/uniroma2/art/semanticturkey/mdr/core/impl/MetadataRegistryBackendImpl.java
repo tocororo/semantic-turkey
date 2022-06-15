@@ -990,11 +990,13 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
 				"   ?dataset dcat:distribution ?distribution .                                    \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
-				"   OPTIONAL { ?distribution void:sparqlEndpoint ?oldEndpoint }                   \n" +
-				"   OPTIONAL { ?oldEndpoint ?oldEndpointP ?oldEndpointO }                         \n" +
-				"   BIND(NOW() AS ?now)                                                           \n" +
-				" }                                                                               \n"
-				// @formatter:on
+						"   OPTIONAL { \n" +
+						"     ?distribution void:sparqlEndpoint ?oldEndpoint \n" +
+						"     OPTIONAL { ?oldEndpoint ?oldEndpointP ?oldEndpointO }\n" +
+						"   }                   \n" +
+						"   BIND(NOW() AS ?now)                                                           \n" +
+						" }                                                                               \n"
+					// @formatter:on
 			);
 			update.setBinding("dataset", dataset);
 			if (endpoint != null) {
