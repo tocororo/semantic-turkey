@@ -200,35 +200,63 @@ public class MetadataRegistry extends STServiceAdapter {
 	}
 
 	/**
-	 * Sets the title of a dataset.
+	 * Sets the title of a dataset. This operation also deletes any existing title of the dataset in the same language.
 	 * 
 	 * @param dataset
 	 * @param title
-	 *            if {@code null}, the title is left unspecified
 	 * @throws IllegalArgumentException
 	 * @throws MetadataRegistryWritingException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
-	public void setTitle(IRI dataset, @Optional Literal title)
+	public void setTitle(IRI dataset, Literal title)
 			throws IllegalArgumentException, MetadataRegistryWritingException {
 		metadataRegistryBackend.setTitle(dataset, title);
 	}
 
 	/**
-	 * Sets the description of a dataset.
+	 * Deletes a title of a dataset. If no title is specified, then all titles are deleted.
 	 *
 	 * @param dataset
-	 * @param description
-	 *            if {@code null}, the description is left unspecified
+	 * @param title
 	 * @throws IllegalArgumentException
 	 * @throws MetadataRegistryWritingException
 	 */
 	@STServiceOperation(method = RequestMethod.POST)
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
-	public void setDescription(IRI dataset, @Optional Literal description)
+	public void deleteTitle(IRI dataset, @Optional Literal title)
+			throws IllegalArgumentException, MetadataRegistryWritingException {
+		metadataRegistryBackend.deleteTitle(dataset, title);
+	}
+
+	/**
+	 * Sets the description of a dataset. This operation also deletes any existing description of the dataset in the same language.
+	 *
+	 * @param dataset
+	 * @param description
+	 * @throws IllegalArgumentException
+	 * @throws MetadataRegistryWritingException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
+	public void setDescription(IRI dataset, Literal description)
 			throws IllegalArgumentException, MetadataRegistryWritingException {
 		metadataRegistryBackend.setDescription(dataset, description);
+	}
+
+	/**
+	 * Deletes a description of a dataset. If no title is specified, then all descriptions are deleted.
+	 *
+	 * @param dataset
+	 * @param description
+	 * @throws IllegalArgumentException
+	 * @throws MetadataRegistryWritingException
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
+	public void deleteDescription(IRI dataset, @Optional Literal description)
+			throws IllegalArgumentException, MetadataRegistryWritingException {
+		metadataRegistryBackend.deleteDescription(dataset, description);
 	}
 
 	/**

@@ -174,11 +174,11 @@ public interface MetadataRegistryBackend {
 			throws IllegalArgumentException, MetadataRegistryWritingException;
 
 	/**
-	 * Sets the title of a dataset.
+	 * Sets the title of a dataset. This operation also deletes any existing title of the dataset in the same language.
 	 * 
 	 * @param dataset
 	 * @param title
-	 *            if {@code null}, the title is left unspecified
+	 *
 	 * @throws IllegalArgumentException
 	 * @throws MetadataRegistryWritingException
 	 */
@@ -186,16 +186,35 @@ public interface MetadataRegistryBackend {
 			throws IllegalArgumentException, MetadataRegistryWritingException;
 
 	/**
-	 * Sets the description of a dataset.
+	 * Deletes a title of a dataset. If no title is specified, then all titles are deleted.
+	 *
+	 * @param dataset
+	 * @param title
+	 * @throws IllegalArgumentException
+	 * @throws MetadataRegistryWritingException
+	 */
+	void deleteTitle(IRI dataset, Literal title) throws IllegalArgumentException, MetadataRegistryWritingException;
+
+	/**
+	 * Sets the description of a dataset. This operation also deletes any existing description of the dataset in the same language.
 	 *
 	 * @param dataset
 	 * @param description
-	 *            if {@code null}, the description is left unspecified
 	 * @throws IllegalArgumentException
 	 * @throws MetadataRegistryWritingException
 	 */
 	void setDescription(IRI dataset, Literal description)
 			throws IllegalArgumentException, MetadataRegistryWritingException;
+
+	/**
+	 * Deletes a description of a dataset. If no title is specified, then all descriptions are deleted.
+	 *
+	 * @param dataset
+	 * @param description
+	 * @throws IllegalArgumentException
+	 * @throws MetadataRegistryWritingException
+	 */
+	void deleteDescription(IRI dataset, Literal description) throws IllegalArgumentException, MetadataRegistryWritingException;
 
 	/**
 	 * Returns a list of limitations associated with the provided <em>endpoint</em>

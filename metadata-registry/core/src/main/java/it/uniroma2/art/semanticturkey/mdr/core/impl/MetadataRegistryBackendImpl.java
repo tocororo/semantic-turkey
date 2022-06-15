@@ -1030,7 +1030,44 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" WHERE {                                                                         \n" +
 				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
-				"   OPTIONAL { ?dataset dcterms:title ?oldTitle }                                 \n" +
+				"   OPTIONAL { \n" +
+				"     ?dataset dcterms:title ?oldTitle\n" +
+				"     FILTER(LANG(?oldTitle) = LANG(?title))" +
+				"   \n" +
+				"   }                                 \n" +
+				"   BIND(NOW() AS ?now)                                                           \n" +
+				" }                                                                               \n"
+				// @formatter:on
+			);
+			update.setBinding("dataset", dataset);
+			update.setBinding("title", title);
+			update.execute();
+		}
+
+		saveToFile();
+	}
+
+	@Override
+	public void deleteTitle(IRI dataset, Literal title) throws IllegalArgumentException, MetadataRegistryWritingException {
+		try (RepositoryConnection conn = getConnection()) {
+			checkLocallyDefined(conn, dataset);
+			Update update = conn.prepareUpdate(
+				// @formatter:off
+				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
+				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
+				" PREFIX void: <http://rdfs.org/ns/void#>                                         \n" +
+				"                                                                                 \n" +
+				" DELETE {                                                                        \n" +
+				"   ?record dcterms:modified ?oldModified .                                       \n" +
+				"   ?dataset dcterms:title ?title .                                              \n" +
+				" }                                                                               \n" +
+				" INSERT {                                                                        \n" +
+				"   ?record dcterms:modified ?now .                                               \n" +
+				" }                                                                               \n" +
+				" WHERE {                                                                         \n" +
+				"   ?record foaf:primaryTopic ?dataset .                             \n" +
+				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
+				"   ?dataset dcterms:title ?title\n" +
 				"   BIND(NOW() AS ?now)                                                           \n" +
 				" }                                                                               \n"
 				// @formatter:on
@@ -1067,10 +1104,46 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" WHERE {                                                                         \n" +
 				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
-				"   OPTIONAL { ?dataset dcterms:description ?oldDescription }                     \n" +
+						"   OPTIONAL { \n" +
+						"     ?dataset dcterms:description ?oldDescription\n" +
+						"     FILTER(LANG(?oldDescription) = LANG(?description))\n" +
+						"   }                     \n" +
 				"   BIND(NOW() AS ?now)                                                           \n" +
 				" }                                                                               \n"
 				// @formatter:on
+			);
+			update.setBinding("dataset", dataset);
+			update.setBinding("description", description);
+			update.execute();
+		}
+
+		saveToFile();
+	}
+
+	@Override
+	public void deleteDescription(IRI dataset, Literal description) throws IllegalArgumentException, MetadataRegistryWritingException {
+		try (RepositoryConnection conn = getConnection()) {
+			checkLocallyDefined(conn, dataset);
+			Update update = conn.prepareUpdate(
+					// @formatter:off
+					" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
+					" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
+					" PREFIX void: <http://rdfs.org/ns/void#>                                         \n" +
+					"                                                                                 \n" +
+					" DELETE {                                                                        \n" +
+					"   ?record dcterms:modified ?oldModified .                                       \n" +
+					"   ?dataset dcterms:description ?description .                                              \n" +
+					" }                                                                               \n" +
+					" INSERT {                                                                        \n" +
+					"   ?record dcterms:modified ?now .                                               \n" +
+					" }                                                                               \n" +
+					" WHERE {                                                                         \n" +
+					"   ?record foaf:primaryTopic ?dataset .                                          \n" +
+					"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
+					"   ?dataset dcterms:description ?description\n" +
+					"   BIND(NOW() AS ?now)                                                           \n" +
+					" }                                                                               \n"
+					// @formatter:on
 			);
 			update.setBinding("dataset", dataset);
 			if (description != null) {
