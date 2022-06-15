@@ -311,15 +311,6 @@ public class MetadataRegistry extends STServiceAdapter {
 	}
 
 	/**
-	 * Returns the catalog records
-	 */
-	@STServiceOperation
-	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
-	public Collection<CatalogRecord> getCatalogRecords() {
-		return metadataRegistryBackend.getCatalogRecords();
-	}
-
-	/**
 	 * Returns metadata about a given dataset
 	 * 
 	 * @throws MetadataRegistryStateException

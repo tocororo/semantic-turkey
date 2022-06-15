@@ -290,12 +290,12 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	}
 
 	@Override
-	public IRI createConcreteDataset(String datasetLocalName, String uriSpace, Literal title, Literal description, Boolean dereferenceable, Distribution distribution, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
+	public synchronized IRI createConcreteDataset(String datasetLocalName, String uriSpace, Literal title, Literal description, Boolean dereferenceable, Distribution distribution, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
 		ConcreteDatasetSpecification concreteDatasetSpecification = new ConcreteDatasetSpecification(null, uriSpace, title, description, dereferenceable, distribution);
 		return createDataset(datasetLocalName, concreteDatasetSpecification, abstractDatasetAttachment, null, null, true);
 	}
 
-	protected IRI createDataset(String datasetLocalName,
+	protected synchronized IRI createDataset(String datasetLocalName,
 								DatasetSpecification dataset,
 								AbstractDatasetAttachment abstractDatasetAttachment,
 								BiConsumer<Model, IRI> postOperation, IRI ctx, boolean save) throws MetadataRegistryWritingException {
@@ -497,19 +497,80 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	}
 
 	@Override
-	public void connectToAbstractDataset(IRI dataset, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
+	public synchronized void connectToAbstractDataset(IRI dataset, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
 			Model model = new LinkedHashModel();
 			ValueFactory vf = conn.getValueFactory();
 			abstractDatasetAttachment.export(model, vf, dataset);
 			conn.add(model);
+			IRI abstractDatasetIRI = abstractDatasetAttachment.getAbstractDataset();
+			updateDatasetRecordTimestamp(conn, abstractDatasetIRI);
 		}
 
 		saveToFile();
 	}
 
+	protected void updateDatasetRecordTimestamp(RepositoryConnection conn, IRI dataset) {
+		Update updateRecordTimestamp = conn.prepareUpdate("PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" +
+				"PREFIX dct: <http://purl.org/dc/terms/>\n" +
+				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
+				"\n" +
+				"DELETE {\n" +
+				"  ?record dct:modified ?oldModified \n" +
+				"}\n" +
+				"INSERT {\n" +
+				"  ?record dct:modified ?now \n" +
+				"}\n" +
+				"WHERE {\n" +
+				"    ?record a dcat:CatalogRecord ;\n" +
+				"      foaf:primaryTopic ?dataset .\n" +
+				"    OPTIONAL {\n" +
+				"      ?record dct:modified ?oldModified \n" +
+				"    " +
+				"}\n" +
+				"    BIND(NOW() as ?now)\n" +
+				"}");
+		updateRecordTimestamp.setBinding("dataset", dataset);
+		updateRecordTimestamp.execute();
+	}
+
+	protected void updateParentDatasetRecordTimestamp(RepositoryConnection conn, IRI dataset, boolean isRecord) {
+		Update updateRecordTimestamp = conn.prepareUpdate("PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" +
+				"PREFIX dct: <http://purl.org/dc/terms/>\n" +
+				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
+				"PREFIX mdr: <http://semanticturkey.uniroma2.it/ns/mdr#>\n" +
+				"\n" +
+				"DELETE {\n" +
+				"  ?record dct:modified ?oldModified \n" +
+				"}\n" +
+				"INSERT {\n" +
+				"  ?record dct:modified ?now \n" +
+				"}\n" +
+				" WHERE {\n" +
+				(isRecord ?
+				"    ?thisRecord foaf:primaryTopic ?dataset . \n"
+						:
+				""
+				) +
+				"    ?parentDataset mdr:master|mdr:lod|dcat:hasVersion ?dataset . \n" +
+				"    ?record a dcat:CatalogRecord ;\n" +
+				"      foaf:primaryTopic ?parentDataset .\n" +
+				"    OPTIONAL {\n" +
+				"      ?record dct:modified ?oldModified \n" +
+				"    " +
+				"}\n" +
+				"    BIND(NOW() as ?now)\n" +
+				"}");
+		if (isRecord) {
+			updateRecordTimestamp.setBinding("thisRecord", dataset);
+		} else {
+			updateRecordTimestamp.setBinding("dataset", dataset);
+		}
+		updateRecordTimestamp.execute();
+	}
+
 	@Override
-	public IRI spawnNewAbstractDataset(IRI dataset1,
+	public synchronized IRI spawnNewAbstractDataset(IRI dataset1,
 									   AbstractDatasetAttachment abstractDatasetAttachment1,
 									   IRI dataset2,
 									   AbstractDatasetAttachment abstractDatasetAttachment2,
@@ -710,6 +771,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 			checkLocallyDefined(conn, catalogRecord);
 
+			updateParentDatasetRecordTimestamp(conn, catalogRecord, true);
 			GraphQuery query = conn.prepareGraphQuery(
 			// @formatter:off
 				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                  \n" +
@@ -717,56 +779,12 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"PREFIX dcat: <http://www.w3.org/ns/dcat#>									\n" +
 				"	                                                                        \n" +
 				"DESCRIBE * WHERE {                                                         \n" +
-				"  ?catalogRecord (foaf:topic|foaf:primaryTopic)/(dcat:distribution/void:subset*)? ?dataset      \n" +
+				"  ?catalogRecord foaf:primaryTopic/(dcat:distribution/void:subset*)? ?dataset      \n" +
 				"}                                                                          \n"
 				// @formatter:on
 			);
 			query.setBinding("catalogRecord", catalogRecord);
 			conn.remove(QueryResults.asModel(query.evaluate()));
-		}
-
-		saveToFile();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * it.uniroma2.art.semanticturkey.resources.MetadataRegistryBackend#deleteDatasetVersion(org.eclipse.rdf4j
-	 * .model.IRI)
-	 */
-	@Override
-	public synchronized void deleteDatasetVersion(IRI dataset) throws MetadataRegistryWritingException {
-		try (RepositoryConnection conn = getConnection()) {
-
-			checkLocallyDefined(conn, dataset);
-
-			Update updateCatalogModified = conn.prepareUpdate(
-			//@formatter:off
-				"PREFIX dcat: <http://www.w3.org/ns/dcat#>                            \n" +
-				"PREFIX dcterms: <http://purl.org/dc/terms/>                          \n" +
-				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>                            \n" +
-				"PREFIX void: <http://rdfs.org/ns/void#>                              \n" +
-				"                                                                     \n" +
-				"DELETE {                                                             \n" +
-				"  ?record dcterms:modified ?oldModified .                            \n" +
-				"}                                                                    \n" +
-				"INSERT {                                                             \n" +
-				"  ?record dcterms:modified ?now .                                    \n" +
-				"}                                                                    \n" +
-				"WHERE {                                                              \n" +
-				"  ?record a dcat:CatalogRecord ;                                     \n" +
-				"    foaf:topic ?dataset .                                            \n" +                                      
-				"  OPTIONAL { ?record dcterms:modified ?oldModified . }               \n" +
-				"  BIND(NOW() AS ?now)                                                \n" +
-				"}                                                         	          \n"
-				//@formatter:on
-			);
-			updateCatalogModified.setBinding("dataset", dataset);
-			updateCatalogModified.execute();
-
-			conn.remove(QueryResults
-					.asModel(conn.prepareGraphQuery("DESCRIBE " + RenderUtils.toSPARQL(dataset)).evaluate()));
 		}
 
 		saveToFile();
@@ -816,7 +834,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"	.                                                              \n" +
 				"}                                                                 \n" +
 				"WHERE {                                                           \n" +
-				"  ?record (foaf:primaryTopic|foaf:topic) ?dataset .               \n" +
+				"  ?record foaf:primaryTopic ?dataset .                            \n" +
 				"  ?dataset dcat:distribution ?lexicalizedDataset .                \n" +
 				"  OPTIONAL { ?record dcterms:modified ?oldModified . }            \n" +
 				"  BIND(NOW() AS ?now)                                             \n" +
@@ -897,7 +915,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"   ?record dcterms:modified ?now .                                               \n" +
 				" }                                                                               \n" +
 				" WHERE {                                                                         \n" +
-				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
+				"   ?record foaf:primaryTopic ?dataset .                                          \n" +
 				"   OPTIONAL {                                                                    \n" +
 				"     ?record dcterms:modified ?oldModified .                                     \n" +
 				"   }                                                                             \n" +
@@ -940,7 +958,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"   ?dataset mdreg:dereferenciationSystem ?dereferenciationSystem .               \n" + 
 				" }                                                                               \n" +
 				" WHERE {                                                                         \n" +
-				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
+				"   ?record foaf:primaryTopic ?dataset .                                          \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
 				"   OPTIONAL { ?dataset mdreg:dereferenciationSystem ?oldDereferenciationSystem .}\n" +
 				"   BIND(NOW() AS ?now)                                                           \n" +
@@ -987,15 +1005,15 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"   ?endpoint ?oldEndpointP ?oldEndpointO .                                       \n" +
 				" }                                                                               \n" +
 				" WHERE {                                                                         \n" +
-				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
+				"   ?record foaf:primaryTopic ?dataset .                                          \n" +
 				"   ?dataset dcat:distribution ?distribution .                                    \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
-						"   OPTIONAL { \n" +
-						"     ?distribution void:sparqlEndpoint ?oldEndpoint \n" +
-						"     OPTIONAL { ?oldEndpoint ?oldEndpointP ?oldEndpointO }\n" +
-						"   }                   \n" +
-						"   BIND(NOW() AS ?now)                                                           \n" +
-						" }                                                                               \n"
+				"   OPTIONAL { \n" +
+				"     ?distribution void:sparqlEndpoint ?oldEndpoint \n" +
+				"     OPTIONAL { ?oldEndpoint ?oldEndpointP ?oldEndpointO }\n" +
+				"   }                   \n" +
+				"   BIND(NOW() AS ?now)                                                           \n" +
+				" }                                                                               \n"
 					// @formatter:on
 			);
 			update.setBinding("dataset", dataset);
@@ -1028,7 +1046,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"   ?dataset dcterms:title ?title .                                               \n" + 
 				" }                                                                               \n" +
 				" WHERE {                                                                         \n" +
-				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
+				"   ?record foaf:primaryTopic ?dataset .                                         \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
 				"   OPTIONAL { \n" +
 				"     ?dataset dcterms:title ?oldTitle\n" +
@@ -1059,13 +1077,13 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"                                                                                 \n" +
 				" DELETE {                                                                        \n" +
 				"   ?record dcterms:modified ?oldModified .                                       \n" +
-				"   ?dataset dcterms:title ?title .                                              \n" +
+				"   ?dataset dcterms:title ?title .                                               \n" +
 				" }                                                                               \n" +
 				" INSERT {                                                                        \n" +
 				"   ?record dcterms:modified ?now .                                               \n" +
 				" }                                                                               \n" +
 				" WHERE {                                                                         \n" +
-				"   ?record foaf:primaryTopic ?dataset .                             \n" +
+				"   ?record foaf:primaryTopic ?dataset .                                          \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
 				"   ?dataset dcterms:title ?title\n" +
 				"   BIND(NOW() AS ?now)                                                           \n" +
@@ -1102,7 +1120,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"   ?dataset dcterms:description ?description .                                   \n" +
 				" }                                                                               \n" +
 				" WHERE {                                                                         \n" +
-				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
+				"   ?record foaf:primaryTopic ?dataset .                                          \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
 						"   OPTIONAL { \n" +
 						"     ?dataset dcterms:description ?oldDescription\n" +
@@ -1132,7 +1150,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					"                                                                                 \n" +
 					" DELETE {                                                                        \n" +
 					"   ?record dcterms:modified ?oldModified .                                       \n" +
-					"   ?dataset dcterms:description ?description .                                              \n" +
+					"   ?dataset dcterms:description ?description .                                   \n" +
 					" }                                                                               \n" +
 					" INSERT {                                                                        \n" +
 					"   ?record dcterms:modified ?now .                                               \n" +
@@ -1186,7 +1204,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" WHERE {                                                                         \n" +
 				"   ?dataset dcat:distribution ?distribution .                                    \n" +
 				"   ?distribution void:sparqlEndpoint ?endpoint .                                 \n" +
-				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
+				"   ?record foaf:primaryTopic ?dataset .                                          \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
 				"   BIND(NOW() AS ?now)                                                           \n" +
 				" }                                                                               \n"
@@ -1222,7 +1240,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" WHERE {                                                                         \n" +
 				"   ?dataset dcat:distribution ?distribution .                                    \n" +
 				"   ?distribution void:sparqlEndpoint ?endpoint .                                 \n" +
-				"   ?record foaf:primaryTopic | foaf:topic ?dataset .                             \n" +
+				"   ?record foaf:primaryTopic ?dataset .                                          \n" +
 				"   OPTIONAL { ?record dcterms:modified ?oldModified . }                          \n" +
 				"   BIND(NOW() AS ?now)                                                           \n" +
 				" }                                                                               \n"
@@ -1234,139 +1252,6 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		}
 
 		saveToFile();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see it.uniroma2.art.semanticturkey.resources.M#getCatalogRecords()
-	 */
-	@Override
-	public Collection<CatalogRecord> getCatalogRecords() {
-		try (RepositoryConnection conn = getConnection()) {
-			TupleQuery query = conn.prepareTupleQuery(
-			// @formatter:off
-				" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                           \n" +
-				" PREFIX dcterms: <http://purl.org/dc/terms/>                                         \n" +
-				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                           \n" +
-				" PREFIX void: <http://rdfs.org/ns/void#>                                             \n" +
-				" PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdr#>                           \n" +
-				" PREFIX owl: <http://www.w3.org/2002/07/owl#>                                        \n" +
-                "                                                                                     \n" +
-				" SELECT ?record (MIN(?recordIssued) as ?recordIssuedT)                               \n" +
-                "        (MAX(?recordModified) as ?recordModifiedT) ?dataset                          \n" +
-				"        (MIN(?datasetRole) as ?datasetRoleT) (MIN(?datasetUriSpace) as ?datasetUriSpaceT) \n" +
-                "        (MIN(?datasetTitle) as ?datasetTitleT)                                            \n" +
-                "        (MIN(?datasetDereferenciationSystem) as ?datasetDereferenciationSystemT)          \n" +
-				"        (GROUP_CONCAT(CONCAT(STR(?datasetSPARQLEndpoint), \"|_|\", COALESCE(STR(?datasetSPARQLEndpointLimitation), \"-\")); separator=\"|_|\") as ?datasetSPARQLEndpointT) \n" +
-				"        (MIN(?datasetVersionInfo) as ?datasetVersionInfoT)                           \n" +
-                "{                                                                                    \n" +
-				"   {SELECT ?record ?recordIssued ?recordModified WHERE {                             \n" +
-				"     ?catalog a dcat:Catalog ;                                                       \n" +
-				"       dcat:record ?record .                                                         \n" +
-                "                                                                                     \n" +
-				"     ?record dcterms:issued ?recordIssued .                                          \n" +
-				"     OPTIONAL { ?record dcterms:modified ?recordModified . }                         \n" +
-				"                                                                                     \n" +
-				"     FILTER EXISTS {                                                                 \n" +
-				"       ?record foaf:primaryTopic [] .                                                \n" +
-				"     }                                                                               \n" +
-				"   }}                                                                                \n" +
-				"                                                                                     \n" +
-				"   {                                                                                 \n" +
-				"     ?record foaf:primaryTopic ?dataset .                                            \n" +
-				" 	  BIND(foaf:primaryTopic as ?datasetRole)                                         \n" +
-				"   } UNION {                                                                         \n" +
-				"     ?record foaf:topic ?dataset .                                                   \n" +
-				" 	  BIND(foaf:topic as ?datasetRole)                                                \n" +
-				"   }                                                                                 \n" +
-				"   OPTIONAL {                                                                        \n" +
-				"     ?dataset void:uriSpace ?datasetUriSpace .                                       \n" +
-				"   }                                                                                 \n" +
-				"   OPTIONAL {                                                                        \n" +
-				" 	?dataset dcterms:title ?datasetTitle .                                            \n" +
-				"   }                                                                                 \n" +
-				"   OPTIONAL {                                                                        \n" +
-				" 	?dataset dcterms:description ?datasetDescription .                                \n" +
-				"   }                                                                                 \n" +
-				"   OPTIONAL {                                                                        \n" +
-				" 	?dataset mdreg:dereferenciationSystem ?datasetDereferenciationSystem .            \n" +
-				"   }                                                                                 \n" +
-				"   OPTIONAL {                                                                        \n" +
-				" 	?dataset void:sparqlEndpoint ?datasetSPARQLEndpoint .                             \n" +
-				"   OPTIONAL { ?datasetSPARQLEndpoint mdreg:sparqlEndpointLimitation ?datasetSPARQLEndpointLimitation . } \n" +
-				"   }                                                                                 \n" +
-				"   OPTIONAL {                                                                        \n" +
-				" 	?dataset owl:versionInfo ?datasetVersionInfo .                                    \n" +
-				"   }                                                                                 \n" +
-				"                                                                                     \n" +
-				" }                                                                                   \n" +
-				" GROUP BY ?record ?dataset                                                           \n" +
-				" HAVING BOUND(?record)                                                               \n"
-				// @formatter:on
-			);
-			query.setIncludeInferred(false);
-
-			Map<IRI, DatasetMetadata> record2primary = new HashMap<>();
-			Map<IRI, GregorianCalendar> record2issued = new HashMap<>();
-			Map<IRI, GregorianCalendar> record2modified = new HashMap<>();
-			Multimap<IRI, DatasetMetadata> record2version = HashMultimap.create();
-
-			Set<IRI> records = new HashSet<>();
-
-			try (TupleQueryResult results = query.evaluate()) {
-				while (results.hasNext()) {
-					BindingSet bs = results.next();
-
-					IRI record = (IRI) bs.getValue("record");
-
-					records.add(record);
-
-					if (!record2issued.containsKey(record)) {
-						record2issued.put(record, ((Literal) bs.getValue("recordIssuedT")).calendarValue()
-								.toGregorianCalendar());
-					}
-
-					if (!record2modified.containsKey(record) && bs.hasBinding("recordModifiedT")) {
-						record2modified.put(record, ((Literal) bs.getValue("recordModifiedT")).calendarValue()
-								.toGregorianCalendar());
-					}
-
-					Value datasetRole = bs.getValue("datasetRoleT");
-
-					boolean primary;
-
-					if (FOAF.PRIMARY_TOPIC.equals(datasetRole)) {
-						primary = true;
-					} else {
-						primary = false;
-					}
-
-					DatasetMetadata datasetMetadata = bindingset2datasetmetadata(bs);
-
-					if (primary) {
-						if (!datasetMetadata.getUriSpace().isPresent()
-								|| datasetMetadata.getVersionInfo().isPresent()) {
-							continue;
-						}
-						record2primary.put(record, datasetMetadata);
-					} else {
-						if (!datasetMetadata.getVersionInfo().isPresent()) {
-							continue;
-						}
-						record2version.put(record, datasetMetadata);
-					}
-				}
-			}
-			return records.stream().filter(r -> record2issued.containsKey(r) && record2primary.containsKey(r))
-					.map(r -> new CatalogRecord(r, record2issued.get(r), record2modified.get(r),
-							record2primary.get(r),
-							record2version.get(r).stream()
-									.sorted(Comparator.comparing(
-											(DatasetMetadata meta) -> meta.getVersionInfo().orElse(null)))
-									.collect(toList())))
-					.collect(toList());
-		}
 	}
 
 	@Override
@@ -1409,24 +1294,24 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				"    OPTIONAL {\n" +
 				"      ?record a dcat:CatalogRecord ;\n" +
 				"        foaf:primaryTopic ?registeredTargetDataset .\n" +
-						"      ?registeredTargetDataset void:uriSpace ?targetDatasetUriSpace .\n" +
-						"      FILTER NOT EXISTS {\n" +
-						"        [] mdr:master|mdr:lod|dcat:hasVersion ?registeredTargetDataset .\n" +
-						"      " +
-						"}\n" +
-						"      OPTIONAL {\n" +
-						"    " +
-						"    ?registeredTargetDataset dcat:distribution [\n" +
-						"            a stmdr:Project ;\n" +
-						"            foaf:name ?registeredTargetProjectName\n" +
-						"          ]\n" +
-						"          .\n" +
-						"      }\n" +
-						"      OPTIONAL { ?registeredTargetDataset dct:title ?registeredTargetDatasetTitle . }\n" +
-						"    }\n" +
-						"  }\n" +
-						"}"
-					//@formatter:on
+				"      ?registeredTargetDataset void:uriSpace ?targetDatasetUriSpace .\n" +
+				"      FILTER NOT EXISTS {\n" +
+				"        [] mdr:master|mdr:lod|dcat:hasVersion ?registeredTargetDataset .\n" +
+				"      " +
+				"}\n" +
+				"      OPTIONAL {\n" +
+				"    " +
+				"    ?registeredTargetDataset dcat:distribution [\n" +
+				"            a stmdr:Project ;\n" +
+				"            foaf:name ?registeredTargetProjectName\n" +
+				"          ]\n" +
+				"          .\n" +
+				"      }\n" +
+				"      OPTIONAL { ?registeredTargetDataset dct:title ?registeredTargetDatasetTitle . }\n" +
+				"    }\n" +
+				"  }\n" +
+				"}"
+			//@formatter:on
 			);
 			query.setBinding("dataset", dataset);
 			List<BindingSet> queryResults = QueryResults.asList(query.evaluate());

@@ -106,15 +106,6 @@ public interface MetadataRegistryBackend {
 	void deleteCatalogRecord(IRI catalogRecord) throws MetadataRegistryWritingException;
 
 	/**
-	 * Deletes a dataset version. The provided {@code dataset} is the identity of the specific version that
-	 * will be deleted.
-	 * 
-	 * @param dataset
-	 * @throws MetadataRegistryWritingException
-	 */
-	void deleteDatasetVersion(IRI dataset) throws MetadataRegistryWritingException;
-
-	/**
 	 * Adds an embedded lexicalization set for a dataset.
 	 * 
 	 * @param dataset
@@ -241,14 +232,6 @@ public interface MetadataRegistryBackend {
 	 * @throws MetadataRegistryWritingException
 	 */
 	void removeSPARQLEndpointLimitation(IRI endpoint, IRI limitation) throws MetadataRegistryWritingException;
-
-	/**
-	 * Returns the catalog records
-	 * 
-	 * @return
-	 */
-	// @TODO delete when removed from assisted search???
-	Collection<CatalogRecord> getCatalogRecords();
 
 	/**
 	 * Returns the metadata associated with the given dataset
