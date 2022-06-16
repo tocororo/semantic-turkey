@@ -1,13 +1,8 @@
 package it.uniroma2.art.semanticturkey.mdr.core;
 
 import java.io.File;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.Collection;
-import java.util.List;
 
-import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.DCAT3FRAGMENT;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.STMETADATAREGISTRY;
 import org.apache.commons.io.FileUtils;
 import org.apache.sling.testing.mock.osgi.junit.OsgiContext;
@@ -24,17 +19,13 @@ import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import com.google.common.base.Objects;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -103,8 +94,8 @@ public class MetadataRegistryBackendTest {
 				Values.literal("The AGROVOC thesaurus contains more than 38 000 concepts in 39 languages covering topics related to food, nutrition, agriculture, fisheries, forestry, environment and other related domains", "en"),
 				true,
 				distribution,
-				null
-		);
+				null,
+				false);
 		try (RepositoryConnection con = metadataRegistryBackend.getConnection()) {
 			con.export(Rio.createWriter(RDFFormat.TURTLE, System.out));
 		}
@@ -127,8 +118,8 @@ public class MetadataRegistryBackendTest {
 					Values.literal("The AGROVOC thesaurus contains more than 38 000 concepts in 39 languages covering topics related to food, nutrition, agriculture, fisheries, forestry, environment and other related domains", "en"),
 					true,
 					distribution,
-					null
-			);
+					null,
+					false);
 		}
 
 		// AGROVOC master development project
@@ -145,8 +136,8 @@ public class MetadataRegistryBackendTest {
 					Values.literal("The AGROVOC thesaurus contains more than 38 000 concepts in 39 languages covering topics related to food, nutrition, agriculture, fisheries, forestry, environment and other related domains", "en"),
 					true,
 					distribution,
-					null
-			);
+					null,
+					false);
 		}
 
 		try (RepositoryConnection con = metadataRegistryBackend.getConnection()) {
@@ -267,8 +258,8 @@ public class MetadataRegistryBackendTest {
 				Values.literal("DBpedia", "en"),
 				true,
 				distribution,
-				null
-		);
+				null,
+				false);
 
 		metadataRegistryBackend.discoverLexicalizationSets(dbpediaDataset);
 
@@ -294,8 +285,8 @@ public class MetadataRegistryBackendTest {
 				Values.literal("Agrovoc", "en"),
 				true,
 				distribution,
-				null
-		);
+				null,
+				false);
 
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
 			conn.export(
@@ -323,12 +314,12 @@ public class MetadataRegistryBackendTest {
 		ValueFactory vf = SimpleValueFactory.getInstance();
 		Distribution agrovocDistribution = new Distribution(Values.iri("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"), METADATAREGISTRY.SPARQL_ENDPOINT, Values.iri("http://agrovoc.fao.org/sparql"), null);
 		IRI agrovocDataset = metadataRegistryBackend.createConcreteDataset("agrovoc", "http://aims.fao.org/aos/agrovoc/",
-				Values.literal("Agrovoc DatasetSpecification"), null, true, agrovocDistribution, null);
+				Values.literal("Agrovoc DatasetSpecification"), null, true, agrovocDistribution, null, false);
 
 
 		Distribution eurovocDistribution = new Distribution(Values.iri("http://eurovoc.europa.eu/void.ttl#EuroVoc"), METADATAREGISTRY.SPARQL_ENDPOINT, null, null);
 		metadataRegistryBackend.createConcreteDataset("eurovoc", "http://eurovoc.europa.eu/",
-				Values.literal("EuroVoc DatasetSpecification"), null, true, eurovocDistribution, null);
+				Values.literal("EuroVoc DatasetSpecification"), null, true, eurovocDistribution, null, false);
 
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
 			Update update = conn.prepareUpdate(

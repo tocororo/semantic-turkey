@@ -33,15 +33,16 @@ public interface MetadataRegistryBackend {
 	 * @param dereferenceable whether the dataset is dereferenceable: <code>null</code> means unknown
 	 * @param distribution the distribution associated with the dataset, which also determines the dataset nature
 	 * @param abstractDatasetAttachment optional connection to an abstract dataset
+	 * @param renameOnConflict
 	 * @return the IRI of the newly created dataset
 	 */
 	IRI createConcreteDataset(String datasetLocalName,
-					  String uriSpace,
-					  Literal title,
-					  Literal description,
-					  Boolean dereferenceable,
-					  Distribution distribution,
-					  AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException;
+							  String uriSpace,
+							  Literal title,
+							  Literal description,
+							  Boolean dereferenceable,
+							  Distribution distribution,
+							  AbstractDatasetAttachment abstractDatasetAttachment, boolean renameOnConflict) throws MetadataRegistryWritingException;
 
 	/**
 	 * Returns root datasets, i.e. datasets (either abstract or concrete) that are not connect to another (abstract)
@@ -64,6 +65,13 @@ public interface MetadataRegistryBackend {
 	 * @param abstractDatasetAttachment
 	 */
 	void connectToAbstractDataset(IRI dataset, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException;
+
+	/**
+	 * Disconnect a dataset from an abstract dataset
+	 * @param dataset
+	 * @param abstractDataset
+	 */
+	void disconnectFromAbstractDataset(IRI dataset, IRI abstractDataset) throws MetadataRegistryWritingException;
 
 	/**
 	 * Spawn a new abstract dataset grouping two existing root concrete datasets

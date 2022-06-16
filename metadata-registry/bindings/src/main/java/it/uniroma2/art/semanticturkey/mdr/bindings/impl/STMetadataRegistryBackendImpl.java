@@ -164,7 +164,7 @@ public class STMetadataRegistryBackendImpl extends MetadataRegistryBackendImpl
 							);
 
 
-					createDataset(dataset.getLocalName(), datasetSpecification, null, null, projectCtx, false);
+					createDataset(dataset.getLocalName(), datasetSpecification, null, null, projectCtx, false, false);
 
 					metadataConn.add(datasetDescription, projectCtx);
 				}

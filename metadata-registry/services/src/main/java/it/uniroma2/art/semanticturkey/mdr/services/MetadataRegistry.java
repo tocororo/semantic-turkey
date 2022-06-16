@@ -1,6 +1,5 @@
 package it.uniroma2.art.semanticturkey.mdr.services;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
@@ -23,14 +22,12 @@ import it.uniroma2.art.semanticturkey.data.access.ResourcePosition;
 import it.uniroma2.art.semanticturkey.exceptions.DeniedOperationException;
 import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
 import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
-import it.uniroma2.art.semanticturkey.mdr.core.CatalogRecord;
 import it.uniroma2.art.semanticturkey.mdr.core.DatasetMetadata;
 import it.uniroma2.art.semanticturkey.mdr.core.LexicalizationSetMetadata;
 import it.uniroma2.art.semanticturkey.mdr.core.LinksetMetadata;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataDiscoveryException;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryStateException;
 import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryWritingException;
-import it.uniroma2.art.semanticturkey.mdr.core.NoSuchCatalogRecordException;
 import it.uniroma2.art.semanticturkey.mdr.core.NoSuchDatasetMetadataException;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
@@ -90,7 +87,7 @@ public class MetadataRegistry extends STServiceAdapter {
 				description,
 				dereferenceable,
 				distribution,
-				abstractDatasetAttachment);
+				abstractDatasetAttachment, false);
 		return new AnnotatedValue<>(datasetIRI);
 	}
 
@@ -127,6 +124,17 @@ public class MetadataRegistry extends STServiceAdapter {
 	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
 	public void connectToAbstractDataset(IRI dataset, @JsonSerialized AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
 		metadataRegistryBackend.connectToAbstractDataset(dataset, abstractDatasetAttachment);
+	}
+
+	/**
+	 * Disconnect a dataset from an abstract dataset
+	 * @param dataset
+	 * @param abstractDataset
+	 */
+	@STServiceOperation(method = RequestMethod.POST)
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'U')")
+	public void disconnectFromAbstractDataset(IRI dataset, IRI abstractDataset) throws MetadataRegistryWritingException {
+		metadataRegistryBackend.disconnectFromAbstractDataset(dataset, abstractDataset);
 	}
 
 	/**

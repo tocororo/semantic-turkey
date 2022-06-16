@@ -104,13 +104,9 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.Values;
-import org.eclipse.rdf4j.model.vocabulary.FOAF;
-import org.eclipse.rdf4j.query.QueryResults;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.slf4j.Logger;
@@ -676,7 +672,7 @@ public class ShowVoc extends STServiceAdapter {
 		String uriSpace = config.uriSpace != null ? config.uriSpace : config.baseURI.stringValue();
 		Distribution datasetDistribution = new Distribution(config.identity, METADATAREGISTRY.SPARQL_ENDPOINT, config.sparqlEndpoint, null);
 		IRI datasetIRI = metadataRegistryBackend.createConcreteDataset(null, uriSpace, Values.literal(config.resourceName), null,
-				dereferenciability, datasetDistribution, null);
+				dereferenciability, datasetDistribution, null, false);
 		try (RepositoryConnection conn = metadataRegistryBackend.getConnection()) {
 			if (config.sparqlLimitations != null && !config.sparqlLimitations.isEmpty()) {
 				// if it's not empty, set just the first since at the moment we have just a limitation

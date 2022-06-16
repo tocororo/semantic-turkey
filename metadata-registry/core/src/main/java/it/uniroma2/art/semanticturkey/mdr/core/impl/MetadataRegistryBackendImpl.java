@@ -18,8 +18,6 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -50,11 +48,11 @@ import it.uniroma2.art.semanticturkey.mdr.core.DatasetSpecification;
 import it.uniroma2.art.semanticturkey.mdr.core.Distribution;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.DCAT3FRAGMENT;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.STMETADATAREGISTRY;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.IsolationLevels;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
-import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -107,14 +105,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Multimap;
 
 import it.uniroma2.art.lime.model.vocabulary.LIME;
 import it.uniroma2.art.maple.orchestration.AssessmentException;
 import it.uniroma2.art.maple.orchestration.MediationFramework;
-import it.uniroma2.art.semanticturkey.mdr.core.CatalogRecord;
 import it.uniroma2.art.semanticturkey.mdr.core.LexicalizationSetMetadata;
 import it.uniroma2.art.semanticturkey.mdr.core.LinksetMetadata;
 import it.uniroma2.art.semanticturkey.mdr.core.LinksetMetadata.Target;
@@ -290,15 +285,15 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	}
 
 	@Override
-	public synchronized IRI createConcreteDataset(String datasetLocalName, String uriSpace, Literal title, Literal description, Boolean dereferenceable, Distribution distribution, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
+	public synchronized IRI createConcreteDataset(String datasetLocalName, String uriSpace, Literal title, Literal description, Boolean dereferenceable, Distribution distribution, AbstractDatasetAttachment abstractDatasetAttachment, boolean renameOnConflict) throws MetadataRegistryWritingException {
 		ConcreteDatasetSpecification concreteDatasetSpecification = new ConcreteDatasetSpecification(null, uriSpace, title, description, dereferenceable, distribution);
-		return createDataset(datasetLocalName, concreteDatasetSpecification, abstractDatasetAttachment, null, null, true);
+		return createDataset(datasetLocalName, concreteDatasetSpecification, abstractDatasetAttachment, null, null, true, renameOnConflict);
 	}
 
 	protected synchronized IRI createDataset(String datasetLocalName,
-								DatasetSpecification dataset,
-								AbstractDatasetAttachment abstractDatasetAttachment,
-								BiConsumer<Model, IRI> postOperation, IRI ctx, boolean save) throws MetadataRegistryWritingException {
+											 DatasetSpecification dataset,
+											 AbstractDatasetAttachment abstractDatasetAttachment,
+											 BiConsumer<Model, IRI> postOperation, IRI ctx, boolean save, boolean renameOnConflict) throws MetadataRegistryWritingException {
 		IRI datasetIRI;
 
 		try (RepositoryConnection conn = getConnection()) {
@@ -310,10 +305,45 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			String recordLocalName = "record_" + datasetLocalName;
 			String distributionLocalName = "distribution_" + datasetLocalName;
 
-			datasetIRI = vf.createIRI(conn.getNamespace(""), datasetLocalName);
-			IRI recordIRI = vf.createIRI(conn.getNamespace(""), recordLocalName);
-			IRI distributionIRI = vf.createIRI(conn.getNamespace(""), distributionLocalName);
+			IRI recordIRI;
+			IRI distributionIRI;
 
+			boolean recheckNames;
+			int nameAppend = 0;
+			do {
+				recheckNames = false;
+
+				datasetIRI = vf.createIRI(conn.getNamespace(""), datasetLocalName);
+				recordIRI = vf.createIRI(conn.getNamespace(""), recordLocalName);
+				distributionIRI = vf.createIRI(conn.getNamespace(""), distributionLocalName);
+
+				try {
+					checkNotLocallyDefined(conn, datasetIRI);
+					checkNotLocallyDefined(conn, recordIRI);
+					checkNotLocallyDefined(conn, distributionIRI);
+				} catch (IllegalArgumentException e) {
+					if (StringUtils.startsWith(e.getMessage(), "Resource already defined") && renameOnConflict) {
+						nameAppend += 1;
+						if (nameAppend > 100) {
+							throw e; // no nome than 100 retries
+						}
+
+						if (nameAppend > 1) { // if this is not the first retry, remove the string _N that has appended previously
+							datasetLocalName = StringUtils.substringBeforeLast(datasetLocalName, "_");
+							recordLocalName = StringUtils.substringBeforeLast(recordLocalName, "_");
+							distributionLocalName = StringUtils.substringBeforeLast(distributionLocalName, "_");
+						}
+
+						datasetLocalName = datasetLocalName + "_" + nameAppend;
+						recordLocalName = recordLocalName + "_" + nameAppend;
+						distributionLocalName = distributionLocalName + "_" + nameAppend;
+
+						recheckNames = true;
+					} else {
+						throw e;
+					}
+				}
+			} while (recheckNames);
 			dataset.setIdentity(datasetIRI);
 
 			if (dataset.getDistribution() != null && dataset.getDistribution().getIdentity() == null) {
@@ -415,6 +445,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	@Override
 	public CatalogRecord2 getCatalogRecordMetadata(IRI catalogRecord) {
 		try(RepositoryConnection con = getConnection()) {
+
+			checkLocallyDefined(con, catalogRecord);
+
 			TupleQuery query = con.prepareTupleQuery("PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" +
 					"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
 					"PREFIX mdr: <http://semanticturkey.uniroma2.it/ns/mdr#>\n" +
@@ -452,6 +485,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	@Override
 	public Collection<CatalogRecord2> listConnectedDatasets(IRI abstractDataset) {
 		try(RepositoryConnection con = getConnection()) {
+
+			checkLocallyDefined(con, abstractDataset);
+
 			TupleQuery query = con.prepareTupleQuery("PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" +
 					"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
 					"PREFIX mdr: <http://semanticturkey.uniroma2.it/ns/mdr#>\n" +
@@ -499,12 +535,73 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	@Override
 	public synchronized void connectToAbstractDataset(IRI dataset, AbstractDatasetAttachment abstractDatasetAttachment) throws MetadataRegistryWritingException {
 		try (RepositoryConnection conn = getConnection()) {
+
+			checkLocallyDefined(conn, dataset);
+			checkLocallyDefined(conn, abstractDatasetAttachment.getAbstractDataset());
+
 			Model model = new LinkedHashModel();
 			ValueFactory vf = conn.getValueFactory();
 			abstractDatasetAttachment.export(model, vf, dataset);
 			conn.add(model);
 			IRI abstractDatasetIRI = abstractDatasetAttachment.getAbstractDataset();
 			updateDatasetRecordTimestamp(conn, abstractDatasetIRI);
+		}
+
+		saveToFile();
+	}
+
+	@Override
+	public synchronized void disconnectFromAbstractDataset(IRI dataset, IRI abstractDataset) throws MetadataRegistryWritingException {
+		try (RepositoryConnection conn = getConnection()) {
+
+			checkLocallyDefined(conn, dataset);
+			checkLocallyDefined(conn, abstractDataset);
+
+			BooleanQuery otherChildCheck = conn.prepareBooleanQuery("PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" +
+					"PREFIX mdr: <http://semanticturkey.uniroma2.it/ns/mdr#>\n" +
+					"\n" +
+					"ASK {\n" +
+					"  ?abstractDataset mdr:master|mdr:lod|dcat:hasVersion ?otherDataset .\n" +
+					"  FILTER(!sameTerm(?otherDataset, ?dataset)) \n" +
+					"}");
+
+			otherChildCheck.setBinding("dataset", dataset);
+			otherChildCheck.setBinding("abstractDataset", abstractDataset);
+
+			if (!otherChildCheck.evaluate()) {
+				throw new IllegalArgumentException("Could not disconnect the sole subset of an abstract dataset");
+			}
+
+			Update datasetDisconnectionQuery = conn.prepareUpdate("PREFIX dcat: <http://www.w3.org/ns/dcat#>\n" +
+					"PREFIX dct: <http://purl.org/dc/terms/>\n" +
+					"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
+					"PREFIX mdr: <http://semanticturkey.uniroma2.it/ns/mdr#>\n" +
+					"\n" +
+					"DELETE {\n" +
+					"  ?abstractDataset mdr:master ?dataset .\n" +
+					"  ?abstractDataset mdr:lod ?dataset .\n" +
+					"  ?abstractDataset dcat:hasVersion ?dataset .\n" +
+					"  ?record dct:modified ?oldModified .\n" +
+					"}\n" +
+					"INSERT {\n" +
+					"  ?record dct:modified ?now .\n" +
+					"}\n" +
+					"WHERE {\n" +
+					"  ?record a dcat:CatalogRecord ;\n" +
+					"    foaf:primaryTopic ?abstractDataset .\n" +
+					"    \n" +
+					"  OPTIONAL {\n" +
+					"    ?record dct:modified ?oldModified\n" +
+					"  " +
+					"}\n" +
+					"  \n" +
+					"  BIND(NOW() as ?now)\n" +
+					"}");
+
+			datasetDisconnectionQuery.setBinding("dataset", dataset);
+			datasetDisconnectionQuery.setBinding("abstractDataset", abstractDataset);
+
+			datasetDisconnectionQuery.execute();
 		}
 
 		saveToFile();
@@ -579,6 +676,11 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 									   Literal title,
 									   Literal description,
 									   Boolean dereferenceable) throws MetadataRegistryWritingException {
+		try (RepositoryConnection con = getConnection()) {
+			checkLocallyDefined(con, dataset1);
+			checkLocallyDefined(con, dataset2);
+		}
+
 		AbstractDatasetSpecification abstractDatasetSpecification = new AbstractDatasetSpecification(null, uriSpace, title, description, dereferenceable);
 		return createDataset(datasetLocalName, abstractDatasetSpecification, null, (Model model, IRI abstractDatasetIRI) -> {
 			abstractDatasetAttachment1.setAbstractDataset(abstractDatasetIRI);
@@ -586,7 +688,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			abstractDatasetAttachment1.export(model, SimpleValueFactory.getInstance(), dataset1);
 			abstractDatasetAttachment2.export(model, SimpleValueFactory.getInstance(), dataset2);
 
-		}, null, true);
+		}, null, true, false);
 	}
 
 	private Collection<CatalogRecord2> parseCatalogRecords(TupleQueryResult result) {
@@ -2008,8 +2110,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					datasetMetadata.getDescription().map(Values::literal).orElse(null),
 					datasetMetadata.getDereferenciationSystem().map(METADATAREGISTRY.STANDARD_DEREFERENCIATION::equals).orElse(null),
 					distribution,
-					null
-			);
+					null,
+					true);
 
 
 			if (voidDataset != null) {
