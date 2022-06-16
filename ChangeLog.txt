@@ -1,6 +1,8 @@
 version 11.0.1
 date: dd/mm/2022
   * introduced the new access level "EXT" for universal project accessibility
+  * fixed several bugs related to the MDR
+  * updated dependency on MAPLE 0.0.12
   * updated dependency on CODA 1.7.6
   * updated dependency on Sheet2RDF 5.0.2
 
