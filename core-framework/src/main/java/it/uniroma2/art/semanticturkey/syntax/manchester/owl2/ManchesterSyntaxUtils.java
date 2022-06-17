@@ -73,8 +73,10 @@ import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ManchesterSyntaxUtils {
 
@@ -924,7 +926,9 @@ public class ManchesterSyntaxUtils {
 		PossType type = null;
 		int card = -1;
 		boolean inverse = false;
-		IRI typeInRDF = null;
+		//IRI typeInRDF = null; // old,
+		Set<IRI> typeInRDFSet = new HashSet<>(); // it is a Set since multiple types are possible, mainly when a
+		// reasoner is used
 
 
 		// while (statements.hasNext()) {
@@ -1020,7 +1024,11 @@ public class ManchesterSyntaxUtils {
 					onClassIRI = (IRI) stat.getObject();
 				}
 			} else if(pred.equals(RDF.TYPE)){
-				typeInRDF = (IRI) stat.getObject();
+				if (stat.getObject() instanceof  IRI) {
+					// IRI typeInRDFIri = (IRI) stat.getObject(); // old, when a single value only managed
+					typeInRDFSet.add((IRI) stat.getObject());
+				}
+
 			} else if(pred.equals(OWL.ONDATATYPE)) {
 				type = PossType.DATATYPERESTRICTION;
 				if (stat.getObject() instanceof BNode) {
@@ -1083,7 +1091,7 @@ public class ManchesterSyntaxUtils {
 			//two restrictions use the PossType.AND, so distinguish among them
 			List<ManchesterClassInterface> andResourceList = new ArrayList<ManchesterClassInterface>();
 			parseListFirstRestForManchesterAxiom(objBnode, andResourceList, graphs, tripleList, model);
-			if(typeInRDF.equals(OWL.CLASS)){
+			if(typeInRDFSet.contains(OWL.CLASS)){
 				mci = new ManchesterAndClass(andResourceList);
 			} else {
 				mci = new ManchesterDataConjunction(andResourceList);
@@ -1093,7 +1101,7 @@ public class ManchesterSyntaxUtils {
 			//two restrictions use the PossType.OR, so distinguish among them
 			List<ManchesterClassInterface> orResourceList = new ArrayList<ManchesterClassInterface>();
 			parseListFirstRestForManchesterAxiom(objBnode, orResourceList, graphs, tripleList, model);
-			if(typeInRDF.equals(OWL.CLASS)){
+			if(typeInRDFSet.contains(OWL.CLASS)){
 				mci = new ManchesterOrClass(orResourceList);
 			} else {
 				mci = new ManchesterDataRange(orResourceList);
