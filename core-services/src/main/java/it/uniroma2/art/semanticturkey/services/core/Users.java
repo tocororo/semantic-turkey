@@ -8,7 +8,11 @@ import it.uniroma2.art.semanticturkey.email.EmailApplicationContext;
 import it.uniroma2.art.semanticturkey.email.EmailService;
 import it.uniroma2.art.semanticturkey.email.EmailServiceFactory;
 import it.uniroma2.art.semanticturkey.email.VbEmailService;
-import it.uniroma2.art.semanticturkey.exceptions.*;
+import it.uniroma2.art.semanticturkey.exceptions.InvalidProjectNameException;
+import it.uniroma2.art.semanticturkey.exceptions.OldPasswordMismatchException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectAccessException;
+import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
+import it.uniroma2.art.semanticturkey.exceptions.UserSelfDeletionException;
 import it.uniroma2.art.semanticturkey.project.AbstractProject;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
@@ -17,15 +21,25 @@ import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.rbac.RBACException;
 import it.uniroma2.art.semanticturkey.rbac.RBACManager;
-import it.uniroma2.art.semanticturkey.security.STUserDetailsService;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.settings.core.CoreSystemSettings;
 import it.uniroma2.art.semanticturkey.settings.core.SemanticTurkeyCoreSettingsManager;
-import it.uniroma2.art.semanticturkey.user.*;
+import it.uniroma2.art.semanticturkey.user.ProjectBindingException;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBinding;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.Role;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UpdateEmailAlreadyUsedException;
+import it.uniroma2.art.semanticturkey.user.UserException;
+import it.uniroma2.art.semanticturkey.user.UserFormCustomField;
+import it.uniroma2.art.semanticturkey.user.UserStatus;
+import it.uniroma2.art.semanticturkey.user.UsersGroup;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
 import it.uniroma2.art.semanticturkey.utilities.Utilities;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
@@ -37,7 +51,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -47,8 +60,13 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 @STService
 public class Users extends STServiceAdapter {
@@ -57,9 +75,6 @@ public class Users extends STServiceAdapter {
 
     @Autowired
     private SessionRegistry sessionRegistry;
-
-    @Autowired
-    private STUserDetailsService stUserDetailsService;
 
     /**
      * If there are no registered users return an empty response;
@@ -144,8 +159,8 @@ public class Users extends STServiceAdapter {
      * @throws InvalidProjectNameException
      */
     @STServiceOperation
-//	@PreAuthorize("@auth.isAuthorized('um(user, project)', 'R')")
-    public JsonNode listUsersBoundToProject(String projectName)
+    public JsonNode listUsersBoundToProject(String projectName, @Optional @JsonSerialized UserFilter requiredRoles,
+            @Optional @JsonSerialized UserFilter requiredGroups, @Optional @JsonSerialized UserFilter requiredLanguages)
             throws InvalidProjectNameException, ProjectInexistentException, ProjectAccessException {
         AbstractProject project = ProjectManager.getProjectDescription(projectName);
         Collection<ProjectUserBinding> puBindings = ProjectUserBindingsManager.listPUBindingsOfProject(project);
@@ -158,12 +173,46 @@ public class Users extends STServiceAdapter {
         //add user only if has a role in project
         for (ProjectUserBinding pub : puBindings) {
             if (!pub.getRoles().isEmpty() || !pub.getLanguages().isEmpty() || pub.getGroup() != null) {
+                if (requiredRoles != null && !requiredRoles.filters.isEmpty()) {
+                    List<String> assignedRoleNames = pub.getRoles().stream().map(r -> r.getName()).collect(Collectors.toList());
+                    if (requiredRoles.and) { //AND => all required roles must be assigned
+                        if (!assignedRoleNames.containsAll(requiredRoles.filters)) {
+                            continue;
+                        }
+                    } else { //OR => it's enough just one required role
+                        if (requiredRoles.filters.stream().noneMatch(r -> assignedRoleNames.contains(r))) {
+                            //user has none of the required roles => skip it
+                            continue;
+                        }
+                    }
+                }
+                if (requiredGroups != null && !requiredGroups.filters.isEmpty()) {
+                    UsersGroup assignedGroup = pub.getGroup();
+                    //Do not check for AND/OR since a user can be bound to only one group
+                    if (assignedGroup == null || !requiredGroups.filters.contains(assignedGroup.getShortName())) {
+                        continue; //user doesn't belong to any of the required group => skip it
+                    }
+                }
+                if (requiredLanguages != null && !requiredLanguages.filters.isEmpty()) {
+                    Collection<String> assignedLanguages = pub.getLanguages();
+                    if (requiredLanguages.and) { //AND => all required languages must be assigned
+                        if (!assignedLanguages.containsAll(requiredLanguages.filters)) {
+                            continue;
+                        }
+                    } else { //OR => it's enough just one required language
+                        if (assignedLanguages == null || requiredLanguages.filters.stream().noneMatch(l -> assignedLanguages.contains(l))) {
+                            //user has none of the required languages => skip user
+                            continue;
+                        }
+                    }
+                }
                 STUser user = pub.getUser();
                 if (!boundUsers.contains(user)) {
                     boundUsers.add(user);
                 }
             }
         }
+
         //serialize bound user in json response
         for (STUser u : boundUsers) {
             userArrayNode.add(u.getAsJsonObject());
@@ -376,7 +425,7 @@ public class Users extends STServiceAdapter {
     }
 
     @STServiceOperation(method = RequestMethod.POST)
-    public void activateRegisteredUser(String email, String token) throws UserException, UnsupportedEncodingException, MessagingException, STPropertyAccessException {
+    public void activateRegisteredUser(String email, String token) throws UserException {
         UsersManager.activateNewRegisteredUser(email, token);
         STUser user = UsersManager.getUser(email);
         VbEmailService emailService = new VbEmailService();
@@ -751,6 +800,25 @@ public class Users extends STServiceAdapter {
     private void updateUserInSecurityContext(STUser user) {
         Authentication auth = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+
+    public static class UserFilter {
+        private List<String> filters;
+        private boolean and;
+        public UserFilter() {}
+        public List<String> getFilters() {
+            return filters;
+        }
+        public void setFilters(List<String> filters) {
+            this.filters = filters;
+        }
+        public boolean isAnd() {
+            return and;
+        }
+        public void setAnd(boolean and) {
+            this.and = and;
+        }
     }
 
 }
