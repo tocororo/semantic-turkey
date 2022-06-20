@@ -11,7 +11,6 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -47,6 +46,7 @@ public class DatasetMetadata2 {
     private final Collection<Literal> titles;
     private final Collection<Literal> descriptions;
     private final DatasetRole role;
+    private final String projectName;
     private final Literal versionInfo;
     private final Literal versionNotes;
     private final Optional<IRI> dereferenciationSystem;
@@ -71,7 +71,7 @@ public class DatasetMetadata2 {
                             Collection<Literal> descriptions,
                             DatasetRole role,
                             Literal versionInfo,
-                            Literal versionNotes) {
+                            Literal versionNotes, String projectName) {
 
         this.identity = identity;
         this.nature = nature;
@@ -82,6 +82,7 @@ public class DatasetMetadata2 {
         this.titles = titles;
         this.descriptions = descriptions;
         this.role = role;
+        this.projectName = projectName;
         this.versionInfo = versionInfo;
         this.versionNotes = versionNotes;
     }
@@ -124,6 +125,10 @@ public class DatasetMetadata2 {
         return role;
     }
 
+    public String getProjectName() {
+        return projectName;
+    }
+
     public Literal getVersionInfo() {
         return versionInfo;
     }
@@ -142,6 +147,7 @@ public class DatasetMetadata2 {
                 .append("titles", titles)
                 .append("descriptions", descriptions)
                 .append("role", role)
+                .append("projectName", projectName)
                 .append("versionInfo", versionInfo)
                 .append("versionNotes", versionNotes)
                 .toString();

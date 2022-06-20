@@ -431,6 +431,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					"} UNION {\n" +
 					"         ?dataset dcat:distribution/rdf:type ?distributionType\n" +
 					"    } UNION {\n" +
+					"   " +
+					"      ?dataset dcat:distribution/foaf:name ?distributionName\n" +
+					"    } UNION {\n" +
 					"     ?dataset dcat:distribution/void:sparqlEndpoint ?sparqlEndpoint .\n" +
 					"     OPTIONAL { ?sparqlEndpoint ?sparqlEndpoint_p ?sparqlEndpoint_o } .\n" +
 					"    }\n" +
@@ -470,6 +473,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					"} UNION {\n" +
 					"         ?dataset dcat:distribution/rdf:type ?distributionType\n" +
 					"    } UNION {\n" +
+					"         ?dataset dcat:distribution/foaf:name ?distributionName\n" +
+					"} UNION {\n" +
 					"     ?dataset dcat:distribution/void:sparqlEndpoint ?sparqlEndpoint .\n" +
 					"     OPTIONAL { ?sparqlEndpoint ?sparqlEndpoint_p ?sparqlEndpoint_o } .\n" +
 					"    }\n" +
@@ -519,6 +524,9 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					"    " +
 					"} UNION {\n" +
 					"         ?dataset dcat:distribution/rdf:type ?distributionType\n" +
+					"    } UNION {\n" +
+					"         ?dataset dcat:distribution/foaf:name ?distribution" +
+					"     " +
 					"    } UNION {\n" +
 					"         ?dataset dcat:distribution/void:sparqlEndpoint ?sparqlEndpoint .\n" +
 					"         OPTIONAL { ?sparqlEndpoint ?sparqlEndpoint_p ?sparqlEndpoint_o } .\n" +
@@ -737,6 +745,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		Literal versionNotes = null;
 
 		List<CatalogRecord2> catalogRecords = new ArrayList<>();
+		String distributionName = null;
 
 		for (BindingSet bs : bindingSetList) {
 			IRI datasetProperty = (IRI)bs.getValue("dataset_p");
@@ -794,6 +803,13 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				}
 			}
 
+			String newDistributionName = Optional.ofNullable(bs.getValue("distributionName"))
+					.map(Value::stringValue)
+					.orElse(null);
+			if (newDistributionName != null) {
+				distributionName = newDistributionName;
+			}
+
 			IRI sparqlEndpoint = (IRI)bs.getValue("sparqlEndpoint");
 			if (sparqlEndpoint != null) {
 				Set<IRI> limitationsSet = sparqlEndpoints2Limitations.computeIfAbsent(sparqlEndpoint, iri -> new HashSet<>());
@@ -813,6 +829,14 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 						sparqlEndpointEntry.getKey(), sparqlEndpointEntry.getValue()
 				)).orElse(null);
 
+		String projectName;
+
+		if (datasetNature == DatasetMetadata2.DatasetNature.PROJECT) {
+			projectName = distributionName;
+		} else {
+			projectName = null;
+		}
+
 		DatasetMetadata2 datasetMetadata = new DatasetMetadata2(
 				datasetIRI,
 				datasetNature,
@@ -824,7 +848,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				descriptions,
 				datasetRole,
 				versionInfo,
-				versionNotes);
+				versionNotes,
+				projectName);
 
 		ZonedDateTime recordIssued = null;
 		ZonedDateTime recordModified = null;
