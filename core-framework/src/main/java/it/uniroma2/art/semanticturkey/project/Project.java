@@ -639,6 +639,8 @@ public abstract class Project extends AbstractProject {
                     .computeCanonicalURI(SimpleValueFactory.getInstance().createIRI(LIME.NAMESPACE));
             IRI decompOnt = OntologyManager
                     .computeCanonicalURI(SimpleValueFactory.getInstance().createIRI(DECOMP.NAMESPACE));
+            IRI lexinfoOnt = OntologyManager
+                            .computeCanonicalURI(SimpleValueFactory.getInstance().createIRI("http://www.lexinfo.net/ontology/3.0/lexinfo"));
 
             coreVocabularies.entrySet().stream().map(Map.Entry::getKey)
                     .map(OntologyManager::computeCanonicalURI).forEach(ont -> {
@@ -652,6 +654,10 @@ public abstract class Project extends AbstractProject {
 
                 if (Objects.equals(ont, decompOnt)) {
                     conn.setNamespace("decomp", DECOMP.NAMESPACE);
+                }
+
+                if (Objects.equals(ont, lexinfoOnt)) {
+                    conn.setNamespace("lexinfo", lexinfoOnt.stringValue() + "#");
                 }
             });
 

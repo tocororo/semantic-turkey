@@ -1,5 +1,6 @@
 version 11.0.1
 date: dd/mm/2022
+  * updated the cached definition of the core vocabulary LexInfo 3 used in conjunction with OntoLex-Lemon
   * fixed a bug in the Global Search when dealing with numbers, symbols and punctuation
   * collect plain sense relationships as "related" senses instead of "terminologicallyRelated" senses in the LexicographerView
   * introduced the new access level "EXT" for universal project accessibility
