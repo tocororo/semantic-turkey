@@ -11,6 +11,7 @@ import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -97,6 +98,7 @@ import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterFactory;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
+import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
 import org.eclipse.rdf4j.rio.helpers.StatementCollector;
@@ -253,6 +255,18 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		} catch (IOException e) {
 			throw new MetadataRegistryWritingException(e);
 		}
+	}
+
+	public static void main(String[] args) throws URISyntaxException {
+		Model model = new LinkedHashModel();
+		model.add(Values.iri("http://example.org#pippo"), RDF.TYPE, FOAF.PERSON);
+		RDFWriter writer = Rio.createWriter(RDFFormat.TURTLE, System.out, "http://example.org");
+		writer.set(BasicWriterSettings.PRETTY_PRINT, true);
+		writer.set(BasicWriterSettings.BASE_DIRECTIVE, true);
+
+		Rio.write(model, writer);
+
+
 	}
 
 	protected void checkNotLocallyDefined(RepositoryConnection conn, @Nullable IRI resource)

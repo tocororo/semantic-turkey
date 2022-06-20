@@ -947,7 +947,7 @@ public class LexicographerView extends STServiceAdapter {
 					if (isTranslation) {
 						sense.translations.add(relationObj);
 					} else {
-						sense.terminologicallyRelated.add(relationObj);
+						sense.related.add(relationObj);
 					}
 				}
 			}
