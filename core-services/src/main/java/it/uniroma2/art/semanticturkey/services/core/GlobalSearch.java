@@ -11,12 +11,11 @@ import it.uniroma2.art.semanticturkey.project.ProjectManager;
 import it.uniroma2.art.semanticturkey.resources.Resources;
 import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
 import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
 import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STService;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import org.apache.lucene.analysis.core.SimpleAnalyzer;
+import org.apache.lucene.analysis.core.UnicodeWhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -114,16 +113,13 @@ public class GlobalSearch extends STServiceAdapter {
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
 		int count=0;
 		try {
-			Directory directory = FSDirectory.open(getLuceneDir().toPath());
 			boolean taskCompleted = false;
 
 			RepositoryConnection conn = getManagedConnection();
 			Map<String, String> resTypeToRoleMap = computeAllRoles(conn);
 			do {
 				try {
-					SimpleAnalyzer simpleAnalyzer = new SimpleAnalyzer();
-					IndexWriterConfig config = new IndexWriterConfig(simpleAnalyzer);
-					try (IndexWriter writer = new IndexWriter(directory, config)) {
+					try (IndexWriter writer = createIndexWriter()) {
 
 						//@formatter:off
 						String query;
@@ -567,12 +563,11 @@ public class GlobalSearch extends STServiceAdapter {
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
 		int count=0;
 		try {
-			Directory directory = FSDirectory.open(getLuceneDir().toPath());
 			boolean taskCompleted = false;
 
 			do {
 				try {
-					try (IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new SimpleAnalyzer()))) {
+					try (IndexWriter writer = createIndexWriter()) {
 
 						Builder builderBoolean = new BooleanQuery.Builder();
 						builderBoolean.add(new TermQuery(new Term(INDEX_REPO_ID, projectName)), Occur.MUST);
@@ -609,13 +604,11 @@ public class GlobalSearch extends STServiceAdapter {
 		Thread.currentThread().setContextClassLoader(IndexWriter.class.getClassLoader());
 		int count=0;
 		try {
-			Directory directory = FSDirectory.open(getLuceneDir().toPath());
 			boolean taskCompleted = false;
 
 			do {
 				try {
-					try (IndexWriter writer = new IndexWriter(directory,
-							new IndexWriterConfig(new SimpleAnalyzer()))) {
+					try (IndexWriter writer = createIndexWriter()) {
 
 						writer.deleteAll();
 						taskCompleted=true;
@@ -659,6 +652,7 @@ public class GlobalSearch extends STServiceAdapter {
 		}
 
 		String searchStringLC = searchString.toLowerCase();
+		searchStringLC = normalizeSearchString(searchStringLC);
 
 		// classloader magic
 		ClassLoader oldCtxClassLoader = Thread.currentThread().getContextClassLoader();
@@ -1131,6 +1125,22 @@ public class GlobalSearch extends STServiceAdapter {
 		
 		return doc;
 	}
+
+	private IndexWriter createIndexWriter() throws IOException {
+		Directory directory = FSDirectory.open(getLuceneDir().toPath());
+		UnicodeWhitespaceAnalyzer analyzer = new UnicodeWhitespaceAnalyzer();
+		//SimpleAnalyzer analyzer = new SimpleAnalyzer(); // old analyzer, not able to work with numbers, symbols and punctuation
+		IndexWriterConfig config = new IndexWriterConfig(analyzer);
+		return new IndexWriter(directory, config);
+	}
+
+	private String normalizeSearchString(String searchString) {
+		// replace multiple whitespaces with a single one
+		searchString = searchString.replaceAll(" +", " ");
+		// remove starting and ending whitespaces
+		searchString = searchString.trim();
+		return  searchString;
+	}
 	
 	private class ResourceWithLabel{
 		private String resource;
@@ -1148,8 +1158,8 @@ public class GlobalSearch extends STServiceAdapter {
 			this.resource = resource;
 			this.resourceLocalName = resourceLocalName;
 			this.resourceType = resourceType;
-			this.lang = lang;
-			this.value = value;
+			this.lang = lang.toLowerCase();
+			this.value = value.toLowerCase();
 			this.predicate = predicate;
 			this.repId = repId;
 			this.type = type;
