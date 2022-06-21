@@ -444,6 +444,19 @@ public class MetadataRegistry extends STServiceAdapter {
 	}
 
 	/**
+	 * Find all datasets matching the given IRI.
+	 *
+	 * @param iri
+	 * @return
+	 * @throws ProjectAccessException
+	 */
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+	public Collection<ResourcePosition> findDatasets(IRI iri) throws ProjectAccessException {
+		return resourceLocator.listResourceLocations(getProject(), getRepository(), iri);
+	}
+
+	/**
 	 * Discover the metadata for a dataset given an IRI. If discovery is unsuccessful, an exception is thrown.
 	 * 
 	 * @param iri

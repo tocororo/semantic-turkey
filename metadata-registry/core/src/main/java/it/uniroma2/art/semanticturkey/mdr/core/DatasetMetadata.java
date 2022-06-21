@@ -32,16 +32,17 @@ public class DatasetMetadata {
 	private final Optional<IRI> dereferenciationSystem;
 	private final Optional<SPARQLEndpointMedatadata> sparqlEndpoint;
 	private final Optional<String> versionInfo;
+	private final Optional<String> projectName;
 
 	@JsonCreator
 	public DatasetMetadata(
-            @JsonProperty("identity") @JsonDeserialize(converter = String2IRIConverter.class) IRI identity,
+			@JsonProperty("identity") @JsonDeserialize(converter = String2IRIConverter.class) IRI identity,
 			@JsonProperty("identity") @JsonDeserialize(converter = String2IRIConverter.class) IRI distribution, @JsonProperty("uriSpace") @Nullable String uriSpace,
-            @JsonProperty("title") @Nullable String title,
-            @JsonProperty("description") @Nullable String description,
-            @JsonProperty("dereferenciationSystem") @JsonDeserialize(converter = String2IRIConverter.class) @Nullable IRI dereferenciationSystem,
-            @JsonProperty("sparqlEndpointMetadata") @Nullable SPARQLEndpointMedatadata endpointMetadata,
-            @JsonProperty("versionInfo") @Nullable String versionInfo) {
+			@JsonProperty("title") @Nullable String title,
+			@JsonProperty("description") @Nullable String description,
+			@JsonProperty("dereferenciationSystem") @JsonDeserialize(converter = String2IRIConverter.class) @Nullable IRI dereferenciationSystem,
+			@JsonProperty("sparqlEndpointMetadata") @Nullable SPARQLEndpointMedatadata endpointMetadata,
+			@JsonProperty("versionInfo") @Nullable String versionInfo, @JsonProperty("projectName") String projectName) {
 		this.identity = identity;
 		this.distribution = Optional.ofNullable(distribution);
 		this.uriSpace = Optional.ofNullable(uriSpace);
@@ -50,6 +51,7 @@ public class DatasetMetadata {
 		this.dereferenciationSystem = Optional.ofNullable(dereferenciationSystem);
 		this.sparqlEndpoint = Optional.ofNullable(endpointMetadata);
 		this.versionInfo = Optional.ofNullable(versionInfo);
+		this.projectName = Optional.ofNullable(projectName);
 	}
 
 	@JsonSerialize(converter = IRI2StringConverter.class)
@@ -87,6 +89,11 @@ public class DatasetMetadata {
 		return sparqlEndpoint.map(SPARQLEndpointMedatadata::getEndpoint);
 	}
 
+	@JsonSerialize(converter = Optional2StringConverter.class)
+	public Optional<String> getProjectName() {
+		return projectName;
+	}
+
 	public Optional<SPARQLEndpointMedatadata> getSparqlEndpointMetadata() {
 		return sparqlEndpoint;
 	}
@@ -105,7 +112,8 @@ public class DatasetMetadata {
 	public String toString() {
 		return MoreObjects.toStringHelper(this).add("uriSpace", uriSpace).add("title", title)
 				.add("description", description).add("dereferenciationSystem", dereferenciationSystem)
-				.add("sparqlEndpoint", sparqlEndpoint).add("versionInfo", versionInfo).toString();
+				.add("sparqlEndpoint", sparqlEndpoint).add("versionInfo", versionInfo)
+				.add("projectName", projectName).toString();
 	}
 
 	public static class SPARQLEndpointMedatadata {

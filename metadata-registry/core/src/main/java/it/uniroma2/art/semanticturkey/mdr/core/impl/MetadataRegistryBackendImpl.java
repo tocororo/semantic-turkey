@@ -1575,14 +1575,17 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			StringBuilder tupleQuerySb = new StringBuilder(
 			// @formatter:off
 				"PREFIX dcat: <http://www.w3.org/ns/dcat#>                                          \n" +
+				"PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                          \n" +
 				"PREFIX dcterms: <http://purl.org/dc/terms/>                                          \n" +
 				"PREFIX void: <http://rdfs.org/ns/void#>                                              \n" +
 				"PREFIX mdreg: <http://semanticturkey.uniroma2.it/ns/mdr#>                          \n" +
+				"PREFIX stmdreg: <http://semanticturkey.uniroma2.it/ns/stmdr#>                          \n" +
 				"PREFIX owl: <http://www.w3.org/2002/07/owl#>                                         \n" +
 				"SELECT ?dataset (MIN(?distribution) as ?distributionT) (MIN(?datasetUriSpace) as ?datasetUriSpaceT) (MIN(?datasetTitle) as ?datasetTitleT) (MIN(?datasetDescription) as ?datasetDescriptionT) \n" +
 			    "       (MIN(?datasetDereferenciationSystem) as ?datasetDereferenciationSystemT) \n" +
 				"       (GROUP_CONCAT(CONCAT(STR(?datasetSPARQLEndpoint), \"|_|\", COALESCE(STR(?datasetSPARQLEndpointLimitation), \"-\")); separator=\"|_|\") as ?datasetSPARQLEndpointT) \n" +
 				"       (MIN(?datasetVersionInfo) as ?datasetVersionInfoT) \n" +
+				"       (MIN(?datasetProjectName) as ?datasetProjectNameT) \n" +
 				"WHERE {                                                                              \n");
 			// @formatter:on
 
@@ -1624,6 +1627,10 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				wrapWithOptional.apply("datasetSPARQLEndpoint",
 				" 	    ?distribution void:sparqlEndpoint ?datasetSPARQLEndpoint .                        \n" +
 				"   OPTIONAL { ?datasetSPARQLEndpoint mdreg:sparqlEndpointLimitation ?datasetSPARQLEndpointLimitation . } \n"
+				)+
+				wrapWithOptional.apply("datasetProjectName",
+			 	" 	    ?distribution foaf:name ?datasetProjectName .                        \n" +
+					"   FILTER EXISTS { ?distribution a stmdreg:Project . } \n"
 				)+
 				wrapWithOptional.apply("datasetVersionInfo",
 				" 	?dataset owl:versionInfo ?datasetVersionInfo .                                    \n"
@@ -1792,6 +1799,55 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		return null;
 	}
 
+	@Override
+	public Collection<DatasetMetadata> listDatasetsForResource(IRI iriResource) {
+		List<DatasetMetadata> rv = new ArrayList<>();
+
+		// -------------------------------------------------------------------------------------------
+		// The following resolution strategy might be subject to ambiguity in some rare circumstances
+
+		try (RepositoryConnection conn = getConnection()) {
+			ValueFactory vf = conn.getValueFactory();
+			List<DatasetMetadata> dataset;
+
+			// -----------------------------------------
+			// Case 1: The provided URI is the base URI
+
+			MapBindingSet bindings = new MapBindingSet();
+			bindings.addBinding("datasetUriSpace", vf.createLiteral(iriResource.stringValue()));
+			dataset = listDatasetMetadata(bindings, 0);
+			rv.addAll(dataset);
+
+
+			// ------------------------------------------
+			// Case 2: The namespace is the base URI
+			// e.g., [http://example.org/]Person
+
+			String namespace = iriResource.getNamespace();
+
+			bindings.clear();
+			bindings.addBinding("datasetUriSpace", vf.createLiteral(namespace));
+
+			dataset = listDatasetMetadata(bindings, 0);
+			rv.addAll(dataset);
+
+			// --------------------------------------------
+			// Case 2: The namespace is the base URI + "#"
+			// e.g., [http://example.org]#Person
+
+			if (namespace.endsWith("#")) {
+				bindings.clear();
+				bindings.addBinding("datasetUriSpace",
+						vf.createLiteral(namespace.substring(0, namespace.length() - 1)));
+
+				dataset = listDatasetMetadata(bindings, 0);
+				rv.addAll(dataset);
+			}
+		}
+
+		return rv;
+	}
+
 	protected DatasetMetadata bindingset2datasetmetadata(BindingSet bs) {
 		IRI dataset = (IRI) bs.getValue("dataset");
 
@@ -1814,6 +1870,10 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				.filter(s -> !s.stringValue().isEmpty()).map(IRI.class::cast).orElse(null);
 		@Nullable
 		String sparqlEndpointSpec = Optional.ofNullable(bs.getValue("datasetSPARQLEndpointT"))
+				.map(Value::stringValue).filter(s -> !s.isEmpty()).orElse(null);
+
+		@Nullable
+		String projectName = Optional.ofNullable(bs.getValue("datasetProjectNameT"))
 				.map(Value::stringValue).filter(s -> !s.isEmpty()).orElse(null);
 
 		@Nullable
@@ -1848,7 +1908,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				.orElse(null);
 
 		return new DatasetMetadata(dataset, distribution, uriSpace, title, description, dereferenciationSystem,
-				sparqlEndpointMetadata, versionInfo);
+				sparqlEndpointMetadata, versionInfo, projectName);
 	}
 
 	protected Pair<DatasetMetadata, Model> discoverDatasetMetadataInternal(IRI iri)
@@ -2089,7 +2149,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 								? new DatasetMetadata.SPARQLEndpointMedatadata(datasetSPARQLEndpoint,
 										Collections.emptySet())
 								: null,
-						null), voidStatements);
+						null, null), voidStatements);
 			} else {
 				throw new MetadataDiscoveryException(
 						"Could not discover a dataset from " + RenderUtils.toSPARQL(iri));

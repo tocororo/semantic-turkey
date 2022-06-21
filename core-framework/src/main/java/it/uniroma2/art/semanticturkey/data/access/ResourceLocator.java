@@ -1,6 +1,7 @@
 package it.uniroma2.art.semanticturkey.data.access;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -207,14 +208,11 @@ public class ResourceLocator {
 			}
 		}
 
-		DatasetMetadata meta = datasetMetadataRepository.findDatasetForResource(iriResource);
+		Collection<DatasetMetadata> metas = datasetMetadataRepository.listDatasetsForResource(iriResource);
 
-		if (meta != null) {
-			// return new RemoteResourcePosition(meta);
-			resourcePositionList.add(new RemoteResourcePosition(meta));
-		} else {
-			// return UNKNOWN_RESOURCE_POSITION;
-		}
+		metas.stream().filter(d -> d.getProjectName() == null)
+				.map(d -> new RemoteResourcePosition(d))
+				.forEach(resourcePositionList::add);
 
 		return resourcePositionList;
 	}

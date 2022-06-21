@@ -280,6 +280,13 @@ public interface MetadataRegistryBackend {
 	DatasetMetadata findDatasetForResource(IRI iriResource);
 
 	/**
+	 * Returns metadata about all datasets that might contain the provided IRI.
+	 * @param iriResource
+	 * @return
+	 */
+	Collection<DatasetMetadata> listDatasetsForResource(IRI iriResource);
+
+	/**
 	 * Discover the metadata for a dataset given an IRI.
 	 * 
 	 * @param iri
