@@ -140,7 +140,8 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	public static final String METADATA_REGISTRY_FILE = "catalog.ttl";
 	private static final RDFFormat CATALOG_FORMAT = RDFFormat.TURTLE;
 
-	public static final String DEFAULTNS = "http://semanticturkey.uniroma2.it/metadataregistry/";
+	public static final String DEFAULT_BASEURI = "http://semanticturkey.uniroma2.it/metadataregistry/";
+	public static final String DEFAULT_NS = DEFAULT_BASEURI;
 
 	protected File registryDirectory;
 	protected File catalogFile;
@@ -210,7 +211,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			conn.setNamespace(OWL.NS.getPrefix(), OWL.NS.getName());
 			conn.setNamespace(METADATAREGISTRY.NS.getPrefix(), METADATAREGISTRY.NS.getName());
 			conn.setNamespace(STMETADATAREGISTRY.NS.getPrefix(), STMETADATAREGISTRY.NS.getName());
-			conn.setNamespace("", DEFAULTNS);
+			conn.setNamespace("", DEFAULT_BASEURI);
 
 			if (catalogFile.exists()) {
 				try {
@@ -539,8 +540,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 					"} UNION {\n" +
 					"         ?dataset dcat:distribution/rdf:type ?distributionType\n" +
 					"    } UNION {\n" +
-					"         ?dataset dcat:distribution/foaf:name ?distribution" +
-					"     " +
+					"         ?dataset dcat:distribution/foaf:name ?distributionName\n" +
 					"    } UNION {\n" +
 					"         ?dataset dcat:distribution/void:sparqlEndpoint ?sparqlEndpoint .\n" +
 					"         OPTIONAL { ?sparqlEndpoint ?sparqlEndpoint_p ?sparqlEndpoint_o } .\n" +
@@ -984,7 +984,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			);
 			update.setBinding("dataset", dataset);
 			update.setBinding("lexicalizationSet", lexicalizationSet != null ? lexicalizationSet
-					: vf.createIRI(DEFAULTNS, UUID.randomUUID().toString()));
+					: vf.createIRI(DEFAULT_BASEURI, UUID.randomUUID().toString()));
 			if (lexiconDataset != null) {
 				update.setBinding("lexiconDataset", lexiconDataset);
 			}
@@ -2270,13 +2270,13 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 	}
 
 	public static IRI computeProjectContext(String projectName, ValueFactory vf) {
-		return vf.createIRI(UriComponentsBuilder.fromHttpUrl(DEFAULTNS + "{project}")
+		return vf.createIRI(UriComponentsBuilder.fromHttpUrl(DEFAULT_BASEURI + "{project}")
 				.buildAndExpand(ImmutableMap.of("project", projectName)).toUriString());
 	}
 
 	public static Optional<String> computeProjectFromContext(IRI ctx) {
 		try {
-			if (DEFAULTNS.equals(ctx.getNamespace())) {
+			if (DEFAULT_BASEURI.equals(ctx.getNamespace())) {
 				return Optional.of(URLDecoder.decode(ctx.getLocalName(), StandardCharsets.UTF_8.name()));
 			} else {
 				return Optional.empty();

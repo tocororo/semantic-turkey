@@ -21,6 +21,8 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
 import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryBackend;
+import it.uniroma2.art.semanticturkey.mdr.core.impl.MetadataRegistryBackendImpl;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.STMETADATAREGISTRY;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
 import it.uniroma2.art.semanticturkey.project.Project;
@@ -83,6 +85,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -118,32 +121,33 @@ public class MAPLE extends STServiceAdapter {
 	@STServiceOperation(method = RequestMethod.POST)
 	@Read
 	public void profileProject() throws ProfilerException, NoSuchSettingsManager, IllegalStateException,
-			STPropertyAccessException, STPropertyUpdateException {
+			STPropertyAccessException, STPropertyUpdateException, URISyntaxException {
 		SailRepository metadataRepository = new SailRepository(new MemoryStore());
 		metadataRepository.init();
 		try {
 			try (SailRepositoryConnection metadataConnection = metadataRepository.getConnection()) {
-				ValueFactory vf = metadataConnection.getValueFactory();
-				IRI metadataBaseURI = metadataConnection.getValueFactory()
-						.createIRI("http://example.org/" + UUID.randomUUID().toString() + "/void.ttl");
+				Project project = getProject();
 
-				metadataConnection.setNamespace("", metadataBaseURI.stringValue() + "#");
+				ValueFactory vf = metadataConnection.getValueFactory();
+
 				metadataConnection.setNamespace(VOID.PREFIX, VOID.NAMESPACE);
 				metadataConnection.setNamespace(LIME.PREFIX, LIME.NAMESPACE);
 				metadataConnection.setNamespace(FOAF.PREFIX, FOAF.NAMESPACE);
 				metadataConnection.setNamespace(XSD.PREFIX, XSD.NAMESPACE);
+				metadataConnection.setNamespace(DCTERMS.PREFIX, DCTERMS.NAMESPACE);
+
+				IRI metadataBaseURI = vf.createIRI(MetadataRegistryBackendImpl.DEFAULT_BASEURI);
 
 				LIMEProfiler profiler = new LIMEProfiler(metadataConnection, metadataBaseURI,
 						getManagedConnection(), (IRI) getWorkingGraph());
-				profiler.profile();
+				it.uniroma2.art.lime.profiler.ProfilerOptions profilerOptions = new it.uniroma2.art.lime.profiler.ProfilerOptions();
+				profiler.profile(profilerOptions);
 
 				IRI datasetIRI = Models
 						.objectIRI(QueryResults.asModel(
 								metadataConnection.getStatements(metadataBaseURI, FOAF.PRIMARY_TOPIC, null)))
 						.orElseThrow(() -> new ProfilerException(
 								"Could not identigy the main dataset inside the metadata"));
-
-				Project project = getProject();
 
 				metadataConnection.add(datasetIRI, VOID.URI_SPACE,
 						vf.createLiteral(project.getDefaultNamespace()));
@@ -164,8 +168,14 @@ public class MAPLE extends STServiceAdapter {
 					metadataConnection.add(datasetIRI, DCTERMS.DESCRIPTION, vf.createLiteral(description));
 				}
 
+				// Remove any triple concerning the base URI, which is now the same for all datasets
+				metadataConnection.remove(metadataBaseURI, null, null);
+
 				StringWriter stringWriter = new StringWriter();
-				RDFWriter rdfWriter = Rio.createWriter(RDFFormat.TURTLE, stringWriter);
+				RDFWriter rdfWriter = Rio.createWriter(RDFFormat.TURTLE, stringWriter, metadataBaseURI.stringValue());
+				rdfWriter.set(BasicWriterSettings.PRETTY_PRINT, true);
+				rdfWriter.set(BasicWriterSettings.INLINE_BLANK_NODES, true);
+
 				metadataConnection.export(rdfWriter);
 
 				SettingsManager settingsManager = exptManager

@@ -157,14 +157,14 @@ public class STMetadataRegistryBackendImpl extends MetadataRegistryBackendImpl
 					ConcreteDatasetSpecification datasetSpecification = new ConcreteDatasetSpecification(
 							null,
 							Models.getPropertyString(datasetDescription, dataset, VOID.URI_SPACE).orElse(null),
-					Models.getPropertyLiteral(datasetDescription, dataset, DCTERMS.TITLE).orElse(null),
-					Models.getPropertyLiteral(datasetDescription, dataset, DCTERMS.DESCRIPTION).orElse(null),
-					null,
+							Models.getPropertyLiteral(datasetDescription, dataset, DCTERMS.TITLE).orElse(null),
+							Models.getPropertyLiteral(datasetDescription, dataset, DCTERMS.DESCRIPTION).orElse(null),
+							null,
 							distributionSpecification
 							);
 
 
-					createDataset(dataset.getLocalName(), datasetSpecification, null, null, projectCtx, false, false);
+					createDataset(project.getName(), datasetSpecification, null, null, projectCtx, false, true);
 
 					metadataConn.add(datasetDescription, projectCtx);
 				}
