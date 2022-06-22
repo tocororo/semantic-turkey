@@ -145,7 +145,9 @@ public interface MetadataRegistryBackend {
 	void deleteEmbeddedLexicalizationSet(IRI lexicalizationSet)
 			throws MetadataRegistryWritingException, MetadataRegistryStateException;
 
-	/**
+    void addEmbeddedLinkset(IRI dataset, @Nullable IRI linkset, @Nullable String targetUriSpace, @Nullable IRI linkPredicate, @Nullable Integer linkCount) throws MetadataRegistryWritingException;
+
+    /**
 	 * Sets whether a dataset is derefereanceable or not. If {@code value} is {@code true}, then sets
 	 * {@code mdreg:standardDereferenciation} and if {@code false} sets {@code mdreg:noDereferenciation}
 	 * 

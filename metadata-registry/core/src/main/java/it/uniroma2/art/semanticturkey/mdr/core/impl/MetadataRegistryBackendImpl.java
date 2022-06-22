@@ -49,6 +49,7 @@ import it.uniroma2.art.semanticturkey.mdr.core.DatasetSpecification;
 import it.uniroma2.art.semanticturkey.mdr.core.Distribution;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.DCAT3FRAGMENT;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.STMETADATAREGISTRY;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -142,6 +143,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 	public static final String DEFAULT_BASEURI = "http://semanticturkey.uniroma2.it/metadataregistry/";
 	public static final String DEFAULT_NS = DEFAULT_BASEURI;
+	public static final String DEFAULT_PROJECT_NS = DEFAULT_NS + "projects/";
 
 	protected File registryDirectory;
 	protected File catalogFile;
@@ -211,6 +213,7 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			conn.setNamespace(OWL.NS.getPrefix(), OWL.NS.getName());
 			conn.setNamespace(METADATAREGISTRY.NS.getPrefix(), METADATAREGISTRY.NS.getName());
 			conn.setNamespace(STMETADATAREGISTRY.NS.getPrefix(), STMETADATAREGISTRY.NS.getName());
+			conn.setNamespace(LIME.PREFIX, LIME.NAMESPACE);
 			conn.setNamespace("", DEFAULT_BASEURI);
 
 			if (catalogFile.exists()) {
@@ -305,11 +308,16 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		return createDataset(datasetLocalName, concreteDatasetSpecification, abstractDatasetAttachment, null, null, true, renameOnConflict);
 	}
 
+	protected synchronized IRI createConcreteDataset(IRI datasetIRI, String uriSpace, Literal title, Literal description, Boolean dereferenceable, Distribution distribution, AbstractDatasetAttachment abstractDatasetAttachment, boolean renameOnConflict) throws MetadataRegistryWritingException {
+		ConcreteDatasetSpecification concreteDatasetSpecification = new ConcreteDatasetSpecification(datasetIRI, uriSpace, title, description, dereferenceable, distribution);
+		return createDataset(null, concreteDatasetSpecification, abstractDatasetAttachment, null, null, true, renameOnConflict);
+	}
+
 	protected synchronized IRI createDataset(String datasetLocalName,
 											 DatasetSpecification dataset,
 											 AbstractDatasetAttachment abstractDatasetAttachment,
 											 BiConsumer<Model, IRI> postOperation, IRI ctx, boolean save, boolean renameOnConflict) throws MetadataRegistryWritingException {
-		IRI datasetIRI;
+		IRI datasetIRI = dataset.getIdentity();
 
 		try (RepositoryConnection conn = getConnection()) {
 			ValueFactory vf = conn.getValueFactory();
@@ -321,16 +329,23 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 			String distributionLocalName = "distribution_" + datasetLocalName;
 
 			IRI recordIRI;
-			IRI distributionIRI;
+			IRI distributionIRI = dataset.getDistribution() != null ? dataset.getDistribution().getIdentity() : null;
 
 			boolean recheckNames;
 			int nameAppend = 0;
+			boolean generateDatasetIRI = (datasetIRI == null);
+			boolean generateDistributionIRI = (distributionIRI == null);
 			do {
 				recheckNames = false;
 
-				datasetIRI = vf.createIRI(conn.getNamespace(""), datasetLocalName);
+				if (generateDatasetIRI) {
+					datasetIRI = vf.createIRI(conn.getNamespace(""), datasetLocalName);
+				}
 				recordIRI = vf.createIRI(conn.getNamespace(""), recordLocalName);
-				distributionIRI = vf.createIRI(conn.getNamespace(""), distributionLocalName);
+
+				if (generateDistributionIRI) {
+					distributionIRI = vf.createIRI(conn.getNamespace(""), distributionLocalName);
+				}
 
 				try {
 					checkNotLocallyDefined(conn, datasetIRI);
@@ -353,12 +368,13 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 						recordLocalName = recordLocalName + "_" + nameAppend;
 						distributionLocalName = distributionLocalName + "_" + nameAppend;
 
-						recheckNames = true;
+						recheckNames = generateDatasetIRI || generateDistributionIRI;
 					} else {
 						throw e;
 					}
 				}
 			} while (recheckNames);
+
 			dataset.setIdentity(datasetIRI);
 
 			if (dataset.getDistribution() != null && dataset.getDistribution().getIdentity() == null) {
@@ -1044,9 +1060,11 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 			Update update = conn.prepareUpdate(
 			// @formatter:off
-				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
-				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
-				"                                                                                 \n" +
+					" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                     \n" +
+							" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
+							" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
+						" PREFIX void: <http://rdfs.org/ns/void#>     \n" +
+						"                                                          \n" +
 				" DELETE {                                                                        \n" +
 				"   ?record dcterms:modified ?oldModified .                                       \n" +
 				"   ?lexicalizationSet ?p1 ?o1 .                                                  \n" +
@@ -1055,17 +1073,76 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" INSERT {                                                                        \n" +
 				"   ?record dcterms:modified ?now .                                               \n" +
 				" }                                                                               \n" +
-				" WHERE {                                                                         \n" +
-				"   ?record foaf:primaryTopic ?dataset .                                          \n" +
-				"   OPTIONAL {                                                                    \n" +
-				"     ?record dcterms:modified ?oldModified .                                     \n" +
-				"   }                                                                             \n" +
+							" WHERE {    \n" +
+							"   ?lexicalizationSet ^void:subset+/^foaf:primaryTopic ?record .                                                         \n" +
+							"   OPTIONAL {                                                                    \n" +
+							"     ?record dcterms:modified ?oldModified .                                     \n" +
+							"   }                                                                             \n" +
 				"   { ?lexicalizationSet ?p1 ?o1 } UNION { ?s2 ?p2 ?lexicalizationSet}            \n" +
 				"   BIND(NOW() AS ?now)                                                           \n" +
 				" }                                                                               \n"
 				// @formatter:on
 			);
 			update.setBinding("lexicalizationSet", lexicalizationSet);
+			update.execute();
+		}
+
+		saveToFile();
+	}
+
+	@Override
+	public synchronized  void addEmbeddedLinkset(IRI dataset, @Nullable IRI linkset, String targetUriSpace, IRI linkPredicate, @Nullable Integer linkCount) throws MetadataRegistryWritingException {
+		try (RepositoryConnection conn = getConnection()) {
+			ValueFactory vf = conn.getValueFactory();
+			checkLocallyDefined(conn, dataset);
+			checkLocallyDefined(conn, linkset);
+
+			Update update = conn.prepareUpdate(
+				// @formatter:off
+				" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                     \n" +
+				" PREFIX void: <http://rdfs.org/ns/void#>                                     \n" +
+				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
+				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
+				"                                                                                 \n" +
+				" DELETE {                                                                        \n" +
+				"   ?record dcterms:modified ?oldModified .                                       \n" +
+				" }                                                                               \n" +
+				" INSERT {                                                                        \n" +
+				"   ?record dcterms:modified ?now . \n" +
+				"   ?linkset a void:Linkset ;\n" +
+				"     void:subjectsTarget ?distribution ;\n" +
+				"     void:objectsTarget ?objectsTarget ;\n" +
+				"     void:linkPredicate ?linkPredicate ;\n" +
+				"     void:triples ?linkCount .\n" +
+						"   \n" +
+						"   ?distribution void:subset ?linkset .\n" +
+						"   \n" +
+						"   ?objectsTarget a void:Dataset ;\n" +
+						"     void:uriSpace ?targetUriSpace .                                           \n" +
+				" }                                                                               \n" +
+				" WHERE {                                                                         \n" +
+					"   ?record foaf:primaryTopic ?dataset ." +
+					"                                         \n" +
+				"   OPTIONAL {                                                                    \n" +
+				"     ?record dcterms:modified ?oldModified .                                     \n" +
+				"   } \n" +
+				"   ?dataset dcat:distribution ?distribution .                                                                            \n" +
+				"   BIND(NOW() AS ?now)                                                           \n" +
+				" }                                                                               \n"
+				// @formatter:on
+			);
+			update.setBinding("dataset", dataset);
+			update.setBinding("linkset", linkset != null ? linkset
+					: vf.createIRI(DEFAULT_BASEURI, UUID.randomUUID().toString()));
+			update.setBinding("targetUriSpace", vf.createLiteral(targetUriSpace));
+			update.setBinding("objectsTarget", vf.createIRI(DEFAULT_BASEURI, UUID.randomUUID().toString()));
+			if (linkPredicate != null) {
+				update.setBinding("linkPredicate", linkPredicate);
+			}
+			if (linkCount != null) {
+				update.setBinding("linkCount", vf.createLiteral(linkCount));
+			}
+
 			update.execute();
 		}
 
@@ -2179,38 +2256,17 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 		Model voidStatements = pair.getRight();
 		try {
 			IRI voidDataset = datasetMetadata.getIdentity();
-			String datasetLocalName = datasetMetadata.getUriSpace().isPresent() ? ModelUtilities.guessPrefix(datasetMetadata.getUriSpace().get(), new RepositoryResult<>(new CloseableIteration<Namespace, RepositoryException>() {
-				@Override
-				public void close() throws RepositoryException {
 
-				}
-
-				@Override
-				public boolean hasNext() throws RepositoryException {
-					return false;
-				}
-
-				@Override
-				public Namespace next() throws RepositoryException {
-					return null;
-				}
-
-				@Override
-				public void remove() throws RepositoryException {
-
-				}
-			})): UUID.randomUUID().toString();
-
-			Distribution distribution = new Distribution(voidDataset, METADATAREGISTRY.SPARQL_ENDPOINT, datasetMetadata.getSparqlEndpoint().orElse(null), null);
+			Distribution distribution = new Distribution(null, METADATAREGISTRY.SPARQL_ENDPOINT, datasetMetadata.getSparqlEndpoint().orElse(null), null);
 			IRI datasetIRI = createConcreteDataset(
-					datasetLocalName,
+					voidDataset,
 					datasetMetadata.getUriSpace().orElse(null),
 					datasetMetadata.getTitle().map(Values::literal).orElse(null),
 					datasetMetadata.getDescription().map(Values::literal).orElse(null),
 					datasetMetadata.getDereferenciationSystem().map(METADATAREGISTRY.STANDARD_DEREFERENCIATION::equals).orElse(null),
 					distribution,
 					null,
-					true);
+					false);
 
 
 			if (voidDataset != null) {
@@ -2246,6 +2302,22 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 						addEmbeddedLexicalizationSet(datasetIRI, null, lexiconDataset, lexicalizationModel,
 								language, references, lexicalEntries, lexicalizations, percentage,
 								avgNumOfLexicalizations);
+					}
+
+
+					if (voidStatements.contains(subset, RDF.TYPE, VOID.LINKSET)
+							&& voidStatements.contains(subset, VOID.SUBJECTS_TARGET, voidDataset)) {
+
+						Resource objectsTarget = Models.getPropertyResource(voidStatements, subset, VOID.OBJECTS_TARGET).orElse(null);
+						if (ObjectUtils.notEqual(objectsTarget, voidDataset)) {
+							/* Nullable */ String targetUriSpace = Models.getPropertyString(voidStatements, objectsTarget, VOID.URI_SPACE).orElse(null);
+							/* Nullable */ IRI linkPredicate = Models.getPropertyIRI(voidStatements, subset, VOID.LINK_PREDICATE).orElse(null);
+							/* Nullable */ Integer linkCount = Models.getPropertyLiteral(voidStatements, subset, VOID.TRIPLES).map(l -> Literals.getIntValue(l, 0)).filter(v -> v != 0).orElse(null);
+
+							if (targetUriSpace != null) {
+								addEmbeddedLinkset(datasetIRI, null, targetUriSpace, linkPredicate, linkCount);
+							}
+						}
 					}
 				}
 			}

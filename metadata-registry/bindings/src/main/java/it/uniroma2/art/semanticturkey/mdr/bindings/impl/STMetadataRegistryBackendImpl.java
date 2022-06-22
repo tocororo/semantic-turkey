@@ -155,7 +155,7 @@ public class STMetadataRegistryBackendImpl extends MetadataRegistryBackendImpl
 					);
 
 					ConcreteDatasetSpecification datasetSpecification = new ConcreteDatasetSpecification(
-							null,
+							vf.createIRI(DEFAULT_PROJECT_NS, project.getName()),
 							Models.getPropertyString(datasetDescription, dataset, VOID.URI_SPACE).orElse(null),
 							Models.getPropertyLiteral(datasetDescription, dataset, DCTERMS.TITLE).orElse(null),
 							Models.getPropertyLiteral(datasetDescription, dataset, DCTERMS.DESCRIPTION).orElse(null),
@@ -164,7 +164,7 @@ public class STMetadataRegistryBackendImpl extends MetadataRegistryBackendImpl
 							);
 
 
-					createDataset(project.getName(), datasetSpecification, null, null, projectCtx, false, true);
+					createDataset(null, datasetSpecification, null, null, projectCtx, false, false);
 
 					metadataConn.add(datasetDescription, projectCtx);
 				}
