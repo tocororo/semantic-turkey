@@ -1060,11 +1060,11 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 
 			Update update = conn.prepareUpdate(
 			// @formatter:off
-					" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                     \n" +
-							" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
-							" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
-						" PREFIX void: <http://rdfs.org/ns/void#>     \n" +
-						"                                                          \n" +
+				" PREFIX dcat: <http://www.w3.org/ns/dcat#>                                     \n" +
+				" PREFIX dcterms: <http://purl.org/dc/terms/>                                     \n" +
+				" PREFIX foaf: <http://xmlns.com/foaf/0.1/>                                       \n" +
+				" PREFIX void: <http://rdfs.org/ns/void#>     \n" +
+				"                                                          \n" +
 				" DELETE {                                                                        \n" +
 				"   ?record dcterms:modified ?oldModified .                                       \n" +
 				"   ?lexicalizationSet ?p1 ?o1 .                                                  \n" +
@@ -1073,11 +1073,11 @@ public class MetadataRegistryBackendImpl implements MetadataRegistryBackend {
 				" INSERT {                                                                        \n" +
 				"   ?record dcterms:modified ?now .                                               \n" +
 				" }                                                                               \n" +
-							" WHERE {    \n" +
-							"   ?lexicalizationSet ^void:subset+/^foaf:primaryTopic ?record .                                                         \n" +
-							"   OPTIONAL {                                                                    \n" +
-							"     ?record dcterms:modified ?oldModified .                                     \n" +
-							"   }                                                                             \n" +
+				" WHERE {    \n" +
+				"   ?lexicalizationSet ^void:subset+/^dcat:distribution/^foaf:primaryTopic ?record .  \n" +
+				"   OPTIONAL {                                                                    \n" +
+				"     ?record dcterms:modified ?oldModified .                                     \n" +
+				"   }                                                                             \n" +
 				"   { ?lexicalizationSet ?p1 ?o1 } UNION { ?s2 ?p2 ?lexicalizationSet}            \n" +
 				"   BIND(NOW() AS ?now)                                                           \n" +
 				" }                                                                               \n"
