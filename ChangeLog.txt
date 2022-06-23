@@ -3,7 +3,7 @@ date: 23/06/2022
   * updated the internal copy of the core vocabulary LexInfo 3 used in conjunction with OntoLex-Lemon
   * collected plain sense relationships as "related" senses instead of "terminologicallyRelated" senses in the LexicographerView
   * introduced the new access level "EXT" for universal project accessibility (if a user has access to the project, ACL table 
-    does not need to be consulted)
+    does not need to be consulted even if the user access it from another consumer)
   * fixed several bugs related to the MDR
   * fixed a bug when showing Manchester Expressions in a project having a reasoner configured
   * fixed a bug in the Global Search when dealing with numbers, symbols and punctuation
