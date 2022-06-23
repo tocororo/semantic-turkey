@@ -191,8 +191,8 @@ public class UpdateRoutines {
 			if (stDataVersionNumber.compareTo(new VersionNumber(11, 0, 0)) < 0) {
 				alignFrom10_2_1To11_0();
 			}
-			if (stDataVersionNumber.compareTo(new VersionNumber(11, 0, 1)) < 0) {
-				alignFrom11To11_0_1();
+			if (stDataVersionNumber.compareTo(new VersionNumber(11, 1, 0)) < 0) {
+				alignFrom11To11_1();
 			}
 
 
@@ -818,7 +818,7 @@ public class UpdateRoutines {
 		printAndLogMessage("Update routine 10.2.1 -> 11.0 completed");
 	}
 
-	private static void alignFrom11To11_0_1() throws STPropertyAccessException, IOException {
+	private static void alignFrom11To11_1() throws IOException {
 		printAndLogMessage("Update routine: 11.0 -> 11.0.1");
 
 		/* v11.0.1 replaced boolean aclUniversalAccessDefault with valid AccessLevel value */
@@ -833,15 +833,18 @@ public class UpdateRoutines {
 		ObjectNode objNode = (ObjectNode) om.readTree(systemSettingsFile);
 		JsonNode projectCreationNode = objNode.get("projectCreation");
 		if (projectCreationNode != null) {
-			boolean aclUniversalAccessDefault = projectCreationNode.get("aclUniversalAccessDefault").asBoolean();
-			if (aclUniversalAccessDefault) {
-				((ObjectNode)projectCreationNode).set("aclUniversalAccessDefault", JsonNodeFactory.instance.textNode(ProjectACL.AccessLevel.R.toString()));
-			} else {
-				((ObjectNode)projectCreationNode).remove("aclUniversalAccessDefault");
+			JsonNode aclUniversalAccessDefaultNode = projectCreationNode.get("aclUniversalAccessDefault");
+			if (aclUniversalAccessDefaultNode != null) {
+				boolean aclUniversalAccessDefault = aclUniversalAccessDefaultNode.asBoolean();
+				if (aclUniversalAccessDefault) {
+					((ObjectNode) projectCreationNode).set("aclUniversalAccessDefault", JsonNodeFactory.instance.textNode(ProjectACL.AccessLevel.R.toString()));
+				} else {
+					((ObjectNode) projectCreationNode).remove("aclUniversalAccessDefault");
+				}
+				STPropertiesManager.storeObjectNodeInYAML(objNode, systemSettingsFile);
 			}
-			STPropertiesManager.storeObjectNodeInYAML(objNode, systemSettingsFile);
 		}
-		printAndLogMessage("Update routine 11.0 -> 11.0.1 completed");
+		printAndLogMessage("Update routine 11.0 -> 11.1 completed");
 	}
 
 	private static <T> void convertPropertiesSettingToYAML(Properties properties, String oldProp, ObjectNode settingsObjectNode, String yamlProp, Functions.FailableFunction<String, T, IOException> propValueConverter) throws IOException {
