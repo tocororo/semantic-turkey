@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>it.uniroma2.art.semanticturkey</groupId>
 		<artifactId>st-dataset-catalog-connectors</artifactId>
-		<version>11.1-SNAPSHOT</version>
+		<version>11.1</version>
 	</parent>
 	<artifactId>st-dataeu-connector</artifactId>
 	<packaging>bundle</packaging>
