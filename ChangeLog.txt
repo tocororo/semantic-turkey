@@ -1,6 +1,8 @@
 version 11.1.1
 date: dd/mm/202y
-  *
+  * fixed a bug related to an exception about the use of abstract datasets erroneously raised in assisted search when
+    selecting a local project
+  * fixed a bug related to transaction management preventing the execution of assisted search on local projects
 
 version 11.1
 date: 23/06/2022

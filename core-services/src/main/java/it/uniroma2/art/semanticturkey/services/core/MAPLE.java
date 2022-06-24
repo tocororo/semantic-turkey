@@ -21,7 +21,6 @@ import it.uniroma2.art.semanticturkey.exceptions.ProjectInexistentException;
 import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
 import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
 import it.uniroma2.art.semanticturkey.mdr.bindings.STMetadataRegistryBackend;
-import it.uniroma2.art.semanticturkey.mdr.core.MetadataRegistryBackend;
 import it.uniroma2.art.semanticturkey.mdr.core.impl.MetadataRegistryBackendImpl;
 import it.uniroma2.art.semanticturkey.mdr.core.vocabulary.STMETADATAREGISTRY;
 import it.uniroma2.art.semanticturkey.project.ForbiddenProjectAccessException;
@@ -54,7 +53,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -77,7 +75,6 @@ import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
-import org.eclipse.rdf4j.rio.WriterConfig;
 import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,10 +85,8 @@ import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * This class provides access to the capabilities of <a href="http://art.uniroma2.it/maple/">MAPLE</a>
@@ -282,20 +277,17 @@ public class MAPLE extends STServiceAdapter {
 			IllegalArgumentException, IOException, STPropertyAccessException, NoSuchSettingsManager,
 			ForbiddenProjectAccessException, InvalidConfigurationException, ProfilingException {
 
-		Pair<IRI, Model> targetDatasetDescription = getDatasetDescriptionFromResourcePosition(targetPosition);
-		IRI datasetIRI = targetDatasetDescription.getKey();
+		Pair<IRI, Model> targetDatasetDescription = getDatasetDistributionDescriptionFromResourcePosition(targetPosition);
+		IRI distributionIRI = targetDatasetDescription.getKey();
 		Model datasetDescription = targetDatasetDescription.getValue();
-
-		IRI distribution = Models.getPropertyIRI(datasetDescription, datasetIRI, DCAT.HAS_DISTRIBUTION)
-				.orElseThrow(() -> new IllegalArgumentException("The provided dataset is abstract: " + datasetIRI));
 
 		List<ResourceLexicalizationSet> resourceLexicalizationSets = mediationFramework
 				.discoverLexicalizationSetsForResource(getManagedConnection(), sourceResource);
 		return mediationFramework.profileSingleResourceMatchingProblem(sourceResource,
-				resourceLexicalizationSets, distribution, datasetDescription);
+				resourceLexicalizationSets, distributionIRI, datasetDescription);
 	}
 
-	protected Pair<IRI, Model> getDatasetDescriptionFromResourcePosition(ResourcePosition targetPosition)
+	protected Pair<IRI, Model> getDatasetDistributionDescriptionFromResourcePosition(ResourcePosition targetPosition)
 			throws RDFParseException, UnsupportedRDFormatException, IOException, IllegalStateException,
 			STPropertyAccessException, NoSuchSettingsManager, ForbiddenProjectAccessException,
 			InvalidConfigurationException, RepositoryException, IllegalArgumentException {
@@ -341,7 +333,10 @@ public class MAPLE extends STServiceAdapter {
 					}
 				}
 
-				targetDatasetDescription = ImmutablePair.of(targetDatasetMetadata.getIdentity(),
+				targetDatasetDescription = ImmutablePair.of(
+						targetDatasetMetadata
+								.getDistribution()
+								.orElseThrow(() -> new IllegalArgumentException("The provided dataset is abstract: " + targetDatasetMetadata.getIdentity())),
 						targetDatasetProfile);
 			}
 

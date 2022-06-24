@@ -36,7 +36,9 @@ import it.uniroma2.art.semanticturkey.services.core.search.AdvancedSearch;
 import it.uniroma2.art.semanticturkey.services.core.search.AdvancedSearch.InWhatToSearch;
 import it.uniroma2.art.semanticturkey.services.core.search.AdvancedSearch.WhatToShow;
 import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.tx.RDF4JRepositoryTransactionManager;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.rdf4j.model.*;
@@ -62,6 +64,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -234,29 +238,38 @@ public class Alignment extends STServiceAdapter {
 			SearchStrategies searchStrategy = STRepositoryInfoUtils.getSearchStrategy(
 					otherProject.getRepositoryManager().getSTRepositoryInfo("core"));
 
-			
+			RDF4JRepositoryTransactionManager transactionManager = new RDF4JRepositoryTransactionManager(otherProject.getRepository(), java.util.Optional.empty());
+			TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+
 			//the structures containing the results, which will be later ordered and returned
 			//Map<String, Integer> resToCountMap = new HashMap<>();
 			Map<String, AnnotatedValue<Resource>> resToAnnValueMap = new HashMap<>();
 			//int maxCount = 0;
-			
-			//iterate over the labelsList, get the associated language and then get the lexModel from langToLexModel for 
+
+			//iterate over the labelsList, get the associated language and then get the lexModel from langToLexModel for
 			// such language and execute one query per language-LexModel
 			for(Literal label : labelsList) {
 
 				//for every element of searchModeList do a search
 				for(SearchMode searchMode : searchModeList) {
-				
+
 					String lang = label.getLanguage().get();
-					String query = ServiceForSearches.getPrefixes() + "\n"
-							+ SearchStrategyUtils.instantiateSearchStrategy(exptManager, searchStrategy)
-								.searchResource(simpleSTServiceContext, label.getLabel(), rolesArray, true,
-									false, false, false, searchMode, null, "or",
-										langs, false, lexModel,
-									false, false, false, false, null);
-		
+					String query = transactionTemplate.execute((transactionStatus) -> {
+						try {
+							return ServiceForSearches.getPrefixes() + "\n"
+									+ SearchStrategyUtils.instantiateSearchStrategy(exptManager, searchStrategy)
+									.searchResource(simpleSTServiceContext, label.getLabel(), rolesArray, true,
+											false, false, false, searchMode, null, "or",
+											langs, false, lexModel,
+											false, false, false, false, null);
+						} catch(SearchStatusException | STPropertyAccessException e) {
+							ExceptionUtils.rethrow(e);
+							return null; // Never executed
+						}
+					});
+
 					logger.debug("query = " + query);
-		
+
 					QueryBuilder qb;
 					qb = new QueryBuilder(simpleSTServiceContext, query);
 					qb.processRendering();
@@ -265,7 +278,7 @@ public class Alignment extends STServiceAdapter {
 					for(AnnotatedValue<Resource> annValue : currentAnnValuList) {
 						String stringValue = annValue.getStringValue();
 						if(resToAnnValueMap.containsKey(stringValue)) {
-							//there is already an AnnotatedValue for the retrieve resource, so add the new matching 
+							//there is already an AnnotatedValue for the retrieve resource, so add the new matching
 							// language
 							String matchedLang = resToAnnValueMap.get(stringValue).getAttributes()
 									.get("matchedLang").stringValue();
@@ -282,7 +295,7 @@ public class Alignment extends STServiceAdapter {
 								resToAnnValueMap.get(stringValue).setAttribute("matchedLang", matchedLang);
 							}
 							//check if this returned AnnotatedValue has a different matchMode, if so
-							// add it to the list ones already present in the 
+							// add it to the list ones already present in the
 							String matchedMode = resToAnnValueMap.get(stringValue).getAttributes()
 									.get("matchMode").stringValue();
 							boolean addMatchMode = true;
