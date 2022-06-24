@@ -1,3 +1,7 @@
+version 11.1.1
+date: dd/mm/202y
+  *
+
 version 11.1
 date: 23/06/2022
   * updated the internal copy of the core vocabulary LexInfo 3 used in conjunction with OntoLex-Lemon
