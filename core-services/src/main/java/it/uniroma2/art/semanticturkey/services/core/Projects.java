@@ -1603,11 +1603,25 @@ public class Projects extends STServiceAdapter {
         ProjectFacetsIndexUtils.recreateFacetIndexForProjectAPI(projectName, projectInfo);
     }
 
+    /**
+     *
+     * @param bagOf
+     * @param orQueryList
+     * @param userDependent
+     * @param onlyOpen
+     * @param role if provided, check if there's at least a user with such role (similar to listProjectsPerRole)
+     * @return
+     * @throws IOException
+     * @throws InvalidProjectNameException
+     * @throws ProjectAccessException
+     * @throws PropertyNotFoundException
+     */
     @STServiceOperation(method = RequestMethod.POST)
     public Map<String, List<ProjectInfo>> retrieveProjects(@Optional String bagOf,
             @Optional @JsonSerialized List<List<Map<String, Object>>> orQueryList,
             @Optional(defaultValue = "false") boolean userDependent,
-            @Optional(defaultValue = "false") boolean onlyOpen)
+            @Optional(defaultValue = "false") boolean onlyOpen,
+            @Optional String role)
             throws IOException, InvalidProjectNameException, ProjectAccessException, PropertyNotFoundException {
         Map<String, List<ProjectInfo>> facetToProjeInfoListMap = new HashMap<>();
 
@@ -1661,6 +1675,16 @@ public class Projects extends STServiceAdapter {
                     Project project = ProjectManager.getProjectDescription(projectName);
                     projectInfo = getProjectInfoHelper(ProjectConsumer.SYSTEM, AccessLevel.R,
                             LockLevel.NO, userDependent, onlyOpen, project);
+
+                    if (projectInfo != null && role != null) {
+                        // looks into the bindings if there is at least one with the given role
+                        Collection<ProjectUserBinding> puBindings = ProjectUserBindingsManager.listPUBindingsOfProject(project);
+                        if (puBindings.stream().noneMatch(pub -> pub.getRoles().stream().anyMatch(r -> r.getName().equals(role)))) {
+                            //no PU binding found where at the given role is assigned
+                            continue;
+                        }
+                    }
+
                 } catch (ProjectInexistentException e) {
                     // the project does not exist, so remove it
                     notExistingProjectList.add(projectName);

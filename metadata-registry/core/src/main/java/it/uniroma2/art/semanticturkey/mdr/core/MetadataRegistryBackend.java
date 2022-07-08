@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -353,4 +354,5 @@ public interface MetadataRegistryBackend {
 	 */
 	void destroy();
 
+    Map<String, Integer> getClassPartitions(IRI dataset);
 }

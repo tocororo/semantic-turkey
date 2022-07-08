@@ -541,4 +541,12 @@ public class MetadataRegistry extends STServiceAdapter {
 		}
 		return rv;
 	}
+
+
+	@STServiceOperation
+	@PreAuthorize("@auth.isAuthorized('sys(metadataRegistry)', 'R')")
+	public Map<String, Integer> getClassPartitions(IRI dataset) {
+		return metadataRegistryBackend.getClassPartitions(dataset);
+	}
+
 }
