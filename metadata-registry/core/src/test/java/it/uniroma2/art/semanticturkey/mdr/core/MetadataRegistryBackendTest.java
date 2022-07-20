@@ -19,6 +19,7 @@ import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -151,6 +152,7 @@ public class MetadataRegistryBackendTest {
 	}
 
 	@Test
+	@Ignore("ignored since it requires access to external resources that could be not available")
 	public void testDiscoverAgrovocFromResource() throws MetadataDiscoveryException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(
 				SimpleValueFactory.getInstance().createIRI("http://aims.fao.org/aos/agrovoc/c_12332"));
@@ -165,6 +167,7 @@ public class MetadataRegistryBackendTest {
 	}
 
 	@Test
+	@Ignore("ignored since it requires access to external resources that could be not available")
 	public void testDiscoverAgrovocFromVoID() throws MetadataDiscoveryException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(SimpleValueFactory.getInstance()
 				.createIRI("http://aims.fao.org/aos/agrovoc/void.ttl#Agrovoc"));
@@ -202,6 +205,7 @@ public class MetadataRegistryBackendTest {
 	}
 
 	@Test
+	@Ignore("ignored since it requires access to external resources that could be not available")
 	public void testDiscoverFOAFFromResource() throws MetadataDiscoveryException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		IRI catalogRecordIRI = metadataRegistryBackend.discoverDataset(
 				SimpleValueFactory.getInstance().createIRI("http://xmlns.com/foaf/0.1/Person"));
@@ -212,6 +216,7 @@ public class MetadataRegistryBackendTest {
 	}
 
 	@Test
+	@Ignore("ignored since it requires access to external resources that could be not available")
 	public void testDiscoverFOAFFromURISpace() throws MetadataDiscoveryException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		IRI catalogRecordIRI = metadataRegistryBackend
 				.discoverDataset(SimpleValueFactory.getInstance().createIRI("http://xmlns.com/foaf/0.1/"));
@@ -222,6 +227,7 @@ public class MetadataRegistryBackendTest {
 	}
 
 	@Test
+	@Ignore("ignored since it requires access to external resources that could be not available")
 	public void testDiscoverFOAFFromBaseURIWithoutEndingSlash() throws MetadataDiscoveryException, NoSuchDatasetMetadataException, MetadataRegistryStateException {
 		IRI catalogRecordIRI = metadataRegistryBackend
 				.discoverDataset(SimpleValueFactory.getInstance().createIRI("http://xmlns.com/foaf/0.1"));
