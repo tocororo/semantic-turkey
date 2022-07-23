@@ -14,5 +14,6 @@
 		<module>ontoportal</module>
 		<module>sftp</module>
 		<module>graph-store</module>
+		<module>showvoc</module>
 	</modules>
 </project>

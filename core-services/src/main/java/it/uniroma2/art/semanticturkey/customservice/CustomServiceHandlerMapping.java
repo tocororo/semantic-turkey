@@ -493,7 +493,7 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		List<Pair<Operation, CustomServiceBackend>> backends = new ArrayList<>(operationDefinitions.size());
 		for (Operation operationDefinition : operationDefinitions) {
 
-			CustomServiceBackend customServiceBackend = buildExtension(operationDefinition);
+			CustomServiceBackend customServiceBackend = exptManager.instantiateExtension(CustomServiceBackend.class, operationDefinition);
 			backends.add(ImmutablePair.of(operationDefinition, customServiceBackend));
 
 			InvocationHandler invocationHandler = customServiceBackend.createInvocationHandler();
@@ -680,26 +680,6 @@ public class CustomServiceHandlerMapping extends AbstractHandlerMapping implemen
 		}
 
 		return preauthorizeValue;
-	}
-
-	protected CustomServiceBackend buildExtension(Operation operationDefinition)
-			throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
-			STPropertyAccessException, InvalidConfigurationException {
-		@SuppressWarnings("unchecked")
-		ConfigurableExtensionFactory<?, Operation> extensionFactory = exptManager
-				.getExtensions(CustomServiceBackend.class.getName()).stream()
-				.filter(ConfigurableExtensionFactory.class::isInstance)
-				.map(ConfigurableExtensionFactory.class::cast)
-				.filter(f -> f.getConfigurations().stream().anyMatch(
-						c -> c.getClass().getName().equals(operationDefinition.getClass().getName())))
-				.findAny()
-				.orElseThrow(() -> new IllegalArgumentException(
-						"Unable to to find an extension for the configuration class "
-								+ operationDefinition.getClass().getName()));
-
-		return exptManager.instantiateExtension(CustomServiceBackend.class,
-				new PluginSpecification(extensionFactory.getId(), null, null,
-						STPropertiesManager.storeSTPropertiesToObjectNode(operationDefinition, true)));
 	}
 
 	protected TypeDefinition generateTypeDefinitionFromSchema(Type typeDescription) throws SchemaException {

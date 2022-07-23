@@ -11,7 +11,9 @@ import it.uniroma2.art.semanticturkey.config.Configuration;
 import it.uniroma2.art.semanticturkey.config.ConfigurationManager;
 import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
 import it.uniroma2.art.semanticturkey.config.InvalidConfigurationException;
+import it.uniroma2.art.semanticturkey.config.customservice.Operation;
 import it.uniroma2.art.semanticturkey.extension.extpts.collaboration.CollaborationBackendExtensionPoint;
+import it.uniroma2.art.semanticturkey.extension.extpts.customservice.CustomServiceBackend;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.DatasetCatalogConnectorExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetmetadata.DatasetMetadataExporterExtensionPoint;
 import it.uniroma2.art.semanticturkey.extension.extpts.rdftransformer.RDFTransformerExtensionPoint;
@@ -24,6 +26,7 @@ import it.uniroma2.art.semanticturkey.extension.settings.SettingsManager;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.properties.PropertyNotFoundException;
+import it.uniroma2.art.semanticturkey.properties.STPropertiesManager;
 import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
 import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
 import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
@@ -161,6 +164,53 @@ public interface ExtensionPointManager {
     public <T extends Extension> T instantiateExtension(Class<T> targetInterface, PluginSpecification spec)
             throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
             STPropertyAccessException, InvalidConfigurationException;
+
+
+    /**
+     * Create an instance of an extension that conforms to {@code targetInterface}, following the provided
+     * {@code Configuration}
+     *
+     * @param targetInterface
+     * @param conf
+     * @return
+     * @throws IllegalArgumentException
+     * @throws NoSuchExtensionException
+     * @throws WrongPropertiesException
+     * @throws STPropertyAccessException
+     * @throws InvalidConfigurationException
+     */
+    default <T extends Extension, C extends Configuration> T instantiateExtension(Class<T> targetInterface, C conf)
+            throws IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
+            STPropertyAccessException, InvalidConfigurationException {
+        PluginSpecification pluginSpec = buildPluginSpecification(targetInterface, conf);
+
+        return instantiateExtension(targetInterface,pluginSpec);
+    }
+
+    /**
+     * Build a {@link PluginSpecification} for the provided {@code targetInterface} and {@code Configuration}
+     * @param targetInterface
+     * @param conf
+     * @param <T>
+     * @param <C>
+     * @return
+     */
+    default <T extends Extension, C extends Configuration> PluginSpecification buildPluginSpecification(Class<T> targetInterface, C conf) {
+        @SuppressWarnings("unchecked")
+        ConfigurableExtensionFactory<?, Operation> extensionFactory = getExtensions(targetInterface.getName()).stream()
+                .filter(ConfigurableExtensionFactory.class::isInstance)
+                .map(ConfigurableExtensionFactory.class::cast)
+                .filter(f -> f.getConfigurations().stream().anyMatch(
+                        c -> c.getClass().getName().equals(conf.getClass().getName())))
+                .findAny()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Unable to to find an extension for the configuration class "
+                                + conf.getClass().getName()));
+
+        PluginSpecification pluginSpec = new PluginSpecification(extensionFactory.getId(), null, null,
+            STPropertiesManager.storeSTPropertiesToObjectNode(conf, true));
+        return pluginSpec;
+    }
 
     Optional<Class<?>> getConfigurationClassFromName(String propsType);
 

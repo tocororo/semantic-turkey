@@ -24,12 +24,11 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 import javax.validation.Constraint;
 
-import org.apache.commons.lang3.EnumUtils;
+import it.uniroma2.art.semanticturkey.config.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.rdf4j.model.BNode;
@@ -245,8 +244,11 @@ public class STPropertiesSerializer extends StdSerializer<STProperties> {
 		boolean isParametricType = type instanceof ParameterizedType || TypeUtils.isArrayType(type);
 
 		gen.writeStartObject();
-
-		if (TypeUtils.isAssignable(annotatedType.getType(), STProperties.class)) {
+		// Configurations are treated differently from STProperties, as we don't assume that they are statically known
+		// Instead, we assume that the required extension point is provided instead
+		if (TypeUtils.isAssignable(annotatedType.getType(), Configuration.class)) {
+			gen.writeStringField("name", "Configuration");
+		} else if (TypeUtils.isAssignable(annotatedType.getType(), STProperties.class)) {
 			gen.writeStringField("name", "Properties");
 			STProperties effectiveSchema;
 			if (schema != null) {

@@ -296,7 +296,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager{
                         ConfigurationManager.class, 0);
 
         Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNodes(configBaseClass, true,
-                configuration);
+                STPropertiesManager.createObjectMapper(this), configuration);
         ((ConfigurationManager) configurationManager).storeConfiguration(reference, configObj);
     }
 
@@ -409,7 +409,7 @@ public class ExtensionPointManagerImpl implements ExtensionPointManager{
                                 0);
 
                 Configuration configObj = STPropertiesManager.loadSTPropertiesFromObjectNodes(configBaseClass,
-                        true, config);
+                        true, STPropertiesManager.createObjectMapper(this), config);
                 STPropertiesChecker checker = STPropertiesChecker.getModelConfigurationChecker(configObj);
                 if (!checker.isValid()) {
                     throw new InvalidConfigurationException(checker.getErrorMessage());

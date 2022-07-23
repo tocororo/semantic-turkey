@@ -19,7 +19,7 @@ import it.uniroma2.art.semanticturkey.extension.extpts.deployer.FormattedResourc
 import it.uniroma2.art.semanticturkey.extension.extpts.deployer.StreamSourcedDeployer;
 
 /**
- * Implementation of the {@link Deployer} extension point that uses t. This implementation can deploy data
+ * Implementation of the {@link Deployer} extension point that uses the SFTP protocol. This implementation can deploy data
  * provided by a {@link FormattedResourceSource}.
  * 
  * <a href="mailto:fiorelli@info.uniroma2.it">Manuel Fiorelli</a>

@@ -56,6 +56,28 @@ public class RemoteVBConnector {
 	private String adminPwd;
 	private String vbUrl;
 
+	public RemoteVBConnector(String stHost, String vbUrl, String adminEmail, String adminPwd) throws STPropertyAccessException {
+		mapper = new ObjectMapper();
+		httpClient = HttpClientBuilder.create().useSystemProperties().build();
+
+		VocBenchConnectionShowVocSettings vbConnectionSettings = null;
+
+		CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
+		ShowVocSettings svSettings = systemSettings.showvoc;
+		if (svSettings != null) {
+			vbConnectionSettings = svSettings.vbConnectionConfig;
+		}
+
+		if (vbConnectionSettings == null) {
+			throw new IllegalStateException("No configuration found for connecting to a remote VocBench instance");
+		}
+
+		this.stHost = stHost;
+		this.adminEmail = adminEmail;
+		this.adminPwd = adminPwd;
+		this.vbUrl = vbUrl;
+	}
+
 	public RemoteVBConnector() throws STPropertyAccessException {
 		mapper = new ObjectMapper();
 		httpClient = HttpClientBuilder.create().useSystemProperties().build();

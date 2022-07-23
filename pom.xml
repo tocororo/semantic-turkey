@@ -152,7 +152,7 @@ update the version of Karaf indicated in branding.properties (module st-console)
 		<module>console</module>
 		<module>builder</module>
 		<module>font</module>
-	</modules>
+    </modules>
 
 	<build>
 		<plugins>
