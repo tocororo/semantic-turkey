@@ -1,5 +1,6 @@
 version 11.1.1
 date: dd/mm/202y
+  * improved the OntoPortal connector to consider the frontend base URL and retrieve missing settings from /site_config
   * added a Deployer targeting ShowVoc
   * fixed a bug related to an exception about the use of abstract datasets erroneously raised in assisted search when
     selecting a local project

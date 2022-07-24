@@ -3,6 +3,7 @@ package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.EcoPortalConnectorConfiguration;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 /**
  * An implementation of {@link ServerCommunicationStrategy} to interact with EcoPortal.
@@ -11,18 +12,16 @@ import org.apache.commons.lang3.StringUtils;
  *
  */
 class EcoPortalCommunicationStrategy
-		extends AbstractOntoPortalCommunicationStrategy<EcoPortalConnectorConfiguration>
-		implements ServerCommunicationStrategy {
+		extends AbstractOntoPortalCommunicationStrategy<EcoPortalConnectorConfiguration> {
 
-	public static final String DEFAULT_API_BASE_URL = "http://ecoportal.lifewatchitaly.eu:8080/";
+	public static final String DEFAULT_FRONTEND_BASE_URL = "http://ecoportal.lifewatch.eu/";
 
 	public EcoPortalCommunicationStrategy(EcoPortalConnectorConfiguration conf) {
 		super(conf);
 	}
 
 	@Override
-	public String getAPIBaseURL() {
-		return StringUtils.appendIfMissing(ObjectUtils.firstNonNull(StringUtils.trim(conf.apiBaseURL), DEFAULT_API_BASE_URL), "/");
+	public String getFrontendBaseURL() {
+		return DEFAULT_FRONTEND_BASE_URL;
 	}
-
 }

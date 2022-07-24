@@ -23,6 +23,8 @@ public abstract class AbstractOntoPortalConnectorConfiguration implements Config
 
 		public static final String shortName = keyBase + ".shortName";
 		public static final String htmlWarning = keyBase + ".htmlWarning";
+		public static final String frontendBaseURL$description = keyBase + ".frontendBaseURL.description";
+		public static final String frontendBaseURL$displayName = keyBase + ".frontendBaseURL.displayName";
 		public static final String apiBaseURL$description = keyBase + ".apiBaseURL.description";
 		public static final String apiBaseURL$displayName = keyBase + ".apiBaseURL.displayName";
 		public static final String apiKey$description = keyBase + ".apiKey.description";
@@ -36,11 +38,13 @@ public abstract class AbstractOntoPortalConnectorConfiguration implements Config
 		return "{" + MessageKeys.htmlWarning + "}";
 	}
 
+	@STProperty(description = "{" + MessageKeys.frontendBaseURL$description+ "}", displayName = "{" + MessageKeys.frontendBaseURL$displayName + "}")
+	public String frontendBaseURL;
+
 	@STProperty(description = "{" + MessageKeys.apiBaseURL$description+ "}", displayName = "{" + MessageKeys.apiBaseURL$displayName + "}")
 	public String apiBaseURL;
 
 	@STProperty(description = "{" + MessageKeys.apiKey$description+ "}", displayName = "{" + MessageKeys.apiKey$displayName + "}")
-	@Required
 	public String apiKey;
 
 }

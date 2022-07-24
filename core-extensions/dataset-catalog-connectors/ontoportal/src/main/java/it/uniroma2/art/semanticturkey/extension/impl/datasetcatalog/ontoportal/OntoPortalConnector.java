@@ -13,19 +13,21 @@ import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFace
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchFacetProcessor;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SearchResultsPage;
 import it.uniroma2.art.semanticturkey.extension.extpts.datasetcatalog.SelectionMode;
+import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.model.Category;
+import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.model.Group;
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.model.Submission;
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.model.Ontology;
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.strategy.ServerCommunicationStrategy;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.NetUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.util.Values;
@@ -36,14 +38,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.time.Duration;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -63,17 +64,29 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
     private static final String FACET_FORMAT = "format";
     private static final String FACET_UPDATED = "updated";
 
+    private static final String ONTOLOGY_PAGE_PATH = "ontologies/{acronym}";
+
+    private static final String CATEGORIES_COLLECTION_ENDPOINT = "categories";
+    private static final String GROUPS_COLLECTION_ENDPOINT = "groups";
+
     private static final String ONTOLOGY_COLLECTION_ENDPOINT = "ontologies";
     private static final String ONTOLOGY_ENDPOINT = "ontologies/{acronym}";
     private static final String DOWNLOAD_ENDPOINT = ONTOLOGY_ENDPOINT + "/download";
     private static final String LATEST_SUBMISSION_ENDPOINT = "ontologies/{acronym}/latest_submission";
 
     private final AbstractOntoPortalConnectorConfiguration conf;
-    private final ServerCommunicationStrategy strategy;
+    private ServerCommunicationStrategy strategy;
 
     public OntoPortalConnector(AbstractOntoPortalConnectorConfiguration conf) {
         this.conf = conf;
-        this.strategy = ServerCommunicationStrategy.getStrategy(conf);
+    }
+
+    protected ServerCommunicationStrategy getServerCommunicationStrategy(CloseableHttpClient httpClient) throws IOException {
+        if (this.strategy == null) {
+            this.strategy = ServerCommunicationStrategy.getStrategy(httpClient, conf);
+        }
+
+        return this.strategy;
     }
 
     @SearchFacet(name = "type", description = "filter by entry type", allowsMultipleValues = false, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
@@ -84,16 +97,24 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
 
         /* List<Pair<String, String>> facetsQueryParams = */ DatasetCatalogConnector.processFacets(this, facets);
 
-        URI ontologiesURL = getUriComponentsBuilder().path(ONTOLOGY_COLLECTION_ENDPOINT)
-                .queryParam("include", "ontologyType,group,hasDomain,name,acronym")
-                .queryParam("include_views", "true")
-                .queryParam("display_links", "false")
-                .queryParam("display_context", "false")
-                .build().toUri();
 
         List<String> queryTokens = Arrays.stream(query.split("\\s+")).filter(StringUtils::isNoneEmpty).collect(Collectors.toList());
 
         try (CloseableHttpClient httpClient = HttpClientBuilder.create().useSystemProperties().build()) {
+
+            ServerCommunicationStrategy strategy = getServerCommunicationStrategy(httpClient);
+
+            URI ontologiesURL = getUriComponentsBuilder(strategy).path(ONTOLOGY_COLLECTION_ENDPOINT)
+                    .queryParam("include", "ontologyType,group,hasDomain,name,acronym")
+                    .queryParam("include_views", "true")
+                    .queryParam("display_links", "false")
+                    .queryParam("display_context", "false")
+                    .build().toUri();
+
+            Map<String, Category> id2Category = new HashMap<>();
+            Map<String, Group> id2Group = new HashMap<>();
+            gatherGroupsAndCategories(httpClient, id2Category, id2Group);
+
             HttpGet httpRequest = new HttpGet(ontologiesURL);
             strategy.getHttpRequestHeaders().forEach(httpRequest::addHeader);
             try (CloseableHttpResponse response = httpClient.execute(httpRequest)) {
@@ -146,7 +167,9 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
                                 bucket ->
                                         new FacetAggregation.Bucket(
                                                 bucket.getKey(),
-                                                StringUtils.substringAfterLast(bucket.getKey(), "/"),
+                                                Optional.ofNullable(id2Category.get(bucket.getKey()))
+                                                        .map(Category::getName)
+                                                        .orElseGet(() -> StringUtils.substringAfterLast(bucket.getKey(), "/")),
                                                 bucket.getValue().getValue())
                         ).collect(Collectors.toList()), false);
                 FacetAggregation groupFacetAggregation = new FacetAggregation(FACET_GROUP,
@@ -156,7 +179,9 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
                                 bucket ->
                                         new FacetAggregation.Bucket(
                                                 bucket.getKey(),
-                                                StringUtils.substringAfterLast(bucket.getKey(), "/"),
+                                                Optional.ofNullable(id2Group.get(bucket.getKey()))
+                                                        .map(Group::getName)
+                                                        .orElseGet(() -> StringUtils.substringAfterLast(bucket.getKey(), "/")),
                                                 bucket.getValue().getValue())
                         ).collect(Collectors.toList()), false);
                 FacetAggregation typeFacetAggregation = new FacetAggregation(FACET_TYPE,
@@ -181,28 +206,87 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
 
     }
 
+    protected void gatherGroupsAndCategories(CloseableHttpClient httpClient, Map<String, Category> id2Category, Map<String, Group> is2Group) throws IOException {
+        ServerCommunicationStrategy strategy = getServerCommunicationStrategy(httpClient);
+
+        URI categoriesURL = getUriComponentsBuilder(strategy).path(CATEGORIES_COLLECTION_ENDPOINT)
+                .queryParam("display", "name,acronym")
+                .queryParam("display_links", "false")
+                .queryParam("display_context", "false")
+                .build().toUri();
+
+        HttpGet httpRequest = new HttpGet(categoriesURL);
+        strategy.getHttpRequestHeaders().forEach(httpRequest::addHeader);
+        try (CloseableHttpResponse response = httpClient.execute(httpRequest)) {
+            StatusLine statusLine = response.getStatusLine();
+            if ((statusLine.getStatusCode() / 200) != 1) {
+                throw new IOException(
+                        "HTTP Error: " + statusLine.getStatusCode() + ":" + statusLine.getReasonPhrase());
+            }
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<Category> categories = objectMapper
+                    .readValue(response.getEntity().getContent(), new TypeReference<List<Category>>() {
+                    });
+            categories.forEach(c -> id2Category.put(c.getId(), c));
+        }
+
+        URI groupsURL = getUriComponentsBuilder(strategy).path(GROUPS_COLLECTION_ENDPOINT)
+                .queryParam("display", "name,acronym")
+                .queryParam("display_links", "false")
+                .queryParam("display_context", "false")
+                .build().toUri();
+
+        httpRequest = new HttpGet(categoriesURL);
+        strategy.getHttpRequestHeaders().forEach(httpRequest::addHeader);
+        try (CloseableHttpResponse response = httpClient.execute(httpRequest)) {
+            StatusLine statusLine = response.getStatusLine();
+            if ((statusLine.getStatusCode() / 200) != 1) {
+                throw new IOException(
+                        "HTTP Error: " + statusLine.getStatusCode() + ":" + statusLine.getReasonPhrase());
+            }
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<Group> groups = objectMapper
+                    .readValue(response.getEntity().getContent(), new TypeReference<List<Group>>() {
+                    });
+            groups.forEach(g -> is2Group.put(g.getId(), g));
+        }
+    }
+
 
     @Override
     public DatasetDescription describeDataset(String id) throws IOException {
-        URI ontologyURL = getUriComponentsBuilder().path(ONTOLOGY_ENDPOINT)
-                .queryParam("include", "ontologyType,group,hasDomain,name,acronym")
-                .queryParam("include_views", "true")
-                .queryParam("display_links", "false")
-                .queryParam("display_context", "false")
-                .buildAndExpand(ImmutableMap.of("acronym", id)).toUri();
-        URI latestSubmissionURL = getUriComponentsBuilder().path(LATEST_SUBMISSION_ENDPOINT)
-                .queryParam("include", "submissionId,hasOntologyLanguage,description,creationDate")
-                .queryParam("include_views", "true")
-                .queryParam("display_links", "false")
-                .queryParam("display_context", "false")
-                .buildAndExpand(ImmutableMap.of("acronym", id)).toUri();
-        URL downloadURL = getUriComponentsBuilder().path(DOWNLOAD_ENDPOINT)
-                .queryParam("apikey", conf.apiKey)
-                .buildAndExpand(ImmutableMap.of("acronym", id)).toUri().toURL();
 
         try (CloseableHttpClient httpClient = HttpClientBuilder.create().useSystemProperties().build()) {
+            ServerCommunicationStrategy strategy = getServerCommunicationStrategy(httpClient);
+
+            URI ontologyURL = getUriComponentsBuilder(strategy).path(ONTOLOGY_ENDPOINT)
+                    .queryParam("include", "ontologyType,group,hasDomain,name,acronym")
+                    .queryParam("include_views", "true")
+                    .queryParam("display_links", "false")
+                    .queryParam("display_context", "false")
+                    .buildAndExpand(ImmutableMap.of("acronym", id)).toUri();
+            URI latestSubmissionURL = getUriComponentsBuilder(strategy).path(LATEST_SUBMISSION_ENDPOINT)
+                    .queryParam("include", "submissionId,hasOntologyLanguage,description,creationDate")
+                    .queryParam("include_views", "true")
+                    .queryParam("display_links", "false")
+                    .queryParam("display_context", "false")
+                    .buildAndExpand(ImmutableMap.of("acronym", id)).toUri();
+            URL downloadURL = getUriComponentsBuilder(strategy).path(DOWNLOAD_ENDPOINT)
+                    .queryParam("apikey", conf.apiKey)
+                    .buildAndExpand(ImmutableMap.of("acronym", id)).toUri().toURL();
+
+            Map<String, Category> id2Category = new HashMap<>();
+            Map<String, Group> id2Group = new HashMap<>();
+            gatherGroupsAndCategories(httpClient, id2Category, id2Group);
+
             IRI ontologyIRI = null;
-            URL datasetPage = null;
+            URL datasetPage = UriComponentsBuilder.fromHttpUrl(strategy.getFrontendBaseURL())
+                    .path(ONTOLOGY_PAGE_PATH)
+                    .buildAndExpand(ImmutableMap.of("acronym", id))
+                    .toUri()
+                    .toURL();
             List<Literal> titles = new ArrayList<>();
             List<Literal> descriptions = new ArrayList<>();
             Map<String, List<String>> facets = new HashMap<>();
@@ -262,13 +346,13 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
 
             }
 
-            renderFacetValuesInPlace(facets);
+            renderFacetValuesInPlace(facets, id2Category, id2Group);
             return new DatasetDescription(id, ontologyIRI, datasetPage, titles, descriptions, facets, uriPrefix,
                     dataDumps, sparqlEndpoint, model, lexicalizationModel);
         }
     }
 
-    protected UriComponentsBuilder getUriComponentsBuilder() {
+    protected static UriComponentsBuilder getUriComponentsBuilder(ServerCommunicationStrategy strategy) {
         return UriComponentsBuilder.fromHttpUrl(strategy.getAPIBaseURL());
     }
 
@@ -283,11 +367,17 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
         facets.put(FACET_UPDATED, Collections.singletonList(sub.getCreationDate().toString()));
     }
 
-    protected void renderFacetValuesInPlace(Map<String, List<String>> facets) {
-        ZonedDateTime now = ZonedDateTime.now();
-
-        CollectionUtils.transform(facets.getOrDefault(FACET_CATEGORY, Collections.emptyList()), v -> StringUtils.substringAfterLast(v, "/"));
-        CollectionUtils.transform(facets.getOrDefault(FACET_GROUP, Collections.emptyList()), v -> StringUtils.substringAfterLast(v, "/"));
+    protected void renderFacetValuesInPlace(Map<String, List<String>> facets, Map<String, Category> id2Category, Map<String, Group> id2Group) {
+        CollectionUtils.transform(facets.getOrDefault(FACET_CATEGORY, Collections.emptyList()),
+                v -> Optional.ofNullable(id2Category.get(v))
+                        .map(Category::getName)
+                        .orElseGet(() -> StringUtils.substringAfterLast(v, "/"))
+        );
+        CollectionUtils.transform(facets.getOrDefault(FACET_GROUP, Collections.emptyList()),
+                v -> Optional.ofNullable(id2Group.get(v))
+                        .map(Group::getName)
+                        .orElseGet(() -> StringUtils.substringAfterLast(v, "/"))
+        );
     }
 
     protected boolean matchesFacets(Map<String, List<String>> facets, DatasetSearchResult dataset) {

@@ -26,12 +26,12 @@ public class OntoPortalConnectorConfiguration extends AbstractOntoPortalConnecto
 	}
 
 	/*
-	 * Overrides #isRequiredProperty(String) to tighten the definition of the property "apiBaseURL", which is
+	 * Overrides #isRequiredProperty(String) to tighten the definition of the property "frontendBaseURL", which is
 	 * mandatory to target a generic OntoPortal instance
 	 */
 	@Override
 	public boolean isRequiredProperty(String parID) throws PropertyNotFoundException {
-		if (Objects.equals(parID, "apiBaseURL")) {
+		if (Objects.equals(parID, "frontendBaseURL")) {
 			return true;
 		} else {
 			return super.isRequiredProperty(parID);

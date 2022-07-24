@@ -16,7 +16,7 @@ class EcoPortalCommunicationStrategy
 		extends AbstractOntoPortalCommunicationStrategy<EcoPortalDeployerConfiguration>
 		implements ServerCommunicationStrategy {
 
-	public static final String DEFAULT_API_BASE_URL = "http://ecoportal.lifewatchitaly.eu:8080/";
+	public static final String DEFAULT_API_BASE_URL = "http://ecoportal.lifewatch.eu:8080/";
 
 	public EcoPortalCommunicationStrategy(EcoPortalDeployerConfiguration conf) {
 		super(conf);

@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.
 
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.OntoPortalConnectorConfiguration;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 /**
  * An implementation of {@link ServerCommunicationStrategy} to interact with a generic OntoPortal server.
@@ -10,8 +11,7 @@ import org.apache.commons.lang3.StringUtils;
  *
  */
 class OntoPortalCommunicationStrategy
-		extends AbstractOntoPortalCommunicationStrategy<OntoPortalConnectorConfiguration>
-		implements ServerCommunicationStrategy {
+		extends AbstractOntoPortalCommunicationStrategy<OntoPortalConnectorConfiguration> {
 
 	public OntoPortalCommunicationStrategy(OntoPortalConnectorConfiguration conf) {
 		super(conf);
