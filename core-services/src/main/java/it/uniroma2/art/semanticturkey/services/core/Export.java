@@ -283,7 +283,7 @@ public class Export extends STServiceAdapter {
 			if (formattedResource != null) {
 				source = new FormattedResourceSource(formattedResource);
 			} else {
-				source = new RepositorySource(workingRepositoryConnection, graphs);
+				source = new RepositorySource(workingRepositoryConnection, graphs, stServiceContext.getProject());
 			}
 
 			downloadOrDeploy(exptManager, stServiceContext, oRes, deployerSpec, source);

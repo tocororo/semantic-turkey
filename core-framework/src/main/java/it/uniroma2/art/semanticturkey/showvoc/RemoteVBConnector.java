@@ -60,18 +60,6 @@ public class RemoteVBConnector {
 		mapper = new ObjectMapper();
 		httpClient = HttpClientBuilder.create().useSystemProperties().build();
 
-		VocBenchConnectionShowVocSettings vbConnectionSettings = null;
-
-		CoreSystemSettings systemSettings = STPropertiesManager.getSystemSettings(CoreSystemSettings.class, SemanticTurkeyCoreSettingsManager.class.getName());
-		ShowVocSettings svSettings = systemSettings.showvoc;
-		if (svSettings != null) {
-			vbConnectionSettings = svSettings.vbConnectionConfig;
-		}
-
-		if (vbConnectionSettings == null) {
-			throw new IllegalStateException("No configuration found for connecting to a remote VocBench instance");
-		}
-
 		this.stHost = stHost;
 		this.adminEmail = adminEmail;
 		this.adminPwd = adminPwd;
@@ -220,7 +208,7 @@ public class RemoteVBConnector {
 	}
 
 	public ObjectNode loadRDF(String projectName, String baseURI, File file, String format,
-			PluginSpecification rdfLifterSpec, TransitiveImportMethodAllowance transitiveImportAllowance)
+							  PluginSpecification rdfLifterSpec, TransitiveImportMethodAllowance transitiveImportAllowance, boolean targetGraphsFromData)
 			throws URISyntaxException, IOException {
 
 		String requestUrl = stHost + "semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/InputOutput/loadRDF";
@@ -237,12 +225,25 @@ public class RemoteVBConnector {
 		builder.addPart("rdfLifterSpec", new StringBody(mapper.writeValueAsString(rdfLifterSpec), ContentType.MULTIPART_FORM_DATA));
 		builder.addPart("format", new StringBody(format, ContentType.MULTIPART_FORM_DATA));
 		builder.addPart("transitiveImportAllowance", new StringBody(transitiveImportAllowance.name(), ContentType.MULTIPART_FORM_DATA));
+		builder.addPart("targetGraphsFromData", new StringBody(Boolean.toString(targetGraphsFromData), ContentType.MULTIPART_FORM_DATA));
 
 		HttpEntity entity = builder.build();
 		httpPost.setEntity(entity);
 		HttpResponse response = httpClient.execute(httpPost);
 		return processResponse(response);
 	}
+
+	public ObjectNode clearData(String projectName) throws URISyntaxException, IOException {
+
+		String requestUrl = stHost + "semanticturkey/it.uniroma2.art.semanticturkey/st-core-services/InputOutput/clearData";
+		URIBuilder uriBuilder = new URIBuilder(requestUrl);
+		uriBuilder.setParameter("ctx_project", projectName);
+		HttpPost httpPost = new HttpPost(uriBuilder.build());
+
+		HttpResponse response = httpClient.execute(httpPost);
+		return processResponse(response);
+	}
+
 
 	/**
 	 * Return the json array node list of the "remoteConfigs" STProperty (contained in the system core Settings)

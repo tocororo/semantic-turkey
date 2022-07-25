@@ -151,7 +151,8 @@ public class InputOutput extends STServiceAdapter {
 			@Optional String format, TransitiveImportMethodAllowance transitiveImportAllowance,
 			@Optional PluginSpecification loaderSpec, @Optional PluginSpecification rdfLifterSpec,
 			@Optional(defaultValue = "[]") TransformationPipeline transformationPipeline,
-			@Optional(defaultValue = "false") boolean validateImplicitly)
+			@Optional(defaultValue = "false") boolean validateImplicitly,
+		    @Optional(defaultValue = "false") boolean targetGraphsFromData)
 			throws FileNotFoundException, IOException, RDF4JException, IllegalStateException,
 			IllegalArgumentException, NoSuchExtensionException, WrongPropertiesException,
 			STPropertyAccessException, InvalidConfigurationException, LiftingException {
@@ -170,7 +171,7 @@ public class InputOutput extends STServiceAdapter {
 						try {
 							Collection<OntologyImport> tempRv = loadRDFInternal(inputFile, baseURI, format,
 									transitiveImportAllowance, conn2, loaderSpec, rdfLifterSpec,
-									transformationPipeline);
+									transformationPipeline, false);
 							rv.addAll(tempRv);
 						} catch (Exception e) {
 							throw new RuntimeException(e);
@@ -180,14 +181,15 @@ public class InputOutput extends STServiceAdapter {
 			return rv;
 		} else {
 			return loadRDFInternal(inputFile, baseURI, format, transitiveImportAllowance, conn, loaderSpec,
-					rdfLifterSpec, transformationPipeline);
+					rdfLifterSpec, transformationPipeline, targetGraphsFromData);
 		}
 	}
 
 	protected Collection<OntologyImport> loadRDFInternal(@Nullable MultipartFile inputFile, String baseURI,
-			@Nullable String format, TransitiveImportMethodAllowance transitiveImportAllowance,
-			RepositoryConnection conn, @Nullable PluginSpecification loaderSpec,
-			PluginSpecification rdfLifterSpec, TransformationPipeline transformationPipeline)
+														 @Nullable String format, TransitiveImportMethodAllowance transitiveImportAllowance,
+														 RepositoryConnection conn, @Nullable PluginSpecification loaderSpec,
+														 PluginSpecification rdfLifterSpec, TransformationPipeline transformationPipeline,
+														 boolean targetGraphsFromData)
 			throws IOException, IllegalStateException, IllegalArgumentException, RDF4JException,
 			NoSuchExtensionException, WrongPropertiesException, STPropertyAccessException,
 			InvalidConfigurationException, LiftingException {
@@ -225,7 +227,7 @@ public class InputOutput extends STServiceAdapter {
 			} else { // special RDFHandler provided by the OntologyManger, if directly writing to the
 						// repository
 				workingRepoInserter = getProject().getOntologyManager().getRDFHandlerForLoadData(conn,
-						baseURI, getWorkingGraph(), transitiveImportAllowance, failedImports);
+						baseURI, targetGraphsFromData ? null : getWorkingGraph(), transitiveImportAllowance, failedImports);
 			}
 
 			IRI[] graphs = new IRI[] { (IRI) getWorkingGraph() };
@@ -367,7 +369,7 @@ public class InputOutput extends STServiceAdapter {
 
 			if (workingConn != conn) {
 				RDFHandler rdfInserter = getProject().getOntologyManager().getRDFHandlerForLoadData(conn,
-						baseURI, getWorkingGraph(), transitiveImportAllowance, failedImports);
+						baseURI,  targetGraphsFromData ? null : getWorkingGraph(), transitiveImportAllowance, failedImports);
 				workingConn.export(rdfInserter);
 			}
 

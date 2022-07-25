@@ -1444,7 +1444,7 @@ public class OntologyManagerImpl implements OntologyManager {
 
 			{
 				this.setPreserveBNodeIDs(false);
-				this.enforceContext(graph);
+				if (graph != null) this.enforceContext(graph);
 			}
 
 			@Override

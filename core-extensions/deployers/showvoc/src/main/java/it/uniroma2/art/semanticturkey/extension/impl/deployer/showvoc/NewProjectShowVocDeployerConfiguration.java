@@ -18,6 +18,7 @@ public class NewProjectShowVocDeployerConfiguration extends ShowVocDeployerConfi
 		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.deployer.showvoc.NewProjectShowVocDeployerConfiguration";
 
 		public static final String shortName = keyBase + ".shortName";
+		public static final String htmlWarning = keyBase + ".htmlWarning";
 
 		public static final String coreRepoSailConf$description = keyBase + ".coreRepoSailConf.description";
 		public static final String coreRepoSailConf$displayName = keyBase + ".coreRepoSailConf.displayName";
@@ -28,17 +29,10 @@ public class NewProjectShowVocDeployerConfiguration extends ShowVocDeployerConfi
 		return "{" + MessageKeys.shortName + "}";
 	}
 
-	@STProperty(description = "")
-	@Required
-	public String baseURI; // TODO Inherit from current project
-
-	@STProperty(description = "")
-	@Required
-	public IRI model; // TODO Inherit from current project
-
-	@STProperty(description = "")
-	@Required
-	public IRI lexicalizationModel; // TODO Inherit from current project
+	@Override
+	public String getHTMLWarning() {
+		return "{" + MessageKeys.htmlWarning + "}";
+	}
 
 	@STProperty(description = "{" + MessageKeys.coreRepoSailConf$description + "}", displayName = "{" + MessageKeys.coreRepoSailConf$displayName + "}")
 	@Required

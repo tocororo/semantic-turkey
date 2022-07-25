@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.extension.extpts.deployer;
 
+import it.uniroma2.art.semanticturkey.project.Project;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 
@@ -12,10 +13,12 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 public class RepositorySource extends Source {
 	private final RepositoryConnection sourceRepository;
 	private final IRI[] graphs;
+	private final Project project;
 
-	public RepositorySource(RepositoryConnection sourceRepository, IRI[] graphs) {
+	public RepositorySource(RepositoryConnection sourceRepository, IRI[] graphs, Project project) {
 		this.sourceRepository = sourceRepository;
 		this.graphs = graphs;
+		this.project = project;
 	}
 
 	public RepositoryConnection getSourceRepositoryConnection() {
@@ -24,5 +27,9 @@ public class RepositorySource extends Source {
 
 	public IRI[] getGraphs() {
 		return graphs;
+	}
+
+	public Project getProject() {
+		return project;
 	}
 }

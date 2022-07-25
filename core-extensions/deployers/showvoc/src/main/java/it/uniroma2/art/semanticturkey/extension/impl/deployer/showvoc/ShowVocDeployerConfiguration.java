@@ -18,8 +18,8 @@ public abstract class ShowVocDeployerConfiguration implements Configuration {
 		public static final String htmlWarning = keyBase + ".htmlWarning";
 		public static final String stHost$description = keyBase + ".stHost.description";
 		public static final String stHost$displayName = keyBase + ".stHost.displayName";
-		public static final String vbUrl$description = keyBase + ".vbUrl.description";
-		public static final String vbUrl$displayName = keyBase + ".vbUrl.displayName";
+		public static final String stPath$description = keyBase + ".stPath.description";
+		public static final String stPath$displayName = keyBase + ".stPath.displayName";
 		public static final String username$description = keyBase + ".username.description";
 		public static final String username$displayName = keyBase + ".username.displayName";
 		public static final String password$description = keyBase + ".password.description";
@@ -42,9 +42,9 @@ public abstract class ShowVocDeployerConfiguration implements Configuration {
 	@Required
 	public String stHost;
 
-	@STProperty(description = "{" + ShowVocDeployerConfiguration.MessageKeys.vbUrl$description + "}", displayName = "{" + ShowVocDeployerConfiguration.MessageKeys.vbUrl$displayName + "}")
+	@STProperty(description = "{" + ShowVocDeployerConfiguration.MessageKeys.stPath$description + "}", displayName = "{" + ShowVocDeployerConfiguration.MessageKeys.stPath$displayName + "}")
 	@Required
-	public String vbUrl;
+	public String stPath;
 
 	@STProperty(description = "{" + ShowVocDeployerConfiguration.MessageKeys.username$description + "}", displayName = "{" + ShowVocDeployerConfiguration.MessageKeys.username$displayName + "}")
 	@Required

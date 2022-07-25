@@ -550,7 +550,7 @@ public class ShowVoc extends STServiceAdapter {
 			// Load data exploiting the InputOutput service class
 			TransformationPipeline pipeline = new TransformationPipeline(new TransformationStep[0]);
 			inputOutputService.loadRDFInternal(inputFile, project.getBaseURI(), format,
-					transitiveImportAllowance, getManagedConnection(), null, rdfLifterSpec, pipeline);
+					transitiveImportAllowance, getManagedConnection(), null, rdfLifterSpec, pipeline, false);
 
 			// Update the status of the project from pristine to staging
 			STUser visitor = UsersManager.getUser(ShowVocConstants.SHOWVOC_VISITOR_EMAIL);
@@ -600,7 +600,7 @@ public class ShowVoc extends STServiceAdapter {
 			inputFile.transferTo(tempServerFile);
 
 			vbConnector.loadRDF(projectName, baseURI, tempServerFile, format, rdfLifterSpec,
-					transitiveImportAllowance);
+					transitiveImportAllowance, false);
 
 			String userPassword = createRemoteUser(vbConnector, contributorEmail,
 					pendingContrib.getContributorName(), pendingContrib.getContributorLastName(), null);
