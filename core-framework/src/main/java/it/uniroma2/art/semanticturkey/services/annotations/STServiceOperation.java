@@ -19,4 +19,6 @@ public @interface STServiceOperation {
 	 * Indicates the HTTP Method supported by exposed method in the controller.
 	 */
 	RequestMethod method() default RequestMethod.GET;
+
+	RequestMethod[] methods() default {};
 }

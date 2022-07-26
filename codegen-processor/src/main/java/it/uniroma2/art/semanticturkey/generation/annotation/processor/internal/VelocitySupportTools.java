@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.generation.annotation.processor.internal;
 
+import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
@@ -19,6 +20,8 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.SimpleTypeVisitor8;
 import javax.lang.model.util.Types;
 
+import it.uniroma2.art.semanticturkey.services.annotations.Produces;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
 import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
 
 public class VelocitySupportTools {
@@ -150,18 +153,45 @@ public class VelocitySupportTools {
 	public String getRequestMethodAsSource(ExecutableElement executableElement) {
 		STServiceOperation ann2 = executableElement.getAnnotation(STServiceOperation.class);
 		if (ann2 != null) {
-			String requestMethodName = ann2.method().toString();
-			if (requestMethodName.equals("GET")) {
-				return "RequestMethod.GET";
-			} else if (requestMethodName.equals("POST")) {
-				return "RequestMethod.POST";
+			RequestMethod[] requestMethods = ann2.methods();
+			if (requestMethods.length == 0) {
+				String requestMethodName = ann2.method().toString();
+				if (requestMethodName.equals("GET")) {
+					return "RequestMethod.GET";
+				} else if (requestMethodName.equals("POST")) {
+					return "RequestMethod.POST";
+				} else if (requestMethodName.equals("HEAD")) {
+					return "RequestMethod.HEAD";
+				} else {
+					throw new IllegalArgumentException(
+							"Unrecognized request method \"" + requestMethodName + "\" on " + executableElement);
+				}
 			} else {
-				throw new IllegalArgumentException(
-						"Unrecognized request method \"" + requestMethodName + "\" on " + executableElement);
+				return Arrays.stream(requestMethods)
+						.map(reqMethod -> {
+							String reqMethodName = reqMethod.toString();
+							if (reqMethodName.equals("POST")) {
+								return "RequestMethod.POST";
+							} else if (reqMethodName.equals("HEAD")) {
+								return "RequestMethod.HEAD";
+							} else {
+								return "RequestMethod.GET";
+							}
+						})
+						.collect(Collectors.joining(","));
 			}
 		}
 
 		throw new IllegalArgumentException("Missing operation-related annotation on " + executableElement);
+	}
+
+	public String getProducedMimeType(ExecutableElement executableElement) {
+		Produces ann = executableElement.getAnnotation(Produces.class);
+		if (ann != null) {
+			return Arrays.stream(ann.value()).map(el -> "\"" + el + "\"").collect(Collectors.joining(","));
+		} else {
+			return "\"application/json;charset=UTF-8\"";
+		}
 	}
 
 	public String printType(TypeMirror typeMirror) {

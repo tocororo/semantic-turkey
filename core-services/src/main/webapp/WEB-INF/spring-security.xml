@@ -84,6 +84,12 @@
         <intercept-url
                 pattern="/it.uniroma2.art.semanticturkey/st-core-services/Administration/downloadPrivacyStatement"
                 access="permitAll"/>
+        <intercept-url
+                pattern="/it.uniroma2.art.semanticturkey/st-core-services/HttpResolution/contentNegotiation"
+                access="permitAll"/>
+        <intercept-url
+                pattern="/it.uniroma2.art.semanticturkey/st-core-services/HttpResolution/rdfProvider"
+                access="permitAll"/>
         <intercept-url pattern="/it.uniroma2.art.semanticturkey/st-core-services/**"
                        access="isAuthenticated()"/>
 

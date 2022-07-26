@@ -213,6 +213,16 @@
 	<osgi:service auto-export="interfaces"
 		ref="notificationSystemSettingsManager" />
 
+	<!-- Publishes the managers for content negotiation and http resolution -->
+
+	<osgi:service auto-export="interfaces">
+		<bean class="it.uniroma2.art.semanticturkey.settings.contentnegotiation.ContentNegotiationManager" />
+	</osgi:service>
+
+	<osgi:service auto-export="interfaces">
+		<bean class="it.uniroma2.art.semanticturkey.settings.uri2projectresolution.Uri2ProjectResolutionManager" />
+	</osgi:service>
+
 	<!-- Publishes the ContributionStore -->
 
 	<osgi:service auto-export="interfaces">

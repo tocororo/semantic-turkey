@@ -101,7 +101,7 @@ public class ${generatedClassSimpleName}
 #end
 #end
 
-    @RequestMapping(value = "${controllerPathPrefix}/${classSimpleName}/${path}", method = $tools.getRequestMethodAsSource($method), produces = "application/json;charset=UTF-8")
+    @RequestMapping(value = "${controllerPathPrefix}/${classSimpleName}/${path}", method = {$tools.getRequestMethodAsSource($method)}, produces = {$tools.getProducedMimeType($method)})
 	public #if ($tools.isMappedToVoid($method)) void #else HttpEntity<#if($tools.isVoidMethod($method))
 String
 #else
