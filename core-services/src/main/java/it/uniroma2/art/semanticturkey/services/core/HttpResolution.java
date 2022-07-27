@@ -152,7 +152,7 @@ public class HttpResolution extends STServiceAdapter {
             ProjectInexistentException, InvalidProjectNameException {
 
         //Find the Project mapped to the input URI
-        Project project = resolveProjectFromUri(resURI);
+        Project project = resolveProjectFromUri(resURI, false);
 
         //Find the rewriting rule that matches the input URI and compute the 303 location
 
@@ -241,7 +241,7 @@ public class HttpResolution extends STServiceAdapter {
     public void rdfProvider(HttpServletResponse oRes, String rdfResURI) throws IOException, NoSuchSettingsManager, ProjectAccessException, ProjectInexistentException, InvalidProjectNameException, STPropertyAccessException {
 
         //Find the Project mapped to the input URI
-        Project project = resolveProjectFromUri(rdfResURI);
+        Project project = resolveProjectFromUri(rdfResURI, true);
 
         ContentNegotiationSettings contentNegotiationSettings = (ContentNegotiationSettings) exptManager.getSettings(
                 project, null, null, ContentNegotiationManager.class.getName(), Scope.PROJECT);
@@ -307,7 +307,7 @@ public class HttpResolution extends STServiceAdapter {
         ObjectNode respNode = jsonFactory.objectNode();
 
         //Find the Project mapped to the input URI
-        Project project = resolveProjectFromUri(htmlResURI);
+        Project project = resolveProjectFromUri(htmlResURI, false);
 
         ContentNegotiationSettings contentNegotiationSettings = (ContentNegotiationSettings) exptManager.getSettings(
                 project, null, null, ContentNegotiationManager.class.getName(), Scope.PROJECT);
@@ -332,7 +332,7 @@ public class HttpResolution extends STServiceAdapter {
     @STServiceOperation
     public String getMappedProject(String resURI) throws IllegalStateException, STPropertyAccessException,
             NoSuchSettingsManager, ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
-        return resolveProjectFromUri(resURI).getName();
+        return resolveProjectFromUri(resURI, false).getName();
     }
 
     /**
@@ -340,7 +340,7 @@ public class HttpResolution extends STServiceAdapter {
      * @param resURI
      * @return
      */
-    private Project resolveProjectFromUri(String resURI) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
+    private Project resolveProjectFromUri(String resURI, boolean onlyOpen) throws NoSuchSettingsManager, STPropertyAccessException, ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
         Uri2ProjectResolutionSettings uri2ProjSettings = (Uri2ProjectResolutionSettings) exptManager.getSettings(
                 null, null, null, Uri2ProjectResolutionManager.class.getName(), Scope.SYSTEM);
 
@@ -356,7 +356,13 @@ public class HttpResolution extends STServiceAdapter {
             throw new IllegalStateException("No mapped dataset found for URI " + resURI);
         }
 
-        Project project = ProjectManager.getProject(projectName, true);
+        boolean descriptionAllowed = !onlyOpen;
+        Project project = ProjectManager.getProject(projectName, descriptionAllowed);
+
+        if (project == null) {
+            throw new IllegalStateException(resURI + " belongs to a not an open project: " + projectName);
+        }
+
         return project;
     }
 
