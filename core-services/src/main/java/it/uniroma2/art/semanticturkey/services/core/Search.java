@@ -1,22 +1,49 @@
 package it.uniroma2.art.semanticturkey.services.core;
 
-import static java.util.stream.Collectors.toSet;
-
-import java.io.IOException;
-import java.security.InvalidParameterException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Sets;
+import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
+import it.uniroma2.art.semanticturkey.config.sparql.SPARQLParameterizationStore;
+import it.uniroma2.art.semanticturkey.config.sparql.SPARQLStore;
+import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLOperation;
+import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization;
+import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization.ConstraintVariableBinding;
+import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization.VariableBinding;
+import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.exceptions.SearchStatusException;
-import it.uniroma2.art.semanticturkey.project.ProjectConsumer;
+import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
+import it.uniroma2.art.semanticturkey.extension.NoSuchSettingsManager;
+import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy.StatusFilter;
+import it.uniroma2.art.semanticturkey.project.Project;
 import it.uniroma2.art.semanticturkey.project.ProjectManager;
+import it.uniroma2.art.semanticturkey.properties.Pair;
+import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
+import it.uniroma2.art.semanticturkey.properties.STPropertyUpdateException;
+import it.uniroma2.art.semanticturkey.properties.TripleForSearch;
+import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
+import it.uniroma2.art.semanticturkey.resources.Reference;
+import it.uniroma2.art.semanticturkey.resources.Scope;
+import it.uniroma2.art.semanticturkey.search.SearchMode;
+import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
+import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
+import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
+import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
+import it.uniroma2.art.semanticturkey.services.annotations.Optional;
+import it.uniroma2.art.semanticturkey.services.annotations.Read;
+import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
+import it.uniroma2.art.semanticturkey.services.annotations.STService;
+import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
+import it.uniroma2.art.semanticturkey.services.annotations.Write;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
+import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
+import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
+import it.uniroma2.art.semanticturkey.settings.search.CustomSearchStore;
+import it.uniroma2.art.semanticturkey.user.ProjectUserBindingsManager;
+import it.uniroma2.art.semanticturkey.user.STUser;
+import it.uniroma2.art.semanticturkey.user.UsersGroup;
+import it.uniroma2.art.semanticturkey.user.UsersManager;
+import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Namespace;
@@ -43,42 +70,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import com.google.common.collect.Sets;
-
-import it.uniroma2.art.semanticturkey.config.ConfigurationNotFoundException;
-import it.uniroma2.art.semanticturkey.config.sparql.SPARQLParameterizationStore;
-import it.uniroma2.art.semanticturkey.config.sparql.SPARQLStore;
-import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLOperation;
-import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization;
-import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization.ConstraintVariableBinding;
-import it.uniroma2.art.semanticturkey.config.sparql.StoredSPARQLParameterization.VariableBinding;
-import it.uniroma2.art.semanticturkey.constraints.LocallyDefinedResources;
-import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
-import it.uniroma2.art.semanticturkey.extension.NoSuchConfigurationManager;
-import it.uniroma2.art.semanticturkey.extension.extpts.search.SearchStrategy.StatusFilter;
-import it.uniroma2.art.semanticturkey.project.Project;
-import it.uniroma2.art.semanticturkey.properties.Pair;
-import it.uniroma2.art.semanticturkey.properties.STPropertyAccessException;
-import it.uniroma2.art.semanticturkey.properties.TripleForSearch;
-import it.uniroma2.art.semanticturkey.properties.WrongPropertiesException;
-import it.uniroma2.art.semanticturkey.resources.Reference;
-import it.uniroma2.art.semanticturkey.search.SearchMode;
-import it.uniroma2.art.semanticturkey.search.ServiceForSearches;
-import it.uniroma2.art.semanticturkey.services.AnnotatedValue;
-import it.uniroma2.art.semanticturkey.services.STServiceAdapter;
-import it.uniroma2.art.semanticturkey.services.annotations.JsonSerialized;
-import it.uniroma2.art.semanticturkey.services.annotations.Optional;
-import it.uniroma2.art.semanticturkey.services.annotations.Read;
-import it.uniroma2.art.semanticturkey.services.annotations.RequestMethod;
-import it.uniroma2.art.semanticturkey.services.annotations.STService;
-import it.uniroma2.art.semanticturkey.services.annotations.STServiceOperation;
-import it.uniroma2.art.semanticturkey.services.annotations.Write;
-import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.FormRenderer;
-import it.uniroma2.art.semanticturkey.services.core.ontolexlemon.LexicalEntryRenderer;
-import it.uniroma2.art.semanticturkey.services.support.QueryBuilder;
-import it.uniroma2.art.semanticturkey.validation.ValidationUtilities;
-
 import javax.validation.constraints.Min;
+import java.io.IOException;
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
 
 @STService
 public class Search extends STServiceAdapter {
@@ -191,7 +196,7 @@ public class Search extends STServiceAdapter {
 		// add prefixes required by the nature computation pattern
 		for (Namespace ns : Arrays.asList(SKOS.NS, org.eclipse.rdf4j.model.vocabulary.SKOSXL.NS, RDF.NS,
 				RDFS.NS, OWL.NS)) {
-			if (queryProlog.indexOf(ns.getPrefix() + ":") == -1) {
+			if (!queryProlog.contains(ns.getPrefix() + ":")) {
 				newQueryPrologBuilder.append("prefix ").append(ns.getPrefix()).append(":");
 				RenderUtils.toSPARQL(SimpleValueFactory.getInstance().createIRI(ns.getName()),
 						newQueryPrologBuilder);
@@ -214,7 +219,7 @@ public class Search extends STServiceAdapter {
 
 		String resourceVariableName = returnedBindingNames.iterator().next();
 
-		QueryBuilder qb = createQueryBuilder(newQueryPrologBuilder.toString() + "\nSELECT DISTINCT ?"
+		QueryBuilder qb = createQueryBuilder(newQueryPrologBuilder + "\nSELECT DISTINCT ?"
 				+ resourceVariableName + " " + generateNatureSPARQLSelectPart() + " WHERE {{"
 				+ groundQueryStringWithoutProlog + "}\n" + generateNatureSPARQLWherePart(resourceVariableName)
 				+ "} GROUP BY ?" + resourceVariableName + " ");
@@ -441,7 +446,7 @@ public class Search extends STServiceAdapter {
 					for(IRI iri : reducedIriList){
 						sb.append(" ").append(NTriplesUtil.toNTriplesString(iri)).append(" ");
 					}
-					query = queryBefore+sb.toString()+queryAfter;
+					query = queryBefore+ sb +queryAfter;
 					executeQueryOneVar(query, "otherRes", conn, objResInDatasetSet);
 					//clear reducedIriList
 					reducedIriList.clear();
@@ -451,7 +456,7 @@ public class Search extends STServiceAdapter {
 			for(IRI iri : reducedIriList){
 				sb.append(" ").append(NTriplesUtil.toNTriplesString(iri)).append(" ");
 			}
-			query = queryBefore+sb.toString()+queryAfter;
+			query = queryBefore+ sb +queryAfter;
 			executeQueryOneVar(query, "otherRes", conn, objResInDatasetSet);
 		}
 
@@ -1078,7 +1083,7 @@ public class Search extends STServiceAdapter {
 		// execute the query
 		TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
 		// the map containing the resource with all the added values taken from the response of the query
-		Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap = new HashMap<String, ResourceForHierarchy>();
+		Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap = new HashMap<>();
 		boolean isTopResource = false;
 		while (tupleQueryResult.hasNext()) {
 			BindingSet bindingSet = tupleQueryResult.next();
@@ -1147,7 +1152,7 @@ public class Search extends STServiceAdapter {
 		// iterate over the resourceToResourceForHierarchyMap and look for the topConcept
 		// and construct a list of list containing all the possible paths
 		// exclude all the path having at least one element which is not a URI (so a BNode or a Literal)
-		List<List<String>> pathList = new ArrayList<List<String>>();
+		List<List<String>> pathList = new ArrayList<>();
 		for (ResourceForHierarchy resourceForHierarchy : resourceToResourceForHierarchyMap.values()) {
 			if (!resourceForHierarchy.hasNoSuperResource) {
 				// since it has at least one superElement (superClass, broader concept or superProperty)
@@ -1161,7 +1166,7 @@ public class Search extends STServiceAdapter {
 					continue;
 				}
 			}
-			List<String> currentList = new ArrayList<String>();
+			List<String> currentList = new ArrayList<>();
 			// currentList.add(resourceForHierarchy.getValue().stringValue());
 			addSubResourcesListUsingResourceFroHierarchy(resourceURI.stringValue(), resourceForHierarchy,
 					currentList, pathList, resourceToResourceForHierarchyMap);
@@ -1196,7 +1201,7 @@ public class Search extends STServiceAdapter {
 		}
 
 		boolean pathFound = false;
-		Collection<AnnotatedValue<Resource>> results = new ArrayList<AnnotatedValue<Resource>>();
+		Collection<AnnotatedValue<Resource>> results = new ArrayList<>();
 
 		// if it is explicitly a topResource or if no path is returned while there was at least one
 		// result from the SPARQL query (this mean that all the paths contained at least one non-URI resource)
@@ -1255,14 +1260,14 @@ public class Search extends STServiceAdapter {
 						}
 
 						if (addRdfsResource) {
-							AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(
+							AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<>(
 									RDFS.RESOURCE);
 							annotatedValue.setAttribute("explicit", true);
 							annotatedValue.setAttribute("show", RDFS.RESOURCE.getLocalName());
 							results.add(annotatedValue);
 						}
 						if (addOwlThing) {
-							AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(OWL.THING);
+							AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<>(OWL.THING);
 							annotatedValue.setAttribute("explicit", true);
 							annotatedValue.setAttribute("show", OWL.THING.getLocalName());
 							results.add(annotatedValue);
@@ -1273,7 +1278,7 @@ public class Search extends STServiceAdapter {
 					if (resourceURI.stringValue().equals(resourceInPath)) {
 						targetResNotPresent = false;
 					}
-					AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>(
+					AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<>(
 							(Resource) resourceToResourceForHierarchyMap.get(resourceInPath).getValue());
 					annotatedValue.setAttribute("explicit", true);
 					annotatedValue.setAttribute("show",
@@ -1282,7 +1287,7 @@ public class Search extends STServiceAdapter {
 				}
 				// add, if necessary, at the end, the input concept
 				if (results.size() != 0 && targetResNotPresent) {
-					AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<Resource>((IRI) resourceURI);
+					AnnotatedValue<Resource> annotatedValue = new AnnotatedValue<>(resourceURI);
 					annotatedValue.setAttribute("explicit", true);
 					annotatedValue.setAttribute("show", resourceURI.getLocalName());
 					results.add(annotatedValue);
@@ -1391,6 +1396,27 @@ public class Search extends STServiceAdapter {
 		return prefixList;
 	}
 
+	@STServiceOperation
+	public it.uniroma2.art.semanticturkey.extension.settings.Settings getCustomSearchSettings(Scope scope)
+			throws NoSuchSettingsManager, STPropertyAccessException {
+		Project project = (scope == Scope.SYSTEM) ? null : getProject();
+		STUser user = UsersManager.getLoggedUser();
+		UsersGroup group = (scope == Scope.PROJECT_GROUP) ? ProjectUserBindingsManager.getUserGroup(user, project) : null;
+		String componentID = CustomSearchStore.class.getName();
+		return exptManager.getSettings(project, user, group, componentID, scope);
+	}
+
+	@STServiceOperation(method = RequestMethod.POST)
+	public void storeCustomSearchSettings(Scope scope, ObjectNode settings)
+			throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,
+			STPropertyUpdateException, WrongPropertiesException {
+		Project project = (scope == Scope.SYSTEM) ? null : getProject();
+		STUser user = UsersManager.getLoggedUser();
+		UsersGroup group = (scope == Scope.PROJECT_GROUP) ? ProjectUserBindingsManager.getUserGroup(user, project) : null;
+		String componentID = CustomSearchStore.class.getName();
+		exptManager.storeSettings(componentID, project, user, group, scope, settings);
+	}
+
 	private void addSubResourcesListUsingResourceFroHierarchy(String targetRes, ResourceForHierarchy resource,
 			List<String> currentPathList, List<List<String>> pathList,
 			Map<String, ResourceForHierarchy> resourceToResourceForHierarchyMap) {
@@ -1420,7 +1446,7 @@ public class Search extends STServiceAdapter {
 		// iterate over subResources of the current resource
 		for (String subResource : resource.getSubResourcesList()) {
 			// create a copy of the currentList
-			List<String> updatedPath = new ArrayList<String>(currentPathList);
+			List<String> updatedPath = new ArrayList<>(currentPathList);
 			// call getSubResourcesListUsingResourceFroHierarchy on subResource
 			addSubResourcesListUsingResourceFroHierarchy(targetRes,
 					resourceToResourceForHierarchyMap.get(subResource), updatedPath, pathList,
@@ -1428,7 +1454,7 @@ public class Search extends STServiceAdapter {
 		}
 	}
 
-	private class ResourceForHierarchy {
+	private static class ResourceForHierarchy {
 		private boolean isTopConcept; // used only for concept
 		private boolean hasNoSuperResource;
 		private List<String> subResourcesList;
@@ -1444,7 +1470,7 @@ public class Search extends STServiceAdapter {
 			this.isNotURI = isNotURI;
 			isTopConcept = true;
 			hasNoSuperResource = true;
-			subResourcesList = new ArrayList<String>();
+			subResourcesList = new ArrayList<>();
 		}
 
 		public boolean isNotURI() {
