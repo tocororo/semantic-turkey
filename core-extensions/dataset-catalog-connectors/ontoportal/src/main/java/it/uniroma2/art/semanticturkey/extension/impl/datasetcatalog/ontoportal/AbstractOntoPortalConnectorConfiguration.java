@@ -1,13 +1,7 @@
 package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal;
 
 import it.uniroma2.art.semanticturkey.config.Configuration;
-import it.uniroma2.art.semanticturkey.constraints.RegExp;
-import it.uniroma2.art.semanticturkey.properties.Enumeration;
-import it.uniroma2.art.semanticturkey.properties.Required;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
-
-import javax.validation.constraints.Pattern;
-import java.util.List;
 
 /**
  * Abstract base class of configuration classes for the {@link OntoPortalConnectorFactory}. The parameter
@@ -21,7 +15,6 @@ public abstract class AbstractOntoPortalConnectorConfiguration implements Config
 	public static class MessageKeys {
 		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.AbstractOntoPortalConnectorConfiguration";
 
-		public static final String shortName = keyBase + ".shortName";
 		public static final String htmlWarning = keyBase + ".htmlWarning";
 		public static final String frontendBaseURL$description = keyBase + ".frontendBaseURL.description";
 		public static final String frontendBaseURL$displayName = keyBase + ".frontendBaseURL.displayName";
@@ -29,9 +22,9 @@ public abstract class AbstractOntoPortalConnectorConfiguration implements Config
 		public static final String apiBaseURL$displayName = keyBase + ".apiBaseURL.displayName";
 		public static final String apiKey$description = keyBase + ".apiKey.description";
 		public static final String apiKey$displayName = keyBase + ".apiKey.displayName";
+		public static final String retrieveSubmissions$description = keyBase + ".retrieveSubmissions.description";
+		public static final String retrieveSubmissions$displayName = keyBase + ".retrieveSubmissions.displayName";
 	}
-
-	public static final String CONTACT_PATTERN = "^\\s*(?<name>.+)\\s*\\((?<email>.+)\\s*\\)$";
 
 	@Override
 	public String getHTMLWarning() {
@@ -47,4 +40,6 @@ public abstract class AbstractOntoPortalConnectorConfiguration implements Config
 	@STProperty(description = "{" + MessageKeys.apiKey$description+ "}", displayName = "{" + MessageKeys.apiKey$displayName + "}")
 	public String apiKey;
 
+	@STProperty(description = "{" + MessageKeys.retrieveSubmissions$description + "}", displayName = "{" + MessageKeys.retrieveSubmissions$displayName + "}")
+	public Boolean retrieveSubmissions;
 }

@@ -2,6 +2,7 @@ package it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.Values;
 
@@ -33,9 +34,19 @@ public class Submission {
     }
 
     private long submissionId = Long.MIN_VALUE;
+    private String id;
     private String description;
     private OntologyLanguage hasOntologyLanguage;
     private ZonedDateTime creationDate;
+
+    @JsonProperty("@id")
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public long getSubmissionId() {
         return submissionId;

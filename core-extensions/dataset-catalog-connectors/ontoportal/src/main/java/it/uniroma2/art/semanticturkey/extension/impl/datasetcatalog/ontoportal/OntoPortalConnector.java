@@ -19,6 +19,7 @@ import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.m
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.model.Ontology;
 import it.uniroma2.art.semanticturkey.extension.impl.datasetcatalog.ontoportal.strategy.ServerCommunicationStrategy;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -27,7 +28,6 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.NetUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.util.Values;
@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -70,6 +71,7 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
     private static final String GROUPS_COLLECTION_ENDPOINT = "groups";
 
     private static final String ONTOLOGY_COLLECTION_ENDPOINT = "ontologies";
+    private static final String LATEST_SUBMISSIONS_ENDPOINT = "submissions";
     private static final String ONTOLOGY_ENDPOINT = "ontologies/{acronym}";
     private static final String DOWNLOAD_ENDPOINT = ONTOLOGY_ENDPOINT + "/download";
     private static final String LATEST_SUBMISSION_ENDPOINT = "ontologies/{acronym}/latest_submission";
@@ -79,6 +81,10 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
 
     public OntoPortalConnector(AbstractOntoPortalConnectorConfiguration conf) {
         this.conf = conf;
+    }
+
+    protected static UriComponentsBuilder getUriComponentsBuilder(ServerCommunicationStrategy strategy) {
+        return UriComponentsBuilder.fromHttpUrl(strategy.getAPIBaseURL());
     }
 
     protected ServerCommunicationStrategy getServerCommunicationStrategy(CloseableHttpClient httpClient) throws IOException {
@@ -92,10 +98,12 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
     @SearchFacet(name = "type", description = "filter by entry type", allowsMultipleValues = false, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
     @SearchFacet(name = "category", description = "filter by category", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
     @SearchFacet(name = "group", description = "filter by group", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
+    @SearchFacet(name = "format", description = "filter by format", allowsMultipleValues = true, processedUsing = @SearchFacetProcessor(joinUsingDelimiter = ","))
     public SearchResultsPage<DatasetSearchResult> searchDataset(String query,
                                                                 Map<String, List<String>> facets, int page) throws IOException {
 
-        /* List<Pair<String, String>> facetsQueryParams = */ DatasetCatalogConnector.processFacets(this, facets);
+        /* List<Pair<String, String>> facetsQueryParams = */
+        DatasetCatalogConnector.processFacets(this, facets);
 
 
         List<String> queryTokens = Arrays.stream(query.split("\\s+")).filter(StringUtils::isNoneEmpty).collect(Collectors.toList());
@@ -115,6 +123,14 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
             Map<String, Group> id2Group = new HashMap<>();
             gatherGroupsAndCategories(httpClient, id2Category, id2Group);
 
+            Optional<Map<String, Submission>> latestSubmissionsForOntologies;
+
+            if (BooleanUtils.isTrue(conf.retrieveSubmissions)) {
+                latestSubmissionsForOntologies = Optional.of(gatherLatestSubmissions(httpClient));
+            } else {
+                latestSubmissionsForOntologies = Optional.empty();
+            }
+
             HttpGet httpRequest = new HttpGet(ontologiesURL);
             strategy.getHttpRequestHeaders().forEach(httpRequest::addHeader);
             try (CloseableHttpResponse response = httpClient.execute(httpRequest)) {
@@ -125,6 +141,8 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
                 }
 
                 ObjectMapper objectMapper = new ObjectMapper();
+                objectMapper.registerModule(new JavaTimeModule());
+
                 List<Ontology> searchResultPage = objectMapper
                         .readValue(response.getEntity().getContent(), new TypeReference<List<Ontology>>() {
                         });
@@ -132,12 +150,20 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
                 List<DatasetSearchResult> pageContent = searchResultPage.stream().map(ont -> {
                     Map<String, List<String>> resultFacets = new HashMap<>();
                     extractOntologyFacets(ont, resultFacets);
+                    Optional<Submission> latestSubmissionForOnt = latestSubmissionsForOntologies.flatMap(
+                            submissions -> Optional.ofNullable(submissions.get(ont.getAcronym()))
+                    );
+                    latestSubmissionForOnt.ifPresent(s -> extractSubmissionFacets(s, resultFacets));
+
+
                     return new DatasetSearchResult(ont.getAcronym(), null,
                             1.0, null, Collections.singletonList(Values.literal(ont.getName())),
-                            Collections.emptyList(), resultFacets);
+                            latestSubmissionForOnt.map(Submission::getDescription).map(d -> Collections.singletonList(Values.literal(d))).orElse(Collections.emptyList()), resultFacets);
                 }).filter(r -> {
                     if (queryTokens.stream().noneMatch(tk -> StringUtils.containsIgnoreCase(r.getId(), tk)
-                            || r.getTitles().stream().allMatch(l -> StringUtils.containsIgnoreCase(l.getLabel(), tk)))) return false;
+                            || r.getTitles().stream().anyMatch(l -> StringUtils.containsIgnoreCase(l.getLabel(), tk))
+                            || r.getDescriptions().stream().anyMatch(l -> StringUtils.containsIgnoreCase(l.getLabel(), tk))
+                    )) return false;
 
                     return matchesFacets(facets, r);
                 }).collect(Collectors.toList());
@@ -145,6 +171,7 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
                 Map<String, MutableInt> type2count = new HashMap<>();
                 Map<String, MutableInt> category2count = new HashMap<>();
                 Map<String, MutableInt> group2count = new HashMap<>();
+                Map<String, MutableInt> format2count = new HashMap<>();
 
                 for (DatasetSearchResult r : pageContent) {
                     r.getFacets().get(FACET_TYPE).forEach(count -> {
@@ -159,6 +186,12 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
                         group2count.putIfAbsent(group, new MutableInt(0));
                         group2count.get(group).increment();
                     });
+                    if (latestSubmissionsForOntologies.isPresent()) {
+                        r.getFacets().get(FACET_FORMAT).forEach(group -> {
+                            format2count.putIfAbsent(group, new MutableInt(0));
+                            format2count.get(group).increment();
+                        });
+                    }
                 }
                 FacetAggregation categoryFacetAggregation = new FacetAggregation(FACET_CATEGORY,
                         "category",
@@ -198,12 +231,56 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
                 facetAggregations.add(typeFacetAggregation);
                 facetAggregations.add(categoryFacetAggregation);
                 facetAggregations.add(groupFacetAggregation);
+                if (latestSubmissionsForOntologies.isPresent()) {
+                    FacetAggregation formatFacetAggregation = new FacetAggregation(FACET_FORMAT,
+                            "format",
+                            SelectionMode.multiple,
+                            format2count.entrySet().stream().map(
+                                    bucket ->
+                                            new FacetAggregation.Bucket(
+                                                    bucket.getKey(),
+                                                    bucket.getKey(),
+                                                    bucket.getValue().getValue())
+                            ).collect(Collectors.toList()), false);
+                    facetAggregations.add(formatFacetAggregation);
+                }
                 return new SearchResultsPage<>(pageContent.size(),
                         pageContent.size(), 1, pageContent,
                         facetAggregations);
             }
         }
 
+    }
+
+    protected Map<String, Submission> gatherLatestSubmissions(CloseableHttpClient httpClient) throws IOException {
+        ServerCommunicationStrategy strategy = getServerCommunicationStrategy(httpClient);
+
+        URI latestSubmissionsURL = getUriComponentsBuilder(strategy).path(LATEST_SUBMISSIONS_ENDPOINT)
+                .queryParam("include", "submissionId,hasOntologyLanguage,description,creationDate")
+                .queryParam("include_views", "true")
+                .queryParam("display_links", "false")
+                .queryParam("display_context", "false")
+                .build().toUri();
+
+        HttpGet httpRequest = new HttpGet(latestSubmissionsURL);
+        strategy.getHttpRequestHeaders().forEach(httpRequest::addHeader);
+        try (CloseableHttpResponse response = httpClient.execute(httpRequest)) {
+            StatusLine statusLine = response.getStatusLine();
+            if ((statusLine.getStatusCode() / 200) != 1) {
+                throw new IOException(
+                        "HTTP Error: " + statusLine.getStatusCode() + ":" + statusLine.getReasonPhrase());
+            }
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerModule(new JavaTimeModule());
+            List<Submission> latestSubmissions = objectMapper
+                    .readValue(response.getEntity().getContent(), new TypeReference<List<Submission>>() {
+                    });
+            return latestSubmissions.stream().collect(Collectors.toMap(s -> {
+                String[] idComponents = s.getId().split("/"); // e.g., https://data.bioontology.org/ontologies/OGG/submissions/3
+                return idComponents[idComponents.length - 3]; // ontology acronym
+            }, Function.identity()));
+        }
     }
 
     protected void gatherGroupsAndCategories(CloseableHttpClient httpClient, Map<String, Category> id2Category, Map<String, Group> is2Group) throws IOException {
@@ -253,7 +330,6 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
             groups.forEach(g -> is2Group.put(g.getId(), g));
         }
     }
-
 
     @Override
     public DatasetDescription describeDataset(String id) throws IOException {
@@ -308,7 +384,8 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
 
                 ObjectMapper objectMapper = new ObjectMapper();
                 Ontology ontologyObject = objectMapper.readValue(response.getEntity().getContent(),
-                        new TypeReference<Ontology>() {});
+                        new TypeReference<Ontology>() {
+                        });
 
                 titles.add(Values.literal(ontologyObject.getName()));
                 dataDumps.add(new DownloadDescription(downloadURL,
@@ -331,7 +408,8 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
                 ObjectMapper objectMapper = new ObjectMapper();
                 objectMapper.registerModule(new JavaTimeModule());
                 Submission submissionObject = objectMapper.readValue(response.getEntity().getContent(),
-                        new TypeReference<Submission>() {});
+                        new TypeReference<Submission>() {
+                        });
 
                 if (submissionObject.getSubmissionId() != Long.MIN_VALUE) {
 
@@ -350,10 +428,6 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
             return new DatasetDescription(id, ontologyIRI, datasetPage, titles, descriptions, facets, uriPrefix,
                     dataDumps, sparqlEndpoint, model, lexicalizationModel);
         }
-    }
-
-    protected static UriComponentsBuilder getUriComponentsBuilder(ServerCommunicationStrategy strategy) {
-        return UriComponentsBuilder.fromHttpUrl(strategy.getAPIBaseURL());
     }
 
     private void extractOntologyFacets(Ontology ont, Map<String, List<String>> facets) {
@@ -384,12 +458,13 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
         if (!matchesFacet(facets, dataset, FACET_TYPE)) return false;
         if (!matchesFacet(facets, dataset, FACET_CATEGORY)) return false;
         if (!matchesFacet(facets, dataset, FACET_GROUP)) return false;
+        if (!matchesFacet(facets, dataset, FACET_FORMAT)) return false;
 
         return true;
     }
 
     protected boolean matchesFacet(Map<String, List<String>> facets, DatasetSearchResult dataset, String facetType) {
-        return CollectionUtils.subtract(CollectionUtils.emptyIfNull(facets.get(facetType)), dataset.getFacets().get(facetType)).isEmpty();
+        return CollectionUtils.subtract(CollectionUtils.emptyIfNull(facets.get(facetType)), CollectionUtils.emptyIfNull(dataset.getFacets().get(facetType))).isEmpty();
     }
 
 }

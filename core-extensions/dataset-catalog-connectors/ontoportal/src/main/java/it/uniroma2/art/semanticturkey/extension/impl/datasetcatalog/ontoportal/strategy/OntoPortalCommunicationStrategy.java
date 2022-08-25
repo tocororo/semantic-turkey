@@ -17,9 +17,4 @@ class OntoPortalCommunicationStrategy
 		super(conf);
 	}
 
-	@Override
-	public String getAPIBaseURL() {
-		return StringUtils.appendIfMissing(conf.apiBaseURL.trim(), "/");
-	}
-
 }
