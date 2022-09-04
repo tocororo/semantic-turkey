@@ -190,6 +190,7 @@
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-update-property-value-rdf-tranformer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-xlabel-dereification-rdf-transformer/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-xnote-dereification-rdf-transformer/${project.version}</bundle>
+		<bundle>mvn:it.uniroma2.art.semanticturkey/st-scheme-exporter-transformer/${project.version}</bundle>
 		<!-- serializers-->
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-rdf-serializing-exporter/${project.version}</bundle>
 		<bundle>mvn:it.uniroma2.art.semanticturkey/st-spreadsheet-serializing-exporter/${project.version}</bundle>

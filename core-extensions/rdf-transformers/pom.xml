@@ -16,5 +16,6 @@
   	<module>update-property-value</module>
   	<module>xlabel-dereification</module>
   	<module>xnote-dereification</module>
+  	<module>scheme-exporter</module>
   </modules>
 </project>
