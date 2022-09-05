@@ -1406,6 +1406,7 @@ public class Search extends STServiceAdapter {
 		return exptManager.getSettings(project, user, group, componentID, scope);
 	}
 
+	@PreAuthorize("@auth.isSettingsActionAuthorized(#scope, 'U')")
 	@STServiceOperation(method = RequestMethod.POST)
 	public void storeCustomSearchSettings(Scope scope, ObjectNode settings)
 			throws NoSuchSettingsManager, STPropertyAccessException, IllegalStateException,

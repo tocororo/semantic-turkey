@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.settings.core;
 
+import it.uniroma2.art.semanticturkey.data.role.RDFResourceRole;
 import it.uniroma2.art.semanticturkey.extension.settings.Settings;
 import it.uniroma2.art.semanticturkey.properties.Enumeration;
 import it.uniroma2.art.semanticturkey.properties.STProperty;
@@ -28,6 +29,8 @@ public class CorePUSettings implements Settings {
 		public static final String projectTheme$displayName = keyBase + ".projectTheme.displayName";
 		public static final String classTree$description = keyBase + ".classTree.description";
 		public static final String classTree$displayName = keyBase + ".classTree.displayName";
+		public static final String structurePanelFilter$description = keyBase + ".structurePanelFilter.description";
+		public static final String structurePanelFilter$displayName = keyBase + ".structurePanelFilter.displayName";
 		public static final String instanceList$description = keyBase + ".instanceList.description";
 		public static final String instanceList$displayName = keyBase + ".instanceList.displayName";
 		public static final String conceptTree$description = keyBase + ".conceptTree.description";
@@ -76,6 +79,10 @@ public class CorePUSettings implements Settings {
 	@STProperty(description = "{" + MessageKeys.projectTheme$description
 			+ "}", displayName = "{" + MessageKeys.projectTheme$displayName + "}")
 	public String projectTheme; // TODO: is this right?
+
+	@STProperty(description = "{" + MessageKeys.structurePanelFilter$description
+			+ "}", displayName = "{" + MessageKeys.structurePanelFilter$displayName + "}")
+	public List<RDFResourceRole> structurePanelFilter;
 
 	@STProperty(description = "{" + MessageKeys.classTree$description
 			+ "}", displayName = "{" + MessageKeys.classTree$displayName + "}")

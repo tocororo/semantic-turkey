@@ -166,7 +166,7 @@ public class STAuthorizationEvaluator {
 			if (crud.equals("R")) { //only read
 				return true; //PROJECT settings can be read by any user (e.g. project languages)
 			} else {
-				return isAuthorized("pm(project)", crud);
+				return isAuthorized("pm(project, _)", crud);
 			}
 		} else if (scope.equals(Scope.PROJECT_GROUP)) {
 			if (crud.equals("R")) { //only read
