@@ -357,7 +357,7 @@ public class Settings extends STServiceAdapter {
      * @throws ProjectInexistentException
      * @throws InvalidProjectNameException
      */
-    @PreAuthorize("@auth.isAdmin()") //only admin can manage all projects (even closed one)
+    @PreAuthorize("@auth.isAuthorizedInProject('pm(project)', 'R', #projectName)")
     @STServiceOperation
     public it.uniroma2.art.semanticturkey.extension.settings.Settings getPUSettingsProjectDefault(String componentID,
             String projectName) throws NoSuchSettingsManager, STPropertyAccessException,  ProjectAccessException, ProjectInexistentException, InvalidProjectNameException {
