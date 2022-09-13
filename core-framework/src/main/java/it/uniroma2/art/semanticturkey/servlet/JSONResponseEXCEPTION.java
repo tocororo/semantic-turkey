@@ -47,6 +47,7 @@ public class JSONResponseEXCEPTION extends JSONResponseProblem implements Respon
 		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.responseType, ServiceVocabulary.type_exception);
 		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.exceptionName, e.getClass().getCanonicalName());
 		setMessage(msg);
+		setExceptionFacets(e);
 		if (reportStackTrace) {
 			setStackTrace(e);
 		}

@@ -26,10 +26,20 @@
   */
 package it.uniroma2.art.semanticturkey.servlet;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import it.uniroma2.art.semanticturkey.mvc.RequestMappingHandlerAdapterPostProcessor;
+import it.uniroma2.art.semanticturkey.services.ExceptionFacet;
+import org.apache.commons.lang3.reflect.MethodUtils;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-/**
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+ /**
  * Defines a JSON realization of ResponseProblem interface  
  * 
  * @autor Ramon Orrù
@@ -58,5 +68,48 @@ public abstract class JSONResponseProblem extends JSONResponse implements Respon
 		}
 		return "";
     }
-    
-}
+
+    protected void setExceptionFacets(Exception e) {
+		ObjectMapper om = RequestMappingHandlerAdapterPostProcessor.createObjectMapper();
+
+		addExceptionFacets(e, om);
+		addExceptionFacets(e.getCause(), om);
+	}
+
+	 private void addExceptionFacets(Throwable ex, ObjectMapper om) {
+		 if (ex == null) return;
+
+		 try {
+			 JSONObject responseContent = (JSONObject) this.getResponseObject().get(ServiceVocabulary.responseRoot);
+			 for (Method m : MethodUtils.getMethodsListWithAnnotation(ex.getClass(), ExceptionFacet.class, true, false)) {
+				 Object value = m.invoke(ex);
+				 responseContent.
+				 	put(m.getAnnotation(ExceptionFacet.class).value(),
+							toJSONValue(om, value));
+			 }
+		 } catch (IllegalAccessException | InvocationTargetException | JSONException | JsonProcessingException e) {
+			 e.printStackTrace();
+		 }
+	 }
+
+	 private Object toJSONValue(ObjectMapper om, Object value) throws JSONException, JsonProcessingException {
+    	if (value == null) return null;
+
+		 JsonNode jsonNode = om.valueToTree(value);
+		 if (jsonNode.isObject()) {
+		 	return new JSONObject(om.writeValueAsString(jsonNode));
+		 } else if (jsonNode.isArray()) {
+		 	return new JSONArray(om.writeValueAsString(jsonNode));
+		 } else if (jsonNode.isTextual()) {
+		 	return jsonNode.textValue();
+		 } else if (jsonNode.isBoolean()) {
+		 	return jsonNode.asBoolean();
+		 } else if (jsonNode.isFloatingPointNumber()) {
+		 	return jsonNode.asDouble();
+		 } else if (jsonNode.isIntegralNumber()) {
+		 	return jsonNode.asLong();
+		 } else {
+		 	throw new IllegalArgumentException("Cannot convert jackson node " + jsonNode.toString());
+		 }
+	 }
+ }

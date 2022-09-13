@@ -42,6 +42,7 @@ public class JSONResponseERROR extends JSONResponseProblem {
 		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.responseType, ServiceVocabulary.type_error);
 		content.getJSONObject(ServiceVocabulary.responseRoot).put(ServiceVocabulary.exceptionName, e.getClass().getCanonicalName());
 		setMessage(msg);
+		setExceptionFacets(e);
 		setStackTrace(e);
 	}
 

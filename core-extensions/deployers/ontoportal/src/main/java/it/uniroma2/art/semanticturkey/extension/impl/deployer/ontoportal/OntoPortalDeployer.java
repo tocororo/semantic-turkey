@@ -7,13 +7,21 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.eclipse.rdf4j.query.BooleanQuery;
+import org.eclipse.rdf4j.query.impl.SimpleDataset;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -56,9 +64,69 @@ public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 	@Override
 	public void deploy(RepositorySource source) throws IOException {
 		try {
+			checkConstraints(source);
 			deployInternal(source);
 		} finally {
 			this.requestScopedResourcesToRelease.get().close();
+		}
+	}
+
+	protected void checkConstraints(RepositorySource source) throws IOException {
+
+		SimpleDataset dataset = new SimpleDataset();
+		Arrays.stream(source.getGraphs()).forEach(dataset::addDefaultGraph);
+
+		RepositoryConnection con = source.getSourceRepositoryConnection();
+		// checks whether there are reified labels for which there is not the corresponding plain version
+		BooleanQuery checkReifiedLabels = con.prepareBooleanQuery(
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
+						"PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>\n" +
+						"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n" +
+						"\n" +
+						"ASK {\n" +
+						"    VALUES (?reifiedProp ?plainProp) {\n" +
+						"        (skosxl:prefLabel skos:prefLabel)\n" +
+						"        (skosxl:altbel skos:altLabel)\n" +
+						"        (skosxl:hidddenLabel skos:hiddenLabel)\n" +
+						"    }\n" +
+						"    ?s ?reifiedProp [\n" +
+						"    \tskosxl:literalForm ?lit\n" +
+						"    ]\n" +
+						"    FILTER NOT EXISTS {\n" +
+						"        ?s ?plainProp ?lit\n" +
+						"    }\n" +
+						"} ");
+		checkReifiedLabels.setDataset(dataset);
+		checkReifiedLabels.setIncludeInferred(false);
+		boolean nonPlainLabels = checkReifiedLabels.evaluate();
+
+		List<OntoPortalConstraintsViolationException.Violation> violations = new ArrayList<>();
+
+		if (nonPlainLabels) {
+			OntoPortalConstraintsViolationException.Violation violation = new OntoPortalConstraintsViolationException.Violation();
+			violation.message = "Some entities have labels expressed in SKOS-XL without a corresponding plain label";
+			violation.fixes = new ArrayList<>();
+			OntoPortalConstraintsViolationException.Repair nonPlainLabelsRepair = new OntoPortalConstraintsViolationException.Repair();
+			nonPlainLabelsRepair.message = "Generate plain labels from reified ones";
+			nonPlainLabelsRepair.transformerSpecification = new PluginSpecification(
+					"it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xlabeldereification.XLabelDereificationRDFTransformer",
+					null,
+					null,
+					JsonNodeFactory.instance.objectNode()
+							.set("@type",
+									JsonNodeFactory.instance.textNode("it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xlabeldereification.XLabelDereificationRDFTransformerConfiguration")
+
+							)
+			);
+			violation.fixes.add(nonPlainLabelsRepair);
+
+			violations.add(violation);
+		}
+
+		if (!violations.isEmpty()) {
+			OntoPortalConstraintsViolationException e = new OntoPortalConstraintsViolationException();
+			violations.forEach(e::addViolation);
+			throw e;
 		}
 	}
 
