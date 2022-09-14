@@ -1,15 +1,18 @@
-package it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal;
+package it.uniroma2.art.semanticturkey.extension.extpts.deployer;
 
-import com.fasterxml.jackson.annotation.JsonIncludeProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import it.uniroma2.art.semanticturkey.i18n.InternationalizedRuntimeException;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import it.uniroma2.art.semanticturkey.services.ExceptionFacet;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
-public class OntoPortalConstraintsViolationException extends InternationalizedRuntimeException {
+public class DeploymentConstraintsViolationException extends IOException {
+
+    public static final String MESSAGE_KEY = DeploymentConstraintsViolationException.class.getName() + ".message";
+
     public static class Repair {
         public String message;
         public PluginSpecification transformerSpecification;
@@ -20,8 +23,8 @@ public class OntoPortalConstraintsViolationException extends InternationalizedRu
     }
     private List<Violation> violations;
 
-    public OntoPortalConstraintsViolationException() {
-        super(OntoPortalConstraintsViolationException.class.getName() + ".message", null);
+    public DeploymentConstraintsViolationException() {
+        super(STMessageSource.getMessage(MESSAGE_KEY, Locale.ROOT), null);
         this.violations = new ArrayList<>();
     }
 
@@ -33,4 +36,10 @@ public class OntoPortalConstraintsViolationException extends InternationalizedRu
     public List<Violation> getViolations() {
         return violations;
     }
+
+    @Override
+    public String getLocalizedMessage() {
+        return STMessageSource.getMessage(MESSAGE_KEY);
+    }
+
 }

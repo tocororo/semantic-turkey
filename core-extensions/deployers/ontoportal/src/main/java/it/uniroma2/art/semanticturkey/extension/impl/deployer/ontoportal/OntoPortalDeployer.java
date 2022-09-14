@@ -14,6 +14,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.semanticturkey.extension.extpts.deployer.DeploymentConstraintsViolationException;
 import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import org.apache.commons.io.IOUtils;
@@ -90,7 +91,7 @@ public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		SimpleDataset dataset = new SimpleDataset();
 		Arrays.stream(source.getGraphs()).forEach(dataset::addDefaultGraph);
 
-		List<OntoPortalConstraintsViolationException.Violation> violations = new ArrayList<>();
+		List<DeploymentConstraintsViolationException.Violation> violations = new ArrayList<>();
 
 		RepositoryConnection con = source.getSourceRepositoryConnection();
 
@@ -99,13 +100,13 @@ public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		checkDanglingConcepts(dataset, violations, con);
 
 		if (!violations.isEmpty()) {
-			OntoPortalConstraintsViolationException e = new OntoPortalConstraintsViolationException();
+			DeploymentConstraintsViolationException e = new DeploymentConstraintsViolationException();
 			violations.forEach(e::addViolation);
 			throw e;
 		}
 	}
 
-	private void checkNonPlainLabels(SimpleDataset dataset, List<OntoPortalConstraintsViolationException.Violation> violations, RepositoryConnection con) {
+	private void checkNonPlainLabels(SimpleDataset dataset, List<DeploymentConstraintsViolationException.Violation> violations, RepositoryConnection con) {
 		// checks whether there are reified labels for which there is not the corresponding plain version
 		BooleanQuery checkReifiedLabels = con.prepareBooleanQuery(
 				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
@@ -130,10 +131,10 @@ public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		boolean nonPlainLabels = checkReifiedLabels.evaluate();
 
 		if (nonPlainLabels) {
-			OntoPortalConstraintsViolationException.Violation violation = new OntoPortalConstraintsViolationException.Violation();
+			DeploymentConstraintsViolationException.Violation violation = new DeploymentConstraintsViolationException.Violation();
 			violation.message = STMessageSource.getMessage(MessageKeys.violations_nonPlainLabel);
 			violation.fixes = new ArrayList<>();
-			OntoPortalConstraintsViolationException.Repair nonPlainLabelsRepair = new OntoPortalConstraintsViolationException.Repair();
+			DeploymentConstraintsViolationException.Repair nonPlainLabelsRepair = new DeploymentConstraintsViolationException.Repair();
 			nonPlainLabelsRepair.message = STMessageSource.getMessage(MessageKeys.fixes_generatePlainLabels);
 			nonPlainLabelsRepair.transformerSpecification = new PluginSpecification(
 					"it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xlabeldereification.XLabelDereificationRDFTransformer",
@@ -151,7 +152,7 @@ public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		}
 	}
 
-	private void checkTopConceptOf(SimpleDataset dataset, List<OntoPortalConstraintsViolationException.Violation> violations, RepositoryConnection con) {
+	private void checkTopConceptOf(SimpleDataset dataset, List<DeploymentConstraintsViolationException.Violation> violations, RepositoryConnection con) {
 		if (ObjectUtils.notEqual(conf.hasOntologyLanguage, "SKOS")) return; // skis for non-SKOS assets
 
 		// checks whether there are concepts related to their scheme through skos:isTopConceptOf but not in the opposite
@@ -170,10 +171,10 @@ public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		boolean topConceptOf = checkTopConceptOf.evaluate();
 
 		if (topConceptOf) {
-			OntoPortalConstraintsViolationException.Violation violation = new OntoPortalConstraintsViolationException.Violation();
+			DeploymentConstraintsViolationException.Violation violation = new DeploymentConstraintsViolationException.Violation();
 			violation.message = STMessageSource.getMessage(MessageKeys.violations_topConceptOf);
 			violation.fixes = new ArrayList<>();
-			OntoPortalConstraintsViolationException.Repair topConceptOfRepair = new OntoPortalConstraintsViolationException.Repair();
+			DeploymentConstraintsViolationException.Repair topConceptOfRepair = new DeploymentConstraintsViolationException.Repair();
 			topConceptOfRepair.message = STMessageSource.getMessage(MessageKeys.fixes_generateHasTopConcept);
 			ObjectNode config = JsonNodeFactory.instance.objectNode();
 
@@ -201,7 +202,7 @@ public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		}
 	}
 
-	private void checkDanglingConcepts(SimpleDataset dataset, List<OntoPortalConstraintsViolationException.Violation> violations, RepositoryConnection con) {
+	private void checkDanglingConcepts(SimpleDataset dataset, List<DeploymentConstraintsViolationException.Violation> violations, RepositoryConnection con) {
 		if (ObjectUtils.notEqual(conf.hasOntologyLanguage, "SKOS")) return; // skis for non-SKOS assets
 
 		// checks whether there are concepts that can't be reached from a skos:ConceptScheme
@@ -220,7 +221,7 @@ public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		boolean danglingConcepts = checkDanglingConcepts.evaluate();
 
 		if (danglingConcepts) {
-			OntoPortalConstraintsViolationException.Violation violation = new OntoPortalConstraintsViolationException.Violation();
+			DeploymentConstraintsViolationException.Violation violation = new DeploymentConstraintsViolationException.Violation();
 			violation.message = STMessageSource.getMessage(MessageKeys.violations_danglingConcepts);
 			violation.fixes = new ArrayList<>();
 			violations.add(violation);
