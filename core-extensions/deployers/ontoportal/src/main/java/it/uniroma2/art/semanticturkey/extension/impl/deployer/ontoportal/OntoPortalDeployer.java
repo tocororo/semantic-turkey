@@ -13,8 +13,11 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import it.uniroma2.art.semanticturkey.i18n.STMessageSource;
 import it.uniroma2.art.semanticturkey.plugin.PluginSpecification;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.entity.ContentType;
@@ -46,6 +49,17 @@ import it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.strateg
 public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		implements RepositorySourcedDeployer {
 
+	public static class MessageKeys {
+		public static final String keyBase = "it.uniroma2.art.semanticturkey.extension.impl.deployer.ontoportal.OntoPortalDeployer";
+
+		public static final String violations_nonPlainLabel = keyBase + ".violations.nonPlainLabels";
+		public static final String violations_topConceptOf = keyBase + ".violations.topConceptOf";
+		public static final String violations_danglingConcepts = keyBase + ".violations.danglingConcepts";
+
+		public static final String fixes_generatePlainLabels = keyBase + ".fixes.generatePlainLabels";
+		public static final String fixes_generateHasTopConcept = keyBase + ".fixes.generateHasTopConcept";
+	}
+
 	public static String SUBMISSIONS_ENDPOINT = "ontologies/{acronym}/submissions";
 
 	private AbstractOntoPortalDeployerConfiguration conf;
@@ -76,7 +90,22 @@ public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		SimpleDataset dataset = new SimpleDataset();
 		Arrays.stream(source.getGraphs()).forEach(dataset::addDefaultGraph);
 
+		List<OntoPortalConstraintsViolationException.Violation> violations = new ArrayList<>();
+
 		RepositoryConnection con = source.getSourceRepositoryConnection();
+
+		checkNonPlainLabels(dataset, violations, con);
+		checkTopConceptOf(dataset, violations, con);
+		checkDanglingConcepts(dataset, violations, con);
+
+		if (!violations.isEmpty()) {
+			OntoPortalConstraintsViolationException e = new OntoPortalConstraintsViolationException();
+			violations.forEach(e::addViolation);
+			throw e;
+		}
+	}
+
+	private void checkNonPlainLabels(SimpleDataset dataset, List<OntoPortalConstraintsViolationException.Violation> violations, RepositoryConnection con) {
 		// checks whether there are reified labels for which there is not the corresponding plain version
 		BooleanQuery checkReifiedLabels = con.prepareBooleanQuery(
 				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
@@ -100,14 +129,12 @@ public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 		checkReifiedLabels.setIncludeInferred(false);
 		boolean nonPlainLabels = checkReifiedLabels.evaluate();
 
-		List<OntoPortalConstraintsViolationException.Violation> violations = new ArrayList<>();
-
 		if (nonPlainLabels) {
 			OntoPortalConstraintsViolationException.Violation violation = new OntoPortalConstraintsViolationException.Violation();
-			violation.message = "Some entities have labels expressed in SKOS-XL without a corresponding plain label";
+			violation.message = STMessageSource.getMessage(MessageKeys.violations_nonPlainLabel);
 			violation.fixes = new ArrayList<>();
 			OntoPortalConstraintsViolationException.Repair nonPlainLabelsRepair = new OntoPortalConstraintsViolationException.Repair();
-			nonPlainLabelsRepair.message = "Generate plain labels from reified ones";
+			nonPlainLabelsRepair.message = STMessageSource.getMessage(MessageKeys.fixes_generatePlainLabels);
 			nonPlainLabelsRepair.transformerSpecification = new PluginSpecification(
 					"it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.xlabeldereification.XLabelDereificationRDFTransformer",
 					null,
@@ -122,11 +149,81 @@ public class OntoPortalDeployer extends AbstractHTTPDeployer<RepositorySource>
 
 			violations.add(violation);
 		}
+	}
 
-		if (!violations.isEmpty()) {
-			OntoPortalConstraintsViolationException e = new OntoPortalConstraintsViolationException();
-			violations.forEach(e::addViolation);
-			throw e;
+	private void checkTopConceptOf(SimpleDataset dataset, List<OntoPortalConstraintsViolationException.Violation> violations, RepositoryConnection con) {
+		if (ObjectUtils.notEqual(conf.hasOntologyLanguage, "SKOS")) return; // skis for non-SKOS assets
+
+		// checks whether there are concepts related to their scheme through skos:isTopConceptOf but not in the opposite
+		// direction through skos:hasTopConcept
+		BooleanQuery checkTopConceptOf = con.prepareBooleanQuery(
+				"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n" +
+				"\n" +
+				"ASK {\n" +
+				"    ?c skos:topConceptOf ?s\n" +
+				"    FILTER NOT EXISTS {\n" +
+				"     ?s skos:hasTopConcept ?c   \n" +
+				"    }\n" +
+				"}");
+		checkTopConceptOf.setDataset(dataset);
+		checkTopConceptOf.setIncludeInferred(false);
+		boolean topConceptOf = checkTopConceptOf.evaluate();
+
+		if (topConceptOf) {
+			OntoPortalConstraintsViolationException.Violation violation = new OntoPortalConstraintsViolationException.Violation();
+			violation.message = STMessageSource.getMessage(MessageKeys.violations_topConceptOf);
+			violation.fixes = new ArrayList<>();
+			OntoPortalConstraintsViolationException.Repair topConceptOfRepair = new OntoPortalConstraintsViolationException.Repair();
+			topConceptOfRepair.message = STMessageSource.getMessage(MessageKeys.fixes_generateHasTopConcept);
+			ObjectNode config = JsonNodeFactory.instance.objectNode();
+
+			config.set("@type",
+						JsonNodeFactory.instance.textNode("it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformerConfiguration"));
+			config.set("filter",
+						JsonNodeFactory.instance.textNode(
+							"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n" +
+							"INSERT {\n" +
+							"?s skos:hasTopConcept ?c .\n" +
+							"}\n" +
+							"WHERE {\n" +
+							"?c skos:topConceptOf ?s .\n" +
+							"}\n"));
+			config.set("sliced",
+						JsonNodeFactory.instance.booleanNode(true));
+			topConceptOfRepair.transformerSpecification = new PluginSpecification(
+					"it.uniroma2.art.semanticturkey.extension.impl.rdftransformer.sparql.SPARQLRDFTransformer",
+					null,
+					null,
+					config);
+			violation.fixes.add(topConceptOfRepair);
+
+			violations.add(violation);
+		}
+	}
+
+	private void checkDanglingConcepts(SimpleDataset dataset, List<OntoPortalConstraintsViolationException.Violation> violations, RepositoryConnection con) {
+		if (ObjectUtils.notEqual(conf.hasOntologyLanguage, "SKOS")) return; // skis for non-SKOS assets
+
+		// checks whether there are concepts that can't be reached from a skos:ConceptScheme
+		BooleanQuery checkDanglingConcepts = con.prepareBooleanQuery(
+				"PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n" +
+				"\n" +
+				"ASK {\n" +
+				"    ?c a skos:Concept .\n" +
+				"    FILTER NOT EXISTS {\n" +
+				"     ?c skos:broader*/(skos:topConceptOf|^skos:hasTopConcept) ?s .\n" +
+				"     ?s a skos:ConceptScheme .\n" +
+				"    }\n" +
+				"}");
+		checkDanglingConcepts.setDataset(dataset);
+		checkDanglingConcepts.setIncludeInferred(false);
+		boolean danglingConcepts = checkDanglingConcepts.evaluate();
+
+		if (danglingConcepts) {
+			OntoPortalConstraintsViolationException.Violation violation = new OntoPortalConstraintsViolationException.Violation();
+			violation.message = STMessageSource.getMessage(MessageKeys.violations_danglingConcepts);
+			violation.fixes = new ArrayList<>();
+			violations.add(violation);
 		}
 	}
 
