@@ -7,6 +7,9 @@ date: dd/mm/202y
   * fixed a bug related to an exception about the use of abstract datasets erroneously raised in assisted search when
     selecting a local project
   * fixed a bug related to transaction management preventing the execution of assisted search on local projects
+  * updated dependency on Sheet2RDF 5.0.3-SNAPSHOT
+  * updated the imports regarding the new dependency on Sheet2RDF
+  * updated dependency on org.owasp.esapi:esapi 2.3.0.0
 
 version 11.1
 date: 23/06/2022

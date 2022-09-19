@@ -58,7 +58,7 @@
 						<Webapp-Context>${project.artifactId}</Webapp-Context>
 						<Web-ContextPath>semanticturkey/${project.groupId}/${project.artifactId}</Web-ContextPath>
 						<Import-Package>
-							<!-- this import is neessary for the ConversionService -->
+							<!-- this import is necessary for the ConversionService -->
 							org.springframework.core.convert,
 							org.springframework.context.support,
 							org.springframework.security.crypto.bcrypt,

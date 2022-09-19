@@ -209,7 +209,7 @@
         <dependency>
             <groupId>org.owasp.esapi</groupId>
             <artifactId>esapi</artifactId>
-            <version>2.0.1</version>
+            <version>2.3.0.0</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -358,6 +358,19 @@
                             org.springframework.security.cas.web,
                             org.springframework.security.core.userdetails,
                             org.apache.velocity.app,
+                            <!-- Sheet2RDF-->
+                            com.graphbuilder.curve,
+                            com.graphbuilder.geom,
+                            com.microsoft.schemas.office.powerpoint,
+                            com.microsoft.schemas.office.word,
+                            org.apache.commons.compress.archivers,
+                            org.apache.commons.compress.archivers.zip,
+                            org.apache.commons.compress.utils,
+                            org.apache.jcp.xml.dsig.internal.dom,
+                            org.dom4j,
+                            org.dom4j.io,
+                            org.etsi.uri.x01903.v14,
+                            <!-- The rest -->
                             *;resolution:=optional
                         </Import-Package>
                         <DynamicImport-Package>*</DynamicImport-Package>

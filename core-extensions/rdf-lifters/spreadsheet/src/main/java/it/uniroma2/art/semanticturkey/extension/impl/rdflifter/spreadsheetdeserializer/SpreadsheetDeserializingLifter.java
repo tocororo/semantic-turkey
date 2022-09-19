@@ -40,110 +40,113 @@ public class SpreadsheetDeserializingLifter implements RDFLifter {
 	public void lift(ClosableFormattedResource sourceFormattedResource, String format,
 			RDFHandler targetRDFHandler, LifterContext lifterContext) throws LiftingException, IOException {
 
-		try {
-			//this model will contain all the triples extracted from the spreadsheet
-			Model model = new LinkedHashModel();
+		//try {
+		//this model will contain all the triples extracted from the spreadsheet
+		Model model = new LinkedHashModel();
 
-			Workbook workbook = WorkbookFactory.create(sourceFormattedResource.getInputStream());
-			//read the second sheet, containing the prefix-mapping
-			Sheet sheet2 = workbook.getSheetAt(1);
-			readPrefixed(sheet2);
+		Workbook workbook = WorkbookFactory.create(sourceFormattedResource.getInputStream());
+		//read the second sheet, containing the prefix-mapping
+		Sheet sheet2 = workbook.getSheetAt(1);
+		readPrefixed(sheet2);
 
-			// now focus on the first sheet
-			Sheet sheet = workbook.getSheetAt(0);
+		// now focus on the first sheet
+		Sheet sheet = workbook.getSheetAt(0);
 
-			// read the excel file and process the Concepts, Schemes and Collections part, use the separator to
-			// identify the different parts:
-			// - concept hierarchy / scheme URI / collection hierarchy
-			// - lexicalizations
-			// - types
-			// - reified notes (this part can be empty)
-			// - generic properties
+		// read the excel file and process the Concepts, Schemes and Collections part, use the separator to
+		// identify the different parts:
+		// - concept hierarchy / scheme URI / collection hierarchy
+		// - lexicalizations
+		// - types
+		// - reified notes (this part can be empty)
+		// - generic properties
 
-			//start with the headers
-			// all these "start_*" values represent the colPos where the "::" are, so a pos before the actual stating
-			// of the part
-			int start_col_lexicalization=0, start_col_type=0, start_col_reifiedNote=0, start_pos_genProp=0, afterLastCol;
-			int posCol = 0;
-			Row row = sheet.getRow(0);
-			while(true){
-				Cell cell = row.getCell(++posCol);
-				//String cellTextx = row.getCell(++posCol).getStringCellValue();
-				if( (cell == null || cell.getStringCellValue().isEmpty()) && start_pos_genProp!=0){
-					afterLastCol = posCol;
-					break;
+		//start with the headers
+		// all these "start_*" values represent the colPos where the "::" are, so a pos before the actual stating
+		// of the part
+		int start_col_lexicalization=0, start_col_type=0, start_col_reifiedNote=0, start_pos_genProp=0, afterLastCol;
+		int posCol = 0;
+		Row row = sheet.getRow(0);
+		while(true){
+			Cell cell = row.getCell(++posCol);
+			//String cellTextx = row.getCell(++posCol).getStringCellValue();
+			if( (cell == null || cell.getStringCellValue().isEmpty()) && start_pos_genProp!=0){
+				afterLastCol = posCol;
+				break;
+			}
+			if(cell == null) {
+				continue;
+			}
+			String cellValue = cell.getStringCellValue().trim();
+			if (cellValue.equals("::")) {
+				//found a separator
+				if (start_col_lexicalization==0) {
+					start_col_lexicalization = posCol;
+				} else if (start_col_type==0) {
+					start_col_type = posCol;
+				} else if (start_col_reifiedNote==0) {
+					start_col_reifiedNote = posCol;
+				} else { // start_pos_genProp==0
+					start_pos_genProp = posCol;
 				}
-				if(cell == null) {
-					continue;
-				}
-				String cellValue = cell.getStringCellValue().trim();
-				if (cellValue.equals("::")) {
-					//found a separator
-					if (start_col_lexicalization==0) {
-						start_col_lexicalization = posCol;
-					} else if (start_col_type==0) {
-						start_col_type = posCol;
-					} else if (start_col_reifiedNote==0) {
-						start_col_reifiedNote = posCol;
-					} else { // start_pos_genProp==0
-						start_pos_genProp = posCol;
-					}
-				} else if (start_col_lexicalization!=0){
-					// the concept hierarchy has been passed, so now the headers are about the properties names
-					// (and reified used properties)
-					if (start_pos_genProp!=0) {
-						//we are in the generic property part, so no reified values
-						PropertyName propertyName = new PropertyName(cellValue, false);
-						posToPropertyNameMap.put(posCol, propertyName);
-					} else if (start_col_reifiedNote!=0){
-						// we are in the reified note, so the rdf:value is a reified for the previous column
-						IRI prop = toIRI(cellValue);
-						PropertyName propertyName;
-						if(prop.equals(RDF.VALUE)){
-							propertyName = new PropertyName(cellValue, true);
-						} else {
-							propertyName = new PropertyName(cellValue, false);
-						}
-						posToPropertyNameMap.put(posCol, propertyName);
-					} else if (start_col_type!=0){
-						// we are in the type part, no reified properties
-						PropertyName propertyName = new PropertyName(cellValue, false);
-						posToPropertyNameMap.put(posCol, propertyName);
+			} else if (start_col_lexicalization!=0){
+				// the concept hierarchy has been passed, so now the headers are about the properties names
+				// (and reified used properties)
+				if (start_pos_genProp!=0) {
+					//we are in the generic property part, so no reified values
+					PropertyName propertyName = new PropertyName(cellValue, false);
+					posToPropertyNameMap.put(posCol, propertyName);
+				} else if (start_col_reifiedNote!=0){
+					// we are in the reified note, so the rdf:value is a reified for the previous column
+					IRI prop = toIRI(cellValue);
+					PropertyName propertyName;
+					if(prop.equals(RDF.VALUE)){
+						propertyName = new PropertyName(cellValue, true);
 					} else {
-						//we are in the lexicalizations, if a skosxl:literalForm is found, then it is reified
-						IRI prop = toIRI(cellValue);
-						PropertyName propertyName;
-						if(prop.equals(SKOSXL.LITERAL_FORM)){
-							propertyName = new PropertyName(cellValue, true);
-						} else {
-							propertyName = new PropertyName(cellValue, false);
-						}
-						posToPropertyNameMap.put(posCol, propertyName);
+						propertyName = new PropertyName(cellValue, false);
 					}
+					posToPropertyNameMap.put(posCol, propertyName);
+				} else if (start_col_type!=0){
+					// we are in the type part, no reified properties
+					PropertyName propertyName = new PropertyName(cellValue, false);
+					posToPropertyNameMap.put(posCol, propertyName);
+				} else {
+					//we are in the lexicalizations, if a skosxl:literalForm is found, then it is reified
+					IRI prop = toIRI(cellValue);
+					PropertyName propertyName;
+					if(prop.equals(SKOSXL.LITERAL_FORM)){
+						propertyName = new PropertyName(cellValue, true);
+					} else {
+						propertyName = new PropertyName(cellValue, false);
+					}
+					posToPropertyNameMap.put(posCol, propertyName);
 				}
 			}
-
-			int posRow = 0;
-			//Concepts part (CONCEPTS HIERARCHY)
-			posRow = processConceptSection(sheet, posRow, start_col_lexicalization, start_col_type, start_col_reifiedNote,
-					start_pos_genProp, afterLastCol, model);
-
-			//Schemes part (CONCEPT SCHEMES)
-			posRow = processSchemeSection(sheet, ++posRow, start_col_lexicalization, start_col_type, start_col_reifiedNote,
-					start_pos_genProp, afterLastCol, model);
-
-			//Collection part (COLLECTIONS HIERARCHY)
-			processCollectionSection(sheet, ++posRow, start_col_lexicalization, start_col_type, start_col_reifiedNote,
-					start_pos_genProp, afterLastCol, model);
-
-
-			for (Statement stmt : model) {
-				targetRDFHandler.handleStatement(stmt);
-			}
-
-		} catch (InvalidFormatException e) {
-			throw new LiftingException(e);
 		}
+
+		int posRow = 0;
+		//Concepts part (CONCEPTS HIERARCHY)
+		posRow = processConceptSection(sheet, posRow, start_col_lexicalization, start_col_type, start_col_reifiedNote,
+				start_pos_genProp, afterLastCol, model);
+
+		//Schemes part (CONCEPT SCHEMES)
+		posRow = processSchemeSection(sheet, ++posRow, start_col_lexicalization, start_col_type, start_col_reifiedNote,
+				start_pos_genProp, afterLastCol, model);
+
+		//Collection part (COLLECTIONS HIERARCHY)
+		processCollectionSection(sheet, ++posRow, start_col_lexicalization, start_col_type, start_col_reifiedNote,
+				start_pos_genProp, afterLastCol, model);
+
+
+		for (Statement stmt : model) {
+			targetRDFHandler.handleStatement(stmt);
+		}
+
+		// the InvalidFormatException is not throw anymore in org.apache.poi:poi-ooxml 4.0.1
+		// it was thrown before in org.apache.poi:poi-ooxml 3.10-FINAL
+		/*}
+		catch (InvalidFormatException e) {
+			throw new LiftingException(e);
+		}*/
 	}
 
 
