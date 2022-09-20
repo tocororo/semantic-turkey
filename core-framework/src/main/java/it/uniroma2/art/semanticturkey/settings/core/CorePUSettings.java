@@ -123,6 +123,6 @@ public class CorePUSettings implements Settings {
 
 	@STProperty(description = "{" + MessageKeys.sheet2rdfSettings$description
 			+ "}", displayName = "{" + MessageKeys.sheet2rdfSettings$displayName + "}")
-	public SearchSettings sheet2rdfSettings;
+	public Sheet2RdfSettings sheet2rdfSettings;
 
 }
