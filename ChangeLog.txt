@@ -4,12 +4,11 @@ date: dd/mm/202y
   * improved the OntoPortal deployer to identify violations of constraints on data structure and then try to propose fixes
   * added a Deployer targeting ShowVoc
   * added an exporter for a selected scheme
+  * added support for HTTP resolution and Content negotiation
   * fixed a bug related to an exception about the use of abstract datasets erroneously raised in assisted search when
     selecting a local project
   * fixed a bug related to transaction management preventing the execution of assisted search on local projects
-  * updated dependency on Sheet2RDF 5.0.3-SNAPSHOT
-  * updated the imports regarding the new dependency on Sheet2RDF
-  * updated dependency on org.owasp.esapi:esapi 2.3.0.0
+  * updated dependency on Sheet2RDF 5.0.3
 
 version 11.1
 date: 23/06/2022
