@@ -3,7 +3,7 @@
   <parent>
     <groupId>it.uniroma2.art.semanticturkey</groupId>
     <artifactId>st-core-extensions</artifactId>
-    <version>11.2.0</version>
+    <version>11.2</version>
   </parent>
   <artifactId>st-rdf-lifters</artifactId>
   <packaging>pom</packaging>
