@@ -1,3 +1,6 @@
+version 11.2.1
+date: dd/mm/202y
+
 version 11.2
 date: 27/09/2022
   * improved the OntoPortal connector to consider the frontend base URL and retrieve missing settings from /site_config
