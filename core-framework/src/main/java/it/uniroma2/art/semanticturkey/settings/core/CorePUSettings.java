@@ -37,6 +37,8 @@ public class CorePUSettings implements Settings {
 		public static final String conceptTree$displayName = keyBase + ".conceptTree.displayName";
 		public static final String lexEntryList$description = keyBase + ".lexEntryList.description";
 		public static final String lexEntryList$displayName = keyBase + ".lexEntryList.displayName";
+		public static final String customTree$description = keyBase + ".customTree.description";
+		public static final String customTree$displayName = keyBase + ".customTree.displayName";
 		public static final String graphViewPartitionFilter$description = keyBase + ".graphViewPartitionFilter.description";
 		public static final String graphViewPartitionFilter$displayName = keyBase + ".graphViewPartitionFilter.displayName";
 		public static final String resourceView$description = keyBase + ".resourceView.description";
@@ -99,6 +101,10 @@ public class CorePUSettings implements Settings {
 	@STProperty(description = "{" + MessageKeys.lexEntryList$description
 			+ "}", displayName = "{" + MessageKeys.lexEntryList$displayName + "}")
 	public LexEntryListPreferences lexEntryList;
+
+	@STProperty(description = "{" + MessageKeys.customTree$description
+			+ "}", displayName = "{" + MessageKeys.customTree$displayName + "}")
+	public CustomTreeSettings customTree;
 
 	@STProperty(description = "{" + MessageKeys.resourceView$description
 			+ "}", displayName = "{" + MessageKeys.resourceView$displayName + "}")
