@@ -56,10 +56,6 @@ public class CustomTrees extends STServiceAdapter {
                 "} \n" +
                 "GROUP BY ?resource ?attr_more";
         // @formatter:on
-//        /* used query.replace() instead of qb.setBinding() since the possible presence of ^ before ?childProp
-//        would cause error during the creation of QueryBuilder */
-//        query = query.replace("%childProp%", NTriplesUtil.toNTriplesString(childProp));
-        System.out.println(query);
         QueryBuilder qb = createQueryBuilder(query);
         qb.setBinding("cls", cls);
         qb.processRendering();
@@ -83,7 +79,6 @@ public class CustomTrees extends STServiceAdapter {
                 "SELECT ?resource ?attr_more " + generateNatureSPARQLSelectPart() + " \n" +
                 "WHERE { \n" +
                 "   ?resource rdf:type"  + (includeSubclasses ? "/rdfs:subClassOf*" : "") + " ?cls . \n" +
-//                "   ?parent " + (invHierarchyDirection ? "^" : "") + "%childProp% ?resource . \n" +
                 "   ?parent (" + hierarchyPath + ") ?resource . \n" +
                 "   BIND(EXISTS { \n" +
                 "       ?resource ("  + hierarchyPath + ") ?child . \n" +
@@ -92,9 +87,6 @@ public class CustomTrees extends STServiceAdapter {
                 "} \n" +
                 "GROUP BY ?resource ?attr_more";
         // @formatter:on
-//        /* used query.replace() instead of qb.setBinding() since the possible presence of ^ before ?childProp
-//        would cause error during the creation of QueryBuilder */
-//        query = query.replace("%childProp%", NTriplesUtil.toNTriplesString(childProp));
         QueryBuilder qb = createQueryBuilder(query);
         qb.setBinding("cls", cls);
         qb.setBinding("parent", parent);
