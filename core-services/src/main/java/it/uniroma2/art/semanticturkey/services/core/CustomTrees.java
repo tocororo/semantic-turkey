@@ -71,14 +71,14 @@ public class CustomTrees extends STServiceAdapter {
     }
 
     private String getResourceWhere(CustomTreeSettings ctSettings, String hierarchyPath) {
-        String rootCriteria = ctSettings.rootCriteria;
-        if (rootCriteria == null) {
-            rootCriteria = CustomTreeSettings.ROOT_CRITERIA_ALL;
+        String rootSelection = ctSettings.rootSelection;
+        if (rootSelection == null) {
+            rootSelection = CustomTreeSettings.ROOT_SELECTION_ALL;
         }
         List<IRI> roots = ctSettings.roots != null ? ctSettings.roots : new ArrayList<>();
 
         String where = "";
-        if (rootCriteria.equals(CustomTreeSettings.ROOT_CRITERIA_STATIC)) {
+        if (rootSelection.equals(CustomTreeSettings.ROOT_SELECTION_ENUMERATION)) {
             //?resource is bound to statically defined values
             where += "   VALUES(?resource) {" + roots.stream().map(iri -> "(" + RenderUtils.toSPARQL(iri) + ")").collect(joining()) + "}";
         } else {
@@ -89,7 +89,7 @@ public class CustomTrees extends STServiceAdapter {
                     "       ?parent rdf:type" + (ctSettings.includeSubtype ? "/rdfs:subClassOf*" : "") + " ?cls . \n" +
                     "   } \n";
             //collect only resources with children
-            if (rootCriteria.equals(CustomTreeSettings.ROOT_CRITERIA_ONLY_WITH_CHILDREN)) {
+            if (rootSelection.equals(CustomTreeSettings.ROOT_SELECTION_WITH_CHILD_ONLY)) {
                 where += "FILTER EXISTS { ?resource (" + hierarchyPath + ") ?child . } \n";
             }
         }
