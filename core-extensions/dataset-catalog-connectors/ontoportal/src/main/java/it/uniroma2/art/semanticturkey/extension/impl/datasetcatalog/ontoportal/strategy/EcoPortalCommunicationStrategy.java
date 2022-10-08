@@ -22,6 +22,11 @@ class EcoPortalCommunicationStrategy
 
 	@Override
 	public String getFrontendBaseURL() {
-		return DEFAULT_FRONTEND_BASE_URL;
+		String providedFrontendBaseURL = StringUtils.trim(super.getFrontendBaseURL());
+		if (StringUtils.isNotBlank(providedFrontendBaseURL)) {
+			return providedFrontendBaseURL;
+		} else {
+			return DEFAULT_FRONTEND_BASE_URL;
+		}
 	}
 }

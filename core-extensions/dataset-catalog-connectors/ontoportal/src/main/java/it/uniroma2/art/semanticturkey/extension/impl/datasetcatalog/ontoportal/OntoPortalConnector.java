@@ -350,7 +350,7 @@ public class OntoPortalConnector implements DatasetCatalogConnector {
                     .queryParam("display_context", "false")
                     .buildAndExpand(ImmutableMap.of("acronym", id)).toUri();
             URL downloadURL = getUriComponentsBuilder(strategy).path(DOWNLOAD_ENDPOINT)
-                    .queryParam("apikey", conf.apiKey)
+                    .queryParam("apikey", strategy.getAPIKey())
                     .buildAndExpand(ImmutableMap.of("acronym", id)).toUri().toURL();
 
             Map<String, Category> id2Category = new HashMap<>();

@@ -42,10 +42,6 @@ public abstract class ShowVocDeployerConfiguration implements Configuration {
 	@Required
 	public String stHost;
 
-	@STProperty(description = "{" + ShowVocDeployerConfiguration.MessageKeys.stPath$description + "}", displayName = "{" + ShowVocDeployerConfiguration.MessageKeys.stPath$displayName + "}")
-	@Required
-	public String stPath;
-
 	@STProperty(description = "{" + ShowVocDeployerConfiguration.MessageKeys.username$description + "}", displayName = "{" + ShowVocDeployerConfiguration.MessageKeys.username$displayName + "}")
 	@Required
 	public String username;
