@@ -1,5 +1,9 @@
 version 11.2.1
 date: dd/mm/202y
+  * Fixed bug in EcoPortal configuration for the OntoPortal connector ignoring the provided frontend base URL always
+    using the default value (i.e., the address of the official installation of EcoPortal).
+  * Removed unused property stPath in the configuration of the ShowVoc deployer
+  * Fixed bug in the OntoPortal connector that may not always include the api key in the data dump URL
 
 version 11.2
 date: 27/09/2022

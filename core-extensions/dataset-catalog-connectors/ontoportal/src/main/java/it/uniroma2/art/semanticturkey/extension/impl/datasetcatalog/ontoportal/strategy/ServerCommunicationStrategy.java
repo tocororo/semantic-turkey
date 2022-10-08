@@ -25,6 +25,11 @@ public abstract class ServerCommunicationStrategy {
 	public abstract String getFrontendBaseURL();
 
 	/**
+	 * Returns the API key to use in the request
+	 */
+	public abstract String getAPIKey();
+
+	/**
 	 * Returns the API base URL to use in the request.
 	 */
 	public abstract String getAPIBaseURL();

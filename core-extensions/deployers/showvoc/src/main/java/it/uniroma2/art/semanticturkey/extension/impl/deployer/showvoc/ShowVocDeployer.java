@@ -44,7 +44,7 @@ public class ShowVocDeployer implements RepositorySourcedDeployer {
     public void deploy(RepositorySource source) throws IOException {
         try {
             // Creates a connector to the remote VB
-            RemoteVBConnector vbConnector = new RemoteVBConnector(conf.stHost, conf.stPath, conf.username, conf.password);
+            RemoteVBConnector vbConnector = new RemoteVBConnector(conf.stHost, null, conf.username, conf.password);
 
             // Log in
             vbConnector.loginAdmin();

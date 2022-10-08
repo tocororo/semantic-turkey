@@ -36,7 +36,7 @@ abstract class AbstractOntoPortalCommunicationStrategy<T extends AbstractOntoPor
 	@Override
 	public void initialize(CloseableHttpClient httpClient) throws IOException {
 
-		if (StringUtils.isNoneBlank(getAPIKey(), getAPIKey())) return; // check if there is need to fetch /site_config
+		if (StringUtils.isNoneBlank(getAPIBaseURL(), getAPIKey())) return; // check if there is need to fetch /site_config
 
 		HttpGet httpRequest = new HttpGet(StringUtils.stripEnd(StringUtils.trim(getFrontendBaseURL()), "/") + "/site_config");
 		try (CloseableHttpResponse httpResponse = httpClient.execute(httpRequest)) {
@@ -76,7 +76,9 @@ abstract class AbstractOntoPortalCommunicationStrategy<T extends AbstractOntoPor
 			return siteProvidedAPIBaseURL;
 		}
 	}
-	protected String getAPIKey() {
+
+	@Override
+	public String getAPIKey() {
 		String providedKey = StringUtils.trim(this.conf.apiKey);
 		if (StringUtils.isNotBlank(providedKey))	{
 			return providedKey;
