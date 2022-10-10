@@ -278,21 +278,27 @@ public class Classes extends STServiceAdapter {
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, instances)', 'R')")
-	public Collection<AnnotatedValue<Resource>> getInstances(@LocallyDefined IRI cls) {
-		QueryBuilder qb = createQueryBuilder(
-				// @formatter:off
+	public Collection<AnnotatedValue<Resource>> getInstances(@LocallyDefined IRI cls,
+															 @Optional(defaultValue = "false") boolean includeNonDirect) {
+		// @formatter:off
+		String query =
 				" PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>						\n" +
 				" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>							\n" +
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>									\n" +                                      
 				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>							\n" +
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>							\n" +
-				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {				\n " +                                                                              
-				"    ?resource a ?cls .															\n " +
-				generateNatureSPARQLWherePart("?resource") +
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {				\n ";
+
+		if (includeNonDirect) {
+			query += " ?resource a/rdfs:subClassOf* ?cls .										\n " ;
+		} else {
+			query += "?resource a ?cls .				 										\n";
+		}
+		query +=generateNatureSPARQLWherePart("?resource") +
 				" }																				\n " +
-				" GROUP BY ?resource 															\n "
-				// @formatter:on
-		);
+				" GROUP BY ?resource 															\n ";
+		// @formatter:on
+		QueryBuilder qb = createQueryBuilder(query);
 		qb.processRendering();
 		qb.processQName();
 		qb.setBinding("cls", cls);
