@@ -273,6 +273,7 @@ public class Classes extends STServiceAdapter {
 	 * Returns the (explicit) instances of the class <code>cls</code>.
 	 * 
 	 * @param cls
+	 * @param includeNonDirect
 	 * @return
 	 */
 	@STServiceOperation
@@ -287,7 +288,8 @@ public class Classes extends STServiceAdapter {
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>									\n" +                                      
 				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>							\n" +
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>							\n" +
-				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " WHERE {				\n ";
+				" SELECT ?resource " + generateNatureSPARQLSelectPart() + " 					\n" +
+				" WHERE {																		\n ";
 
 		if (includeNonDirect) {
 			query += " ?resource a/rdfs:subClassOf* ?cls .										\n " ;
@@ -310,15 +312,23 @@ public class Classes extends STServiceAdapter {
 	 * Also {@link Classes#getClassesInfo(IRI[], boolean)} returns it, but it computes other info, so in case 
 	 * of a lot of instances it could be slow. 
 	 * @param cls
+	 * @param includeNonDirect
 	 * @return
 	 */
 	@STServiceOperation
 	@Read
 	@PreAuthorize("@auth.isAuthorized('rdf(cls, instances)', 'R')")
-	public Integer getNumberOfInstances(@LocallyDefined IRI cls) {
-		String query = " SELECT (count(distinct ?s) as ?count) WHERE { \n" + 
-			"?s a " + NTriplesUtil.toNTriplesString(cls) + " \n" +
-			"}";
+	public Integer getNumberOfInstances(@LocallyDefined IRI cls,
+										@Optional(defaultValue = "false") boolean includeNonDirect) {
+		String query = " PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>					\n" +
+						" SELECT (count(distinct ?resource) as ?count) 							\n" +
+						"WHERE { 																\n" ;
+		if (includeNonDirect) {
+			query += " ?resource a/rdfs:subClassOf* "+NTriplesUtil.toNTriplesString(cls)+" .	\n " ;
+		} else {
+			query += "?resource a "+NTriplesUtil.toNTriplesString(cls)+" . 						\n";
+		}
+		query += "}";
 		TupleQueryResult result = getManagedConnection().prepareTupleQuery(query).evaluate();
 		return ((Literal) result.next().getValue("count")).intValue();
 	}
