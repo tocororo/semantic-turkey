@@ -11,8 +11,8 @@ public class VocBenchConnectionShowVocSettings implements STProperties {
 
 		public static final String vbURL$description = keyBase + ".vbURL.description";
 		public static final String vbURL$displayName = keyBase + ".vbURL.displayName";
-		public static final String stHost$description = keyBase + ".vstHost.description";
-		public static final String stHost$displayName = keyBase + ".vstHost.displayName";
+		public static final String stHost$description = keyBase + ".stHost.description";
+		public static final String stHost$displayName = keyBase + ".stHost.displayName";
 		public static final String adminEmail$description = keyBase + ".adminEmail.description";
 		public static final String adminEmail$displayName = keyBase + ".adminEmail.displayName";
 		public static final String adminPassword$description = keyBase + ".adminPassword.description";

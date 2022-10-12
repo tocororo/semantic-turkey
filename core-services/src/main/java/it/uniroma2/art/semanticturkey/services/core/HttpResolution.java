@@ -40,6 +40,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -94,19 +95,22 @@ public class HttpResolution extends STServiceAdapter {
                 null, null, null, Uri2ProjectResolutionManager.class.getName(), Scope.SYSTEM);
         //clears/removes any mapping to not existing project
         boolean updated = false;
-        for (Map.Entry<String, String> mapping: settings.uri2ProjectMap.entrySet()) {
-            try {
-                ProjectManager.getProject(mapping.getValue(), true);
-            } catch (InvalidProjectNameException | ProjectInexistentException | ProjectAccessException e) {
-                settings.uri2ProjectMap.remove(mapping.getKey());
-                updated = true;
+        if (settings.uri2ProjectMap != null) {
+            for (Map.Entry<String, String> mapping : settings.uri2ProjectMap.entrySet()) {
+                try {
+                    ProjectManager.getProject(mapping.getValue(), true);
+                } catch (InvalidProjectNameException | ProjectInexistentException | ProjectAccessException e) {
+                    settings.uri2ProjectMap.remove(mapping.getKey());
+                    updated = true;
+                }
             }
+            if (updated) {
+                storeUri2ProjectSettingsInner(settings);
+            }
+            return settings.uri2ProjectMap;
+        } else {
+            return new HashMap<>();
         }
-        if (updated) {
-            storeUri2ProjectSettingsInner(settings);
-        }
-
-        return settings.uri2ProjectMap;
     }
 
     @STServiceOperation(method = RequestMethod.POST)
