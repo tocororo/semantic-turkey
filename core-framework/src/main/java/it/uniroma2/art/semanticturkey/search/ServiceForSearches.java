@@ -406,19 +406,26 @@ public class ServiceForSearches {
 	}
 
 	public static String getResourceshavingTypes(List<List<IRI>> typesListOfList, String varToUse, 
-			boolean searchInSubTypes) {
+			boolean searchInSubTypes, boolean includeNonDirect) {
 		String query = "\nSELECT "+varToUse
 				+"\nWHERE{";
-			
+
+		String predForBelonging;
+		if (includeNonDirect) {
+			predForBelonging = "a/<http://www.w3.org/2000/01/rdf-schema#subClassOf>*";
+		} else {
+			predForBelonging = "a";
+		}
+
 		if (typesListOfList == null || typesListOfList.size() ==0) {
-			query+="\n"+varToUse+" a ?genericType .";
+			query+="\n"+varToUse+" "+predForBelonging+" ?genericType .";
 		}else if(typesListOfList.size()==1 && typesListOfList.get(0).size()==1) {
 			IRI type = typesListOfList.get(0).get(0);
 			if(searchInSubTypes) {
 				query+="\n?genericSubType" +NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"* " +NTriplesUtil.toNTriplesString(type)+" ." +
-						"\n"+varToUse+" a ?genericSubType .";
+						"\n"+varToUse+" "+predForBelonging+" ?genericSubType .";
 			} else {
-				query+="\n"+varToUse+" a "+NTriplesUtil.toNTriplesString(type)+" .";
+				query+="\n"+varToUse+" "+predForBelonging+" "+NTriplesUtil.toNTriplesString(type)+" .";
 			}
 		} else {
 			//the input type list of list is more complicate than a single value, so behave according 
@@ -426,9 +433,9 @@ public class ServiceForSearches {
 			if(searchInSubTypes) {
 				query+=filterWithOrOfAndValues("?genericSubType", 
 						NTriplesUtil.toNTriplesString(RDFS.SUBCLASSOF)+"*", typesListOfList) +
-					"\n"+varToUse+" a ?genericSubType .";
+					"\n"+varToUse+" "+predForBelonging+" ?genericSubType .";
 			} else {
-				query+=filterWithOrOfAndValues(varToUse, "a", typesListOfList);
+				query+=filterWithOrOfAndValues(varToUse, predForBelonging, typesListOfList);
 			}
 		}
 		query+= "\n}";

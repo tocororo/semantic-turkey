@@ -233,7 +233,7 @@ public class Search extends STServiceAdapter {
 
 
 	/**
-	 * Perform a complext search with many custom input parameters
+	 * Perform a complex search with many custom input parameters
 	 * If parameter useURI is true and searchMode is startsWith, prefixes in qname (in the searchString) are expanded
 	 * @param searchString the text to search
 	 * @param useLexicalizations true to search in the lexicalizations, false otherwise. Optional and default value is true
@@ -309,7 +309,7 @@ public class Search extends STServiceAdapter {
 				useLocalName, useURI, useNotes, searchMode, langs, includeLocales, true, true, lexModel,
 				searchInRDFSLabel, searchInSKOSLabel, searchInSKOSXLLabel, searchInOntolex, schemes, 
 				statusFilter, outgoingLinks, outgoingSearch, ingoingLinks, instantiateSearchStrategy(), 
-				getProject().getBaseURI(), prefixToNamespaceMap);
+				getProject().getBaseURI(), prefixToNamespaceMap, false);
 		
 		
 		query+="\n}";
@@ -650,7 +650,8 @@ public class Search extends STServiceAdapter {
 			@Optional(defaultValue = "true") boolean  useLexicalizations,
 			boolean useLocalName, boolean useURI, SearchMode searchMode,
 			@Optional(defaultValue = "false") boolean useNotes, @Optional List<String> langs,
-			@Optional(defaultValue = "false") boolean includeLocales)
+			@Optional(defaultValue = "false") boolean includeLocales,
+			@Optional(defaultValue = "false") boolean includeNonDirect)
 			throws IllegalStateException, STPropertyAccessException, SearchStatusException {
 
 		//prepare the namespace map
@@ -665,7 +666,7 @@ public class Search extends STServiceAdapter {
 				+ instantiateSearchStrategy().searchInstancesOfClass(stServiceContext, clsListList,
 						searchString, useLexicalizations, useLocalName, useURI, useNotes, searchMode, langs, includeLocales,
 						false, false, lexModel, false, false, false, false, null, null, null, null, null, 
-						instantiateSearchStrategy(), getProject().getBaseURI(), prefixToNamespaceMap);
+						instantiateSearchStrategy(), getProject().getBaseURI(), prefixToNamespaceMap, includeNonDirect);
 
 		logger.debug("query = " + query);
 

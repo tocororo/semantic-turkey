@@ -267,7 +267,8 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			@Nullable List<List<IRI>> schemes, StatusFilter statusFilter,
 			@Nullable List<Pair<IRI, List<Value>>> outgoingLinks,
 			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
-			@Nullable List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy, String baseURI, Map<String, String> prefixToNamespaceMap)
+			@Nullable List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy, String baseURI,
+			Map<String, String> prefixToNamespaceMap, boolean includeNonDirect)
 					throws IllegalStateException, STPropertyAccessException {
 
 		ServiceForSearches serviceForSearches = new ServiceForSearches();
@@ -282,7 +283,7 @@ public class RegexSearchStrategy extends AbstractSearchStrategy implements Searc
 			"\nWHERE{" +
 			"\n{";
 		//do a subquery to get the candidate resources
-		query+=ServiceForSearches.getResourceshavingTypes(clsListList, "?resource", searchInSubTypes)+
+		query+=ServiceForSearches.getResourceshavingTypes(clsListList, "?resource", searchInSubTypes, includeNonDirect)+
 				"\n}";
 
 		boolean specialCaseXLabel = ServiceForSearches.isSpecialCaseXLabel(clsListList);

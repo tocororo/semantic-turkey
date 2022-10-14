@@ -520,7 +520,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			@Nullable List<Pair<IRI, List<Value>>> outgoingLinks,
 			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
 			@Nullable List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy, String baseURI,
-			Map<String, String> prefixToNamespaceMap)
+			Map<String, String> prefixToNamespaceMap, boolean includeNonDirect)
 			throws IllegalStateException, STPropertyAccessException, SearchStatusException {
 
 		isSearchPossible(stServiceContext.getProject().getName(), getThreadBoundTransaction(stServiceContext), true);
@@ -536,7 +536,7 @@ public class GraphDBSearchStrategy extends AbstractSearchStrategy implements Sea
 			"\nWHERE{" +
 			"\n{";
 		//do a subquery to get the candidate resources
-		query+=ServiceForSearches.getResourceshavingTypes(clsListList, "?resource", searchInSubTypes)+
+		query+=ServiceForSearches.getResourceshavingTypes(clsListList, "?resource", searchInSubTypes, includeNonDirect)+
 				"\n}";
 
 		boolean specialCaseXLabel = ServiceForSearches.isSpecialCaseXLabel(clsListList);

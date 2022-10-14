@@ -272,7 +272,8 @@ public class BaseRenderingEngineTest {
 										List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
 										List<Pair<IRI, List<Value>>> ingoingLinks,
 										SearchStrategy searchStrategy, String baseURI,
-										Map<String, String> prefixToNamespaceMap)
+										Map<String, String> prefixToNamespaceMap,
+										boolean includeNonDirect)
 										throws IllegalStateException {
 									throw new UnsupportedOperationException("Not implemented by the stub");
 								}

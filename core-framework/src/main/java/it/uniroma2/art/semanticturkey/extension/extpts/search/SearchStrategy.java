@@ -67,7 +67,8 @@ public interface SearchStrategy extends Extension {
 			@Nullable List<Pair<IRI, List<Value>>> outgoingLinks,
 			@Nullable List<TripleForSearch<IRI, String, SearchMode>> outgoingSearch,
 			@JsonSerialized List<Pair<IRI, List<Value>>> ingoingLinks, SearchStrategy searchStrategy,
-			String baseURI, Map<String, String> prefixToNamespaceMap) throws IllegalStateException, STPropertyAccessException, SearchStatusException;
+			String baseURI, Map<String, String> prefixToNamespaceMap,
+			boolean includeNonDirect) throws IllegalStateException, STPropertyAccessException, SearchStatusException;
 
 	public String searchSpecificModePrepareQuery(String variable, String value, SearchMode searchMode,
 			String indexToUse, List<String> langs, boolean includeLocales, boolean forLocalName);
