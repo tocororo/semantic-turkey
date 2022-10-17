@@ -1,5 +1,6 @@
 package it.uniroma2.art.semanticturkey.services.aspects;
 
+import it.uniroma2.art.semanticturkey.project.Project;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.eclipse.rdf4j.repository.Repository;
@@ -31,6 +32,11 @@ public class WritabilityCheckerInterceptor implements MethodInterceptor {
 		if (version != null) {
 			throw new IllegalArgumentException(
 					"Can't execute a @Write-annotated operation on a version dump");
+		}
+
+		Project project = stServiceContext.getProject();
+		if (project.isReadonly()) {
+			throw new IllegalStateException("Can't execute a @Write-annotated operation on a read only project");
 		}
 
 		Repository repository = STServiceContextUtils.getRepostory(stServiceContext);

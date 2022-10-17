@@ -473,6 +473,7 @@ public class Projects extends STServiceAdapter {
         boolean blacklistingEnabled = false;
         boolean shaclEnabled = false;
         boolean undoEnabled = false;
+        boolean readOnly = false;
         boolean open = false;
         AccessResponse access = null;
         RepositoryLocation repoLocation = new RepositoryLocation(null);
@@ -495,6 +496,7 @@ public class Projects extends STServiceAdapter {
             blacklistingEnabled = proj.isBlacklistingEnabled();
             shaclEnabled = proj.isSHACLEnabled();
             undoEnabled = proj.isUndoEnabled();
+            readOnly = proj.isReadonly();
             open = ProjectManager.isOpen(proj);
             access = ProjectManager.checkAccessibility(consumer, proj, requestedAccessLevel,
                     requestedLockLevel);
@@ -524,7 +526,7 @@ public class Projects extends STServiceAdapter {
             status = new ProjectStatus(Status.corrupted, proj.getCauseOfCorruption().getMessage());
         }
         return new ProjectInfo(name, open, baseURI, defaultNamespace, model, lexicalizationModel,
-                historyEnabled, validationEnabled, blacklistingEnabled, shaclEnabled, undoEnabled, access,
+                historyEnabled, validationEnabled, blacklistingEnabled, shaclEnabled, undoEnabled, readOnly, access,
                 repoLocation, status, labels, description, createdAt, openAtStartup, facets);
     }
 
@@ -1906,6 +1908,13 @@ public class Projects extends STServiceAdapter {
             }
         });
         return undoEnabled.toBoolean();
+    }
+
+    @STServiceOperation(method = RequestMethod.POST)
+    @PreAuthorize("@auth.isAdmin()")
+    public void setReadOnly(String projectName, boolean readOnly) throws ProjectAccessException, ProjectInexistentException, InvalidProjectNameException, ProjectUpdateException {
+        Project project = ProjectManager.getProject(projectName, true);
+        project.setReservedProperty(Project.READONLY_PROP, String.valueOf(readOnly));
     }
 
     /**

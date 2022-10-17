@@ -176,6 +176,7 @@ public abstract class Project extends AbstractProject {
     public static final String VALIDATION_ENABLED_PROP = "validationEnabled";
     public static final String BLACKLISTING_ENABLED_PROP = "blacklistingEnabled";
     public static final String UNDO_ENABLED_PROP = "undoEnabled";
+    public static final String READONLY_PROP = "readOnly";
     public static final String DESCRIPTION_PROP = "description";
     public static final String VERSIONS_PROP = "versions";
     public static final String DEFAULT_REPOSITORY_LOCATION_PROP = "defaultRepositoryLocation";
@@ -228,6 +229,7 @@ public abstract class Project extends AbstractProject {
         reservedProperties.add(UNDO_ENABLED_PROP);
         reservedProperties.add(CREATED_AT_PROP);
         reservedProperties.add(OPEN_AT_STARTUP_PROP);
+        reservedProperties.add(READONLY_PROP);
     }
 
     public NSPrefixMappings nsPrefixMappingsPersistence;
@@ -902,7 +904,11 @@ public abstract class Project extends AbstractProject {
     }
 
     public boolean isUndoEnabled() {
-        return Boolean.parseBoolean(getProperty(UNDO_ENABLED_PROP));
+        return Boolean.parseBoolean(ObjectUtils.firstNonNull(getProperty(UNDO_ENABLED_PROP), "false"));
+    }
+
+    public boolean isReadonly() {
+        return Boolean.parseBoolean(getProperty(READONLY_PROP));
     }
 
     String getRequiredProperty(String propertyName) throws ProjectInconsistentException {

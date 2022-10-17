@@ -1853,6 +1853,7 @@ public class ProjectManager {
 			projProp.setProperty(Project.HISTORY_ENABLED_PROP, String.valueOf(historyEnabled));
 			projProp.setProperty(Project.VALIDATION_ENABLED_PROP, String.valueOf(validationEnabled));
 			projProp.setProperty(Project.BLACKLISTING_ENABLED_PROP, String.valueOf(blacklistingEnabled));
+			projProp.setProperty(Project.READONLY_PROP, String.valueOf(false));
 			projProp.setProperty(Project.URI_GENERATOR_FACTORY_ID_PROP,
 					uriGeneratorSpecification.getFactoryId());
 			projProp.setProperty(Project.RENDERING_ENGINE_FACTORY_ID_PROP,
