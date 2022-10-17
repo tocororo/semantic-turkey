@@ -293,12 +293,10 @@ public class Classes extends STServiceAdapter {
 
 		if (includeNonDirect) {
 			query += " ?resource a/rdfs:subClassOf* ?cls .										\n" +
-					"BIND( IF( EXISTS{?resource a ?cls}, \"false\", \"true\")					\n" +
-					"        AS ?attr_nonDirect)												\n";
-
+					"BIND(NOT EXISTS{?resource a ?cls} AS ?attr_nonDirect)							\n";
 		} else {
 			query += "?resource a ?cls .				 										\n" +
-					"BIND(\"false\" AS ?attr_nonDirect)											\n";
+					"BIND(false AS ?attr_nonDirect)											\n";
 		}
 		query +=generateNatureSPARQLWherePart("?resource") +
 				" }																				\n " +

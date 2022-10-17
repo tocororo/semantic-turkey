@@ -17,6 +17,8 @@ public class InstanceListPreferences implements STProperties {
         public static final String allowVisualizationChange$displayName = keyBase + ".allowVisualizationChange.displayName";
         public static final String safeToGoLimit$displayName = keyBase + ".safeToGoLimit.displayName";
         public static final String safeToGoLimit$description = keyBase + ".safeToGoLimit.description";
+        public static final String includeNonDirect$description = keyBase + ".includeNonDirect.description";
+        public static final String includeNonDirect$displayName = keyBase + ".includeNonDirect.displayName";
     }
 
     @Override
@@ -36,5 +38,9 @@ public class InstanceListPreferences implements STProperties {
     @STProperty(description = "{" + MessageKeys.safeToGoLimit$description
             + "}", displayName = "{" + MessageKeys.safeToGoLimit$displayName + "}")
     public Integer safeToGoLimit;
+
+    @STProperty(description = "{" + MessageKeys.includeNonDirect$description
+            + "}", displayName = "{" + MessageKeys.includeNonDirect$displayName + "}")
+    public Boolean includeNonDirect;
 
 }
