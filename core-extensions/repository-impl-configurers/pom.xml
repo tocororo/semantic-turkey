@@ -3,7 +3,7 @@
   <parent>
     <groupId>it.uniroma2.art.semanticturkey</groupId>
     <artifactId>st-core-extensions</artifactId>
-    <version>11.2.1-SNAPSHOT</version>
+    <version>11.2.1</version>
   </parent>
   <artifactId>st-repository-impl-configurers</artifactId>
   <packaging>pom</packaging>
