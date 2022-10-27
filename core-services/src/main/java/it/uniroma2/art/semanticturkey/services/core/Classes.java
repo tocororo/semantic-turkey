@@ -288,17 +288,21 @@ public class Classes extends STServiceAdapter {
 				" PREFIX owl: <http://www.w3.org/2002/07/owl#>									\n" +                                      
 				" PREFIX skos: <http://www.w3.org/2004/02/skos/core#>							\n" +
 				" PREFIX skosxl: <http://www.w3.org/2008/05/skos-xl#>							\n" +
-				" SELECT ?resource ?attr_nonDirect " + generateNatureSPARQLSelectPart() + "		\n" +
+				" SELECT ?resource ?attr_nonDirect " +
+						"(group_concat(DISTINCT concat(\"<\", str(?directClass), \">\");separator=\", \") AS ?attr_directClasses) "
+						+ generateNatureSPARQLSelectPart() + "									\n" +
 				" WHERE {																		\n ";
 
 		if (includeNonDirect) {
 			query += " ?resource a/rdfs:subClassOf* ?cls .										\n" +
-					"BIND(NOT EXISTS{?resource a ?cls} AS ?attr_nonDirect)							\n";
+					"BIND(NOT EXISTS{?resource a ?cls} AS ?attr_nonDirect)						\n";
 		} else {
 			query += "?resource a ?cls .				 										\n" +
-					"BIND(false AS ?attr_nonDirect)											\n";
+					"BIND(false AS ?attr_nonDirect)												\n";
 		}
-		query +=generateNatureSPARQLWherePart("?resource") +
+
+		query +="?resource a ?directClass . 															\n" +
+				generateNatureSPARQLWherePart("?resource") +
 				" }																				\n " +
 				" GROUP BY ?resource ?attr_nonDirect											\n ";
 		// @formatter:on
