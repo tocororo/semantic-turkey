@@ -1,5 +1,5 @@
 version 11.2.1
-date: dd/mm/202y
+date: dd/mm/2022
   * Implemented services and support for Custom Tree
   * Removed unused property stPath in the configuration of the ShowVoc deployer
   * Added possibility to get also the non-direct instances of a given class
