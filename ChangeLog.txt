@@ -1,11 +1,15 @@
-version 11.2.1
-date: dd/mm/2022
+version 11.3
+date: 28/10/2022
   * Implemented services and support for Custom Tree
-  * Removed unused property stPath in the configuration of the ShowVoc deployer
   * Added possibility to get also the non-direct instances of a given class
   * Added possibility to prevent write operation on project by setting it in read only mode
+  * Minor bugfixes
+
+version 11.2.1
+date: 19/10/2022
   * Fixed bug in EcoPortal configuration for the OntoPortal connector ignoring the provided frontend base URL always
-    using the default value (i.e., the address of the official installation of EcoPortal).
+      using the default value (i.e., the address of the official installation of EcoPortal).
+  * Removed unused property stPath in the configuration of the ShowVoc deployer
   * Fixed bug in the OntoPortal connector that may not always include the api key in the data dump URL
 
 version 11.2

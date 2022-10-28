@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>it.uniroma2.art.semanticturkey</groupId>
 		<artifactId>st-metadata-registry</artifactId>
-		<version>11.2.1-SNAPSHOT</version>
+		<version>11.3</version>
 	</parent>
 	<artifactId>st-metadata-registry-core</artifactId>
 	<packaging>bundle</packaging>
