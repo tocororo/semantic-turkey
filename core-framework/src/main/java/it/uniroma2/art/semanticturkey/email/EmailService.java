@@ -117,7 +117,7 @@ public abstract class EmailService {
 			text = replaceAdminPlaceholders(text, admin);
 			text = replaceGenericPlaceholders(text);
 
-			EmailSender.sendMail(adminEmail, "VocBench: new project created", text);
+			EmailSender.sendMail(adminEmail, appName + ": new project created", text);
 		}
 	}
 

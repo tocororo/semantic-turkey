@@ -229,7 +229,8 @@ public class Projects extends STServiceAdapter {
             @Optional @JsonSerialized SHACLSettings shaclSettings, @Optional boolean trivialInferenceEnabled,
             @Optional(defaultValue = "false") boolean openAtStartup,
             @Optional AccessLevel universalAccess,
-            @Optional Literal label, @Optional(defaultValue = "false") boolean undoEnabled)
+            @Optional Literal label, @Optional(defaultValue = "false") boolean undoEnabled,
+            @Optional EmailApplicationContext appCtx)
             throws ProjectInconsistentException, InvalidProjectNameException, ProjectInexistentException,
             ProjectAccessException, ForbiddenProjectAccessException, DuplicatedResourceException,
             ProjectCreationException, ClassNotFoundException, WrongPropertiesException, RBACException,
@@ -301,7 +302,7 @@ public class Projects extends STServiceAdapter {
             ProjectUserBindingsManager.addRolesToPUBinding(loggedUser, project, Arrays.asList(RBACManager.DefaultRole.PROJECTMANAGER));
             //send notification to administrators
             try {
-                EmailService emailService = EmailServiceFactory.getService(EmailApplicationContext.VB); //uses VB service since in SV superuser is not used
+                EmailService emailService = EmailServiceFactory.getService(appCtx);
                 emailService.sendProjCreationMailToAdmin(loggedUser, project);
             } catch (Exception e) { //catch generic Exception in order to avoid annoying exception raised to the client when the configuration is invalid
                 logger.error(Utilities.printFullStackTrace(e));
