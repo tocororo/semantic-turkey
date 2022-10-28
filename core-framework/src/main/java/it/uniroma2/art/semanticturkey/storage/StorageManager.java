@@ -40,7 +40,7 @@ public abstract class StorageManager {
 
     private static final String STORAGE_FOLDER = "storage";
 
-    public static final Pattern PATH_VALIDATION_PATTERN = Pattern.compile("^((/(?!\\.)[a-zA-Z0-9_\\-.]+)+|/)$");
+    public static final Pattern PATH_VALIDATION_PATTERN = Pattern.compile("^((/(?!\\.)[a-zA-Z0-9_\\-.,\\s]+)+|/)$");
 
     public static File getSystemStorageDirectory() {
         return FileUtils.getFile(Resources.getSystemDir(), STORAGE_FOLDER);
